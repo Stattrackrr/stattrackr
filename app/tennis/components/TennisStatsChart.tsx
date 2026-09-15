@@ -1292,7 +1292,25 @@ export function TennisStatsChart({
       ? chartData
       : filteredGameLogs.map((g, idx) => gameToChartRow(g as Record<string, unknown>, idx));
     const values = numericChartValues(axisRows);
-    if (!values.length) return { domain: [0, 10] as [number, number], ticks: [0, 3, 7, 10] };
+    const incomingLine =
+      externalLineValue != null && Number.isFinite(externalLineValue) ? externalLineValue : null;
+    const expandPositiveMax = (baseMax: number) => {
+      if (incomingLine == null) return baseMax;
+      return Math.max(baseMax, Math.ceil(Math.abs(incomingLine) / 5) * 5);
+    };
+    const ticksForPositiveMax = (max: number, useDecimals: boolean) => {
+      const step = max / 3;
+      return [
+        0,
+        useDecimals ? Math.round(step * 10) / 10 : Math.round(step),
+        useDecimals ? Math.round(step * 2 * 10) / 10 : Math.round(step * 2),
+        max,
+      ];
+    };
+    if (!values.length) {
+      const max = expandPositiveMax(10);
+      return { domain: [0, max] as [number, number], ticks: ticksForPositiveMax(max, incomingLine != null && Math.abs(incomingLine - Math.round(incomingLine)) > 0.001) };
+    }
 
     const isMoneylineStat =
       selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat);
@@ -1306,7 +1324,11 @@ export function TennisStatsChart({
     if (selectedStat === 'plusMinus' || selectedStat === 'spread' || /^q[1-4]_spread$/.test(selectedStat)) {
       const minValue = Math.min(...values);
       const maxValue = Math.max(...values);
-      const absMax = Math.max(Math.abs(minValue), Math.abs(maxValue));
+      const absMax = Math.max(
+        Math.abs(minValue),
+        Math.abs(maxValue),
+        incomingLine != null ? Math.abs(incomingLine) : 0
+      );
       const bound = Math.max(Math.ceil(absMax / 5) * 5, 5);
       const step = bound / 3;
       const useDecimals = values.some((v) => Math.abs(v - Math.round(v)) > 0.001);
@@ -1323,7 +1345,7 @@ export function TennisStatsChart({
       };
     }
 
-    const maxValue = Math.max(...values);
+    const maxValue = Math.max(...values, incomingLine != null ? Math.abs(incomingLine) : 0);
     if (selectedStat === 'dominanceRatio') {
       const max = Math.max(2, Math.ceil(maxValue * 2) / 2);
       const ticks: number[] = [];
@@ -1340,21 +1362,14 @@ export function TennisStatsChart({
       ? Math.min(100, Math.max(pctCap, 10))
       : useMaxPlusOne
         ? Math.max(Math.ceil(maxValue) + 1, 1)
-        : Math.max(Math.ceil(maxValue / 5) * 5, 5);
-    const step = max / 3;
+        : expandPositiveMax(Math.max(Math.ceil(maxValue / 5) * 5, 5));
     const useDecimals = values.some((v) => Math.abs(v - Math.round(v)) > 0.001);
-    const ticks: number[] = [
-      0,
-      useDecimals ? Math.round(step * 10) / 10 : Math.round(step),
-      useDecimals ? Math.round(step * 2 * 10) / 10 : Math.round(step * 2),
-      max,
-    ];
 
     return {
       domain: [0, max] as [number, number],
-      ticks,
+      ticks: ticksForPositiveMax(max, useDecimals),
     };
-  }, [chartData, selectedStat, filteredGameLogs, gameToChartRow]);
+  }, [chartData, selectedStat, filteredGameLogs, gameToChartRow, externalLineValue]);
 
   const placeholderChartData = useMemo(() => {
     const [min, max] = yAxisConfig.domain;
@@ -1422,12 +1437,13 @@ export function TennisStatsChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit statAverage so timeframe changes don't reset line
   }, [selectedStat, externalLineValue, hasDecimalValues, emitTransientLine, chartDataReady]);
 
-  // When external line (e.g. from selected bookmaker) changes, sync chart line to it. Do NOT depend on yAxisConfig.domain so that changing timeframe (which changes domain) doesn't overwrite the user's manual line.
+  // When external line (e.g. from props URL or selected bookmaker) changes, sync chart line to it.
+  // Do not clamp to the current Y domain — expand the domain around the incoming line instead.
   useEffect(() => {
     if (externalLineValue == null || !Number.isFinite(externalLineValue)) return;
-    const [min, max] = yAxisConfig.domain;
-    const clamped = Math.max(min, Math.min(max, externalLineValue));
-    const next = hasDecimalValues ? Math.round(clamped * 10) / 10 : Math.round(clamped * 2) / 2;
+    const next = hasDecimalValues
+      ? Math.round(externalLineValue * 10) / 10
+      : Math.round(externalLineValue * 2) / 2;
     setLineValue(next);
     emitTransientLine(next);
     const input = document.getElementById('betting-line-input') as HTMLInputElement | null;

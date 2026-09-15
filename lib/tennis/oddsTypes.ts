@@ -7,7 +7,7 @@ export type TennisBookRegion = BookmakerRegion;
 /** Decimal prices shown in the tennis line selector. */
 export const TENNIS_SELECTOR_MIN_DECIMAL = 1.65;
 export const TENNIS_SELECTOR_MAX_DECIMAL = 2.5;
-/** Moneyline floor so heavy-favorite chalk like 1.05 is not the displayed price. */
+/** Props-page moneyline floor. Dashboard H2H still shows shorter prices. */
 export const TENNIS_MONEYLINE_MIN_DECIMAL = 1.3;
 
 export interface TennisBookRow {
@@ -61,10 +61,7 @@ export function tennisH2hMeetsMinOdds(h2h: { home?: string; away?: string } | un
   if (!h2h) return false;
   const home = decimalFromAmericanStr(h2h.home);
   const away = decimalFromAmericanStr(h2h.away);
-  if (home == null && away == null) return false;
-  if (home != null && home < TENNIS_MONEYLINE_MIN_DECIMAL) return false;
-  if (away != null && away < TENNIS_MONEYLINE_MIN_DECIMAL) return false;
-  return true;
+  return home != null || away != null;
 }
 
 export function tennisMoneylinePriceMeetsMin(odds: string | undefined): boolean {

@@ -1,6 +1,7 @@
 /**
  * Tennis props-page list: one row per player / market / bookmaker,
- * same shape as AFL `/api/afl/player-props/list`.
+ * then collapsed to one displayed line per market.
+ * Same shape as AFL `/api/afl/player-props/list`.
  */
 
 import sharedCache from '@/lib/sharedCache';
@@ -27,12 +28,13 @@ import {
   type TennisBookRow,
   type TennisOuLine,
 } from '@/lib/tennis/oddsTypes';
+import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
 import type { TennisDvpMetricKey } from '@/lib/tennis/dvpShared';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisMatchRow, TennisTour } from '@/lib/tennis/types';
 
 export const TENNIS_USER_NO_ODDS = 'No odds available. Come back later.';
-export const TENNIS_LIST_CACHE_KEY = 'tennis_player_props_list_v13';
+export const TENNIS_LIST_CACHE_KEY = 'tennis_player_props_list_v17';
 const TENNIS_LIST_CACHE_TTL_SECONDS = 20 * 60;
 const TENNIS_EMPTY_TOUR_TTL_SECONDS = 15 * 60;
 
@@ -557,15 +559,18 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
     }
   }
 
+  const primaryData = collapseTennisRowsToPrimaryMarketLine(data, {
+    keepAllWinningLineRows: true,
+  });
   games.sort((a, b) => String(a.commenceTime).localeCompare(String(b.commenceTime)));
   const lastUpdated =
     snapshots.reduce((latest, row) => (row.fetchedAt > latest ? row.fetchedAt : latest), '') || null;
-  const empty = data.length === 0;
+  const empty = primaryData.length === 0;
   return {
     success: true,
-    data,
+    data: primaryData,
     games,
-    propsCount: data.length,
+    propsCount: primaryData.length,
     gamesCount: games.length,
     lastUpdated,
     nextUpdate: null,

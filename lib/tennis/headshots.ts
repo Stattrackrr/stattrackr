@@ -105,9 +105,15 @@ export function resolveTennisHeadshotUrl(
     const stamp = index?.generatedAt || '1';
     const qs = new URLSearchParams({ v: encodeURIComponent(stamp).slice(0, 24) });
     const remoteUrl = String(entry?.remoteUrl || '');
-    if (entry?.source === 'tennis-com' && /\/tcf\/images\/players\//i.test(remoteUrl)) {
-      qs.set('crop', 'wide');
-    }
+    const paddedStudio =
+      (entry?.source === 'tennis-com' && /\/tcf\/images\/players\//i.test(remoteUrl)) ||
+      (entry?.source === 'wta' && /-Torso_/i.test(remoteUrl));
+    const tightCrop =
+      entry?.source === 'wta' &&
+      /photoresources\.wtatennis\.com/i.test(remoteUrl) &&
+      !/-Torso_/i.test(remoteUrl);
+    if (paddedStudio) qs.set('crop', 'wide');
+    else if (tightCrop) qs.set('crop', 'tight');
     return `${publicPath}?${qs.toString()}`;
   }
   const fromIndex = loadTennisHeadshotsIndex()?.byPlayerId?.[id];

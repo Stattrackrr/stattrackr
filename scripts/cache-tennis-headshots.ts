@@ -5,15 +5,17 @@
  * Active = currently ranked OR played in the current season (same set as currentOnly roster).
  * Prefer official ATP/WTA square headshots, then ESPN, then API-Tennis logos.
  * ATP images are scraped from atptour.com (opens a Chrome window; Cloudflare
- * blocks headless fetches). WTA prefers tennis.com studio portraits, then the
- * blob .png cutout, then the player-page Torso PNG.
+ * blocks headless fetches). WTA uses the official wtatennis.com photo catalog
+ * (the same portraits as player pages / search), then the player-page
+ * headshot, then the blob .png cutout / casual JPEG. Existing tennis.com
+ * studio files are kept and not overwritten.
  * Files land in public/images/tennis/headshots/{id}.jpg or .png
  *
  * Usage:
  *   npx tsx scripts/cache-tennis-headshots.ts
  *   npx tsx scripts/cache-tennis-headshots.ts --refresh
  *   npx tsx scripts/cache-tennis-headshots.ts --atp-only
- *   npx tsx scripts/cache-tennis-headshots.ts --wta-only
+ *   npx tsx scripts/cache-tennis-headshots.ts --wta-only --wta-pages
  *   npx tsx scripts/cache-tennis-headshots.ts --concurrency=8
  *   npx tsx scripts/cache-tennis-headshots.ts --limit=20
  */
@@ -36,6 +38,7 @@ import {
   tennisHeadshotPublicPath,
   tennisHeadshotsIndexPath,
   tennisHeadshotsPublicDir,
+  type TennisHeadshotEntry,
   type TennisHeadshotSource,
   type TennisHeadshotsIndex,
 } from '../lib/tennis/headshots';
@@ -72,6 +75,7 @@ const BASE = 'https://api.api-tennis.com/tennis/';
 const REFRESH = argFlag('refresh');
 const ATP_ONLY = argFlag('atp-only');
 const WTA_ONLY = argFlag('wta-only');
+const WTA_PAGES = argFlag('wta-pages');
 const CONCURRENCY = Math.max(1, Number(argValue('concurrency')) || 4);
 const LIMIT = Math.max(0, Number(argValue('limit')) || 0);
 const ATP_HEADSHOT = (id: string) =>
@@ -659,10 +663,193 @@ async function fetchTennisComHeadshot(name: string): Promise<{ url: string; buf:
   return null;
 }
 
-async function fetchWtaTorsoPng(
+type WtaCmsPhoto = { wtaId: string; url: string; rank: number; title: string };
+
+type WtaCmsCatalog = {
+  byWtaId: Map<string, WtaCmsPhoto>;
+  byName: Map<string, WtaCmsPhoto>;
+};
+
+type WtaCmsPhotoRow = {
+  title?: string;
+  onDemandUrl?: string;
+  tags?: Array<{ label?: string }>;
+  references?: Array<{ id?: number | string; type?: string }>;
+};
+
+function wtaPhotoKindRank(tags: Array<{ label?: string }> | undefined): number {
+  const labels = (tags || []).map((t) => String(t.label || '').toLowerCase());
+  if (labels.includes('full-body-headshot')) return 0;
+  if (labels.includes('head-cropped-photo')) return 1;
+  return 2;
+}
+
+function cmsTitleToName(title: string): string {
+  return foldTennisName(
+    String(title || '')
+      .replace(/[-_](torso|crop)_\d+$/i, '')
+      .replace(/[_-]+/g, ' ')
+  );
+}
+
+function wtaImageUrl(raw: string): string {
+  const base = String(raw || '').split('?')[0].trim();
+  return base ? `${base}?width=800` : '';
+}
+
+function extractWtaProfileHeadshotUrl(html: string): string | null {
+  const wrap = html.match(
+    /profile-header__headshot-wrap[\s\S]{0,5000}?src="(https:\/\/photoresources\.wtatennis\.com\/photo-resources\/[^"]+)"/i
+  );
+  const raw = wrap?.[1] || '';
+  if (raw && !/Home-Share|Quick-Links|WTA_Logo|joint-logo/i.test(raw)) {
+    return wtaImageUrl(raw);
+  }
+  const torso = html.match(
+    /https:\/\/photoresources\.wtatennis\.com\/photo-resources\/[^"'\\\s>]+\-Torso_[^"'\\\s>]+\.(?:png|jpe?g)/i
+  );
+  return torso ? wtaImageUrl(torso[0]) : null;
+}
+
+function wtaCmsCachePath(): string {
+  return path.join(path.dirname(tennisHeadshotsIndexPath()), 'wta-cms-headshots.json');
+}
+
+function catalogFromPhotos(photos: WtaCmsPhoto[]): WtaCmsCatalog {
+  const byWtaId = new Map<string, WtaCmsPhoto>();
+  const byName = new Map<string, WtaCmsPhoto>();
+  for (const photo of photos) {
+    if (!photo?.wtaId || !photo.url) continue;
+    const prev = byWtaId.get(photo.wtaId);
+    if (!prev || photo.rank < prev.rank) byWtaId.set(photo.wtaId, photo);
+    const nameKey = cmsTitleToName(photo.title);
+    if (nameKey.split(' ').filter(Boolean).length >= 2) {
+      const prevName = byName.get(nameKey);
+      if (!prevName || photo.rank < prevName.rank) byName.set(nameKey, photo);
+    }
+  }
+  return { byWtaId, byName };
+}
+
+function readWtaCmsCache(): WtaCmsCatalog | null {
+  const file = wtaCmsCachePath();
+  if (!fs.existsSync(file)) return null;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as { photos?: WtaCmsPhoto[] };
+    const photos = Array.isArray(parsed.photos) ? parsed.photos : [];
+    if (!photos.length) return null;
+    return catalogFromPhotos(photos);
+  } catch {
+    return null;
+  }
+}
+
+function writeWtaCmsCache(catalog: WtaCmsCatalog) {
+  fs.mkdirSync(path.dirname(wtaCmsCachePath()), { recursive: true });
+  fs.writeFileSync(
+    wtaCmsCachePath(),
+    JSON.stringify(
+      { generatedAt: new Date().toISOString(), photos: [...catalog.byWtaId.values()] },
+      null,
+      2
+    )
+  );
+}
+
+async function loadWtaCmsHeadshots(): Promise<WtaCmsCatalog> {
+  const cached = readWtaCmsCache();
+  if (WTA_PAGES) {
+    if (cached) {
+      console.log(`[tennis-headshots] WTA CMS using disk cache players=${cached.byWtaId.size}`);
+      return cached;
+    }
+    console.log('[tennis-headshots] WTA CMS cache missing — skipping live catalog');
+    return { byWtaId: new Map(), byName: new Map() };
+  }
+
+  const byWtaId = new Map<string, WtaCmsPhoto>();
+  const byName = new Map<string, WtaCmsPhoto>();
+  const pageSize = 100;
+  let page = 0;
+  let numPages = 1;
+  let blocked = false;
+  while (page < numPages) {
+    const url = `https://api.wtatennis.com/content/wta/PHOTO/EN?tagNames=player-headshot&page=${page}&pageSize=${pageSize}`;
+    let json: { pageInfo?: { numPages?: number; numEntries?: number }; content?: WtaCmsPhotoRow[] } | null =
+      null;
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      try {
+        const res = await fetch(url, {
+          headers: {
+            Accept: 'application/json',
+            'User-Agent': CHROME_UA,
+            Referer: 'https://www.wtatennis.com/rankings/singles',
+          },
+        });
+        if (res.status === 429 || res.status >= 500) {
+          blocked = res.status === 429;
+          await sleep(attempt * 2000);
+          continue;
+        }
+        if (!res.ok) break;
+        json = (await res.json()) as typeof json;
+        break;
+      } catch {
+        await sleep(attempt * 400);
+      }
+    }
+    const rows = Array.isArray(json?.content) ? json.content : [];
+    numPages = Math.max(1, Number(json?.pageInfo?.numPages) || page + (rows.length ? 2 : 1));
+    if (page === 0) {
+      console.log(
+        `[tennis-headshots] WTA CMS catalog entries=${json?.pageInfo?.numEntries ?? rows.length} pages=${numPages}`
+      );
+    }
+    for (const row of rows) {
+      const wtaId = String(
+        row.references?.find((r) => String(r.type || '').toUpperCase() === 'TENNIS_PLAYER')?.id || ''
+      ).trim();
+      const urlRaw = String(row.onDemandUrl || '').trim();
+      if (!wtaId || !urlRaw) continue;
+      const photo: WtaCmsPhoto = {
+        wtaId,
+        url: wtaImageUrl(urlRaw),
+        rank: wtaPhotoKindRank(row.tags),
+        title: String(row.title || ''),
+      };
+      const prev = byWtaId.get(wtaId);
+      if (!prev || photo.rank < prev.rank) byWtaId.set(wtaId, photo);
+      const nameKey = cmsTitleToName(photo.title);
+      if (nameKey.split(' ').filter(Boolean).length >= 2) {
+        const prevName = byName.get(nameKey);
+        if (!prevName || photo.rank < prevName.rank) byName.set(nameKey, photo);
+      }
+    }
+    if (!rows.length) break;
+    page += 1;
+    await sleep(150);
+  }
+  const live = { byWtaId, byName };
+  if (byWtaId.size) {
+    writeWtaCmsCache(live);
+    return live;
+  }
+  if (cached) {
+    console.warn(
+      `[tennis-headshots] WTA CMS live fetch empty${blocked ? ' (rate limited)' : ''} — using disk cache players=${cached.byWtaId.size}`
+    );
+    return cached;
+  }
+  return live;
+}
+
+let wtaSiteBlocked = false;
+
+async function fetchWtaPlayerPageHeadshot(
   wtaId: string,
   name: string
 ): Promise<{ url: string; buf: Buffer } | null> {
+  if (wtaSiteBlocked) return null;
   const pageUrl = `https://www.wtatennis.com/players/${wtaId}/${wtaPlayerSlug(name)}`;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
@@ -674,18 +861,19 @@ async function fetchWtaTorsoPng(
         },
       });
       if (res.status === 429 || res.status >= 500) {
-        await sleep(attempt * 900);
+        if (res.status === 429 && attempt >= 3) {
+          wtaSiteBlocked = true;
+          console.warn('[tennis-headshots] WTA site rate limited — stopping player-page scrapes');
+        }
+        await sleep(attempt * 8000);
         continue;
       }
       if (!res.ok) return null;
-      const html = await res.text();
-      const match = html.match(
-        /https:\/\/photoresources\.wtatennis\.com\/photo-resources\/[^"'\\\s>]+\-Torso_[^"'\\\s>]+\.png/i
-      );
-      if (!match) return null;
-      const torsoUrl = `${match[0].split('?')[0]}?width=790&height=740`;
-      const buf = await fetchWtaImageBytes(torsoUrl);
-      if (buf && looksLikePng(buf) && buf.length > 20_000) return { url: torsoUrl, buf };
+      const imgUrl = extractWtaProfileHeadshotUrl(await res.text());
+      if (!imgUrl) return null;
+      const buf = await fetchWtaImageBytes(imgUrl);
+      await sleep(400);
+      if (buf && looksLikeImage(buf) && buf.length > 8_000) return { url: imgUrl, buf };
       return null;
     } catch {
       await sleep(attempt * 400);
@@ -701,6 +889,7 @@ async function fetchWtaImageBytes(url: string): Promise<Buffer | null> {
         headers: {
           Accept: 'image/png,image/jpeg,image/*,*/*;q=0.8',
           'User-Agent': CHROME_UA,
+          Referer: 'https://www.wtatennis.com/',
         },
       });
       if (res.status === 429 || res.status >= 500) {
@@ -717,41 +906,63 @@ async function fetchWtaImageBytes(url: string): Promise<Buffer | null> {
   return null;
 }
 
+function writeWtaHeadshotFile(
+  playerId: string,
+  buf: Buffer
+): 'jpg' | 'png' {
+  const ext: 'jpg' | 'png' = looksLikePng(buf) ? 'png' : 'jpg';
+  fs.mkdirSync(tennisHeadshotsPublicDir(), { recursive: true });
+  fs.writeFileSync(tennisHeadshotFilePath(playerId, ext), buf);
+  const other = tennisHeadshotFilePath(playerId, ext === 'png' ? 'jpg' : 'png');
+  if (fs.existsSync(other)) fs.unlinkSync(other);
+  return ext;
+}
+
+function wtaIdFromEntry(entry?: TennisHeadshotEntry | null): string {
+  const direct = String(entry?.wtaId || '').trim();
+  if (direct) return direct;
+  const match = String(entry?.remoteUrl || '').match(/\/headshots\/(\d+)\.(?:png|jpe?g)/i);
+  return match?.[1] || '';
+}
+
+function hasOfficialWtaPortrait(playerId: string, entry?: TennisHeadshotEntry): boolean {
+  if (entry?.source === 'tennis-com' && hasStudioWtaHeadshot(playerId)) return true;
+  const remote = String(entry?.remoteUrl || '');
+  if (entry?.source !== 'wta' || !/photoresources\.wtatennis\.com/i.test(remote)) return false;
+  return (
+    fs.existsSync(tennisHeadshotFilePath(playerId, 'png')) ||
+    fs.existsSync(tennisHeadshotFilePath(playerId, 'jpg'))
+  );
+}
+
 async function downloadWtaHeadshot(
   playerId: string,
   wtaId: string,
   name: string
 ): Promise<{ url: string; ext: 'jpg' | 'png' } | null> {
+  const fromPage = await fetchWtaPlayerPageHeadshot(wtaId, name);
+  if (fromPage) {
+    return { url: fromPage.url, ext: writeWtaHeadshotFile(playerId, fromPage.buf) };
+  }
   const pngBuf = await fetchWtaImageBytes(WTA_HEADSHOT_PNG(wtaId));
   if (pngBuf && looksLikePng(pngBuf)) {
-    const dest = tennisHeadshotFilePath(playerId, 'png');
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.writeFileSync(dest, pngBuf);
-    const jpg = tennisHeadshotFilePath(playerId, 'jpg');
-    if (fs.existsSync(jpg)) fs.unlinkSync(jpg);
+    writeWtaHeadshotFile(playerId, pngBuf);
     return { url: WTA_HEADSHOT_PNG(wtaId), ext: 'png' };
-  }
-  const torso = await fetchWtaTorsoPng(wtaId, name);
-  if (torso) {
-    const dest = tennisHeadshotFilePath(playerId, 'png');
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.writeFileSync(dest, torso.buf);
-    const jpg = tennisHeadshotFilePath(playerId, 'jpg');
-    if (fs.existsSync(jpg)) fs.unlinkSync(jpg);
-    return { url: torso.url, ext: 'png' };
   }
   const jpgBuf = pngBuf || (await fetchWtaImageBytes(WTA_HEADSHOT_JPG(wtaId)));
   if (!jpgBuf) return null;
-  const dest = tennisHeadshotFilePath(playerId, 'jpg');
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.writeFileSync(dest, jpgBuf);
-  return { url: WTA_HEADSHOT_JPG(wtaId), ext: 'jpg' };
+  return { url: WTA_HEADSHOT_JPG(wtaId), ext: writeWtaHeadshotFile(playerId, jpgBuf) };
 }
 
 async function scrapeWtaHeadshots(
   players: ApiTennisPlayer[],
   index: TennisHeadshotsIndex
 ): Promise<{ ok: number; miss: number }> {
+  const catalog = await loadWtaCmsHeadshots();
+  console.log(
+    `[tennis-headshots] WTA CMS players with photos=${catalog.byWtaId.size} named=${catalog.byName.size}`
+  );
+
   const ranked = [...players].sort((a, b) => {
     const ra = Number(a.rank);
     const rb = Number(b.rank);
@@ -760,45 +971,80 @@ async function scrapeWtaHeadshots(
     return na - nb;
   });
   let list = ranked.filter((p) => {
+    if (!String(p.name || '').trim()) return false;
     if (REFRESH) return true;
-    const entry = index.byPlayerId[p.playerId];
-    if (entry?.source === 'tennis-com' && hasStudioWtaHeadshot(p.playerId)) return false;
-    return Boolean(String(p.name || '').trim());
+    return !hasOfficialWtaPortrait(p.playerId, index.byPlayerId[p.playerId]);
   });
   if (LIMIT) list = list.slice(0, LIMIT);
 
-  console.log(`[tennis-headshots] WTA looking up ${list.length} tennis.com headshots (concurrency=${Math.min(CONCURRENCY, 5)})`);
+  const needId = list.filter((p) => !wtaIdFromEntry(index.byPlayerId[p.playerId]));
+  for (const player of list) {
+    const wtaId = wtaIdFromEntry(index.byPlayerId[player.playerId]);
+    if (!wtaId) continue;
+    const prev = index.byPlayerId[player.playerId];
+    if (prev) prev.wtaId = wtaId;
+    else markEntry(index, player, null, false, { wtaId });
+  }
+  if (!WTA_PAGES && needId.length) {
+    console.log(`[tennis-headshots] WTA resolving ${needId.length} missing player IDs`);
+    await mapPool(needId, 1, async (player) => {
+      const wtaId = await searchWtaPlayerId(player.name);
+      await sleep(400);
+      if (!wtaId) return;
+      const prev = index.byPlayerId[player.playerId];
+      if (prev) prev.wtaId = wtaId;
+      else markEntry(index, player, null, false, { wtaId });
+    });
+  } else if (needId.length) {
+    console.log(`[tennis-headshots] WTA skipping ${needId.length} ID lookups (--wta-pages)`);
+  }
+
+  const pool = Math.min(CONCURRENCY, WTA_PAGES ? 2 : 4);
+  console.log(`[tennis-headshots] WTA downloading ${list.length} official site headshots (concurrency=${pool})`);
   let ok = 0;
   let miss = 0;
-  await mapPool(list, Math.min(CONCURRENCY, 5), async (player) => {
-    const fromCom = await fetchTennisComHeadshot(player.name);
-    if (fromCom) {
-      const dest = tennisHeadshotFilePath(player.playerId, 'png');
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.writeFileSync(dest, fromCom.buf);
-      const jpg = tennisHeadshotFilePath(player.playerId, 'jpg');
-      if (fs.existsSync(jpg)) fs.unlinkSync(jpg);
-      markEntry(index, player, fromCom.url, true, {
-        source: 'tennis-com',
-        wtaId: index.byPlayerId[player.playerId]?.wtaId,
-        ext: 'png',
-      });
-      ok += 1;
-    } else {
-      let wtaId = String(index.byPlayerId[player.playerId]?.wtaId || '').trim();
-      if (!wtaId) wtaId = (await searchWtaPlayerId(player.name)) || '';
-      if (!wtaId) {
+  await mapPool(list, pool, async (player) => {
+    const wtaId = wtaIdFromEntry(index.byPlayerId[player.playerId]);
+    const cms =
+      (wtaId && catalog.byWtaId.get(wtaId)) || catalog.byName.get(foldTennisName(player.name)) || null;
+    const hasFile =
+      fs.existsSync(tennisHeadshotFilePath(player.playerId, 'png')) ||
+      fs.existsSync(tennisHeadshotFilePath(player.playerId, 'jpg'));
+    if (cms) {
+      const buf = await fetchWtaImageBytes(cms.url);
+      if (buf && looksLikeImage(buf) && buf.length > 8_000) {
+        const ext = writeWtaHeadshotFile(player.playerId, buf);
+        markEntry(index, player, cms.url, true, { source: 'wta', wtaId: cms.wtaId || wtaId, ext });
+        ok += 1;
+      } else if (wtaId) {
+        const saved = await downloadWtaHeadshot(player.playerId, wtaId, player.name);
+        if (saved && /photoresources\.wtatennis\.com/i.test(saved.url)) {
+          markEntry(index, player, saved.url, true, { source: 'wta', wtaId, ext: saved.ext });
+          ok += 1;
+        } else if (!hasFile && saved) {
+          markEntry(index, player, saved.url, true, { source: 'wta', wtaId, ext: saved.ext });
+          ok += 1;
+        } else if (!hasFile) {
+          markEntry(index, player, WTA_HEADSHOT_JPG(wtaId), false, { wtaId });
+          miss += 1;
+        }
+      } else if (!hasFile) {
         miss += 1;
-        return;
       }
+    } else if (wtaId) {
       const saved = await downloadWtaHeadshot(player.playerId, wtaId, player.name);
-      if (saved) {
+      if (saved && /photoresources\.wtatennis\.com/i.test(saved.url)) {
         markEntry(index, player, saved.url, true, { source: 'wta', wtaId, ext: saved.ext });
         ok += 1;
-      } else {
-        markEntry(index, player, WTA_HEADSHOT_JPG(wtaId), false, { source: undefined, wtaId });
+      } else if (!hasFile && saved) {
+        markEntry(index, player, saved.url, true, { source: 'wta', wtaId, ext: saved.ext });
+        ok += 1;
+      } else if (!hasFile) {
+        markEntry(index, player, WTA_HEADSHOT_JPG(wtaId), false, { wtaId });
         miss += 1;
       }
+    } else if (!hasFile) {
+      miss += 1;
     }
     if ((ok + miss) % 25 === 0) {
       saveIndex(index);

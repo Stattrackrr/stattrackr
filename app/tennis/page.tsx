@@ -20,7 +20,6 @@ import {
   isTennisOuStat,
   tennisBestMoneylinePick,
   tennisBestOuPick,
-  tennisH2hMeetsMinOdds,
   tennisLineMatches,
   tennisMainLineForStat,
   tennisOuLinesForStat,
@@ -574,6 +573,9 @@ export default function TennisDashboardPage() {
   const ignoreNextTransientLineRef = useRef(false);
   const lastOddsMatchupKeyRef = useRef<string | null>(null);
   const tennisLineFromUrlRef = useRef<number | null>(null);
+  const preferredTennisBookmakerRef = useRef<string | null>(null);
+  const hasIncomingTennisBookOrLineRef = useRef(false);
+  const tennisIncomingStatRef = useRef<string | null>(null);
 
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -677,9 +679,19 @@ export default function TennisDashboardPage() {
     setNblGameFilters(restored.nblGameFilters);
     if (restored.searchQuery) setSearchQuery(restored.searchQuery);
     try {
-      const lineRaw = new URL(window.location.href).searchParams.get('line');
+      const url = new URL(window.location.href);
+      const lineRaw = url.searchParams.get('line');
       const line = lineRaw != null ? Number.parseFloat(lineRaw) : NaN;
+      const bookmakerParam = url.searchParams.get('bookmaker')?.trim() || '';
       tennisLineFromUrlRef.current = Number.isFinite(line) ? line : null;
+      preferredTennisBookmakerRef.current = bookmakerParam || null;
+      if (Number.isFinite(line) || bookmakerParam) {
+        hasIncomingTennisBookOrLineRef.current = true;
+        tennisIncomingStatRef.current = restored.mainChartStat;
+      }
+      if (Number.isFinite(line)) {
+        setTennisGameLineValue(line);
+      }
     } catch {
       tennisLineFromUrlRef.current = null;
     }
@@ -966,6 +978,10 @@ export default function TennisDashboardPage() {
     setTennisOddsAwayTeam('');
     setTennisGameLineValue(null);
     lastOddsMatchupKeyRef.current = null;
+    tennisLineFromUrlRef.current = null;
+    preferredTennisBookmakerRef.current = null;
+    hasIncomingTennisBookOrLineRef.current = false;
+    tennisIncomingStatRef.current = null;
     const playerId = String(player.playerId || '').trim();
     const cached = readTennisNextGameClient(playerId);
     if (playerId && cached) applyUpcoming(playerId, cached);
@@ -1194,7 +1210,7 @@ export default function TennisDashboardPage() {
       setTennisOddsHomeTeam('');
       setTennisOddsAwayTeam('');
       setTennisOddsLoading(false);
-      setTennisGameLineValue(null);
+      if (!hasIncomingTennisBookOrLineRef.current) setTennisGameLineValue(null);
       return;
     }
     let cancelled = false;
@@ -1231,6 +1247,7 @@ export default function TennisDashboardPage() {
     const matchupKey = `${selectedPlayer?.playerId || ''}|${nextGameOpponent || ''}`;
     if (lastOddsMatchupKeyRef.current === matchupKey) return;
     lastOddsMatchupKeyRef.current = matchupKey;
+    if (hasIncomingTennisBookOrLineRef.current) return;
     const idx = tennisBestMoneylinePick(tennisOddsBooks);
     setSelectedTennisBookIndex(idx ?? 0);
   }, [tennisOddsBooks, selectedPlayer?.playerId, nextGameOpponent]);
@@ -1259,22 +1276,43 @@ export default function TennisDashboardPage() {
 
   useEffect(() => {
     if (!tennisOddsBooks.length) return;
+    if (
+      hasIncomingTennisBookOrLineRef.current &&
+      tennisIncomingStatRef.current &&
+      tennisIncomingStatRef.current !== mainChartStat
+    ) {
+      hasIncomingTennisBookOrLineRef.current = false;
+      tennisIncomingStatRef.current = null;
+      tennisLineFromUrlRef.current = null;
+    }
+    const normalizeBook = (value: unknown) =>
+      String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '');
+    const preferredBook = preferredTennisBookmakerRef.current;
+    if (preferredBook) {
+      const preferredNorm = normalizeBook(preferredBook);
+      const preferredIndex = tennisOddsBooks.findIndex((book) => {
+        const bookNorm = normalizeBook(book.name);
+        return bookNorm === preferredNorm || bookNorm.includes(preferredNorm) || preferredNorm.includes(bookNorm);
+      });
+      if (preferredIndex >= 0) {
+        setSelectedTennisBookIndex((prev) => {
+          if (prev !== preferredIndex) ignoreNextTransientLineRef.current = true;
+          return preferredIndex;
+        });
+        preferredTennisBookmakerRef.current = null;
+      }
+    }
     if (!isTennisOuStat(mainChartStat)) return;
     const urlLine = tennisLineFromUrlRef.current;
     if (urlLine != null && Number.isFinite(urlLine)) {
-      const idx = tennisOddsBooks.findIndex((book) =>
-        tennisOuLinesForStat(book, mainChartStat).some((row) => tennisLineMatches(row.line, urlLine, 0.01))
-      );
-      if (idx >= 0) {
-        setSelectedTennisBookIndex((prev) => {
-          if (prev !== idx) ignoreNextTransientLineRef.current = true;
-          return idx;
-        });
-      }
       setTennisGameLineValue(urlLine);
       tennisLineFromUrlRef.current = null;
       return;
     }
+    if (hasIncomingTennisBookOrLineRef.current) return;
     const best = tennisBestOuPick(tennisOddsBooks, mainChartStat);
     const n = tennisParseLineNumber(best?.line.line);
     if (best) {
@@ -1290,6 +1328,7 @@ export default function TennisDashboardPage() {
   useEffect(() => {
     if (!tennisOddsBooks.length) return;
     if (mainChartStat !== 'moneyline') return;
+    if (hasIncomingTennisBookOrLineRef.current) return;
     const idx = tennisBestMoneylinePick(tennisOddsBooks);
     if (idx != null) setSelectedTennisBookIndex(idx);
   }, [mainChartStat, tennisOddsBooks]);
@@ -1894,7 +1933,9 @@ export default function TennisDashboardPage() {
                         }
                         const book = tennisOddsBooks[selectedTennisBookIndex];
                         const n = tennisParseLineNumber(tennisMainLineForStat(book, mainChartStat)?.line);
-                        return n ?? 0.5;
+                        if (n != null) return n;
+                        if (tennisOddsBooks.length) return 0.5;
+                        return undefined;
                       }
                       if (mainChartStat === 'moneyline') return 0.5;
                       return undefined;

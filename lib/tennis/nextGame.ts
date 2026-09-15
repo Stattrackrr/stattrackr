@@ -8,7 +8,7 @@ import type { TennisTour } from '@/lib/tennis/types';
 const API_BASE = 'https://api.api-tennis.com/tennis/';
 const CACHE_TTL_MS = 2 * 60 * 1000;
 const LOOKAHEAD_DAYS = 21;
-export const TENNIS_UPCOMING_CACHE_KEY = 'tennis_upcoming_v4';
+export const TENNIS_UPCOMING_CACHE_KEY = 'tennis_upcoming_v5';
 export const TENNIS_UPCOMING_TTL_SECONDS = 20 * 60;
 const FETCH_TIMEOUT_MS = 5000;
 
@@ -50,9 +50,9 @@ type UpcomingRuntime = {
 };
 
 function upcomingRuntime(): UpcomingRuntime {
-  const g = globalThis as typeof globalThis & { __tennisUpcomingV4?: UpcomingRuntime };
-  if (!g.__tennisUpcomingV4) g.__tennisUpcomingV4 = { window: null, inflight: null };
-  return g.__tennisUpcomingV4;
+  const g = globalThis as typeof globalThis & { __tennisUpcomingV5?: UpcomingRuntime };
+  if (!g.__tennisUpcomingV5) g.__tennisUpcomingV5 = { window: null, inflight: null };
+  return g.__tennisUpcomingV5;
 }
 
 function apiKey(): string {
@@ -102,6 +102,9 @@ function nameKey(name: string): string {
   return `name:${name.trim().toLowerCase()}`;
 }
 
+/** API-Tennis "Set 1" / live can appear hours before first ball. Trust it only near tipoff. */
+const LIVE_STATUS_MAX_FUTURE_MS = 2 * 60 * 60 * 1000;
+
 function fixturePhase(
   status: string,
   tipoff: Date | null
@@ -130,8 +133,12 @@ function fixturePhase(
     s.includes('live') ||
     s.includes('progress') ||
     s.includes('playing');
-  // Order-of-play "not before" times stay in the future after a match starts.
-  if (setOrLive) return 'live';
+  if (setOrLive) {
+    if (!tipoff) return 'live';
+    // Not-before times can lag after a match starts, but not by many hours.
+    if (tipoff.getTime() - now <= LIVE_STATUS_MAX_FUTURE_MS) return 'live';
+    return 'scheduled';
+  }
   if (!s || s === 'not started' || s === 'scheduled' || s === 'ns') {
     return started ? 'live' : 'scheduled';
   }
@@ -455,7 +462,9 @@ export function tennisCommenceTimeForMatch(
   if (!hit) return null;
   if (hit.live) {
     const tipMs = hit.tipoff ? Date.parse(hit.tipoff) : Number.NaN;
-    if (!Number.isFinite(tipMs) || tipMs > Date.now()) return new Date().toISOString();
+    if (!Number.isFinite(tipMs)) return new Date().toISOString();
+    const ahead = tipMs - Date.now();
+    if (ahead > 0 && ahead <= LIVE_STATUS_MAX_FUTURE_MS) return new Date().toISOString();
   }
   return hit.tipoff || null;
 }

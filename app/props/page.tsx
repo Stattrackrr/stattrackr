@@ -86,6 +86,7 @@ import {
 import { prefetchTennisDashboardFromProps } from '@/lib/tennisPropsNavigationPrefetch';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisEventPlaceLabel, tennisTourLabel } from '@/lib/tennis/chartStats';
+import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
 import { resolveWorldCupFlagCode, resolveBestWorldCupFlagUrl, worldCupTeamsMatch } from '@/lib/worldCupFlags';
 
 interface Game {
@@ -1291,8 +1292,8 @@ function normalizeNbaTeam(team: string): string {
 
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v6';
 const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v9';
-const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v7';
-const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v10';
+const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v8';
+const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v13';
 const WC_PROPS_MIN_DECIMAL_ODDS = 1.6;
 
 function worldCupBackNavSkipFetchPending(): boolean {
@@ -1609,6 +1610,12 @@ function readSecondaryPropsSessionCache(sport: SecondaryPropsSport): SecondaryPr
   }
 }
 
+function tennisPropsForTour(props: PlayerProp[], tour: 'atp' | 'wta'): PlayerProp[] {
+  return props.filter(
+    (p) => isTennisListProp(p) && propsSportFromTennisTour(p.team || p.homeTeamCode) === tour
+  );
+}
+
 function combinedModeHasAflRows(aflProps: PlayerProp[]): boolean {
   return aflProps.some(isAflCombinedListProp);
 }
@@ -1858,6 +1865,20 @@ function readCombinedSnapshotBrowserCache(): CombinedSnapshotBrowserCache | null
   }
   return null;
 }
+
+function readTennisTourPropsFromCaches(tour: 'atp' | 'wta'): PlayerProp[] {
+  const cached = readSecondaryPropsSessionCache(tour);
+  if (cached.isFresh) {
+    const rows = tennisPropsForTour(cached.props, tour);
+    if (rows.length > 0) return rows;
+  }
+  const combined = readCombinedSnapshotBrowserCache();
+  return tennisPropsForTour(
+    Array.isArray(combined?.tennis?.props) ? combined.tennis.props : [],
+    tour
+  );
+}
+
 function getSecondaryPropsCacheKey(sport: SecondaryPropsSport): string {
   if (sport === 'world-cup') return WC_PROPS_CACHE_KEY;
   if (sport === 'atp') return ATP_PROPS_CACHE_KEY;
@@ -2287,6 +2308,7 @@ export default function NBALandingPage() {
   const combinedWarmToggleRef = useRef(false);
   const combinedPartialWcRefetchAttemptedRef = useRef(false);
   const combinedPartialAflRefetchAttemptedRef = useRef(false);
+  const combinedPartialTennisRefetchAttemptedRef = useRef(false);
   const combinedFetchInFlightRef = useRef(false);
   const combinedLoadPromiseRef = useRef<Promise<void> | null>(null);
   /** Skip AFL/WC list fetch after instant session-cache restore (persists through Strict Mode re-runs). */
@@ -2582,6 +2604,10 @@ export default function NBALandingPage() {
       } else if (typeof listData?.ingestMessage === 'string') {
         ingestMessage = listData.ingestMessage;
       }
+    }
+
+    if (isTennisPropsSport(sport)) {
+      finalAggregated = collapseTennisRowsToPrimaryMarketLine(finalAggregated);
     }
 
     return {
@@ -3963,7 +3989,8 @@ export default function NBALandingPage() {
             return;
           }
           if (isTennisSportParam(sportParam)) {
-            void preloadSecondaryPropsCache(sportParam === 'wta' ? 'wta' : 'atp');
+            void preloadSecondaryPropsCache('atp');
+            void preloadSecondaryPropsCache('wta');
             return;
           }
           // combined/all: /api/props/combined fetches AFL+WC — skip redundant list preloads.
@@ -4829,6 +4856,49 @@ export default function NBALandingPage() {
           // ignore AFL stats refill errors
         }
         combinedPartialAflRefetchAttemptedRef.current = true;
+      }
+
+      const tennisNow = [
+        ...tennisCombinedPropsRef.current.filter(isTennisListProp),
+        ...(Array.isArray(payload?.tennis?.props) ? payload.tennis.props.filter(isTennisListProp) : []),
+      ];
+      const hasAtp = tennisPropsForTour(tennisNow, 'atp').length > 0;
+      const hasWta = tennisPropsForTour(tennisNow, 'wta').length > 0;
+      if (
+        !combinedPartialTennisRefetchAttemptedRef.current &&
+        ((hasAtp && !hasWta) || (hasWta && !hasAtp))
+      ) {
+        const missingTour: 'atp' | 'wta' = hasAtp ? 'wta' : 'atp';
+        const presentTour: 'atp' | 'wta' = hasAtp ? 'atp' : 'wta';
+        try {
+          const listUrl = getSecondaryPropsListUrl(missingTour, debugStats);
+          const listRes = await fetchSecondaryPropsList(listUrl);
+          const listData = await listRes.json();
+          const { aggregated } = aggregateSecondaryListPayload(listData, missingTour);
+          const missingRows = tennisPropsForTour(aggregated, missingTour);
+          if (missingRows.length > 0) {
+            const presentRows = tennisPropsForTour(tennisNow, presentTour);
+            applyCombinedSnapshot(
+              {
+                ...buildProgressiveSnapshot({}),
+                tennis: {
+                  ok: true,
+                  status: listRes.status,
+                  lastUpdated: null,
+                  nextUpdate: null,
+                  ingestMessage: null,
+                  noTennisOdds: false,
+                  games: [],
+                  props: [...presentRows, ...missingRows],
+                },
+              },
+              { persistCaches: false }
+            );
+          }
+        } catch {
+          // ignore tennis refill errors
+        }
+        combinedPartialTennisRefetchAttemptedRef.current = true;
       }
     };
 
@@ -6694,7 +6764,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   );
 
   const filteredAflProps = useMemo(() => {
-    return activeSecondaryProps.filter((prop) => {
+    const filtered = activeSecondaryProps.filter((prop) => {
       if (!isAflCommenceTimePropsEligible(prop.gameDate)) return false;
       if (propsSport === 'world-cup' && !isWorldCupListProp(prop)) return false;
       if (isTennisPropsSport(propsSport) && !isTennisPropStatType(prop.statType)) return false;
@@ -6719,6 +6789,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       if (secondaryGameFilterApplies && prop.gameId && !selectedAflGames.has(prop.gameId)) return false;
       return true;
     });
+    return isTennisPropsSport(propsSport)
+      ? collapseTennisRowsToPrimaryMarketLine(filtered)
+      : filtered;
   }, [activeSecondaryProps, propsSport, debouncedSearchQuery, selectedPropTypes, selectedBookmakers, selectedAflGames, secondaryGameFilterApplies, getStatLabel]);
 
   // Combined mode: minimal filters only (search + sort + pagination).
@@ -6782,20 +6855,24 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       ),
       ...(WORLD_CUP_PUBLIC_ENABLED ? mapWithSport(worldCupCombinedProps, 'world-cup') : []),
       ...mapWithSport(
-        tennisCombinedProps.filter(
-          (prop) =>
-            isAflCommenceTimePropsEligible(prop.gameDate) &&
-            isTennisListProp(prop) &&
-            propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'atp'
+        collapseTennisRowsToPrimaryMarketLine(
+          tennisCombinedProps.filter(
+            (prop) =>
+              isAflCommenceTimePropsEligible(prop.gameDate) &&
+              isTennisListProp(prop) &&
+              propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'atp'
+          )
         ),
         'atp'
       ),
       ...mapWithSport(
-        tennisCombinedProps.filter(
-          (prop) =>
-            isAflCommenceTimePropsEligible(prop.gameDate) &&
-            isTennisListProp(prop) &&
-            propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'wta'
+        collapseTennisRowsToPrimaryMarketLine(
+          tennisCombinedProps.filter(
+            (prop) =>
+              isAflCommenceTimePropsEligible(prop.gameDate) &&
+              isTennisListProp(prop) &&
+              propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'wta'
+          )
         ),
         'wta'
       ),
@@ -7865,10 +7942,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       setAflGames([]);
     }
     if (nextMode === 'combined' && isTennisPropsSport(propsSport)) {
-      const kept = tennisCombinedPropsRef.current.filter(
-        (p) => isTennisListProp(p) && propsSportFromTennisTour(p.team || p.homeTeamCode) !== propsSport
-      );
-      setTennisCombinedProps([...kept, ...aflProps.filter(isTennisListProp)]);
+      const leavingTour = propsSport as 'atp' | 'wta';
+      const otherTour: 'atp' | 'wta' = leavingTour === 'wta' ? 'atp' : 'wta';
+      const currentTourRows = aflProps.filter(isTennisListProp);
+      const otherFromMemory = tennisPropsForTour(tennisCombinedPropsRef.current, otherTour);
+      const otherFromCache = readTennisTourPropsFromCaches(otherTour);
+      const otherRows = otherFromMemory.length >= otherFromCache.length ? otherFromMemory : otherFromCache;
+      setTennisCombinedProps([...otherRows, ...currentTourRows]);
       setAflProps([]);
       setAflGames([]);
     }
@@ -8026,6 +8106,17 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       }
 
       if (isTennisPropsSport(propsSport)) {
+        const leavingTour = propsSport as 'atp' | 'wta';
+        const otherTour: 'atp' | 'wta' = leavingTour === 'wta' ? 'atp' : 'wta';
+        const currentTourRows = aflProps.filter(isTennisListProp);
+        const otherFromMemory = tennisPropsForTour(tennisCombinedPropsRef.current, otherTour);
+        const otherFromCache = readTennisTourPropsFromCaches(otherTour);
+        const otherRows = otherFromMemory.length >= otherFromCache.length ? otherFromMemory : otherFromCache;
+        const tennisMerged = [...otherRows, ...currentTourRows];
+        if (WORLD_CUP_PUBLIC_ENABLED && worldCupCombinedPropsRef.current.length === 0) {
+          const wcFromSession = hydrateWorldCupPropsFromSessionCache();
+          if (wcFromSession.length > 0) setWorldCupCombinedProps(wcFromSession);
+        }
         const aflCached = readSecondaryPropsSessionCache('afl');
         if (aflCached.isFresh && (aflCached.props.length > 0 || aflCached.games.length > 0)) {
           const liveAfl = applyLiveAflPropsCutoff(aflCached.props, aflCached.games);
@@ -8047,7 +8138,36 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           setAflPropsLoading(false);
           setSecondaryPropsFetchComplete(true);
           combinedWarm = true;
-          combinedWarmToggleRef.current = true;
+          const wcSlice =
+            worldCupCombinedPropsRef.current.length > 0
+              ? worldCupCombinedPropsRef.current
+              : hydrateWorldCupPropsFromSessionCache();
+          const needsCombinedRefresh =
+            otherRows.length === 0 ||
+            combinedModeNeedsDataRefresh(
+              playerProps,
+              liveAfl.noAflOdds ? [] : liveAfl.props,
+              wcSlice,
+              {
+                wc: combinedPartialWcRefetchAttemptedRef.current,
+                afl: combinedPartialAflRefetchAttemptedRef.current,
+              },
+              combinedOddsFlagsRef.current
+            );
+          if (needsCombinedRefresh) {
+            combinedPartialTennisRefetchAttemptedRef.current = false;
+            setCombinedFetchComplete(false);
+            setCombinedPropsLoading(true);
+            combinedWarmToggleRef.current = false;
+          } else {
+            combinedWarmToggleRef.current = true;
+          }
+          writeTennisTourSessionCaches({
+            props: tennisMerged,
+            games: [],
+            selectedGameIds: [],
+            now: Date.now(),
+          });
         }
       }
 
@@ -12271,7 +12391,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       {/* Pagination controls - Shared for desktop and mobile */}
                       <div className="flex items-center justify-between mt-6 px-2 pb-24 sm:pb-4">
                         <div className={`text-sm ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                          {propsSport === 'afl'
+                          {isSecondaryListMode
                             ? `Showing ${(currentPage - 1) * ITEMS_PER_PAGE + 1} - ${Math.min(currentPage * ITEMS_PER_PAGE, displaySortedAflProps.length)} of ${displaySortedAflProps.length}`
                             : propsSport === 'combined'
                               ? `Showing ${(currentPage - 1) * ITEMS_PER_PAGE + 1} - ${Math.min(currentPage * ITEMS_PER_PAGE, displaySortedCombinedProps.length)} of ${displaySortedCombinedProps.length}`
