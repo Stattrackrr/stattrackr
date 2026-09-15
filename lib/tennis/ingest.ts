@@ -4,6 +4,7 @@
  */
 
 import sharedCache from '@/lib/sharedCache';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { gunzipSync, gzipSync } from 'zlib';
 import {
   API_TENNIS_SINGLES_EVENTS,
@@ -21,11 +22,14 @@ import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
 import type { TennisMatchRow, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 
 export const TENNIS_OVERLAY_CACHE_KEY = 'tennis_match_overlay_v1';
-/** Long enough for L10 form on lower-tour players; gzip keeps Redis under Upstash's ~10MB cap. */
+export const TENNIS_OVERLAY_CACHE_TYPE = 'tennis_overlay';
+/** Long enough for L10 form on lower-tour players; gzip keeps Redis/Supabase payloads small. */
 export const TENNIS_INGEST_LOOKBACK_DAYS = 90;
 export const TENNIS_OVERLAY_KEEP_DAYS = 90;
 /** 10 years — overlay is replaced on successful ingest, same as AFL odds. */
 export const TENNIS_OVERLAY_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
+const TENNIS_OVERLAY_SUPABASE_TTL_MINUTES = 60 * 24 * 400;
+const TENNIS_OVERLAY_READ_TIMEOUT_MS = 30_000;
 
 const API_BASE = 'https://api.api-tennis.com/tennis/';
 
@@ -75,6 +79,17 @@ function packTennisOverlay(overlay: TennisMatchOverlay): PackedTennisOverlay {
 }
 
 async function readStoredTennisOverlay(): Promise<TennisMatchOverlay | null> {
+  try {
+    const fromSupabase = await getNBACache(TENNIS_OVERLAY_CACHE_KEY, {
+      quiet: true,
+      restTimeoutMs: TENNIS_OVERLAY_READ_TIMEOUT_MS,
+      jsTimeoutMs: TENNIS_OVERLAY_READ_TIMEOUT_MS,
+    });
+    const unpacked = unpackTennisOverlay(fromSupabase);
+    if (unpacked?.matches?.length) return unpacked;
+  } catch {
+    /* fall through to Redis */
+  }
   return unpackTennisOverlay(await sharedCache.getJSON(TENNIS_OVERLAY_CACHE_KEY));
 }
 
@@ -304,8 +319,7 @@ export async function hydrateTennisMatchOverlay(): Promise<TennisMatchOverlay | 
   if (runtime.overlay && Date.now() - runtime.fetchedAtMs < 60_000) return runtime.overlay;
   if (runtime.inflight) return runtime.inflight;
   runtime.inflight = (async () => {
-    const stored = await sharedCache.getJSON(TENNIS_OVERLAY_CACHE_KEY);
-    const overlay = unpackTennisOverlay(stored);
+    const overlay = await readStoredTennisOverlay();
     rememberOverlay(overlay);
     return overlay;
   })();
@@ -409,7 +423,17 @@ export function applyIncrementalTennisFetch(
 }
 
 export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promise<void> {
-  await sharedCache.setJSON(TENNIS_OVERLAY_CACHE_KEY, packTennisOverlay(overlay), TENNIS_OVERLAY_TTL_SECONDS);
+  const packed = packTennisOverlay(overlay);
+  await Promise.all([
+    sharedCache.setJSON(TENNIS_OVERLAY_CACHE_KEY, packed, TENNIS_OVERLAY_TTL_SECONDS),
+    setNBACache(
+      TENNIS_OVERLAY_CACHE_KEY,
+      TENNIS_OVERLAY_CACHE_TYPE,
+      packed,
+      TENNIS_OVERLAY_SUPABASE_TTL_MINUTES,
+      true
+    ),
+  ]);
   rememberOverlay(overlay);
 }
 
@@ -519,6 +543,42 @@ export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult & 
 
 function loadApiTennisCacheFromDiskOnly(): ApiTennisCache | null {
   return loadApiTennisCache({ diskOnly: true });
+}
+
+export async function seedTennisOverlayFromDisk(): Promise<{
+  overlayRows: number;
+  players: number;
+  fetchedAt: string;
+}> {
+  const disk = loadApiTennisCacheFromDiskOnly();
+  if (!disk?.matches?.length) {
+    throw new Error('No local data/tennis/api-tennis/cache.json to seed from');
+  }
+  const matches = pruneOverlayMatches(disk.matches);
+  const ids = new Set<string>();
+  for (const row of matches) {
+    if (row.playerId) ids.add(row.playerId);
+    if (row.opponentId) ids.add(row.opponentId);
+  }
+  const players = (disk.players || [])
+    .filter((player) => ids.has(player.playerId))
+    .map((player) => ({
+      ...player,
+      imageUrl: resolveTennisHeadshotUrl(player.playerId, player.imageUrl),
+    }));
+  const fetchedAt = new Date().toISOString();
+  const overlay: TennisMatchOverlay = {
+    fetchedAt,
+    source: 'api-tennis-incremental',
+    matches,
+    players,
+    standings: {
+      ATP: disk.standings?.ATP || [],
+      WTA: disk.standings?.WTA || [],
+    },
+  };
+  await saveTennisMatchOverlay(overlay);
+  return { overlayRows: matches.length, players: players.length, fetchedAt };
 }
 
 registerTennisOverlayGetter(() => overlayRuntime().overlay);
