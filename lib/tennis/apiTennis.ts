@@ -847,14 +847,28 @@ function readApiTennisDiskRoster(): { roster: ApiTennisRoster | null; mtime: num
 }
 
 function mergeRosterWithOverlay(
-  disk: ApiTennisRoster,
+  disk: ApiTennisRoster | null,
   overlay: TennisOverlaySnapshot | null
-): ApiTennisRoster {
+): ApiTennisRoster | null {
+  if (
+    !disk &&
+    !overlay?.players?.length &&
+    !overlay?.standings?.ATP?.length &&
+    !overlay?.standings?.WTA?.length
+  ) {
+    return null;
+  }
+  const base: ApiTennisRoster = disk || {
+    fetchedAt: overlay?.fetchedAt || new Date().toISOString(),
+    source: 'api-tennis',
+    players: [],
+    standings: { ATP: [], WTA: [] },
+  };
   if (!overlay?.players?.length && !overlay?.standings?.ATP?.length && !overlay?.standings?.WTA?.length) {
-    return disk;
+    return base;
   }
   const playersById = new Map<string, ApiTennisPlayer>();
-  for (const player of disk.players || []) {
+  for (const player of base.players || []) {
     if (player?.playerId) playersById.set(player.playerId, player);
   }
   for (const player of overlay.players || []) {
@@ -866,12 +880,12 @@ function mergeRosterWithOverlay(
     );
   }
   return {
-    fetchedAt: overlay.fetchedAt || disk.fetchedAt,
-    source: disk.source,
+    fetchedAt: overlay.fetchedAt || base.fetchedAt,
+    source: base.source,
     players: [...playersById.values()],
     standings: {
-      ATP: overlay.standings?.ATP?.length ? overlay.standings.ATP : disk.standings?.ATP || [],
-      WTA: overlay.standings?.WTA?.length ? overlay.standings.WTA : disk.standings?.WTA || [],
+      ATP: overlay.standings?.ATP?.length ? overlay.standings.ATP : base.standings?.ATP || [],
+      WTA: overlay.standings?.WTA?.length ? overlay.standings.WTA : base.standings?.WTA || [],
     },
   };
 }
@@ -881,7 +895,6 @@ export function loadApiTennisRoster(): ApiTennisRoster | null {
   const overlay = runtime.overlayGetter();
   const overlayAt = overlay?.fetchedAt || '';
   const { roster: disk, mtime } = readApiTennisDiskRoster();
-  if (!disk) return null;
   if (runtime.roster && runtime.rosterDiskMtime === mtime && runtime.rosterOverlayAt === overlayAt) {
     return runtime.roster;
   }

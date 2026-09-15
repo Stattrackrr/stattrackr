@@ -93,7 +93,7 @@
       "maxDuration": 300
     },
     "app/api/cron/refresh-tennis-cache/route.ts": {
-      "maxDuration": 120
+      "maxDuration": 180
     },
     "app/api/cron/refresh-tennis-odds/route.ts": {
       "maxDuration": 180

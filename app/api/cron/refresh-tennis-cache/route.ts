@@ -6,11 +6,11 @@ import { refreshTennisOddsSnapshots } from '@/lib/tennis/odds';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 /**
- * Incremental tennis ingest: last 16 days of finished ATP/WTA singles + standings.
- * Writes sharedCache overlay and re-pulls live fixture start times for next-opponent lookup.
+ * Incremental tennis ingest: last 90 days of finished ATP/WTA/Challenger/ITF singles + standings.
+ * Gzip-packs the Redis overlay so it stays under Upstash's value limit.
  */
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);

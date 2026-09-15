@@ -1,4 +1,4 @@
-# Incremental tennis match ingest: finished ATP/WTA singles from the last 16 days.
+# Incremental tennis match ingest: finished ATP/WTA/Challenger/ITF singles from the last 90 days.
 # Hits production /api/cron/refresh-tennis-cache (sharedCache overlay + upcoming warm).
 name: Tennis Process Stats
 
@@ -32,12 +32,12 @@ jobs:
       - name: Refresh tennis match overlay
         if: steps.check.outputs.configured == 'true'
         run: |
-          echo "Refreshing tennis finished-match overlay (last 16 days)..."
+          echo "Refreshing tennis finished-match overlay (last 90 days)..."
           RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/cron/refresh-tennis-cache" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
-            -L --max-time 150 \
+            -L --max-time 240 \
             --write-out "\nHTTP_STATUS:%{http_code}" 2>&1) || true
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')

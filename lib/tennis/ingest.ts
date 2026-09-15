@@ -1,9 +1,10 @@
 /**
- * Incremental tennis match ingest: last 16 days of finished ATP/WTA/Challenger/ITF singles
- * merged onto the disk cache + a sharedCache overlay (AFL-style replace-on-success).
+ * Incremental tennis match ingest: last 90 days of finished ATP/WTA/Challenger/ITF singles
+ * merged onto the disk cache + a gzip Redis overlay (AFL-style replace-on-success).
  */
 
 import sharedCache from '@/lib/sharedCache';
+import { gunzipSync, gzipSync } from 'zlib';
 import {
   API_TENNIS_SINGLES_EVENTS,
   countryToIoc,
@@ -16,10 +17,13 @@ import {
   type ApiTennisPlayer,
   type ApiTennisStanding,
 } from '@/lib/tennis/apiTennis';
+import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
 import type { TennisMatchRow, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 
 export const TENNIS_OVERLAY_CACHE_KEY = 'tennis_match_overlay_v1';
-export const TENNIS_INGEST_LOOKBACK_DAYS = 16;
+/** Long enough for L10 form on lower-tour players; gzip keeps Redis under Upstash's ~10MB cap. */
+export const TENNIS_INGEST_LOOKBACK_DAYS = 90;
+export const TENNIS_OVERLAY_KEEP_DAYS = 90;
 /** 10 years — overlay is replaced on successful ingest, same as AFL odds. */
 export const TENNIS_OVERLAY_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
 
@@ -32,6 +36,54 @@ export type TennisMatchOverlay = {
   players: ApiTennisPlayer[];
   standings: { ATP: TennisRankingRow[]; WTA: TennisRankingRow[] };
 };
+
+type PackedTennisOverlay = {
+  v: 1;
+  encoding: 'gzip-json';
+  payload: string;
+};
+
+function isPackedTennisOverlay(value: unknown): value is PackedTennisOverlay {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    (value as PackedTennisOverlay).encoding === 'gzip-json' &&
+    typeof (value as PackedTennisOverlay).payload === 'string'
+  );
+}
+
+export function unpackTennisOverlay(stored: unknown): TennisMatchOverlay | null {
+  if (!stored || typeof stored !== 'object') return null;
+  if (isPackedTennisOverlay(stored)) {
+    try {
+      const json = gunzipSync(Buffer.from(stored.payload, 'base64')).toString('utf8');
+      return unpackTennisOverlay(JSON.parse(json));
+    } catch {
+      return null;
+    }
+  }
+  const overlay = stored as TennisMatchOverlay;
+  return Array.isArray(overlay.matches) ? overlay : null;
+}
+
+function packTennisOverlay(overlay: TennisMatchOverlay): PackedTennisOverlay {
+  return {
+    v: 1,
+    encoding: 'gzip-json',
+    payload: gzipSync(Buffer.from(JSON.stringify(overlay)), { level: 6 }).toString('base64'),
+  };
+}
+
+async function readStoredTennisOverlay(): Promise<TennisMatchOverlay | null> {
+  return unpackTennisOverlay(await sharedCache.getJSON(TENNIS_OVERLAY_CACHE_KEY));
+}
+
+function pruneOverlayMatches(matches: TennisMatchRow[], keepDays = TENNIS_OVERLAY_KEEP_DAYS): TennisMatchRow[] {
+  const startDate = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()));
+  startDate.setUTCDate(startDate.getUTCDate() - keepDays);
+  const cutoff = ymdUtc(startDate);
+  return matches.filter((row) => !row.date || String(row.date) >= cutoff);
+}
 
 export type TennisIngestResult = {
   fetchedAt: string;
@@ -252,9 +304,8 @@ export async function hydrateTennisMatchOverlay(): Promise<TennisMatchOverlay | 
   if (runtime.overlay && Date.now() - runtime.fetchedAtMs < 60_000) return runtime.overlay;
   if (runtime.inflight) return runtime.inflight;
   runtime.inflight = (async () => {
-    const stored = await sharedCache.getJSON<TennisMatchOverlay>(TENNIS_OVERLAY_CACHE_KEY);
-    const overlay =
-      stored && typeof stored === 'object' && Array.isArray(stored.matches) ? stored : null;
+    const stored = await sharedCache.getJSON(TENNIS_OVERLAY_CACHE_KEY);
+    const overlay = unpackTennisOverlay(stored);
     rememberOverlay(overlay);
     return overlay;
   })();
@@ -322,7 +373,7 @@ export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{
       height: null,
       rank: p.rank,
       rankPoints: p.rankPoints,
-      imageUrl: p.imageUrl,
+      imageUrl: resolveTennisHeadshotUrl(p.playerId, p.imageUrl),
     }))
     .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999) || a.name.localeCompare(b.name));
 
@@ -358,7 +409,7 @@ export function applyIncrementalTennisFetch(
 }
 
 export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promise<void> {
-  await sharedCache.setJSON(TENNIS_OVERLAY_CACHE_KEY, overlay, TENNIS_OVERLAY_TTL_SECONDS);
+  await sharedCache.setJSON(TENNIS_OVERLAY_CACHE_KEY, packTennisOverlay(overlay), TENNIS_OVERLAY_TTL_SECONDS);
   rememberOverlay(overlay);
 }
 
@@ -366,8 +417,7 @@ export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promi
 export async function refreshTennisStandings(): Promise<{ atp: number; wta: number; fetchedAt: string }> {
   const fetchedAt = new Date().toISOString();
   if (!apiKey()) return { atp: 0, wta: 0, fetchedAt };
-  const existing =
-    (await sharedCache.getJSON<TennisMatchOverlay>(TENNIS_OVERLAY_CACHE_KEY)) || getHydratedTennisOverlay();
+  const existing = (await readStoredTennisOverlay()) || getHydratedTennisOverlay();
   if (!existing?.matches?.length) return { atp: 0, wta: 0, fetchedAt };
   const [atpStandingsJson, wtaStandingsJson] = await Promise.all([
     apiTennisCall({ method: 'get_standings', event_type: 'ATP' }),
@@ -424,14 +474,32 @@ export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult & 
   }
   const fetchedAt = new Date().toISOString();
   const incoming = await fetchTennisIncrementalWindow();
-  const existingOverlay = (await sharedCache.getJSON<TennisMatchOverlay>(TENNIS_OVERLAY_CACHE_KEY)) || getHydratedTennisOverlay();
+  const existingOverlay = (await readStoredTennisOverlay()) || getHydratedTennisOverlay();
+  if (!incoming.matches.length) {
+    if (existingOverlay?.matches?.length) {
+      rememberOverlay(existingOverlay);
+      return {
+        fetchedAt: existingOverlay.fetchedAt,
+        fixtureCount: incoming.fixtureCount,
+        matchCount: 0,
+        added: 0,
+        updated: 0,
+        overlayRows: existingOverlay.matches.length,
+        warmedUpcoming: false,
+        fixtures: incoming.fixtures,
+      };
+    }
+    throw new Error('Tennis ingest returned 0 matches; refusing to replace overlay');
+  }
   const disk = loadApiTennisCacheFromDiskOnly();
   const prior = mergeTennisCacheWithOverlay(disk, existingOverlay);
   const applied = applyIncrementalTennisFetch(prior, incoming, fetchedAt);
   const overlay: TennisMatchOverlay = {
     fetchedAt,
     source: 'api-tennis-incremental',
-    matches: incoming.matches,
+    matches: pruneOverlayMatches(
+      mergeTennisMatchRows(existingOverlay?.matches || [], incoming.matches).matches
+    ),
     players: incoming.players,
     standings: incoming.standings,
   };

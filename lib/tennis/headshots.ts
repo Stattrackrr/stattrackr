@@ -45,6 +45,10 @@ export function tennisHeadshotsPublicDir(): string {
 }
 
 export function tennisHeadshotsIndexPath(): string {
+  return path.join(process.cwd(), 'data', 'tennis', 'headshots.json');
+}
+
+function tennisHeadshotsIndexFallbackPath(): string {
   return path.join(process.cwd(), 'data', 'tennis', 'api-tennis', 'headshots.json');
 }
 
@@ -58,7 +62,9 @@ export function tennisHeadshotFilePath(playerId: string, ext: 'jpg' | 'png' = 'j
 
 export function loadTennisHeadshotsIndex(): TennisHeadshotsIndex | null {
   const runtime = headshotRuntime();
-  const file = tennisHeadshotsIndexPath();
+  const file = fs.existsSync(tennisHeadshotsIndexPath())
+    ? tennisHeadshotsIndexPath()
+    : tennisHeadshotsIndexFallbackPath();
   const mtime = fs.existsSync(file) ? fs.statSync(file).mtimeMs : 0;
   if (runtime.index !== undefined && runtime.mtime === mtime) return runtime.index;
   runtime.localIds = null;
@@ -80,14 +86,37 @@ function localHeadshotIds(): Set<string> {
   const runtime = headshotRuntime();
   if (runtime.localIds) return runtime.localIds;
   const ids = new Set<string>();
-  const index = loadTennisHeadshotsIndex();
-  if (index) {
-    for (const [id, entry] of Object.entries(index.byPlayerId)) {
-      if (entry.ok) ids.add(id);
+  try {
+    const dir = tennisHeadshotsPublicDir();
+    if (fs.existsSync(dir)) {
+      for (const name of fs.readdirSync(dir)) {
+        const match = /^(\d+)\.(?:jpg|png)$/i.exec(name);
+        if (match) ids.add(match[1]);
+      }
     }
+  } catch {
+    /* public headshot files are optional on Vercel */
   }
   runtime.localIds = ids;
   return ids;
+}
+
+function withHeadshotCrop(pathOrUrl: string, entry: TennisHeadshotEntry | undefined, stamp: string): string {
+  const remoteUrl = String(entry?.remoteUrl || pathOrUrl);
+  const qs = new URLSearchParams();
+  if (stamp) qs.set('v', encodeURIComponent(stamp).slice(0, 24));
+  const paddedStudio =
+    (entry?.source === 'tennis-com' && /\/tcf\/images\/players\//i.test(remoteUrl)) ||
+    (entry?.source === 'wta' && /-Torso_/i.test(remoteUrl));
+  const tightCrop =
+    entry?.source === 'wta' &&
+    /photoresources\.wtatennis\.com/i.test(remoteUrl) &&
+    !/-Torso_/i.test(remoteUrl);
+  if (paddedStudio) qs.set('crop', 'wide');
+  else if (tightCrop) qs.set('crop', 'tight');
+  const query = qs.toString();
+  if (!query) return pathOrUrl;
+  return pathOrUrl.includes('?') ? `${pathOrUrl}&${query}` : `${pathOrUrl}?${query}`;
 }
 
 export function resolveTennisHeadshotUrl(
@@ -96,30 +125,17 @@ export function resolveTennisHeadshotUrl(
 ): string | null {
   const id = String(playerId || '').trim();
   if (!id) return String(remote || '').trim() || null;
+  const index = loadTennisHeadshotsIndex();
+  const entry = index?.byPlayerId?.[id];
+  const stamp = index?.generatedAt || '1';
   if (localHeadshotIds().has(id)) {
-    const index = loadTennisHeadshotsIndex();
-    const entry = index?.byPlayerId?.[id];
     const publicPath =
       String(entry?.file || '').trim() ||
       tennisHeadshotPublicPath(id, entry?.ext === 'png' ? 'png' : 'jpg');
-    const stamp = index?.generatedAt || '1';
-    const qs = new URLSearchParams({ v: encodeURIComponent(stamp).slice(0, 24) });
-    const remoteUrl = String(entry?.remoteUrl || '');
-    const paddedStudio =
-      (entry?.source === 'tennis-com' && /\/tcf\/images\/players\//i.test(remoteUrl)) ||
-      (entry?.source === 'wta' && /-Torso_/i.test(remoteUrl));
-    const tightCrop =
-      entry?.source === 'wta' &&
-      /photoresources\.wtatennis\.com/i.test(remoteUrl) &&
-      !/-Torso_/i.test(remoteUrl);
-    if (paddedStudio) qs.set('crop', 'wide');
-    else if (tightCrop) qs.set('crop', 'tight');
-    return `${publicPath}?${qs.toString()}`;
+    return withHeadshotCrop(publicPath, entry, stamp);
   }
-  const fromIndex = loadTennisHeadshotsIndex()?.byPlayerId?.[id];
-  if (fromIndex && fromIndex.ok === false) {
-    return String(remote || '').trim() || null;
-  }
-  const url = String(fromIndex?.remoteUrl || remote || '').trim();
-  return url || null;
+  const url = String(entry?.remoteUrl || remote || '').trim();
+  if (!url) return null;
+  if (entry?.source === 'tennis-com' || entry?.source === 'wta') return withHeadshotCrop(url, entry, stamp);
+  return url;
 }
