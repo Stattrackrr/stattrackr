@@ -7,12 +7,61 @@
  * Local dev – to use the same AFL (and other) cache as production, add to .env.local:
  *   UPSTASH_REDIS_REST_URL=<your Upstash REST URL>
  *   UPSTASH_REDIS_REST_TOKEN=<your Upstash REST token>
+ *
+ * Upstash Pay As You Go max request size is 10MB. We gzip larger values and skip Redis
+ * (memory-only) when the HTTP body would still exceed that cap.
  */
+
+import { gunzipSync, gzipSync } from 'zlib';
 
 const REST_URL = process.env.UPSTASH_REDIS_REST_URL || '';
 const REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 const HAS_UPSTASH = !!(REST_URL && REST_TOKEN);
 const fallbackWarnings = new Set<string>();
+/** Stay under Upstash PAYG 10MB request limit after JSON wrapping of the SET body. */
+const UPSTASH_MAX_REQUEST_BYTES = 8 * 1024 * 1024;
+const GZIP_MIN_BYTES = 32 * 1024;
+const GET_MANY_CHUNK = 20;
+
+type GzipPacked = { v: 1; encoding: 'gzip-json'; payload: string };
+
+function isGzipPacked(value: unknown): value is GzipPacked {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    (value as GzipPacked).encoding === 'gzip-json' &&
+    typeof (value as GzipPacked).payload === 'string'
+  );
+}
+
+function unpackGzipJson<T>(value: unknown): T | null {
+  if (!isGzipPacked(value)) return value as T;
+  try {
+    const json = gunzipSync(Buffer.from(value.payload, 'base64')).toString('utf8');
+    return JSON.parse(json) as T;
+  } catch {
+    return null;
+  }
+}
+
+function encodeUpstashValue(value: unknown): { body: string; skipped: boolean } {
+  if (isGzipPacked(value)) {
+    const body = JSON.stringify(value);
+    return { body, skipped: body.length > UPSTASH_MAX_REQUEST_BYTES };
+  }
+  const json = JSON.stringify(value);
+  let body = json;
+  if (json.length >= GZIP_MIN_BYTES) {
+    const packed: GzipPacked = {
+      v: 1,
+      encoding: 'gzip-json',
+      payload: gzipSync(Buffer.from(json), { level: 6 }).toString('base64'),
+    };
+    const packedJson = JSON.stringify(packed);
+    if (packedJson.length < json.length) body = packedJson;
+  }
+  return { body, skipped: body.length > UPSTASH_MAX_REQUEST_BYTES };
+}
 
 function warnSharedCacheFallback(operation: string, error: unknown): void {
   const key = `${operation}:${error instanceof Error ? error.message : String(error)}`;
@@ -70,7 +119,11 @@ export const sharedCache = {
                 ? r
                 : null;
         if (val == null || val === '') return null;
-        try { return JSON.parse(val as string) as T; } catch { return null; }
+        try {
+          return unpackGzipJson<T>(JSON.parse(val as string));
+        } catch {
+          return null;
+        }
       } catch (error) {
         warnSharedCacheFallback('redis GET', error);
       }
@@ -81,9 +134,16 @@ export const sharedCache = {
     if (hit.exp && Date.now() > hit.exp) { memory.delete(key); return null; }
     return hit.v as T;
   },
-  /** Batch GET via one Upstash pipeline round-trip (null per missing key). */
+  /** Batch GET via chunked Upstash pipeline round-trips (null per missing key). */
   async getJSONMany<T = any>(keys: string[]): Promise<Array<T | null>> {
     if (!keys.length) return [];
+    if (HAS_UPSTASH && keys.length > GET_MANY_CHUNK) {
+      const out: Array<T | null> = [];
+      for (let i = 0; i < keys.length; i += GET_MANY_CHUNK) {
+        out.push(...(await sharedCache.getJSONMany<T>(keys.slice(i, i + GET_MANY_CHUNK))));
+      }
+      return out;
+    }
     if (HAS_UPSTASH) {
       try {
         const commands = keys.map((key) => ['GET', key]);
@@ -109,7 +169,7 @@ export const sharedCache = {
                   : null;
           if (val == null || val === '') return null;
           try {
-            return JSON.parse(val as string) as T;
+            return unpackGzipJson<T>(JSON.parse(val as string));
           } catch {
             return null;
           }
@@ -139,18 +199,21 @@ export const sharedCache = {
     memory.delete(key);
   },
   async setJSON(key: string, value: any, ttlSeconds: number): Promise<void> {
-    if (HAS_UPSTASH) {
-      try {
-        const payload = JSON.stringify(value);
-        // SET key value EX ttlSeconds
-        await upstash(['SET', key, payload, 'EX', ttlSeconds]);
-        return;
-      } catch (error) {
-        warnSharedCacheFallback('redis SET', error);
-      }
-    }
     const exp = ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : 0;
     memory.set(key, { v: value, exp });
+    if (!HAS_UPSTASH) return;
+    try {
+      const { body, skipped } = encodeUpstashValue(value);
+      if (skipped) {
+        console.warn(
+          `[sharedCache] skip Redis SET ${key} (${body.length} bytes > ${UPSTASH_MAX_REQUEST_BYTES}); memory-only`
+        );
+        return;
+      }
+      await upstash(['SET', key, body, 'EX', ttlSeconds]);
+    } catch (error) {
+      warnSharedCacheFallback('redis SET', error);
+    }
   },
   /** Delete all keys whose string key starts with prefix (e.g. "afl_prop_stats_v1"). */
   async clearKeysByPrefix(prefix: string): Promise<number> {

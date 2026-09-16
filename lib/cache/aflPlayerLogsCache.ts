@@ -11,8 +11,15 @@ const useUpstash = process.env.AFL_USE_UPSTASH_CACHE === 'true';
 
 const hasRemoteCache = !!(useUpstash && upstashUrl && upstashToken);
 const redis = hasRemoteCache
-  ? new Redis({ url: upstashUrl, token: upstashToken })
+  ? new Redis({
+      url: upstashUrl,
+      token: upstashToken,
+      // Concurrent warm requests share this client. Auto-pipelining 6 duplicate
+      // SETs per player blew past Upstash PAYG's 10MB request cap.
+      enableAutoPipelining: false,
+    })
   : null;
+const UPSTASH_MAX_VALUE_BYTES = 8 * 1024 * 1024;
 
 const memoryCache = new Map<string, { expiresAt: number; payload: unknown }>();
 
@@ -106,19 +113,15 @@ export async function setAflPlayerLogsCacheForPlayer(
   payload: AflPlayerLogsCachePayload,
   options?: { allowEmpty?: boolean; ttlSeconds?: number }
 ): Promise<void> {
-  await Promise.all(
-    teamLookupVariants(params.teamForRequest).flatMap((team) => [
-      setAflPlayerLogsCache(
-        buildAflPlayerLogsCacheKey({ ...params, teamForRequest: team, includeQuarters: false }),
-        payload,
-        options
-      ),
-      setAflPlayerLogsCache(
-        buildAflPlayerLogsCacheKey({ ...params, teamForRequest: team, includeQuarters: true }),
-        payload,
-        options
-      ),
-    ])
+  // One canonical key. GET still probes team aliases and falls back here.
+  await setAflPlayerLogsCache(
+    buildAflPlayerLogsCacheKey({
+      ...params,
+      teamForRequest: AFL_PLAYER_LOGS_CANONICAL_TEAM,
+      includeQuarters: false,
+    }),
+    payload,
+    options
   );
 }
 
@@ -174,8 +177,20 @@ export async function setAflPlayerLogsCache(
   if (!redis) return;
 
   try {
+    const encoded = JSON.stringify(payload);
+    if (encoded.length > UPSTASH_MAX_VALUE_BYTES) {
+      console.warn(
+        `[AFL player logs] skip Redis SET ${key} (${encoded.length} bytes > ${UPSTASH_MAX_VALUE_BYTES})`
+      );
+      return;
+    }
     await redis.set(key, payload, { ex: ttlSeconds });
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/max request size|request size/i.test(message)) {
+      console.warn(`[AFL player logs] Upstash rejected SET ${key}:`, message);
+      return;
+    }
     // Ignore cache write failures and continue with source response.
   }
 }
