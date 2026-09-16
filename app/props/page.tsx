@@ -1680,6 +1680,10 @@ function preferAflPropsForCombined(primary: PlayerProp[], fallback: PlayerProp[]
   const fallbackAfl = fallback.filter(isAflCombinedListProp);
   if (primaryAfl.length === 0) return fallbackAfl;
   if (fallbackAfl.length === 0) return primaryAfl;
+  const primaryCoverage = aflPropsHistoricalStatsCoverage(primaryAfl);
+  const fallbackCoverage = aflPropsHistoricalStatsCoverage(fallbackAfl);
+  if (fallbackCoverage > primaryCoverage) return fallbackAfl;
+  if (primaryCoverage > fallbackCoverage) return primaryAfl;
   return primaryAfl.length >= fallbackAfl.length ? primaryAfl : fallbackAfl;
 }
 
@@ -2071,8 +2075,7 @@ function getSecondaryPropsListUrl(sport: SecondaryPropsSport, debugStats: boolea
   }
   const base = '/api/afl/player-props/list';
   const params = new URLSearchParams();
-  // Default enrich=true serves the pre-warmed enriched Redis snapshot (~2s).
-  // Server falls back to fast per-event odds when that snapshot is cold (userFastList).
+  // Default enrich=true attaches cached L5/L10/H2H/Season/DvP when the pre-warmed snapshot is cold.
   if (debugStats) params.set('debugStats', '1');
   if (refresh) params.set('refresh', '1');
   const qs = params.toString();

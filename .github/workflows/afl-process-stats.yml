@@ -250,8 +250,8 @@ jobs:
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
           echo "Response ($HTTP_STATUS): $BODY"
           if [ "$HTTP_STATUS" != "200" ] || [ -z "$HTTP_STATUS" ]; then
-            echo "⚠️ AFL props-stats warm skipped or failed (HTTP ${HTTP_STATUS:-unknown}) — continuing"
-            exit 0
+            echo "❌ AFL props-stats warm skipped or failed (HTTP ${HTTP_STATUS:-unknown})"
+            exit 1
           fi
           COVERAGE=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.coveragePct ?? 100)); } catch { process.stdout.write('100'); }" "$BODY")
           NO_DATA=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.noData ?? 0)); } catch { process.stdout.write('0'); }" "$BODY")
@@ -259,9 +259,10 @@ jobs:
           WARMED=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.warmed ?? 0)); } catch { process.stdout.write('0'); }" "$BODY")
           echo "AFL props-stats coverage: ${COVERAGE}% (warmed=${WARMED}, noData=${NO_DATA}, total=${TOTAL})"
           if [ "${TOTAL}" -gt "0" ] && [ "${COVERAGE}" -lt "50" ]; then
-            echo "⚠️ AFL props-stats coverage below threshold (50%) — continuing"
+            echo "❌ AFL props-stats form coverage below threshold (50%)"
+            exit 1
           elif [ "${TOTAL}" -gt "0" ] && [ "${COVERAGE}" -lt "90" ]; then
-            echo "⚠️ AFL props-stats coverage below ideal (90%) but above minimum — continuing"
+            echo "⚠️ AFL props-stats coverage below ideal (90%) but above minimum"
           else
             echo "✅ Props stats warm done"
           fi
@@ -282,11 +283,13 @@ jobs:
           echo "$RESPONSE" | sed '/HTTP_STATUS:/d' > "$BODY_FILE"
           PROPS=$(node -e "const fs=require('fs'); try { const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); process.stdout.write(String(j.propsCount ?? (Array.isArray(j.data)?j.data.length:0))); } catch { process.stdout.write('0'); }" "$BODY_FILE")
           GAMES=$(node -e "const fs=require('fs'); try { const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); process.stdout.write(String(j.gamesCount ?? (Array.isArray(j.games)?j.games.length:0))); } catch { process.stdout.write('0'); }" "$BODY_FILE")
-          echo "Enriched list prewarm HTTP ${HTTP_STATUS:-?}: games=${GAMES} props=${PROPS}"
-          if [ "${HTTP_STATUS}" = "200" ] && [ "${PROPS}" -gt "0" ]; then
+          WITH_STATS=$(node -e "const fs=require('fs'); try { const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); const rows=Array.isArray(j.data)?j.data:[]; const n=rows.filter((r)=>r && (r.last5Avg!=null || r.seasonAvg!=null)).length; process.stdout.write(String(n)); } catch { process.stdout.write('0'); }" "$BODY_FILE")
+          echo "Enriched list prewarm HTTP ${HTTP_STATUS:-?}: games=${GAMES} props=${PROPS} withFormStats=${WITH_STATS}"
+          if [ "${HTTP_STATUS}" = "200" ] && [ "${PROPS}" -gt "0" ] && [ "${WITH_STATS}" -gt "0" ]; then
             echo "✅ Enriched AFL props list cached"
           else
-            echo "⚠️ Enriched list prewarm did not populate props (props page may rebuild on first load)"
+            echo "⚠️ Enriched list prewarm did not populate form stats (props page may show N/A)"
+            exit 1
           fi
 
       # Guardrail: ensure list DvP ranks match DvP card source for all props rows.

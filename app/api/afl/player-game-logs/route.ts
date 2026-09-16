@@ -84,11 +84,37 @@ export async function GET(request: NextRequest) {
 
   try {
     const payload = await pending;
+    if (!payload.games.length && cacheEnabled) {
+      const cached = await getAflPlayerLogsCacheForPlayer({
+        season,
+        playerName,
+        teamForRequest: team || null,
+      });
+      if (cached?.base && Array.isArray(cached.base.games) && cached.base.games.length > 0) {
+        return NextResponse.json(
+          includeBoth ? { ...cached.base, gamesWithQuarters: cached.quarters?.games || cached.base.games } : cached.base,
+          { headers: { ...headers, 'X-AFL-Player-Logs-Source': 'cache-after-live-empty' } }
+        );
+      }
+    }
     return NextResponse.json(
       includeBoth ? { ...payload, gamesWithQuarters: payload.games } : payload,
       { headers: { ...headers, 'X-AFL-Player-Logs-Source': payload.games.length ? 'footyinfo-live' : 'footyinfo-live-empty' } }
     );
   } catch (error) {
+    if (cacheEnabled) {
+      const cached = await getAflPlayerLogsCacheForPlayer({
+        season,
+        playerName,
+        teamForRequest: team || null,
+      });
+      if (cached?.base && Array.isArray(cached.base.games) && cached.base.games.length > 0) {
+        return NextResponse.json(
+          includeBoth ? { ...cached.base, gamesWithQuarters: cached.quarters?.games || cached.base.games } : cached.base,
+          { headers: { ...headers, 'X-AFL-Player-Logs-Source': 'cache-after-live-error' } }
+        );
+      }
+    }
     return NextResponse.json(
       { error: 'Failed to fetch FootyInfo player game logs', details: error instanceof Error ? error.message : String(error) },
       { status: 502, headers }

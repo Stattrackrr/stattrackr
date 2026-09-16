@@ -4,7 +4,7 @@
  */
 
 import { listAflPlayerPropsFromCache, aflListRowHasTwoWayOdds } from '@/lib/aflPlayerPropsCache';
-import { getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
+import { aflPropStatsHaveForm, getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
 import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles, lookupAflPlayerTeamFromMaps } from '@/lib/aflPlayerTeamResolver';
 import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
@@ -240,17 +240,7 @@ export async function runAflPropsStatsWarm(
               errored++;
               return;
             }
-            const hasStats =
-              r.last5Avg != null ||
-              r.last10Avg != null ||
-              r.h2hAvg != null ||
-              r.seasonAvg != null ||
-              r.streak != null ||
-              r.last5HitRate != null ||
-              r.last10HitRate != null ||
-              r.h2hHitRate != null ||
-              r.seasonHitRate != null ||
-              r.dvpRating != null;
+            const hasStats = aflPropStatsHaveForm(r);
             if (hasStats) warmed++;
             else {
               failed++;

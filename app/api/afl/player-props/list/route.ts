@@ -43,12 +43,13 @@ import {
 } from '@/lib/aflDfsRoleMap';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 /** List is always dynamic/no-store; user path is strict cache-read for low latency. */
 const AFL_LIST_CACHE_CONTROL = 'private, no-store';
-// User-facing list endpoint: compute a small sync subset on cache miss so props cards
-// are not stuck on N/A when enriched cache was built before stats warm finished.
-// Background compute fills the rest without blocking the response.
-const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 50;
+// User-facing list endpoint: attach cached stats on cache miss so props cards
+// are not stuck on N/A when the enriched snapshot is cold. Full FootyInfo
+// compute and depth DvP HTTP stay on the cron path.
+const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 80;
 const MISS_COMPUTE_BG_LIMIT_NO_CRON = 250;
 const MISS_COMPUTE_CONCURRENCY = 3;
 const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
@@ -361,9 +362,9 @@ export async function GET(request: Request) {
       if (cachedResponse) return cachedResponse;
     }
 
-    // User requests without a warm enriched snapshot: serve fast odds rows from per-event cache.
-    // Full enrich (stats + DvP assembly) is cron-only — it exceeds mobile/serverless timeouts.
-    const userFastList = cacheOnly && enrich && !debugStats;
+    // User requests: attach cached L5/L10/H2H/Season/DvP without FootyInfo compute or dvp/batch HTTP.
+    // Odds-only short-circuit used to paint every column as N/A whenever the enriched snapshot was cold.
+    const fastUserEnrich = cacheOnly && enrich && !debugStats;
 
     // Single source of truth for cron/debug: get games from the Odds API.
     // Normal user requests are fast cache reads only.
@@ -476,7 +477,7 @@ export async function GET(request: Request) {
     }));
     const rowsWithCanonical = rows;
 
-    if (!enrich || userFastList) {
+    if (!enrich) {
       const oddsCacheEnrich = await getAflOddsCache();
       const seasonEnrich = new Date().getFullYear();
       const gamesCountEnrich = gamesPayload.length;
@@ -498,7 +499,6 @@ export async function GET(request: Request) {
         _meta: {
           rowsFromList: rowsWithCanonical.length,
           enrich: false,
-          fastUserList: userFastList || undefined,
           canonicalUsed: usedCanonicalGames,
           canonicalError: canonicalError ?? undefined,
         },
@@ -521,12 +521,14 @@ export async function GET(request: Request) {
     const seasonForPositions = new Date().getFullYear();
     let fantasyPositionApiByName = new Map<string, string>();
     let fantasyPositionApiByInitialSurnameTeam = new Map<string, string>();
-    try {
-      const fromApi = await getFantasyPositionsFromApi(baseUrl, seasonForPositions, listCronSecret);
-      fantasyPositionApiByName = fromApi.byName;
-      fantasyPositionApiByInitialSurnameTeam = fromApi.byInitialSurnameTeam;
-    } catch {
-      // Ignore API fallback failure; we'll use local enrich context map below.
+    if (!fastUserEnrich) {
+      try {
+        const fromApi = await getFantasyPositionsFromApi(baseUrl, seasonForPositions, listCronSecret);
+        fantasyPositionApiByName = fromApi.byName;
+        fantasyPositionApiByInitialSurnameTeam = fromApi.byInitialSurnameTeam;
+      } catch {
+        // Ignore API fallback failure; we'll use local enrich context map below.
+      }
     }
     const normalizeForCompare = (v: string | null | undefined) =>
       String(v ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
@@ -882,7 +884,9 @@ export async function GET(request: Request) {
     const neededDepthRoles = Array.from(
       new Set(rowContexts.flatMap((ctx) => [ctx.depthRole, ctx.fantasyDepthRole]).filter(Boolean))
     ) as AflDepthRole[];
-    await Promise.all(neededDepthRoles.map((role) => loadDvpBatchForDepthRole(role)));
+    if (!fastUserEnrich) {
+      await Promise.all(neededDepthRoles.map((role) => loadDvpBatchForDepthRole(role)));
+    }
 
     const resolveDvpLookup = (
       opponent: string,
@@ -1027,6 +1031,9 @@ export async function GET(request: Request) {
       _meta: {
         canonicalUsed: usedCanonicalGames,
         canonicalError: canonicalError ?? undefined,
+        fastUserEnrich: fastUserEnrich || undefined,
+        rowsWithStats: rowsWithStats.length,
+        rowsNa: rowsNa.length,
         disposalsModelVersion: disposalsModelMeta.modelVersion,
         disposalsModelGeneratedAt: disposalsModelMeta.generatedAt,
         disposalsModelRows: disposalsModelMeta.count,

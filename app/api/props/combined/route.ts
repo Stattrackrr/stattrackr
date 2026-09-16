@@ -12,6 +12,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 const COMBINED_CACHE_CONTROL = 'private, no-store';
 const COMBINED_CACHE_CONTROL_HIT = 'public, s-maxage=120, stale-while-revalidate=600';
@@ -88,19 +89,25 @@ export async function GET(request: NextRequest) {
       writeCache: !debugStats,
     });
 
+    const readySnapshot = combinedSnapshotAflAssemblyReady(snapshot)
+      ? snapshot
+      : (await getCombinedPropsSnapshot());
+    const outgoing =
+      readySnapshot && combinedSnapshotAflAssemblyReady(readySnapshot) ? readySnapshot : snapshot;
+
     const clientSnapshot = wantsFull
-      ? filterCombinedSnapshotAflEligibility(snapshot)
-      : slimCombinedPropsSnapshotForClient(filterCombinedSnapshotAflEligibility(snapshot));
+      ? filterCombinedSnapshotAflEligibility(outgoing)
+      : slimCombinedPropsSnapshotForClient(filterCombinedSnapshotAflEligibility(outgoing));
 
     return NextResponse.json(
       {
         ...clientSnapshot,
-        cachedSnapshot: false,
+        cachedSnapshot: outgoing !== snapshot,
         backgroundRefreshStarted: false,
         paintSnapshot: !wantsFull,
       },
       {
-        status: snapshot.success ? 200 : 502,
+        status: outgoing.success ? 200 : 502,
         headers: {
           'Cache-Control': COMBINED_CACHE_CONTROL,
         },

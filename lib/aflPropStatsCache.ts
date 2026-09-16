@@ -122,13 +122,14 @@ function resolveMatchupOpponentForH2H(
   return opponent;
 }
 
+/** Form stats the props page paints (LS / L10 / Season). H2H can still be missing. */
+export function aflPropStatsHaveForm(payload: AflPropStatsPayload | null | undefined): boolean {
+  if (!payload) return false;
+  return payload.last5Avg != null || payload.seasonAvg != null;
+}
+
 function cachedStatsAreUsable(cached: AflPropStatsPayload): boolean {
-  if (cached.seasonAvg == null) return false;
-  const hasRolling = cached.last5Avg != null || cached.last10Avg != null;
-  if (!hasRolling && cached.h2hAvg == null && cached.streak == null) return false;
-  // Null means H2H was never looked up (old cache). {hits:0,total:0} means looked up, no games.
-  if (cached.h2hHitRate == null) return false;
-  return true;
+  return aflPropStatsHaveForm(cached);
 }
 
 export function computeAflPropStatsFromGames(
@@ -249,9 +250,20 @@ async function fetchGameLogsForSeason(
   const initialQuery = warmCurrentSeason ? '&strict_season=1&force_fetch=1' : '';
   let games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret, initialQuery);
   if (season === currentYear && !aflGamesIncludeSeason(games, season)) {
-    const forceQuery = cronSecret ? '&strict_season=1&force_fetch=1' : '&strict_season=1';
-    const retry = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret, forceQuery);
-    if (aflGamesIncludeSeason(retry, season)) games = retry;
+    // Cron force-fetch often 403s from GitHub/Vercel IPs. Keep last warmed season logs.
+    const cached = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret, '&strict_season=1');
+    if (aflGamesIncludeSeason(cached, season) || cached.length > games.length) games = cached;
+    if (!aflGamesIncludeSeason(games, season) && cronSecret) {
+      const retry = await fetchGameLogs(
+        baseUrl,
+        playerName,
+        team,
+        season,
+        cronSecret,
+        '&strict_season=1&force_fetch=1'
+      );
+      if (aflGamesIncludeSeason(retry, season)) games = retry;
+    }
   }
   return games;
 }
@@ -280,7 +292,7 @@ export async function getAflPropStats(
   const key = cacheKey(playerName, team, opponent, statType, line);
   const cached = await sharedCache.getJSON<AflPropStatsPayload>(key);
   if (cached && typeof cached === 'object') {
-    // Don't use cached entry when it has no stats or only partial stats (e.g. L5/L10 without season).
+    // Prefer last5/season so the props page can paint even if H2H is still warming.
     if (cachedStatsAreUsable(cached)) {
       if (debugOut) {
         debugOut.fromCache = true;
@@ -349,13 +361,18 @@ export async function getAflPropStats(
   // For the current season, require at least one row tagged as that year so stale 2025-only
   // payloads are not persisted as 2026 season averages.
   const hasCurrentSeasonGames = aflGamesIncludeSeason(games, currentSeason);
-  if (games.length > 0 && hasCurrentSeasonGames) {
+  if (aflPropStatsHaveForm(payload) && (hasCurrentSeasonGames || !cached)) {
     await sharedCache.setJSON(key, payload, CACHE_TTL_SECONDS);
     // Store under reverse key (playerName, opponent, team) so list API finds stats whether row has (home, away) or (away, home)
     const keyReverse = cacheKey(playerName, opponent, team, statType, line);
     if (keyReverse !== key) {
       await sharedCache.setJSON(keyReverse, payload, CACHE_TTL_SECONDS);
     }
+  } else if (cached && aflPropStatsHaveForm(cached) && !aflPropStatsHaveForm(payload)) {
+    // Live logs failed; keep last good form stats instead of returning all-N/A.
+    return dvpLookup != null && (cached.dvpRating == null || cached.dvpStatValue == null)
+      ? { ...cached, dvpRating: dvpLookup.rank, dvpStatValue: dvpLookup.value }
+      : cached;
   }
   return payload;
 }
