@@ -118,6 +118,7 @@ export default function LoginPage() {
         setShowCheckEmail(true);
         setPendingEmail(email);
         setSuccess("");
+        setLoading(false);
       } else {
         // Always use persistent session for reliable login
         const { error } = await supabase.auth.signInWithPassword({
@@ -133,8 +134,12 @@ export default function LoginPage() {
           localStorage.removeItem('stattrackr_remember_me');
         }
         
-        // Always send newly authenticated users to home
+        // Navigate to home after successful sign-in
         router.replace(HOME_ROUTE);
+        
+        // Reset loading state after a brief delay to handle cases where navigation is slow
+        // or if the user navigates back. This prevents infinite loading states.
+        setTimeout(() => setLoading(false), 2000);
       }
     } catch (error: any) {
       // Better error handling  
@@ -150,7 +155,6 @@ export default function LoginPage() {
       } else {
         setError(`Error: ${error.message}`);
       }
-    } finally {
       setLoading(false);
     }
   };
