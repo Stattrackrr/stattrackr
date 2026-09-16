@@ -21,14 +21,19 @@ function isNetworkAuthError(error: unknown): boolean {
     message.includes("networkerror") ||
     message.includes("network request failed") ||
     message.includes("abort") ||
-    message.includes("timeout")
+    message.includes("timeout") ||
+    message.includes("error code 522") ||
+    message.includes("522:") ||
+    message.includes("cf-error") ||
+    message.includes("<!doctype html") ||
+    message.includes("<html")
   );
 }
 
 function authErrorMessage(error: unknown): string {
   const message = (error as { message?: string } | null)?.message || String(error || "Unknown error");
-  if (isNetworkAuthError(error)) {
-    return "We couldn't reach the login service. Check your connection and try again.";
+  if (isNetworkAuthError(error) || /<!DOCTYPE html|<html|Error code 522|cf-error/i.test(message)) {
+    return "Sign-in is temporarily unavailable. Please wait a minute and try again.";
   }
   if (message.toLowerCase().includes("captcha")) {
     return "Captcha is enabled in Supabase. Please disable it in Authentication → Settings → Security.";
@@ -41,6 +46,9 @@ function authErrorMessage(error: unknown): string {
   }
   if (message.toLowerCase().includes("user already registered")) {
     return "Email already in use. Please try a different email or sign in instead.";
+  }
+  if (message.length > 180 || /<[^>]+>/.test(message)) {
+    return "Sign-in is temporarily unavailable. Please wait a minute and try again.";
   }
   return `Error: ${message}`;
 }
