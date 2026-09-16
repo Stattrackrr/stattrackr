@@ -338,6 +338,73 @@ if (!isBrowser && isBuildPhase) {
   };
 }
 
+const AUTH_FETCH_TIMEOUT_MS = 15000
+
+/**
+ * Safari/iOS Web Locks can deadlock while a background token refresh hangs.
+ * Auth storage is already tab-namespaced, so an in-process lock is enough.
+ */
+function createInProcessLock() {
+  const chain = new Map<string, Promise<unknown>>()
+  return async function inProcessLock<R>(
+    name: string,
+    _acquireTimeout: number,
+    fn: () => Promise<R>,
+  ): Promise<R> {
+    const previous = chain.get(name) ?? Promise.resolve()
+    let release = () => {}
+    const current = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    chain.set(
+      name,
+      previous.then(() => current).catch(() => current),
+    )
+    try {
+      await previous.catch(() => undefined)
+      return await fn()
+    } finally {
+      release()
+    }
+  }
+}
+
+const fetchWithTimeout: typeof fetch = (input, init) => {
+  const url =
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.href
+        : input.url
+  const isAuthRequest = url.includes('/auth/v1/')
+  if (!isAuthRequest) {
+    return fetch(input, init)
+  }
+
+  const timeoutController = new AbortController()
+  const timeoutId = setTimeout(() => timeoutController.abort(), AUTH_FETCH_TIMEOUT_MS)
+  const userSignal = init?.signal
+  if (userSignal) {
+    if (userSignal.aborted) {
+      timeoutController.abort()
+    } else {
+      userSignal.addEventListener('abort', () => timeoutController.abort(), { once: true })
+    }
+  }
+  return fetch(input, { ...init, signal: timeoutController.signal }).finally(() => {
+    clearTimeout(timeoutId)
+  })
+}
+
+function isStaleRefreshTokenError(message: string, name?: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    lower.includes('invalid refresh token') ||
+    lower.includes('refresh token not found') ||
+    (name === 'AuthApiError' && lower.includes('refresh token'))
+  )
+}
+
 // Auth config - completely disabled during build/server
 const authConfig = isBrowser ? {
   persistSession: true,
@@ -346,6 +413,7 @@ const authConfig = isBrowser ? {
   autoRefreshToken: true,
   detectSessionInUrl: true,
   flowType: 'pkce' as const,
+  lock: createInProcessLock(),
 } : {
   persistSession: false,
   autoRefreshToken: false,
@@ -381,6 +449,9 @@ try {
     } else {
       supabase = createClient(supabaseUrl, supabaseAnonKey, {
         auth: authConfig,
+        global: {
+          fetch: fetchWithTimeout,
+        },
       });
       setBrowserSupabase(supabase);
       // Set up error handler only for the client we just created (avoid duplicate listeners)
@@ -389,19 +460,10 @@ try {
       const error = event.reason;
       const errorMessage = error?.message || error?.toString() || '';
       
-      // Suppress refresh token errors and network errors - they're harmless (user just needs to log in again)
-      if (
-        errorMessage.includes('Invalid Refresh Token') ||
-        errorMessage.includes('Refresh Token Not Found') ||
-        errorMessage.includes('refresh') ||
-        errorMessage.includes('Failed to fetch') ||
-        errorMessage.includes('NetworkError') ||
-        errorMessage.includes('Network request failed') ||
-        error?.name === 'AuthApiError' ||
-        error?.name === 'TypeError'
-      ) {
-        event.preventDefault(); // Prevent error from showing in console
-        // Clear invalid tokens silently
+      // Only swallow stale-refresh errors. Do not clear sessions on generic
+      // TypeError / "Load failed" — that wipes a valid login on flaky mobile networks.
+      if (isStaleRefreshTokenError(errorMessage, error?.name)) {
+        event.preventDefault();
         if (persistentStorage) {
           persistentStorage.removeItem(PERSISTENT_STORAGE_KEY);
         }
@@ -450,8 +512,10 @@ try {
           error?.message?.includes('Refresh Token Not Found') ||
           error?.message?.includes('refresh') ||
           error?.message?.includes('Failed to fetch') ||
+          error?.message?.includes('Load failed') ||
           error?.message?.includes('NetworkError') ||
-          error?.message?.includes('Network request failed')
+          error?.message?.includes('Network request failed') ||
+          error?.name === 'AbortError'
         ) {
           // Clear all auth storage
           if (persistentStorage) {
