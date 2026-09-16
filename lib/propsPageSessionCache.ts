@@ -1,4 +1,4 @@
-import { propsPathForSport, WC_PROPS_RETURN_SPORT_KEY, type PropsSportMode } from '@/lib/nbaConstants';
+import { propsPathForSport, type PropsSportMode } from '@/lib/nbaConstants';
 
 /** In-tab memory snapshot — survives Next.js client navigations without re-fetching props lists. */
 export type PropsPageWarmSnapshot = {
@@ -7,14 +7,12 @@ export type PropsPageWarmSnapshot = {
   propsSport: PropsSportMode;
   playerProps: unknown[];
   aflProps: unknown[];
-  worldCupCombinedProps: unknown[];
   aflGames: unknown[];
   todaysGames: unknown[];
   selectedAflGameIds: string[];
   combinedPaintUnlocked: boolean;
   combinedFetchComplete: boolean;
   noAflOdds: boolean;
-  noWorldCupOdds: boolean;
   scrollY: number;
   currentPage: number;
 };
@@ -51,7 +49,6 @@ function parseStoredPropsSport(raw: string | null | undefined): PropsSportMode |
     value === 'combined' ||
     value === 'nba' ||
     value === 'afl' ||
-    value === 'world-cup' ||
     value === 'atp' ||
     value === 'wta'
   ) {
@@ -65,7 +62,6 @@ function rememberPropsReturnSport(mode: PropsSportMode): void {
   if (typeof window === 'undefined') return;
   try {
     sessionStorage.setItem(PROPS_RETURN_SPORT_KEY, mode);
-    sessionStorage.setItem(WC_PROPS_RETURN_SPORT_KEY, mode);
   } catch {
     // ignore
   }
@@ -76,12 +72,9 @@ export function consumePropsReturnPath(fallback: PropsSportMode): string {
   let mode = fallback;
   if (typeof window !== 'undefined') {
     try {
-      const stored =
-        parseStoredPropsSport(sessionStorage.getItem(PROPS_RETURN_SPORT_KEY)) ??
-        parseStoredPropsSport(sessionStorage.getItem(WC_PROPS_RETURN_SPORT_KEY));
+      const stored = parseStoredPropsSport(sessionStorage.getItem(PROPS_RETURN_SPORT_KEY));
       if (stored) mode = stored;
       sessionStorage.removeItem(PROPS_RETURN_SPORT_KEY);
-      sessionStorage.removeItem(WC_PROPS_RETURN_SPORT_KEY);
     } catch {
       // ignore
     }
@@ -94,7 +87,6 @@ export function clearPropsReturnSport(): void {
   if (typeof window === 'undefined') return;
   try {
     sessionStorage.removeItem(PROPS_RETURN_SPORT_KEY);
-    sessionStorage.removeItem(WC_PROPS_RETURN_SPORT_KEY);
   } catch {
     // ignore
   }
@@ -117,8 +109,7 @@ export function snapshotPropsPageBeforeLeave(): void {
   if (!snap) return;
   if (
     snap.playerProps.length === 0 &&
-    snap.aflProps.length === 0 &&
-    snap.worldCupCombinedProps.length === 0
+    snap.aflProps.length === 0
   ) {
     return;
   }

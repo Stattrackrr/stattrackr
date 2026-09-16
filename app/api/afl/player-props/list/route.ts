@@ -25,7 +25,14 @@ import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAf
 import sharedCache, { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles, lookupAflPlayerTeamFromMaps } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
-import { loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON, type DvpMaps } from '@/lib/aflDvpLookup';
+import {
+  loadDvpMapsFromFiles,
+  loadDepthDvpTeamTotalsFromFiles,
+  getDvpLookupTeamTotal,
+  getDepthDvpTeamTotal,
+  DVP_MATCHUP_SEASON,
+  type DvpMaps,
+} from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
@@ -36,7 +43,7 @@ import {
   loadDfsRolePlayers,
   normalizeFantasyPositionToDvp,
   resolveDfsRoleDisplayLabel,
-  depthRoleFromDfsRoleGroup,
+  preferredDepthRoleForPlayer,
   depthRoleFromFantasyPosition,
   depthRoleApiPosition,
   type AflDepthRole,
@@ -787,6 +794,7 @@ export async function GET(request: Request) {
     // Without cron auth, list is cache-only; rows without cached stats show N/A. With cron auth we compute on miss (e.g. workflow N/A report).
     // Always override DvP from position-aware lookup so matchup rank matches dashboard.
     const dvpMapsForOverride = enrichContext.dvpMaps;
+    const depthDvpMaps = await loadDepthDvpTeamTotalsFromFiles(DVP_MATCHUP_SEASON);
     type DvpBatchPayload = {
       metrics?: Record<
         string,
@@ -855,14 +863,18 @@ export async function GET(request: Request) {
       const dfsP = findDfsRolePlayer(dfsPlayers, r.playerName);
       const position = dfsP?.roleBucket != null ? dfsP.roleBucket : filePos;
       const fantasyDepthRole = depthRoleFromFantasyPosition(filePos);
-      const preferredDepthRole =
-        depthRoleFromDfsRoleGroup(dfsP?.roleGroup) ?? fantasyDepthRole;
+      const preferredDepthRole = preferredDepthRoleForPlayer(
+        dfsP?.roleGroup,
+        dfsP?.roleBucket ?? null,
+        filePos
+      );
       return {
         r,
         playerTeam,
         opponent,
         position,
         fantasyPosition: filePos,
+        dfsResolved: Boolean(dfsP?.roleGroup || dfsP?.roleBucket),
         depthRole: preferredDepthRole,
         fantasyDepthRole,
       };
@@ -872,7 +884,7 @@ export async function GET(request: Request) {
     for (const ctx of rowContexts) {
       const nk = normalizeAflPlayerNameForMatch(ctx.r.playerName);
       if (!fantasyDvpByPlayerKey.has(nk)) {
-        fantasyDvpByPlayerKey.set(nk, ctx.fantasyPosition);
+        fantasyDvpByPlayerKey.set(nk, ctx.position);
       }
     }
     for (const [nk, fantasyDvp] of fantasyDvpByPlayerKey) {
@@ -893,7 +905,8 @@ export async function GET(request: Request) {
       statType: string,
       preferredDepthRole: AflDepthRole,
       fantasyDepthRole: AflDepthRole,
-      fantasyPosition: string
+      fantasyPosition: string,
+      dfsResolved: boolean
     ): { rank: number; value: number; usedDepthRole: AflDepthRole | null; usedPosition: string } | null => {
       const metric = statType === 'goals_over' ? 'goals' : 'disposals';
       const tryDepthRole = (
@@ -910,32 +923,41 @@ export async function GET(request: Request) {
             usedPosition: depthRoleApiPosition(role),
           };
         }
+        const fromFile = getDepthDvpTeamTotal(depthDvpMaps, opponent, role, statType);
+        if (fromFile) {
+          return {
+            ...fromFile,
+            usedDepthRole: role,
+            usedPosition: depthRoleApiPosition(role),
+          };
+        }
         return null;
       };
 
       const preferred = tryDepthRole(preferredDepthRole);
       if (preferred) return preferred;
       // Dual-role players: if preferred depth role is missing for this opponent, fall back to
-      // fantasy depth role only — never to an unrelated specialty (e.g. des_kck → key_fwd).
-      if (fantasyDepthRole && fantasyDepthRole !== preferredDepthRole) {
+      // fantasy depth role only when DFS did not already pin the role (never MID ranks for a ruck).
+      if (!dfsResolved && fantasyDepthRole && fantasyDepthRole !== preferredDepthRole) {
         const fantasyHit = tryDepthRole(fantasyDepthRole);
         if (fantasyHit) return fantasyHit;
       }
-      // Last resort: basic fantasy position file map (not depth-accurate).
-      const fileHit = getDvpOverride(opponent, statType, fantasyPosition);
+      // Last resort: basic file map for the DFS/depth bucket, not the fantasy first-slot.
+      const filePosition = depthRoleApiPosition(preferredDepthRole) || fantasyPosition;
+      const fileHit = getDvpOverride(opponent, statType, filePosition);
       if (fileHit) {
         return {
           ...fileHit,
           usedDepthRole: null,
-          usedPosition: fantasyPosition,
+          usedPosition: filePosition,
         };
       }
       return null;
     };
 
     const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rowContexts.map(
-      ({ r, playerTeam, opponent, position, fantasyPosition, depthRole, fantasyDepthRole }) => {
-      const fantasyDvp = fantasyPosition;
+      ({ r, playerTeam, opponent, position, fantasyPosition, dfsResolved, depthRole, fantasyDepthRole }) => {
+      const fantasyDvp = position;
       const dfsShort =
         dfsShortByNormalizedName.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? null;
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
@@ -948,7 +970,8 @@ export async function GET(request: Request) {
         r.statType,
         depthRole,
         fantasyDepthRole,
-        fantasyPosition
+        fantasyPosition,
+        dfsResolved
       );
       const dvpRating = dvpLookupResult?.rank ?? null;
       const dvpStatValue = dvpLookupResult?.value ?? null;

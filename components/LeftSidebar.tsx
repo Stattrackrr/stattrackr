@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
-import { NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED, WORLD_CUP_LOGO_PATH } from "@/lib/nbaConstants";
+import { NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
@@ -275,13 +275,8 @@ export default function LeftSidebar({
   };
 
   // Sport icons from public/images.
-  const SportLogo = ({ sport }: { sport: "nba" | "afl" | "nbl" | "atp" | "wta" | "world-cup" }) => (
-    <span
-      className={`flex-shrink-0 flex items-center justify-center ${
-        sport === "world-cup" ? "w-7 h-7" : "w-6 h-6"
-      }`}
-      aria-hidden
-    >
+  const SportLogo = ({ sport }: { sport: "nba" | "afl" | "nbl" | "atp" | "wta" }) => (
+    <span className="flex-shrink-0 flex items-center justify-center w-6 h-6" aria-hidden>
       <img
         src={
           sport === "nba"
@@ -292,18 +287,10 @@ export default function LeftSidebar({
                 ? "/images/nbl-logo.png"
                 : sport === "atp"
                   ? "/images/atp-logo.webp"
-                  : sport === "wta"
-                    ? "/images/wta-logo.png"
-                    : WORLD_CUP_LOGO_PATH
+                  : "/images/wta-logo.png"
         }
         alt=""
-        className={
-          sport === "world-cup"
-            ? "w-6 h-6 object-contain"
-            : sport === "atp" || sport === "wta"
-              ? "w-6 h-6 object-contain"
-              : "w-5 h-5 object-contain"
-        }
+        className={sport === "atp" || sport === "wta" ? "w-6 h-6 object-contain" : "w-5 h-5 object-contain"}
       />
     </span>
   );

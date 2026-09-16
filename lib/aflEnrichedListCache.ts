@@ -12,10 +12,10 @@ import {
   COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
 } from '@/lib/combinedPropsSnapshotPaint';
 
-export const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v5';
-export const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v5';
-export const AFL_LIST_ENRICHED_STALE_CACHE_KEY = 'afl_list_enriched_response_v3_stale';
-export const AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v3_stale';
+export const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v6';
+export const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v6';
+export const AFL_LIST_ENRICHED_STALE_CACHE_KEY = 'afl_list_enriched_response_v6_stale';
+export const AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v6_stale';
 
 type EnrichedPayload = Record<string, unknown>;
 

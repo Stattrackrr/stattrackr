@@ -7,6 +7,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { getAflDvpPayloadFromCache } from '@/lib/aflDvpCache';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
+import type { AflDepthRole } from '@/lib/aflDfsRoleLabels';
 
 /** Official name (lowercase) or common variant -> canonical DvP key used in file/cache. */
 const OPPONENT_TO_DVP_KEY: Record<string, string> = {
@@ -93,12 +94,130 @@ export async function loadDvpMaps(origin: string): Promise<DvpMaps> {
 type DvpFileRow = {
   opponent?: string;
   position?: string;
+  depthRole?: string;
   sampleSize?: number;
   perPlayerGame?: Record<string, number>;
   perTeamGame?: Record<string, number | null>;
   teamGames?: number;
   totals?: Record<string, number>;
 };
+
+const DEPTH_ROLES: AflDepthRole[] = [
+  'key_fwd',
+  'gen_fwd',
+  'ins_mid',
+  'ruck',
+  'wng_def',
+  'gen_def',
+  'des_kck',
+];
+
+export type DepthDvpMaps = Map<
+  AflDepthRole,
+  {
+    disposals: Map<string, { rank: number; value: number }>;
+    goals: Map<string, { rank: number; value: number }>;
+  }
+>;
+
+/** Same team-total formula as `/api/afl/dvp/batch?mode=depth`. */
+function depthTeamTotalFromRow(row: DvpFileRow, stat: 'disposals' | 'goals'): number {
+  const tg = Number(row.teamGames ?? 0);
+  const ss = Number(row.sampleSize ?? 0);
+  const pv = Number(row.perPlayerGame?.[stat] ?? NaN);
+  if (!Number.isFinite(pv)) return NaN;
+  const observedPlayersPerGame = tg > 0 ? ss / tg : 0;
+  return Math.round((pv * observedPlayersPerGame) * 100) / 100;
+}
+
+function putOpponentAliases(
+  map: Map<string, { rank: number; value: number }>,
+  oppKey: string,
+  entry: { rank: number; value: number }
+) {
+  map.set(oppKey, entry);
+  for (const [full, short] of Object.entries(OPPONENT_TO_DVP_KEY)) {
+    if (short === oppKey) map.set(full, entry);
+  }
+}
+
+function buildDepthTeamTotalMap(
+  rows: DvpFileRow[],
+  role: AflDepthRole,
+  stat: 'disposals' | 'goals'
+): Map<string, { rank: number; value: number }> {
+  const byOpp = new Map<string, number>();
+  for (const row of rows) {
+    if (String(row.depthRole || '').trim().toLowerCase() !== role) continue;
+    const opp = normalizeOpponentForDvp(String(row.opponent || '').trim());
+    if (!opp) continue;
+    const val = depthTeamTotalFromRow(row, stat);
+    if (!Number.isFinite(val)) continue;
+    byOpp.set(opp, val);
+  }
+  const sorted = Array.from(byOpp.entries()).sort((a, b) => a[1] - b[1]);
+  const map = new Map<string, { rank: number; value: number }>();
+  sorted.forEach(([opp, value], i) => {
+    putOpponentAliases(map, opp, { rank: i + 1, value });
+  });
+  return map;
+}
+
+/** Load depth-role team-total ranks from `data/afl-dvp-depth-*.json` (dashboard source of truth). */
+export async function loadDepthDvpTeamTotalsFromFiles(seasonHint?: number): Promise<DepthDvpMaps> {
+  const out: DepthDvpMaps = new Map();
+  const year = seasonHint ?? DVP_MATCHUP_SEASON;
+  const seasonsToTry = Array.from(new Set([year, year - 1]));
+  for (const season of seasonsToTry) {
+    if (season < 2020) continue;
+    try {
+      const filePath = path.join(process.cwd(), 'data', `afl-dvp-depth-${season}.json`);
+      const raw = await fs.readFile(filePath, 'utf8');
+      const data = JSON.parse(raw) as { rows?: DvpFileRow[] };
+      const rows = Array.isArray(data?.rows) ? data.rows : [];
+      if (rows.length === 0) continue;
+      for (const role of DEPTH_ROLES) {
+        out.set(role, {
+          disposals: buildDepthTeamTotalMap(rows, role, 'disposals'),
+          goals: buildDepthTeamTotalMap(rows, role, 'goals'),
+        });
+      }
+      if ([...out.values()].some((bucket) => bucket.disposals.size > 0 || bucket.goals.size > 0)) {
+        return out;
+      }
+    } catch {
+      // try next season
+    }
+  }
+  return out;
+}
+
+export function getDepthDvpTeamTotal(
+  maps: DepthDvpMaps,
+  opponent: string,
+  depthRole: AflDepthRole,
+  statType: string
+): { rank: number; value: number } | null {
+  const bucket = maps.get(depthRole);
+  if (!bucket) return null;
+  const m = statType === 'goals_over' ? bucket.goals : bucket.disposals;
+  if (!m.size) return null;
+  const key = normalizeOpponentForDvp(opponent);
+  const direct = key ? m.get(key) : null;
+  if (direct) return direct;
+  const wanted = String(toOfficialAflTeamDisplayName(opponent) || opponent)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  for (const [k, v] of m.entries()) {
+    const candidate = String(toOfficialAflTeamDisplayName(k) || k)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+    if (candidate === wanted) return v;
+  }
+  return null;
+}
 
 type OaFileShape = {
   teams?: Array<{ team?: string; stats?: Record<string, number | string | null> }>;

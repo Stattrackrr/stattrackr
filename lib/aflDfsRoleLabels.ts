@@ -114,6 +114,10 @@ export function formatAflFantasyDfsPositionLabel(
   const dRaw = aflDfsRole != null && String(aflDfsRole).trim() ? String(aflDfsRole).trim() : null;
   const d = dRaw ?? (fValid ? resolveDfsRoleDisplayLabel(null, fValid) : null);
   if (!fValid && !d) return null;
+  // DFS ruck is the dashboard source of truth; don't keep a leftover Fantasy MID bucket.
+  if (d && String(d).trim().toUpperCase() === 'RUCK') {
+    return 'RUC - RUCK';
+  }
   if (fValid && d) return `${fValid} - ${d}`;
   return fValid || d || null;
 }
@@ -182,6 +186,19 @@ export function depthRoleFromFantasyPosition(pos: 'DEF' | 'MID' | 'FWD' | 'RUC')
   if (pos === 'FWD') return 'gen_fwd';
   if (pos === 'RUC') return 'ruck';
   return 'ins_mid';
+}
+
+/** DFS role is the dashboard source of truth; fantasy is only a fallback. */
+export function preferredDepthRoleForPlayer(
+  dfsRoleGroup: string | null | undefined,
+  dfsRoleBucket: 'DEF' | 'MID' | 'FWD' | 'RUC' | null | undefined,
+  fantasyPosition: 'DEF' | 'MID' | 'FWD' | 'RUC'
+): AflDepthRole {
+  return (
+    depthRoleFromDfsRoleGroup(dfsRoleGroup) ??
+    (dfsRoleBucket ? depthRoleFromFantasyPosition(dfsRoleBucket) : null) ??
+    depthRoleFromFantasyPosition(fantasyPosition)
+  );
 }
 
 export function depthRoleApiPosition(role: AflDepthRole): 'DEF' | 'MID' | 'FWD' | 'RUC' {

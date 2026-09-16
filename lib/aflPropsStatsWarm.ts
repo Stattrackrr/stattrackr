@@ -6,11 +6,11 @@
 import { listAflPlayerPropsFromCache, aflListRowHasTwoWayOdds } from '@/lib/aflPlayerPropsCache';
 import { aflPropStatsHaveForm, getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
 import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles, lookupAflPlayerTeamFromMaps } from '@/lib/aflPlayerTeamResolver';
-import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
+import { loadDvpMaps, loadDvpMapsFromFiles, loadDepthDvpTeamTotalsFromFiles, getDvpLookupTeamTotal, getDepthDvpTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
-import { findDfsRolePlayer, loadDfsRolePlayers, normalizeFantasyPositionToDvp, depthRoleFromDfsRoleGroup, depthRoleFromFantasyPosition, depthRoleApiPosition, type AflDepthRole } from '@/lib/aflDfsRoleMap';
+import { findDfsRolePlayer, loadDfsRolePlayers, normalizeFantasyPositionToDvp, preferredDepthRoleForPlayer, depthRoleFromFantasyPosition, depthRoleApiPosition, type AflDepthRole } from '@/lib/aflDfsRoleMap';
 
 const BATCH_SIZE = 50;
 const CONCURRENT_BATCHES = 2;
@@ -139,6 +139,7 @@ export async function runAflPropsStatsWarm(
       'des_kck',
     ];
     await Promise.all(ALL_DEPTH_ROLES.map((role) => loadDvpBatchForDepthRole(role)));
+    const depthDvpMaps = await loadDepthDvpTeamTotalsFromFiles(DVP_MATCHUP_SEASON);
 
     const findTeamValue = (values: Record<string, number> | undefined, opponent: string): number | null => {
       if (!values) return null;
@@ -158,7 +159,8 @@ export async function runAflPropsStatsWarm(
       statType: string,
       preferredDepthRole: AflDepthRole,
       fantasyDepthRole: AflDepthRole,
-      fantasyPosition: string
+      fantasyPosition: string,
+      dfsResolved: boolean
     ) => {
       const metric = statType === 'goals_over' ? 'goals' : 'disposals';
       const tryRole = (role: AflDepthRole) => {
@@ -166,15 +168,20 @@ export async function runAflPropsStatsWarm(
         const rank = findTeamValue(batch?.metrics?.[metric]?.teamTotalRanks, opponent);
         const value = findTeamValue(batch?.metrics?.[metric]?.teamTotalValues, opponent);
         if (rank != null && value != null) return { rank, value };
-        return null;
+        return getDepthDvpTeamTotal(depthDvpMaps, opponent, role, statType);
       };
       const preferred = tryRole(preferredDepthRole);
       if (preferred) return preferred;
-      if (fantasyDepthRole !== preferredDepthRole) {
+      if (!dfsResolved && fantasyDepthRole !== preferredDepthRole) {
         const fantasyHit = tryRole(fantasyDepthRole);
         if (fantasyHit) return fantasyHit;
       }
-      return getDvpLookupTeamTotal(opponent, statType, dvpMaps, fantasyPosition);
+      return getDvpLookupTeamTotal(
+        opponent,
+        statType,
+        dvpMaps,
+        depthRoleApiPosition(preferredDepthRole) || fantasyPosition
+      );
     };
     console.log(
       '[AFL props-stats/warm] DvP maps loaded (disposals:',
@@ -224,14 +231,18 @@ export async function runAflPropsStatsWarm(
           );
           const dfsP = findDfsRolePlayer(dfsPlayers, p.playerName);
           const fantasyDepthRole = depthRoleFromFantasyPosition(fantasyPosition);
-          const preferredDepthRole =
-            depthRoleFromDfsRoleGroup(dfsP?.roleGroup) ?? fantasyDepthRole;
+          const preferredDepthRole = preferredDepthRoleForPlayer(
+            dfsP?.roleGroup,
+            dfsP?.roleBucket ?? null,
+            fantasyPosition
+          );
           const dvp = getDvp(
             p.opponent,
             p.statType,
             preferredDepthRole,
             fantasyDepthRole,
-            fantasyPosition
+            fantasyPosition,
+            Boolean(dfsP?.roleGroup || dfsP?.roleBucket)
           );
           const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
           return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, url, dvp, false, cronSecret, resolvedTeam).then((r) => {

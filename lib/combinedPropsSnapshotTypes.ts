@@ -57,11 +57,11 @@ export type CombinedPlayerProp = {
   opponentDrawRank?: number | null;
   tournamentName?: string | null;
   surface?: string | null;
-  wcGamesAvg?: number | null;
-  wcGamesHitRate?: { hits: number; total: number } | null;
-  wcGameLog?: Array<{ opponent: string; value: number; date?: string }>;
   headshotUrl?: string | null;
-  wcPosition?: string | null;
+  /** AFL Fantasy bucket (DEF/MID/FWD/RUC) from /api/afl/player-props/list. */
+  aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
+  /** DFS role short label (e.g. INS MID). */
+  aflDfsRole?: string | null;
 };
 
 export type CombinedAflGame = {
@@ -94,16 +94,6 @@ export type CombinedPropsSnapshot = {
     games: CombinedAflGame[];
     props: CombinedPlayerProp[];
     debugMeta?: Record<string, unknown> | null;
-  };
-  worldCup: {
-    ok: boolean;
-    status: number;
-    lastUpdated: string | null;
-    nextUpdate: string | null;
-    ingestMessage: string | null;
-    noWorldCupOdds: boolean;
-    games: CombinedAflGame[];
-    props: CombinedPlayerProp[];
   };
   tennis?: {
     ok: boolean;

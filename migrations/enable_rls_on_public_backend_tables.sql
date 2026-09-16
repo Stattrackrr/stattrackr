@@ -29,8 +29,7 @@ DECLARE
     'international_player_match_stats',
     'international_player_earnings',
     'international_team_match_stats',
-    'international_player_warnings',
-    'world_cup_cache'
+    'international_player_warnings'
   ];
 BEGIN
   FOREACH t IN ARRAY tables LOOP

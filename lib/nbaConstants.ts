@@ -85,31 +85,12 @@ export const NBA_PUBLIC_ENABLED =
 
 export const NBA_OFFSEASON_SIDEBAR_LABEL = 'Off-season';
 
-const WORLD_CUP_PUBLIC_ENABLED_DEFAULT = false;
-
-export const WORLD_CUP_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED === 'true' ||
-  process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED === '1' ||
-  (process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED == null && WORLD_CUP_PUBLIC_ENABLED_DEFAULT);
-
 const TENNIS_PUBLIC_ENABLED_DEFAULT = false;
 
 export const TENNIS_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_TENNIS_ENABLED === 'true' ||
   process.env.NEXT_PUBLIC_TENNIS_ENABLED === '1' ||
   (process.env.NEXT_PUBLIC_TENNIS_ENABLED == null && TENNIS_PUBLIC_ENABLED_DEFAULT);
-
-export const WORLD_CUP_OFFSEASON_SIDEBAR_LABEL = 'Coming Soon';
-
-export const WORLD_CUP_LOGO_DOWNLOADS_STEM = 'fifa_trophy_transparent_v2';
-export const WORLD_CUP_LOGO_DOWNLOADS_EXTENSIONS = ['.png', '.webp'] as const;
-export const WORLD_CUP_LOGO_PUBLIC_FILENAME = 'world-cup-logo.png';
-export const WORLD_CUP_LOGO_SERVE_PATH = '/api/world-cup/dashboard?logo=1';
-export const WORLD_CUP_LOGO_PATH = `/images/${WORLD_CUP_LOGO_PUBLIC_FILENAME}`;
-/** Portrait trophy asset — square slots keep the trophy readable. */
-export const WORLD_CUP_LOGO_TOGGLE_CLASS = 'w-10 h-10 lg:w-12 lg:h-12 object-contain';
-export const WORLD_CUP_LOGO_MARK_CLASS = 'h-10 w-10 object-contain';
-export const WORLD_CUP_LOGO_MARK_COMPACT_CLASS = 'h-8 w-8 object-contain';
 
 export const TENNIS_LOGO_PATH = '/images/atp-logo.webp';
 export const WTA_LOGO_PATH = '/images/wta-logo.png';
@@ -122,8 +103,8 @@ export function tennisLogoForTour(tour?: string | null): string {
 }
 
 export type TennisPropsSport = 'atp' | 'wta';
-export type PropsSportMode = 'nba' | 'afl' | 'world-cup' | 'atp' | 'wta' | 'combined';
-export type SecondaryPropsSport = 'afl' | 'world-cup' | 'atp' | 'wta';
+export type PropsSportMode = 'nba' | 'afl' | 'atp' | 'wta' | 'combined';
+export type SecondaryPropsSport = 'afl' | 'atp' | 'wta';
 
 export function isTennisPropsSport(mode: string | null | undefined): mode is TennisPropsSport {
   return mode === 'atp' || mode === 'wta';
@@ -147,64 +128,12 @@ export function propsSportFromTennisTour(tour?: string | null): TennisPropsSport
 }
 
 export function secondaryListSportForMode(mode: PropsSportMode): SecondaryPropsSport {
-  if (mode === 'world-cup') return 'world-cup';
   if (mode === 'atp' || mode === 'wta') return mode;
   return 'afl';
 }
 
-/** sessionStorage: props sport tab to restore when leaving World Cup dashboard. */
-export const WC_PROPS_RETURN_SPORT_KEY = 'wc_props_return_sport';
-/** sessionStorage: paint cached WC rows instantly on back-nav; refresh list in background. */
-export const WC_BACK_TO_PROPS_SKIP_FETCH_KEY = 'wc_back_to_props_skip_fetch';
-export const WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY = 'wc_back_to_props_clear_search';
-
-export const WORLD_CUP_SELECTION_KEYS = {
-  propsMode: 'world-cup:propsMode',
-  competition: 'world-cup:competition',
-  selectedTeam: 'world-cup:selectedTeam',
-  gamePropsTeam: 'world-cup:gamePropsTeam',
-  selectedPlayer: 'world-cup:selectedPlayer',
-  chartContext: 'world-cup:chartContext',
-} as const;
-
-/** Survives refresh; cleared when the tab/browser session ends. */
-export function worldCupSelectionStorage(): Storage | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return window.sessionStorage;
-  } catch {
-    return null;
-  }
-}
-
-/** Drop legacy localStorage keys from before session-only persistence. */
-export function clearLegacyWorldCupLocalStorage(): void {
-  if (typeof window === 'undefined') return;
-  try {
-    for (const key of Object.values(WORLD_CUP_SELECTION_KEYS)) {
-      window.localStorage.removeItem(key);
-    }
-  } catch {
-    /* ignore */
-  }
-}
-
-export function clearWorldCupDashboardPersistence(): void {
-  const storage = worldCupSelectionStorage();
-  if (storage) {
-    try {
-      for (const key of Object.values(WORLD_CUP_SELECTION_KEYS)) {
-        storage.removeItem(key);
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-  clearLegacyWorldCupLocalStorage();
-}
-
 export function isSecondaryPropsSport(mode: PropsSportMode): mode is SecondaryPropsSport {
-  return mode === 'afl' || mode === 'world-cup' || isTennisPropsSport(mode);
+  return mode === 'afl' || isTennisPropsSport(mode);
 }
 
 export function defaultPropsSport(): PropsSportMode {
@@ -212,9 +141,7 @@ export function defaultPropsSport(): PropsSportMode {
 }
 
 export function resolvePropsSportParam(sportParam: string | null): PropsSportMode {
-  if (sportParam === 'world-cup' || sportParam === 'worldcup') {
-    return WORLD_CUP_PUBLIC_ENABLED ? 'world-cup' : 'combined';
-  }
+  if (sportParam === 'world-cup' || sportParam === 'worldcup') return 'combined';
   if (sportParam === 'combined' || sportParam === 'all' || sportParam == null) return 'combined';
   if (sportParam === 'afl') return 'afl';
   if (sportParam === 'wta') return TENNIS_PUBLIC_ENABLED ? 'wta' : 'combined';
@@ -227,8 +154,6 @@ export function propsPathForSport(mode: PropsSportMode, testEventCode?: string |
   const basePath =
     mode === 'afl'
       ? '/props?sport=afl'
-      : mode === 'world-cup'
-        ? '/props?sport=world-cup'
       : mode === 'wta'
         ? '/props?sport=wta'
       : mode === 'atp'

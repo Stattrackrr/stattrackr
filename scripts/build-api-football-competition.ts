@@ -1109,7 +1109,7 @@ async function main() {
     console.log(`\n[dvp-gap] Checking coverage gap for slug="${slug}"...\n`);
 
     // international_matches that involve this nation (search by known team names for the slug)
-    // Try both exact slug match via resolveWorldCupFlagCode logic and common team name patterns
+    // Match international_matches by slug and common team-name patterns
     const namePattern = slug === 'rsa' ? 'south africa' : slug;
     type IntlMatchRow = {
       source: string;

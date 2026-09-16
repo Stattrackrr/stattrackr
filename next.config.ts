@@ -63,7 +63,6 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       { source: "/favicon.ico", destination: "/images/favicon-32.png" },
-      { source: "/world-cup/player/:slug", destination: "/world-cup" },
     ];
   },
   typescript: {

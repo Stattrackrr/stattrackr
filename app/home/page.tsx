@@ -12,7 +12,7 @@ import {
 } from '@/lib/profileSubscriptionGate';
 import type { User } from '@supabase/supabase-js';
 import { StatTrackrSplash } from '@/components/StatTrackrSplash';
-import { NBA_PUBLIC_ENABLED, WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
+import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -88,9 +88,6 @@ export default function HomePage() {
       void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
     }
     void fetch('/api/afl/player-props/list', { cache: 'force-cache' }).catch(() => {});
-    if (WORLD_CUP_PUBLIC_ENABLED) {
-      void fetch('/api/world-cup/dashboard?playerPropsList=1', { cache: 'force-cache' }).catch(() => {});
-    }
   };
 
   const goToProps = () => {

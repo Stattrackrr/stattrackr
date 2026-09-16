@@ -22,6 +22,7 @@ export {
   roleBucketFromDfsRoleGroup,
   depthRoleFromDfsRoleGroup,
   depthRoleFromFantasyPosition,
+  preferredDepthRoleForPlayer,
   depthRoleApiPosition,
 } from './aflDfsRoleLabels';
 

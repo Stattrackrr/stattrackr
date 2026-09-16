@@ -1,15 +1,14 @@
 import type { CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
 
 /** Full combined snapshot (server). Keep in lockstep with the paint key below. */
-export const COMBINED_PROPS_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_v3';
+export const COMBINED_PROPS_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_v5';
 
 /** Browser paint payload — no per-row game logs or other dashboard-only fields. */
-export const COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_paint_v3';
+export const COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_paint_v5';
 
 /** Strip fields the props list never renders (saves parse/hydrate work in the browser). */
 export function slimCombinedPlayerPropForPaint(prop: CombinedPlayerProp): CombinedPlayerProp {
   const {
-    wcGameLog: _wcGameLog,
     expectedValue: _expectedValue,
     overProb: _overProb,
     underProb: _underProb,
@@ -34,7 +33,6 @@ export function slimCombinedPropsSnapshotForClient(
     ...snapshot,
     nba: { ...snapshot.nba, props: mapProps(snapshot.nba.props) },
     afl: { ...snapshot.afl, props: mapProps(snapshot.afl.props) },
-    worldCup: { ...snapshot.worldCup, props: mapProps(snapshot.worldCup.props) },
     tennis: snapshot.tennis
       ? { ...snapshot.tennis, props: mapProps(snapshot.tennis.props) }
       : snapshot.tennis,

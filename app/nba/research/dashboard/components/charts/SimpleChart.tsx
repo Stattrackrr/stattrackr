@@ -57,11 +57,11 @@ interface SimpleChartProps {
   averageOverlayLower?: boolean;
   /** Extra lowering for layouts with reduced controls height (e.g. advanced open with no selected filter). */
   averageOverlayLowerExtra?: boolean;
-  /** When true, lift the Avg + Hit overlay further above the chart (used by World Cup dashboard). */
+  /** When true, lift the Avg + Hit overlay further above the chart. */
   averageOverlayHigher?: boolean;
-  /** When true, sit the Avg + Hit overlay inside the chart top edge (World Cup mobile/desktop). */
+  /** When true, sit the Avg + Hit overlay inside the chart top edge. */
   averageOverlayInsideChart?: boolean;
-  /** Optional control rendered on the same row as the avg/hit overlay (e.g. World Cup competition filter). */
+  /** Optional control rendered on the same row as the avg/hit overlay. */
   overlayEnd?: ReactNode;
   /** Optional max value for rank-based secondary Y-axis (AFL uses 18 teams, NBA uses 30). */
   secondaryRankAxisMax?: number;
