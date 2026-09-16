@@ -39,6 +39,28 @@ export function proxy(request: NextRequest) {
     'camera=(), microphone=(), geolocation=(), interest-cohort=()'
   );
 
+  const supabaseConnectSrc = (() => {
+    const sources = new Set<string>([
+      "https://*.supabase.co",
+      "wss://*.supabase.co",
+      "https://*.supabase.net",
+      "wss://*.supabase.net",
+    ]);
+    const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (raw) {
+      try {
+        const origin = new URL(raw).origin;
+        sources.add(origin);
+        if (origin.startsWith("https://")) {
+          sources.add(`wss://${new URL(raw).host}`);
+        }
+      } catch {
+        // Ignore invalid env values; wildcards still apply.
+      }
+    }
+    return Array.from(sources).join(" ");
+  })();
+
   // Content Security Policy - adjust based on your needs
   const csp = [
     "default-src 'self'",
@@ -46,7 +68,7 @@ export function proxy(request: NextRequest) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com https://analytics.tiktok.com data:",
     "img-src 'self' data: https: blob:",
-    "connect-src 'self' https://*.supabase.co https://api.stripe.com https://stats.nba.com https://www.facebook.com https://connect.facebook.net https://analytics.tiktok.com https://capig.stape.gl https://*.stape.gl https://ads.tiktok.com https://*.tiktok.com https://*.tiktokw.us",
+    `connect-src 'self' ${supabaseConnectSrc} https://api.stripe.com https://stats.nba.com https://www.facebook.com https://connect.facebook.net https://analytics.tiktok.com https://capig.stape.gl https://*.stape.gl https://ads.tiktok.com https://*.tiktok.com https://*.tiktokw.us`,
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
     "object-src 'none'",
     "base-uri 'self'",

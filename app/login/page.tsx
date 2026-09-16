@@ -9,6 +9,79 @@ import { trackMetaEvent } from "@/lib/metaPixel";
 
 const HOME_ROUTE = "/home";
 
+function isNetworkAuthError(error: unknown): boolean {
+  const err = error as { message?: string; name?: string } | null;
+  const message = (err?.message || String(error || "")).toLowerCase();
+  const name = (err?.name || "").toLowerCase();
+  return (
+    name === "typeerror" ||
+    name === "aborterror" ||
+    message.includes("load failed") ||
+    message.includes("failed to fetch") ||
+    message.includes("networkerror") ||
+    message.includes("network request failed") ||
+    message.includes("abort") ||
+    message.includes("timeout") ||
+    message.includes("error code 522") ||
+    message.includes("522:") ||
+    message.includes("cf-error") ||
+    message.includes("<!doctype html") ||
+    message.includes("<html")
+  );
+}
+
+function authErrorMessage(error: unknown): string {
+  const message = (error as { message?: string } | null)?.message || String(error || "Unknown error");
+  if (isNetworkAuthError(error) || /<!DOCTYPE html|<html|Error code 522|cf-error/i.test(message)) {
+    return "Sign-in is temporarily unavailable. Please wait a minute and try again.";
+  }
+  if (message.toLowerCase().includes("captcha")) {
+    return "Captcha is enabled in Supabase. Please disable it in Authentication → Settings → Security.";
+  }
+  if (message.toLowerCase().includes("invalid login credentials")) {
+    return "Invalid email or password. Please check and try again.";
+  }
+  if (message.toLowerCase().includes("email not confirmed")) {
+    return "Please verify your email before signing in. Check your inbox for the verification code.";
+  }
+  if (message.toLowerCase().includes("user already registered")) {
+    return "Email already in use. Please try a different email or sign in instead.";
+  }
+  if (message.length > 180 || /<[^>]+>/.test(message)) {
+    return "Sign-in is temporarily unavailable. Please wait a minute and try again.";
+  }
+  return `Error: ${message}`;
+}
+
+async function signInWithPasswordViaApi(email: string, password: string) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 20000);
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+      signal: controller.signal,
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json?.error || "Sign in failed");
+    }
+    if (!json?.access_token || !json?.refresh_token) {
+      throw new Error("Sign in failed");
+    }
+    const { error } = await supabase.auth.setSession({
+      access_token: json.access_token,
+      refresh_token: json.refresh_token,
+    });
+    if (error && !isNetworkAuthError(error)) {
+      throw error;
+    }
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -72,16 +145,19 @@ export default function LoginPage() {
     }
 
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check for stored redirect from OAuth flow
-        if (localStorage.getItem('stattrackr_login_redirect')) {
-          localStorage.removeItem('stattrackr_login_redirect');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          if (localStorage.getItem('stattrackr_login_redirect')) {
+            localStorage.removeItem('stattrackr_login_redirect');
+          }
+          router.replace(HOME_ROUTE);
         }
-        router.replace(HOME_ROUTE);
+      } catch {
+        // Ignore session recovery errors so the login form still works on mobile.
       }
     };
-    checkUser();
+    void checkUser();
   }, [router]);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -119,37 +195,20 @@ export default function LoginPage() {
         setPendingEmail(email);
         setSuccess("");
       } else {
-        // Always use persistent session for reliable login
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        
-        // Store remember me preference for future use
+        await signInWithPasswordViaApi(email, password);
+
         if (rememberMe) {
           localStorage.setItem('stattrackr_remember_me', 'true');
         } else {
           localStorage.removeItem('stattrackr_remember_me');
         }
-        
-        // Always send newly authenticated users to home
-        router.replace(HOME_ROUTE);
+
+        window.location.assign(HOME_ROUTE);
+        return;
       }
-    } catch (error: any) {
-      // Better error handling  
-      console.log('Auth error:', error); // For debugging
-      if (error.message.includes('captcha')) {
-        setError("Captcha is enabled in Supabase. Please disable it in Authentication → Settings → Security.");
-      } else if (error.message.includes('Invalid login credentials')) {
-        setError("Invalid email or password. Please check and try again.");
-      } else if (error.message.includes('Email not confirmed')) {
-        setError("Please verify your email before signing in. Check your inbox for the verification code.");
-      } else if (error.message.includes('User already registered')) {
-        setError("Email already in use. Please try a different email or sign in instead.");
-      } else {
-        setError(`Error: ${error.message}`);
-      }
+    } catch (error: unknown) {
+      console.log('Auth error:', error);
+      setError(authErrorMessage(error));
     } finally {
       setLoading(false);
     }
