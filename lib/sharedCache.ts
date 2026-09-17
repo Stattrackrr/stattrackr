@@ -215,6 +215,45 @@ export const sharedCache = {
       warnSharedCacheFallback('redis SET', error);
     }
   },
+  /** Batch SET via chunked Upstash pipeline round-trips. */
+  async setJSONMany(
+    entries: Array<{ key: string; value: unknown; ttlSeconds: number }>
+  ): Promise<void> {
+    const SET_CHUNK = 15;
+    for (const { key, value, ttlSeconds } of entries) {
+      const exp = ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : 0;
+      memory.set(key, { v: value, exp });
+    }
+    if (!HAS_UPSTASH || !entries.length) return;
+    for (let i = 0; i < entries.length; i += SET_CHUNK) {
+      const chunk = entries.slice(i, i + SET_CHUNK);
+      try {
+        const commands: unknown[][] = [];
+        for (const { key, value, ttlSeconds } of chunk) {
+          const { body, skipped } = encodeUpstashValue(value);
+          if (skipped) {
+            console.warn(
+              `[sharedCache] skip Redis SET ${key} (${body.length} bytes > ${UPSTASH_MAX_REQUEST_BYTES}); memory-only`
+            );
+            continue;
+          }
+          commands.push(['SET', key, body, 'EX', ttlSeconds]);
+        }
+        if (!commands.length) continue;
+        const res = await fetch(`${REST_URL}/pipeline`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${REST_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(commands),
+        });
+        if (!res.ok) throw new Error(`Upstash error ${res.status}`);
+      } catch (error) {
+        warnSharedCacheFallback('redis SET pipeline', error);
+      }
+    }
+  },
   /** Delete all keys whose string key starts with prefix (e.g. "afl_prop_stats_v1"). */
   async clearKeysByPrefix(prefix: string): Promise<number> {
     const match = prefix.endsWith('*') ? prefix : `${prefix}*`;

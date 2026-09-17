@@ -6,7 +6,7 @@ import { refreshTennisOddsSnapshots } from '@/lib/tennis/odds';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 180;
+export const maxDuration = 300;
 
 /**
  * Incremental tennis ingest: fetch last 90 days, keep the current-season overlay in Supabase.
@@ -17,9 +17,10 @@ export async function GET(request: NextRequest) {
   try {
     const { fixtures: _fixtures, ...result } = await refreshTennisMatchOverlay();
     const overlay = (await import('@/lib/tennis/ingest')).getHydratedTennisOverlay();
+    let shards = { players: 0, logs: 0, skipped: true };
     try {
       const { publishTennisDashboardCache } = await import('@/lib/tennis/dashboardCache');
-      await publishTennisDashboardCache(overlay);
+      shards = await publishTennisDashboardCache(overlay);
     } catch {
       /* shards still publish in the background from ingest */
     }
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
       upcomingPlayers,
       warmedUpcoming,
       dashboard,
+      shards,
       odds,
     });
   } catch (err) {

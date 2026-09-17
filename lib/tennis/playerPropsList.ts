@@ -98,6 +98,7 @@ export type TennisListPropRow = {
   playerId?: string | null;
   playerTeam?: string | null;
   opponent?: string | null;
+  opponentId?: string | null;
   playerIoc?: string | null;
   playerRank?: number | null;
   opponentIoc?: string | null;
@@ -303,6 +304,7 @@ function rowsForBook(opts: {
   playerId: string | null;
   tour: string | null;
   opponent: string;
+  opponentId: string | null;
   playerIoc: string | null;
   playerRank: number | null;
   opponentIoc: string | null;
@@ -324,6 +326,7 @@ function rowsForBook(opts: {
     playerId,
     tour,
     opponent,
+    opponentId,
     playerIoc,
     playerRank,
     opponentIoc,
@@ -341,6 +344,7 @@ function rowsForBook(opts: {
   const identity = {
     playerIoc,
     playerRank,
+    opponentId,
     opponentIoc,
     opponentRank,
     playerSeed,
@@ -825,6 +829,7 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
             playerId,
             tour,
             opponent,
+            opponentId,
             playerIoc: meta?.ioc || resolveTennisIoc(playerId, playerName),
             playerRank: meta?.rank ?? null,
             opponentIoc:

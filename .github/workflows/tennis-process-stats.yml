@@ -37,7 +37,7 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
-            -L --max-time 240 \
+            -L --max-time 330 \
             --write-out "\nHTTP_STATUS:%{http_code}" 2>&1) || true
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
@@ -57,7 +57,7 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
-            -L --max-time 150 \
+            -L --max-time 210 \
             --write-out "\nHTTP_STATUS:%{http_code}" 2>&1) || true
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')

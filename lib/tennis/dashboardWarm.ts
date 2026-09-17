@@ -39,7 +39,7 @@ export async function warmTennisDashboardComputed(): Promise<{ matchups: number 
   const rows = Array.isArray(list?.data) ? list.data : [];
   const seen = new Set<string>();
   let matchups = 0;
-  const MAX_MATCHUPS = 80;
+  const MAX_MATCHUPS = 400;
   for (const row of rows) {
     const player = String(row.playerName || '').trim();
     const opponent = String(row.opponent || '').trim();

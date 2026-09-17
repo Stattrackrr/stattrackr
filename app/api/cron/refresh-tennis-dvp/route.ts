@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { clearCombinedPropsSnapshotCaches } from '@/lib/combinedPropsSnapshot';
 import { buildTennisDvpLiveStore } from '@/lib/tennis/dvpLiveCache';
-import { hydrateTennisMatchOverlay, refreshTennisStandings } from '@/lib/tennis/ingest';
+import { getHydratedTennisOverlay, hydrateTennisMatchOverlay, refreshTennisStandings } from '@/lib/tennis/ingest';
 import { listLiveTennisEventIndex, warmTennisUpcomingFixtures } from '@/lib/tennis/nextGame';
 import { getTennisPlayerPropsList, invalidateTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 /**
  * Refresh ATP/WTA rankings, rebuild per-tournament DVP for live/upcoming events,
@@ -40,6 +40,13 @@ export async function GET(request: NextRequest) {
     } catch {
       propsCount = 0;
     }
+    let shards = { players: 0, logs: 0, skipped: true };
+    try {
+      const { publishTennisDashboardCache } = await import('@/lib/tennis/dashboardCache');
+      shards = await publishTennisDashboardCache(getHydratedTennisOverlay(), { onlyPriority: true });
+    } catch {
+      /* props-player logs still republish on the 8h ingest cron */
+    }
     await clearCombinedPropsSnapshotCaches().catch(() => undefined);
     return NextResponse.json({
       success: true,
@@ -53,6 +60,7 @@ export async function GET(request: NextRequest) {
         fieldSize: event.fieldSize,
       })),
       propsCount,
+      shards,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
