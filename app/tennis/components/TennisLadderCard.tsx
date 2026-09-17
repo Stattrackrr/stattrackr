@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchJsonDeduped } from '@/lib/clientFetchDedupe';
 import { tennisLastName } from '@/lib/tennis/chartStats';
+import { tennisDashboardFetch } from '@/lib/tennisDashboardFetch';
 
 type RankingRow = {
   pos: number | null;
@@ -37,12 +37,16 @@ export function TennisLadderCard({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetchJsonDeduped<{
-      error?: string;
-      year?: number;
-      seasonLabel?: string;
-      teams?: RankingRow[];
-    }>(`/api/tennis/rankings?tour=${tour}`)
+    tennisDashboardFetch(`/api/tennis/rankings?tour=${tour}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{
+          error?: string;
+          year?: number;
+          seasonLabel?: string;
+          teams?: RankingRow[];
+        }>;
+      })
       .then((json) => {
         if (cancelled) return;
         if (json?.error) {

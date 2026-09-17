@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { aflDashboardFetch } from '@/lib/aflDashboardFetch';
 
 const DISPLAY_STATS = ['D', 'K', 'HB', 'M', 'G', 'T', 'CL', 'I50', 'R50'] as const;
 const STAT_LABELS: Record<string, string> = {
@@ -29,7 +30,7 @@ export function AflTeamRankingsCard({ isDark, season }: { isDark: boolean; seaso
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetch(`/api/afl/team-rankings?season=${season}`)
+    aflDashboardFetch(`/api/afl/team-rankings?season=${season}`)
       .then((r) => r.json())
       .then((json) => {
         if (cancelled) return;

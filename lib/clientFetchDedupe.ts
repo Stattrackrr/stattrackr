@@ -23,6 +23,12 @@ export async function fetchJsonDeduped<T = unknown>(url: string, init?: RequestI
   return promise as Promise<T>;
 }
 
+export function clearInflightJsonByUrlPrefix(prefix: string): void {
+  for (const key of inflightJson.keys()) {
+    if (key.includes(prefix)) inflightJson.delete(key);
+  }
+}
+
 export async function fetchJsonDedupedResult<T = unknown>(
   url: string,
   init?: RequestInit

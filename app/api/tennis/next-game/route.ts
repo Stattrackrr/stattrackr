@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { findTennisNextGameFromOdds } from '@/lib/tennis/odds';
 import { getTennisNextGame, warmTennisUpcomingFixtures } from '@/lib/tennis/nextGame';
 import type { TennisTour } from '@/lib/tennis/types';
 
@@ -38,16 +39,20 @@ export async function GET(request: NextRequest) {
     const warm = request.nextUrl.searchParams.get('warm') === '1';
     const playerId = request.nextUrl.searchParams.get('playerId');
     const playerName = request.nextUrl.searchParams.get('player') || request.nextUrl.searchParams.get('name');
+    const opponentName =
+      request.nextUrl.searchParams.get('opponent') || request.nextUrl.searchParams.get('opponentName');
     const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
     const tour = tourParam === 'ATP' || tourParam === 'WTA' ? (tourParam as TennisTour) : null;
     if (warm && !String(playerId || '').trim()) {
-      await warmTennisUpcomingFixtures({ force: true });
+      await warmTennisUpcomingFixtures({ force: false });
       return NextResponse.json({ success: true, warmed: true });
     }
     if (!String(playerId || '').trim() && !String(playerName || '').trim()) {
       return NextResponse.json({ error: 'playerId is required' }, { status: 400 });
     }
-    const next = await getTennisNextGame({ playerId, playerName, tour });
+    const next =
+      (await getTennisNextGame({ playerId, playerName, opponentName, tour })) ||
+      (await findTennisNextGameFromOdds({ playerName, opponentName, tour }));
     return NextResponse.json(nextGameJson(playerId || null, next, tour));
   } catch (err) {
     console.warn('[tennis-next-game]', err);

@@ -4,7 +4,7 @@ import { answerTennisAsk, tennisAskConfigured, type TennisAskMessage } from '@/l
 import { buildTennisAskBrief, buildTennisAskSuggestions } from '@/lib/tennis/askBrief';
 import { inferBestOfFromOdds, summarizeTennisAskOdds } from '@/lib/tennis/askOdds';
 import { tennisBestOf } from '@/lib/tennis/apiTennis';
-import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
+import { hydrateTennisOverlayLocal } from '@/lib/tennis/ingest';
 import { buildTennisMatchAnalysis } from '@/lib/tennis/matchAnalyst';
 import { getTennisMatchOddsForPlayer } from '@/lib/tennis/odds';
 import type { TennisTour } from '@/lib/tennis/types';
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
   if (!player || !opponent) {
     return NextResponse.json({ success: true, configured: tennisAskConfigured(), suggestions: [] });
   }
-  await hydrateTennisMatchOverlay();
+  await hydrateTennisOverlayLocal();
   const tour = parseTour(request.nextUrl.searchParams.get('tour'));
   const isGrandSlam = request.nextUrl.searchParams.get('isGrandSlam') === '1';
   const tournamentName = String(request.nextUrl.searchParams.get('tournament') || '').trim() || null;
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   if (TENNIS_AI_UNDER_MAINTENANCE) return maintenanceResponse();
-  await hydrateTennisMatchOverlay();
+  await hydrateTennisOverlayLocal();
   const body = (await request.json().catch(() => null)) as {
     question?: unknown;
     player?: unknown;

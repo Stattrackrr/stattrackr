@@ -208,15 +208,22 @@ async function fetchGameLogs(
   team: string,
   season: number,
   cronSecret?: string,
-  extraQuery = ''
+  extraQuery = '',
+  signal?: AbortSignal
 ): Promise<Record<string, unknown>[]> {
+  if (signal?.aborted) return [];
   const url = `${baseUrl}/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(playerName)}&team=${encodeURIComponent(team)}&include_both=1${extraQuery}`;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (cronSecret) {
     headers['Authorization'] = `Bearer ${cronSecret}`;
     headers['x-cron-secret'] = cronSecret;
   }
-  const r = await fetch(url, { cache: 'no-store', headers });
+  let r: Response;
+  try {
+    r = await fetch(url, { cache: 'no-store', headers, signal });
+  } catch {
+    return [];
+  }
   if (!r.ok) return [];
   const data = (await r.json()) as { games?: unknown[]; season?: number };
   let games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
@@ -243,15 +250,24 @@ async function fetchGameLogsForSeason(
   playerName: string,
   team: string,
   season: number,
-  cronSecret?: string
+  cronSecret?: string,
+  signal?: AbortSignal
 ): Promise<Record<string, unknown>[]> {
   const currentYear = new Date().getFullYear();
   const warmCurrentSeason = season === currentYear && !!cronSecret;
   const initialQuery = warmCurrentSeason ? '&strict_season=1&force_fetch=1' : '';
-  let games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret, initialQuery);
+  let games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret, initialQuery, signal);
   if (season === currentYear && !aflGamesIncludeSeason(games, season)) {
     // Cron force-fetch often 403s from GitHub/Vercel IPs. Keep last warmed season logs.
-    const cached = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret, '&strict_season=1');
+    const cached = await fetchGameLogs(
+      baseUrl,
+      playerName,
+      team,
+      season,
+      cronSecret,
+      '&strict_season=1',
+      signal
+    );
     if (aflGamesIncludeSeason(cached, season) || cached.length > games.length) games = cached;
     if (!aflGamesIncludeSeason(games, season) && cronSecret) {
       const retry = await fetchGameLogs(
@@ -260,7 +276,8 @@ async function fetchGameLogsForSeason(
         team,
         season,
         cronSecret,
-        '&strict_season=1&force_fetch=1'
+        '&strict_season=1&force_fetch=1',
+        signal
       );
       if (aflGamesIncludeSeason(retry, season)) games = retry;
     }
@@ -287,8 +304,10 @@ export async function getAflPropStats(
   cacheOnly?: boolean,
   cronSecret?: string,
   resolvedPlayerTeam?: string,
-  debugOut?: AflPropStatsDebug
+  debugOut?: AflPropStatsDebug,
+  signal?: AbortSignal
 ): Promise<AflPropStatsPayload | null> {
+  if (signal?.aborted) return null;
   const key = cacheKey(playerName, team, opponent, statType, line);
   const cached = await sharedCache.getJSON<AflPropStatsPayload>(key);
   if (cached && typeof cached === 'object') {
@@ -316,14 +335,16 @@ export async function getAflPropStats(
     }
     return null;
   }
+  if (signal?.aborted) return null;
   const currentSeason = new Date().getFullYear();
   const prevSeason = currentSeason - 1;
   const olderSeason = currentSeason - 2;
   // Fetch current + previous two seasons (e.g. 2026/2025/2024) for better H2H depth.
   const fetchForSeason = async (season: number): Promise<Record<string, unknown>[]> => {
     const tryFetch = async (teamForRequest: string) =>
-      fetchGameLogsForSeason(baseUrl, playerName, teamForRequest, season, cronSecret);
+      fetchGameLogsForSeason(baseUrl, playerName, teamForRequest, season, cronSecret, signal);
     let list: Record<string, unknown>[] = [];
+    if (signal?.aborted) return [];
     if (resolvedPlayerTeam?.trim()) list = await tryFetch(resolvedPlayerTeam.trim());
     if (list.length === 0 && team.trim()) list = await tryFetch(team);
     if (list.length === 0 && opponent.trim()) list = await tryFetch(opponent);

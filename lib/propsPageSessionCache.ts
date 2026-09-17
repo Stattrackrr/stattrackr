@@ -1,3 +1,4 @@
+import { abortAflPropsStatsBackfill } from '@/lib/aflPropsStatsBackfillControl';
 import { propsPathForSport, type PropsSportMode } from '@/lib/nbaConstants';
 
 /** In-tab memory snapshot — survives Next.js client navigations without re-fetching props lists. */
@@ -7,6 +8,7 @@ export type PropsPageWarmSnapshot = {
   propsSport: PropsSportMode;
   playerProps: unknown[];
   aflProps: unknown[];
+  tennisCombinedProps: unknown[];
   aflGames: unknown[];
   todaysGames: unknown[];
   selectedAflGameIds: string[];
@@ -104,12 +106,14 @@ function markPropsBackNavWarm(): void {
 
 /** Call immediately before leaving /props for a player dashboard. */
 export function snapshotPropsPageBeforeLeave(): void {
+  abortAflPropsStatsBackfill();
   const snap = getter?.();
   if (snap) rememberPropsReturnSport(snap.propsSport);
   if (!snap) return;
   if (
     snap.playerProps.length === 0 &&
-    snap.aflProps.length === 0
+    snap.aflProps.length === 0 &&
+    snap.tennisCombinedProps.length === 0
   ) {
     return;
   }

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { opponentToFootywireTeam } from '@/lib/aflTeamMapping';
+import { aflDashboardFetch } from '@/lib/aflDashboardFetch';
 
 const SEASON_OPTIONS = [2026, 2025] as const;
 const MATCHUP_STATS = [
@@ -113,8 +114,8 @@ export default function AflTeamMatchupCard({
     setError(null);
 
     Promise.all([
-      fetch(`/api/afl/team-rankings?season=${selectedSeason}&type=ta`).then((r) => r.json()),
-      fetch(`/api/afl/team-rankings?season=${selectedSeason}&type=oa`).then((r) => r.json()),
+      aflDashboardFetch(`/api/afl/team-rankings?season=${selectedSeason}&type=ta`).then((r) => r.json()),
+      aflDashboardFetch(`/api/afl/team-rankings?season=${selectedSeason}&type=oa`).then((r) => r.json()),
     ])
       .then(([taJson, oaJson]) => {
         if (cancelled) return;

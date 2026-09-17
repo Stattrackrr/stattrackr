@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { tennisDvpProfile } from '@/lib/tennis/data';
+import {
+  readTennisComputedCache,
+  tennisComputedCacheKey,
+  writeTennisComputedCache,
+} from '@/lib/tennis/dashboardCache';
 import { findCachedTennisDvpEvent, readTennisDvpLiveStore } from '@/lib/tennis/dvpLiveCache';
 import type { TennisDvpStage } from '@/lib/tennis/dvpShared';
-import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
+import { hydrateTennisOverlayLocal } from '@/lib/tennis/ingest';
 import {
   listLiveTennisEventIndex,
   tennisLiveEventPlayerIds,
@@ -73,7 +78,6 @@ async function tournamentField(opts: {
 }
 
 export async function GET(request: NextRequest) {
-  await hydrateTennisMatchOverlay();
   const player = String(request.nextUrl.searchParams.get('player') || '').trim();
   const opponent = String(request.nextUrl.searchParams.get('opponent') || '').trim();
   if (!player || !opponent) {
@@ -84,6 +88,12 @@ export async function GET(request: NextRequest) {
   }
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
   const tour: TennisTour | null = tourParam === 'WTA' || tourParam === 'ATP' ? tourParam : null;
+  const playerId = String(request.nextUrl.searchParams.get('playerId') || '').trim();
+  const cacheKey = tennisComputedCacheKey('matchup', [playerId || player, opponent, tour]);
+  const cached = await readTennisComputedCache<Record<string, unknown>>(cacheKey);
+  if (cached?.success) return NextResponse.json(cached);
+
+  await hydrateTennisOverlayLocal();
   const yearRaw = Number(request.nextUrl.searchParams.get('year'));
   const year =
     Number.isFinite(yearRaw) && yearRaw >= 2000 ? yearRaw : TENNIS_CURRENT_YEAR;
@@ -91,7 +101,6 @@ export async function GET(request: NextRequest) {
   const windowN = Number.isFinite(windowRaw) ? Math.max(0, windowRaw) : 0;
   const bestOfParam = String(request.nextUrl.searchParams.get('bestOf') || '').trim();
   const bestOf = bestOfParam === '5' ? 5 : bestOfParam === '3' ? 3 : 'all';
-  const playerId = String(request.nextUrl.searchParams.get('playerId') || '').trim();
   const opponentId = String(request.nextUrl.searchParams.get('opponentId') || '').trim();
   const tournament = String(request.nextUrl.searchParams.get('tournament') || '').trim();
   const tournamentKey = String(request.nextUrl.searchParams.get('tournamentKey') || '').trim();
@@ -118,5 +127,7 @@ export async function GET(request: NextRequest) {
     fieldIds: field.fieldIds,
     fieldSize: field.fieldSize,
   });
-  return NextResponse.json({ success: true, ...payload });
+  const body = { success: true, ...payload };
+  void writeTennisComputedCache(cacheKey, body);
+  return NextResponse.json(body);
 }

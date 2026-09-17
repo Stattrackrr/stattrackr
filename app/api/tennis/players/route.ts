@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadTennisPlayers, type TennisTour } from '@/lib/tennis/data';
-import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
+import { loadTennisPlayersCached } from '@/lib/tennis/loadCached';
+import type { TennisTour } from '@/lib/tennis/data';
 
 export async function GET(request: NextRequest) {
-  await hydrateTennisMatchOverlay();
   const q = (request.nextUrl.searchParams.get('q') || '').trim().toLowerCase();
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
   const tour = tourParam === 'ATP' || tourParam === 'WTA' ? (tourParam as TennisTour) : null;
   const currentOnly = request.nextUrl.searchParams.get('currentOnly') !== '0';
-  let players = loadTennisPlayers({ currentOnly });
+  let players = await loadTennisPlayersCached({ currentOnly });
   if (tour) players = players.filter((p) => p.tour === tour);
   if (q) {
     players = players.filter(

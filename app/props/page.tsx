@@ -16,6 +16,11 @@ import {
   takePropsBackNavWarmSnapshot,
 } from '@/lib/propsPageSessionCache';
 import {
+  abortAflPropsStatsBackfill,
+  isOnPropsPage,
+  startAflPropsStatsBackfill,
+} from '@/lib/aflPropsStatsBackfillControl';
+import {
   kickCombinedPropsEarlyFetch,
   peekCombinedPropsEarlyPayload,
   takeCombinedPropsEarlyPayload,
@@ -46,7 +51,6 @@ import { prefetchAflDashboardFromProps } from '@/lib/aflPropsNavigationPrefetch'
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import { PropsModelRecap } from '@/components/PropsModelRecap';
-import Image from 'next/image';
 import {
   defaultPropsSport,
   isSecondaryPropsSport,
@@ -372,9 +376,19 @@ function navigateToTennisDashboardFromProp(
     playerName: prop.playerName,
     playerId: prop.playerId,
     tour,
+    opponent: prop.opponent,
   });
   snapshotPropsPageBeforeLeave();
   router.push(`/tennis?${q.toString()}`);
+}
+
+function tennisPropsHeadshotUrl(
+  prop: Pick<PlayerProp, 'headshotUrl' | 'playerId'>
+): string | null {
+  const direct = String(prop.headshotUrl || '').trim();
+  if (direct) return direct;
+  const id = String(prop.playerId || '').trim();
+  return id ? `/api/tennis/headshot/${encodeURIComponent(id)}` : null;
 }
 
 function normalizeAflStatForDashboard(stat: string): string {
@@ -882,6 +896,17 @@ function tennisRankLabel(rank?: number | null): string {
   return rank != null && Number.isFinite(rank) && rank > 0 ? `#${rank}` : '';
 }
 
+function tennisIocFromListedPlayer(name: string, props: PlayerProp[]): string | null {
+  const want = String(name || '').trim().toLowerCase();
+  if (!want) return null;
+  for (const row of props) {
+    const ioc = String(row.playerIoc || '').trim();
+    if (!ioc) continue;
+    if (String(row.playerName || '').trim().toLowerCase() === want) return ioc;
+  }
+  return null;
+}
+
 function isTennisMoneylineStat(statType?: string): boolean {
   return String(statType || '') === 'moneyline';
 }
@@ -945,9 +970,7 @@ function TennisPropsOpponentLine({
       <span className={vsClass}>vs</span>
       {flagUrl ? (
         <img src={flagUrl} alt="" className={`${flagClass} object-cover rounded-[1px] flex-shrink-0 shadow-sm`} />
-      ) : (
-        <span className={`${flagClass} rounded-[1px] flex-shrink-0 ${mounted && isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
-      )}
+      ) : null}
       <span className={nameClass}>{tennisShortDisplayName(name)}</span>
       {rankLabel ? <span className={rankClass}>{rankLabel}</span> : null}
     </div>
@@ -1066,8 +1089,8 @@ function normalizeNbaTeam(team: string): string {
 
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v6';
 
-const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v14';
-const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v19';
+const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v17';
+const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v22';
 
 
 function aflPropHasHistoricalStats(row: {
@@ -1123,6 +1146,7 @@ function aflPropsNeedStatsBackfill(props: PlayerProp[]): boolean {
 }
 
 async function backfillAflPropStatsBatch(props: PlayerProp[]): Promise<PlayerProp[] | null> {
+  if (!isOnPropsPage()) return null;
   const needsStats = props
     .filter((p) => {
       if (!isAflCombinedListProp(p) || !p.overOdds || p.overOdds === 'N/A') return false;
@@ -1153,13 +1177,16 @@ async function backfillAflPropStatsBatch(props: PlayerProp[]): Promise<PlayerPro
     playerTeam: p.playerTeam || p.team,
   }));
 
+  const signal = startAflPropsStatsBackfill();
   try {
     const res = await fetch('/api/afl/props-stats/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ props: batchProps }),
+      body: JSON.stringify({ props: batchProps, cacheOnly: true }),
       cache: 'no-store',
+      signal,
     });
+    if (!isOnPropsPage() || signal.aborted) return null;
     if (!res.ok) {
       for (const p of needsStats) aflH2hBackfillAttempted.delete(aflPropStatsBackfillKey(p));
       return null;
@@ -1182,6 +1209,7 @@ async function backfillAflPropStatsBatch(props: PlayerProp[]): Promise<PlayerPro
         }
       >;
     };
+    if (!isOnPropsPage() || signal.aborted) return null;
     const stats = data.stats ?? {};
     let merged = 0;
     const updated = props.map((p) => {
@@ -1208,7 +1236,10 @@ async function backfillAflPropStatsBatch(props: PlayerProp[]): Promise<PlayerPro
       };
     });
     return merged > 0 ? updated : null;
-  } catch {
+  } catch (error) {
+    if (signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+      return null;
+    }
     for (const p of needsStats) aflH2hBackfillAttempted.delete(aflPropStatsBackfillKey(p));
     return null;
   }
@@ -1457,9 +1488,9 @@ function selectedGameIdsForProps(
 function propsRowShowsUnderOdds(rowSport: 'nba' | 'afl' | 'atp' | 'wta'): boolean {
   return true;
 }
-const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v15';
-const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v11';
-const COMBINED_PROPS_LS_TS_KEY = 'combined_props_snapshot_ls_ts_v11';
+const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v16';
+const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v12';
+const COMBINED_PROPS_LS_TS_KEY = 'combined_props_snapshot_ls_ts_v12';
 const COMBINED_PROPS_LS_TTL_MS = 30 * 60 * 1000;
 
 type CombinedSnapshotBrowserCache = CombinedPropsSnapshotResponse & {
@@ -2523,7 +2554,7 @@ export default function NBALandingPage() {
   const skipPropsRefetchOnceRef = useRef(false);
 
   useEffect(() => {
-    return bindPropsPageSnapshotGetter(() => {
+    const unbind = bindPropsPageSnapshotGetter(() => {
       if (typeof window === 'undefined') return null;
       const sportParam = new URL(window.location.href).searchParams.get('sport');
       return {
@@ -2532,6 +2563,7 @@ export default function NBALandingPage() {
         propsSport: propsSportRef.current,
         playerProps: playerPropsRef.current,
         aflProps: aflPropsRef.current,
+        tennisCombinedProps: tennisCombinedPropsRef.current,
         aflGames: aflGamesRef.current,
         todaysGames: todaysGamesRef.current,
         selectedAflGameIds: Array.from(selectedAflGamesRef.current),
@@ -2542,6 +2574,10 @@ export default function NBALandingPage() {
         currentPage: currentPageRef.current,
       };
     });
+    return () => {
+      abortAflPropsStatsBackfill();
+      unbind();
+    };
   }, []);
 
   useEffect(() => {
@@ -2848,6 +2884,11 @@ export default function NBALandingPage() {
       }
       setPlayerProps(warmSnapshot.playerProps as PlayerProp[]);
       setAflProps(warmSnapshot.aflProps as PlayerProp[]);
+      setTennisCombinedProps(
+        Array.isArray(warmSnapshot.tennisCombinedProps)
+          ? (warmSnapshot.tennisCombinedProps as PlayerProp[])
+          : []
+      );
       setAflGames(warmSnapshot.aflGames as AflGameForProps[]);
       setTodaysGames(warmSnapshot.todaysGames as Game[]);
       selectedAflGamesRef.current = new Set(warmSnapshot.selectedAflGameIds);
@@ -3860,13 +3901,6 @@ export default function NBALandingPage() {
     return labels[statType] || statType;
   }, []);
 
-  const getAflInitials = (name: string): string => {
-    const parts = (name || '').trim().split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return (parts[0][0]! + parts[parts.length - 1]![0]).toUpperCase();
-    if (parts.length === 1) return (parts[0]!.slice(0, 2) || '?').toUpperCase();
-    return '?';
-  };
-
   // Extract unique bookmakers and prop types from playerProps
   const availableBookmakers = useMemo(() => {
     const bookmakers = new Set<string>();
@@ -4485,9 +4519,9 @@ export default function NBALandingPage() {
           setAflGames(games);
           syncSelectedAflGames(games.map((g) => g.gameId));
         }
-        if (needsAflStatsBackfill && !cancelled) {
+        if (needsAflStatsBackfill && !cancelled && isOnPropsPage()) {
           void backfillAflPropStatsBatch(aggregated).then((backfilled) => {
-            if (cancelled || secondaryListSportRef.current !== listSport || !backfilled) return;
+            if (cancelled || secondaryListSportRef.current !== listSport || !backfilled || !isOnPropsPage()) return;
             commitSecondaryProps(backfilled);
             try {
               sessionStorage.setItem(
@@ -4525,6 +4559,7 @@ export default function NBALandingPage() {
     })();
     return () => {
       cancelled = true;
+      abortAflPropsStatsBackfill();
       if (aflListFetchInFlightRef.current?.sport === listSport) {
         aflListFetchInFlightRef.current = null;
       }
@@ -4606,6 +4641,7 @@ export default function NBALandingPage() {
       payload: CombinedPropsSnapshotResponse,
       debugStats: boolean
     ) => {
+      if (!isOnPropsPage()) return;
       const mergedAfl = preferAflPropsForCombined(
         aflPropsRef.current,
         Array.isArray(payload?.afl?.props) ? payload.afl.props : []
@@ -4614,19 +4650,27 @@ export default function NBALandingPage() {
         noAflOdds: payload?.afl?.noAflOdds === true && mergedAfl.length === 0,
       };
       const { missingAfl } = combinedModeMissingSecondarySlice(mergedAfl, oddsFlags);
+      const wantsAflStats =
+        isOnPropsPage() &&
+        (propsSportRef.current === 'combined' || propsSportRef.current === 'afl');
 
-      if (missingAfl && !combinedPartialAflRefetchAttemptedRef.current) {
+      if (missingAfl && !combinedPartialAflRefetchAttemptedRef.current && wantsAflStats) {
         try {
           const aflUrl = getSecondaryPropsListUrl('afl', debugStats);
           const aflResponse = await fetch(aflUrl, { cache: 'no-store' });
           const aflPayload = await aflResponse.json();
           const aflResult = aggregateAflListPayload(aflPayload);
           let aflPropsForSnapshot = aflResult.aggregated;
-          if (aflPropsForSnapshot.length > 0 && aflPropsNeedStatsBackfill(aflPropsForSnapshot)) {
+          if (
+            isOnPropsPage() &&
+            (propsSportRef.current === 'combined' || propsSportRef.current === 'afl') &&
+            aflPropsForSnapshot.length > 0 &&
+            aflPropsNeedStatsBackfill(aflPropsForSnapshot)
+          ) {
             const backfilled = await backfillAflPropStatsBatch(aflPropsForSnapshot);
-            if (backfilled) aflPropsForSnapshot = backfilled;
+            if (backfilled && isOnPropsPage()) aflPropsForSnapshot = backfilled;
           }
-          if (aflPropsForSnapshot.length > 0) {
+          if (aflPropsForSnapshot.length > 0 && isOnPropsPage()) {
             applyCombinedSnapshot(
               buildProgressiveSnapshot({
                 afl: {
@@ -4651,34 +4695,28 @@ export default function NBALandingPage() {
       }
 
       if (
+        isOnPropsPage() &&
+        (propsSportRef.current === 'combined' || propsSportRef.current === 'afl') &&
         !missingAfl &&
         mergedAfl.length > 0 &&
         aflPropsNeedStatsBackfill(mergedAfl) &&
         !combinedPartialAflRefetchAttemptedRef.current
       ) {
         try {
-          const aflUrl = getSecondaryPropsListUrl('afl', debugStats);
-          const aflResponse = await fetch(aflUrl, { cache: 'no-store' });
-          const aflPayload = await aflResponse.json();
-          const aflResult = aggregateAflListPayload(aflPayload);
-          let aflPropsForSnapshot = aflResult.aggregated;
-          if (aflPropsForSnapshot.length > 0 && aflPropsNeedStatsBackfill(aflPropsForSnapshot)) {
-            const backfilled = await backfillAflPropStatsBatch(aflPropsForSnapshot);
-            if (backfilled) aflPropsForSnapshot = backfilled;
-          }
-          if (aflPropsForSnapshot.length > 0 && !aflPropsNeedStatsBackfill(aflPropsForSnapshot)) {
+          const backfilled = await backfillAflPropStatsBatch(mergedAfl);
+          if (backfilled && isOnPropsPage() && !aflPropsNeedStatsBackfill(backfilled)) {
             applyCombinedSnapshot(
               buildProgressiveSnapshot({
                 afl: {
                   ok: true,
-                  status: aflResponse.status,
-                  lastUpdated: aflResult.lastUpdated ?? null,
-                  nextUpdate: aflResult.nextUpdate ?? null,
-                  ingestMessage: aflResult.ingestMessage ?? null,
-                  noAflOdds: aflResult.noAflOdds === true,
-                  games: aflResult.games,
-                  props: aflPropsForSnapshot,
-                  debugMeta: aflResult.debugMeta ?? null,
+                  status: 200,
+                  lastUpdated: payload?.afl?.lastUpdated ?? null,
+                  nextUpdate: payload?.afl?.nextUpdate ?? null,
+                  ingestMessage: payload?.afl?.ingestMessage ?? null,
+                  noAflOdds: payload?.afl?.noAflOdds === true,
+                  games: Array.isArray(payload?.afl?.games) ? payload.afl.games : [],
+                  props: backfilled,
+                  debugMeta: payload?.afl?.debugMeta ?? null,
                 },
               }),
               { persistCaches: false }
@@ -4920,6 +4958,9 @@ export default function NBALandingPage() {
     }
 
     void combinedLoadPromiseRef.current;
+    return () => {
+      abortAflPropsStatsBackfill();
+    };
   }, [aggregateAflListPayload, aggregateSecondaryListPayload, applyCombinedSnapshot, propsSport, setCombinedFetchComplete]);
 
   // Fetch AFL league player stats for jumper numbers (for circle placeholder)
@@ -6126,7 +6167,8 @@ export default function NBALandingPage() {
         if (homeLogo) warmImage(homeLogo);
         if (awayLogo) warmImage(awayLogo);
       } else if (isTennisPropsSport(rowSport)) {
-        if (prop.headshotUrl) warmImage(prop.headshotUrl);
+        const tennisHeadshot = tennisPropsHeadshotUrl(prop);
+        if (tennisHeadshot) warmImage(tennisHeadshot);
         if (prop.homeTeamLogo) warmImage(prop.homeTeamLogo);
         if (prop.awayTeamLogo) warmImage(prop.awayTeamLogo);
       }
@@ -8365,17 +8407,13 @@ export default function NBALandingPage() {
                                     </div>
                                   )}
                                   <div className={`flex items-center gap-3 min-w-0 ${isCombinedMode ? 'pl-9' : ''}`}>
-                                    {rowSport === 'nba' && headshotUrl && (
-                                      <img
-                                        src={headshotUrl}
-                                        alt={prop.playerName}
-                                        className="w-12 h-12 rounded-full object-cover flex-shrink-0 border-2 border-gray-200 dark:border-gray-700"
-                                        style={{ imageRendering: 'auto' }}
-                                        loading="eager"
-                                        decoding="async"
-                                        onError={(e) => {
-                                          (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
+                                    {rowSport === 'nba' && (
+                                      <AflPropsPlayerAvatar
+                                        headshotUrl={headshotUrl}
+                                        jerseyNumber={null}
+                                        isDark={isDark}
+                                        mounted={mounted}
+                                        size="md"
                                       />
                                     )}
                                     {rowSport === 'afl' &&
@@ -8395,7 +8433,6 @@ export default function NBALandingPage() {
                                               ? aflPlayerNumbers[prop.playerName]!
                                               : null
                                           }
-                                          initials={getAflInitials(prop.playerName)}
                                           isDark={isDark}
                                           mounted={mounted}
                                           size="md"
@@ -8403,9 +8440,8 @@ export default function NBALandingPage() {
                                       ))}
                                     {isTennisPropsSport(rowSport) && (
                                       <AflPropsPlayerAvatar
-                                        headshotUrl={prop.headshotUrl ?? null}
+                                        headshotUrl={tennisPropsHeadshotUrl(prop)}
                                         jerseyNumber={null}
-                                        initials={getAflInitials(prop.playerName)}
                                         isDark={isDark}
                                         mounted={mounted}
                                         size="md"
@@ -8492,7 +8528,7 @@ export default function NBALandingPage() {
                                         })() : isTennisPropsSport(rowSport) ? (
                                           <TennisPropsOpponentLine
                                             opponentName={prop.opponent || prop.awayTeam || ''}
-                                            opponentIoc={prop.opponentIoc}
+                                            opponentIoc={prop.opponentIoc || tennisIocFromListedPlayer(prop.opponent || '', playerProps)}
                                             opponentRank={prop.opponentRank}
                                             isDark={isDark}
                                             mounted={mounted}
@@ -9749,7 +9785,6 @@ export default function NBALandingPage() {
                                             ? aflPlayerNumbers[prop.playerName]!
                                             : null
                                         }
-                                        initials={getAflInitials(prop.playerName)}
                                         isDark={isDark}
                                         mounted={mounted}
                                         size="sm"
@@ -9757,29 +9792,21 @@ export default function NBALandingPage() {
                                     )
                                   ) : isTennisPropsSport(rowSport) ? (
                                     <AflPropsPlayerAvatar
-                                      headshotUrl={prop.headshotUrl ?? null}
+                                      headshotUrl={tennisPropsHeadshotUrl(prop)}
                                       jerseyNumber={null}
-                                      initials={getAflInitials(prop.playerName)}
                                       isDark={isDark}
                                       mounted={mounted}
                                       size="sm"
                                     />
-                                  ) : headshotUrl ? (
-                                    <div className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 overflow-hidden relative" style={{ borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb' }}>
-                                      <Image
-                                        src={headshotUrl}
-                                        alt={prop.playerName}
-                                        width={40}
-                                        height={40}
-                                        className="object-cover"
-                                        loading="eager"
-                                        unoptimized={false}
-                                        onError={(e) => {
-                                          (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                      />
-                                    </div>
-                                  ) : null}
+                                  ) : (
+                                    <AflPropsPlayerAvatar
+                                      headshotUrl={headshotUrl}
+                                      jerseyNumber={null}
+                                      isDark={isDark}
+                                      mounted={mounted}
+                                      size="sm"
+                                    />
+                                  )}
                                   <div className="flex-1 min-w-0 overflow-hidden">
                                     <div className="flex items-center justify-between gap-2 min-w-0">
                                       <div className="flex items-center gap-1.5 min-w-0">
@@ -9881,7 +9908,7 @@ export default function NBALandingPage() {
                                         <div className="mt-1">
                                           <TennisPropsOpponentLine
                                             opponentName={prop.opponent || prop.awayTeam || ''}
-                                            opponentIoc={prop.opponentIoc}
+                                            opponentIoc={prop.opponentIoc || tennisIocFromListedPlayer(prop.opponent || '', playerProps)}
                                             opponentRank={prop.opponentRank}
                                             isDark={isDark}
                                             mounted={mounted}

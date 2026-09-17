@@ -98,6 +98,20 @@ function formatAmericanFromDecimal(raw: string | number | undefined): string {
   return decimalToAmerican(n);
 }
 
+function tennisFirstInitial(value: string): string {
+  return value.trim().replace(/[^A-Za-z]/g, '').charAt(0).toLowerCase();
+}
+
+const NAME_PARTICLES = new Set(['de', 'da', 'do', 'dos', 'das', 'van', 'von', 'del', 'della', 'di', 'le', 'la', 'el']);
+
+function significantNameTokens(value: string): string[] {
+  return value
+    .trim()
+    .split(/\s+/)
+    .map((part) => normalizeName(part))
+    .filter((token) => token.length >= 2 && !NAME_PARTICLES.has(token));
+}
+
 export function tennisNamesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
   const left = String(a || '').trim();
   const right = String(b || '').trim();
@@ -110,6 +124,39 @@ export function tennisNamesMatch(a: string | null | undefined, b: string | null 
   const la = lastNameToken(left);
   const lb = lastNameToken(right);
   return la.length >= 4 && la === lb;
+}
+
+/** Roster identity: last name plus first initial, or 2+ shared family tokens. Never last-name-only. */
+export function tennisIdentityMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const left = String(a || '').trim();
+  const right = String(b || '').trim();
+  if (!left || !right) return false;
+  const na = normalizeName(left);
+  const nb = normalizeName(right);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  const la = lastNameToken(left);
+  const lb = lastNameToken(right);
+  const ia = tennisFirstInitial(left);
+  const ib = tennisFirstInitial(right);
+  if (la && la === lb && la.length >= 3 && ia && ia === ib) return true;
+  const ta = significantNameTokens(left);
+  const tb = significantNameTokens(right);
+  if (!ta.length || !tb.length) return false;
+  const overlap = ta.filter((token) => tb.includes(token) && token.length >= 4);
+  if (overlap.length < 2) return false;
+  return ta.some((token) => token.startsWith(ib)) || tb.some((token) => token.startsWith(ia));
+}
+
+/** True when two opponent strings are the same person under different spellings. */
+export function tennisSameOpponentQuery(
+  a: string | null | undefined,
+  b: string | null | undefined
+): boolean {
+  const left = String(a || '').trim();
+  const right = String(b || '').trim();
+  if (!left || !right || left === right) return false;
+  return tennisIdentityMatch(left, right) || tennisNamesMatch(left, right);
 }
 
 export function tennisTourFromOdds(

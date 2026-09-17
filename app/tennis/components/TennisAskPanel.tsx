@@ -5,6 +5,7 @@ import { Loader2, Send, Wrench } from 'lucide-react';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import { tennisLastName } from '@/lib/tennis/chartStats';
 import { TENNIS_AI_UNDER_MAINTENANCE } from '@/lib/tennis/constants';
+import { tennisDashboardFetch } from '@/lib/tennisDashboardFetch';
 
 type ChatMsg = { role: 'user' | 'assistant'; content: string; breakdown?: string[] };
 
@@ -103,7 +104,7 @@ export function TennisAskPanel({
       isGrandSlam: isGrandSlam ? '1' : '0',
     });
     if (tournamentName) params.set('tournament', tournamentName);
-    fetch(`/api/tennis/ask?${params.toString()}`)
+    tennisDashboardFetch(`/api/tennis/ask?${params.toString()}`)
       .then((r) => r.json())
       .then((json) => {
         if (cancelled) return;
@@ -133,7 +134,7 @@ export function TennisAskPanel({
     setMessages((prev) => [...prev, { role: 'user', content: next }]);
     setLoading(true);
     try {
-      const res = await fetch('/api/tennis/ask', {
+      const res = await tennisDashboardFetch('/api/tennis/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

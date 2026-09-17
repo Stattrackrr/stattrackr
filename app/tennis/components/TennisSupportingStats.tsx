@@ -288,6 +288,12 @@ export function TennisSupportingStats({
     return v.toFixed(1);
   };
 
+  const hasSelectedStatValues = chartData.some(
+    (row) => typeof row.value === 'number' && Number.isFinite(row.value)
+  );
+
+  const chartPlotData = chartData.length > 0 ? chartData : [{ key: 'supporting-empty', xKey: 'supporting-empty', value: null, isPercent }];
+
   const pills = (
     <div className={`sticky top-0 z-10 flex flex-col -mt-1 pt-1 pb-2 min-w-0 ${isDark ? 'bg-[#0a1929]' : 'bg-white'}`}>
       <div
@@ -320,74 +326,76 @@ export function TennisSupportingStats({
     </div>
   );
 
-  if (chartData.length === 0) {
-    return (
-      <div className="flex flex-col gap-3 min-w-0">
-        {pills}
-        <div className={`min-h-[120px] flex items-center justify-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-          No {ALL_TOGGLE_OPTIONS.find((o) => o.value === supportingStatKind)?.label ?? supportingStatKind} data
-        </div>
-      </div>
-    );
-  }
+  const missingStatsNote = (
+    <div
+      className={`absolute inset-0 z-10 flex items-center justify-center px-6 text-center text-sm pointer-events-none ${
+        isDark ? 'text-gray-500' : 'text-gray-400'
+      }`}
+    >
+      Lower ranked tournaments may not contain all stats
+    </div>
+  );
 
   return (
     <div className="flex flex-col gap-3 min-w-0">
       {pills}
-      <div className={`w-full h-[380px] min-h-[340px] flex-shrink-0 min-w-0 pointer-events-none select-none ${alignRightTight ? 'lg:pr-6 xl:pr-7' : ''}`}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart key={`${timeframe}-${supportingStatKind}`} data={chartData} margin={margin} barCategoryGap="5%">
-            <YAxis
-              type="number"
-              dataKey="value"
-              domain={yDomain}
-              ticks={yDomain}
-              width={0}
-              tick={false}
-              axisLine={false}
-              tickLine={false}
-              allowDataOverflow
-            />
-            <XAxis
-              dataKey="xKey"
-              axisLine={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: 2 }}
-              tickLine={false}
-              tick={emptyTick}
-              tickFormatter={() => ''}
-              height={8}
-              interval={0}
-            />
-            <Bar
-              dataKey="value"
-              radius={CHART_CONFIG.bar.radius}
-              isAnimationActive={false}
-              label={(props) => {
-                const { x, y, width, value } = props;
-                const payload = (props as { payload?: { isPercent?: boolean } }).payload;
-                if (value == null || value === '') return null;
-                const numericValue = Number(value);
-                if (!Number.isFinite(numericValue)) return null;
-                if (supportingStatKind === 'moneyline' && numericValue === 0) return null;
-                return (
-                  <text
-                    x={Number(x ?? 0) + Number(width ?? 0) / 2}
-                    y={Number(y ?? 0) - 6}
-                    textAnchor="middle"
-                    fill={labelFill}
-                    fontSize={payload?.isPercent ?? isPercent ? 9 : 12}
-                    fontWeight={500}
-                  >
-                    {formatLabel(numericValue, payload?.isPercent ?? isPercent)}
-                  </text>
-                );
-              }}
-            >
-              {chartData.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={barFill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <div className={`relative w-full h-[380px] min-h-[340px] flex-shrink-0 min-w-0 select-none ${alignRightTight ? 'lg:pr-6 xl:pr-7' : ''}`}>
+        {!hasSelectedStatValues ? missingStatsNote : null}
+        <div className="w-full h-full pointer-events-none">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart key={`${timeframe}-${supportingStatKind}`} data={chartPlotData} margin={margin} barCategoryGap="5%">
+              <YAxis
+                type="number"
+                dataKey="value"
+                domain={yDomain}
+                ticks={yDomain}
+                width={0}
+                tick={false}
+                axisLine={false}
+                tickLine={false}
+                allowDataOverflow
+              />
+              <XAxis
+                dataKey="xKey"
+                axisLine={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: 2 }}
+                tickLine={false}
+                tick={emptyTick}
+                tickFormatter={() => ''}
+                height={8}
+                interval={0}
+              />
+              <Bar
+                dataKey="value"
+                radius={CHART_CONFIG.bar.radius}
+                isAnimationActive={false}
+                label={(props) => {
+                  const { x, y, width, value } = props;
+                  const payload = (props as { payload?: { isPercent?: boolean } }).payload;
+                  if (value == null || value === '') return null;
+                  const numericValue = Number(value);
+                  if (!Number.isFinite(numericValue)) return null;
+                  if (supportingStatKind === 'moneyline' && numericValue === 0) return null;
+                  return (
+                    <text
+                      x={Number(x ?? 0) + Number(width ?? 0) / 2}
+                      y={Number(y ?? 0) - 6}
+                      textAnchor="middle"
+                      fill={labelFill}
+                      fontSize={payload?.isPercent ?? isPercent ? 9 : 12}
+                      fontWeight={500}
+                    >
+                      {formatLabel(numericValue, payload?.isPercent ?? isPercent)}
+                    </text>
+                  );
+                }}
+              >
+                {chartPlotData.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={barFill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

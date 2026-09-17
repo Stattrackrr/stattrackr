@@ -1,4 +1,4 @@
-import { fetchJsonDeduped } from '@/lib/clientFetchDedupe';
+import { beginAflDashboardSession, aflDashboardFetch } from '@/lib/aflDashboardFetch';
 import { footywireNicknameToOfficial, rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 
 /** Warm the immediately visible dashboard data on props → AFL navigation. */
@@ -8,6 +8,8 @@ export function prefetchAflDashboardFromProps(options: {
   opponent?: string;
 }): void {
   const { playerName, team = '', opponent = '' } = options;
+  if (!playerName) return;
+  beginAflDashboardSession();
   const currentSeason = new Date().getFullYear();
   const teamForApi = team
     ? rosterTeamToInjuryTeam(team) || footywireNicknameToOfficial(team) || team
@@ -16,12 +18,11 @@ export function prefetchAflDashboardFromProps(options: {
   const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(playerName)}${teamEnc}&include_both=1`;
   const urls = [
     `/api/afl/player-props?player=${encodeURIComponent(playerName)}&all=1${teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
-    // Match the complete current-season payload the dashboard renders.
     `${logsBase}&season=${currentSeason}`,
     `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(playerName)}`,
     `/api/afl/players?query=${encodeURIComponent(playerName)}&limit=30`,
   ];
   for (const url of urls) {
-    void fetchJsonDeduped(url).catch(() => {});
+    void aflDashboardFetch(url).catch(() => {});
   }
 }

@@ -6,6 +6,7 @@ import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import type { TennisDvpStage } from '@/lib/tennis/dvpShared';
 import { TennisTournamentRankInfoButton } from '@/app/tennis/components/TennisTournamentRankInfoButton';
+import { tennisDashboardFetch } from '@/lib/tennisDashboardFetch';
 import type {
   TennisMatchupBestOf,
   TennisPlayerMatchupPayload,
@@ -79,7 +80,7 @@ export default function TennisTeamMatchupCard({
     if (tournamentName) qs.set('tournament', tournamentName);
     if (tournamentKey) qs.set('tournamentKey', tournamentKey);
     if (stage) qs.set('stage', stage);
-    fetch(`/api/tennis/player-matchup?${qs.toString()}`)
+    tennisDashboardFetch(`/api/tennis/player-matchup?${qs.toString()}`)
       .then(async (r) => {
         const json = await r.json();
         if (!r.ok) throw new Error(json?.error || 'Failed to load player matchup');

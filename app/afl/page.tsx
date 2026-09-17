@@ -19,7 +19,13 @@ import { AflRoleStatsCard } from '@/app/afl/components/AflRoleStatsCard';
 import { type AflBookRow, type AflPropLine, type AflPropOverOnly, type AflPropYesNo, getGoalsMarketLineOver, getGoalsMarketLines } from '@/app/afl/components/AflBestOddsTable';
 import { AflLineSelector } from '@/app/afl/components/AflLineSelector';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
-import { fetchJsonDedupedResult } from '@/lib/clientFetchDedupe';
+import {
+  abortAflDashboardFetches,
+  aflDashboardFetch,
+  aflDashboardFetchResult,
+  beginAflDashboardSession,
+  resetAflDashboardFetches,
+} from '@/lib/aflDashboardFetch';
 import {
   readAflTeamLogosSessionCache,
   writeAflTeamLogosSessionCache,
@@ -935,7 +941,7 @@ function AflTopPicksModal({
       return;
     }
     const params = new URLSearchParams({ history: '1', limit: '500', roundKey: roundKeysToLoad.join(',') });
-    const res = await fetch(`/api/afl/model/disposals/top-picks?${params.toString()}`, { cache: 'no-store' });
+    const res = await aflDashboardFetch(`/api/afl/model/disposals/top-picks?${params.toString()}`);
     const data = await res.json();
     if (!res.ok || !data?.success) {
       setHistoryGroups([]);
@@ -956,8 +962,8 @@ function AflTopPicksModal({
       setAllHistoryRecords([]);
       try {
         const [currentSettled, historySettled] = await Promise.allSettled([
-          fetch('/api/afl/model/disposals/top-picks?limitPerGame=3', { cache: 'no-store' }),
-          fetch('/api/afl/model/disposals/top-picks?history=1&limit=500', { cache: 'no-store' }),
+          aflDashboardFetch('/api/afl/model/disposals/top-picks?limitPerGame=3', { cache: 'no-store' }),
+          aflDashboardFetch('/api/afl/model/disposals/top-picks?history=1&limit=500', { cache: 'no-store' }),
         ]);
         const currentRes = currentSettled.status === 'fulfilled' ? currentSettled.value : null;
         const historyRes = historySettled.status === 'fulfilled' ? historySettled.value : null;
@@ -1358,6 +1364,39 @@ export default function AFLPage() {
   const [isGameInProgress, setIsGameInProgress] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [navigatingToProps, setNavigatingToProps] = useState(false);
+
+  useEffect(() => {
+    beginAflDashboardSession();
+    router.prefetch('/props?sport=afl');
+    router.prefetch('/props?sport=all');
+    return () => {
+      abortAflDashboardFetches();
+    };
+  }, [router]);
+
+  const prevAflDashboardPlayerRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = String(selectedPlayer?.id || selectedPlayer?.name || '').trim() || null;
+    const prev = prevAflDashboardPlayerRef.current;
+    prevAflDashboardPlayerRef.current = id;
+    if (prev && id && prev !== id) {
+      resetAflDashboardFetches();
+    }
+  }, [selectedPlayer?.id, selectedPlayer?.name]);
+
+  const goBackToPlayerProps = useCallback(() => {
+    abortAflDashboardFetches();
+    try {
+      localStorage.removeItem(AFL_PAGE_STATE_KEY);
+      sessionStorage.setItem('afl_back_to_props_clear_search', '1');
+    } catch {
+      /* ignore */
+    }
+    setNavigatingToProps(true);
+    const returnPath = consumePropsReturnPath('afl');
+    router.prefetch(returnPath);
+    router.push(returnPath);
+  }, [router]);
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   useCountdownTimer({ nextGameTipoff, isGameInProgress, setCountdown });
   const [leaguePlayerStats, setLeaguePlayerStats] = useState<AflLeaguePlayerTeamRankRow[] | null>(null);
@@ -1459,7 +1498,7 @@ export default function AFLPage() {
   useEffect(() => {
     let cancelled = false;
     const effectiveSeason = Math.min(season, 2026);
-    fetch(`/api/afl/league-player-stats?season=${effectiveSeason}`)
+    aflDashboardFetch(`/api/afl/league-player-stats?season=${effectiveSeason}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
         if (cancelled) return;
@@ -1476,7 +1515,7 @@ export default function AFLPage() {
   useEffect(() => {
     let cancelled = false;
     const effectiveSeason = Math.min(season, 2026);
-    fetch(`/api/afl/team-rankings?season=${effectiveSeason}&type=oa`)
+    aflDashboardFetch(`/api/afl/team-rankings?season=${effectiveSeason}&type=oa`)
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
         if (cancelled) return;
@@ -1907,7 +1946,7 @@ export default function AFLPage() {
     (async () => {
       try {
         const params = new URLSearchParams({ query: playerParam, limit: '30', exact: '1' });
-        const res = await fetch(`/api/afl/players?${params.toString()}`);
+        const res = await aflDashboardFetch(`/api/afl/players?${params.toString()}`);
         const data = await res.json();
         if (cancelled) return;
         if (!res.ok) {
@@ -2218,7 +2257,7 @@ export default function AFLPage() {
             return;
           }
         }
-        const res = await fetch('/api/afl/team-logos');
+        const res = await aflDashboardFetch('/api/afl/team-logos');
         if (!res.ok) return;
         const json = await res.json();
         const nextMap: Record<string, string> = {};
@@ -2325,7 +2364,7 @@ export default function AFLPage() {
       return false;
     };
     const fetchJson = (url: string) =>
-      fetch(url)
+      aflDashboardFetch(url)
         .then((r) => r.json())
         .catch(() => null);
 
@@ -2520,7 +2559,7 @@ export default function AFLPage() {
       }
       const params = new URLSearchParams({ team: teamRaw.trim(), season: String(season) });
       if (lastRound) params.set('last_round', lastRound);
-      return fetch(`/api/afl/next-game?${params}`)
+      return aflDashboardFetch(`/api/afl/next-game?${params}`)
         .then((res) => res.json())
         .then((data) => {
           if (cancelled) return null;
@@ -2561,7 +2600,7 @@ export default function AFLPage() {
           .filter(Boolean)
           .join('&');
         const url = `/api/afl/player-props?player=${encodeURIComponent(playerName)}&all=1&${teamOpp}`;
-        return fetch(url)
+        return aflDashboardFetch(url)
           .then((r) => r.json().then((data: { all?: Record<string, PropItem[]>; error?: string; message?: string }) => ({ ok: r.ok, data })))
           .catch(() => ({ ok: false, data: { all: {} } }));
       })
@@ -2617,6 +2656,7 @@ export default function AFLPage() {
     }
 
     let cancelled = false;
+    const ac = new AbortController();
     setAflDisposalsModelLoading(true);
     const params = new URLSearchParams({
       playerName: String(selectedPlayer.name),
@@ -2625,7 +2665,7 @@ export default function AFLPage() {
       line: String(lineToUse),
     });
 
-    fetch(`/api/afl/model/disposals?${params.toString()}`, { cache: 'no-store' })
+    aflDashboardFetch(`/api/afl/model/disposals?${params.toString()}`, { signal: ac.signal })
       .then(async (res) => (res.ok ? res.json() : null))
       .then((payload) => {
         if (cancelled) return;
@@ -2654,6 +2694,7 @@ export default function AFLPage() {
 
     return () => {
       cancelled = true;
+      ac.abort();
     };
   }, [
     aflPropsMode,
@@ -2686,7 +2727,7 @@ export default function AFLPage() {
       playerName: String(selectedPlayer.name),
       limit: '20',
     });
-    fetch(`/api/afl/model/disposals/history?${params.toString()}`, { cache: 'no-store' })
+    aflDashboardFetch(`/api/afl/model/disposals/history?${params.toString()}`, { cache: 'no-store' })
       .then(async (res) => (res.ok ? res.json() : null))
       .then((payload) => {
         if (cancelled) return;
@@ -2717,7 +2758,7 @@ export default function AFLPage() {
       if (teamFilter && teamFilter !== 'All' && teamFilter.trim() !== '') {
         params.set('team', teamFilter.trim());
       }
-      const res = await fetch(`/api/afl/players?${params.toString()}`);
+      const res = await aflDashboardFetch(`/api/afl/players?${params.toString()}`);
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = data?.error || 'Failed to load players';
@@ -2822,7 +2863,7 @@ export default function AFLPage() {
     const olderYear = currentYear - 2;
     const fetchOpts = { cache: 'no-store' as RequestCache };
     const fetchSeasonLogs = (year: number, extra = '') =>
-      fetch(`${baseUrl}&season=${year}${extra}`, fetchOpts).then((r) => r.json());
+      aflDashboardFetch(`${baseUrl}&season=${year}${extra}`, fetchOpts).then((r) => r.json());
     Promise.all([
       fetchSeasonLogs(currentYear),
       fetchSeasonLogs(prevYear),
@@ -3031,7 +3072,7 @@ export default function AFLPage() {
     const emptyOlderSeason: SeasonFetchResult = { ok: true, data: { games: [], gamesWithQuarters: [] } };
     (async () => {
       const fetchSeason = (year: number, force = '') =>
-        fetchJsonDedupedResult<Record<string, unknown>>(`${baseUrl}&season=${year}${force}`, fetchOpts).then(
+        aflDashboardFetchResult<Record<string, unknown>>(`${baseUrl}&season=${year}${force}`, fetchOpts).then(
           ({ ok, data }) => ({ ok, data } as SeasonFetchResult)
         );
       const resultHasSeason = (result: SeasonFetchResult, targetSeason: number) => {
@@ -3198,7 +3239,7 @@ export default function AFLPage() {
         const q = new URLSearchParams();
         q.set('player', playerName);
         if (dvp) q.set('dvp', dvp);
-        const res = await fetch(`/api/afl/dfs-role?${q.toString()}`);
+        const res = await aflDashboardFetch(`/api/afl/dfs-role?${q.toString()}`);
         const json = await res.json().catch(() => ({}));
         if (cancelled) return;
         const fromApi =
@@ -3244,7 +3285,7 @@ export default function AFLPage() {
         const trySeasons = [season, 2025];
 
         for (const s of trySeasons) {
-          const res = await fetch(
+          const res = await aflDashboardFetch(
             `/api/afl/fantasy-positions?season=${s}&player=${encodeURIComponent(name)}`
           );
           if (!res.ok) continue;
@@ -3339,9 +3380,9 @@ export default function AFLPage() {
       }
       try {
         const [curRes, prevRes, olderRes] = await Promise.all([
-          fetch(`/api/afl/team-game-logs?season=${season}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
-          fetch(`/api/afl/team-game-logs?season=${season - 1}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
-          fetch(`/api/afl/team-game-logs?season=${season - 2}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
+          aflDashboardFetch(`/api/afl/team-game-logs?season=${season}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
+          aflDashboardFetch(`/api/afl/team-game-logs?season=${season - 1}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
+          aflDashboardFetch(`/api/afl/team-game-logs?season=${season - 2}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
         ]);
         const [curJson, prevJson, olderJson] = await Promise.all([curRes.json(), prevRes.json(), olderRes.json()]);
 
@@ -3477,7 +3518,7 @@ export default function AFLPage() {
         : null) || 'MID';
     let cancelled = false;
     Promise.all([
-      fetch(
+      aflDashboardFetch(
         `/api/afl/dvp/batch?season=${dvpSeason}&position=${pos}&stats=disposals,kicks,handballs,marks,goals,tackles,clearances,inside_50s,uncontested_possessions,contested_possessions,free_kicks_for,meters_gained,free_kicks_against`
       ).then((r) => (r.ok ? r.json() : null)),
     ]).then(([dvpRes]) => {
@@ -3531,10 +3572,10 @@ export default function AFLPage() {
     setAflOaRankSnapshots(null);
     setAflDvpRankSnapshots(null);
     Promise.all([
-      fetch(
+      aflDashboardFetch(
         `/api/afl/rank-snapshots/history?season=${dvpSeason}&source=dvp&position=${encodeURIComponent(pos)}&metric=${encodeURIComponent(selectedAdvancedOpponentMetric)}`
       ).then((r) => (r.ok ? r.json() : null)),
-      fetch(
+      aflDashboardFetch(
         `/api/afl/rank-snapshots/history?season=${dvpSeason}&source=dvp&position=${encodeURIComponent(pos)}&metric=${encodeURIComponent(selectedAdvancedDvpMetric)}`
       ).then((r) => (r.ok ? r.json() : null)),
     ]).then(([oppHist, dvpHist]) => {
@@ -4177,7 +4218,7 @@ export default function AFLPage() {
       params.set('player_name', nameTrimmed);
     }
     if (lastRound) params.set('last_round', lastRound);
-    fetch(`/api/afl/next-game?${params}`)
+    aflDashboardFetch(`/api/afl/next-game?${params}`)
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
@@ -4374,14 +4415,7 @@ export default function AFLPage() {
                           <div>
                             <button
                               type="button"
-                              onClick={() => {
-                                try {
-                                  localStorage.removeItem(AFL_PAGE_STATE_KEY);
-                                  sessionStorage.setItem('afl_back_to_props_clear_search', '1');
-                                } catch {}
-                                setNavigatingToProps(true);
-                                router.push(consumePropsReturnPath('afl'));
-                              }}
+                              onClick={goBackToPlayerProps}
                               className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4552,14 +4586,7 @@ export default function AFLPage() {
                             <div>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  try {
-                                    localStorage.removeItem(AFL_PAGE_STATE_KEY);
-                                    sessionStorage.setItem('afl_back_to_props_clear_search', '1');
-                                  } catch {}
-                                  setNavigatingToProps(true);
-                                  router.push(consumePropsReturnPath('afl'));
-                                }}
+                                onClick={goBackToPlayerProps}
                                 className="flex items-center gap-1.5 mb-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                               >
                                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -16,6 +16,20 @@ export async function GET(request: NextRequest) {
   if (!auth.authorized) return auth.response;
   try {
     const { fixtures: _fixtures, ...result } = await refreshTennisMatchOverlay();
+    const overlay = (await import('@/lib/tennis/ingest')).getHydratedTennisOverlay();
+    try {
+      const { publishTennisDashboardCache } = await import('@/lib/tennis/dashboardCache');
+      await publishTennisDashboardCache(overlay);
+    } catch {
+      /* shards still publish in the background from ingest */
+    }
+    let dashboard = { matchups: 0 };
+    try {
+      const { warmTennisDashboardComputed } = await import('@/lib/tennis/dashboardWarm');
+      dashboard = await warmTennisDashboardComputed();
+    } catch {
+      dashboard = { matchups: 0 };
+    }
     let upcomingPlayers = 0;
     let warmedUpcoming = false;
     try {
@@ -35,6 +49,7 @@ export async function GET(request: NextRequest) {
       ...result,
       upcomingPlayers,
       warmedUpcoming,
+      dashboard,
       odds,
     });
   } catch (err) {

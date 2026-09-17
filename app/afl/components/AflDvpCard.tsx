@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AFL_TEAM_TO_FOOTYWIRE } from '@/lib/aflTeamMapping';
+import { aflDashboardFetch } from '@/lib/aflDashboardFetch';
 
 const DVP_METRICS = [
   { key: 'goals', label: 'Goals vs ', isPercentage: false },
@@ -225,7 +226,7 @@ export default function AflDvpCard({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/afl/fantasy-positions?season=${selectedSeason}&player=${encodeURIComponent(name)}`);
+        const res = await aflDashboardFetch(`/api/afl/fantasy-positions?season=${selectedSeason}&player=${encodeURIComponent(name)}`);
         const json = await res.json().catch(() => ({}));
         if (cancelled) return;
         const rows = Array.isArray(json?.players) ? (json.players as FantasyPositionRow[]) : [];
@@ -311,7 +312,7 @@ export default function AflDvpCard({
       try {
         let request = dvpBatchInFlight.get(cacheKey);
         if (!request) {
-          request = fetch(
+          request = aflDashboardFetch(
             `/api/afl/dvp/batch?season=${selectedSeason}&position=${targetPos}&stats=${encodeURIComponent(statsCsv)}${bust}`
           )
             .then(async (res) => {
@@ -446,7 +447,7 @@ export default function AflDvpCard({
           rolesToFetch.map(async ({ role, position, cacheKey }) => {
             let request = dvpBatchInFlight.get(cacheKey);
             if (!request) {
-              request = fetch(
+              request = aflDashboardFetch(
                 `/api/afl/dvp/batch?season=${selectedSeason}&mode=depth&position=${position}&depthRole=${role.key}&stats=${encodeURIComponent(statsCsv)}${bust}`
               )
                 .then(async (res) => {
@@ -496,7 +497,7 @@ export default function AflDvpCard({
       const cached = dvpBatchCache.get(cacheKey);
       const isFresh = !skipClientCache && cached && (Date.now() - cached.timestamp) < DVP_CACHE_TTL;
       if (isFresh || dvpBatchInFlight.has(cacheKey)) return;
-      const request = fetch(
+      const request = aflDashboardFetch(
         `/api/afl/dvp/batch?season=${selectedSeason}&position=${position}&stats=${encodeURIComponent(statsCsv)}${bust}`
       )
         .then(async (res) => {
@@ -523,7 +524,7 @@ export default function AflDvpCard({
       const cached = dvpBatchCache.get(cacheKey);
       const isFresh = !skipClientCache && cached && (Date.now() - cached.timestamp) < DVP_CACHE_TTL;
       if (isFresh || dvpBatchInFlight.has(cacheKey)) return;
-      const request = fetch(
+      const request = aflDashboardFetch(
         `/api/afl/dvp/batch?season=${selectedSeason}&mode=depth&position=${position}&depthRole=${role.key}&stats=${encodeURIComponent(statsCsv)}${bust}`
       )
         .then(async (res) => {

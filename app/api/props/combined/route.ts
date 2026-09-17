@@ -9,10 +9,11 @@ import {
   slimCombinedPropsSnapshotForClient,
   warmCombinedPropsSnapshot,
 } from '@/lib/combinedPropsSnapshot';
+import { TENNIS_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 const COMBINED_CACHE_CONTROL = 'private, no-store';
 const COMBINED_CACHE_CONTROL_HIT = 'public, s-maxage=120, stale-while-revalidate=600';
@@ -50,7 +51,9 @@ export async function GET(request: NextRequest) {
     if (!refresh && !debugStats) {
       const cachedSnapshot = await getCombinedPropsSnapshot();
       if (cachedSnapshot && combinedSnapshotAflAssemblyReady(cachedSnapshot)) {
-        const stale = isCombinedPropsSnapshotStale(cachedSnapshot);
+        const tennisMissing =
+          TENNIS_PUBLIC_ENABLED && !(cachedSnapshot.tennis?.props?.length);
+        const stale = isCombinedPropsSnapshotStale(cachedSnapshot) || tennisMissing;
         if (stale) {
           void warmCombinedPropsSnapshot({ origin, cronSecret }).catch((error) => {
             console.warn(

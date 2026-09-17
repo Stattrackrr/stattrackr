@@ -10,6 +10,8 @@ import { tennisDominanceRatio, resolveTennisMatchBestOf } from '@/lib/tennis/cha
 import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
 import { tennisHandForName } from '@/lib/tennis/hands';
 import { lookupTennisSurface, tennisSurfacesMtime } from '@/lib/tennis/surfaces';
+import { derivePointByPointStats, type ApiPointByPointGame } from '@/lib/tennis/pointByPointStats';
+import { tennisIocToIso2 } from '@/lib/tennis/flags';
 
 export const API_TENNIS_EVENT = {
   ATP_SINGLES: '265',
@@ -99,6 +101,7 @@ export type ApiTennisFixture = {
   event_second_player_logo?: string | null;
   scores?: ApiScore[];
   statistics?: ApiStat[];
+  pointbypoint?: ApiPointByPointGame[];
 };
 
 export type ApiPlayerInfo = {
@@ -170,6 +173,61 @@ const COUNTRY_TO_IOC: Record<string, string> = {
   usa: 'USA',
   uruguay: 'URU',
   uzbekistan: 'UZB',
+  peru: 'PER',
+  ireland: 'IRL',
+  'republic of ireland': 'IRL',
+  bosnia: 'BIH',
+  'bosnia and herzegovina': 'BIH',
+  monaco: 'MON',
+  luxembourg: 'LUX',
+  georgia: 'GEO',
+  armenia: 'ARM',
+  azerbaijan: 'AZE',
+  belarus: 'BLR',
+  bolivia: 'BOL',
+  'costa rica': 'CRC',
+  cyprus: 'CYP',
+  'dominican republic': 'DOM',
+  'el salvador': 'ESA',
+  guatemala: 'GUA',
+  honduras: 'HON',
+  'hong kong': 'HKG',
+  indonesia: 'INA',
+  iran: 'IRI',
+  israel: 'ISR',
+  jamaica: 'JAM',
+  kenya: 'KEN',
+  lebanon: 'LIB',
+  liechtenstein: 'LIE',
+  malaysia: 'MAS',
+  moldova: 'MDA',
+  montenegro: 'MNE',
+  nigeria: 'NGR',
+  paraguay: 'PAR',
+  philippines: 'PHI',
+  'puerto rico': 'PUR',
+  qatar: 'QAT',
+  'saudi arabia': 'KSA',
+  thailand: 'THA',
+  venezuela: 'VEN',
+  vietnam: 'VIE',
+  zimbabwe: 'ZIM',
+  algeria: 'ALG',
+  andorra: 'AND',
+  bahamas: 'BAH',
+  barbados: 'BAR',
+  botswana: 'BOT',
+  iceland: 'ISL',
+  malta: 'MLT',
+  pakistan: 'PAK',
+  uae: 'UAE',
+  'united arab emirates': 'UAE',
+  kosovo: 'KOS',
+  senegal: 'SEN',
+  ghana: 'GHA',
+  cameroon: 'CMR',
+  "cote d'ivoire": 'CIV',
+  'ivory coast': 'CIV',
 };
 
 export function apiTennisDir(): string {
@@ -210,9 +268,14 @@ export function writeApiTennisRoster(input: {
 }
 
 export function countryToIoc(country: string | null | undefined): string | null {
-  const key = String(country || '').trim().toLowerCase();
-  if (!key || key === 'world') return null;
-  return COUNTRY_TO_IOC[key] || null;
+  const raw = String(country || '').trim();
+  if (!raw) return null;
+  const key = raw.toLowerCase();
+  if (key === 'world') return null;
+  if (COUNTRY_TO_IOC[key]) return COUNTRY_TO_IOC[key];
+  const upper = raw.toUpperCase();
+  if (upper.length === 3 && tennisIocToIso2(upper)) return upper;
+  return null;
 }
 
 export function tourFromEventType(eventType: string | null | undefined): TennisTour | null {
@@ -327,6 +390,19 @@ function normStatName(name: string | null | undefined): string {
     .trim();
 }
 
+function hasRealApiStatistics(stats: ApiStat[]): boolean {
+  return stats.some((st) => {
+    const period = String(st.stat_period || 'match').toLowerCase();
+    if (period && period !== 'match') return false;
+    const name = String(st.stat_name || '').trim();
+    if (!name) return false;
+    if (st.stat_won != null && String(st.stat_won).trim() !== '') return true;
+    if (st.stat_total != null && String(st.stat_total).trim() !== '') return true;
+    const value = String(st.stat_value ?? '').trim();
+    return value !== '' && value !== '-' && value !== 'null';
+  });
+}
+
 function statsForPlayer(stats: ApiStat[], playerId: string): Map<string, ApiStat> {
   const map = new Map<string, ApiStat>();
   for (const st of stats) {
@@ -422,6 +498,7 @@ export function mapApiFixtureToRows(
   const round = parseApiRound(fx.tournament_round);
   const scores = Array.isArray(fx.scores) ? fx.scores : [];
   const stats = Array.isArray(fx.statistics) ? fx.statistics : [];
+  const pbp = hasRealApiStatistics(stats) ? null : derivePointByPointStats(fx.pointbypoint);
   const preview = formatScoreFromSets(scores, true, retired);
   if (preview.gamesWon + preview.gamesLost <= 0) return [];
   const qualifyingEvent = fx.event_qualification === 'True' || fx.event_qualification === true;
@@ -476,24 +553,27 @@ export function mapApiFixtureToRows(
     const scored = formatScoreFromSets(scores, side.firstIsPlayer, retired);
     const mine = statsForPlayer(stats, side.playerId);
     const opp = statsForPlayer(stats, side.opponentId);
+    const derived = pbp ? (side.firstIsPlayer ? pbp.first : pbp.second) : null;
     const firstIn = statTotal(mine, '1st serve points won');
     const firstWon = statWon(mine, '1st serve points won');
     const secondAtt = statTotal(mine, '2nd serve points won');
     const secondWon = statWon(mine, '2nd serve points won');
     const servePoints =
-      firstIn != null && secondAtt != null ? firstIn + secondAtt : statTotal(mine, 'Service Points Won');
+      firstIn != null && secondAtt != null
+        ? firstIn + secondAtt
+        : statTotal(mine, 'Service Points Won') ?? derived?.servePoints ?? null;
     const serveWon =
       firstWon != null && secondWon != null
         ? firstWon + secondWon
-        : statWon(mine, 'Service Points Won');
-    const bpSaved = statWon(mine, 'Break Points Saved');
-    const bpFaced = statTotal(mine, 'Break Points Saved');
-    const bpConverted = statWon(mine, 'Break Points Converted');
+        : statWon(mine, 'Service Points Won') ?? derived?.servePointsWon ?? null;
+    const bpSaved = statWon(mine, 'Break Points Saved') ?? derived?.breakPointsSaved ?? null;
+    const bpFaced = statTotal(mine, 'Break Points Saved') ?? derived?.breakPointsFaced ?? null;
+    const bpConverted = statWon(mine, 'Break Points Converted') ?? derived?.breakPointsConverted ?? null;
     const bpChances = statTotal(mine, 'Break Points Converted');
-    const returnWon = statWon(mine, 'Return Points Won');
-    const returnFaced = statTotal(mine, 'Return Points Won');
-    const pointsWon = statWon(mine, 'Total Points Won');
-    const totalPoints = statTotal(mine, 'Total Points Won');
+    const returnWon = statWon(mine, 'Return Points Won') ?? derived?.returnPointsWon ?? null;
+    const returnFaced = statTotal(mine, 'Return Points Won') ?? derived?.returnPointsFaced ?? null;
+    const pointsWon = statWon(mine, 'Total Points Won') ?? derived?.pointsWon ?? null;
+    const totalPoints = statTotal(mine, 'Total Points Won') ?? derived?.totalPoints ?? null;
     const aces = statWon(mine, 'Aces');
     const oppAces = statWon(opp, 'Aces');
     const gamesWon = scored.gamesWon;
@@ -502,13 +582,19 @@ export function mapApiFixtureToRows(
       statPct(mine, '1st serve percentage') ?? pct(firstIn, servePoints);
     const firstServeWonPct = statPct(mine, '1st serve points won');
     const secondServeWonPct = statPct(mine, '2nd serve points won');
-    const servicePointsWonPct = statPct(mine, 'Service Points Won') ?? pct(serveWon, servePoints);
-    const returnPointsWonPct = statPct(mine, 'Return Points Won');
-    const oppBpFaced = statTotal(opp, 'Break Points Saved');
-    const bpSavedPct = statPct(mine, 'Break Points Saved') ?? pct(bpSaved, bpFaced);
+    const servicePointsWonPct =
+      statPct(mine, 'Service Points Won') ?? pct(serveWon, servePoints) ?? derived?.servicePointsWonPct ?? null;
+    const returnPointsWonPct = statPct(mine, 'Return Points Won') ?? derived?.returnPointsWonPct ?? null;
+    const oppBpFaced = statTotal(opp, 'Break Points Saved') ?? (pbp ? (side.firstIsPlayer ? pbp.second.breakPointsFaced : pbp.first.breakPointsFaced) : null);
+    const bpSavedPct =
+      statPct(mine, 'Break Points Saved') ?? pct(bpSaved, bpFaced) ?? derived?.breakPointsSavedPct ?? null;
     const bpConvertedPct =
-      statPct(mine, 'Break Points Converted') ?? pct(bpConverted, bpChances) ?? pct(bpConverted, oppBpFaced);
-    const serveGames = statTotal(mine, 'Service games won');
+      statPct(mine, 'Break Points Converted') ??
+      pct(bpConverted, bpChances) ??
+      pct(bpConverted, oppBpFaced) ??
+      derived?.breakPointsConvertedPct ??
+      null;
+    const serveGames = statTotal(mine, 'Service games won') ?? derived?.serveGames ?? null;
 
     const row: TennisMatchRow = {
       matchId: `${eventKey}-${side.playerId}`,
@@ -585,12 +671,12 @@ export function mapApiFixtureToRows(
       unforcedErrors: statWon(mine, 'Unforced errors'),
       netPointsWon: statWon(mine, 'Net points won'),
       netPointsWonPct: statPct(mine, 'Net points won'),
-      serviceGamesWon: statWon(mine, 'Service games won'),
-      returnGamesWon: statWon(mine, 'Return games won'),
+      serviceGamesWon: statWon(mine, 'Service games won') ?? derived?.serviceGamesWon ?? null,
+      returnGamesWon: statWon(mine, 'Return games won') ?? derived?.returnGamesWon ?? null,
       firstServeSpeed: parseSpeedKmh(mine, 'Average 1st serve speed'),
       secondServeSpeed: parseSpeedKmh(mine, 'Average 2nd serve speed'),
       distanceCovered: statWon(mine, 'Distance covered metres') ?? statWon(mine, 'Distance covered (metres)'),
-      matchPointsSaved: statWon(mine, 'Match points saved'),
+      matchPointsSaved: statWon(mine, 'Match points saved') ?? derived?.matchPointsSaved ?? null,
       firstReturnPointsWonPct: statPct(mine, '1st return points won'),
       secondReturnPointsWonPct: statPct(mine, '2nd return points won'),
     };

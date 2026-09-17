@@ -61,6 +61,12 @@ import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
 import { propsSportFromTennisTour } from '@/lib/nbaConstants';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
+import {
+  abortTennisDashboardFetches,
+  beginTennisDashboardSession,
+  resetTennisDashboardFetches,
+  tennisDashboardFetch,
+} from '@/lib/tennisDashboardFetch';
 import { isTennisQualifyingLabel } from '@/lib/tennis/dvpShared';
 
 /** Tennis match LIVE window (~5-set length). */
@@ -248,6 +254,21 @@ function normalizeNblPlayerNameForMatch(name: string): string {
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function tennisUrlOpponentValue(raw: string | null | undefined): string | null {
+  const value = String(raw || '').trim();
+  if (!value || value === '—' || value === 'NA' || value === 'N/A') return null;
+  return value;
+}
+
+function readTennisUrlOpponent(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return tennisUrlOpponentValue(new URLSearchParams(window.location.search).get('opponent'));
+  } catch {
+    return null;
+  }
 }
 
 function isTennisTourName(value: string | null | undefined): boolean {
@@ -547,6 +568,7 @@ export default function TennisDashboardPage() {
   const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
   const [selectedPlayer, setSelectedPlayer] = useState<NblRosterPlayer | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [propsOpponentFallback, setPropsOpponentFallback] = useState<string | null>(null);
   const [selectedPlayerGameLogs, setSelectedPlayerGameLogs] = useState<Array<Record<string, unknown>>>([]);
   const [selectedTeamGameLogs, setSelectedTeamGameLogs] = useState<Array<Record<string, unknown>>>([]);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
@@ -647,10 +669,7 @@ export default function TennisDashboardPage() {
         if (tour) qs.set('tour', tour);
         const name = String(playerName || '').trim();
         if (name) qs.set('player', name);
-        const res = await fetch(`/api/tennis/next-game?${qs.toString()}`, {
-          cache: 'no-store',
-          signal: AbortSignal.timeout(12000),
-        });
+        const res = await tennisDashboardFetch(`/api/tennis/next-game?${qs.toString()}`);
         const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
         if (!res.ok || !data) return;
         const payload = parseTennisNextGameClient(data);
@@ -667,6 +686,9 @@ export default function TennisDashboardPage() {
 
   selectedPlayerIdRef.current = String(selectedPlayer?.playerId || '').trim() || null;
 
+  const propsOpponentFallbackRef = useRef(propsOpponentFallback);
+  propsOpponentFallbackRef.current = propsOpponentFallback;
+
   useEffect(() => {
     if (TENNIS_AI_UNDER_MAINTENANCE && playerVsContainerTab === 'overview') {
       setPlayerVsContainerTab('similar');
@@ -674,11 +696,15 @@ export default function TennisDashboardPage() {
   }, [playerVsContainerTab]);
 
   useEffect(() => {
-    fetch('/api/tennis/next-game?warm=1', {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(20000),
-    }).catch(() => undefined);
-  }, []);
+    beginTennisDashboardSession();
+    router.prefetch('/props?sport=all');
+    router.prefetch('/props?sport=atp');
+    router.prefetch('/props?sport=wta');
+    tennisDashboardFetch('/api/tennis/next-game?warm=1').catch(() => undefined);
+    return () => {
+      abortTennisDashboardFetches();
+    };
+  }, [router]);
 
   useEffect(() => {
     setMounted(true);
@@ -687,7 +713,20 @@ export default function TennisDashboardPage() {
     } catch {
       /* ignore */
     }
+    return () => {
+      abortTennisDashboardFetches();
+    };
   }, []);
+
+  const prevDashboardPlayerIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = String(selectedPlayer?.playerId || '').trim() || null;
+    const prev = prevDashboardPlayerIdRef.current;
+    prevDashboardPlayerIdRef.current = id;
+    if (prev && id && prev !== id) {
+      resetTennisDashboardFetches();
+    }
+  }, [selectedPlayer?.playerId]);
 
   // Restore selection after mount only (localStorage / URL) — keeps SSR HTML identical.
   useEffect(() => {
@@ -725,6 +764,8 @@ export default function TennisDashboardPage() {
       if (Number.isFinite(line)) {
         setTennisGameLineValue(line);
       }
+      const urlOpponent = tennisUrlOpponentValue(url.searchParams.get('opponent'));
+      if (urlOpponent) setPropsOpponentFallback(urlOpponent);
     } catch {
       tennisLineFromUrlRef.current = null;
     }
@@ -737,7 +778,7 @@ export default function TennisDashboardPage() {
       setRosterLoading(true);
       try {
         const [playersRes] = await Promise.all([
-          fetch('/api/tennis/players?currentOnly=1'),
+          tennisDashboardFetch('/api/tennis/players?currentOnly=1'),
         ]);
         if (cancelled) return;
         if (playersRes.ok) {
@@ -822,16 +863,19 @@ export default function TennisDashboardPage() {
       : isTennisTourName(selectedPlayer.tour)
         ? String(selectedPlayer.tour).toUpperCase()
         : '';
-    const match =
-      (selectedPlayer.playerId
-        ? rosterPlayers.find((p) => p.playerId && p.playerId === selectedPlayer.playerId)
-        : null) ||
+    const byId = selectedPlayer.playerId
+      ? rosterPlayers.find((p) => p.playerId && p.playerId === selectedPlayer.playerId)
+      : null;
+    const byName =
       rosterPlayers.find((p) => {
         if (normalizeNblPlayerNameForMatch(p.name) !== want) return false;
         if (!teamWant) return true;
         return String(p.team || p.tour || '').toUpperCase() === teamWant;
-      }) ||
-      rosterPlayers.find((p) => normalizeNblPlayerNameForMatch(p.name) === want);
+      }) || rosterPlayers.find((p) => normalizeNblPlayerNameForMatch(p.name) === want);
+    const idMatchesName =
+      Boolean(byId) &&
+      (!want || normalizeNblPlayerNameForMatch(byId!.name) === want);
+    const match = (idMatchesName ? byId : null) || byName;
     if (match) {
       const tour = tennisPlayerTour(match);
       setSelectedPlayer(match);
@@ -888,6 +932,7 @@ export default function TennisDashboardPage() {
   ]);
 
   const goBackToPlayerProps = useCallback(() => {
+    abortTennisDashboardFetches();
     try {
       localStorage.removeItem(NBL_PAGE_STATE_KEY);
     } catch {
@@ -899,7 +944,9 @@ export default function TennisDashboardPage() {
     if (!tour && typeof window !== 'undefined') {
       tour = new URLSearchParams(window.location.search).get('team');
     }
-    router.push(consumePropsReturnPath(propsSportFromTennisTour(tour) ?? 'atp'));
+    const returnPath = consumePropsReturnPath(propsSportFromTennisTour(tour) ?? 'atp');
+    router.prefetch(returnPath);
+    router.push(returnPath);
   }, [router, selectedPlayer]);
 
   // Keep URL in sync with tennis selection only.
@@ -913,15 +960,10 @@ export default function TennisDashboardPage() {
       url.searchParams.set('name', String(tennisPlayer.name ?? ''));
       url.searchParams.set('team', String(tennisPlayer.team ?? tennisPlayer.tour ?? '').trim());
       const upcomingForPlayer = nextGamePlayerId === String(tennisPlayer.playerId || '').trim();
-      const nextOpp =
-        upcomingForPlayer &&
-        nextGameOpponent &&
-        nextGameOpponent !== '' &&
-        nextGameOpponent !== '—' &&
-        nextGameOpponent !== 'NA'
-          ? nextGameOpponent
-          : null;
+      const nextOpp = tennisUrlOpponentValue(upcomingForPlayer ? nextGameOpponent : null);
+      const existingOpp = tennisUrlOpponentValue(url.searchParams.get('opponent')) || propsOpponentFallback;
       if (nextOpp) url.searchParams.set('opponent', nextOpp);
+      else if (existingOpp) url.searchParams.set('opponent', existingOpp);
       else url.searchParams.delete('opponent');
       if (mainChartStat) url.searchParams.set('stat', mainChartStat);
       else url.searchParams.delete('stat');
@@ -943,15 +985,10 @@ export default function TennisDashboardPage() {
       else url.searchParams.delete('stat');
       url.searchParams.set('tf', chartTimeframe);
       const upcomingForPlayer = nextGamePlayerId === String(tennisPlayer.playerId || '').trim();
-      const nextOpp =
-        upcomingForPlayer &&
-        nextGameOpponent &&
-        nextGameOpponent !== '' &&
-        nextGameOpponent !== '—' &&
-        nextGameOpponent !== 'NA'
-          ? nextGameOpponent
-          : null;
+      const nextOpp = tennisUrlOpponentValue(upcomingForPlayer ? nextGameOpponent : null);
+      const existingOpp = tennisUrlOpponentValue(url.searchParams.get('opponent')) || propsOpponentFallback;
       if (nextOpp) url.searchParams.set('opponent', nextOpp);
+      else if (existingOpp) url.searchParams.set('opponent', existingOpp);
       else url.searchParams.delete('opponent');
     } else if (!url.searchParams.get('name') && !url.searchParams.get('player')) {
       url.searchParams.delete('mode');
@@ -974,6 +1011,7 @@ export default function TennisDashboardPage() {
     selectedTeam,
     nextGameOpponent,
     nextGamePlayerId,
+    propsOpponentFallback,
     selectedPlayer?.playerId,
     mainChartStat,
     chartTimeframe,
@@ -1015,6 +1053,7 @@ export default function TennisDashboardPage() {
     preferredTennisBookmakerRef.current = null;
     hasIncomingTennisBookOrLineRef.current = false;
     tennisIncomingStatRef.current = null;
+    setPropsOpponentFallback(null);
     const playerId = String(player.playerId || '').trim();
     const cached = readTennisNextGameClient(playerId);
     if (playerId && cached) applyUpcoming(playerId, cached);
@@ -1071,7 +1110,7 @@ export default function TennisDashboardPage() {
         const logsQs = new URLSearchParams();
         if (playerId) logsQs.set('playerId', playerId);
         if (playerName) logsQs.set('player', playerName);
-        const res = await fetch(`/api/tennis/matches?${logsQs.toString()}`, { cache: 'no-store' });
+        const res = await tennisDashboardFetch(`/api/tennis/matches?${logsQs.toString()}`);
         if (!res.ok) throw new Error(`logs ${res.status}`);
         const data = await res.json();
         if (cancelled) return;
@@ -1126,9 +1165,8 @@ export default function TennisDashboardPage() {
     setStatsLoadingForTeam(true);
     (async () => {
       try {
-        const res = await fetch(
-          `/api/tennis/matches?player=${encodeURIComponent(team)}`,
-          { cache: 'no-store' }
+        const res = await tennisDashboardFetch(
+          `/api/tennis/matches?player=${encodeURIComponent(team)}`
         );
         if (!res.ok) throw new Error(`team logs ${res.status}`);
         const data = await res.json();
@@ -1174,7 +1212,8 @@ export default function TennisDashboardPage() {
       return;
     }
     const cached = readTennisNextGameClient(cacheKey);
-    if (cached) applyUpcoming(playerId || cacheKey, cached);
+    if (cached?.opponent) applyUpcoming(playerId || cacheKey, cached);
+    else clearUpcoming();
     let cancelled = false;
     const loadUpcoming = async () => {
       try {
@@ -1183,14 +1222,17 @@ export default function TennisDashboardPage() {
         if (playerId) qs.set('playerId', playerId);
         if (playerName) qs.set('player', playerName);
         if (tour) qs.set('tour', tour);
-        const res = await fetch(`/api/tennis/next-game?${qs.toString()}`, {
-          cache: 'no-store',
-          signal: AbortSignal.timeout(12000),
-        });
+        const hintedOpp =
+          tennisUrlOpponentValue(propsOpponentFallbackRef.current) || readTennisUrlOpponent();
+        if (hintedOpp) qs.set('opponent', hintedOpp);
+        const res = await tennisDashboardFetch(`/api/tennis/next-game?${qs.toString()}`);
         const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
         if (cancelled) return;
         if (!res.ok || !data) return;
-        applyUpcoming(playerId || cacheKey, parseTennisNextGameClient(data));
+        const payload = parseTennisNextGameClient(data);
+        applyUpcoming(playerId || cacheKey, payload);
+        const resolvedOpp = tennisUrlOpponentValue(payload.opponent);
+        if (resolvedOpp) setPropsOpponentFallback(resolvedOpp);
       } catch {
         /* keep cached / previous upcoming rather than flashing NA */
       }
@@ -1203,7 +1245,13 @@ export default function TennisDashboardPage() {
       cancelled = true;
       window.clearInterval(pollId);
     };
-  }, [selectedPlayer?.playerId, selectedPlayer?.name, selectedPlayer?.tour, selectedPlayer?.team, applyUpcoming]);
+  }, [
+    selectedPlayer?.playerId,
+    selectedPlayer?.name,
+    selectedPlayer?.tour,
+    selectedPlayer?.team,
+    applyUpcoming,
+  ]);
 
   // Mark tipoff LIVE for the tennis match window, or when the fixture is already in progress.
   useEffect(() => {
@@ -1256,7 +1304,7 @@ export default function TennisDashboardPage() {
     const oddsQs = new URLSearchParams({ playerId });
     const playerName = String(selectedPlayer?.name || '').trim();
     if (playerName) oddsQs.set('player', playerName);
-    fetch(`/api/tennis/odds?${oddsQs.toString()}`, { cache: 'no-store' })
+    tennisDashboardFetch(`/api/tennis/odds?${oddsQs.toString()}`)
       .then((r) => r.json())
       .then((data: { success?: boolean; data?: TennisBookRow[]; homeTeam?: string; awayTeam?: string }) => {
         if (cancelled) return;
@@ -1392,8 +1440,8 @@ export default function TennisDashboardPage() {
   const lastCompletedOpponent = lastLog?.opponent ? String(lastLog.opponent).trim() : null;
   const selectedPlayerId = String(selectedPlayer?.playerId || '').trim();
   const upcomingReady = Boolean(selectedPlayerId) && nextGamePlayerId === selectedPlayerId;
-  const displayOpponent =
-    upcomingReady && nextGameOpponent ? String(nextGameOpponent).trim() : null;
+  const fromUpcoming = upcomingReady ? tennisUrlOpponentValue(nextGameOpponent) : null;
+  const displayOpponent = fromUpcoming || tennisUrlOpponentValue(propsOpponentFallback);
   const showUpcomingNA = Boolean(selectedPlayer) && upcomingReady && !displayOpponent;
   const statsOpponent = displayOpponent || lastCompletedOpponent;
   const upcomingIsGrandSlam = Boolean(displayOpponent && nextGameIsGrandSlam);

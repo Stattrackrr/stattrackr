@@ -4,6 +4,8 @@ import { API_TENNIS_SINGLES_EVENTS, isApiGrandSlam, parseApiRound, tourFromEvent
 import { loadTennisPlayers, loadTennisRankings } from '@/lib/tennis/data';
 import { isTennisQualifyingLabel, type TennisDvpStage } from '@/lib/tennis/dvpShared';
 import { tennisAssignDrawRanks } from '@/lib/tennis/seeds';
+import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { resolveTennisIoc } from '@/lib/tennis/resolveIoc';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisTour } from '@/lib/tennis/types';
 
@@ -109,18 +111,12 @@ function hasPlayedScore(fx: ApiTennisFixture): boolean {
   return scores.some((row) => Number(row.score_first) > 0 || Number(row.score_second) > 0);
 }
 
-function namesEqual(a: string, b: string): boolean {
-  return a.trim().toLowerCase() === b.trim().toLowerCase();
+export function tennisFixtureNamesMatch(a: string, b: string): boolean {
+  return tennisIdentityMatch(a, b);
 }
 
 function namesMatch(a: string, b: string): boolean {
-  if (namesEqual(a, b)) return true;
-  const lastA = tennisLastName(a).toLowerCase();
-  const lastB = tennisLastName(b).toLowerCase();
-  if (!lastA || lastA !== lastB) return false;
-  const initA = a.trim().replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase();
-  const initB = b.trim().replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase();
-  return Boolean(initA && initA === initB);
+  return tennisFixtureNamesMatch(a, b);
 }
 
 function nameKey(name: string): string {
@@ -208,7 +204,7 @@ function officialPlayer(playerId: string | null, fallback: string): {
   const player = hit || byName;
   return {
     name: player?.name || fallback.trim(),
-    ioc: player?.ioc ?? null,
+    ioc: player?.ioc || resolveTennisIoc(id, player?.name || fallback),
     rank: player?.rank ?? null,
     imageUrl: player?.imageUrl ?? null,
   };
@@ -886,28 +882,65 @@ export async function listUniqueUpcomingTennisGames(opts?: {
   return uniqueUpcomingFromMap(byPlayerId);
 }
 
+function nextGameInvolvesName(next: TennisNextGame, name: string): boolean {
+  const n = String(name || '').trim();
+  if (!n) return false;
+  return namesMatch(next.homeName, n) || namesMatch(next.awayName, n);
+}
+
+function pickSoonestNextGame(games: TennisNextGame[]): TennisNextGame | null {
+  if (!games.length) return null;
+  return [...games].sort((a, b) => {
+    const ta = Date.parse(String(a.tipoff || '')) || Number.POSITIVE_INFINITY;
+    const tb = Date.parse(String(b.tipoff || '')) || Number.POSITIVE_INFINITY;
+    return ta - tb;
+  })[0];
+}
+
 export async function getTennisNextGame(opts: {
   playerId?: string | null;
   playerName?: string | null;
+  opponentName?: string | null;
   tour?: TennisTour | null;
 }): Promise<TennisNextGame | null> {
   const playerId = String(opts.playerId || '').trim();
   const playerName = String(opts.playerName || '').trim();
+  const opponentName = String(opts.opponentName || '').trim();
   if (!playerId && !playerName) return null;
-  const byPlayerId = await loadUpcomingByPlayer({ waitForFresh: true });
+  const byPlayerId = await loadUpcomingByPlayer({ waitForFresh: false });
   const live = indexLiveEvents(byPlayerId, upcomingRuntime().window?.events);
-  const found =
-    (playerId && byPlayerId.get(playerId)) ||
-    (playerName && byPlayerId.get(nameKey(playerName))) ||
-    null;
-  if (found) return withDrawSeeds(withSurface(found), playerId || null, live);
+  const finish = (next: TennisNextGame | null) =>
+    next ? withDrawSeeds(withSurface(next), playerId || null, live) : null;
+
+  const named: TennisNextGame[] = [];
   if (playerName) {
+    const seen = new Set<string>();
     for (const next of byPlayerId.values()) {
-      const onThisSide =
-        namesMatch(next.homeName, playerName) || namesMatch(next.awayName, playerName);
-      if (!onThisSide || namesMatch(next.opponent, playerName)) continue;
-      return withDrawSeeds(withSurface(next), playerId || null, live);
+      const key = String(next.matchId || `${next.homeName}|${next.awayName}|${next.tipoff}`);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (!nextGameInvolvesName(next, playerName) || namesMatch(next.opponent, playerName)) continue;
+      named.push(next);
     }
   }
-  return null;
+  const withOpponent = opponentName
+    ? named.filter((next) => nextGameInvolvesName(next, opponentName))
+    : named;
+
+  const byId = playerId ? byPlayerId.get(playerId) || null : null;
+  const byIdOk =
+    byId &&
+    (!playerName || nextGameInvolvesName(byId, playerName)) &&
+    (!opponentName || nextGameInvolvesName(byId, opponentName))
+      ? byId
+      : null;
+  const byNameKey = playerName ? byPlayerId.get(nameKey(playerName)) || null : null;
+  const byNameKeyOk =
+    byNameKey &&
+    (!playerName || nextGameInvolvesName(byNameKey, playerName)) &&
+    (!opponentName || nextGameInvolvesName(byNameKey, opponentName))
+      ? byNameKey
+      : null;
+
+  return finish(byIdOk || byNameKeyOk || pickSoonestNextGame(withOpponent) || pickSoonestNextGame(named));
 }

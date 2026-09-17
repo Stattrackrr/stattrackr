@@ -31,12 +31,15 @@ export type TennisHeadshotsIndex = {
 type HeadshotRuntime = {
   index: TennisHeadshotsIndex | null | undefined;
   localIds: Set<string> | null;
+  byName: Map<string, string> | null;
   mtime: number;
 };
 
 function headshotRuntime(): HeadshotRuntime {
   const g = globalThis as typeof globalThis & { __tennisHeadshots?: HeadshotRuntime };
-  if (!g.__tennisHeadshots) g.__tennisHeadshots = { index: undefined, localIds: null, mtime: 0 };
+  if (!g.__tennisHeadshots) {
+    g.__tennisHeadshots = { index: undefined, localIds: null, byName: null, mtime: 0 };
+  }
   return g.__tennisHeadshots;
 }
 
@@ -68,6 +71,7 @@ export function loadTennisHeadshotsIndex(): TennisHeadshotsIndex | null {
   const mtime = fs.existsSync(file) ? fs.statSync(file).mtimeMs : 0;
   if (runtime.index !== undefined && runtime.mtime === mtime) return runtime.index;
   runtime.localIds = null;
+  runtime.byName = null;
   runtime.mtime = mtime;
   if (!fs.existsSync(file)) {
     runtime.index = null;
@@ -138,4 +142,53 @@ export function resolveTennisHeadshotUrl(
   if (!url) return null;
   if (entry?.source === 'tennis-com' || entry?.source === 'wta') return withHeadshotCrop(url, entry, stamp);
   return url;
+}
+
+function normHeadshotName(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function headshotIdsByName(): Map<string, string> {
+  const runtime = headshotRuntime();
+  if (runtime.byName) return runtime.byName;
+  const map = new Map<string, string>();
+  const index = loadTennisHeadshotsIndex();
+  for (const [id, entry] of Object.entries(index?.byPlayerId || {})) {
+    const key = normHeadshotName(String(entry?.name || ''));
+    if (key && !map.has(key)) map.set(key, id);
+  }
+  runtime.byName = map;
+  return map;
+}
+
+export function resolveTennisHeadshotUrlByName(name: string | null | undefined): string | null {
+  const key = normHeadshotName(String(name || ''));
+  if (!key) return null;
+  const id = headshotIdsByName().get(key);
+  return id ? resolveTennisHeadshotUrl(id, null) : null;
+}
+
+export function attachTennisHeadshots<
+  T extends { playerId?: string | null; playerName?: string; headshotUrl?: string | null },
+>(rows: T[]): T[] {
+  if (!rows.length) return rows;
+  try {
+    let changed = false;
+    const next = rows.map((row) => {
+      if (row.headshotUrl) return row;
+      const url =
+        resolveTennisHeadshotUrl(row.playerId, null) || resolveTennisHeadshotUrlByName(row.playerName);
+      if (!url) return row;
+      changed = true;
+      return { ...row, headshotUrl: url };
+    });
+    return changed ? next : rows;
+  } catch {
+    return rows;
+  }
 }

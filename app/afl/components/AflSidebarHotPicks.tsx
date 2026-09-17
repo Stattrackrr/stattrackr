@@ -7,6 +7,7 @@ import { formatAflFantasyDfsPositionLabel } from '@/lib/aflDfsRoleLabels';
 import { buildAflHotPicksFromListRows, type AflHotPickCard } from '@/lib/aflHotPicksFromList';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
+import { aflDashboardFetch } from '@/lib/aflDashboardFetch';
 
 /** Same keys as props page so sessionStorage is shared. */
 import {
@@ -24,13 +25,6 @@ const AFL_PORTRAIT_EXTRAS_LS_TS_KEY = `${AFL_PORTRAIT_EXTRAS_LS_KEY}_ts`;
 const AFL_PORTRAIT_EXTRAS_LS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const AFL_PORTRAIT_FETCH_BATCH_SIZE = 16;
 const AFL_PORTRAIT_RETRY_DELAY_MS = 2 * 60 * 1000;
-
-function aflInitials(name: string): string {
-  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
-  if (parts.length === 1) return (parts[0]!.slice(0, 2) || '?').toUpperCase();
-  return '?';
-}
 
 /** Match AFL props row copy (e.g. Disposals Over 27.5). */
 function formatHotPickStatLine(statType: string, line: number): string {
@@ -210,7 +204,7 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
       return;
     }
 
-    fetch('/api/afl/team-logos', { cache: 'force-cache' })
+    aflDashboardFetch('/api/afl/team-logos', { cache: 'force-cache' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { logos?: Record<string, string> } | null) => {
         if (data?.logos && typeof data.logos === 'object' && Object.keys(data.logos).length > 0) {
@@ -225,8 +219,8 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
     if (picks.length === 0) return;
     const season = new Date().getFullYear();
     Promise.all([
-      fetch(`/api/afl/league-player-stats?season=${season}`).then((r) => (r.ok ? r.json() : null)),
-      fetch(`/api/afl/league-player-stats?season=${season - 1}`).then((r) => (r.ok ? r.json() : null)),
+      aflDashboardFetch(`/api/afl/league-player-stats?season=${season}`).then((r) => (r.ok ? r.json() : null)),
+      aflDashboardFetch(`/api/afl/league-player-stats?season=${season - 1}`).then((r) => (r.ok ? r.json() : null)),
     ])
       .then(([curr, prev]) => {
         const map: Record<string, number> = {};
@@ -283,7 +277,7 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
     void Promise.all(
       chunks.map(async (batch) => {
         try {
-          const r = await fetch('/api/afl/player-portraits', {
+          const r = await aflDashboardFetch('/api/afl/player-portraits', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ players: batch }),
@@ -336,7 +330,7 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
+      const res = await aflDashboardFetch('/api/afl/player-props/list', { cache: 'no-store' });
       const json = await res.json().catch(() => null);
       const rows = Array.isArray(json?.data) ? json.data : [];
       setPicks(buildAflHotPicksFromListRows(rows, { excludePlayerName: ex, limit: 20 }));
@@ -422,7 +416,6 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
                     <AflPropsPlayerAvatar
                       headshotUrl={headshotUrl}
                       jerseyNumber={jerseyNum}
-                      initials={aflInitials(p.playerName)}
                       isDark={isDark}
                       mounted={mounted}
                       size="sm"

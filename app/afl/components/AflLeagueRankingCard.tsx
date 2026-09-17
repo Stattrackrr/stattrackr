@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { opponentToFootywireTeam, rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
+import { aflDashboardFetch } from '@/lib/aflDashboardFetch';
 
 const RANK_STATS = [
   { key: 'disposals', label: 'Disposals', playerKey: 'disposals_season_avg' },
@@ -80,7 +81,7 @@ export function AflLeagueRankingCard({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetch(`/api/afl/league-player-stats?season=${effectiveSeason}`)
+    aflDashboardFetch(`/api/afl/league-player-stats?season=${effectiveSeason}`)
       .then((r) => {
         if (!r.ok) throw new Error(r.status === 404 ? 'League stats not loaded. Run: npm run fetch:footyinfo-league-player-stats' : 'Failed to load');
         return r.json();

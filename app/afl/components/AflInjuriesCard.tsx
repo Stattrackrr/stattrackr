@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { fetchJsonDeduped } from '@/lib/clientFetchDedupe';
+import { aflDashboardFetch } from '@/lib/aflDashboardFetch';
 import { rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 import { getAflCanonicalTeamKey } from '@/lib/aflTeamCanonical';
 
@@ -76,7 +76,11 @@ export function AflInjuriesCard({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchJsonDeduped<{ error?: string; injuries?: InjuryRow[]; generatedAt?: string }>('/api/afl/injuries')
+    aflDashboardFetch('/api/afl/injuries')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{ error?: string; injuries?: InjuryRow[]; generatedAt?: string }>;
+      })
       .then((json) => {
         if (cancelled) return;
         if (json?.error) {
@@ -137,7 +141,7 @@ export function AflInjuriesCard({
       for (const injury of teamInjuries) {
         if (cancelled) return;
         try {
-          const res = await fetch(
+          const res = await aflDashboardFetch(
             `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(injury.player)}`
           );
           const json = await res.json();

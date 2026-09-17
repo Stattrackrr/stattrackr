@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { tennisLastName } from '@/lib/tennis/chartStats';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
+import { tennisSameOpponentQuery } from '@/lib/tennis/oddsApi';
+import { tennisDashboardFetch, isTennisDashboardAbortError } from '@/lib/tennisDashboardFetch';
 import type {
   TennisSimilarMatchStats,
   TennisSimilarPlayersPayload,
@@ -71,11 +73,19 @@ export function TennisSimilarPlayersCard({
     : 'bg-purple-100 text-purple-800 border-purple-200';
   const compact = layout === 'mobile';
   const frameClass = compact ? 'h-[420px] max-h-[50vh]' : 'h-[380px]';
+  const lastOpponentRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    lastOpponentRef.current = null;
+  }, [playerName, playerId]);
 
   useEffect(() => {
     if (!playerName || !opponentName) {
       setPayload(null);
       setLoading(false);
+      return;
+    }
+    if (tennisSameOpponentQuery(lastOpponentRef.current, opponentName)) {
       return;
     }
     let cancelled = false;
@@ -88,17 +98,22 @@ export function TennisSimilarPlayersCard({
       limit: '8',
     });
     if (playerId) params.set('playerId', playerId);
-    fetch(`/api/tennis/similar-players?${params.toString()}`)
-      .then(async (r) => {
-        const json = await r.json();
-        if (!r.ok || json?.success === false) throw new Error(json?.error || 'Failed to load');
-        return json as TennisSimilarPlayersPayload;
+    lastOpponentRef.current = opponentName;
+    tennisDashboardFetch(`/api/tennis/similar-players?${params.toString()}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<TennisSimilarPlayersPayload>;
       })
       .then((json) => {
-        if (!cancelled) setPayload(json);
+        if (cancelled) return;
+        if ((json as { success?: boolean })?.success === false) {
+          throw new Error((json as { error?: string })?.error || 'Failed to load');
+        }
+        setPayload(json);
       })
-      .catch(() => {
-        if (!cancelled) setPayload(null);
+      .catch((err) => {
+        if (cancelled || isTennisDashboardAbortError(err)) return;
+        setPayload(null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

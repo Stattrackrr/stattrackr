@@ -13,6 +13,7 @@ import {
   matchTennisOppRank,
   type TennisOppRankFilter,
 } from '@/lib/tennis/advancedAveragesShared';
+import { tennisDashboardFetch } from '@/lib/tennisDashboardFetch';
 
 type NblAdvancedFilterKey =
   | 'dvp_rank'
@@ -843,7 +844,7 @@ export function TennisStatsChart({
       return;
     }
 
-    fetch(
+    tennisDashboardFetch(
       `/api/tennis/matches?playerId=${encodeURIComponent(rosterHit.playerId)}`
     )
       .then((r) => r.json())

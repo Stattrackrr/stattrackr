@@ -10,6 +10,7 @@ const AFL_DISPOSALS_HISTORY_TRACE_FILES = [
 const TENNIS_RUNTIME_DATA = [
   './data/tennis/rank-history.json',
   './data/tennis/espn-hands.json',
+  './data/tennis/headshots.json',
 ] as const;
 
 const nextConfig: NextConfig = {
@@ -48,6 +49,12 @@ const nextConfig: NextConfig = {
     '/api/tennis/players/route': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/next-game': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/next-game/route': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/player-props/list': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/player-props/list/route': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/headshot/[id]': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/headshot/[id]/route': [...TENNIS_RUNTIME_DATA],
+    '/api/props/combined': [...TENNIS_RUNTIME_DATA],
+    '/api/props/combined/route': [...TENNIS_RUNTIME_DATA],
     '/api/afl/cron/league-player-stats': [
       './data/afl-league-player-stats-2026.json',
       './data/afl-league-player-stats-2025.json',

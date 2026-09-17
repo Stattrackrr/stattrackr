@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { aflDashboardFetch } from '@/lib/aflDashboardFetch';
 
 type GameLog = Record<string, unknown>;
 
@@ -318,7 +319,7 @@ export function AflRoleStatsCard({
     });
     void (async () => {
       try {
-        const res = await fetch(`/api/afl/role-leaders?${params.toString()}`, {
+        const res = await aflDashboardFetch(`/api/afl/role-leaders?${params.toString()}`, {
           headers: { Accept: 'application/json' },
         });
         const json = (await res.json()) as {
@@ -403,7 +404,7 @@ export function AflRoleStatsCard({
           stat,
           limit: '5',
         });
-        const res = await fetch(`/api/afl/role-leaders?${params.toString()}`, {
+        const res = await aflDashboardFetch(`/api/afl/role-leaders?${params.toString()}`, {
           headers: { Accept: 'application/json' },
         });
         const json = (await res.json()) as {

@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
+import { tennisSameOpponentQuery } from '@/lib/tennis/oddsApi';
+import { tennisDashboardFetch, isTennisDashboardAbortError } from '@/lib/tennisDashboardFetch';
 import {
   ADV_AVG_BEST_OF,
   ADV_AVG_COLUMNS,
@@ -80,6 +82,7 @@ export default function TennisAdvancedAveragesCard({
   const [payload, setPayload] = useState<TennisAdvancedAveragesPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lastOpponentRef = useRef<string | null>(null);
 
   const player = String(playerName || '').trim();
   const opponent = String(opponentName || '').trim();
@@ -87,10 +90,17 @@ export default function TennisAdvancedAveragesCard({
   const averagesBestOf: AdvAvgBestOf = tourKey === 'WTA' ? 'all' : bestOf;
 
   useEffect(() => {
+    lastOpponentRef.current = null;
+  }, [player]);
+
+  useEffect(() => {
     if (!player) {
       setPayload(null);
       setError(null);
       setLoading(false);
+      return;
+    }
+    if (tennisSameOpponentQuery(lastOpponentRef.current, opponent)) {
       return;
     }
     let cancelled = false;
@@ -105,23 +115,17 @@ export default function TennisAdvancedAveragesCard({
       vsRank,
     });
     if (opponent) qs.set('opponent', opponent);
-    fetch(`/api/tennis/advanced-averages?${qs.toString()}`)
-      .then(async (r) => {
-        const text = await r.text();
-        let json: TennisAdvancedAveragesPayload | null = null;
-        try {
-          json = text ? (JSON.parse(text) as TennisAdvancedAveragesPayload) : null;
-        } catch {
-          throw new Error('Error');
-        }
-        if (!r.ok || !json) throw new Error('Error');
-        return json;
+    lastOpponentRef.current = opponent || null;
+    tennisDashboardFetch(`/api/tennis/advanced-averages?${qs.toString()}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<TennisAdvancedAveragesPayload>;
       })
       .then((data) => {
         if (!cancelled) setPayload(data);
       })
-      .catch(() => {
-        if (cancelled) return;
+      .catch((err) => {
+        if (cancelled || isTennisDashboardAbortError(err)) return;
         setPayload(null);
         setError('Error');
       })

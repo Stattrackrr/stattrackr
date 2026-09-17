@@ -35,7 +35,7 @@ import {
 } from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
-import { getNBACache, setNBACache } from '@/lib/nbaCache';
+import { setNBACache } from '@/lib/nbaCache';
 import { getAflDisposalsProjection, getAflDisposalsProjectionPayloadMeta } from '@/lib/aflDisposalsModel';
 import {
   findDfsRoleGroup,
@@ -297,33 +297,27 @@ async function tryServeCachedEnrichedForUsers(nowMs = Date.now()): Promise<NextR
   const odds = await getAflOddsCache();
   const oddsGames = odds?.games ?? [];
 
-  const rawCandidates: Array<Record<string, unknown> | null | undefined> = [];
-  if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > nowMs) {
-    rawCandidates.push(aflEnrichedPayloadMemoryCache.payload);
-  }
-
-  const supabasePayload = await getNBACache<Record<string, unknown>>(AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY, {
-    restTimeoutMs: 4000,
-    jsTimeoutMs: 4000,
-    quiet: true,
-  });
-  rawCandidates.push(supabasePayload && typeof supabasePayload === 'object' ? supabasePayload : null);
-
-  const cachedPayload = await sharedCache.getJSON<Record<string, unknown>>(AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY);
-  rawCandidates.push(cachedPayload && typeof cachedPayload === 'object' ? cachedPayload : null);
-
-  for (const raw of rawCandidates) {
-    if (!raw || !(await enrichedListCacheIsCurrent(raw, nowMs))) continue;
+  const serve = async (raw: Record<string, unknown> | null | undefined): Promise<NextResponse | null> => {
+    if (!raw || !(await enrichedListCacheIsCurrent(raw, nowMs))) return null;
     const best = await pickBestEnrichedPayload(raw);
-    if (!best || !aflEnrichedPayloadHasUsableStats(best) || enrichedPayloadRowCount(best) === 0) continue;
-    if (!(await enrichedListCacheIsCurrent(best, nowMs))) continue;
+    if (!best || !aflEnrichedPayloadHasUsableStats(best) || enrichedPayloadRowCount(best) === 0) return null;
+    if (!(await enrichedListCacheIsCurrent(best, nowMs))) return null;
     if (enrichedPayloadReadyForUsers(best, nowMs)) {
       return jsonEnrichedPayload(best);
     }
     const staleMarked = markAflEnrichedPayloadStale(best, 'serving_cached_until_refresh');
     const applyLiveCutoff = aflEnrichedPayloadHasEligibleLiveRows(staleMarked, nowMs);
     return jsonEnrichedPayload(staleMarked, AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS, applyLiveCutoff);
+  };
+
+  if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > nowMs) {
+    const hit = await serve(aflEnrichedPayloadMemoryCache.payload);
+    if (hit) return hit;
   }
+
+  const cachedPayload = await sharedCache.getJSON<Record<string, unknown>>(AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY);
+  const redisHit = await serve(cachedPayload && typeof cachedPayload === 'object' ? cachedPayload : null);
+  if (redisHit) return redisHit;
 
   const stale = await getAflStaleEnrichedPayload();
   if (
@@ -1171,15 +1165,17 @@ export async function GET(request: Request) {
             payload,
             AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS
           ),
-          setNBACache(
-            AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY,
-            'afl-player-props-list-enriched',
-            payload,
-            AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_MINUTES,
-            true
-          ),
+          hasCronAuth
+            ? setNBACache(
+                AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY,
+                'afl-player-props-list-enriched',
+                payload,
+                AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_MINUTES,
+                true
+              )
+            : Promise.resolve(true),
         ]);
-        await persistAflStaleEnrichedPayload(payload);
+        await persistAflStaleEnrichedPayload(payload, { persistSupabase: hasCronAuth });
       }
     }
 

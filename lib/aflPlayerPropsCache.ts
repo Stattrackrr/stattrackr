@@ -8,7 +8,7 @@ import {
   AFL_LIST_ENRICHED_STALE_CACHE_KEY,
   AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY,
 } from '@/lib/aflEnrichedListCache';
-import { getNBACache, setNBACache } from '@/lib/nbaCache';
+import { setNBACache } from '@/lib/nbaCache';
 import sharedCache from '@/lib/sharedCache';
 
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
@@ -678,28 +678,28 @@ export function markAflEnrichedPayloadStale(
 export async function getAflStaleEnrichedPayload(): Promise<AflEnrichedListPayload | null> {
   const fromRedis = await sharedCache.getJSON<AflEnrichedListPayload>(AFL_LIST_ENRICHED_STALE_CACHE_KEY);
   if (fromRedis && aflEnrichedPayloadHasUsableStats(fromRedis)) return fromRedis;
-
-  const fromSupabase = await getNBACache<AflEnrichedListPayload>(AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY, {
-    restTimeoutMs: 4000,
-    jsTimeoutMs: 4000,
-    quiet: true,
-  });
-  if (fromSupabase && aflEnrichedPayloadHasUsableStats(fromSupabase)) return fromSupabase;
-
   return null;
 }
 
-export async function persistAflStaleEnrichedPayload(payload: AflEnrichedListPayload): Promise<void> {
+export async function persistAflStaleEnrichedPayload(
+  payload: AflEnrichedListPayload,
+  opts?: { persistSupabase?: boolean }
+): Promise<void> {
   if (!aflEnrichedPayloadHasUsableStats(payload)) return;
   const staleMinutes = Math.max(1, Math.ceil(AFL_LIST_ENRICHED_STALE_TTL_SECONDS / 60));
-  await Promise.allSettled([
+  const writes: Array<Promise<unknown>> = [
     sharedCache.setJSON(AFL_LIST_ENRICHED_STALE_CACHE_KEY, payload, AFL_LIST_ENRICHED_STALE_TTL_SECONDS),
-    setNBACache(
-      AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY,
-      'afl-player-props-list-enriched-stale',
-      payload,
-      staleMinutes,
-      true
-    ),
-  ]);
+  ];
+  if (opts?.persistSupabase) {
+    writes.push(
+      setNBACache(
+        AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY,
+        'afl-player-props-list-enriched-stale',
+        payload,
+        staleMinutes,
+        true
+      )
+    );
+  }
+  await Promise.allSettled(writes);
 }

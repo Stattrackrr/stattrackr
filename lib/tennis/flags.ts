@@ -95,6 +95,14 @@ const IOC_TO_ISO2: Record<string, string> = {
   VEN: 've',
   VIE: 'vn',
   ZIM: 'zw',
+  ISL: 'is',
+  MLT: 'mt',
+  PAK: 'pk',
+  KOS: 'xk',
+  SEN: 'sn',
+  GHA: 'gh',
+  CMR: 'cm',
+  CIV: 'ci',
 };
 
 export function tennisIocToIso2(ioc: string | null | undefined): string | null {

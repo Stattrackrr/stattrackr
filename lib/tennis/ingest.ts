@@ -33,7 +33,8 @@ const TENNIS_OVERLAY_REDIS_MAX_BYTES = 8 * 1024 * 1024;
 /** 10 years — overlay is replaced on successful ingest, same as AFL odds. */
 export const TENNIS_OVERLAY_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
 const TENNIS_OVERLAY_SUPABASE_TTL_MINUTES = 60 * 24 * 400;
-const TENNIS_OVERLAY_READ_TIMEOUT_MS = 45_000;
+/** One REST attempt — a second JS-client wait of the same blob is what stacked to ~109s. */
+const TENNIS_OVERLAY_READ_TIMEOUT_MS = 25_000;
 
 const API_BASE = 'https://api.api-tennis.com/tennis/';
 
@@ -87,7 +88,7 @@ async function readStoredTennisOverlay(): Promise<TennisMatchOverlay | null> {
     const fromSupabase = await getNBACache(TENNIS_OVERLAY_CACHE_KEY, {
       quiet: true,
       restTimeoutMs: TENNIS_OVERLAY_READ_TIMEOUT_MS,
-      jsTimeoutMs: TENNIS_OVERLAY_READ_TIMEOUT_MS,
+      skipJsFallback: true,
     });
     const unpacked = unpackTennisOverlay(fromSupabase);
     if (unpacked?.matches?.length) return unpacked;
@@ -316,25 +317,45 @@ export function tennisOverlayGeneration(): number {
 }
 
 function rememberOverlay(overlay: TennisMatchOverlay | null) {
+  if (!overlay?.matches?.length) return;
   const runtime = overlayRuntime();
   runtime.overlay = overlay;
   runtime.fetchedAtMs = Date.now();
 }
 
-export async function hydrateTennisMatchOverlay(): Promise<TennisMatchOverlay | null> {
-  const runtime = overlayRuntime();
-  if (runtime.overlay && Date.now() - runtime.fetchedAtMs < 60_000) return runtime.overlay;
-  if (runtime.inflight) return runtime.inflight;
-  runtime.inflight = (async () => {
-    const overlay = await readStoredTennisOverlay();
+async function loadOverlayFromRemote(): Promise<TennisMatchOverlay | null> {
+  const overlay = await readStoredTennisOverlay();
+  if (overlay?.matches?.length) {
     rememberOverlay(overlay);
     return overlay;
-  })();
-  try {
-    return await runtime.inflight;
-  } finally {
-    runtime.inflight = null;
   }
+  return overlayRuntime().overlay;
+}
+
+function startOverlayRefresh(): Promise<TennisMatchOverlay | null> {
+  const runtime = overlayRuntime();
+  if (runtime.inflight) return runtime.inflight;
+  runtime.inflight = loadOverlayFromRemote().finally(() => {
+    runtime.inflight = null;
+  });
+  return runtime.inflight;
+}
+
+export async function hydrateTennisMatchOverlay(opts?: {
+  allowRemote?: boolean;
+}): Promise<TennisMatchOverlay | null> {
+  const runtime = overlayRuntime();
+  if (runtime.overlay?.matches?.length) {
+    return runtime.overlay;
+  }
+  if (opts?.allowRemote === false) return null;
+  if (runtime.inflight) return runtime.inflight;
+  return startOverlayRefresh();
+}
+
+/** Process memory only. Dashboard GETs must not pull the overlay blob. */
+export async function hydrateTennisOverlayLocal(): Promise<TennisMatchOverlay | null> {
+  return hydrateTennisMatchOverlay({ allowRemote: false });
 }
 
 export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{

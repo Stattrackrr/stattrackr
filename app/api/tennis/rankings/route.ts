@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadTennisRankings, type TennisTour } from '@/lib/tennis/data';
-import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
+import { loadTennisRankingsCached } from '@/lib/tennis/loadCached';
+import type { TennisTour } from '@/lib/tennis/data';
 
 export async function GET(request: NextRequest) {
-  await hydrateTennisMatchOverlay();
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
   const tour: TennisTour = tourParam === 'WTA' ? 'WTA' : 'ATP';
   const limitRaw = Number(request.nextUrl.searchParams.get('limit'));
   const limit =
     Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(200, Math.floor(limitRaw)) : 50;
-  const teams = loadTennisRankings(tour, { limit }).map((row) => ({
+  const teams = (await loadTennisRankingsCached(tour, { limit })).map((row) => ({
     pos: row.pos,
     team: row.name,
     teamCode: row.ioc,

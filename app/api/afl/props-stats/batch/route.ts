@@ -49,39 +49,68 @@ function getDvpLookup(
   return entry ? entry[1] : null;
 }
 
+async function mapWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  signal: AbortSignal | undefined,
+  worker: (item: T) => Promise<void>
+): Promise<void> {
+  let index = 0;
+  const n = Math.max(1, Math.min(concurrency, items.length || 1));
+  await Promise.all(
+    Array.from({ length: n }, async () => {
+      while (index < items.length) {
+        if (signal?.aborted) return;
+        const item = items[index];
+        index += 1;
+        await worker(item);
+      }
+    })
+  );
+}
+
 export async function POST(request: NextRequest) {
+  const signal = request.signal;
   try {
     const body = (await request.json()) as { props?: PropInput[]; cacheOnly?: boolean };
     const props = Array.isArray(body?.props) ? body.props : [];
     const cacheOnly = body?.cacheOnly === true;
-    if (props.length === 0) {
+    if (props.length === 0 || signal.aborted) {
       return NextResponse.json({ stats: {} });
     }
     const origin = request.nextUrl?.origin ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
     const baseUrl = origin.startsWith('http') ? origin : `https://${origin}`;
-    const dvpMaps = await loadDvpMaps(baseUrl);
+    const emptyDvp = {
+      disposals: new Map<string, { rank: number; value: number }>(),
+      goals: new Map<string, { rank: number; value: number }>(),
+    };
+    const dvpMaps = cacheOnly || signal.aborted ? emptyDvp : await loadDvpMaps(baseUrl);
     const stats: Record<string, AflPropStatsPayload> = {};
-    await Promise.all(
-      props.map(async (p) => {
-        const key = buildAflPropStatKey(p.playerName, p.team, p.opponent, p.statType, p.line);
-        const dvp = getDvpLookup(p.opponent, p.statType, dvpMaps);
-        const result = await getAflPropStats(
-          p.playerName,
-          p.team,
-          p.opponent,
-          p.statType,
-          p.line,
-          baseUrl,
-          dvp,
-          cacheOnly,
-          undefined,
-          p.playerTeam || p.team
-        );
-        if (result) stats[key] = result;
-      })
-    );
+    await mapWithConcurrency(props, cacheOnly ? 12 : 3, signal, async (p) => {
+      if (signal.aborted) return;
+      const key = buildAflPropStatKey(p.playerName, p.team, p.opponent, p.statType, p.line);
+      const dvp = cacheOnly ? null : getDvpLookup(p.opponent, p.statType, dvpMaps);
+      const result = await getAflPropStats(
+        p.playerName,
+        p.team,
+        p.opponent,
+        p.statType,
+        p.line,
+        baseUrl,
+        dvp,
+        cacheOnly,
+        undefined,
+        p.playerTeam || p.team,
+        undefined,
+        signal
+      );
+      if (result) stats[key] = result;
+    });
     return NextResponse.json({ stats });
   } catch (e) {
+    if (signal.aborted) {
+      return NextResponse.json({ stats: {} });
+    }
     console.error('[afl/props-stats/batch]', e);
     return NextResponse.json({ stats: {}, error: 'Failed to compute stats' }, { status: 500 });
   }

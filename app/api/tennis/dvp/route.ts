@@ -3,7 +3,7 @@ import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { tennisDvpProfile, type TennisTour } from '@/lib/tennis/data';
 import { TENNIS_DVP_METRICS, type TennisDvpStage, type TennisDvpWindow } from '@/lib/tennis/dvpShared';
 import { findCachedTennisDvpEvent, readTennisDvpLiveStore } from '@/lib/tennis/dvpLiveCache';
-import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
+import { hydrateTennisOverlayLocal } from '@/lib/tennis/ingest';
 import {
   listLiveTennisEventIndex,
   tennisLiveEventPlayerIds,
@@ -11,7 +11,7 @@ import {
 } from '@/lib/tennis/nextGame';
 
 export async function GET(request: NextRequest) {
-  const overlay = await hydrateTennisMatchOverlay();
+  const overlay = await hydrateTennisOverlayLocal();
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
   const tour: TennisTour = tourParam === 'WTA' ? 'WTA' : 'ATP';
   const yearRaw = Number(request.nextUrl.searchParams.get('year'));
@@ -112,7 +112,11 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const extraPlayerIds = tennisLiveEventPlayerIds(live, tournamentKey || null, tournament || null, stage);
+  const liveIds = tennisLiveEventPlayerIds(live, tournamentKey || null, tournament || null, stage);
+  const extraPlayerIds =
+    opponent || opponentId
+      ? [...new Set([...liveIds, playerId, opponentId].map((id) => String(id || '').trim()).filter((id) => /^\d+$/.test(id)))]
+      : liveIds;
   const profile = tennisDvpProfile({
     tour,
     year,

@@ -12,6 +12,7 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
 import { GET as getTennisPlayerPropsList } from '@/app/api/tennis/player-props/list/route';
+import { attachTennisHeadshots } from '@/lib/tennis/headshots';
 import {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
   COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
@@ -276,12 +277,26 @@ function createHeaders(cronSecret?: string): Headers {
   return headers;
 }
 
+function withTennisHeadshots(snapshot: CombinedPropsSnapshot): CombinedPropsSnapshot {
+  try {
+    const tennis = snapshot.tennis;
+    if (!tennis?.props?.length) return snapshot;
+    const props = attachTennisHeadshots(tennis.props);
+    if (props === tennis.props) return snapshot;
+    return { ...snapshot, tennis: { ...tennis, props } };
+  } catch {
+    return snapshot;
+  }
+}
+
 export async function getCombinedPropsSnapshot(): Promise<CombinedPropsSnapshot | null> {
-  return sharedCache.getJSON<CombinedPropsSnapshot>(COMBINED_PROPS_SNAPSHOT_CACHE_KEY);
+  const snapshot = await sharedCache.getJSON<CombinedPropsSnapshot>(COMBINED_PROPS_SNAPSHOT_CACHE_KEY);
+  return snapshot ? withTennisHeadshots(snapshot) : null;
 }
 
 export async function getCombinedPropsPaintSnapshot(): Promise<CombinedPropsSnapshot | null> {
-  return sharedCache.getJSON<CombinedPropsSnapshot>(COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY);
+  const snapshot = await sharedCache.getJSON<CombinedPropsSnapshot>(COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY);
+  return snapshot ? withTennisHeadshots(snapshot) : null;
 }
 
 async function writeCombinedPropsSnapshotCaches(snapshot: CombinedPropsSnapshot): Promise<void> {
@@ -442,10 +457,18 @@ export async function buildCombinedPropsSnapshot(
   };
 
   if (snapshot.success && writeCache && !debugStats && combinedSnapshotAflAssemblyReady(snapshot)) {
-    await writeCombinedPropsSnapshotCaches(snapshot);
+    let toStore = snapshot;
+    if (TENNIS_PUBLIC_ENABLED && !(snapshot.tennis?.props?.length)) {
+      const previous = await getCombinedPropsSnapshot();
+      if (previous?.tennis?.props?.length) {
+        toStore = { ...snapshot, tennis: previous.tennis };
+      }
+    }
+    await writeCombinedPropsSnapshotCaches(withTennisHeadshots(toStore));
+    return withTennisHeadshots(toStore);
   }
 
-  return snapshot;
+  return withTennisHeadshots(snapshot);
 }
 
 export async function warmCombinedPropsSnapshot(

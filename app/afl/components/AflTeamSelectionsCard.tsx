@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getAflTeamColor, getAflTeamBadgeTextColor } from '@/lib/aflTeamColors';
 import { getAflCanonicalTeamKey } from '@/lib/aflTeamCanonical';
+import { aflDashboardFetch } from '@/lib/aflDashboardFetch';
 
 const TEAM_SELECTIONS_URL = 'https://www.footywire.com/afl/footy/afl_team_selections';
 
@@ -173,7 +174,7 @@ export function AflTeamSelectionsCard({
     if (playerTeam?.trim()) params.set('team', playerTeam.trim());
     if (expectedOpponentTeam?.trim()) params.set('opponent', expectedOpponentTeam.trim());
     const q = params.toString() ? `?${params.toString()}` : '';
-    return fetch(`/api/afl/footywire-team-selections${q}`).then((r) => r.json());
+    return aflDashboardFetch(`/api/afl/footywire-team-selections${q}`).then((r) => r.json());
   };
 
   useEffect(() => {

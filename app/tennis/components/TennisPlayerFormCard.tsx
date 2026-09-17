@@ -15,6 +15,7 @@ import {
   type PlayerFormWindow,
   type TennisPlayerFormPayload,
 } from '@/lib/tennis/playerFormShared';
+import { tennisDashboardFetch } from '@/lib/tennisDashboardFetch';
 
 function formatMatchDate(raw: unknown, fallback?: unknown): string {
   const s = String(raw || '').trim();
@@ -112,7 +113,7 @@ export function TennisPlayerFormCard({
     setError(null);
     const qs = new URLSearchParams({ player, tour: tourKey });
     if (opponent) qs.set('opponent', opponent);
-    fetch(`/api/tennis/player-form?${qs.toString()}`)
+    tennisDashboardFetch(`/api/tennis/player-form?${qs.toString()}`)
       .then(async (r) => {
         const json = await r.json();
         if (!r.ok) throw new Error(json?.error || 'Failed to load form');

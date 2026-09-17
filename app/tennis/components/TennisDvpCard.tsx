@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisEventPlaceLabel, tennisLastName } from '@/lib/tennis/chartStats';
 import { TENNIS_DVP_METRICS, type TennisDvpStage, type TennisDvpWindow } from '@/lib/tennis/dvpShared';
+import { tennisSameOpponentQuery } from '@/lib/tennis/oddsApi';
+import { tennisDashboardFetch, isTennisDashboardAbortError } from '@/lib/tennisDashboardFetch';
 import { TennisTournamentRankInfoButton } from '@/app/tennis/components/TennisTournamentRankInfoButton';
 
 const WINDOW_OPTIONS: Array<{ id: TennisDvpWindow; label: string }> = [
@@ -128,17 +130,23 @@ export default function TennisDvpCard({
   const userChangedOpponentRef = useRef(false);
   const opponentNameRef = useRef(opponentName);
   opponentNameRef.current = opponentName;
+  const lastOppQueryRef = useRef<string | null>(null);
+  const lastFetchKeyRef = useRef('');
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!userChangedOpponentRef.current) setOppSel(String(opponentName || ''));
-  }, [opponentName]);
-
-  useEffect(() => {
+    lastOppQueryRef.current = null;
+    lastFetchKeyRef.current = '';
     userChangedOpponentRef.current = false;
     setOppSel(String(opponentNameRef.current || ''));
+    setPayload(null);
+    setError(null);
   }, [playerName]);
+
+  useEffect(() => {
+    if (!userChangedOpponentRef.current) setOppSel(String(opponentName || ''));
+  }, [opponentName]);
 
   useEffect(() => {
     if (!playerName) {
@@ -147,8 +155,26 @@ export default function TennisDvpCard({
       setLoading(false);
       return;
     }
+    const fetchKey = [
+      playerName,
+      playerId,
+      tour,
+      selectedWindow,
+      opponentId,
+      tournamentName,
+      tournamentKey,
+      stage,
+    ].join('|');
+    if (
+      !userChangedOpponentRef.current &&
+      lastFetchKeyRef.current === fetchKey &&
+      tennisSameOpponentQuery(lastOppQueryRef.current, oppSel)
+    ) {
+      return;
+    }
     let cancelled = false;
     setLoading(true);
+    setPayload(null);
     const params = new URLSearchParams({
       tour,
       window: selectedWindow,
@@ -163,25 +189,20 @@ export default function TennisDvpCard({
     if (tournamentName) params.set('tournament', tournamentName);
     if (tournamentKey) params.set('tournamentKey', tournamentKey);
     if (stage === 'qualifying') params.set('stage', 'qualifying');
-    fetch(`/api/tennis/dvp?${params}`)
-      .then(async (r) => {
-        const text = await r.text();
-        let json: DvpPayload | null = null;
-        try {
-          json = text ? (JSON.parse(text) as DvpPayload) : null;
-        } catch {
-          throw new Error('Error');
-        }
-        if (!r.ok || !json) throw new Error('Error');
-        return json;
+    lastOppQueryRef.current = oppSel || null;
+    lastFetchKeyRef.current = fetchKey;
+    tennisDashboardFetch(`/api/tennis/dvp?${params}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<DvpPayload>;
       })
       .then((data) => {
         if (cancelled) return;
         setPayload(data);
         setError(null);
       })
-      .catch(() => {
-        if (cancelled) return;
+      .catch((err) => {
+        if (cancelled || isTennisDashboardAbortError(err)) return;
         setPayload(null);
         setError('Error');
       })
@@ -191,7 +212,7 @@ export default function TennisDvpCard({
     return () => {
       cancelled = true;
     };
-  }, [playerName, playerId, tour, selectedWindow, oppSel, opponentId, tournamentName, tournamentKey, stage]);
+  }, [playerName, playerId, tour, selectedWindow, oppSel, opponentId, opponentName, tournamentName, tournamentKey, stage]);
 
   const opponents = payload?.opponents || [];
   const metrics = payload?.metrics?.length ? payload.metrics : TENNIS_DVP_METRICS.map((m) => ({

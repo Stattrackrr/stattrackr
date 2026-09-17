@@ -18,9 +18,11 @@ import {
   getTennisNextGame,
   listUniqueUpcomingTennisGames,
   tennisCommenceTimeForMatch,
+  tennisFixtureNamesMatch,
   warmTennisUpcomingFixtures,
   type TennisNextGame,
 } from '@/lib/tennis/nextGame';
+import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import {
   filterTennisOuLines,
   type TennisBookRow,
@@ -681,6 +683,15 @@ export async function refreshTennisOddsSnapshots(opts?: {
       sharedCache.deleteJSON('tennis_player_props_list_v23'),
       sharedCache.deleteJSON('tennis_player_props_list_v24'),
       sharedCache.deleteJSON('tennis_player_props_list_v25'),
+      sharedCache.deleteJSON('tennis_player_props_list_v26'),
+      sharedCache.deleteJSON('tennis_player_props_list_v27'),
+      sharedCache.deleteJSON('tennis_player_props_list_v28'),
+      sharedCache.deleteJSON('tennis_player_props_list_v29'),
+      sharedCache.deleteJSON('tennis_props_empty_atp_v1'),
+      sharedCache.deleteJSON('tennis_props_empty_wta_v1'),
+      sharedCache.deleteJSON('tennis_props_empty_all_v1'),
+      sharedCache.deleteJSON('combined_props_snapshot_v6'),
+      sharedCache.deleteJSON('combined_props_snapshot_paint_v6'),
     ]).catch(() => undefined);
     const meta: TennisOddsRefreshMeta = {
       fetchedAt: new Date().toISOString(),
@@ -706,37 +717,108 @@ export async function getTennisMatchOddsForPlayer(opts: {
 }): Promise<TennisMatchOdds | null> {
   const playerId = String(opts.playerId || '').trim();
   const playerName = String(opts.playerName || '').trim();
-  if ((!playerId && !playerName) || !apiKey()) return null;
-  const next = await getTennisNextGame({ playerId, playerName });
+  if (!playerId && !playerName) return null;
+  const next =
+    (await getTennisNextGame({ playerId, playerName })) ||
+    (await findTennisNextGameFromOdds({ playerName }));
   const matchId = String(next?.matchId || '').trim();
   if (!next || !matchId) return null;
   const snapshot = await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(matchId));
-  if (snapshot?.bookmakers?.length && snapshot.oddsApiEventId) {
-    return presentSnapshot(snapshot, next);
+  if (!snapshot?.bookmakers?.length) return null;
+  return presentSnapshot(snapshot, next);
+}
+
+export async function findTennisNextGameFromOdds(opts: {
+  playerName?: string | null;
+  opponentName?: string | null;
+  tour?: string | null;
+}): Promise<TennisNextGame | null> {
+  const playerName = String(opts.playerName || '').trim();
+  if (!playerName) return null;
+  const opponentName = String(opts.opponentName || '').trim();
+  const tourWant = String(opts.tour || '').trim().toUpperCase();
+  const [index, catalog] = await Promise.all([listTennisOddsIndex(), readOddsApiTennisCatalog()]);
+  type OddsSide = {
+    homeName: string;
+    awayName: string;
+    commenceTime?: string | null;
+    tournamentName?: string | null;
+    sportKey?: string | null;
+    matchId: string;
+  };
+  const rows: OddsSide[] = [
+    ...index.map((row) => ({
+      homeName: row.homeName,
+      awayName: row.awayName,
+      commenceTime: row.commenceTime || null,
+      tournamentName: row.tournamentName || null,
+      sportKey: row.sportKey || null,
+      matchId: row.matchId,
+    })),
+    ...(catalog?.matches || []).map((match) => ({
+      homeName: match.homeTeam,
+      awayName: match.awayTeam,
+      commenceTime: match.commenceTime || null,
+      tournamentName: match.sportTitle || null,
+      sportKey: match.sportKey || null,
+      matchId: `odds:${match.eventId}`,
+    })),
+  ];
+  const involves = (home: string, away: string, name: string) =>
+    tennisFixtureNamesMatch(home, name) || tennisFixtureNamesMatch(away, name);
+  const seen = new Set<string>();
+  const hits: OddsSide[] = [];
+  for (const row of rows) {
+    const key = `${row.matchId}|${row.homeName}|${row.awayName}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (!involves(row.homeName, row.awayName, playerName)) continue;
+    if (opponentName && !involves(row.homeName, row.awayName, opponentName)) continue;
+    if (tourWant === 'ATP' || tourWant === 'WTA') {
+      const blob = `${row.sportKey || ''} ${row.tournamentName || ''}`.toLowerCase();
+      if (blob.includes('wta') || blob.includes('atp')) {
+        const tour = tennisTourFromOdds(row.sportKey, row.tournamentName);
+        if (tour !== tourWant) continue;
+      }
+    }
+    hits.push(row);
   }
-  if (!(await readOddsApiTennisCatalog())) {
-    await refreshOddsApiTennisCatalog({ upcoming: [next] });
-  }
-  if (snapshot?.bookmakers?.length) {
-    const extra = await getOddsApiTennisMatch({ homeName: next.homeName, awayName: next.awayName });
-    if (!extra?.books?.length) return presentSnapshot(snapshot, next);
-    const books = mergeSources(null, extra, next);
-    const stored = await writeSnapshot(next, mergeBookRows(snapshot.bookmakers, books), {
-      oddsApiEventId: extra.eventId,
-      sportKey: extra.sportKey,
-    });
-    return presentSnapshot(stored, next);
-  }
-  const [raw, oddsApi] = await Promise.all([
-    fetchRawOdds(matchId),
-    getOddsApiTennisMatch({ homeName: next.homeName, awayName: next.awayName }),
-  ]);
-  const books = mergeSources(raw, oddsApi, next);
-  if (!books.length) return null;
-  const stored = await writeSnapshot(next, books, {
-    oddsApiEventId: oddsApi?.eventId,
-    sportKey: oddsApi?.sportKey,
-  });
-  return presentSnapshot(stored, next);
+  const withOpponent = opponentName
+    ? hits.filter((row) => involves(row.homeName, row.awayName, opponentName))
+    : hits;
+  const picked = [...(withOpponent.length ? withOpponent : hits)].sort((a, b) => {
+    const ta = Date.parse(String(a.commenceTime || '')) || Number.POSITIVE_INFINITY;
+    const tb = Date.parse(String(b.commenceTime || '')) || Number.POSITIVE_INFINITY;
+    return ta - tb;
+  })[0];
+  if (!picked) return null;
+  const playerIsHome = tennisFixtureNamesMatch(picked.homeName, playerName);
+  const tournamentName = picked.tournamentName || null;
+  return {
+    opponent: playerIsHome ? picked.awayName : picked.homeName,
+    opponentId: null,
+    opponentIoc: null,
+    opponentRank: null,
+    opponentLogo: null,
+    tipoff: picked.commenceTime || null,
+    live: false,
+    isGrandSlam: /_open$|_french_open|_wimbledon|_us_open|_australian_open/i.test(
+      String(picked.sportKey || '')
+    ),
+    tour: tennisTourFromOdds(picked.sportKey, tournamentName),
+    tournamentName,
+    tournamentKey: null,
+    surface: lookupTennisSurface(tournamentName),
+    round: null,
+    matchId: picked.matchId,
+    status: null,
+    playerIsHome,
+    homeName: picked.homeName,
+    awayName: picked.awayName,
+    playerSeed: null,
+    opponentSeed: null,
+    topSeedName: null,
+    topSeedId: null,
+  };
 }
 

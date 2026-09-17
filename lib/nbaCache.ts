@@ -40,7 +40,7 @@ if (supabaseUrl && supabaseServiceKey) {
 
 // Hot in-memory cache to reduce repeated Supabase reads across
 // rapid successive requests on the same warm instance.
-const HOT_CACHE_TTL_MS = 30 * 1000;
+const HOT_CACHE_TTL_MS = 15 * 60 * 1000;
 type HotCacheEntry = { expiresAtMs: number; value: any };
 const hotCache = new Map<string, HotCacheEntry>();
 
@@ -94,6 +94,11 @@ export interface GetCacheOptions {
    * Force skipping the REST API shortcut (use JS client only).
    */
   disableRest?: boolean;
+  /**
+   * Skip the Supabase JS client after REST fails/times out.
+   * Use for huge blobs where a second 45s wait cannot succeed.
+   */
+  skipJsFallback?: boolean;
   /**
    * Suppress verbose logging (only log errors). Useful for bulk operations.
    */
@@ -196,10 +201,20 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
         });
         return cacheEntry.data as T;
       } catch (restError: any) {
+        if (options.skipJsFallback) {
+          if (!quiet) {
+            warnNbaCache(`REST cache read failed for ${cacheKey}; skipping JS fallback`, restError);
+          }
+          return null;
+        }
         if (!quiet) {
           warnNbaCache(`REST cache read failed for ${cacheKey}; falling back to JS client`, restError);
         }
       }
+    }
+
+    if (options.skipJsFallback) {
+      return null;
     }
     
     // Fallback to JS client (for dev or if REST API fails)

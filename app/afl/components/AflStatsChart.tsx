@@ -8,6 +8,7 @@ import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
 import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
 import { dedupeAflGames, parseAflRoundIndex, resolveAflGameSeason } from '@/lib/aflGameDedupe';
+import { aflDashboardFetch } from '@/lib/aflDashboardFetch';
 import { opponentToOfficialTeamName, rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 
 type AflAdvancedFilterKey =
@@ -667,10 +668,10 @@ export function AflStatsChart({
     }
     let cancelled = false;
     Promise.all([
-      fetch(
+      aflDashboardFetch(
         `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(teammateFilterName.trim())}`
       ).then((r) => r.json()),
-      fetch(
+      aflDashboardFetch(
         `/api/afl/player-game-logs?season=${season - 1}&player_name=${encodeURIComponent(teammateFilterName.trim())}`
       ).then((r) => r.json()),
     ])
@@ -707,7 +708,7 @@ export function AflStatsChart({
     const loadTeamLogos = async () => {
       try {
         const nextMap: Record<string, string> = {};
-        const res = await fetch('/api/afl/team-logos');
+        const res = await aflDashboardFetch('/api/afl/team-logos');
         if (!res.ok) return;
         const json = await res.json();
         const logos = json?.logos && typeof json.logos === 'object' ? json.logos : {};

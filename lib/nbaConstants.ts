@@ -85,7 +85,7 @@ export const NBA_PUBLIC_ENABLED =
 
 export const NBA_OFFSEASON_SIDEBAR_LABEL = 'Off-season';
 
-const TENNIS_PUBLIC_ENABLED_DEFAULT = false;
+const TENNIS_PUBLIC_ENABLED_DEFAULT = true;
 
 export const TENNIS_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_TENNIS_ENABLED === 'true' ||
