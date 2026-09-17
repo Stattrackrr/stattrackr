@@ -240,7 +240,7 @@ export function derivePointByPointStats(games: ApiPointByPointGame[] | null | un
   let currentSet: string | null = null;
 
   for (const game of games) {
-    const setLabel = String(game.set_number || '').trim() || currentSet || '';
+    const setLabel: string = String(game.set_number || '').trim() || currentSet || '';
     if (currentSet != null && setLabel && setLabel !== currentSet) {
       gamesFirst = 0;
       gamesSecond = 0;
