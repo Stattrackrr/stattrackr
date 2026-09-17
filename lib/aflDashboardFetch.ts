@@ -61,7 +61,7 @@ export function aflDashboardFetch(input: RequestInfo | URL, init?: RequestInit):
     return Promise.reject(new DOMException('The operation was aborted.', 'AbortError'));
   }
   return fetch(input, {
-    cache: 'no-store',
+    cache: 'default',
     ...init,
     signal: mergedSignal(init?.signal ?? null),
   });

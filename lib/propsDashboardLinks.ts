@@ -59,6 +59,8 @@ export function tennisDashboardHref(opts: {
   playerId?: string | null;
   team?: string | null;
   opponent?: string | null;
+  opponentIoc?: string | null;
+  opponentId?: string | null;
   statType?: string | null;
   line?: number | null;
   bookmaker?: string | null;
@@ -69,6 +71,10 @@ export function tennisDashboardHref(opts: {
   const tour = String(opts.team || '').trim();
   if (tour) q.set('team', tour);
   if (opts.opponent) q.set('opponent', opts.opponent);
+  const oppIoc = String(opts.opponentIoc || '').trim().toUpperCase();
+  if (oppIoc) q.set('oioc', oppIoc);
+  const oppId = String(opts.opponentId || '').trim();
+  if (oppId) q.set('oid', oppId);
   q.set('stat', normalizeTennisStat(String(opts.statType || '')));
   if (opts.line != null && Number.isFinite(opts.line)) q.set('line', String(opts.line));
   if (opts.playerId) q.set('pid', String(opts.playerId));
@@ -116,6 +122,8 @@ export function propsDashboardHref(opts: {
   playerId?: string | null;
   team?: string | null;
   opponent?: string | null;
+  opponentIoc?: string | null;
+  opponentId?: string | null;
   statType?: string | null;
   line?: number | null;
   bookmaker?: string | null;

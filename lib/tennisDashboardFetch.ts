@@ -4,6 +4,7 @@ import { clearInflightJsonByUrlPrefix } from '@/lib/clientFetchDedupe';
 
 let controller: AbortController | null = null;
 let leaving = false;
+const inflight = new Map<string, Promise<Response>>();
 
 function currentController(): AbortController {
   if (!controller || controller.signal.aborted) {
@@ -28,6 +29,7 @@ function abortCurrent(): void {
     controller.abort();
   }
   controller = new AbortController();
+  inflight.clear();
   clearInflightJsonByUrlPrefix('/api/tennis');
 }
 
@@ -53,9 +55,17 @@ export function tennisDashboardFetch(input: RequestInfo | URL, init?: RequestIni
   if (leaving) {
     return Promise.reject(new DOMException('The operation was aborted.', 'AbortError'));
   }
-  return fetch(input, {
-    cache: 'no-store',
-    ...init,
-    signal: tennisDashboardSignal(),
-  });
+  const url = String(input);
+  let pending = inflight.get(url);
+  if (!pending) {
+    pending = fetch(input, {
+      cache: 'default',
+      ...init,
+      signal: tennisDashboardSignal(),
+    }).finally(() => {
+      inflight.delete(url);
+    });
+    inflight.set(url, pending);
+  }
+  return pending.then((res) => res.clone());
 }

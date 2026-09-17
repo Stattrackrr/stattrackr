@@ -50,6 +50,7 @@ export function TennisSimilarPlayersCard({
   playerId = null,
   playerName = null,
   opponentName = null,
+  opponentId = null,
   selectedStat = 'moneyline',
   tour = 'ATP',
 }: {
@@ -59,6 +60,7 @@ export function TennisSimilarPlayersCard({
   playerId?: string | null;
   playerName?: string | null;
   opponentName?: string | null;
+  opponentId?: string | null;
   selectedStat?: string;
   tour?: 'ATP' | 'WTA';
   players?: Array<{ name?: string | null; imageUrl?: string | null; ioc?: string | null }>;
@@ -98,6 +100,7 @@ export function TennisSimilarPlayersCard({
       limit: '8',
     });
     if (playerId) params.set('playerId', playerId);
+    if (opponentId) params.set('opponentId', opponentId);
     lastOpponentRef.current = opponentName;
     tennisDashboardFetch(`/api/tennis/similar-players?${params.toString()}`)
       .then((res) => {
@@ -121,7 +124,7 @@ export function TennisSimilarPlayersCard({
     return () => {
       cancelled = true;
     };
-  }, [playerId, playerName, opponentName, selectedStat, tour]);
+  }, [playerId, playerName, opponentName, opponentId, selectedStat, tour]);
 
   const playerLabel = tennisLastName(payload?.player?.name || playerName);
   const oppLabel = tennisLastName(payload?.opponent?.name || opponentName);

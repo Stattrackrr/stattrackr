@@ -10,6 +10,7 @@ import {
 } from '@/lib/tennis/advancedAverages';
 import {
   tennisComputedCacheKey,
+  tennisSimilarComputedKey,
   writeTennisComputedCache,
 } from '@/lib/tennis/dashboardCache';
 import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
@@ -44,6 +45,7 @@ export async function warmTennisDashboardComputed(): Promise<{ matchups: number 
     const player = String(row.playerName || '').trim();
     const opponent = String(row.opponent || '').trim();
     const playerId = String(row.playerId || '').trim();
+    const opponentId = String(row.opponentId || '').trim();
     if (!player || !opponent) continue;
     const tour = tourOf(row);
     const key = `${playerId || player}:${opponent}:${tour || ''}`;
@@ -59,10 +61,18 @@ export async function warmTennisDashboardComputed(): Promise<{ matchups: number 
       stat,
       limit: 8,
     });
-    await writeTennisComputedCache(
-      tennisComputedCacheKey('similar', [playerId || player, opponent, stat, tour]),
-      { success: true, ...similar }
-    );
+    if (similar.similar.length) {
+      await writeTennisComputedCache(
+        tennisSimilarComputedKey({
+          playerId,
+          playerName: player,
+          opponentId,
+          opponentName: opponent,
+          tour,
+        }),
+        { success: true, ...similar }
+      );
+    }
     const form = buildTennisPlayerForm({
       playerName: player,
       opponentName: opponent,

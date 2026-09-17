@@ -26,6 +26,8 @@ import {
   type TennisPlayer,
   type TennisTour,
 } from '@/lib/tennis/data';
+import { loadTennisPlayersCached, loadPlayerMatchesCached } from '@/lib/tennis/loadCached';
+import { readTennisPlayerLogsCacheMany } from '@/lib/tennis/dashboardCache';
 
 export type {
   TennisSimilarPlayerRow,
@@ -69,12 +71,12 @@ export function normalizeTennisSimilarStat(raw: string | null | undefined): Tenn
   return 'moneyline';
 }
 
-function resolvePlayer(
+function resolvePlayerIn(
+  players: TennisPlayer[],
   name: string,
   preferredTour: TennisTour,
   playerId?: string | null
 ): TennisPlayer | null {
-  const players = loadTennisPlayers();
   const id = String(playerId || '').trim();
   if (id) {
     const byId = players.find((p) => p.playerId === id);
@@ -96,6 +98,14 @@ function resolvePlayer(
     if (unique.length === 1) return unique[0];
   }
   return null;
+}
+
+function resolvePlayer(
+  name: string,
+  preferredTour: TennisTour,
+  playerId?: string | null
+): TennisPlayer | null {
+  return resolvePlayerIn(loadTennisPlayers(), name, preferredTour, playerId);
 }
 
 function playerHand(player: TennisPlayer | null, name: string): TennisHand | null {
@@ -282,6 +292,200 @@ export function buildTennisSimilarPlayers(opts: {
     rpw: 1.2,
   };
 
+  const scored = candidates
+    .map((bundle) => {
+      let dist = 0;
+      for (const key of features) {
+        const a = targetProfile[key];
+        const b = bundle.profile[key];
+        if (a == null || b == null) continue;
+        const zT = (a - norms[key].mean) / norms[key].std;
+        const zP = (b - norms[key].mean) / norms[key].std;
+        dist += weights[key] * (zT - zP) ** 2;
+      }
+      if (targetHand && bundle.hand && targetHand !== bundle.hand) dist += 2.4;
+      const winGap =
+        targetProfile.winPct != null && bundle.profile.winPct != null
+          ? Math.abs(targetProfile.winPct - bundle.profile.winPct)
+          : 0;
+      if (winGap > 16) dist += ((winGap - 16) / 8) ** 2;
+      return { ...bundle, distance: Math.sqrt(dist) };
+    })
+    .sort((a, b) => a.distance - b.distance);
+
+  const similar: TennisSimilarPlayerRow[] = scored.slice(0, limit).map((bundle) => {
+    const games = [...bundle.games].sort((a, b) =>
+      String(a.date || '').localeCompare(String(b.date || ''))
+    );
+    const latest = games[games.length - 1];
+    const wins = games.filter((g) => g.isWin).length;
+    return {
+      matchId: latest.matchId,
+      date: latest.date,
+      playerId: bundle.player.playerId,
+      name: bundle.player.name,
+      ioc: bundle.player.ioc,
+      imageUrl: clientTennisHeadshotUrl(bundle.player.playerId, bundle.player.imageUrl),
+      hand: playerHand(bundle.player, bundle.player.name),
+      rank: bundle.player.rank,
+      similarity: round1(100 / (1 + bundle.distance)),
+      isWin: latest.isWin,
+      score: formatScore(latest),
+      surface: latest.surface || null,
+      h2hWins: wins,
+      h2hLosses: games.length - wins,
+      value: statValue(latest, stat),
+      stats: {
+        aces: num(latest.aces),
+        opponentAces: num(latest.opponentAces),
+        totalGames: num(latest.totalGames),
+        gamesWon: num(latest.gamesWon),
+        gamesLost: num(latest.gamesLost),
+        totalSets: num(latest.totalSets),
+        doubleFaults: num(latest.doubleFaults),
+        firstServePct: num(latest.firstServePct),
+        dominanceRatio: num(latest.dominanceRatio),
+        breakPointsConverted: num(latest.breakPointsConverted),
+        returnPointsWonPct: num(latest.returnPointsWonPct),
+      },
+    };
+  });
+
+  return { ...empty, similar };
+}
+
+const MAX_REDIS_SIMILAR_CANDIDATES = 28;
+
+export async function buildTennisSimilarPlayersAsync(opts: {
+  playerName: string;
+  opponentName: string;
+  playerId?: string | null;
+  opponentId?: string | null;
+  tour?: TennisTour | null;
+  stat?: string;
+  limit?: number;
+}): Promise<TennisSimilarPlayersPayload> {
+  if (loadTennisMatches().length) {
+    return buildTennisSimilarPlayers(opts);
+  }
+
+  const playerName = String(opts.playerName || '').trim();
+  const opponentName = String(opts.opponentName || '').trim();
+  const stat = normalizeTennisSimilarStat(opts.stat);
+  const limit = Math.min(Math.max(Number(opts.limit) || 8, 1), 12);
+  const players = await loadTennisPlayersCached();
+  const preferredTour =
+    opts.tour ||
+    players.find((p) => p.playerId === String(opts.playerId || '').trim())?.tour ||
+    'ATP';
+  const player = resolvePlayerIn(players, playerName, preferredTour, opts.playerId);
+  const opponent = resolvePlayerIn(
+    players,
+    opponentName,
+    player?.tour || preferredTour,
+    opts.opponentId
+  );
+  const tour = player?.tour || opponent?.tour || preferredTour;
+  const empty: TennisSimilarPlayersPayload = {
+    stat,
+    statLabel: TENNIS_SIMILAR_STAT_LABELS[stat],
+    player: slimSide(player, playerName),
+    opponent: opponent
+      ? { playerId: opponent.playerId, name: opponent.name, ioc: opponent.ioc }
+      : opponentName
+        ? { playerId: null, name: opponentName, ioc: null }
+        : null,
+    similar: [],
+  };
+  if (!player || !opponent || player.playerId === opponent.playerId) return empty;
+
+  const opponentLogs = await loadPlayerMatchesCached({
+    playerId: opponent.playerId,
+    playerName: opponent.name,
+    tour,
+  });
+  const candidateIds = new Set<string>();
+  for (const row of opponentLogs) {
+    const id = String(row.opponentId || '').trim();
+    if (id && id !== player.playerId) candidateIds.add(id);
+  }
+  const playersById = new Map(players.filter((p) => p.tour === tour).map((p) => [p.playerId, p]));
+  const targetHand = playerHand(player, player.name);
+  const rankedCandidates = [...candidateIds]
+    .map((id) => playersById.get(id))
+    .filter((meta): meta is TennisPlayer => Boolean(meta))
+    .filter((meta) =>
+      inRankBand(player.rank, meta.rank, !!(targetHand && playerHand(meta, meta.name) === targetHand))
+    )
+    .sort(
+      (a, b) =>
+        Math.abs((a.rank ?? 999) - (player.rank ?? 999)) -
+        Math.abs((b.rank ?? 999) - (player.rank ?? 999))
+    )
+    .slice(0, MAX_REDIS_SIMILAR_CANDIDATES);
+
+  const logsById = await readTennisPlayerLogsCacheMany([
+    player.playerId,
+    ...rankedCandidates.map((row) => row.playerId),
+  ]);
+  const targetRows =
+    logsById.get(player.playerId) ||
+    (await loadPlayerMatchesCached({
+      playerId: player.playerId,
+      playerName: player.name,
+      tour,
+    }));
+  const targetProfile = buildProfile(targetRows, { rank: player.rank, height: player.height });
+  if (!targetProfile) return empty;
+
+  type VsBundle = { player: TennisPlayer; games: TennisMatchRow[] };
+  const vsByPlayer = new Map<string, VsBundle>();
+  for (const meta of rankedCandidates) {
+    const rows = logsById.get(meta.playerId) || [];
+    const games = rows.filter((row) => isVsOpponent(row, opponent));
+    if (!games.length) continue;
+    vsByPlayer.set(meta.playerId, { player: meta, games });
+  }
+  if (!vsByPlayer.size) return empty;
+
+  const candidates = [...vsByPlayer.values()]
+    .map((bundle) => {
+      const hand = playerHand(bundle.player, bundle.player.name);
+      if (!inRankBand(player.rank, bundle.player.rank, !!(targetHand && hand && targetHand === hand))) {
+        return null;
+      }
+      const rows = logsById.get(bundle.player.playerId) || bundle.games;
+      const profile = buildProfile(rows, { rank: bundle.player.rank, height: bundle.player.height });
+      return profile ? { ...bundle, profile, hand } : null;
+    })
+    .filter((row): row is VsBundle & { profile: Profile; hand: TennisHand | null } => !!row);
+  if (!candidates.length) return empty;
+
+  const features: FeatureKey[] = [
+    'rank',
+    'height',
+    'winPct',
+    'aces',
+    'gamesWon',
+    'firstServePct',
+    'rpw',
+  ];
+  const pool = [targetProfile, ...candidates.map((row) => row.profile)];
+  const norms = Object.fromEntries(
+    features.map((key) => {
+      const values = pool.map((p) => p[key]).filter((v): v is number => v != null);
+      return [key, meanStd(values)];
+    })
+  ) as Record<FeatureKey, { mean: number; std: number }>;
+  const weights: Record<FeatureKey, number> = {
+    rank: 1.8,
+    height: 1.1,
+    winPct: 1.15,
+    aces: 2.4,
+    gamesWon: 1.15,
+    firstServePct: 1.5,
+    rpw: 1.2,
+  };
   const scored = candidates
     .map((bundle) => {
       let dist = 0;

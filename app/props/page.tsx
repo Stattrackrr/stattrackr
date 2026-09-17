@@ -20,6 +20,7 @@ import {
   isOnPropsPage,
   startAflPropsStatsBackfill,
 } from '@/lib/aflPropsStatsBackfillControl';
+import { abortAflDashboardFetches } from '@/lib/aflDashboardFetch';
 import {
   kickCombinedPropsEarlyFetch,
   peekCombinedPropsEarlyPayload,
@@ -147,6 +148,7 @@ interface PlayerProp {
   playerIoc?: string | null;
   playerRank?: number | null;
   opponentIoc?: string | null;
+  opponentId?: string | null;
   opponentRank?: number | null;
   playerSeed?: number | null;
   opponentSeed?: number | null;
@@ -345,7 +347,10 @@ const PROPS_DESKTOP_IP_COL_STYLE = {
 } as const;
 
 function navigateToTennisDashboardFromProp(
-  prop: Pick<PlayerProp, 'playerName' | 'playerId' | 'team' | 'opponent' | 'statType' | 'line' | 'bookmaker'>,
+  prop: Pick<
+    PlayerProp,
+    'playerName' | 'playerId' | 'team' | 'opponent' | 'opponentIoc' | 'opponentId' | 'statType' | 'line' | 'bookmaker'
+  >,
   router: { push: (href: string) => void },
   lineValue?: number
 ): void {
@@ -354,6 +359,8 @@ function navigateToTennisDashboardFromProp(
     playerId: prop.playerId,
     team: prop.team,
     opponent: prop.opponent,
+    opponentIoc: prop.opponentIoc,
+    opponentId: prop.opponentId,
     statType: prop.statType,
     line:
       typeof lineValue === 'number' && Number.isFinite(lineValue)
@@ -369,6 +376,7 @@ function navigateToTennisDashboardFromProp(
     tour: String(prop.team || '').trim(),
     opponent: prop.opponent,
   });
+  abortAflDashboardFetches();
   snapshotPropsPageBeforeLeave();
   router.push(href);
 }
@@ -8160,6 +8168,8 @@ export default function NBALandingPage() {
                               playerId: prop.playerId,
                               team: prop.team,
                               opponent: prop.opponent,
+                              opponentIoc: prop.opponentIoc,
+                              opponentId: prop.opponentId,
                               statType: prop.statType,
                               line: Number.isFinite(prop.line) ? prop.line : null,
                               bookmaker: prop.bookmaker,
@@ -8346,38 +8356,6 @@ export default function NBALandingPage() {
                               <tr
                                 key={propsListRowKey(prop, rowSport)}
                                 className={`border-b ${mounted && isDark ? 'border-gray-900 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
-                                onMouseEnter={() => {
-                                  if (isTennisPropsSport(rowSport)) {
-                                    prefetchTennisDashboardFromProps({
-                                      playerName: prop.playerName,
-                                      playerId: prop.playerId,
-                                      tour: prop.team,
-                                      opponent: prop.opponent,
-                                    });
-                                    return;
-                                  }
-                                  if (rowSport === 'afl') {
-                                    prefetchAflDashboardFromProps({
-                                      playerName: prop.playerName,
-                                      team: prop.team || '',
-                                      opponent: prop.opponent || '',
-                                    });
-                                    return;
-                                  }
-                                  const playerId = getPlayerIdFromName(prop.playerName);
-                                  if (playerId && typeof window !== 'undefined') {
-                                    const currentSeason = new Date().getFullYear();
-                                    const prefetchUrls = [
-                                      `/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`,
-                                      `/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`,
-                                      `/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`,
-                                      `/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`,
-                                    ];
-                                    prefetchUrls.forEach(url => {
-                                      fetch(url, { cache: 'default' }).catch(() => {});
-                                    });
-                                  }
-                                }}
                                 onAuxClick={(e) => {
                                   if (e.button !== 1) return;
                                   if (eventTargetIsInteractive(e)) return;
@@ -9641,6 +9619,8 @@ export default function NBALandingPage() {
                             playerId: prop.playerId,
                             team: prop.team,
                             opponent: prop.opponent,
+                            opponentIoc: prop.opponentIoc,
+                            opponentId: prop.opponentId,
                             statType: prop.statType,
                             line: Number.isFinite(prop.line) ? prop.line : null,
                             bookmaker: prop.bookmaker,

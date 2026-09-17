@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   readTennisComputedCache,
   tennisComputedCacheKey,
+  tennisSimilarComputedKey,
   writeTennisComputedCache,
 } from '@/lib/tennis/dashboardCache';
-import { hydrateTennisOverlayLocal } from '@/lib/tennis/ingest';
-import { buildTennisSimilarPlayers } from '@/lib/tennis/similarPlayers';
+import { buildTennisSimilarPlayersAsync } from '@/lib/tennis/similarPlayers';
 import type { TennisTour } from '@/lib/tennis/types';
+
+type SimilarCacheBody = Record<string, unknown> & { success?: boolean; similar?: unknown[] };
+
+function cacheHasSimilar(cached: SimilarCacheBody | null): cached is SimilarCacheBody {
+  return Boolean(cached?.success && Array.isArray(cached.similar) && cached.similar.length);
+}
 
 export async function GET(request: NextRequest) {
   const player = String(request.nextUrl.searchParams.get('player') || '').trim();
@@ -21,21 +27,31 @@ export async function GET(request: NextRequest) {
   const tour: TennisTour | null = tourParam === 'WTA' || tourParam === 'ATP' ? tourParam : null;
   const limitRaw = Number(request.nextUrl.searchParams.get('limit') || 8);
   const stat = request.nextUrl.searchParams.get('stat') || 'moneyline';
-  const playerId = request.nextUrl.searchParams.get('playerId');
-  const cacheKey = tennisComputedCacheKey('similar', [playerId || player, opponent, stat, tour]);
-  const cached = await readTennisComputedCache<Record<string, unknown>>(cacheKey);
-  if (cached?.success) return NextResponse.json(cached);
+  const playerId = String(request.nextUrl.searchParams.get('playerId') || '').trim();
+  const opponentId = String(request.nextUrl.searchParams.get('opponentId') || '').trim();
+  const stableKey = tennisSimilarComputedKey({
+    playerId,
+    playerName: player,
+    opponentId,
+    opponentName: opponent,
+    tour,
+  });
+  const legacyKey = tennisComputedCacheKey('similar', [playerId || player, opponent, stat, tour]);
+  for (const key of [stableKey, legacyKey]) {
+    const cached = await readTennisComputedCache<SimilarCacheBody>(key);
+    if (cacheHasSimilar(cached)) return NextResponse.json(cached);
+  }
 
-  await hydrateTennisOverlayLocal();
-  const payload = buildTennisSimilarPlayers({
+  const payload = await buildTennisSimilarPlayersAsync({
     playerName: player,
     opponentName: opponent,
     playerId,
+    opponentId,
     tour,
     stat,
     limit: Number.isFinite(limitRaw) ? limitRaw : 8,
   });
   const body = { success: true, ...payload };
-  if (payload.similar.length) void writeTennisComputedCache(cacheKey, body);
+  if (payload.similar.length) void writeTennisComputedCache(stableKey, body);
   return NextResponse.json(body);
 }

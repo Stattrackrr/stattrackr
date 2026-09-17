@@ -103,6 +103,34 @@ export async function readTennisPlayerLogsCache(playerId: string): Promise<Tenni
   return null;
 }
 
+export async function readTennisPlayerLogsCacheMany(
+  playerIds: string[]
+): Promise<Map<string, TennisMatchRow[]>> {
+  const ids = [...new Set(playerIds.map((id) => String(id || '').trim()).filter(Boolean))];
+  const out = new Map<string, TennisMatchRow[]>();
+  if (!ids.length) return out;
+  const rows = await sharedCache.getJSONMany<TennisPlayerLogsCache>(ids.map(playerLogsKey));
+  ids.forEach((id, i) => {
+    const games = rows[i]?.games;
+    if (games?.length) out.set(id, games);
+  });
+  return out;
+}
+
+export function tennisSimilarComputedKey(opts: {
+  playerId?: string | null;
+  playerName?: string | null;
+  opponentId?: string | null;
+  opponentName?: string | null;
+  tour?: string | null;
+}): string {
+  return tennisComputedCacheKey('similar', [
+    opts.playerId || opts.playerName,
+    opts.opponentId || opts.opponentName,
+    opts.tour,
+  ]);
+}
+
 function fitPlayerLogsPayload(payload: TennisPlayerLogsCache): TennisPlayerLogsCache | null {
   const id = String(payload.playerId || '').trim();
   if (!id || !payload.games?.length) return null;

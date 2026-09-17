@@ -57,7 +57,7 @@ import {
   tennisRoundLabel,
   tennisTourLabel,
 } from '@/lib/tennis/chartStats';
-import { tennisFlagUrl } from '@/lib/tennis/flags';
+import { tennisFlagUrl, tennisIocToIso2 } from '@/lib/tennis/flags';
 import { clientTennisHeadshotUrl, tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
 import { propsSportFromTennisTour } from '@/lib/nbaConstants';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
@@ -260,6 +260,24 @@ function tennisUrlOpponentValue(raw: string | null | undefined): string | null {
   const value = String(raw || '').trim();
   if (!value || value === '—' || value === 'NA' || value === 'N/A') return null;
   return value;
+}
+
+function tennisUrlIocValue(raw: string | null | undefined): string | null {
+  const code = String(raw || '').trim().toUpperCase();
+  if (!code || !tennisIocToIso2(code)) return null;
+  return code;
+}
+
+function useIsDesktopLayout(): boolean | null {
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  return isDesktop;
 }
 
 function readTennisUrlOpponent(): string | null {
@@ -558,6 +576,9 @@ export default function TennisDashboardPage() {
     loginRedirect: '/login',
     requireAuth: false,
   });
+  const isDesktopLayout = useIsDesktopLayout();
+  const showMobileDashCards = isDesktopLayout === false;
+  const showDesktopDashCards = isDesktopLayout === true;
 
   // SSR-safe defaults only — restore from localStorage/URL after mount (avoids hydration mismatch).
   const [nblPropsMode, setNblPropsMode] = useState<NblPropsMode>('player');
@@ -576,6 +597,8 @@ export default function TennisDashboardPage() {
   const [selectedPlayer, setSelectedPlayer] = useState<NblRosterPlayer | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [propsOpponentFallback, setPropsOpponentFallback] = useState<string | null>(null);
+  const [propsOpponentIocFallback, setPropsOpponentIocFallback] = useState<string | null>(null);
+  const [propsOpponentIdFallback, setPropsOpponentIdFallback] = useState<string | null>(null);
   const [selectedPlayerGameLogs, setSelectedPlayerGameLogs] = useState<Array<Record<string, unknown>>>([]);
   const [selectedTeamGameLogs, setSelectedTeamGameLogs] = useState<Array<Record<string, unknown>>>([]);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
@@ -773,6 +796,10 @@ export default function TennisDashboardPage() {
       }
       const urlOpponent = tennisUrlOpponentValue(url.searchParams.get('opponent'));
       if (urlOpponent) setPropsOpponentFallback(urlOpponent);
+      const urlOpponentIoc = tennisUrlIocValue(url.searchParams.get('oioc'));
+      if (urlOpponentIoc) setPropsOpponentIocFallback(urlOpponentIoc);
+      const urlOpponentId = String(url.searchParams.get('oid') || '').trim();
+      if (urlOpponentId) setPropsOpponentIdFallback(urlOpponentId);
     } catch {
       tennisLineFromUrlRef.current = null;
     }
@@ -961,6 +988,24 @@ export default function TennisDashboardPage() {
     router.push(returnPath);
   }, [router, selectedPlayer]);
 
+  const tennisUrlSyncKey = [
+    nblPropsMode,
+    selectedPlayer?.name ?? '',
+    selectedPlayer?.team ?? '',
+    selectedTeam ?? '',
+    nextGameOpponent ?? '',
+    nextGameOpponentIoc ?? '',
+    nextGameOpponentId ?? '',
+    nextGamePlayerId ?? '',
+    propsOpponentFallback ?? '',
+    propsOpponentIocFallback ?? '',
+    propsOpponentIdFallback ?? '',
+    selectedPlayer?.playerId ?? '',
+    mainChartStat ?? '',
+    chartTimeframe ?? '',
+    selectionHydrated ? '1' : '0',
+  ].join('\0');
+
   // Keep URL in sync with tennis selection only.
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -977,6 +1022,12 @@ export default function TennisDashboardPage() {
       if (nextOpp) url.searchParams.set('opponent', nextOpp);
       else if (existingOpp) url.searchParams.set('opponent', existingOpp);
       else url.searchParams.delete('opponent');
+      const nextOppIoc = tennisUrlIocValue(nextGameOpponentIoc) || propsOpponentIocFallback;
+      if (nextOppIoc) url.searchParams.set('oioc', nextOppIoc);
+      else url.searchParams.delete('oioc');
+      const nextOppId = String(nextGameOpponentId || propsOpponentIdFallback || '').trim();
+      if (nextOppId) url.searchParams.set('oid', nextOppId);
+      else url.searchParams.delete('oid');
       if (mainChartStat) url.searchParams.set('stat', mainChartStat);
       else url.searchParams.delete('stat');
       url.searchParams.set('tf', chartTimeframe);
@@ -1007,6 +1058,8 @@ export default function TennisDashboardPage() {
       url.searchParams.delete('name');
       url.searchParams.delete('team');
       url.searchParams.delete('opponent');
+      url.searchParams.delete('oioc');
+      url.searchParams.delete('oid');
       url.searchParams.delete('player');
       url.searchParams.delete('pid');
       url.searchParams.delete('stat');
@@ -1016,19 +1069,7 @@ export default function TennisDashboardPage() {
     if (window.location.href !== next) {
       window.history.replaceState({}, '', next);
     }
-  }, [
-    nblPropsMode,
-    selectedPlayer?.name,
-    selectedPlayer?.team,
-    selectedTeam,
-    nextGameOpponent,
-    nextGamePlayerId,
-    propsOpponentFallback,
-    selectedPlayer?.playerId,
-    mainChartStat,
-    chartTimeframe,
-    selectionHydrated,
-  ]);
+  }, [tennisUrlSyncKey]);
 
   const filteredPlayers = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -1066,6 +1107,8 @@ export default function TennisDashboardPage() {
     hasIncomingTennisBookOrLineRef.current = false;
     tennisIncomingStatRef.current = null;
     setPropsOpponentFallback(null);
+    setPropsOpponentIocFallback(null);
+    setPropsOpponentIdFallback(null);
     const playerId = String(player.playerId || '').trim();
     const cached = readTennisNextGameClient(playerId);
     if (playerId && cached) applyUpcoming(playerId, cached);
@@ -1491,15 +1534,21 @@ export default function TennisDashboardPage() {
   );
   const matchupLeft = selectedPlayer?.name ? String(selectedPlayer.name).trim() : null;
   const matchupLeftIoc = selectedPlayer?.ioc || lastLog?.ioc || null;
-  const matchupOpponentIoc = displayOpponent ? nextGameOpponentIoc || lastLog?.opponentIoc || null : null;
-  const rosterOpponentRank = displayOpponent
-    ? Number(
-        rosterPlayers.find(
-          (player) =>
-            normalizeNblPlayerNameForMatch(player.name) ===
-            normalizeNblPlayerNameForMatch(displayOpponent)
-        )?.jersey
+  const rosterOpponent = displayOpponent
+    ? rosterPlayers.find(
+        (player) =>
+          normalizeNblPlayerNameForMatch(player.name) ===
+          normalizeNblPlayerNameForMatch(displayOpponent)
       )
+    : null;
+  const matchupOpponentIoc = displayOpponent
+    ? propsOpponentIocFallback ||
+      nextGameOpponentIoc ||
+      rosterOpponent?.ioc ||
+      null
+    : null;
+  const rosterOpponentRank = displayOpponent
+    ? Number(rosterOpponent?.jersey)
     : NaN;
   const matchupOpponentRank = displayOpponent
     ? nextGameOpponentRank ??
@@ -2165,7 +2214,7 @@ export default function TennisDashboardPage() {
                         </button>
                       </div>
                       <div className="relative w-full min-w-0 flex flex-col flex-1 min-h-0 overflow-hidden">
-                        {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
+                        {showMobileDashCards && nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
                           <div className={nblRightTab === 'dvp' ? 'w-full h-full flex flex-col min-h-0' : 'hidden'}>
                             <TennisDvpCard
                               isDark={!!mounted && isDark}
@@ -2291,13 +2340,14 @@ export default function TennisDashboardPage() {
                         tournamentName={nextGameTournament}
                       />
                     </div>
-                    {playerVsContainerTab === 'similar' ? (
+                    {showMobileDashCards && playerVsContainerTab === 'similar' ? (
                       <TennisSimilarPlayersCard
                         isDark={!!mounted && isDark}
                         layout="mobile"
                         playerId={selectedPlayer?.playerId || null}
                         playerName={matchupLeft}
                         opponentName={statsOpponent}
+                        opponentId={displayOpponent ? nextGameOpponentId || propsOpponentIdFallback : null}
                         selectedStat={mainChartStat}
                         tour={dvpTour}
                         players={rosterPlayers}
@@ -2312,7 +2362,7 @@ export default function TennisDashboardPage() {
                     <div className={`rounded-lg ${TENNIS_DASH_CARD_GLOW} min-h-[380px] p-2`}>
                       {showEmptyShell ? (
                         <div className="min-h-[360px]" />
-                      ) : showStatsLoadingShell ? (
+                      ) : showStatsLoadingShell || !showMobileDashCards ? (
                         <div className="min-h-[360px]" />
                       ) : (
                         <TennisAdvancedAveragesCard
@@ -2425,7 +2475,7 @@ export default function TennisDashboardPage() {
                             : 'overflow-hidden h-[380px] xl:h-[420px]'
                         }`}
                       >
-                        {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
+                        {showDesktopDashCards && nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
                           <div
                             className={
                               nblRightTab === 'dvp' ? 'w-full h-full flex flex-col min-h-0' : 'hidden'
@@ -2511,7 +2561,7 @@ export default function TennisDashboardPage() {
                     <div className={`rounded-lg ${TENNIS_DASH_CARD_GLOW} min-h-[380px] p-1.5 xl:p-2`}>
                       {showEmptyShell ? (
                         <div className="h-[360px]" />
-                      ) : showStatsLoadingShell ? (
+                      ) : showStatsLoadingShell || !showDesktopDashCards ? (
                         <div className="h-[360px]" />
                       ) : (
                         <TennisAdvancedAveragesCard
@@ -2582,7 +2632,7 @@ export default function TennisDashboardPage() {
                         tournamentName={nextGameTournament}
                       />
                     </div>
-                    {playerVsContainerTab === 'similar' ? (
+                    {showDesktopDashCards && playerVsContainerTab === 'similar' ? (
                       <div className="min-h-0 overflow-hidden">
                         <TennisSimilarPlayersCard
                           isDark={!!mounted && isDark}
@@ -2590,6 +2640,7 @@ export default function TennisDashboardPage() {
                           playerId={selectedPlayer?.playerId || null}
                           playerName={matchupLeft}
                           opponentName={statsOpponent}
+                          opponentId={displayOpponent ? nextGameOpponentId || propsOpponentIdFallback : null}
                           selectedStat={mainChartStat}
                           tour={dvpTour}
                           players={rosterPlayers}
