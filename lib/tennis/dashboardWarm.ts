@@ -16,7 +16,7 @@ import {
 import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
 import { TENNIS_LIST_CACHE_KEY } from '@/lib/tennis/playerPropsList';
 import { buildTennisPlayerForm } from '@/lib/tennis/playerForm';
-import { buildTennisPlayerMatchupAsync, tennisMatchupComputedKey, tennisMatchupPayloadUsable } from '@/lib/tennis/playerMatchup';
+import { buildTennisPlayerMatchup, tennisMatchupComputedKey, tennisMatchupPayloadUsable } from '@/lib/tennis/playerMatchup';
 import { buildTennisSimilarPlayers } from '@/lib/tennis/similarPlayers';
 import type { TennisTour } from '@/lib/tennis/types';
 
@@ -95,7 +95,7 @@ export async function warmTennisDashboardComputed(): Promise<{ matchups: number 
         { success: true, ...averages }
       );
     }
-    const matchup = await buildTennisPlayerMatchupAsync({
+    const matchup = buildTennisPlayerMatchup({
       playerName: player,
       opponentName: opponent,
       playerId,

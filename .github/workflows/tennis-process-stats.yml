@@ -1,5 +1,7 @@
-# Incremental tennis match ingest: fetch last 90 days, keep the current-season overlay in Supabase.
-# Hits production /api/cron/refresh-tennis-cache.
+# Incremental tennis match ingest: fetch recent finished matches, keep the
+# current-season overlay in Supabase, then publish Redis player-log shards.
+# Hits production /api/cron/refresh-tennis-cache in two steps so Vercel
+# does not 504 the 5-minute function.
 name: Tennis Process Stats
 
 on:
@@ -33,11 +35,11 @@ jobs:
         if: steps.check.outputs.configured == 'true'
         run: |
           echo "Refreshing tennis finished-match overlay (current season)..."
-          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/cron/refresh-tennis-cache" \
+          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/cron/refresh-tennis-cache?step=overlay" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
-            -L --max-time 330 \
+            -L --max-time 270 \
             --write-out "\nHTTP_STATUS:%{http_code}" 2>&1) || true
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
@@ -48,6 +50,26 @@ jobs:
             exit 1
           fi
           echo "Tennis ingest ok"
+
+      - name: Publish tennis player-log shards
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          echo "Publishing tennis Redis player-log shards..."
+          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/cron/refresh-tennis-cache?step=shards" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -L --max-time 150 \
+            --write-out "\nHTTP_STATUS:%{http_code}" 2>&1) || true
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          echo "Response ($HTTP_STATUS): $BODY"
+          OK=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(j.success === true ? 'true' : 'false'); } catch { process.stdout.write('false'); }" "$BODY")
+          if [ "$HTTP_STATUS" != "200" ] || [ "$OK" != "true" ]; then
+            echo "Tennis shard publish failed (HTTP ${HTTP_STATUS:-unknown})"
+            exit 1
+          fi
+          echo "Tennis shards ok"
 
       - name: Rebuild tennis tournament DVP
         if: steps.check.outputs.configured == 'true'

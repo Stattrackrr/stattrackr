@@ -1,58 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { refreshTennisMatchOverlay } from '@/lib/tennis/ingest';
-import { warmTennisUpcomingFixtures } from '@/lib/tennis/nextGame';
-import { refreshTennisOddsSnapshots } from '@/lib/tennis/odds';
+import {
+  getHydratedTennisOverlay,
+  hydrateTennisMatchOverlay,
+  refreshTennisMatchOverlay,
+} from '@/lib/tennis/ingest';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
+async function publishShards() {
+  const overlay = getHydratedTennisOverlay() || (await hydrateTennisMatchOverlay());
+  const { publishTennisDashboardCache } = await import('@/lib/tennis/dashboardCache');
+  return publishTennisDashboardCache(overlay);
+}
+
 /**
- * Incremental tennis ingest: fetch last 90 days, keep the current-season overlay in Supabase.
+ * Incremental tennis ingest: fetch recent finished matches, keep the current-season
+ * overlay in Supabase, then publish Redis player-log shards.
+ * Odds, upcoming, DVP, and dashboard warm run on their own crons.
  */
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);
   if (!auth.authorized) return auth.response;
+  const step = String(request.nextUrl.searchParams.get('step') || 'all').trim().toLowerCase();
   try {
+    if (step === 'shards') {
+      const shards = await publishShards();
+      const overlay = getHydratedTennisOverlay();
+      return NextResponse.json({
+        success: true,
+        step,
+        overlayRows: overlay?.matches?.length || 0,
+        shards,
+      });
+    }
+
     const { fixtures: _fixtures, ...result } = await refreshTennisMatchOverlay();
-    const overlay = (await import('@/lib/tennis/ingest')).getHydratedTennisOverlay();
+    if (step === 'overlay') {
+      return NextResponse.json({ success: true, step, ...result });
+    }
+
     let shards = { players: 0, logs: 0, skipped: true };
     try {
-      const { publishTennisDashboardCache } = await import('@/lib/tennis/dashboardCache');
-      shards = await publishTennisDashboardCache(overlay);
+      shards = await publishShards();
     } catch {
-      /* shards still publish in the background from ingest */
-    }
-    let dashboard = { matchups: 0 };
-    try {
-      const { warmTennisDashboardComputed } = await import('@/lib/tennis/dashboardWarm');
-      dashboard = await warmTennisDashboardComputed();
-    } catch {
-      dashboard = { matchups: 0 };
-    }
-    let upcomingPlayers = 0;
-    let warmedUpcoming = false;
-    try {
-      upcomingPlayers = await warmTennisUpcomingFixtures({ force: true });
-      warmedUpcoming = upcomingPlayers > 0;
-    } catch {
-      warmedUpcoming = false;
-    }
-    let odds = null;
-    try {
-      odds = await refreshTennisOddsSnapshots({ force: true });
-    } catch {
-      odds = null;
+      shards = { players: 0, logs: 0, skipped: true };
     }
     return NextResponse.json({
       success: true,
+      step: 'all',
       ...result,
-      upcomingPlayers,
-      warmedUpcoming,
-      dashboard,
       shards,
-      odds,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

@@ -141,10 +141,20 @@ function ymdUtc(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function ingestWindow(now = new Date()): { start: string; stop: string } {
+function overlayAgeMs(overlay: TennisMatchOverlay | null | undefined): number {
+  const ms = overlay?.fetchedAt ? Date.parse(overlay.fetchedAt) : NaN;
+  return Number.isFinite(ms) ? Date.now() - ms : Number.POSITIVE_INFINITY;
+}
+
+function ingestLookbackDays(overlay: TennisMatchOverlay | null | undefined): number {
+  // Regular 8h runs only need recent finished matches. Full 90-day window is for a stale/missing overlay.
+  return overlayAgeMs(overlay) < 3 * 24 * 60 * 60 * 1000 ? 16 : TENNIS_INGEST_LOOKBACK_DAYS;
+}
+
+function ingestWindow(now = new Date(), lookbackDays = TENNIS_INGEST_LOOKBACK_DAYS): { start: string; stop: string } {
   const stop = ymdUtc(now);
   const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  startDate.setUTCDate(startDate.getUTCDate() - TENNIS_INGEST_LOOKBACK_DAYS);
+  startDate.setUTCDate(startDate.getUTCDate() - Math.max(1, lookbackDays));
   return { start: ymdUtc(startDate), stop };
 }
 
@@ -359,26 +369,41 @@ export async function hydrateTennisOverlayLocal(): Promise<TennisMatchOverlay | 
   return hydrateTennisMatchOverlay({ allowRemote: false });
 }
 
-export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{
+export async function fetchTennisIncrementalWindow(
+  now = new Date(),
+  lookbackDays = TENNIS_INGEST_LOOKBACK_DAYS
+): Promise<{
   matches: TennisMatchRow[];
   players: ApiTennisPlayer[];
   standings: { ATP: TennisRankingRow[]; WTA: TennisRankingRow[] };
   fixtureCount: number;
   fixtures: ApiTennisFixture[];
 }> {
-  const { start, stop } = ingestWindow(now);
-  const [atpStandingsJson, wtaStandingsJson, ...fixtureBatches] = await Promise.all([
+  const { start, stop } = ingestWindow(now, lookbackDays);
+  const mainEvents = API_TENNIS_SINGLES_EVENTS.filter(
+    (event) => event.label === 'ATP' || event.label === 'WTA'
+  );
+  const lowerEvents = API_TENNIS_SINGLES_EVENTS.filter(
+    (event) => event.label !== 'ATP' && event.label !== 'WTA'
+  );
+  const fetchFixtures = (event: (typeof API_TENNIS_SINGLES_EVENTS)[number]) =>
+    apiTennisCall({
+      method: 'get_fixtures',
+      date_start: start,
+      date_stop: stop,
+      event_type_key: event.eventType,
+    });
+  const [atpStandingsJson, wtaStandingsJson, ...mainBatches] = await Promise.all([
     apiTennisCall({ method: 'get_standings', event_type: 'ATP' }),
     apiTennisCall({ method: 'get_standings', event_type: 'WTA' }),
-    ...API_TENNIS_SINGLES_EVENTS.map((event) =>
-      apiTennisCall({
-        method: 'get_fixtures',
-        date_start: start,
-        date_stop: stop,
-        event_type_key: event.eventType,
-      })
-    ),
+    ...mainEvents.map(fetchFixtures),
   ]);
+  const lowerBatches: unknown[] = [];
+  for (const event of lowerEvents) {
+    lowerBatches.push(await fetchFixtures(event));
+  }
+  const fixtureEvents = [...mainEvents, ...lowerEvents];
+  const fixtureBatches = [...mainBatches, ...lowerBatches];
 
   const atpStandings = (Array.isArray(atpStandingsJson?.result) ? atpStandingsJson.result : []) as ApiTennisStanding[];
   const wtaStandings = (Array.isArray(wtaStandingsJson?.result) ? wtaStandingsJson.result : []) as ApiTennisStanding[];
@@ -386,11 +411,11 @@ export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{
   for (const row of atpStandings) players.set(String(row.player_key), standingToPlayer(row, 'ATP'));
   for (const row of wtaStandings) players.set(String(row.player_key), standingToPlayer(row, 'WTA'));
 
-  const tours: Array<{ tour: TennisTour; fixtures: ApiTennisFixture[] }> = API_TENNIS_SINGLES_EVENTS.map(
+  const tours: Array<{ tour: TennisTour; fixtures: ApiTennisFixture[] }> = fixtureEvents.map(
     (event, index) => ({
       tour: event.tour,
-      fixtures: (Array.isArray(fixtureBatches[index]?.result)
-        ? fixtureBatches[index].result
+      fixtures: (Array.isArray((fixtureBatches[index] as { result?: unknown } | null)?.result)
+        ? (fixtureBatches[index] as { result: ApiTennisFixture[] }).result
         : []) as ApiTennisFixture[],
     })
   );
@@ -534,8 +559,8 @@ export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult & 
     throw new Error('API_TENNIS_KEY is not configured');
   }
   const fetchedAt = new Date().toISOString();
-  const incoming = await fetchTennisIncrementalWindow();
   const existingOverlay = (await readStoredTennisOverlay()) || getHydratedTennisOverlay();
+  const incoming = await fetchTennisIncrementalWindow(new Date(), ingestLookbackDays(existingOverlay));
   if (!incoming.matches.length) {
     if (existingOverlay?.matches?.length) {
       rememberOverlay(existingOverlay);
