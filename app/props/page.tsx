@@ -715,19 +715,25 @@ function SportMark({
   tour,
   isDark,
   compact = false,
+  tiny = false,
 }: {
   sport: 'nba' | 'afl' | 'atp' | 'wta';
   tour?: string | null;
   isDark: boolean;
   compact?: boolean;
+  tiny?: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
   const isAfl = sport === 'afl';
   const isTennis = isTennisPropsSport(sport);
   const tennisTour = sport === 'wta' ? 'WTA' : sport === 'atp' ? 'ATP' : String(tour || '').toUpperCase() === 'WTA' ? 'WTA' : 'ATP';
   const imgClass = isTennis
-      ? (compact ? TENNIS_LOGO_MARK_COMPACT_CLASS : TENNIS_LOGO_MARK_CLASS)
-      : (compact ? 'w-6 h-6 object-contain' : 'w-8 h-8 object-contain');
+      ? (tiny
+          ? 'h-5 w-8 object-contain'
+          : compact ? TENNIS_LOGO_MARK_COMPACT_CLASS : TENNIS_LOGO_MARK_CLASS)
+      : (tiny
+          ? 'w-5 h-5 object-contain'
+          : compact ? 'w-6 h-6 object-contain' : 'w-8 h-8 object-contain');
   const fallbackClass = compact
     ? `inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold border ${
         isAfl
@@ -8429,24 +8435,10 @@ export default function NBALandingPage() {
                                 }}
                               >
                                 {/* Player Column */}
-                                <td className={`py-3 px-4 overflow-hidden ${isCombinedMode ? 'relative' : ''}`}>
-                                  {isCombinedMode && (
-                                    <div
-                                      className={`absolute z-10 ${
-                                        'top-2 left-3'
-                                      }`}
-                                    >
-                                      <SportMark
-                                        sport={rowSport}
-                                        tour={isTennisPropsSport(rowSport) ? prop.team : undefined}
-                                        isDark={mounted && isDark}
-                                        compact
-                                      />
-                                    </div>
-                                  )}
+                                <td className="py-3 px-4 overflow-hidden">
                                   <a
                                     href={dashboardHref}
-                                    className={`flex items-center gap-3 min-w-0 no-underline hover:no-underline ${isCombinedMode ? 'pl-9' : ''}`}
+                                    className="flex items-center gap-3 min-w-0 no-underline hover:no-underline"
                                     onClick={(e) => {
                                       if (!isUnmodifiedLeftClick(e)) return;
                                       e.preventDefault();
@@ -8523,6 +8515,16 @@ export default function NBALandingPage() {
                                             mounted={mounted}
                                           />
                                         ) : null}
+                                        {isCombinedMode && (
+                                          <span className="flex-shrink-0">
+                                            <SportMark
+                                              sport={rowSport}
+                                              tour={isTennisPropsSport(rowSport) ? prop.team : undefined}
+                                              isDark={mounted && isDark}
+                                              tiny
+                                            />
+                                          </span>
+                                        )}
                                       </div>
                                       {rowSport === 'afl' && (() => {
                                         const aflPosLine = formatAflFantasyDfsPositionLabel(prop.aflFantasyPosition, prop.aflDfsRole);
@@ -9765,7 +9767,7 @@ export default function NBALandingPage() {
                           return (
                             <div
                               key={propsListRowKey(prop, rowSport)}
-                              className={`relative rounded-2xl border pl-3.5 pr-3.5 py-3.5 cursor-pointer active:scale-[0.99] transition-transform ${isCombinedMode ? 'pt-8' : ''} shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
+                              className={`relative rounded-2xl border px-3.5 py-3.5 cursor-pointer active:scale-[0.99] transition-transform shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
                                 mounted && isDark ? 'bg-gradient-to-br from-[#0b1a2b] via-[#10253f] to-[#1b1c3d] border-[#463e6b]' : 'bg-white border-gray-200'
                               }`}
                               onAuxClick={(e) => {
@@ -9852,20 +9854,6 @@ export default function NBALandingPage() {
                                 }, 1500);
                               }}
                             >
-                              {isCombinedMode && (
-                                <div
-                                  className={`absolute z-10 pointer-events-none ${
-                                    'top-2 left-2'
-                                  }`}
-                                >
-                                  <SportMark
-                                    sport={rowSport}
-                                    tour={isTennisPropsSport(rowSport) ? prop.team : undefined}
-                                    isDark={mounted && isDark}
-                                    compact
-                                  />
-                                </div>
-                              )}
                               {/* Header Section */}
                               <div className="mb-1.5">
                                 {/* Player Name and Headshot Row */}
@@ -9957,6 +9945,16 @@ export default function NBALandingPage() {
                                             compact
                                           />
                                         ) : null}
+                                        {isCombinedMode && (
+                                          <span className="flex-shrink-0">
+                                            <SportMark
+                                              sport={rowSport}
+                                              tour={isTennisPropsSport(rowSport) ? prop.team : undefined}
+                                              isDark={mounted && isDark}
+                                              tiny
+                                            />
+                                          </span>
+                                        )}
                                       </div>
                                       {/* Team Logos */}
                                       <div className="flex items-center gap-1.5 flex-shrink-0">
