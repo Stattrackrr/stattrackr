@@ -389,7 +389,35 @@ function extraMatchLookup(rows: TennisMatchRow[] | undefined): {
       byOpponentId.set(opponentId, list);
     }
   }
+  for (const list of byPlayerId.values()) list.sort((a, b) => matchDateKey(b).localeCompare(matchDateKey(a)));
+  for (const list of byOpponentId.values()) list.sort((a, b) => matchDateKey(b).localeCompare(matchDateKey(a)));
   return { byPlayerId, byOpponentId };
+}
+
+function dvpRowRichness(row: TennisMatchRow): number {
+  let n = 0;
+  if (typeof row.gamesWon === 'number') n += 1;
+  if (typeof row.gamesLost === 'number') n += 1;
+  if (typeof row.aces === 'number') n += 1;
+  if (typeof row.breakPointsConverted === 'number') n += 1;
+  if (typeof row.returnPointsWonPct === 'number') n += 1;
+  if (typeof row.servicePointsWonPct === 'number') n += 1;
+  return n;
+}
+
+function mergeDvpMatchRows(overlay: TennisMatchRow[], extra: TennisMatchRow[]): TennisMatchRow[] {
+  if (!extra.length) return overlay;
+  if (!overlay.length) return extra;
+  const byKey = new Map<string, TennisMatchRow>();
+  const keyOf = (row: TennisMatchRow) =>
+    String(row.matchId || '').trim() || `${matchDateKey(row)}|${row.playerId}|${row.opponentId}`;
+  for (const row of overlay) byKey.set(keyOf(row), row);
+  for (const row of extra) {
+    const key = keyOf(row);
+    const prev = byKey.get(key);
+    if (!prev || dvpRowRichness(row) >= dvpRowRichness(prev)) byKey.set(key, row);
+  }
+  return [...byKey.values()].sort((a, b) => matchDateKey(b).localeCompare(matchDateKey(a)));
 }
 
 function toAllowedView(row: TennisMatchRow): TennisMatchRow {
@@ -928,8 +956,8 @@ export function tennisDvpProfile(opts: {
     const overlayVs = index.byOpponentId.get(id) || [];
     const extraOwn = extraLookup.byPlayerId.get(id) || [];
     const extraVs = extraLookup.byOpponentId.get(id) || [];
-    const ownRows = overlayOwn.length ? overlayOwn : extraOwn;
-    const vsRows = overlayVs.length ? overlayVs : extraVs;
+    const ownRows = mergeDvpMatchRows(overlayOwn, extraOwn);
+    const vsRows = mergeDvpMatchRows(overlayVs, extraVs);
     const ownSlice = sliceDvpWindow(ownRows.length ? ownRows : vsRows, window, year);
     own.set(id, bucketsFromRows(ownSlice, id, 'own'));
     allowed.set(

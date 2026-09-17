@@ -57,6 +57,7 @@ export async function warmTennisDashboardComputed(): Promise<{ matchups: number 
       playerName: player,
       opponentName: opponent,
       playerId,
+      opponentId,
       tour,
       stat,
       limit: 8,

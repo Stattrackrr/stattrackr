@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { tennisLastName } from '@/lib/tennis/chartStats';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
-import { tennisSameOpponentQuery } from '@/lib/tennis/oddsApi';
 import { tennisDashboardFetch, isTennisDashboardAbortError } from '@/lib/tennisDashboardFetch';
 import type {
   TennisSimilarMatchStats,
@@ -75,21 +74,17 @@ export function TennisSimilarPlayersCard({
     : 'bg-purple-100 text-purple-800 border-purple-200';
   const compact = layout === 'mobile';
   const frameClass = compact ? 'h-[420px] max-h-[50vh]' : 'h-[380px]';
-  const lastOpponentRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    lastOpponentRef.current = null;
-  }, [playerName, playerId]);
+  const loadedKeyRef = useRef('');
 
   useEffect(() => {
     if (!playerName || !opponentName) {
       setPayload(null);
       setLoading(false);
+      loadedKeyRef.current = '';
       return;
     }
-    if (tennisSameOpponentQuery(lastOpponentRef.current, opponentName)) {
-      return;
-    }
+    const fetchKey = [playerName, playerId || '', opponentName, opponentId || '', tour, selectedStat].join('|');
+    if (loadedKeyRef.current === fetchKey) return;
     let cancelled = false;
     setLoading(true);
     const params = new URLSearchParams({
@@ -101,7 +96,6 @@ export function TennisSimilarPlayersCard({
     });
     if (playerId) params.set('playerId', playerId);
     if (opponentId) params.set('opponentId', opponentId);
-    lastOpponentRef.current = opponentName;
     tennisDashboardFetch(`/api/tennis/similar-players?${params.toString()}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -113,6 +107,7 @@ export function TennisSimilarPlayersCard({
           throw new Error((json as { error?: string })?.error || 'Failed to load');
         }
         setPayload(json);
+        loadedKeyRef.current = fetchKey;
       })
       .catch((err) => {
         if (cancelled || isTennisDashboardAbortError(err)) return;

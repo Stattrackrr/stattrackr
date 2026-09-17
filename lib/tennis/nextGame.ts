@@ -190,24 +190,43 @@ async function apiTennisCall(params: Record<string, string>): Promise<any> {
 }
 
 function officialPlayer(playerId: string | null, fallback: string): {
+  playerId: string | null;
   name: string;
   ioc: string | null;
   rank: number | null;
   imageUrl: string | null;
 } {
   const id = String(playerId || '').trim();
+  const name = fallback.trim();
   const players = loadTennisPlayers();
   const hit = id ? players.find((p) => p.playerId === id) : null;
-  const nameHits = !hit
-    ? players.filter((p) => tennisIdentityMatch(p.name, fallback))
+  const exact = name
+    ? players.filter((p) => p.name.toLowerCase() === name.toLowerCase())
     : [];
+  const identity = name ? players.filter((p) => tennisIdentityMatch(p.name, name)) : [];
+  const last = name.split(/\s+/).filter(Boolean).pop()?.toLowerCase() || '';
+  const lastHits =
+    last.length >= 3
+      ? players.filter((p) => p.name.toLowerCase().split(/\s+/).pop() === last)
+      : [];
   const byName =
-    nameHits.find((p) => p.name.toLowerCase() === fallback.trim().toLowerCase()) ||
-    (nameHits.length === 1 ? nameHits[0] : null);
-  const player = hit || byName;
+    exact.length === 1
+      ? exact[0]
+      : identity.length === 1
+        ? identity[0]
+        : lastHits.length === 1
+          ? lastHits[0]
+          : exact[0] || null;
+  const idAgrees =
+    Boolean(hit) &&
+    (!name ||
+      tennisIdentityMatch(hit!.name, name) ||
+      hit!.name.toLowerCase() === name.toLowerCase());
+  const player = (idAgrees ? hit : null) || byName || (!name ? hit : null);
   return {
-    name: player?.name || fallback.trim(),
-    ioc: player?.ioc || resolveTennisIoc(id, player?.name || fallback),
+    playerId: player?.playerId || (idAgrees ? id : null) || null,
+    name: player?.name || name,
+    ioc: player?.ioc || resolveTennisIoc(player?.playerId || id, player?.name || fallback),
     rank: player?.rank ?? null,
     imageUrl: player?.imageUrl ?? null,
   };
@@ -250,7 +269,7 @@ function toNextGame(
   const round = parseApiRound(fx.tournament_round) || null;
   return {
     opponent: resolved.name,
-    opponentId,
+    opponentId: resolved.playerId || opponentId,
     opponentIoc: resolved.ioc,
     opponentRank: resolved.rank,
     opponentLogo: resolved.imageUrl || opponentLogo,

@@ -496,7 +496,14 @@ function findDvpPlayer(
 ) {
   if (opponentId) {
     const byId = players.find((row) => row.id === opponentId);
-    if (byId) return byId;
+    if (
+      byId &&
+      (!opponentName.trim() ||
+        tennisIdentityMatch(byId.name, opponentName) ||
+        byId.name.trim().toLowerCase() === opponentName.trim().toLowerCase())
+    ) {
+      return byId;
+    }
   }
   const key = opponentName.trim().toLowerCase();
   if (!key) return null;

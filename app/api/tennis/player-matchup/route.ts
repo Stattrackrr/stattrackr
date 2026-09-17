@@ -22,6 +22,7 @@ import {
   tennisMatchupComputedKey,
   tennisMatchupPayloadUsable,
 } from '@/lib/tennis/playerMatchup';
+import type { TennisPlayerMatchupPayload } from '@/lib/tennis/playerMatchupShared';
 import type { TennisTour } from '@/lib/tennis/types';
 
 function isNumericTennisId(value: string | null | undefined): boolean {
@@ -126,15 +127,15 @@ export async function GET(request: NextRequest) {
     opponentId,
     opponentName: opponent,
     tour,
-    window: windowN,
     year,
-    bestOf,
     tournamentKey,
     tournamentName: tournament,
     stage: stageParam,
+    boards: true,
   });
-  const cached = await readTennisComputedCache<Record<string, unknown>>(cacheKey);
+  const cached = await readTennisComputedCache<TennisPlayerMatchupPayload>(cacheKey);
   if (
+    cached?.boards &&
     tennisMatchupPayloadUsable(cached, {
       window: windowN,
       year,
@@ -170,6 +171,7 @@ export async function GET(request: NextRequest) {
   });
   const body = { success: true, ...payload };
   if (
+    payload.boards &&
     tennisMatchupPayloadUsable(body, {
       window: windowN,
       year,

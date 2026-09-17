@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   readTennisComputedCache,
-  tennisComputedCacheKey,
   tennisSimilarComputedKey,
   writeTennisComputedCache,
 } from '@/lib/tennis/dashboardCache';
@@ -36,11 +35,8 @@ export async function GET(request: NextRequest) {
     opponentName: opponent,
     tour,
   });
-  const legacyKey = tennisComputedCacheKey('similar', [playerId || player, opponent, stat, tour]);
-  for (const key of [stableKey, legacyKey]) {
-    const cached = await readTennisComputedCache<SimilarCacheBody>(key);
-    if (cacheHasSimilar(cached)) return NextResponse.json(cached);
-  }
+  const cached = await readTennisComputedCache<SimilarCacheBody>(stableKey);
+  if (cacheHasSimilar(cached)) return NextResponse.json(cached);
 
   const payload = await buildTennisSimilarPlayersAsync({
     playerName: player,

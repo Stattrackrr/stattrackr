@@ -9,6 +9,7 @@ import { loadPlayerMatchesCached, loadTennisPlayersCached } from '@/lib/tennis/l
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import {
   TENNIS_MATCHUP_STATS,
+  tennisMatchupBoardKey,
   type TennisMatchupBestOf,
   type TennisMatchupRow,
   type TennisMatchupSide,
@@ -26,6 +27,7 @@ import {
 
 export {
   TENNIS_MATCHUP_STATS,
+  tennisMatchupBoardKey,
   type TennisMatchupRow,
   type TennisMatchupSide,
   type TennisMatchupStatKey,
@@ -345,14 +347,15 @@ export function tennisMatchupComputedKey(opts: {
   tournamentKey?: string | null;
   tournamentName?: string | null;
   stage?: string | null;
+  boards?: boolean;
 }): string {
-  return tennisComputedCacheKey('matchup', [
+  return tennisComputedCacheKey(opts.boards ? 'matchup_boards' : 'matchup', [
     opts.playerId || opts.playerName,
     opts.opponentId || opts.opponentName,
     opts.tour,
-    String(opts.window ?? 0),
+    opts.boards ? 'all' : String(opts.window ?? 0),
     String(opts.year || ''),
-    String(opts.bestOf || 'all'),
+    opts.boards ? 'boards' : String(opts.bestOf || 'all'),
     opts.tournamentKey || opts.tournamentName,
     opts.stage,
   ]);
@@ -362,16 +365,24 @@ export function tennisMatchupPayloadUsable(
   payload: (Partial<TennisPlayerMatchupPayload> & { success?: boolean }) | null | undefined,
   opts?: { window?: number; year?: number; bestOf?: string | number | null; expectField?: boolean }
 ): payload is TennisPlayerMatchupPayload & { success?: boolean } {
-  if (!payload?.player || !payload.opponent || !Array.isArray(payload.rows)) return false;
-  if (payload.success === false) return false;
-  if (!humanTennisName(payload.player.name) || !humanTennisName(payload.opponent.name)) return false;
-  if (opts?.window != null && Number(payload.window) !== Number(opts.window)) return false;
-  if (opts?.year != null && Number(payload.year) !== Number(opts.year)) return false;
-  if (opts?.bestOf != null && String(payload.bestOf || 'all') !== String(opts.bestOf || 'all')) return false;
-  const hasValues = payload.rows.some((row) => row.playerValue != null || row.opponentValue != null);
+  const boardKey =
+    opts?.window != null || opts?.bestOf != null
+      ? tennisMatchupBoardKey(opts.bestOf, opts.window)
+      : '';
+  const selected =
+    boardKey && payload?.boards?.[boardKey] ? payload.boards[boardKey] : payload;
+  if (!selected?.player || !selected.opponent || !Array.isArray(selected.rows)) return false;
+  if (payload?.success === false) return false;
+  if (!humanTennisName(selected.player.name) || !humanTennisName(selected.opponent.name)) return false;
+  if (!payload?.boards) {
+    if (opts?.window != null && Number(selected.window) !== Number(opts.window)) return false;
+    if (opts?.bestOf != null && String(selected.bestOf || 'all') !== String(opts.bestOf || 'all')) return false;
+  }
+  if (opts?.year != null && Number(selected.year) !== Number(opts.year)) return false;
+  const hasValues = selected.rows.some((row) => row.playerValue != null || row.opponentValue != null);
   if (!hasValues) return false;
   if (opts?.expectField) {
-    const hasRanks = payload.rows.some((row) => row.playerRank != null || row.opponentRank != null);
+    const hasRanks = selected.rows.some((row) => row.playerRank != null || row.opponentRank != null);
     if (!hasRanks) return false;
   }
   return true;
@@ -405,7 +416,7 @@ export async function buildTennisPlayerMatchupAsync(
     tourForPlayer(null, String(opts.opponentName || '')) ||
     'ATP';
   const bestOfN = Number(opts.bestOf);
-  const bestOf: TennisMatchupBestOf =
+  const selectedBestOf: TennisMatchupBestOf =
     tour === 'WTA' ? 'all' : bestOfN === 5 ? 5 : bestOfN === 3 ? 3 : 'all';
   const resolvedPlayer = resolvePlayer(players, String(opts.playerName || ''), tour, opts.playerId);
   const resolvedOpponent = resolvePlayer(players, String(opts.opponentName || ''), tour, opts.opponentId);
@@ -417,42 +428,56 @@ export async function buildTennisPlayerMatchupAsync(
   ].filter(Boolean);
   const logsById = await readTennisPlayerLogsCacheMany(ids);
   const extra = opts.extraGamesById;
-  const gamesCache = new Map<string, TennisMatchRow[]>();
+  const rawById = new Map<string, TennisMatchRow[]>();
 
-  const gamesFor = (id: string | null, name: string): TennisMatchRow[] => {
+  const rawGamesFor = (id: string | null, name: string): TennisMatchRow[] => {
     const key = String(id || '').trim();
-    if (key && gamesCache.has(key)) return gamesCache.get(key) || [];
-    const redis = key ? filterGames(logsById.get(key), tour, bestOf) : [];
-    const extraRows = key && extra?.get(key)?.length ? filterGames(extra.get(key), tour, bestOf) : [];
-    const overlay = overlayGames(key || null, name, tour, bestOf);
+    if (key && rawById.has(key)) return rawById.get(key) || [];
+    const redis = key ? filterGames(logsById.get(key), tour, 'all') : [];
+    const extraRows = key && extra?.get(key)?.length ? filterGames(extra.get(key), tour, 'all') : [];
+    const overlay = overlayGames(key || null, name, tour, 'all');
     const rows = redis.length ? redis : extraRows.length ? extraRows : overlay;
-    if (key) gamesCache.set(key, rows);
+    if (key) rawById.set(key, rows);
     return rows;
   };
 
-  const payload = assembleTennisPlayerMatchup(opts, players, gamesFor);
-  if (payload.player.totalMatches || payload.opponent.totalMatches) return payload;
+  let probe = assembleTennisPlayerMatchup({ ...opts, bestOf: selectedBestOf }, players, (id, name) =>
+    filterGames(rawGamesFor(id, name), tour, selectedBestOf)
+  );
+  if (!probe.player.totalMatches && !probe.opponent.totalMatches) {
+    const [playerLive, opponentLive] = await Promise.all([
+      loadPlayerMatchesCached({
+        playerId: probe.player.id || resolvedPlayer.id,
+        playerName: probe.player.name || opts.playerName,
+        tour,
+      }),
+      loadPlayerMatchesCached({
+        playerId: probe.opponent.id || resolvedOpponent.id,
+        playerName: probe.opponent.name || opts.opponentName,
+        tour,
+      }),
+    ]);
+    const playerId = String(probe.player.id || resolvedPlayer.id || '').trim();
+    const opponentId = String(probe.opponent.id || resolvedOpponent.id || '').trim();
+    if (playerId && playerLive.length) rawById.set(playerId, filterGames(playerLive, tour, 'all'));
+    if (opponentId && opponentLive.length) rawById.set(opponentId, filterGames(opponentLive, tour, 'all'));
+    probe = assembleTennisPlayerMatchup({ ...opts, bestOf: selectedBestOf }, players, (id, name) =>
+      filterGames(rawGamesFor(id, name), tour, selectedBestOf)
+    );
+  }
 
-  const [playerLive, opponentLive] = await Promise.all([
-    loadPlayerMatchesCached({
-      playerId: payload.player.id || resolvedPlayer.id,
-      playerName: payload.player.name || opts.playerName,
-      tour,
-    }),
-    loadPlayerMatchesCached({
-      playerId: payload.opponent.id || resolvedOpponent.id,
-      playerName: payload.opponent.name || opts.opponentName,
-      tour,
-    }),
-  ]);
-  const liveById = new Map(logsById);
-  const playerId = String(payload.player.id || resolvedPlayer.id || '').trim();
-  const opponentId = String(payload.opponent.id || resolvedOpponent.id || '').trim();
-  if (playerId && playerLive.length) liveById.set(playerId, playerLive);
-  if (opponentId && opponentLive.length) liveById.set(opponentId, opponentLive);
-  return assembleTennisPlayerMatchup(opts, players, (id, name) => {
-    const key = String(id || '').trim();
-    const cached = key ? filterGames(liveById.get(key), tour, bestOf) : [];
-    return cached.length ? cached : overlayGames(id, name, tour, bestOf);
-  });
+  const bestOfs: TennisMatchupBestOf[] = tour === 'WTA' ? ['all'] : ['all', 3, 5];
+  const windowNs = [0, 5, 10];
+  const boards: Record<string, TennisPlayerMatchupPayload> = {};
+  for (const bestOf of bestOfs) {
+    const gamesFor = (id: string | null, name: string) => filterGames(rawGamesFor(id, name), tour, bestOf);
+    for (const window of windowNs) {
+      const board = assembleTennisPlayerMatchup({ ...opts, bestOf, window }, players, gamesFor);
+      const { boards: _ignored, ...plain } = board;
+      boards[tennisMatchupBoardKey(bestOf, window)] = plain;
+    }
+  }
+  const selected =
+    boards[tennisMatchupBoardKey(selectedBestOf, Math.max(0, Number(opts.window ?? 0) || 0))] || probe;
+  return { ...selected, boards };
 }

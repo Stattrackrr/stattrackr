@@ -26,8 +26,10 @@ import {
   type TennisPlayer,
   type TennisTour,
 } from '@/lib/tennis/data';
-import { loadTennisPlayersCached, loadPlayerMatchesCached } from '@/lib/tennis/loadCached';
+import { loadTennisPlayersCached } from '@/lib/tennis/loadCached';
 import { readTennisPlayerLogsCacheMany } from '@/lib/tennis/dashboardCache';
+import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
 
 export type {
   TennisSimilarPlayerRow,
@@ -78,16 +80,27 @@ function resolvePlayerIn(
   playerId?: string | null
 ): TennisPlayer | null {
   const id = String(playerId || '').trim();
+  const key = normName(name);
   if (id) {
     const byId = players.find((p) => p.playerId === id);
-    if (byId) return byId;
+    if (
+      byId &&
+      (!key ||
+        normName(byId.name) === key ||
+        tennisIdentityMatch(byId.name, name))
+    ) {
+      return byId;
+    }
   }
-  const key = normName(name);
   if (!key) return null;
   const exactTour = players.find((p) => p.tour === preferredTour && normName(p.name) === key);
   if (exactTour) return exactTour;
   const exactAny = players.find((p) => normName(p.name) === key);
   if (exactAny) return exactAny;
+  const identity = players.filter(
+    (p) => p.tour === preferredTour && tennisIdentityMatch(p.name, name)
+  );
+  if (identity.length === 1) return identity[0];
   const last = tennisLastName(key).toLowerCase();
   if (last.length >= 3) {
     const lastHits = players.filter((p) => {
@@ -114,7 +127,8 @@ function playerHand(player: TennisPlayer | null, name: string): TennisHand | nul
 
 function isVsOpponent(row: TennisMatchRow, opponent: TennisPlayer): boolean {
   if (opponent.playerId && row.opponentId && row.opponentId === opponent.playerId) return true;
-  return normName(row.opponent) === normName(opponent.name);
+  if (normName(row.opponent) === normName(opponent.name)) return true;
+  return tennisIdentityMatch(row.opponent, opponent.name);
 }
 
 function recentRows(rows: TennisMatchRow[], limit = PROFILE_WINDOW): TennisMatchRow[] {
@@ -190,6 +204,7 @@ export function buildTennisSimilarPlayers(opts: {
   playerName: string;
   opponentName: string;
   playerId?: string | null;
+  opponentId?: string | null;
   tour?: TennisTour | null;
   stat?: string;
   limit?: number;
@@ -202,7 +217,11 @@ export function buildTennisSimilarPlayers(opts: {
     opts.tour || tourForPlayer(opts.playerId || null, playerName) || 'ATP';
 
   const player = resolvePlayer(playerName, preferredTour, opts.playerId);
-  const opponent = resolvePlayer(opponentName, player?.tour || preferredTour);
+  const opponent = resolvePlayer(
+    opponentName,
+    player?.tour || preferredTour,
+    opts.opponentId
+  );
   const tour = player?.tour || opponent?.tour || preferredTour;
 
   const empty: TennisSimilarPlayersPayload = {
@@ -356,6 +375,24 @@ export function buildTennisSimilarPlayers(opts: {
 
 const MAX_REDIS_SIMILAR_CANDIDATES = 28;
 
+function overlaySimilarFallback(
+  payload: TennisSimilarPlayersPayload,
+  opts: {
+    playerName: string;
+    opponentName: string;
+    playerId?: string | null;
+    opponentId?: string | null;
+    tour?: TennisTour | null;
+    stat?: string;
+    limit?: number;
+  }
+): TennisSimilarPlayersPayload {
+  if (payload.similar.length) return payload;
+  if (!getHydratedTennisOverlay()?.matches?.length) return payload;
+  const overlay = buildTennisSimilarPlayers(opts);
+  return overlay.similar.length ? overlay : payload;
+}
+
 export async function buildTennisSimilarPlayersAsync(opts: {
   playerName: string;
   opponentName: string;
@@ -365,10 +402,6 @@ export async function buildTennisSimilarPlayersAsync(opts: {
   stat?: string;
   limit?: number;
 }): Promise<TennisSimilarPlayersPayload> {
-  if (loadTennisMatches().length) {
-    return buildTennisSimilarPlayers(opts);
-  }
-
   const playerName = String(opts.playerName || '').trim();
   const opponentName = String(opts.opponentName || '').trim();
   const stat = normalizeTennisSimilarStat(opts.stat);
@@ -397,13 +430,12 @@ export async function buildTennisSimilarPlayersAsync(opts: {
         : null,
     similar: [],
   };
-  if (!player || !opponent || player.playerId === opponent.playerId) return empty;
+  if (!player || !opponent || player.playerId === opponent.playerId) {
+    return overlaySimilarFallback(empty, opts);
+  }
 
-  const opponentLogs = await loadPlayerMatchesCached({
-    playerId: opponent.playerId,
-    playerName: opponent.name,
-    tour,
-  });
+  const seedLogs = await readTennisPlayerLogsCacheMany([opponent.playerId, player.playerId]);
+  const opponentLogs = seedLogs.get(opponent.playerId) || [];
   const candidateIds = new Set<string>();
   for (const row of opponentLogs) {
     const id = String(row.opponentId || '').trim();
@@ -428,15 +460,9 @@ export async function buildTennisSimilarPlayersAsync(opts: {
     player.playerId,
     ...rankedCandidates.map((row) => row.playerId),
   ]);
-  const targetRows =
-    logsById.get(player.playerId) ||
-    (await loadPlayerMatchesCached({
-      playerId: player.playerId,
-      playerName: player.name,
-      tour,
-    }));
+  const targetRows = logsById.get(player.playerId) || seedLogs.get(player.playerId) || [];
   const targetProfile = buildProfile(targetRows, { rank: player.rank, height: player.height });
-  if (!targetProfile) return empty;
+  if (!targetProfile) return overlaySimilarFallback(empty, opts);
 
   type VsBundle = { player: TennisPlayer; games: TennisMatchRow[] };
   const vsByPlayer = new Map<string, VsBundle>();
@@ -446,7 +472,7 @@ export async function buildTennisSimilarPlayersAsync(opts: {
     if (!games.length) continue;
     vsByPlayer.set(meta.playerId, { player: meta, games });
   }
-  if (!vsByPlayer.size) return empty;
+  if (!vsByPlayer.size) return overlaySimilarFallback(empty, opts);
 
   const candidates = [...vsByPlayer.values()]
     .map((bundle) => {
@@ -459,7 +485,7 @@ export async function buildTennisSimilarPlayersAsync(opts: {
       return profile ? { ...bundle, profile, hand } : null;
     })
     .filter((row): row is VsBundle & { profile: Profile; hand: TennisHand | null } => !!row);
-  if (!candidates.length) return empty;
+  if (!candidates.length) return overlaySimilarFallback(empty, opts);
 
   const features: FeatureKey[] = [
     'rank',
@@ -545,5 +571,5 @@ export async function buildTennisSimilarPlayersAsync(opts: {
     };
   });
 
-  return { ...empty, similar };
+  return overlaySimilarFallback({ ...empty, similar }, opts);
 }

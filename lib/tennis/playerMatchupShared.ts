@@ -122,4 +122,12 @@ export type TennisPlayerMatchupPayload = {
   player: TennisMatchupSide;
   opponent: TennisMatchupSide;
   rows: TennisMatchupRow[];
+  boards?: Record<string, TennisPlayerMatchupPayload>;
 };
+
+export function tennisMatchupBoardKey(
+  bestOf: TennisMatchupBestOf | string | number | null | undefined,
+  windowN: number | null | undefined
+): string {
+  return `${bestOf || 'all'}|${Math.max(0, Number(windowN) || 0)}`;
+}

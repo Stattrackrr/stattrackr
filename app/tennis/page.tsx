@@ -2223,7 +2223,11 @@ export default function TennisDashboardPage() {
                               playerName={matchupLeft}
                               playerId={selectedPlayer?.playerId || null}
                               opponentName={statsOpponent}
-                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              opponentId={
+                                displayOpponent
+                                  ? nextGameOpponentId || propsOpponentIdFallback
+                                  : null
+                              }
                               tournamentName={nextGameTournament}
                               tournamentKey={nextGameTournamentKey}
                               stage={dvpStage}
@@ -2488,7 +2492,11 @@ export default function TennisDashboardPage() {
                               playerName={matchupLeft}
                               playerId={selectedPlayer?.playerId || null}
                               opponentName={statsOpponent}
-                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              opponentId={
+                                displayOpponent
+                                  ? nextGameOpponentId || propsOpponentIdFallback
+                                  : null
+                              }
                               tournamentName={nextGameTournament}
                               tournamentKey={nextGameTournamentKey}
                               stage={dvpStage}

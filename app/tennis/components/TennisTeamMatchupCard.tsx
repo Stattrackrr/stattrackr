@@ -11,6 +11,7 @@ import type {
   TennisMatchupBestOf,
   TennisPlayerMatchupPayload,
 } from '@/lib/tennis/playerMatchupShared';
+import { tennisMatchupBoardKey } from '@/lib/tennis/playerMatchupShared';
 
 const SEASON_WINDOW = 0;
 const WINDOWS = [
@@ -47,7 +48,7 @@ export default function TennisTeamMatchupCard({
 }) {
   const [windowN, setWindowN] = useState<number>(SEASON_WINDOW);
   const [bestOf, setBestOf] = useState<TennisMatchupBestOf>('all');
-  const [payload, setPayload] = useState<TennisPlayerMatchupPayload | null>(null);
+  const [bundle, setBundle] = useState<TennisPlayerMatchupPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +62,7 @@ export default function TennisTeamMatchupCard({
 
   useEffect(() => {
     if (!player || (!opponent && !resolvedOpponentId)) {
-      setPayload(null);
+      setBundle(null);
       setError(null);
       setLoading(false);
       return;
@@ -73,8 +74,8 @@ export default function TennisTeamMatchupCard({
       player,
       tour: tourKey,
       year: String(TENNIS_CURRENT_YEAR),
-      window: String(windowN),
-      bestOf: String(matchupBestOf),
+      window: '0',
+      bestOf: 'all',
     });
     if (opponent) qs.set('opponent', opponent);
     if (playerId) qs.set('playerId', playerId);
@@ -89,11 +90,11 @@ export default function TennisTeamMatchupCard({
         return json as TennisPlayerMatchupPayload;
       })
       .then((data) => {
-        if (!cancelled) setPayload(data);
+        if (!cancelled) setBundle(data);
       })
       .catch(() => {
         if (cancelled) return;
-        setPayload(null);
+        setBundle(null);
         setError('Error');
       })
       .finally(() => {
@@ -102,7 +103,11 @@ export default function TennisTeamMatchupCard({
     return () => {
       cancelled = true;
     };
-  }, [player, opponent, resolvedOpponentId, playerId, tournamentName, tournamentKey, stage, tourKey, windowN, matchupBestOf]);
+  }, [player, opponent, resolvedOpponentId, playerId, tournamentName, tournamentKey, stage, tourKey]);
+
+  const payload =
+    bundle?.boards?.[tennisMatchupBoardKey(matchupBestOf, windowN)] ||
+    bundle;
 
   const playerLabel = payload?.player.name && !/^\d+$/.test(payload.player.name)
     ? payload.player.name
@@ -285,9 +290,6 @@ export default function TennisTeamMatchupCard({
         </div>
         <div className="flex items-center justify-end gap-0.5">
           {WINDOWS.map((option, idx) => {
-            const isSeasonOption = option.id === SEASON_WINDOW;
-            const minTotal = Math.min(playerTotal || 0, oppTotal || 0);
-            const disabled = !isSeasonOption && minTotal > 0 && minTotal < option.id;
             const active = windowN === option.id;
             return (
               <span key={option.id} className="flex items-center">
@@ -298,20 +300,15 @@ export default function TennisTeamMatchupCard({
                 ) : null}
                 <button
                   type="button"
-                  disabled={disabled}
                   onClick={() => setWindowN(option.id)}
                   className={`px-0.5 text-[10px] font-medium tracking-wide transition-colors ${
-                    disabled
+                    active
                       ? isDark
-                        ? 'text-gray-700 cursor-not-allowed'
-                        : 'text-gray-300 cursor-not-allowed'
-                      : active
-                        ? isDark
-                          ? 'text-gray-300 underline decoration-gray-500 underline-offset-2'
-                          : 'text-gray-700 underline decoration-gray-400 underline-offset-2'
-                        : isDark
-                          ? 'text-gray-600 hover:text-gray-400'
-                          : 'text-gray-400 hover:text-gray-600'
+                        ? 'text-gray-300 underline decoration-gray-500 underline-offset-2'
+                        : 'text-gray-700 underline decoration-gray-400 underline-offset-2'
+                      : isDark
+                        ? 'text-gray-600 hover:text-gray-400'
+                        : 'text-gray-400 hover:text-gray-600'
                   }`}
                 >
                   {option.label}
@@ -385,7 +382,7 @@ export default function TennisTeamMatchupCard({
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Select a player to see the matchup.
           </div>
-        ) : loading && !payload ? (
+        ) : loading && !bundle ? (
           <div className="space-y-2">
             {[0, 1, 2, 3, 4].map((idx) => (
               <div

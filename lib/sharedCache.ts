@@ -22,6 +22,7 @@ const fallbackWarnings = new Set<string>();
 const UPSTASH_MAX_REQUEST_BYTES = 8 * 1024 * 1024;
 const GZIP_MIN_BYTES = 32 * 1024;
 const GET_MANY_CHUNK = 20;
+const UPSTASH_TIMEOUT_MS = 2000;
 
 type GzipPacked = { v: 1; encoding: 'gzip-json'; payload: string };
 
@@ -63,11 +64,23 @@ function encodeUpstashValue(value: unknown): { body: string; skipped: boolean } 
   return { body, skipped: body.length > UPSTASH_MAX_REQUEST_BYTES };
 }
 
+function sharedCacheErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    const name = error.name || 'Error';
+    if (name === 'TimeoutError' || name === 'AbortError' || /aborted due to timeout/i.test(error.message)) {
+      return `Redis timed out after ${UPSTASH_TIMEOUT_MS}ms`;
+    }
+    return error.message || name;
+  }
+  return String(error);
+}
+
 function warnSharedCacheFallback(operation: string, error: unknown): void {
-  const key = `${operation}:${error instanceof Error ? error.message : String(error)}`;
+  const detail = sharedCacheErrorMessage(error);
+  const key = `${operation}:${detail}`;
   if (fallbackWarnings.has(key)) return;
   fallbackWarnings.add(key);
-  console.warn(`[sharedCache] Falling back to in-memory cache during ${operation}:`, error);
+  console.warn(`[sharedCache] ${operation} failed (${detail}); using in-memory cache`);
 }
 
 // One-time dev hint when using in-memory fallback (AFL props etc. will be empty until populated)
@@ -93,6 +106,7 @@ async function upstash(command: unknown[]): Promise<unknown> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify([command]),
+    signal: AbortSignal.timeout(UPSTASH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`Upstash error ${res.status}`);
   const json = await res.json();
@@ -154,6 +168,7 @@ export const sharedCache = {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(commands),
+          signal: AbortSignal.timeout(UPSTASH_TIMEOUT_MS),
         });
         if (!res.ok) throw new Error(`Upstash error ${res.status}`);
         const json = (await res.json()) as unknown[];
@@ -247,6 +262,7 @@ export const sharedCache = {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(commands),
+          signal: AbortSignal.timeout(UPSTASH_TIMEOUT_MS),
         });
         if (!res.ok) throw new Error(`Upstash error ${res.status}`);
       } catch (error) {
