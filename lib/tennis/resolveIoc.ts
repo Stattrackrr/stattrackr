@@ -29,7 +29,7 @@ function add(index: IocIndex, id: string | null | undefined, name: string | null
 }
 
 function iocIndex(): IocIndex {
-  if (cached) return cached;
+  if (cached && (cached.byId.size > 0 || cached.byName.size > 0)) return cached;
   const index: IocIndex = { byId: new Map(), byName: new Map() };
   for (const player of loadTennisPlayers()) {
     add(index, player.playerId, player.name, player.ioc);
@@ -39,7 +39,7 @@ function iocIndex(): IocIndex {
       add(index, row.playerId, row.name, row.ioc);
     }
   }
-  cached = index;
+  if (index.byId.size || index.byName.size) cached = index;
   return index;
 }
 
@@ -50,6 +50,13 @@ export function resolveTennisIoc(
   const index = iocIndex();
   const id = String(playerId || '').trim();
   if (id && index.byId.has(id)) return index.byId.get(id) || null;
+  if (id) {
+    for (const player of loadTennisPlayers()) {
+      if (player.playerId !== id) continue;
+      const code = validIoc(player.ioc);
+      if (code) return code;
+    }
+  }
   const key = String(name || '').trim().toLowerCase();
   if (key && index.byName.has(key)) return index.byName.get(key) || null;
   if (!key) return null;

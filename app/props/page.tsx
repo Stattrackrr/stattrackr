@@ -81,6 +81,7 @@ import {
   tennisDashboardHref,
 } from '@/lib/propsDashboardLinks';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
+import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { tennisEventPlaceLabel, tennisTourLabel } from '@/lib/tennis/chartStats';
 import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
 import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
@@ -899,13 +900,23 @@ function tennisRankLabel(rank?: number | null): string {
 }
 
 function tennisIocFromListedPlayer(name: string, props: PlayerProp[]): string | null {
-  const want = String(name || '').trim().toLowerCase();
+  const want = String(name || '').trim();
   if (!want) return null;
+  const wantKey = want.toLowerCase();
+  const exact: string[] = [];
+  const identity: string[] = [];
   for (const row of props) {
     const ioc = String(row.playerIoc || '').trim();
     if (!ioc) continue;
-    if (String(row.playerName || '').trim().toLowerCase() === want) return ioc;
+    const playerName = String(row.playerName || '').trim();
+    if (playerName.toLowerCase() === wantKey) {
+      if (!exact.includes(ioc)) exact.push(ioc);
+      continue;
+    }
+    if (tennisIdentityMatch(playerName, want) && !identity.includes(ioc)) identity.push(ioc);
   }
+  if (exact.length === 1) return exact[0];
+  if (identity.length === 1) return identity[0];
   return null;
 }
 
@@ -2107,6 +2118,7 @@ export default function NBALandingPage() {
       aflDfsRole?: string | null;
       playerIoc?: string | null;
       playerRank?: number | null;
+      opponentId?: string | null;
       opponentIoc?: string | null;
       opponentRank?: number | null;
       playerSeed?: number | null;
@@ -2131,6 +2143,12 @@ export default function NBALandingPage() {
         }
         if (!existing.aflDfsRole && r.aflDfsRole) {
           existing.aflDfsRole = r.aflDfsRole;
+        }
+        if (!existing.opponentId && r.opponentId != null) {
+          existing.opponentId = String(r.opponentId);
+        }
+        if (!existing.opponentIoc && r.opponentIoc) {
+          existing.opponentIoc = r.opponentIoc;
         }
       } else {
         keyToRow.set(key, {
@@ -2168,6 +2186,7 @@ export default function NBALandingPage() {
           aflDfsRole: r.aflDfsRole ?? null,
           playerIoc: r.playerIoc ?? null,
           playerRank: r.playerRank ?? null,
+          opponentId: r.opponentId != null ? String(r.opponentId) : null,
           opponentIoc: r.opponentIoc ?? null,
           opponentRank: r.opponentRank ?? null,
           playerSeed: r.playerSeed ?? null,
@@ -2244,6 +2263,7 @@ export default function NBALandingPage() {
         playerTeam,
         playerIoc: a.playerIoc ?? null,
         playerRank: a.playerRank ?? null,
+        opponentId: a.opponentId ?? null,
         opponentIoc: a.opponentIoc ?? null,
         opponentRank: a.opponentRank ?? null,
         playerSeed: a.playerSeed ?? null,

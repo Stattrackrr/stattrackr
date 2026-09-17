@@ -11,7 +11,8 @@ import { NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
-import { getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
+import { applyTennisListLiveOverlay, getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
+import type { TennisListGame, TennisListPropRow } from '@/lib/tennis/playerPropsList';
 import { attachTennisHeadshots } from '@/lib/tennis/headshots';
 import {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
@@ -110,6 +111,7 @@ function aggregateAflProps(listData: any): {
     awayTeamLogo?: string | null;
     playerIoc?: string | null;
     playerRank?: number | null;
+    opponentId?: string | null;
     opponentIoc?: string | null;
     opponentRank?: number | null;
     playerSeed?: number | null;
@@ -138,6 +140,12 @@ function aggregateAflProps(listData: any): {
       }
       if (!existing.aflDfsRole) {
         existing.aflDfsRole = normalizeCombinedAflDfsRole(row.aflDfsRole);
+      }
+      if (!existing.opponentId && row.opponentId != null) {
+        existing.opponentId = String(row.opponentId);
+      }
+      if (!existing.opponentIoc && row.opponentIoc) {
+        existing.opponentIoc = row.opponentIoc;
       }
       continue;
     }
@@ -173,6 +181,7 @@ function aggregateAflProps(listData: any): {
       awayTeamLogo: row.awayTeamLogo ?? null,
       playerIoc: row.playerIoc ?? null,
       playerRank: row.playerRank ?? null,
+      opponentId: row.opponentId != null ? String(row.opponentId) : null,
       opponentIoc: row.opponentIoc ?? null,
       opponentRank: row.opponentRank ?? null,
       playerSeed: row.playerSeed ?? null,
@@ -229,6 +238,7 @@ function aggregateAflProps(listData: any): {
       playerTeam,
       playerIoc: row.playerIoc ?? null,
       playerRank: row.playerRank ?? null,
+      opponentId: row.opponentId ?? null,
       opponentIoc: row.opponentIoc ?? null,
       opponentRank: row.opponentRank ?? null,
       playerSeed: row.playerSeed ?? null,
@@ -289,14 +299,58 @@ function withTennisHeadshots(snapshot: CombinedPropsSnapshot): CombinedPropsSnap
   }
 }
 
+async function withTennisLiveOverlay(snapshot: CombinedPropsSnapshot): Promise<CombinedPropsSnapshot> {
+  const tennis = snapshot.tennis;
+  if (!tennis?.props?.length) return snapshot;
+  try {
+    const overlayed = await applyTennisListLiveOverlay({
+      success: true,
+      data: tennis.props.map((prop) => ({
+        ...prop,
+        playerTeam: prop.playerTeam || prop.team,
+      })) as unknown as TennisListPropRow[],
+      games: (tennis.games || []).map(
+        (game): TennisListGame => ({
+          gameId: game.gameId,
+          homeTeam: game.homeTeam,
+          awayTeam: game.awayTeam,
+          commenceTime: game.commenceTime,
+        })
+      ),
+      propsCount: tennis.props.length,
+      gamesCount: tennis.games?.length || 0,
+      lastUpdated: tennis.lastUpdated,
+      nextUpdate: tennis.nextUpdate,
+      noTennisOdds: tennis.noTennisOdds,
+      noAflOdds: tennis.noTennisOdds,
+      ingestMessage: tennis.ingestMessage,
+    });
+    return {
+      ...snapshot,
+      tennis: {
+        ...tennis,
+        props: overlayed.data as unknown as CombinedPlayerProp[],
+        games: overlayed.games.map((game) => ({
+          gameId: game.gameId,
+          homeTeam: game.homeTeam,
+          awayTeam: game.awayTeam,
+          commenceTime: game.commenceTime,
+        })),
+      },
+    };
+  } catch {
+    return snapshot;
+  }
+}
+
 export async function getCombinedPropsSnapshot(): Promise<CombinedPropsSnapshot | null> {
   const snapshot = await sharedCache.getJSON<CombinedPropsSnapshot>(COMBINED_PROPS_SNAPSHOT_CACHE_KEY);
-  return snapshot ? withTennisHeadshots(snapshot) : null;
+  return snapshot ? withTennisLiveOverlay(withTennisHeadshots(snapshot)) : null;
 }
 
 export async function getCombinedPropsPaintSnapshot(): Promise<CombinedPropsSnapshot | null> {
   const snapshot = await sharedCache.getJSON<CombinedPropsSnapshot>(COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY);
-  return snapshot ? withTennisHeadshots(snapshot) : null;
+  return snapshot ? withTennisLiveOverlay(withTennisHeadshots(snapshot)) : null;
 }
 
 async function writeCombinedPropsSnapshotCaches(snapshot: CombinedPropsSnapshot): Promise<void> {

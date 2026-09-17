@@ -49,6 +49,7 @@ export type CombinedPlayerProp = {
   playerTeam?: string | null;
   playerIoc?: string | null;
   playerRank?: number | null;
+  opponentId?: string | null;
   opponentIoc?: string | null;
   opponentRank?: number | null;
   playerSeed?: number | null;

@@ -68,6 +68,7 @@ import {
   tennisDashboardFetch,
 } from '@/lib/tennisDashboardFetch';
 import { isTennisQualifyingLabel } from '@/lib/tennis/dvpShared';
+import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
 /** Tennis match LIVE window (~5-set length). */
 const NBL_MATCH_DURATION_MS = 6 * 60 * 60 * 1000;
@@ -1535,7 +1536,8 @@ export default function TennisDashboardPage() {
   const matchupLeft = selectedPlayer?.name ? String(selectedPlayer.name).trim() : null;
   const matchupLeftIoc = selectedPlayer?.ioc || lastLog?.ioc || null;
   const rosterOpponent = displayOpponent
-    ? rosterPlayers.find(
+    ? rosterPlayers.find((player) => tennisIdentityMatch(player.name, displayOpponent)) ||
+      rosterPlayers.find(
         (player) =>
           normalizeNblPlayerNameForMatch(player.name) ===
           normalizeNblPlayerNameForMatch(displayOpponent)

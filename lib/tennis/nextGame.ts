@@ -198,9 +198,12 @@ function officialPlayer(playerId: string | null, fallback: string): {
   const id = String(playerId || '').trim();
   const players = loadTennisPlayers();
   const hit = id ? players.find((p) => p.playerId === id) : null;
-  const byName = !hit
-    ? players.find((p) => p.name.toLowerCase() === fallback.trim().toLowerCase())
-    : null;
+  const nameHits = !hit
+    ? players.filter((p) => tennisIdentityMatch(p.name, fallback))
+    : [];
+  const byName =
+    nameHits.find((p) => p.name.toLowerCase() === fallback.trim().toLowerCase()) ||
+    (nameHits.length === 1 ? nameHits[0] : null);
   const player = hit || byName;
   return {
     name: player?.name || fallback.trim(),
@@ -873,6 +876,12 @@ export async function listTennisUpcomingPlayerIdsForEvent(opts: {
 }): Promise<string[]> {
   const live = await listLiveTennisEventIndex();
   return tennisLiveEventPlayerIds(live, opts.tournamentKey, opts.tournamentName);
+}
+
+export async function listUpcomingTennisByPlayer(opts?: {
+  waitForFresh?: boolean;
+}): Promise<Map<string, TennisNextGame>> {
+  return loadUpcomingByPlayer({ waitForFresh: opts?.waitForFresh });
 }
 
 export async function listUniqueUpcomingTennisGames(opts?: {
