@@ -39,8 +39,6 @@ const nextConfig: NextConfig = {
     '/api/nbl/injuries/route': ['./data/nbl-injuries.json'],
     '/api/tennis/matches': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/matches/route': [...TENNIS_RUNTIME_DATA],
-    '/api/tennis/advanced-averages': [...TENNIS_RUNTIME_DATA],
-    '/api/tennis/advanced-averages/route': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/player-matchup': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/player-matchup/route': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/dvp': [...TENNIS_RUNTIME_DATA],

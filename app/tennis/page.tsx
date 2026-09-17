@@ -269,16 +269,103 @@ function tennisUrlIocValue(raw: string | null | undefined): string | null {
   return code;
 }
 
+function readIsDesktopLayout(): boolean {
+  const inner = window.innerWidth;
+  const outer = window.outerWidth || 0;
+  // Docked DevTools shrink innerWidth only. Keep the real window size.
+  return Math.max(inner, outer) >= 1024;
+}
+
 function useIsDesktopLayout(): boolean | null {
   const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const apply = () => setIsDesktop(mq.matches);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const apply = () => {
+      const next = readIsDesktopLayout();
+      setIsDesktop((prev) => (prev === next ? prev : next));
+    };
     apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
+    const onResize = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(apply, 250);
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('resize', onResize);
+    };
   }, []);
   return isDesktop;
+}
+
+function TennisHeaderCountdown({
+  show,
+  live,
+  tipoff,
+  variant,
+}: {
+  show: boolean;
+  live: boolean;
+  tipoff: Date | null;
+  variant: 'desktop' | 'mobile';
+}) {
+  const [countdown, setCountdown] = useState<{
+    hours: number;
+    minutes: number;
+    seconds: number;
+  } | null>(null);
+  useCountdownTimer({
+    nextGameTipoff: show ? tipoff : null,
+    isGameInProgress: live,
+    setCountdown,
+  });
+  const clock = countdown
+    ? `${String(countdown.hours).padStart(2, '0')}:${String(countdown.minutes).padStart(2, '0')}:${String(countdown.seconds).padStart(2, '0')}`
+    : '';
+  if (show && live) {
+    return variant === 'desktop' ? (
+      <div className="flex flex-col items-center flex-shrink-0 min-w-0">
+        <div className="text-xs xl:text-sm font-semibold text-green-600 dark:text-green-400 animate-live-pulse-green">
+          LIVE
+        </div>
+      </div>
+    ) : (
+      <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">LIVE</span>
+    );
+  }
+  if (show && countdown) {
+    return variant === 'desktop' ? (
+      <div className="flex flex-col items-center flex-shrink-0 min-w-0 w-14 xl:w-20">
+        <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">
+          Match in
+        </div>
+        <div className="text-xs xl:text-sm font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
+          {clock}
+        </div>
+      </div>
+    ) : (
+      <div className="flex flex-col items-center flex-shrink-0">
+        <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Match in</div>
+        <div className="text-[10px] font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
+          {clock}
+        </div>
+      </div>
+    );
+  }
+  if (show && tipoff && variant === 'desktop') {
+    return (
+      <div className="flex flex-col items-center flex-shrink-0 min-w-0">
+        <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+          Game time passed
+        </div>
+      </div>
+    );
+  }
+  return variant === 'desktop' ? (
+    <span className="text-gray-500 dark:text-gray-400 font-medium text-xs flex-shrink-0">VS</span>
+  ) : (
+    <span className="text-gray-400 text-xs">VS</span>
+  );
 }
 
 function readTennisUrlOpponent(): string | null {
@@ -631,11 +718,6 @@ export default function TennisDashboardPage() {
   const [nextGameOpponentSeed, setNextGameOpponentSeed] = useState<number | null>(null);
   const [nextGameTopSeedName, setNextGameTopSeedName] = useState<string | null>(null);
   const selectedPlayerIdRef = useRef<string | null>(null);
-  const [countdown, setCountdown] = useState<{
-    hours: number;
-    minutes: number;
-    seconds: number;
-  } | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
   const [tennisOddsBooks, setTennisOddsBooks] = useState<TennisBookRow[]>([]);
   const [selectedTennisBookIndex, setSelectedTennisBookIndex] = useState(0);
@@ -665,8 +747,6 @@ export default function TennisDashboardPage() {
     mainContentClassName,
     mainContentStyle,
   } = useDashboardStyles({ sidebarOpen });
-
-  useCountdownTimer({ nextGameTipoff, isGameInProgress, setCountdown });
 
   const applyUpcoming = useCallback((playerId: string, payload: TennisNextGameClient) => {
     writeTennisNextGameClient(playerId, payload);
@@ -1680,34 +1760,12 @@ export default function TennisDashboardPage() {
                                 textClassName="font-bold text-gray-900 dark:text-white text-xs xl:text-sm"
                               />
                             </div>
-                            {displayOpponent && countdown && !isGameInProgress ? (
-                              <div className="flex flex-col items-center flex-shrink-0 min-w-0 w-14 xl:w-20">
-                                <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">
-                                  Match in
-                                </div>
-                                <div className="text-xs xl:text-sm font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
-                                  {String(countdown.hours).padStart(2, '0')}:
-                                  {String(countdown.minutes).padStart(2, '0')}:
-                                  {String(countdown.seconds).padStart(2, '0')}
-                                </div>
-                              </div>
-                            ) : displayOpponent && isGameInProgress ? (
-                              <div className="flex flex-col items-center flex-shrink-0 min-w-0">
-                                <div className="text-xs xl:text-sm font-semibold text-green-600 dark:text-green-400 animate-live-pulse-green">
-                                  LIVE
-                                </div>
-                              </div>
-                            ) : displayOpponent && nextGameTipoff ? (
-                              <div className="flex flex-col items-center flex-shrink-0 min-w-0">
-                                <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                  Game time passed
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-gray-500 dark:text-gray-400 font-medium text-xs flex-shrink-0">
-                                VS
-                              </span>
-                            )}
+                            <TennisHeaderCountdown
+                              show={Boolean(displayOpponent)}
+                              live={isGameInProgress}
+                              tipoff={nextGameTipoff}
+                              variant="desktop"
+                            />
                             <div className="flex items-center gap-1 xl:gap-1.5 min-w-0 flex-shrink">
                               {displayOpponent ? (
                                 <TennisAbbrevFlag
@@ -1801,24 +1859,12 @@ export default function TennisDashboardPage() {
                               ioc={matchupLeftIoc}
                               textClassName="text-xs font-semibold text-gray-900 dark:text-white"
                             />
-                            {displayOpponent && countdown && !isGameInProgress ? (
-                              <div className="flex flex-col items-center flex-shrink-0">
-                                <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                  Match in
-                                </div>
-                                <div className="text-[10px] font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
-                                  {String(countdown.hours).padStart(2, '0')}:
-                                  {String(countdown.minutes).padStart(2, '0')}:
-                                  {String(countdown.seconds).padStart(2, '0')}
-                                </div>
-                              </div>
-                            ) : displayOpponent && isGameInProgress ? (
-                              <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">
-                                LIVE
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 text-xs">VS</span>
-                            )}
+                            <TennisHeaderCountdown
+                              show={Boolean(displayOpponent)}
+                              live={isGameInProgress}
+                              tipoff={nextGameTipoff}
+                              variant="mobile"
+                            />
                             {displayOpponent ? (
                               <TennisAbbrevFlag
                                 code={displayOpponentAbbrev}
@@ -2280,7 +2326,6 @@ export default function TennisDashboardPage() {
                               tipoff={nextGameTipoff}
                               live={nextGameLive}
                               isGameInProgress={isGameInProgress}
-                              countdown={countdown}
                               topSeedName={displayOpponent ? nextGameTopSeedName : null}
                               gameLogs={selectedPlayerGameLogs}
                             />
@@ -2554,7 +2599,6 @@ export default function TennisDashboardPage() {
                               tipoff={nextGameTipoff}
                               live={nextGameLive}
                               isGameInProgress={isGameInProgress}
-                              countdown={countdown}
                               topSeedName={displayOpponent ? nextGameTopSeedName : null}
                               gameLogs={selectedPlayerGameLogs}
                             />

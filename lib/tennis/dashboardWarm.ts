@@ -89,10 +89,15 @@ export async function warmTennisDashboardComputed(): Promise<{ matchups: number 
       playerId,
       opponentId: String(row.opponentId || '').trim() || null,
       tour,
+      includeBoards: true,
     });
-    if (averagesPayloadHasRows(averages)) {
+    if (averagesPayloadHasRows(averages) || averages.boards) {
       await writeTennisComputedCache(
-        tennisComputedCacheKey('averages', [player, opponent, tour]),
+        tennisComputedCacheKey('averages_boards', [
+          playerId || player,
+          opponentId || opponent,
+          tour,
+        ]),
         { success: true, ...averages }
       );
     }

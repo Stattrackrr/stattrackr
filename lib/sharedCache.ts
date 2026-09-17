@@ -22,7 +22,7 @@ const fallbackWarnings = new Set<string>();
 const UPSTASH_MAX_REQUEST_BYTES = 8 * 1024 * 1024;
 const GZIP_MIN_BYTES = 32 * 1024;
 const GET_MANY_CHUNK = 20;
-const UPSTASH_TIMEOUT_MS = 2000;
+const UPSTASH_TIMEOUT_MS = 8000;
 
 type GzipPacked = { v: 1; encoding: 'gzip-json'; payload: string };
 
@@ -64,14 +64,18 @@ function encodeUpstashValue(value: unknown): { body: string; skipped: boolean } 
   return { body, skipped: body.length > UPSTASH_MAX_REQUEST_BYTES };
 }
 
+function isUpstashTimeout(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.name === 'TimeoutError' ||
+      error.name === 'AbortError' ||
+      /aborted due to timeout/i.test(error.message))
+  );
+}
+
 function sharedCacheErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    const name = error.name || 'Error';
-    if (name === 'TimeoutError' || name === 'AbortError' || /aborted due to timeout/i.test(error.message)) {
-      return `Redis timed out after ${UPSTASH_TIMEOUT_MS}ms`;
-    }
-    return error.message || name;
-  }
+  if (isUpstashTimeout(error)) return `Redis timed out after ${UPSTASH_TIMEOUT_MS}ms`;
+  if (error instanceof Error) return error.message || error.name;
   return String(error);
 }
 
@@ -98,19 +102,32 @@ if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development' &&
 // Simple per-process fallback
 const memory = new Map<string, { v: any; exp: number }>();
 
-async function upstash(command: unknown[]): Promise<unknown> {
-  const res = await fetch(`${REST_URL}/pipeline`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${REST_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify([command]),
-    signal: AbortSignal.timeout(UPSTASH_TIMEOUT_MS),
-  });
+async function upstashPipeline(commands: unknown[][]): Promise<unknown[]> {
+  const run = () =>
+    fetch(`${REST_URL}/pipeline`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${REST_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(commands),
+      signal: AbortSignal.timeout(UPSTASH_TIMEOUT_MS),
+    });
+  let res: Response;
+  try {
+    res = await run();
+  } catch (error) {
+    if (!isUpstashTimeout(error)) throw error;
+    res = await run();
+  }
   if (!res.ok) throw new Error(`Upstash error ${res.status}`);
-  const json = await res.json();
-  return json?.[0];
+  const json = (await res.json()) as unknown[];
+  return Array.isArray(json) ? json : [];
+}
+
+async function upstash(command: unknown[]): Promise<unknown> {
+  const json = await upstashPipeline([command]);
+  return json[0];
 }
 
 /** 'redis' when UPSTASH_* are set (shared across processes); 'memory' otherwise (per-process). */
@@ -160,18 +177,7 @@ export const sharedCache = {
     }
     if (HAS_UPSTASH) {
       try {
-        const commands = keys.map((key) => ['GET', key]);
-        const res = await fetch(`${REST_URL}/pipeline`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${REST_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(commands),
-          signal: AbortSignal.timeout(UPSTASH_TIMEOUT_MS),
-        });
-        if (!res.ok) throw new Error(`Upstash error ${res.status}`);
-        const json = (await res.json()) as unknown[];
+        const json = await upstashPipeline(keys.map((key) => ['GET', key]));
         return keys.map((_, i) => {
           const r = json?.[i];
           const val =
@@ -255,16 +261,7 @@ export const sharedCache = {
           commands.push(['SET', key, body, 'EX', ttlSeconds]);
         }
         if (!commands.length) continue;
-        const res = await fetch(`${REST_URL}/pipeline`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${REST_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(commands),
-          signal: AbortSignal.timeout(UPSTASH_TIMEOUT_MS),
-        });
-        if (!res.ok) throw new Error(`Upstash error ${res.status}`);
+        await upstashPipeline(commands);
       } catch (error) {
         warnSharedCacheFallback('redis SET pipeline', error);
       }

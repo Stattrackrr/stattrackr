@@ -132,4 +132,13 @@ export type TennisAdvancedAveragesPayload = {
   vsRank: AdvAvgVsRank;
   player: AdvAvgSide;
   opponent: AdvAvgSide | null;
+  boards?: Partial<Record<string, { player: AdvAvgSide; opponent: AdvAvgSide | null }>>;
 };
+
+export function tennisAveragesBoardKey(
+  window: AdvAvgWindow,
+  bestOf: AdvAvgBestOf,
+  vsRank: AdvAvgVsRank
+): string {
+  return `${window}|${bestOf}|${vsRank}`;
+}

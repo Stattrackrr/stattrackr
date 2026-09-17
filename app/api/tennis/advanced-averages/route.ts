@@ -11,18 +11,18 @@ import {
 } from '@/lib/tennis/dashboardCache';
 import type { TennisTour } from '@/lib/tennis/types';
 
-function isDefaultAveragesQuery(opts: {
-  year: number;
-  windowRaw: number;
-  bestOf: string;
-  vsRank: string;
-}): boolean {
-  return (
-    opts.year === TENNIS_CURRENT_YEAR &&
-    (!Number.isFinite(opts.windowRaw) || opts.windowRaw === 0) &&
-    (!opts.bestOf || opts.bestOf === 'all') &&
-    (!opts.vsRank || opts.vsRank === 'all')
-  );
+function averagesBoardsKey(opts: {
+  player: string;
+  opponent: string;
+  playerId: string;
+  opponentId: string;
+  tour: TennisTour | null;
+}): string {
+  return tennisComputedCacheKey('averages_boards', [
+    opts.playerId || opts.player,
+    opts.opponentId || opts.opponent,
+    opts.tour,
+  ]);
 }
 
 export async function GET(request: NextRequest) {
@@ -40,21 +40,9 @@ export async function GET(request: NextRequest) {
   const windowRaw = Number(request.nextUrl.searchParams.get('window'));
   const bestOf = String(request.nextUrl.searchParams.get('bestOf') || '').trim();
   const vsRank = String(request.nextUrl.searchParams.get('vsRank') || '').trim();
-  const useShortKey = isDefaultAveragesQuery({ year, windowRaw, bestOf, vsRank });
-  const shortKey = tennisComputedCacheKey('averages', [player, opponent, tour]);
-  const cacheKey = tennisComputedCacheKey('averages', [
-    player,
-    opponent,
-    tour,
-    String(year),
-    String(Number.isFinite(windowRaw) ? windowRaw : 0),
-    bestOf,
-    vsRank,
-  ]);
-  const cached =
-    (await readTennisComputedCache<Record<string, unknown>>(cacheKey)) ||
-    (useShortKey ? await readTennisComputedCache<Record<string, unknown>>(shortKey) : null);
-  if (cached?.success && averagesPayloadHasRows(cached)) {
+  const cacheKey = averagesBoardsKey({ player, opponent, playerId, opponentId, tour });
+  const cached = await readTennisComputedCache<Record<string, unknown>>(cacheKey);
+  if (cached?.success && (cached.boards || averagesPayloadHasRows(cached))) {
     return NextResponse.json(cached);
   }
 
@@ -68,11 +56,11 @@ export async function GET(request: NextRequest) {
     year,
     bestOf,
     vsRank,
+    includeBoards: true,
   });
   const body = { success: true, ...payload };
-  if (averagesPayloadHasRows(payload)) {
+  if (payload.boards || averagesPayloadHasRows(payload)) {
     void writeTennisComputedCache(cacheKey, body);
-    if (useShortKey) void writeTennisComputedCache(shortKey, body);
   }
   return NextResponse.json(body);
 }

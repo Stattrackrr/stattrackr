@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
-import { tennisSameOpponentQuery } from '@/lib/tennis/oddsApi';
 import { tennisDashboardFetch, isTennisDashboardAbortError } from '@/lib/tennisDashboardFetch';
 import {
   ADV_AVG_BEST_OF,
@@ -10,6 +9,7 @@ import {
   ADV_AVG_GLOSSARY,
   ADV_AVG_VS_RANKS,
   ADV_AVG_WINDOWS,
+  tennisAveragesBoardKey,
   type AdvAvgBestOf,
   type AdvAvgSide,
   type AdvAvgTone,
@@ -86,7 +86,7 @@ export default function TennisAdvancedAveragesCard({
   const [payload, setPayload] = useState<TennisAdvancedAveragesPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const lastOpponentRef = useRef<string | null>(null);
+  const loadedKeyRef = useRef('');
 
   const player = String(playerName || '').trim();
   const opponent = String(opponentName || '').trim();
@@ -94,19 +94,15 @@ export default function TennisAdvancedAveragesCard({
   const averagesBestOf: AdvAvgBestOf = tourKey === 'WTA' ? 'all' : bestOf;
 
   useEffect(() => {
-    lastOpponentRef.current = null;
-  }, [player, playerId]);
-
-  useEffect(() => {
     if (!player) {
       setPayload(null);
       setError(null);
       setLoading(false);
+      loadedKeyRef.current = '';
       return;
     }
-    if (tennisSameOpponentQuery(lastOpponentRef.current, opponent)) {
-      return;
-    }
+    const fetchKey = [player, playerId || '', opponent, opponentId || '', tourKey].join('|');
+    if (loadedKeyRef.current === fetchKey) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -114,21 +110,19 @@ export default function TennisAdvancedAveragesCard({
       player,
       tour: tourKey,
       year: String(TENNIS_CURRENT_YEAR),
-      window: String(windowN),
-      bestOf: averagesBestOf,
-      vsRank,
     });
     if (opponent) qs.set('opponent', opponent);
     if (playerId) qs.set('playerId', playerId);
     if (opponentId) qs.set('opponentId', opponentId);
-    lastOpponentRef.current = opponent || null;
     tennisDashboardFetch(`/api/tennis/advanced-averages?${qs.toString()}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<TennisAdvancedAveragesPayload>;
       })
       .then((data) => {
-        if (!cancelled) setPayload(data);
+        if (cancelled) return;
+        setPayload(data);
+        loadedKeyRef.current = fetchKey;
       })
       .catch((err) => {
         if (cancelled || isTennisDashboardAbortError(err)) return;
@@ -141,17 +135,19 @@ export default function TennisAdvancedAveragesCard({
     return () => {
       cancelled = true;
     };
-  }, [player, playerId, opponent, opponentId, tourKey, windowN, averagesBestOf, vsRank]);
+  }, [player, playerId, opponent, opponentId, tourKey]);
 
   useEffect(() => {
     if (!opponent) setSide('player');
   }, [opponent]);
 
+  const board = payload?.boards?.[tennisAveragesBoardKey(windowN, averagesBestOf, vsRank)];
   const active: AdvAvgSide | null = useMemo(() => {
-    if (!payload) return null;
-    if (side === 'opponent' && payload.opponent) return payload.opponent;
-    return payload.player;
-  }, [payload, side]);
+    const playerSide = board?.player || payload?.player || null;
+    const opponentSide = board?.opponent || payload?.opponent || null;
+    if (side === 'opponent' && opponentSide) return opponentSide;
+    return playerSide;
+  }, [board, payload, side]);
 
   const playerTab = payload?.player.name || player || 'Player';
   const opponentTab = payload?.opponent?.name || opponent;
