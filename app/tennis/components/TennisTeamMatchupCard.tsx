@@ -52,13 +52,15 @@ export default function TennisTeamMatchupCard({
   const [error, setError] = useState<string | null>(null);
 
   const player = String(teamName || '').trim();
-  const opponent = String(opponentName || '').trim();
+  const opponentRaw = String(opponentName || '').trim();
+  const opponent = /^\d+$/.test(opponentRaw) ? '' : opponentRaw;
+  const resolvedOpponentId = String(opponentId || ( /^\d+$/.test(opponentRaw) ? opponentRaw : '') || '').trim();
   const tourKey = tour === 'WTA' ? 'WTA' : 'ATP';
   const wtaTour = tourKey === 'WTA';
   const matchupBestOf: TennisMatchupBestOf = wtaTour ? 'all' : bestOf;
 
   useEffect(() => {
-    if (!player || !opponent) {
+    if (!player || (!opponent && !resolvedOpponentId)) {
       setPayload(null);
       setError(null);
       setLoading(false);
@@ -69,14 +71,14 @@ export default function TennisTeamMatchupCard({
     setError(null);
     const qs = new URLSearchParams({
       player,
-      opponent,
       tour: tourKey,
       year: String(TENNIS_CURRENT_YEAR),
       window: String(windowN),
       bestOf: String(matchupBestOf),
     });
+    if (opponent) qs.set('opponent', opponent);
     if (playerId) qs.set('playerId', playerId);
-    if (opponentId) qs.set('opponentId', opponentId);
+    if (resolvedOpponentId) qs.set('opponentId', resolvedOpponentId);
     if (tournamentName) qs.set('tournament', tournamentName);
     if (tournamentKey) qs.set('tournamentKey', tournamentKey);
     if (stage) qs.set('stage', stage);
@@ -100,10 +102,15 @@ export default function TennisTeamMatchupCard({
     return () => {
       cancelled = true;
     };
-  }, [player, opponent, playerId, opponentId, tournamentName, tournamentKey, stage, tourKey, windowN, matchupBestOf]);
+  }, [player, opponent, resolvedOpponentId, playerId, tournamentName, tournamentKey, stage, tourKey, windowN, matchupBestOf]);
 
-  const playerLabel = payload?.player.name || player || 'Selected player';
-  const opponentLabel = payload?.opponent.name || opponent || 'Opponent';
+  const playerLabel = payload?.player.name && !/^\d+$/.test(payload.player.name)
+    ? payload.player.name
+    : player || 'Selected player';
+  const opponentLabel =
+    payload?.opponent.name && !/^\d+$/.test(payload.opponent.name)
+      ? payload.opponent.name
+      : opponent || String(opponentName || '').trim() || 'Opponent';
   const playerAbbr = tennisOpponentCode(playerLabel);
   const oppAbbr = tennisOpponentCode(opponentLabel);
   const playerFlag = tennisFlagUrl(payload?.player.ioc);
@@ -165,7 +172,7 @@ export default function TennisTeamMatchupCard({
     return Math.max(6, (rank / rankedSize) * 100);
   };
 
-  const hasPlayers = Boolean(player && opponent);
+  const hasPlayers = Boolean(player && (opponent || resolvedOpponentId));
   const noData =
     Boolean(payload) &&
     hasPlayers &&

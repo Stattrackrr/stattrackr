@@ -16,7 +16,7 @@ import {
 import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
 import { TENNIS_LIST_CACHE_KEY } from '@/lib/tennis/playerPropsList';
 import { buildTennisPlayerForm } from '@/lib/tennis/playerForm';
-import { buildTennisPlayerMatchup } from '@/lib/tennis/playerMatchup';
+import { buildTennisPlayerMatchupAsync, tennisMatchupComputedKey, tennisMatchupPayloadUsable } from '@/lib/tennis/playerMatchup';
 import { buildTennisSimilarPlayers } from '@/lib/tennis/similarPlayers';
 import type { TennisTour } from '@/lib/tennis/types';
 
@@ -95,16 +95,29 @@ export async function warmTennisDashboardComputed(): Promise<{ matchups: number 
         { success: true, ...averages }
       );
     }
-    const matchup = buildTennisPlayerMatchup({
+    const matchup = await buildTennisPlayerMatchupAsync({
       playerName: player,
       opponentName: opponent,
       playerId,
+      opponentId,
       tour,
     });
-    await writeTennisComputedCache(
-      tennisComputedCacheKey('matchup', [playerId || player, opponent, tour]),
-      { success: true, ...matchup }
-    );
+    if (
+      tennisMatchupPayloadUsable(matchup, {
+        expectField: false,
+      })
+    ) {
+      await writeTennisComputedCache(
+        tennisMatchupComputedKey({
+          playerId,
+          playerName: player,
+          opponentId,
+          opponentName: opponent,
+          tour,
+        }),
+        { success: true, ...matchup }
+      );
+    }
     matchups += 1;
   }
   return { matchups };

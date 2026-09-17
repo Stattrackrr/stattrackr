@@ -4,6 +4,9 @@
 
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
+import { readTennisPlayerLogsCacheMany, tennisComputedCacheKey } from '@/lib/tennis/dashboardCache';
+import { loadPlayerMatchesCached, loadTennisPlayersCached } from '@/lib/tennis/loadCached';
+import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import {
   TENNIS_MATCHUP_STATS,
   type TennisMatchupBestOf,
@@ -17,6 +20,7 @@ import {
   loadTennisPlayers,
   tourForPlayer,
   type TennisMatchRow,
+  type TennisPlayer,
   type TennisTour,
 } from '@/lib/tennis/data';
 
@@ -28,6 +32,27 @@ export {
   type TennisPlayerMatchupPayload,
 } from '@/lib/tennis/playerMatchupShared';
 
+type ResolvedMatchupPlayer = {
+  id: string | null;
+  name: string;
+  ioc: string | null;
+  tour: TennisTour;
+};
+
+type MatchupBuildOpts = {
+  playerName: string;
+  opponentName: string;
+  playerId?: string | null;
+  opponentId?: string | null;
+  tour?: TennisTour | null;
+  window?: number;
+  year?: number;
+  bestOf?: TennisMatchupBestOf | number | null;
+  fieldIds?: string[] | null;
+  fieldSize?: number | null;
+  extraGamesById?: Map<string, TennisMatchRow[]>;
+};
+
 function num(v: unknown): number | null {
   if (typeof v === 'number' && Number.isFinite(v)) return v;
   return null;
@@ -36,6 +61,18 @@ function num(v: unknown): number | null {
 function mean(values: number[]): number | null {
   if (!values.length) return null;
   return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+function isNumericTennisId(value: string | null | undefined): boolean {
+  return /^\d+$/.test(String(value || '').trim());
+}
+
+function humanTennisName(...candidates: Array<string | null | undefined>): string {
+  for (const candidate of candidates) {
+    const name = String(candidate || '').trim();
+    if (name && !isNumericTennisId(name)) return name;
+  }
+  return '';
 }
 
 function normName(name: string | null | undefined): string {
@@ -58,20 +95,28 @@ function windowMatches(games: TennisMatchRow[], windowN: number, year: number): 
 }
 
 function resolvePlayer(
+  players: TennisPlayer[],
   name: string,
   preferredTour: TennisTour,
   playerId?: string | null
-): { id: string | null; name: string; ioc: string | null; tour: TennisTour } {
-  const players = loadTennisPlayers();
-  const id = String(playerId || '').trim();
+): ResolvedMatchupPlayer {
+  const rawName = String(name || '').trim();
+  const numeric = isNumericTennisId(rawName);
+  const id = String(playerId || (numeric ? rawName : '') || '').trim();
+  const human = humanTennisName(rawName);
   if (id) {
     const byId = players.find((p) => p.playerId === id);
     if (byId) {
-      return { id: byId.playerId, name: byId.name, ioc: byId.ioc, tour: byId.tour };
+      return {
+        id: byId.playerId,
+        name: humanTennisName(byId.name, human) || byId.name,
+        ioc: byId.ioc,
+        tour: byId.tour,
+      };
     }
   }
-  const key = normName(name);
-  if (!key) return { id: null, name, ioc: null, tour: preferredTour };
+  if (!human) return { id: id || null, name: human || rawName, ioc: null, tour: preferredTour };
+  const key = normName(human);
   const exactTour = players.find((p) => p.tour === preferredTour && normName(p.name) === key);
   if (exactTour) {
     return { id: exactTour.playerId, name: exactTour.name, ioc: exactTour.ioc, tour: exactTour.tour };
@@ -79,6 +124,17 @@ function resolvePlayer(
   const exactAny = players.find((p) => normName(p.name) === key);
   if (exactAny) {
     return { id: exactAny.playerId, name: exactAny.name, ioc: exactAny.ioc, tour: exactAny.tour };
+  }
+  const identity = players.filter((p) => tennisIdentityMatch(p.name, human));
+  const identityTour = identity.filter((p) => p.tour === preferredTour);
+  const identityHits = identityTour.length ? identityTour : identity;
+  if (identityHits.length === 1) {
+    return {
+      id: identityHits[0].playerId,
+      name: identityHits[0].name,
+      ioc: identityHits[0].ioc,
+      tour: identityHits[0].tour,
+    };
   }
   const last = key.split(/\s+/).filter(Boolean).pop() || '';
   if (last.length >= 3) {
@@ -91,18 +147,31 @@ function resolvePlayer(
       return { id: unique[0].playerId, name: unique[0].name, ioc: unique[0].ioc, tour: unique[0].tour };
     }
   }
-  return { id: null, name, ioc: null, tour: preferredTour };
+  return { id: id || null, name: human, ioc: null, tour: preferredTour };
+}
+
+function resolveFromGames(
+  resolved: ResolvedMatchupPlayer,
+  games: TennisMatchRow[]
+): ResolvedMatchupPlayer {
+  const last = games.at(-1);
+  return {
+    id: resolved.id || last?.playerId || null,
+    name: humanTennisName(resolved.name, last?.playerName) || resolved.name,
+    ioc: resolved.ioc ?? last?.ioc ?? null,
+    tour: last?.tour || resolved.tour,
+  };
 }
 
 function sideFromRows(
-  resolved: { id: string | null; name: string; ioc: string | null },
+  resolved: ResolvedMatchupPlayer,
   all: TennisMatchRow[],
   windowed: TennisMatchRow[]
 ): TennisMatchupSide {
   const last = windowed.at(-1) || all.at(-1);
   return {
     id: last?.playerId ?? resolved.id,
-    name: last?.playerName || resolved.name,
+    name: humanTennisName(resolved.name, last?.playerName) || resolved.name,
     ioc: last?.ioc ?? resolved.ioc,
     matches: windowed.length,
     totalMatches: all.length,
@@ -130,23 +199,44 @@ function rankMap(
   return out;
 }
 
-export function buildTennisPlayerMatchup(opts: {
-  playerName: string;
-  opponentName: string;
-  playerId?: string | null;
-  opponentId?: string | null;
-  tour?: TennisTour | null;
-  window?: number;
-  year?: number;
-  bestOf?: TennisMatchupBestOf | number | null;
-  fieldIds?: string[] | null;
-  fieldSize?: number | null;
-}): TennisPlayerMatchupPayload {
+function filterGames(
+  rows: TennisMatchRow[] | undefined,
+  tour: TennisTour,
+  bestOf: TennisMatchupBestOf
+): TennisMatchRow[] {
+  const list = rows || [];
+  const ofTour = list.filter((row) => row.tour === tour);
+  const pool = ofTour.length ? ofTour : list;
+  return pool.filter((row) => matchesBestOf(row, bestOf));
+}
+
+function overlayGames(
+  id: string | null,
+  name: string,
+  tour: TennisTour,
+  bestOf: TennisMatchupBestOf
+): TennisMatchRow[] {
+  return filterGames(
+    loadPlayerMatches({
+      playerId: id,
+      playerName: id ? null : name,
+      tour,
+    }),
+    tour,
+    bestOf
+  );
+}
+
+function assembleTennisPlayerMatchup(
+  opts: MatchupBuildOpts,
+  players: TennisPlayer[],
+  gamesFor: (id: string | null, name: string) => TennisMatchRow[]
+): TennisPlayerMatchupPayload {
   const year =
     opts.year && Number.isFinite(opts.year) && opts.year >= 2000 ? opts.year : TENNIS_CURRENT_YEAR;
   const windowN = Math.max(0, Number(opts.window ?? 0) || 0);
-  const playerName = String(opts.playerName || '').trim();
-  const opponentName = String(opts.opponentName || '').trim();
+  const playerName = humanTennisName(opts.playerName) || String(opts.playerName || '').trim();
+  const opponentName = humanTennisName(opts.opponentName) || String(opts.opponentName || '').trim();
   const tour =
     opts.tour ||
     tourForPlayer(null, playerName) ||
@@ -156,18 +246,12 @@ export function buildTennisPlayerMatchup(opts: {
   const bestOf: TennisMatchupBestOf =
     tour === 'WTA' ? 'all' : bestOfN === 5 ? 5 : bestOfN === 3 ? 3 : 'all';
 
-  const resolvedPlayer = resolvePlayer(playerName, tour, opts.playerId);
-  const resolvedOpponent = resolvePlayer(opponentName, tour, opts.opponentId);
-  const playerAll = loadPlayerMatches({
-    playerId: resolvedPlayer.id,
-    playerName: resolvedPlayer.id ? null : playerName,
-    tour,
-  }).filter((row) => matchesBestOf(row, bestOf));
-  const opponentAll = loadPlayerMatches({
-    playerId: resolvedOpponent.id,
-    playerName: resolvedOpponent.id ? null : opponentName,
-    tour,
-  }).filter((row) => matchesBestOf(row, bestOf));
+  let resolvedPlayer = resolvePlayer(players, playerName, tour, opts.playerId);
+  let resolvedOpponent = resolvePlayer(players, opponentName, tour, opts.opponentId);
+  const playerAll = gamesFor(resolvedPlayer.id, resolvedPlayer.name || playerName);
+  const opponentAll = gamesFor(resolvedOpponent.id, resolvedOpponent.name || opponentName);
+  resolvedPlayer = resolveFromGames(resolvedPlayer, playerAll);
+  resolvedOpponent = resolveFromGames(resolvedOpponent, opponentAll);
   const playerWindow = windowMatches(playerAll, windowN, year);
   const opponentWindow = windowMatches(opponentAll, windowN, year);
 
@@ -185,10 +269,7 @@ export function buildTennisPlayerMatchup(opts: {
   if (opponent.id) byId.set(opponent.id, opponentAll);
   for (const id of rankingIds) {
     if (byId.has(id)) continue;
-    byId.set(
-      id,
-      loadPlayerMatches({ playerId: id, tour }).filter((row) => matchesBestOf(row, bestOf))
-    );
+    byId.set(id, gamesFor(id, ''));
   }
 
   const fieldAvgs = new Map<string, Map<TennisMatchupStatKey, number>>();
@@ -250,4 +331,128 @@ export function buildTennisPlayerMatchup(opts: {
     opponent,
     rows,
   };
+}
+
+export function tennisMatchupComputedKey(opts: {
+  playerId?: string | null;
+  playerName?: string | null;
+  opponentId?: string | null;
+  opponentName?: string | null;
+  tour?: string | null;
+  window?: number | null;
+  year?: number | null;
+  bestOf?: string | number | null;
+  tournamentKey?: string | null;
+  tournamentName?: string | null;
+  stage?: string | null;
+}): string {
+  return tennisComputedCacheKey('matchup', [
+    opts.playerId || opts.playerName,
+    opts.opponentId || opts.opponentName,
+    opts.tour,
+    String(opts.window ?? 0),
+    String(opts.year || ''),
+    String(opts.bestOf || 'all'),
+    opts.tournamentKey || opts.tournamentName,
+    opts.stage,
+  ]);
+}
+
+export function tennisMatchupPayloadUsable(
+  payload: (Partial<TennisPlayerMatchupPayload> & { success?: boolean }) | null | undefined,
+  opts?: { window?: number; year?: number; bestOf?: string | number | null; expectField?: boolean }
+): payload is TennisPlayerMatchupPayload & { success?: boolean } {
+  if (!payload?.player || !payload.opponent || !Array.isArray(payload.rows)) return false;
+  if (payload.success === false) return false;
+  if (!humanTennisName(payload.player.name) || !humanTennisName(payload.opponent.name)) return false;
+  if (opts?.window != null && Number(payload.window) !== Number(opts.window)) return false;
+  if (opts?.year != null && Number(payload.year) !== Number(opts.year)) return false;
+  if (opts?.bestOf != null && String(payload.bestOf || 'all') !== String(opts.bestOf || 'all')) return false;
+  const hasValues = payload.rows.some((row) => row.playerValue != null || row.opponentValue != null);
+  if (!hasValues) return false;
+  if (opts?.expectField) {
+    const hasRanks = payload.rows.some((row) => row.playerRank != null || row.opponentRank != null);
+    if (!hasRanks) return false;
+  }
+  return true;
+}
+
+export function buildTennisPlayerMatchup(opts: MatchupBuildOpts): TennisPlayerMatchupPayload {
+  const players = loadTennisPlayers();
+  const extra = opts.extraGamesById;
+  const yearTour =
+    opts.tour ||
+    tourForPlayer(null, String(opts.playerName || '')) ||
+    tourForPlayer(null, String(opts.opponentName || '')) ||
+    'ATP';
+  const bestOfN = Number(opts.bestOf);
+  const bestOf: TennisMatchupBestOf =
+    yearTour === 'WTA' ? 'all' : bestOfN === 5 ? 5 : bestOfN === 3 ? 3 : 'all';
+  return assembleTennisPlayerMatchup(opts, players, (id, name) => {
+    const cached = id && extra?.get(id)?.length ? filterGames(extra.get(id), yearTour, bestOf) : [];
+    return cached.length ? cached : overlayGames(id, name, yearTour, bestOf);
+  });
+}
+
+export async function buildTennisPlayerMatchupAsync(
+  opts: MatchupBuildOpts
+): Promise<TennisPlayerMatchupPayload> {
+  const roster = await loadTennisPlayersCached();
+  const players = roster.length ? roster : loadTennisPlayers();
+  const tour =
+    opts.tour ||
+    tourForPlayer(null, String(opts.playerName || '')) ||
+    tourForPlayer(null, String(opts.opponentName || '')) ||
+    'ATP';
+  const bestOfN = Number(opts.bestOf);
+  const bestOf: TennisMatchupBestOf =
+    tour === 'WTA' ? 'all' : bestOfN === 5 ? 5 : bestOfN === 3 ? 3 : 'all';
+  const resolvedPlayer = resolvePlayer(players, String(opts.playerName || ''), tour, opts.playerId);
+  const resolvedOpponent = resolvePlayer(players, String(opts.opponentName || ''), tour, opts.opponentId);
+  const fieldIds = [...new Set((opts.fieldIds || []).map((id) => String(id || '').trim()).filter(Boolean))];
+  const ids = [
+    ...fieldIds,
+    String(resolvedPlayer.id || '').trim(),
+    String(resolvedOpponent.id || '').trim(),
+  ].filter(Boolean);
+  const logsById = await readTennisPlayerLogsCacheMany(ids);
+  const extra = opts.extraGamesById;
+  const gamesCache = new Map<string, TennisMatchRow[]>();
+
+  const gamesFor = (id: string | null, name: string): TennisMatchRow[] => {
+    const key = String(id || '').trim();
+    if (key && gamesCache.has(key)) return gamesCache.get(key) || [];
+    const redis = key ? filterGames(logsById.get(key), tour, bestOf) : [];
+    const extraRows = key && extra?.get(key)?.length ? filterGames(extra.get(key), tour, bestOf) : [];
+    const overlay = overlayGames(key || null, name, tour, bestOf);
+    const rows = redis.length ? redis : extraRows.length ? extraRows : overlay;
+    if (key) gamesCache.set(key, rows);
+    return rows;
+  };
+
+  const payload = assembleTennisPlayerMatchup(opts, players, gamesFor);
+  if (payload.player.totalMatches || payload.opponent.totalMatches) return payload;
+
+  const [playerLive, opponentLive] = await Promise.all([
+    loadPlayerMatchesCached({
+      playerId: payload.player.id || resolvedPlayer.id,
+      playerName: payload.player.name || opts.playerName,
+      tour,
+    }),
+    loadPlayerMatchesCached({
+      playerId: payload.opponent.id || resolvedOpponent.id,
+      playerName: payload.opponent.name || opts.opponentName,
+      tour,
+    }),
+  ]);
+  const liveById = new Map(logsById);
+  const playerId = String(payload.player.id || resolvedPlayer.id || '').trim();
+  const opponentId = String(payload.opponent.id || resolvedOpponent.id || '').trim();
+  if (playerId && playerLive.length) liveById.set(playerId, playerLive);
+  if (opponentId && opponentLive.length) liveById.set(opponentId, opponentLive);
+  return assembleTennisPlayerMatchup(opts, players, (id, name) => {
+    const key = String(id || '').trim();
+    const cached = key ? filterGames(liveById.get(key), tour, bestOf) : [];
+    return cached.length ? cached : overlayGames(id, name, tour, bestOf);
+  });
 }

@@ -259,7 +259,7 @@ function normalizeNblPlayerNameForMatch(name: string): string {
 
 function tennisUrlOpponentValue(raw: string | null | undefined): string | null {
   const value = String(raw || '').trim();
-  if (!value || value === '—' || value === 'NA' || value === 'N/A') return null;
+  if (!value || value === '—' || value === 'NA' || value === 'N/A' || /^\d+$/.test(value)) return null;
   return value;
 }
 
@@ -1493,7 +1493,7 @@ export default function TennisDashboardPage() {
         round?: string | null;
       })
     : null;
-  const lastCompletedOpponent = lastLog?.opponent ? String(lastLog.opponent).trim() : null;
+  const lastCompletedOpponent = tennisUrlOpponentValue(lastLog?.opponent);
   const selectedPlayerId = String(selectedPlayer?.playerId || '').trim();
   const upcomingReady = Boolean(selectedPlayerId) && nextGamePlayerId === selectedPlayerId;
   const fromUpcoming = upcomingReady ? tennisUrlOpponentValue(nextGameOpponent) : null;

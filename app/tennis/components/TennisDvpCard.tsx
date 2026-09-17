@@ -46,6 +46,18 @@ type DvpPayload = {
   metrics: DvpMetricRow[];
 };
 
+function isNumericTennisId(value: string | null | undefined): boolean {
+  return /^\d+$/.test(String(value || '').trim());
+}
+
+function displayDvpName(...candidates: Array<string | null | undefined>): string {
+  for (const candidate of candidates) {
+    const name = String(candidate || '').trim();
+    if (name && !isNumericTennisId(name)) return name;
+  }
+  return '';
+}
+
 function fmt(value: number | null | undefined, pct: boolean): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '';
   return pct ? `${value.toFixed(1)}%` : value.toFixed(1);
@@ -122,7 +134,8 @@ export default function TennisDvpCard({
 }) {
   const [mounted, setMounted] = useState(false);
   const [selectedWindow, setSelectedWindow] = useState<TennisDvpWindow>('last10');
-  const [oppSel, setOppSel] = useState(String(opponentName || ''));
+  const [oppSel, setOppSel] = useState(displayDvpName(opponentName));
+  const [oppSelId, setOppSelId] = useState(String(opponentId || ''));
   const [oppOpen, setOppOpen] = useState(false);
   const [payload, setPayload] = useState<DvpPayload | null>(null);
   const [loading, setLoading] = useState(false);
@@ -139,14 +152,18 @@ export default function TennisDvpCard({
     lastOppQueryRef.current = null;
     lastFetchKeyRef.current = '';
     userChangedOpponentRef.current = false;
-    setOppSel(String(opponentNameRef.current || ''));
+    setOppSel(displayDvpName(opponentNameRef.current));
+    setOppSelId(String(opponentId || ''));
     setPayload(null);
     setError(null);
-  }, [playerName]);
+  }, [playerName, opponentId]);
 
   useEffect(() => {
-    if (!userChangedOpponentRef.current) setOppSel(String(opponentName || ''));
-  }, [opponentName]);
+    if (!userChangedOpponentRef.current) {
+      setOppSel(displayDvpName(opponentName));
+      if (opponentId) setOppSelId(String(opponentId));
+    }
+  }, [opponentName, opponentId]);
 
   useEffect(() => {
     if (!playerName) {
@@ -161,6 +178,7 @@ export default function TennisDvpCard({
       tour,
       selectedWindow,
       opponentId,
+      oppSelId,
       tournamentName,
       tournamentKey,
       stage,
@@ -179,17 +197,25 @@ export default function TennisDvpCard({
       tour,
       window: selectedWindow,
     });
-    if (oppSel) params.set('opponent', oppSel);
-    const sameUpcomingOpp =
+    const queryName = displayDvpName(oppSel, opponentName);
+    const upcomingName = displayDvpName(opponentName);
+    const sameUpcoming =
       Boolean(opponentId) &&
-      String(oppSel || '').trim().toLowerCase() === String(opponentName || '').trim().toLowerCase();
-    if (sameUpcomingOpp && opponentId) params.set('opponentId', opponentId);
+      (!queryName ||
+        queryName.toLowerCase() === upcomingName.toLowerCase() ||
+        tennisSameOpponentQuery(queryName, opponentName));
+    const queryId =
+      String(oppSelId || '').trim() ||
+      (isNumericTennisId(oppSel) ? String(oppSel).trim() : '') ||
+      (sameUpcoming ? String(opponentId || '').trim() : '');
+    if (queryName) params.set('opponent', queryName);
+    if (queryId) params.set('opponentId', queryId);
     if (playerName) params.set('player', playerName);
     if (playerId) params.set('playerId', playerId);
     if (tournamentName) params.set('tournament', tournamentName);
     if (tournamentKey) params.set('tournamentKey', tournamentKey);
     if (stage === 'qualifying') params.set('stage', 'qualifying');
-    lastOppQueryRef.current = oppSel || null;
+    lastOppQueryRef.current = queryName || oppSel || null;
     lastFetchKeyRef.current = fetchKey;
     tennisDashboardFetch(`/api/tennis/dvp?${params}`)
       .then((res) => {
@@ -200,6 +226,9 @@ export default function TennisDvpCard({
         if (cancelled) return;
         setPayload(data);
         setError(null);
+        const human = displayDvpName(data.opponent?.name, opponentNameRef.current, oppSel);
+        if (human && human !== oppSel) setOppSel(human);
+        if (data.opponent?.id && data.opponent.id !== oppSelId) setOppSelId(data.opponent.id);
       })
       .catch((err) => {
         if (cancelled || isTennisDashboardAbortError(err)) return;
@@ -212,7 +241,7 @@ export default function TennisDvpCard({
     return () => {
       cancelled = true;
     };
-  }, [playerName, playerId, tour, selectedWindow, oppSel, opponentId, opponentName, tournamentName, tournamentKey, stage]);
+  }, [playerName, playerId, tour, selectedWindow, oppSel, oppSelId, opponentId, opponentName, tournamentName, tournamentKey, stage]);
 
   const opponents = payload?.opponents || [];
   const metrics = payload?.metrics?.length ? payload.metrics : TENNIS_DVP_METRICS.map((m) => ({
@@ -225,7 +254,7 @@ export default function TennisDvpCard({
     fieldSize: payload?.fieldSize || 0,
   }));
   const selected = payload?.opponent;
-  const selectedLabel = selected?.name || oppSel || 'Opponent';
+  const selectedLabel = displayDvpName(selected?.name, oppSel, opponentName) || 'Opponent';
   const flagUrl = tennisFlagUrl(selected?.ioc);
   const fieldSize = payload?.fieldSize || 0;
   const eventLabel = tennisEventPlaceLabel(payload?.tournamentName || tournamentName);
@@ -235,14 +264,22 @@ export default function TennisDvpCard({
   const dark = mounted && isDark;
 
   const oppOptions = useMemo(() => {
-    if (!oppSel) return opponents;
-    const key = oppSel.trim().toLowerCase();
-    if (opponents.some((p) => p.name.toLowerCase() === key)) return opponents;
+    const cleaned = opponents.filter((p) => displayDvpName(p.name));
+    const label = displayDvpName(oppSel, selected?.name, opponentName);
+    if (!label) return cleaned;
+    const key = label.trim().toLowerCase();
+    if (cleaned.some((p) => p.name.toLowerCase() === key)) return cleaned;
     return [
-      { id: 'selected', name: oppSel, ioc: selected?.ioc ?? null, rankPos: selected?.rankPos ?? null, seed: selected?.seed ?? null },
-      ...opponents,
+      {
+        id: selected?.id || oppSelId || 'selected',
+        name: label,
+        ioc: selected?.ioc ?? null,
+        rankPos: selected?.rankPos ?? null,
+        seed: selected?.seed ?? null,
+      },
+      ...cleaned,
     ];
-  }, [opponents, oppSel, selected]);
+  }, [opponents, oppSel, oppSelId, selected, opponentName]);
 
   if (!playerName) {
     return (
@@ -348,7 +385,8 @@ export default function TennisDvpCard({
                         type="button"
                         onClick={() => {
                           userChangedOpponentRef.current = true;
-                          setOppSel(p.name);
+                          setOppSel(displayDvpName(p.name) || p.name);
+                          setOppSelId(p.id && p.id !== 'selected' ? p.id : '');
                           setOppOpen(false);
                         }}
                         className={`w-full flex items-center gap-2 px-2 py-2 text-sm text-left ${

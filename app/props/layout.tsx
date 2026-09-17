@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 export default function PropsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#050d1a] text-white">
+      <link rel="preload" href="/api/props/combined" as="fetch" crossOrigin="use-credentials" />
       <CombinedPropsPrefetch />
       {children}
     </div>

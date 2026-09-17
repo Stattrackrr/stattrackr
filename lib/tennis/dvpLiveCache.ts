@@ -2,10 +2,12 @@ import sharedCache from '@/lib/sharedCache';
 import { TENNIS_CURRENT_YEAR, tennisDvpProfile, type TennisDvpMetricRow, type TennisTour } from '@/lib/tennis/data';
 import { tennisEventPlaceCore } from '@/lib/tennis/chartStats';
 import { TENNIS_DVP_WINDOWS, type TennisDvpStage, type TennisDvpWindow } from '@/lib/tennis/dvpShared';
+import { readTennisPlayerLogsCacheMany } from '@/lib/tennis/dashboardCache';
 import {
   listLiveTennisEventIndex,
   type TennisLiveEventIndex,
 } from '@/lib/tennis/nextGame';
+import type { TennisMatchRow } from '@/lib/tennis/types';
 
 export const TENNIS_DVP_LIVE_CACHE_KEY = 'tennis_dvp_live_v10';
 const TENNIS_DVP_LIVE_TTL_SECONDS = 2 * 60 * 60;
@@ -113,8 +115,26 @@ export function findCachedTennisDvpEvent(
   return null;
 }
 
+export async function tennisDvpExtraMatchesForIds(playerIds: string[]): Promise<TennisMatchRow[]> {
+  const logs = await readTennisPlayerLogsCacheMany(playerIds);
+  const out: TennisMatchRow[] = [];
+  for (const games of logs.values()) {
+    if (games?.length) out.push(...games);
+  }
+  return out;
+}
+
+export function tennisCachedDvpPlayerHasSample(
+  player: TennisCachedDvpPlayer | null | undefined
+): boolean {
+  return Boolean(player?.metrics?.some((row) => typeof row.value === 'number' && Number.isFinite(row.value)));
+}
+
 export async function buildTennisDvpLiveStore(live?: TennisLiveEventIndex): Promise<TennisDvpLiveStore> {
   const index = live || (await listLiveTennisEventIndex());
+  const extraMatches = await tennisDvpExtraMatchesForIds(
+    index.events.flatMap((event) => [...event.playerIds, ...event.qualifyingPlayerIds])
+  );
   const events: TennisCachedDvpEvent[] = [];
   for (const event of index.events) {
     const boards: Array<{ stage: TennisDvpStage; extraPlayerIds: string[] }> = [];
@@ -134,6 +154,7 @@ export async function buildTennisDvpLiveStore(live?: TennisLiveEventIndex): Prom
           tournamentName: event.tournamentName,
           tournamentKey: event.tournamentKey,
           extraPlayerIds: board.extraPlayerIds,
+          extraMatches,
           liveTournamentKeys: index.keys,
           liveTournamentNames: index.names,
           window,

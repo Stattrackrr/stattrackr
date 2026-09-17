@@ -28,6 +28,7 @@ import { tennisRankHistoryMtime, withTennisMatchDayRanks } from '@/lib/tennis/ra
 import { tennisAssignDrawRanks, tennisAssignDrawSeeds } from '@/lib/tennis/seeds';
 import { applyTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
+import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
 export type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 export { TENNIS_CURRENT_YEAR, TENNIS_HISTORY_YEARS };
@@ -324,39 +325,71 @@ function normDvpName(name: string | null | undefined): string {
     .toLowerCase();
 }
 
+function isNumericTennisId(value: string | null | undefined): boolean {
+  return /^\d+$/.test(String(value || '').trim());
+}
+
+function humanTennisDvpName(...candidates: Array<string | null | undefined>): string {
+  for (const candidate of candidates) {
+    const name = String(candidate || '').trim();
+    if (name && !isNumericTennisId(name)) return name;
+  }
+  return '';
+}
+
 function findDvpPlayerId(
   name: string,
   buckets: Map<string, DvpBucket>,
-  ranked: TennisRankingRow[]
+  ranked: TennisRankingRow[],
+  extraPlayers: TennisPlayer[] = []
 ): string | null {
-  const key = normDvpName(name);
-  if (!key) return null;
-  const roster = loadTennisPlayers();
-  const rosterHit = roster.find((p) => normDvpName(p.name) === key);
-  if (rosterHit) return rosterHit.playerId;
-  const rankedHit = ranked.find((p) => normDvpName(p.name) === key);
+  const key = String(name || '').trim();
+  if (!key || isNumericTennisId(key)) return null;
+  const roster = [...loadTennisPlayers(), ...extraPlayers];
+  const exact = roster.find((p) => normDvpName(p.name) === normDvpName(key));
+  if (exact) return exact.playerId;
+  const rankedHit = ranked.find((p) => normDvpName(p.name) === normDvpName(key));
   if (rankedHit) return rankedHit.playerId;
+  const identity = roster.filter((p) => tennisIdentityMatch(p.name, key));
+  if (identity.length === 1) return identity[0].playerId;
   for (const [id, bucket] of buckets) {
-    if (normDvpName(bucket.name) === key) return id;
+    if (normDvpName(bucket.name) === normDvpName(key) || tennisIdentityMatch(bucket.name, key)) return id;
   }
   const last = key.split(/\s+/).filter(Boolean).pop() || '';
   if (last.length < 3) return null;
-  const lastHits = roster.filter((p) => {
-    const parts = normDvpName(p.name).split(/\s+/);
-    return parts[parts.length - 1] === last;
-  });
+  const lastKey = last.toLowerCase();
+  const lastHits = roster.filter((p) => normDvpName(p.name).split(/\s+/).pop() === lastKey);
   if (lastHits.length === 1) return lastHits[0].playerId;
-  const rankedLast = ranked.filter((p) => {
-    const parts = normDvpName(p.name).split(/\s+/);
-    return parts[parts.length - 1] === last;
-  });
+  const rankedLast = ranked.filter((p) => normDvpName(p.name).split(/\s+/).pop() === lastKey);
   if (rankedLast.length === 1) return rankedLast[0].playerId;
-  const bucketHits = [...buckets.entries()].filter(([, b]) => {
-    const parts = normDvpName(b.name).split(/\s+/);
-    return parts[parts.length - 1] === last;
-  });
+  const bucketHits = [...buckets.entries()].filter(
+    ([, bucket]) => normDvpName(bucket.name).split(/\s+/).pop() === lastKey
+  );
   if (bucketHits.length === 1) return bucketHits[0][0];
   return null;
+}
+
+function extraMatchLookup(rows: TennisMatchRow[] | undefined): {
+  byPlayerId: Map<string, TennisMatchRow[]>;
+  byOpponentId: Map<string, TennisMatchRow[]>;
+} {
+  const byPlayerId = new Map<string, TennisMatchRow[]>();
+  const byOpponentId = new Map<string, TennisMatchRow[]>();
+  for (const row of rows || []) {
+    const playerId = String(row.playerId || '').trim();
+    const opponentId = String(row.opponentId || '').trim();
+    if (playerId) {
+      const list = byPlayerId.get(playerId) || [];
+      list.push(row);
+      byPlayerId.set(playerId, list);
+    }
+    if (opponentId) {
+      const list = byOpponentId.get(opponentId) || [];
+      list.push(row);
+      byOpponentId.set(opponentId, list);
+    }
+  }
+  return { byPlayerId, byOpponentId };
 }
 
 function toAllowedView(row: TennisMatchRow): TennisMatchRow {
@@ -683,16 +716,54 @@ function emptyDvpProfile(opts: {
   };
 }
 
+function playersFromExtraMatches(rows: TennisMatchRow[] | undefined): TennisPlayer[] {
+  const byId = new Map<string, TennisPlayer>();
+  const upsert = (
+    id: string,
+    name: string,
+    tour: TennisTour,
+    ioc: string | null,
+    rank: number | null,
+    rankPoints: number | null
+  ) => {
+    const playerId = String(id || '').trim();
+    if (!playerId) return;
+    const human = humanTennisDvpName(name);
+    const existing = byId.get(playerId);
+    if (existing) {
+      if (human && isNumericTennisId(existing.name)) existing.name = human;
+      else if (human && !existing.name) existing.name = human;
+      if (!existing.ioc && ioc) existing.ioc = ioc;
+      if (existing.rank == null && rank != null) existing.rank = rank;
+      if (existing.rankPoints == null && rankPoints != null) existing.rankPoints = rankPoints;
+      return;
+    }
+    byId.set(playerId, {
+      playerId,
+      name: human || String(name || '').trim() || playerId,
+      tour,
+      ioc,
+      hand: null,
+      height: null,
+      rank,
+      rankPoints,
+    });
+  };
+  for (const row of rows || []) {
+    upsert(row.playerId, row.playerName, row.tour, row.ioc, row.playerRank, row.rankPoints);
+    upsert(row.opponentId, row.opponent, row.tour, row.opponentIoc, row.opponentRank, row.opponentRankPoints);
+  }
+  return [...byId.values()];
+}
+
 function bucketsFromRows(rows: TennisMatchRow[], fieldId: string, kind: 'allowed' | 'own'): DvpBucket {
   const bucket = emptyDvpBucket('', null, '');
   for (const row of rows) {
-    if (kind === 'allowed') {
-      bucket.name = row.opponent || bucket.name;
-      bucket.ioc = row.opponentIoc ?? bucket.ioc;
-    } else {
-      bucket.name = row.playerName || bucket.name;
-      bucket.ioc = row.ioc ?? bucket.ioc;
-    }
+    const nextName = kind === 'allowed' ? row.opponent : row.playerName;
+    const nextIoc = kind === 'allowed' ? row.opponentIoc : row.ioc;
+    const human = humanTennisDvpName(nextName);
+    if (human) bucket.name = human;
+    if (nextIoc) bucket.ioc = nextIoc;
     bucket.matches += 1;
     const date = matchDateKey(row);
     if (date >= bucket.date) bucket.date = date;
@@ -702,7 +773,7 @@ function bucketsFromRows(rows: TennisMatchRow[], fieldId: string, kind: 'allowed
       addDvpValue(bucket, metric.key, row[metric.key as keyof TennisMatchRow]);
     }
   }
-  if (!bucket.name) bucket.name = fieldId;
+  if (!humanTennisDvpName(bucket.name)) bucket.name = fieldId;
   return bucket;
 }
 
@@ -752,6 +823,8 @@ export function tennisDvpProfile(opts: {
   tournamentKey?: string | null;
   window?: TennisDvpWindow;
   extraPlayerIds?: string[];
+  extraMatches?: TennisMatchRow[];
+  extraPlayers?: TennisPlayer[];
   liveTournamentKeys?: Iterable<string>;
   liveTournamentNames?: Iterable<string>;
   activeOnly?: boolean;
@@ -789,9 +862,21 @@ export function tennisDvpProfile(opts: {
     });
   }
   const index = tourMatchIndex(tour);
+  const extraLookup = extraMatchLookup(opts.extraMatches);
+  const extraPlayers = [...(opts.extraPlayers || []), ...playersFromExtraMatches(opts.extraMatches)];
   const ranked = loadTennisRankings(tour, { limit: 500 });
   const roster = loadTennisPlayers();
   const rosterById = new Map(roster.map((p) => [p.playerId, p]));
+  for (const player of extraPlayers) {
+    const existing = rosterById.get(player.playerId);
+    if (!existing) {
+      rosterById.set(player.playerId, player);
+      continue;
+    }
+    if (humanTennisDvpName(player.name) && isNumericTennisId(existing.name)) {
+      rosterById.set(player.playerId, { ...existing, name: player.name, ioc: player.ioc ?? existing.ioc });
+    }
+  }
   const rankedById = new Map(ranked.map((p) => [p.playerId, p]));
   const group = resolveTourneyGroup(index, {
     year,
@@ -820,10 +905,10 @@ export function tennisDvpProfile(opts: {
   }
   const seedOpponentId =
     String(opts.opponentId || '').trim() ||
-    findDvpPlayerId(String(opts.opponentName || ''), new Map(), ranked);
+    findDvpPlayerId(String(opts.opponentName || ''), new Map(), ranked, extraPlayers);
   const seedPlayerId =
     String(opts.playerId || '').trim() ||
-    findDvpPlayerId(String(opts.playerName || ''), new Map(), ranked);
+    findDvpPlayerId(String(opts.playerName || ''), new Map(), ranked, extraPlayers);
   if (seedOpponentId) fieldSet.add(seedOpponentId);
   if (seedPlayerId) fieldSet.add(seedPlayerId);
 
@@ -839,8 +924,12 @@ export function tennisDvpProfile(opts: {
   const allowed = new Map<string, DvpBucket>();
   const own = new Map<string, DvpBucket>();
   const fillBuckets = (id: string) => {
-    const ownRows = index.byPlayerId.get(id) || [];
-    const vsRows = index.byOpponentId.get(id) || [];
+    const overlayOwn = index.byPlayerId.get(id) || [];
+    const overlayVs = index.byOpponentId.get(id) || [];
+    const extraOwn = extraLookup.byPlayerId.get(id) || [];
+    const extraVs = extraLookup.byOpponentId.get(id) || [];
+    const ownRows = overlayOwn.length ? overlayOwn : extraOwn;
+    const vsRows = overlayVs.length ? overlayVs : extraVs;
     const ownSlice = sliceDvpWindow(ownRows.length ? ownRows : vsRows, window, year);
     own.set(id, bucketsFromRows(ownSlice, id, 'own'));
     allowed.set(
@@ -856,7 +945,7 @@ export function tennisDvpProfile(opts: {
 
   const opponentId =
     String(opts.opponentId || '').trim() ||
-    findDvpPlayerId(String(opts.opponentName || ''), allowed, ranked);
+    findDvpPlayerId(String(opts.opponentName || ''), allowed, ranked, extraPlayers);
   if (opponentId && !allowed.has(opponentId)) fillBuckets(opponentId);
   if (opponentId && !fieldIds.includes(opponentId)) {
     const next = trimDvpField(
@@ -880,7 +969,13 @@ export function tennisDvpProfile(opts: {
       const bucket = allowed.get(id) || own.get(id);
       return {
         id,
-        name: rankedRow?.name || rosterRow?.name || bucket?.name || id,
+        name:
+          humanTennisDvpName(
+            rankedRow?.name,
+            rosterRow?.name,
+            bucket?.name,
+            id === seedOpponentId ? opts.opponentName : null
+          ) || id,
         ioc: rankedRow?.ioc ?? rosterRow?.ioc ?? bucket?.ioc ?? null,
         rankPos: rankedRow?.pos ?? rosterRow?.rank ?? null,
         seed: null as number | null,
@@ -935,10 +1030,12 @@ export function tennisDvpProfile(opts: {
     ? opponents.find((p) => p.id === opponentId) || {
         id: opponentId,
         name:
-          allowed.get(opponentId)?.name ||
-          own.get(opponentId)?.name ||
-          rosterById.get(opponentId)?.name ||
-          String(opts.opponentName || ''),
+          humanTennisDvpName(
+            allowed.get(opponentId)?.name,
+            own.get(opponentId)?.name,
+            rosterById.get(opponentId)?.name,
+            opts.opponentName
+          ) || opponentId,
         ioc: allowed.get(opponentId)?.ioc || own.get(opponentId)?.ioc || rosterById.get(opponentId)?.ioc || null,
         rankPos: rankedById.get(opponentId)?.pos ?? rosterById.get(opponentId)?.rank ?? null,
         seed: seedById.get(opponentId) ?? null,

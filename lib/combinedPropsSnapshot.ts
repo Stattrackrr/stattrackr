@@ -11,8 +11,7 @@ import { NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
-import { applyTennisListLiveOverlay, getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
-import type { TennisListGame, TennisListPropRow } from '@/lib/tennis/playerPropsList';
+import { getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
 import { attachTennisHeadshots } from '@/lib/tennis/headshots';
 import {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
@@ -299,58 +298,14 @@ function withTennisHeadshots(snapshot: CombinedPropsSnapshot): CombinedPropsSnap
   }
 }
 
-async function withTennisLiveOverlay(snapshot: CombinedPropsSnapshot): Promise<CombinedPropsSnapshot> {
-  const tennis = snapshot.tennis;
-  if (!tennis?.props?.length) return snapshot;
-  try {
-    const overlayed = await applyTennisListLiveOverlay({
-      success: true,
-      data: tennis.props.map((prop) => ({
-        ...prop,
-        playerTeam: prop.playerTeam || prop.team,
-      })) as unknown as TennisListPropRow[],
-      games: (tennis.games || []).map(
-        (game): TennisListGame => ({
-          gameId: game.gameId,
-          homeTeam: game.homeTeam,
-          awayTeam: game.awayTeam,
-          commenceTime: game.commenceTime,
-        })
-      ),
-      propsCount: tennis.props.length,
-      gamesCount: tennis.games?.length || 0,
-      lastUpdated: tennis.lastUpdated,
-      nextUpdate: tennis.nextUpdate,
-      noTennisOdds: tennis.noTennisOdds,
-      noAflOdds: tennis.noTennisOdds,
-      ingestMessage: tennis.ingestMessage,
-    });
-    return {
-      ...snapshot,
-      tennis: {
-        ...tennis,
-        props: overlayed.data as unknown as CombinedPlayerProp[],
-        games: overlayed.games.map((game) => ({
-          gameId: game.gameId,
-          homeTeam: game.homeTeam,
-          awayTeam: game.awayTeam,
-          commenceTime: game.commenceTime,
-        })),
-      },
-    };
-  } catch {
-    return snapshot;
-  }
-}
-
 export async function getCombinedPropsSnapshot(): Promise<CombinedPropsSnapshot | null> {
   const snapshot = await sharedCache.getJSON<CombinedPropsSnapshot>(COMBINED_PROPS_SNAPSHOT_CACHE_KEY);
-  return snapshot ? withTennisLiveOverlay(withTennisHeadshots(snapshot)) : null;
+  return snapshot ? withTennisHeadshots(snapshot) : null;
 }
 
 export async function getCombinedPropsPaintSnapshot(): Promise<CombinedPropsSnapshot | null> {
   const snapshot = await sharedCache.getJSON<CombinedPropsSnapshot>(COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY);
-  return snapshot ? withTennisLiveOverlay(withTennisHeadshots(snapshot)) : null;
+  return snapshot ? withTennisHeadshots(snapshot) : null;
 }
 
 async function writeCombinedPropsSnapshotCaches(snapshot: CombinedPropsSnapshot): Promise<void> {
