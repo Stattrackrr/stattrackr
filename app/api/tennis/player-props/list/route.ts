@@ -14,9 +14,16 @@ export async function GET(request: NextRequest) {
     const refresh = request.nextUrl.searchParams.get('refresh') === '1';
     const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
     const tour = tourParam === 'WTA' || tourParam === 'ATP' ? tourParam : null;
-    const payload = await getTennisPlayerPropsList({ refresh, tour });
+    const payload = await getTennisPlayerPropsList({
+      refresh,
+      tour,
+    });
     return NextResponse.json(payload, {
-      headers: { 'Cache-Control': 'private, no-store' },
+      headers: {
+        'Cache-Control': refresh
+          ? 'private, no-store'
+          : 'public, s-maxage=30, stale-while-revalidate=120',
+      },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

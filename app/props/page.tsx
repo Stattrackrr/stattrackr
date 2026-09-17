@@ -73,6 +73,12 @@ import {
   type SecondaryPropsSport,
 } from '@/lib/nbaConstants';
 import { prefetchTennisDashboardFromProps } from '@/lib/tennisPropsNavigationPrefetch';
+import {
+  eventTargetIsInteractive,
+  isUnmodifiedLeftClick,
+  propsDashboardHref,
+  tennisDashboardHref,
+} from '@/lib/propsDashboardLinks';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisEventPlaceLabel, tennisTourLabel } from '@/lib/tennis/chartStats';
 import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
@@ -338,49 +344,33 @@ const PROPS_DESKTOP_IP_COL_STYLE = {
   maxWidth: '120px',
 } as const;
 
-function normalizeTennisStatForDashboard(stat: string): string {
-  const value = String(stat || '').trim();
-  if (value === 'moneyline' || value === 'spread' || value === 'totalGames' || value === 'gamesWon' || value === 'gamesLost' || value === 'totalSets') {
-    return value;
-  }
-  const n = value.toLowerCase().replace(/\s+/g, '');
-  if (n === 'totalgames') return 'totalGames';
-  if (n === 'gameswon') return 'gamesWon';
-  if (n === 'gameslost' || n === 'oppgameswon') return 'gamesLost';
-  if (n === 'totalsets') return 'totalSets';
-  return 'moneyline';
-}
-
 function navigateToTennisDashboardFromProp(
   prop: Pick<PlayerProp, 'playerName' | 'playerId' | 'team' | 'opponent' | 'statType' | 'line' | 'bookmaker'>,
   router: { push: (href: string) => void },
   lineValue?: number
 ): void {
-  const q = new URLSearchParams();
-  q.set('mode', 'player');
-  q.set('name', prop.playerName);
-  const tour = String(prop.team || '').trim();
-  if (tour) q.set('team', tour);
-  if (prop.opponent) q.set('opponent', prop.opponent);
-  q.set('stat', normalizeTennisStatForDashboard(prop.statType));
-  const selectedLine =
-    typeof lineValue === 'number' && Number.isFinite(lineValue)
-      ? lineValue
-      : Number.isFinite(prop.line)
-        ? prop.line
-        : null;
-  if (selectedLine != null) q.set('line', String(selectedLine));
-  if (prop.playerId) q.set('pid', String(prop.playerId));
-  const selectedBook = String(prop.bookmaker || '').trim();
-  if (selectedBook) q.set('bookmaker', selectedBook);
+  const href = tennisDashboardHref({
+    playerName: prop.playerName,
+    playerId: prop.playerId,
+    team: prop.team,
+    opponent: prop.opponent,
+    statType: prop.statType,
+    line:
+      typeof lineValue === 'number' && Number.isFinite(lineValue)
+        ? lineValue
+        : Number.isFinite(prop.line)
+          ? prop.line
+          : null,
+    bookmaker: prop.bookmaker,
+  });
   prefetchTennisDashboardFromProps({
     playerName: prop.playerName,
     playerId: prop.playerId,
-    tour,
+    tour: String(prop.team || '').trim(),
     opponent: prop.opponent,
   });
   snapshotPropsPageBeforeLeave();
-  router.push(`/tennis?${q.toString()}`);
+  router.push(href);
 }
 
 function tennisPropsHeadshotUrl(
@@ -1598,11 +1588,11 @@ function getSecondaryPropsListUrl(sport: SecondaryPropsSport, debugStats: boolea
 }
 
 async function fetchSecondaryPropsList(url: string): Promise<Response> {
-  const timeoutMs = url.includes('/api/tennis/') ? 180_000 : 25_000;
+  const timeoutMs = 25_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { cache: 'no-store', signal: controller.signal });
+    return await fetch(url, { cache: 'default', signal: controller.signal });
   } finally {
     clearTimeout(timeoutId);
   }
@@ -8158,6 +8148,16 @@ export default function NBALandingPage() {
                         <tbody>
                           {propsTablePaginatedProps.map((prop, idx) => {
                             const rowSport = resolvePropsRowSport(prop, propsSport);
+                            const dashboardHref = propsDashboardHref({
+                              sport: rowSport,
+                              playerName: prop.playerName,
+                              playerId: prop.playerId,
+                              team: prop.team,
+                              opponent: prop.opponent,
+                              statType: prop.statType,
+                              line: Number.isFinite(prop.line) ? prop.line : null,
+                              bookmaker: prop.bookmaker,
+                            });
                             const bdlId = rowSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
                             const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null; // NBA Stats ID for headshot
                             const headshotUrl = nbaId ? getPlayerHeadshotUrl(nbaId) : null;
@@ -8213,6 +8213,28 @@ export default function NBALandingPage() {
                             const teamLogoUrl = getEspnLogoUrl(teamAbbr);
                             const opponentLogoUrl = getEspnLogoUrl(opponentAbbr);
                               const navigateToSecondaryDashboard = (lineValue?: number, bookmakerName?: string) => {
+                              if (rowSport === 'nba') {
+                                const href = propsDashboardHref({
+                                  sport: 'nba',
+                                  playerName: prop.playerName,
+                                  statType: prop.statType,
+                                  line:
+                                    typeof lineValue === 'number' && Number.isFinite(lineValue)
+                                      ? lineValue
+                                      : Number.isFinite(prop.line)
+                                        ? prop.line
+                                        : null,
+                                });
+                                try {
+                                  sessionStorage.removeItem('nba_dashboard_session_v1');
+                                  sessionStorage.setItem('from_props_page', 'true');
+                                  safeSetSessionStorage('last_prop_url', href);
+                                } catch {}
+                                snapshotPropsPageBeforeLeave();
+                                router.push(href);
+                                setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
+                                return;
+                              }
                               if (isTennisPropsSport(rowSport) || isTennisPropsSport(propsSport)) {
                                 navigateToTennisDashboardFromProp(
                                   {
@@ -8319,28 +8341,46 @@ export default function NBALandingPage() {
                                 key={propsListRowKey(prop, rowSport)}
                                 className={`border-b ${mounted && isDark ? 'border-gray-900 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
                                 onMouseEnter={() => {
-                                  
+                                  if (isTennisPropsSport(rowSport)) {
+                                    prefetchTennisDashboardFromProps({
+                                      playerName: prop.playerName,
+                                      playerId: prop.playerId,
+                                      tour: prop.team,
+                                      opponent: prop.opponent,
+                                    });
+                                    return;
+                                  }
+                                  if (rowSport === 'afl') {
+                                    prefetchAflDashboardFromProps({
+                                      playerName: prop.playerName,
+                                      team: prop.team || '',
+                                      opponent: prop.opponent || '',
+                                    });
+                                    return;
+                                  }
                                   const playerId = getPlayerIdFromName(prop.playerName);
                                   if (playerId && typeof window !== 'undefined') {
                                     const currentSeason = new Date().getFullYear();
-                                    // Prefetch all 4 stat endpoints to warm up server cache
-                                    // Use regular fetch (not cachedFetch) to ensure server cache is warmed
                                     const prefetchUrls = [
                                       `/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`,
                                       `/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=5&postseason=false&skip_dvp=1`,
                                       `/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`,
                                       `/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=5&postseason=true&skip_dvp=1`,
                                     ];
-                                    
-                                    // Fire and forget - don't await, just warm up the cache
                                     prefetchUrls.forEach(url => {
-                                      fetch(url, { cache: 'default' }).catch(() => {
-                                        // Ignore errors - this is just prefetch
-                                      });
+                                      fetch(url, { cache: 'default' }).catch(() => {});
                                     });
                                   }
                                 }}
+                                onAuxClick={(e) => {
+                                  if (e.button !== 1) return;
+                                  if (eventTargetIsInteractive(e)) return;
+                                  e.preventDefault();
+                                  window.open(dashboardHref, '_blank', 'noopener,noreferrer');
+                                }}
                                 onClick={(e) => {
+                                  if (!isUnmodifiedLeftClick(e)) return;
+                                  if (eventTargetIsInteractive(e)) return;
                                   e.preventDefault();
                                   e.stopPropagation();
                                   if (navigatingRef.current) return;
@@ -8404,7 +8444,32 @@ export default function NBALandingPage() {
                                       />
                                     </div>
                                   )}
-                                  <div className={`flex items-center gap-3 min-w-0 ${isCombinedMode ? 'pl-9' : ''}`}>
+                                  <a
+                                    href={dashboardHref}
+                                    className={`flex items-center gap-3 min-w-0 no-underline hover:no-underline ${isCombinedMode ? 'pl-9' : ''}`}
+                                    onClick={(e) => {
+                                      if (!isUnmodifiedLeftClick(e)) return;
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (navigatingRef.current) return;
+                                      navigatingRef.current = true;
+                                      setNavigatingToPlayer(true);
+                                      if (rowSport === 'afl' || isTennisPropsSport(rowSport)) {
+                                        navigateToSecondaryDashboard();
+                                        return;
+                                      }
+                                      try {
+                                        sessionStorage.removeItem('nba_dashboard_session_v1');
+                                        sessionStorage.setItem('from_props_page', 'true');
+                                      } catch {}
+                                      snapshotPropsPageBeforeLeave();
+                                      router.push(dashboardHref);
+                                      setTimeout(() => {
+                                        navigatingRef.current = false;
+                                        setNavigatingToPlayer(false);
+                                      }, 1500);
+                                    }}
+                                  >
                                     {rowSport === 'nba' && (
                                       <AflPropsPlayerAvatar
                                         headshotUrl={headshotUrl}
@@ -8539,7 +8604,7 @@ export default function NBALandingPage() {
                                         )}
                                       </div>
                                     </div>
-                                  </div>
+                                  </a>
                                 </td>
 
                                 {isCombinedMode && showCombinedDesktopSportColumn && (
@@ -8602,13 +8667,24 @@ export default function NBALandingPage() {
                                                 return (
                                                   <div key={lineIdx} className="flex items-center gap-1.5">
                                                     {/* Bookmaker card/button */}
-                                                    <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors ${
+                                                    <a
+                                                      href={propsDashboardHref({
+                                                        sport: rowSport,
+                                                        playerName: prop.playerName,
+                                                        playerId: prop.playerId,
+                                                        team: prop.team,
+                                                        opponent: prop.opponent,
+                                                        statType: prop.statType,
+                                                        line: line.line,
+                                                        bookmaker: line.bookmaker,
+                                                      })}
+                                                      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors ${
                                                       mounted && isDark
                                                         ? 'bg-[#0a1929] border-gray-700 hover:bg-[#0d1f35]'
                                                         : 'bg-white border-gray-300 hover:bg-gray-50'
                                                     }`}
                                                     onClick={(e) => {
-                                                      
+                                                      if (!isUnmodifiedLeftClick(e)) return;
                                                       e.preventDefault();
                                                       e.stopPropagation();
                                                       if (navigatingRef.current) return;
@@ -8653,7 +8729,7 @@ export default function NBALandingPage() {
                                                           );
                                                         })()}
                                                       </div>
-                                                    </div>
+                                                    </a>
                                                     
                                                     {/* Separator line between bookmakers */}
                                                     {lineIdx < visibleLines.length - 1 && (
@@ -8729,7 +8805,17 @@ export default function NBALandingPage() {
                                                           {lines.map((line, lineIdx) => {
                                                             const bookmakerInfo = getBookmakerInfo(line.bookmaker || '');
                                                             return (
-                                                              <div
+                                                              <a
+                                                                href={propsDashboardHref({
+                                                                  sport: rowSport,
+                                                                  playerName: prop.playerName,
+                                                                  playerId: prop.playerId,
+                                                                  team: prop.team,
+                                                                  opponent: prop.opponent,
+                                                                  statType: prop.statType,
+                                                                  line: line.line,
+                                                                  bookmaker: line.bookmaker,
+                                                                })}
                                                                 key={lineIdx}
                                                                 className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border ${
                                                                   mounted && isDark
@@ -8737,7 +8823,7 @@ export default function NBALandingPage() {
                                                                     : 'bg-gray-800 border-gray-500'
                                                                 }`}
                                                                 onClick={(e) => {
-                                                                  
+                                                                  if (!isUnmodifiedLeftClick(e)) return;
                                                                   e.preventDefault();
                                                                   e.stopPropagation();
                                                                   if (navigatingRef.current) return;
@@ -8784,7 +8870,7 @@ export default function NBALandingPage() {
                                                                     );
                                                                   })()}
                                                                 </div>
-                                                              </div>
+                                                              </a>
                                                             );
                                                           })}
                                                         </div>
@@ -9547,6 +9633,16 @@ export default function NBALandingPage() {
                       <div className={`2xl:hidden space-y-4.5 ${shellDark ? 'bg-[#050d1a]' : ''}`}>
                         {propsTablePaginatedProps.map((prop, idx) => {
                           const rowSport = resolvePropsRowSport(prop, propsSport);
+                          const dashboardHref = propsDashboardHref({
+                            sport: rowSport,
+                            playerName: prop.playerName,
+                            playerId: prop.playerId,
+                            team: prop.team,
+                            opponent: prop.opponent,
+                            statType: prop.statType,
+                            line: Number.isFinite(prop.line) ? prop.line : null,
+                            bookmaker: prop.bookmaker,
+                          });
                           const bdlId = rowSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
                           const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null;
                           const headshotUrl = nbaId ? getPlayerHeadshotUrl(nbaId) : null;
@@ -9672,7 +9768,15 @@ export default function NBALandingPage() {
                               className={`relative rounded-2xl border pl-3.5 pr-3.5 py-3.5 cursor-pointer active:scale-[0.99] transition-transform ${isCombinedMode ? 'pt-8' : ''} shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
                                 mounted && isDark ? 'bg-gradient-to-br from-[#0b1a2b] via-[#10253f] to-[#1b1c3d] border-[#463e6b]' : 'bg-white border-gray-200'
                               }`}
-                              onClick={() => {
+                              onAuxClick={(e) => {
+                                if (e.button !== 1) return;
+                                if (eventTargetIsInteractive(e)) return;
+                                e.preventDefault();
+                                window.open(dashboardHref, '_blank', 'noopener,noreferrer');
+                              }}
+                              onClick={(e) => {
+                                if (!isUnmodifiedLeftClick(e)) return;
+                                if (eventTargetIsInteractive(e)) return;
                                 if (navigatingRef.current) return;
                                 navigatingRef.current = true;
                                 setNavigatingToPlayer(true);
@@ -9808,9 +9912,42 @@ export default function NBALandingPage() {
                                   <div className="flex-1 min-w-0 overflow-hidden">
                                     <div className="flex items-center justify-between gap-2 min-w-0">
                                       <div className="flex items-center gap-1.5 min-w-0">
-                                        <div className={`font-bold text-base truncate min-w-0 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                        <a
+                                          href={dashboardHref}
+                                          className={`font-bold text-base truncate min-w-0 no-underline hover:no-underline ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}
+                                          onClick={(e) => {
+                                            if (!isUnmodifiedLeftClick(e)) return;
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (navigatingRef.current) return;
+                                            navigatingRef.current = true;
+                                            setNavigatingToPlayer(true);
+                                            if (isTennisPropsSport(rowSport)) {
+                                              navigateToTennisDashboardFromProp(prop, router);
+                                            } else if (rowSport === 'afl') {
+                                              prefetchAflDashboardFromProps({
+                                                playerName: prop.playerName,
+                                                team: prop.team || '',
+                                                opponent: prop.opponent || '',
+                                              });
+                                              snapshotPropsPageBeforeLeave();
+                                              router.push(dashboardHref);
+                                            } else {
+                                              try {
+                                                sessionStorage.removeItem('nba_dashboard_session_v1');
+                                                sessionStorage.setItem('from_props_page', 'true');
+                                              } catch {}
+                                              snapshotPropsPageBeforeLeave();
+                                              router.push(dashboardHref);
+                                            }
+                                            setTimeout(() => {
+                                              navigatingRef.current = false;
+                                              setNavigatingToPlayer(false);
+                                            }, 1500);
+                                          }}
+                                        >
                                           {prop.playerName}
-                                        </div>
+                                        </a>
                                         {isTennisPropsSport(rowSport) ? (
                                           <TennisFlagAndRank
                                             ioc={prop.playerIoc}
@@ -10678,11 +10815,27 @@ export default function NBALandingPage() {
               )}
               {!findPlayerLoading && findPlayerResults.length > 0 && (
                 <ul className="space-y-1">
-                  {findPlayerResults.map((player, idx) => (
+                  {findPlayerResults.map((player, idx) => {
+                    const tennisTour = propsSportFromTennisTour(player.team);
+                    const findSport: 'nba' | 'afl' | 'atp' | 'wta' =
+                      isTennisPropsSport(propsSport) || tennisTour
+                        ? tennisTour || (propsSport === 'wta' ? 'wta' : 'atp')
+                        : propsSport === 'afl'
+                          ? 'afl'
+                          : 'nba';
+                    const findHref = propsDashboardHref({
+                      sport: findSport,
+                      playerName: player.name,
+                      playerId: player.playerId,
+                      team: player.team,
+                    });
+                    return (
                     <li key={`${player.name}-${player.team ?? ''}-${idx}`}>
-                      <button
-                        type="button"
-                        onClick={() => {
+                      <a
+                        href={findHref}
+                        onClick={(e) => {
+                          if (!isUnmodifiedLeftClick(e)) return;
+                          e.preventDefault();
                           setFindPlayerOpen(false);
                           if (isTennisPropsSport(propsSport) || propsSportFromTennisTour(player.team)) {
                             prefetchTennisDashboardFromProps({
@@ -10690,13 +10843,8 @@ export default function NBALandingPage() {
                               playerId: player.playerId,
                               tour: player.team,
                             });
-                            const q = new URLSearchParams();
-                            q.set('mode', 'player');
-                            q.set('name', player.name);
-                            if (player.team) q.set('team', player.team);
-                            if (player.playerId) q.set('pid', player.playerId);
                             snapshotPropsPageBeforeLeave();
-                            router.push(`/tennis?${q.toString()}`);
+                            router.push(findHref);
                           } else if (propsSport === 'afl') {
                             const team = player.team ?? '';
                             prefetchAflDashboardFromProps({
@@ -10718,22 +10866,18 @@ export default function NBALandingPage() {
                                 })
                                 .catch(() => {});
                             }
-                            const q = new URLSearchParams();
-                            q.set('mode', 'player');
-                            q.set('name', player.name);
-                            if (player.team) q.set('team', player.team);
                             snapshotPropsPageBeforeLeave();
-                            router.push(`/afl?${q.toString()}`);
+                            router.push(findHref);
                           } else {
                             try {
                               sessionStorage.removeItem('nba_dashboard_session_v1');
                               sessionStorage.setItem('from_props_page', 'true');
                             } catch {}
                             snapshotPropsPageBeforeLeave();
-                            router.push(`/nba/research/dashboard?player=${encodeURIComponent(player.name)}&tf=last10`);
+                            router.push(findHref);
                           }
                         }}
-                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-colors ${
+                        className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm transition-colors ${
                           mounted && isDark
                             ? 'text-gray-200 hover:bg-gray-800'
                             : 'text-gray-800 hover:bg-gray-100'
@@ -10743,9 +10887,10 @@ export default function NBALandingPage() {
                         {player.team && (
                           <span className={mounted && isDark ? 'text-gray-500 ml-2' : 'text-gray-400 ml-2'}>{player.team}</span>
                         )}
-                      </button>
+                      </a>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </div>

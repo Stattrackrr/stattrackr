@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { clearCombinedPropsSnapshotCaches } from '@/lib/combinedPropsSnapshot';
+import { warmCombinedPropsSnapshot } from '@/lib/combinedPropsSnapshot';
 import { buildTennisDvpLiveStore } from '@/lib/tennis/dvpLiveCache';
 import { getHydratedTennisOverlay, hydrateTennisMatchOverlay, refreshTennisStandings } from '@/lib/tennis/ingest';
 import { listLiveTennisEventIndex, warmTennisUpcomingFixtures } from '@/lib/tennis/nextGame';
-import { getTennisPlayerPropsList, invalidateTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
+import { getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
     }
     const live = await listLiveTennisEventIndex();
     const store = await buildTennisDvpLiveStore(live);
-    await invalidateTennisPlayerPropsList();
     let propsCount = 0;
     try {
       const list = await getTennisPlayerPropsList({ refresh: true });
@@ -47,7 +46,11 @@ export async function GET(request: NextRequest) {
     } catch {
       /* props-player logs still republish on the 8h ingest cron */
     }
-    await clearCombinedPropsSnapshotCaches().catch(() => undefined);
+    try {
+      await warmCombinedPropsSnapshot({ origin: request.nextUrl.origin });
+    } catch {
+      /* keep the previous combined snapshot until the next successful warm */
+    }
     return NextResponse.json({
       success: true,
       builtAt: store.builtAt,

@@ -9,7 +9,6 @@ import {
   slimCombinedPropsSnapshotForClient,
   warmCombinedPropsSnapshot,
 } from '@/lib/combinedPropsSnapshot';
-import { TENNIS_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -49,11 +48,13 @@ export async function GET(request: NextRequest) {
 
   try {
     if (!refresh && !debugStats) {
-      const cachedSnapshot = await getCombinedPropsSnapshot();
+      const paintSnapshot = !wantsFull ? await getCombinedPropsPaintSnapshot() : null;
+      const cachedSnapshot =
+        paintSnapshot && combinedSnapshotAflAssemblyReady(paintSnapshot)
+          ? paintSnapshot
+          : await getCombinedPropsSnapshot();
       if (cachedSnapshot && combinedSnapshotAflAssemblyReady(cachedSnapshot)) {
-        const tennisMissing =
-          TENNIS_PUBLIC_ENABLED && !(cachedSnapshot.tennis?.props?.length);
-        const stale = isCombinedPropsSnapshotStale(cachedSnapshot) || tennisMissing;
+        const stale = isCombinedPropsSnapshotStale(cachedSnapshot);
         if (stale) {
           void warmCombinedPropsSnapshot({ origin, cronSecret }).catch((error) => {
             console.warn(
@@ -63,10 +64,14 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        const clientSnapshot = await resolveClientCombinedSnapshot(
-          filterCombinedSnapshotAflEligibility(cachedSnapshot),
-          wantsFull
-        );
+        const clientSnapshot = wantsFull
+          ? filterCombinedSnapshotAflEligibility(cachedSnapshot)
+          : paintSnapshot && combinedSnapshotAflAssemblyReady(paintSnapshot)
+            ? filterCombinedSnapshotAflEligibility(paintSnapshot)
+            : await resolveClientCombinedSnapshot(
+                filterCombinedSnapshotAflEligibility(cachedSnapshot),
+                wantsFull
+              );
         return NextResponse.json(
           {
             ...clientSnapshot,

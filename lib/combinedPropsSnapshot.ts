@@ -11,7 +11,7 @@ import { NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
-import { GET as getTennisPlayerPropsList } from '@/app/api/tennis/player-props/list/route';
+import { getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
 import { attachTennisHeadshots } from '@/lib/tennis/headshots';
 import {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
@@ -28,7 +28,7 @@ export {
 } from '@/lib/combinedPropsSnapshotPaint';
 
 const COMBINED_PROPS_SNAPSHOT_TTL_SECONDS = 4 * 60 * 60;
-const COMBINED_PROPS_SNAPSHOT_STALE_MS = 60 * 1000;
+const COMBINED_PROPS_SNAPSHOT_STALE_MS = 15 * 60 * 1000;
 
 type BookmakerLine = {
   bookmaker: string;
@@ -371,12 +371,10 @@ export async function buildCombinedPropsSnapshot(
   const nbaUrl = new URL('/api/nba/player-props', origin);
   const aflUrl = new URL('/api/afl/player-props/list', origin);
   aflUrl.searchParams.set('enrich', 'true');
-  const tennisUrl = new URL('/api/tennis/player-props/list', origin);
 
   if (refresh) {
     nbaUrl.searchParams.set('refresh', '1');
     aflUrl.searchParams.set('refresh', '1');
-    tennisUrl.searchParams.set('refresh', '1');
   }
   if (debugStats) {
     aflUrl.searchParams.set('debugStats', '1');
@@ -389,29 +387,26 @@ export async function buildCombinedPropsSnapshot(
         NextResponse.json({ success: true, data: [], cached: false, lastUpdated: null, gameDate: null })
       );
   const tennisPromise = TENNIS_PUBLIC_ENABLED
-    ? getTennisPlayerPropsList(new NextRequest(tennisUrl, { headers }))
-    : Promise.resolve(
-        NextResponse.json({
-          success: true,
-          games: [],
-          data: [],
-          gamesCount: 0,
-          propsCount: 0,
-          noTennisOdds: true,
-          noAflOdds: true,
-          ingestMessage: 'Tennis props are not available.',
-        })
-      );
-  const [nbaResponse, aflResponse, tennisResponse] = await Promise.all([
+    ? getTennisPlayerPropsList({ refresh })
+    : Promise.resolve({
+        success: true,
+        games: [] as never[],
+        data: [] as never[],
+        gamesCount: 0,
+        propsCount: 0,
+        noTennisOdds: true,
+        noAflOdds: true,
+        ingestMessage: 'Tennis props are not available.',
+      });
+  const [nbaResponse, aflResponse, tennisPayload] = await Promise.all([
     nbaPromise,
     getAflPlayerPropsList(new Request(aflUrl, { headers })),
     tennisPromise,
   ]);
 
-  const [nbaPayload, aflPayload, tennisPayload] = await Promise.all([
+  const [nbaPayload, aflPayload] = await Promise.all([
     nbaResponse.json().catch(() => null),
     aflResponse.json().catch(() => null),
-    tennisResponse.json().catch(() => null),
   ]);
 
   const aflAggregated = aggregateAflProps(aflPayload);
@@ -421,7 +416,7 @@ export async function buildCombinedPropsSnapshot(
   // sport responded. A sport that's out of season (e.g. NBA odds cache empty →
   // 503) should not blank out the other sport's props.
   const snapshot: CombinedPropsSnapshot = {
-    success: nbaResponse.ok || aflResponse.ok || tennisResponse.ok,
+    success: nbaResponse.ok || aflResponse.ok || Boolean(tennisPayload?.success),
     snapshotVersion: 1,
     generatedAt: new Date(now).toISOString(),
     staleAt: new Date(now + COMBINED_PROPS_SNAPSHOT_STALE_MS).toISOString(),
@@ -445,8 +440,8 @@ export async function buildCombinedPropsSnapshot(
       debugMeta: debugStats ? aflAggregated.debugMeta ?? null : undefined,
     },
     tennis: {
-      ok: tennisResponse.ok,
-      status: tennisResponse.status,
+      ok: Boolean(tennisPayload?.success),
+      status: tennisPayload?.success === false ? 500 : 200,
       lastUpdated: tennisAggregated.lastUpdated,
       nextUpdate: tennisAggregated.nextUpdate,
       ingestMessage: tennisPayload?.ingestMessage ?? tennisAggregated.ingestMessage,

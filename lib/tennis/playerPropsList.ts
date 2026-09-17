@@ -991,6 +991,24 @@ function filterTennisListByTour(
   };
 }
 
+async function applyTennisListLiveOverlay(
+  payload: TennisPlayerPropsListPayload
+): Promise<TennisPlayerPropsListPayload> {
+  let next = payload;
+  try {
+    const upcoming = await listUniqueUpcomingTennisGames({ waitForFresh: false });
+    next = overlayUpcomingTimes(next, upcoming);
+  } catch {
+    /* keep snapshot times if upcoming is cold */
+  }
+  try {
+    next = await overlayLiveTennisDvp(next);
+  } catch {
+    /* keep baked DVP if live overlay fails */
+  }
+  return next;
+}
+
 async function loadTennisPlayerPropsList(refresh?: boolean): Promise<TennisPlayerPropsListPayload> {
   if (!refresh) {
     const cached = await sharedCache.getJSON<TennisPlayerPropsListPayload>(TENNIS_LIST_CACHE_KEY);
@@ -1003,8 +1021,9 @@ async function loadTennisPlayerPropsList(refresh?: boolean): Promise<TennisPlaye
       }
     }
   }
-  const payload = await buildTennisPlayerPropsList();
+  let payload = await buildTennisPlayerPropsList();
   if (payload.data.length > 0) {
+    payload = await applyTennisListLiveOverlay(payload);
     await sharedCache.setJSON(TENNIS_LIST_CACHE_KEY, payload, TENNIS_LIST_CACHE_TTL_SECONDS);
   }
   return payload;
@@ -1016,17 +1035,7 @@ export async function getTennisPlayerPropsList(opts?: {
 }): Promise<TennisPlayerPropsListPayload> {
   const tour = opts?.tour === 'ATP' || opts?.tour === 'WTA' ? opts.tour : null;
   let payload = await loadTennisPlayerPropsList(opts?.refresh);
-  try {
-    const upcoming = await listUniqueUpcomingTennisGames({ waitForFresh: false });
-    payload = overlayUpcomingTimes(payload, upcoming);
-  } catch {
-    /* keep snapshot times if upcoming is cold */
-  }
-  try {
-    payload = await overlayLiveTennisDvp(payload);
-  } catch {
-    /* keep baked DVP if live overlay fails */
-  }
+  payload = await applyTennisListLiveOverlay(payload);
   let result = filterTennisListByTour(payload, tour);
   if (result.data.length > 0) return result;
 
@@ -1037,18 +1046,7 @@ export async function getTennisPlayerPropsList(opts?: {
 
   await warmTennisUpcomingFixtures({ force: true });
   await refreshTennisOddsSnapshots({ force: true });
-  payload = await loadTennisPlayerPropsList(true);
-  try {
-    const upcoming = await listUniqueUpcomingTennisGames({ waitForFresh: false });
-    payload = overlayUpcomingTimes(payload, upcoming);
-  } catch {
-    /* keep snapshot times */
-  }
-  try {
-    payload = await overlayLiveTennisDvp(payload);
-  } catch {
-    /* keep baked DVP */
-  }
+  payload = await applyTennisListLiveOverlay(await loadTennisPlayerPropsList(true));
   result = filterTennisListByTour(payload, tour);
   if (result.data.length === 0) {
     await sharedCache.setJSON(emptyKey, { at: Date.now() }, TENNIS_EMPTY_TOUR_TTL_SECONDS);
