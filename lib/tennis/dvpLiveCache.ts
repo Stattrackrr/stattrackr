@@ -2,7 +2,7 @@ import sharedCache from '@/lib/sharedCache';
 import { TENNIS_CURRENT_YEAR, tennisDvpProfile, type TennisDvpMetricRow, type TennisTour } from '@/lib/tennis/data';
 import { tennisEventPlaceCore } from '@/lib/tennis/chartStats';
 import { TENNIS_DVP_WINDOWS, type TennisDvpStage, type TennisDvpWindow } from '@/lib/tennis/dvpShared';
-import { readTennisPlayerLogsCacheMany } from '@/lib/tennis/dashboardCache';
+import { readTennisPlayerLogsCacheMany, readTennisRosterCache } from '@/lib/tennis/dashboardCache';
 import {
   listLiveTennisEventIndex,
   type TennisLiveEventIndex,
@@ -70,6 +70,88 @@ export async function readTennisDvpLiveStore(): Promise<TennisDvpLiveStore | nul
     return stored;
   }
   return mem.store;
+}
+
+export function tennisDvpEventCacheKey(opts: {
+  tour: TennisTour;
+  stage?: TennisDvpStage;
+  tournamentKey?: string | null;
+  tournamentName?: string | null;
+}): string | null {
+  const stage: TennisDvpStage = opts.stage === 'qualifying' ? 'qualifying' : 'main';
+  const key = String(opts.tournamentKey || '').trim();
+  if (key) return `${TENNIS_DVP_LIVE_CACHE_KEY}:evt:${opts.tour}:${stage}:${key}`;
+  const place = placeKey(opts.tournamentName);
+  if (place) return `${TENNIS_DVP_LIVE_CACHE_KEY}:name:${opts.tour}:${stage}:${place}`;
+  return null;
+}
+
+function rememberTennisDvpLiveEvent(event: TennisCachedDvpEvent) {
+  const mem = runtime();
+  if (!mem.store) {
+    rememberTennisDvpLiveStore({ builtAt: new Date().toISOString(), events: [event] });
+    return;
+  }
+  const stage = event.stage || 'main';
+  const idx = mem.store.events.findIndex((row) => {
+    if (row.tour !== event.tour || (row.stage || 'main') !== stage) return false;
+    if (event.tournamentKey && row.tournamentKey === event.tournamentKey) return true;
+    return namesMatch(placeKey(row.tournamentName), placeKey(event.tournamentName));
+  });
+  if (idx >= 0) mem.store.events[idx] = event;
+  else mem.store.events.push(event);
+  mem.loadedAt = Date.now();
+}
+
+function dvpEventRedisEntries(event: TennisCachedDvpEvent): Array<{
+  key: string;
+  value: TennisCachedDvpEvent;
+  ttlSeconds: number;
+}> {
+  const byKey = tennisDvpEventCacheKey({
+    tour: event.tour,
+    stage: event.stage,
+    tournamentKey: event.tournamentKey,
+  });
+  const byName = tennisDvpEventCacheKey({
+    tour: event.tour,
+    stage: event.stage,
+    tournamentName: event.tournamentName,
+  });
+  const entries: Array<{ key: string; value: TennisCachedDvpEvent; ttlSeconds: number }> = [];
+  if (byKey) entries.push({ key: byKey, value: event, ttlSeconds: TENNIS_DVP_LIVE_TTL_SECONDS });
+  if (byName && byName !== byKey) {
+    entries.push({ key: byName, value: event, ttlSeconds: TENNIS_DVP_LIVE_TTL_SECONDS });
+  }
+  return entries;
+}
+
+export async function writeTennisDvpLiveEvent(event: TennisCachedDvpEvent): Promise<void> {
+  rememberTennisDvpLiveEvent(event);
+  const entries = dvpEventRedisEntries(event);
+  if (entries.length) await sharedCache.setJSONMany(entries);
+}
+
+export async function readTennisDvpLiveEvent(opts: {
+  tour: TennisTour;
+  tournamentKey?: string | null;
+  tournamentName?: string | null;
+  stage?: TennisDvpStage;
+}): Promise<TennisCachedDvpEvent | null> {
+  const mem = runtime();
+  const fromMem = findCachedTennisDvpEvent(mem.store, opts);
+  if (fromMem && Date.now() - mem.loadedAt < 60_000) return fromMem;
+  const eventKey = tennisDvpEventCacheKey(opts);
+  if (eventKey) {
+    const stored = await sharedCache.getJSON<TennisCachedDvpEvent>(eventKey);
+    if (isPlausibleTennisDvpField(stored)) {
+      rememberTennisDvpLiveEvent(stored);
+      return stored;
+    }
+    return fromMem;
+  }
+  const store = await readTennisDvpLiveStore();
+  return findCachedTennisDvpEvent(store, opts);
 }
 
 function isPlausibleTennisDvpField(event: TennisCachedDvpEvent | null | undefined): event is TennisCachedDvpEvent {
@@ -191,6 +273,85 @@ export async function buildTennisDvpLiveStore(live?: TennisLiveEventIndex): Prom
     events,
   };
   rememberTennisDvpLiveStore(store);
-  await sharedCache.setJSON(TENNIS_DVP_LIVE_CACHE_KEY, store, TENNIS_DVP_LIVE_TTL_SECONDS);
+  await sharedCache.setJSONMany([
+    { key: TENNIS_DVP_LIVE_CACHE_KEY, value: store, ttlSeconds: TENNIS_DVP_LIVE_TTL_SECONDS },
+    ...events.flatMap((event) => dvpEventRedisEntries(event)),
+  ]);
   return store;
+}
+
+export async function buildTennisDvpWindowsFromRedis(opts: {
+  tour: TennisTour;
+  year?: number;
+  opponentName?: string | null;
+  opponentId?: string | null;
+  playerName?: string | null;
+  playerId?: string | null;
+  tournamentName?: string | null;
+  tournamentKey?: string | null;
+  extraPlayerIds: string[];
+  live: TennisLiveEventIndex;
+  stage: TennisDvpStage;
+}): Promise<TennisCachedDvpEvent | null> {
+  const extraPlayerIds = [
+    ...new Set(opts.extraPlayerIds.map((id) => String(id || '').trim()).filter(Boolean)),
+  ];
+  if (!extraPlayerIds.length) return null;
+  const [extraMatches, roster] = await Promise.all([
+    tennisDvpExtraMatchesForIds([
+      ...extraPlayerIds,
+      String(opts.playerId || '').trim(),
+      String(opts.opponentId || '').trim(),
+    ]),
+    readTennisRosterCache(),
+  ]);
+  const windows: TennisCachedDvpEvent['windows'] = {};
+  let fieldSize = 0;
+  let tournamentName = opts.tournamentName || null;
+  let tournamentKey = opts.tournamentKey || null;
+  for (const window of TENNIS_DVP_WINDOWS) {
+    const profile = tennisDvpProfile({
+      tour: opts.tour,
+      year: opts.year || TENNIS_CURRENT_YEAR,
+      opponentName: opts.opponentName,
+      opponentId: opts.opponentId,
+      playerName: opts.playerName,
+      playerId: opts.playerId,
+      tournamentName: opts.tournamentName,
+      tournamentKey: opts.tournamentKey,
+      extraPlayerIds,
+      extraMatches,
+      extraPlayers: roster?.players || [],
+      liveTournamentKeys: opts.live.keys,
+      liveTournamentNames: opts.live.names,
+      window,
+      includeField: true,
+      stage: opts.stage,
+      skipOverlay: true,
+    });
+    fieldSize = profile.fieldSize;
+    tournamentName = profile.tournamentName || tournamentName;
+    tournamentKey = profile.tournamentKey || tournamentKey;
+    windows[window] = (profile.field || []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      ioc: row.ioc,
+      rankPos: row.rankPos,
+      seed: row.seed ?? null,
+      drawRank: row.drawRank ?? null,
+      metrics: row.metrics,
+    }));
+  }
+  const last10 = windows.last10 || [];
+  const event: TennisCachedDvpEvent = {
+    tour: opts.tour,
+    stage: opts.stage,
+    tournamentKey,
+    tournamentName,
+    fieldSize,
+    topSeed: last10.find((row) => row.seed === 1) || null,
+    windows,
+  };
+  void writeTennisDvpLiveEvent(event);
+  return event;
 }

@@ -241,8 +241,8 @@ function assembleTennisPlayerMatchup(
   const opponentName = humanTennisName(opts.opponentName) || String(opts.opponentName || '').trim();
   const tour =
     opts.tour ||
-    tourForPlayer(null, playerName) ||
-    tourForPlayer(null, opponentName) ||
+    players.find((p) => p.playerId === String(opts.playerId || '').trim())?.tour ||
+    players.find((p) => tennisIdentityMatch(p.name, playerName))?.tour ||
     'ATP';
   const bestOfN = Number(opts.bestOf);
   const bestOf: TennisMatchupBestOf =
@@ -408,12 +408,10 @@ export function buildTennisPlayerMatchup(opts: MatchupBuildOpts): TennisPlayerMa
 export async function buildTennisPlayerMatchupAsync(
   opts: MatchupBuildOpts
 ): Promise<TennisPlayerMatchupPayload> {
-  const roster = await loadTennisPlayersCached();
-  const players = roster.length ? roster : loadTennisPlayers();
+  const players = await loadTennisPlayersCached();
   const tour =
     opts.tour ||
-    tourForPlayer(null, String(opts.playerName || '')) ||
-    tourForPlayer(null, String(opts.opponentName || '')) ||
+    players.find((p) => p.playerId === String(opts.playerId || '').trim())?.tour ||
     'ATP';
   const bestOfN = Number(opts.bestOf);
   const selectedBestOf: TennisMatchupBestOf =
@@ -435,8 +433,7 @@ export async function buildTennisPlayerMatchupAsync(
     if (key && rawById.has(key)) return rawById.get(key) || [];
     const redis = key ? filterGames(logsById.get(key), tour, 'all') : [];
     const extraRows = key && extra?.get(key)?.length ? filterGames(extra.get(key), tour, 'all') : [];
-    const overlay = overlayGames(key || null, name, tour, 'all');
-    const rows = redis.length ? redis : extraRows.length ? extraRows : overlay;
+    const rows = redis.length ? redis : extraRows;
     if (key) rawById.set(key, rows);
     return rows;
   };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
-import { tennisDvpProfile, loadTennisPlayers, type TennisTour } from '@/lib/tennis/data';
+import { type TennisTour } from '@/lib/tennis/data';
 import {
   TENNIS_DVP_METRICS,
   TENNIS_DVP_WINDOWS,
@@ -8,15 +8,14 @@ import {
   type TennisDvpWindow,
 } from '@/lib/tennis/dvpShared';
 import {
+  buildTennisDvpWindowsFromRedis,
   findCachedTennisDvpEvent,
-  readTennisDvpLiveStore,
-  tennisCachedDvpPlayerHasSample,
-  tennisDvpExtraMatchesForIds,
+  readTennisDvpLiveEvent,
   type TennisCachedDvpPlayer,
 } from '@/lib/tennis/dvpLiveCache';
-import { hydrateTennisOverlayLocal } from '@/lib/tennis/ingest';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import {
+  findLiveTennisEventForPlayers,
   listLiveTennisEventIndex,
   tennisLiveEventPlayerIds,
   tennisLiveEventStage,
@@ -60,14 +59,6 @@ function windowsFromCache(
   return out;
 }
 
-function eventHasSample(
-  event: NonNullable<ReturnType<typeof findCachedTennisDvpEvent>>
-): boolean {
-  return TENNIS_DVP_WINDOWS.some((window) =>
-    (event.windows[window] || []).some((row) => tennisCachedDvpPlayerHasSample(row))
-  );
-}
-
 function namesAgree(idName: string | null | undefined, opponentName: string): boolean {
   const label = humanTennisName(idName);
   const name = opponentName.trim();
@@ -90,22 +81,7 @@ function reconcileOpponentId(
   if (id && byId && (!name || namesAgree(byId.name, name))) return id;
   const byName = name ? findCachedDvpPlayer(field, '', name) : null;
   if (byName?.id) return byName.id;
-  if (!name) return id;
-  const roster = loadTennisPlayers();
-  const rosterById = id ? roster.find((player) => player.playerId === id) : null;
-  if (rosterById && namesAgree(rosterById.name, name)) return id;
-  const exact = roster.filter((player) => player.name.toLowerCase() === name.toLowerCase());
-  if (exact.length === 1) return exact[0].playerId;
-  const identity = roster.filter((player) => tennisIdentityMatch(player.name, name));
-  if (identity.length === 1) return identity[0].playerId;
-  const last = name.split(/\s+/).filter(Boolean).pop()?.toLowerCase() || '';
-  if (last.length >= 3) {
-    const lastHits = roster.filter(
-      (player) => player.name.toLowerCase().split(/\s+/).pop() === last
-    );
-    if (lastHits.length === 1) return lastHits[0].playerId;
-  }
-  return byName?.id || '';
+  return id;
 }
 
 function findCachedDvpPlayer(
@@ -137,13 +113,79 @@ function findCachedDvpPlayer(
   return lastHits.length === 1 ? lastHits[0] : null;
 }
 
+function jsonFromEvent(opts: {
+  event: NonNullable<ReturnType<typeof findCachedTennisDvpEvent>>;
+  tour: TennisTour;
+  year: number;
+  window: TennisDvpWindow;
+  stage: TennisDvpStage;
+  opponentId: string;
+  opponentName: string;
+}) {
+  const windows = windowsFromCache(opts.event, opts.opponentId, opts.opponentName);
+  const field = windows[opts.window] || windows.last10;
+  const selected = findCachedDvpPlayer(field, opts.opponentId, opts.opponentName);
+  const selectedName = selected
+    ? humanTennisName(selected.name, selected.id === opts.opponentId ? opts.opponentName : null) ||
+      selected.name
+    : '';
+  return {
+    success: true,
+    tour: opts.tour,
+    year: opts.year,
+    window: opts.window,
+    stage: opts.event.stage || opts.stage,
+    tournamentName: opts.event.tournamentName,
+    tournamentKey: opts.event.tournamentKey,
+    fieldSize: opts.event.fieldSize,
+    topSeed: opts.event.topSeed
+      ? {
+          id: opts.event.topSeed.id,
+          name: humanTennisName(opts.event.topSeed.name) || opts.event.topSeed.name,
+          ioc: opts.event.topSeed.ioc,
+          rankPos: opts.event.topSeed.rankPos,
+          seed: opts.event.topSeed.seed ?? 1,
+          drawRank: opts.event.topSeed.drawRank ?? 1,
+        }
+      : field.find((row) => row.seed === 1) || null,
+    opponent: selected
+      ? {
+          id: selected.id,
+          name: selectedName,
+          ioc: selected.ioc,
+          rankPos: selected.rankPos,
+          seed: selected.seed ?? null,
+          drawRank: selected.drawRank ?? null,
+        }
+      : null,
+    opponents: field.map((row) => ({
+      id: row.id,
+      name: row.name,
+      ioc: row.ioc,
+      rankPos: row.rankPos,
+      seed: row.seed ?? null,
+      drawRank: row.drawRank ?? null,
+    })),
+    metrics: selected?.metrics?.length
+      ? selected.metrics
+      : TENNIS_DVP_METRICS.map((metric) => ({
+          key: metric.key,
+          label: metric.label,
+          pct: metric.pct,
+          value: null,
+          rank: null,
+          matches: 0,
+          fieldSize: opts.event.fieldSize,
+        })),
+    windows,
+  };
+}
+
 export async function GET(request: NextRequest) {
-  const overlay = await hydrateTennisOverlayLocal();
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
   const tour: TennisTour = tourParam === 'WTA' ? 'WTA' : 'ATP';
   const yearRaw = Number(request.nextUrl.searchParams.get('year'));
-  const year =
-    Number.isFinite(yearRaw) && yearRaw >= 2000 ? yearRaw : TENNIS_CURRENT_YEAR;
+  const year = Number.isFinite(yearRaw) && yearRaw >= 2000 ? yearRaw : TENNIS_CURRENT_YEAR;
   const opponentRaw = String(request.nextUrl.searchParams.get('opponent') || '').trim();
   const opponentIdRaw = String(request.nextUrl.searchParams.get('opponentId') || '').trim();
   const opponent = isNumericTennisId(opponentRaw) ? '' : opponentRaw;
@@ -156,6 +198,14 @@ export async function GET(request: NextRequest) {
   const window: TennisDvpWindow =
     windowRaw === 'last5' || windowRaw === 'season' ? windowRaw : 'last10';
   const live = await listLiveTennisEventIndex();
+  const liveEvent = findLiveTennisEventForPlayers(live, {
+    playerId: playerId || null,
+    opponentId: opponentId || null,
+    tournamentKey: tournamentKey || null,
+    tournamentName: tournament || null,
+  });
+  const resolvedKey = tournamentKey || liveEvent?.tournamentKey || '';
+  const resolvedName = tournament || liveEvent?.tournamentName || '';
   const stageParam = String(request.nextUrl.searchParams.get('stage') || '').trim();
   const stage: TennisDvpStage =
     stageParam === 'main' || stageParam === 'qualifying'
@@ -163,223 +213,96 @@ export async function GET(request: NextRequest) {
       : tennisLiveEventStage(live, {
           playerId: playerId || null,
           opponentId: opponentId || null,
-          tournamentKey: tournamentKey || null,
-          tournamentName: tournament || null,
+          tournamentKey: resolvedKey || null,
+          tournamentName: resolvedName || null,
         });
 
-  const store = await readTennisDvpLiveStore();
-  const overlayAt = overlay?.fetchedAt || '';
-  const storeStale = Boolean(
-    overlayAt && store?.builtAt && Date.parse(store.builtAt) < Date.parse(overlayAt)
-  );
-  const cachedEvent = storeStale
-    ? null
-    : findCachedTennisDvpEvent(store, {
+  const cachedEvent = await readTennisDvpLiveEvent({
+    tour,
+    tournamentKey: resolvedKey || null,
+    tournamentName: resolvedName || null,
+    stage,
+  });
+  if (cachedEvent) {
+    const cachedPlayers = cachedEvent.windows[window] || cachedEvent.windows.last10 || [];
+    opponentId = reconcileOpponentId(opponentId, opponent, cachedPlayers);
+    return NextResponse.json(
+      jsonFromEvent({
+        event: cachedEvent,
         tour,
-        tournamentKey: tournamentKey || null,
-        tournamentName: tournament || null,
+        year,
+        window,
         stage,
-      });
-  const cachedPlayers = cachedEvent?.windows[window] || cachedEvent?.windows.last10 || [];
-  opponentId = reconcileOpponentId(opponentId, opponent, cachedPlayers);
-  const cachedSelected = cachedEvent
-    ? findCachedDvpPlayer(cachedPlayers, opponentId, opponent)
-    : null;
-  const selectedCachedSample = tennisCachedDvpPlayerHasSample(cachedSelected);
-  if (
-    cachedEvent &&
-    eventHasSample(cachedEvent) &&
-    ((!opponent && !opponentId) || selectedCachedSample)
-  ) {
-    const windows = windowsFromCache(cachedEvent, opponentId, opponent);
-    const field = windows[window] || windows.last10;
-    const selected = findCachedDvpPlayer(field, opponentId, opponent) || cachedSelected;
-    const selectedName = selected
-      ? humanTennisName(selected.name, selected.id === opponentId ? opponent : null) || selected.name
-      : '';
-    return NextResponse.json({
-      success: true,
-      tour,
-      year,
-      window,
-      stage: cachedEvent.stage || stage,
-      tournamentName: cachedEvent.tournamentName,
-      tournamentKey: cachedEvent.tournamentKey,
-      fieldSize: cachedEvent.fieldSize,
-      topSeed: cachedEvent.topSeed
-        ? {
-            id: cachedEvent.topSeed.id,
-            name: humanTennisName(cachedEvent.topSeed.name) || cachedEvent.topSeed.name,
-            ioc: cachedEvent.topSeed.ioc,
-            rankPos: cachedEvent.topSeed.rankPos,
-            seed: cachedEvent.topSeed.seed ?? 1,
-            drawRank: cachedEvent.topSeed.drawRank ?? 1,
-          }
-        : field.find((row) => row.seed === 1) || null,
-      opponent: selected
-        ? {
-            id: selected.id,
-            name: selectedName,
-            ioc: selected.ioc,
-            rankPos: selected.rankPos,
-            seed: selected.seed ?? null,
-            drawRank: selected.drawRank ?? null,
-          }
-        : null,
-      opponents: field.map((row) => ({
-        id: row.id,
-        name: row.name,
-        ioc: row.ioc,
-        rankPos: row.rankPos,
-        seed: row.seed ?? null,
-        drawRank: row.drawRank ?? null,
-      })),
-      metrics: selected?.metrics?.length
-        ? selected.metrics
-        : TENNIS_DVP_METRICS.map((metric) => ({
-            key: metric.key,
-            label: metric.label,
-            pct: metric.pct,
-            value: null,
-            rank: null,
-            matches: 0,
-            fieldSize: cachedEvent.fieldSize,
-          })),
-      windows,
-    });
+        opponentId,
+        opponentName: opponent,
+      })
+    );
   }
 
-  const liveIds = tennisLiveEventPlayerIds(live, tournamentKey || null, tournament || null, stage);
-  const cachedFieldIds = cachedEvent
-    ? (cachedEvent.windows.last10 || cachedEvent.windows.season || cachedEvent.windows.last5 || []).map(
-        (row) => row.id
-      )
-    : [];
   const extraPlayerIds = [
     ...new Set(
-      [...liveIds, ...cachedFieldIds, playerId, opponentId, cachedSelected?.id || '']
+      [
+        ...tennisLiveEventPlayerIds(live, resolvedKey || null, resolvedName || null, stage),
+        playerId,
+        opponentId,
+      ]
         .map((id) => String(id || '').trim())
         .filter((id) => /^\d+$/.test(id))
     ),
   ];
-  const resolvedOpponentId = opponentId || cachedSelected?.id || '';
-  const extraMatchIds = [
-    ...new Set(
-      [resolvedOpponentId, opponentId, playerId]
-        .map((id) => String(id || '').trim())
-        .filter((id) => /^\d+$/.test(id))
-    ),
-  ];
-  const overlayProbe = tennisDvpProfile({
+  const computed = await buildTennisDvpWindowsFromRedis({
     tour,
     year,
     opponentName: opponent || null,
-    opponentId: resolvedOpponentId || null,
+    opponentId: opponentId || null,
     playerName: player || null,
     playerId: playerId || null,
-    tournamentName: tournament || null,
-    tournamentKey: tournamentKey || null,
-    window,
-    stage,
+    tournamentName: resolvedName || null,
+    tournamentKey: resolvedKey || null,
     extraPlayerIds,
-    includeField: false,
-    liveTournamentKeys: live.keys,
-    liveTournamentNames: live.names,
-  });
-  const extraMatches =
-    extraMatchIds.length && !overlayProbe.metrics.some((row) => typeof row.value === 'number')
-      ? await tennisDvpExtraMatchesForIds(extraMatchIds)
-      : [];
-  const windows = {} as Record<TennisDvpWindow, TennisCachedDvpPlayer[]>;
-  let profile = tennisDvpProfile({
-    tour,
-    year,
-    opponentName: opponent || null,
-    opponentId: resolvedOpponentId || null,
-    playerName: player || null,
-    playerId: playerId || null,
-    tournamentName: tournament || null,
-    tournamentKey: tournamentKey || null,
-    window,
+    live,
     stage,
-    extraPlayerIds,
-    extraMatches,
-    includeField: true,
-    liveTournamentKeys: live.keys,
-    liveTournamentNames: live.names,
   });
-  for (const nextWindow of TENNIS_DVP_WINDOWS) {
-    const next =
-      nextWindow === window
-        ? profile
-        : tennisDvpProfile({
-            tour,
-            year,
-            opponentName: opponent || null,
-            opponentId: resolvedOpponentId || null,
-            playerName: player || null,
-            playerId: playerId || null,
-            tournamentName: tournament || null,
-            tournamentKey: tournamentKey || null,
-            window: nextWindow,
-            stage,
-            extraPlayerIds,
-            extraMatches,
-            includeField: true,
-            liveTournamentKeys: live.keys,
-            liveTournamentNames: live.names,
-          });
-    if (nextWindow === window) profile = next;
-    const computed = (next.field || []).map((row) => ({
-      id: row.id,
-      name: humanTennisName(row.name) || row.name,
-      ioc: row.ioc,
-      rankPos: row.rankPos,
-      seed: row.seed ?? null,
-      drawRank: row.drawRank ?? null,
-      metrics: row.metrics,
-    }));
-    const cachedWindow = cachedEvent?.windows[nextWindow] || [];
-    if (cachedWindow.length) {
-      const byId = new Map<string, TennisCachedDvpPlayer>();
-      for (const row of cachedWindow) {
-        byId.set(row.id, slimDvpPlayer(row, resolvedOpponentId, opponent));
-      }
-      for (const row of computed) {
-        if (tennisCachedDvpPlayerHasSample(row) || !byId.has(row.id)) byId.set(row.id, row);
-      }
-      windows[nextWindow] = [...byId.values()];
-    } else {
-      windows[nextWindow] = computed;
-    }
+  if (computed) {
+    opponentId = reconcileOpponentId(
+      opponentId,
+      opponent,
+      computed.windows[window] || computed.windows.last10 || []
+    );
+    return NextResponse.json(
+      jsonFromEvent({
+        event: computed,
+        tour,
+        year,
+        window,
+        stage,
+        opponentId,
+        opponentName: opponent,
+      })
+    );
   }
-  const field = windows[window] || windows.last10 || [];
-  const selected = findCachedDvpPlayer(field, resolvedOpponentId, opponent);
-  const selectedName = selected
-    ? humanTennisName(selected.name, selected.id === resolvedOpponentId ? opponent : null) || selected.name
-    : humanTennisName(profile.opponent?.name, opponent) || profile.opponent?.name || '';
+
   return NextResponse.json({
     success: true,
-    ...profile,
-    opponent: selected
-      ? {
-          id: selected.id,
-          name: selectedName,
-          ioc: selected.ioc,
-          rankPos: selected.rankPos,
-          seed: selected.seed ?? null,
-          drawRank: selected.drawRank ?? null,
-        }
-      : profile.opponent,
-    opponents: field.map((row) => ({
-      id: row.id,
-      name: row.name,
-      ioc: row.ioc,
-      rankPos: row.rankPos,
-      seed: row.seed ?? null,
-      drawRank: row.drawRank ?? null,
+    tour,
+    year,
+    window,
+    stage,
+    tournamentName: resolvedName || null,
+    tournamentKey: resolvedKey || null,
+    fieldSize: 0,
+    topSeed: null,
+    opponent: opponentId || opponent ? { id: opponentId || '', name: opponent, ioc: null, rankPos: null, seed: null, drawRank: null } : null,
+    opponents: [],
+    metrics: TENNIS_DVP_METRICS.map((metric) => ({
+      key: metric.key,
+      label: metric.label,
+      pct: metric.pct,
+      value: null,
+      rank: null,
+      matches: 0,
+      fieldSize: 0,
     })),
-    metrics: selected?.metrics?.length ? selected.metrics : profile.metrics,
-    windows,
+    windows: { last5: [], last10: [], season: [] },
   });
 }

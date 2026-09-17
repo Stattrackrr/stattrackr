@@ -17,6 +17,7 @@ import {
   type TennisTour,
 } from '@/lib/tennis/data';
 import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
+import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
 type TennisRosterStandings = {
   ATP?: TennisRankingRow[];
@@ -63,7 +64,16 @@ export async function loadPlayerMatchesCached(opts: {
   playerName?: string | null;
   tour?: TennisTour | null;
 }): Promise<TennisMatchRow[]> {
-  const playerId = String(opts.playerId || '').trim();
+  let playerId = String(opts.playerId || '').trim();
+  if (!playerId && opts.playerName) {
+    const roster = await readTennisRosterCache();
+    const name = String(opts.playerName || '').trim();
+    const hit =
+      roster?.players.find((player) => player.name.toLowerCase() === name.toLowerCase()) ||
+      roster?.players.filter((player) => tennisIdentityMatch(player.name, name));
+    const resolved = Array.isArray(hit) ? (hit.length === 1 ? hit[0] : null) : hit;
+    if (resolved?.playerId) playerId = resolved.playerId;
+  }
   if (playerId) {
     const cached = await readTennisPlayerLogsCache(playerId);
     if (cached?.games?.length) {
@@ -71,7 +81,7 @@ export async function loadPlayerMatchesCached(opts: {
     }
   }
   if (getHydratedTennisOverlay()?.matches?.length) {
-    const live = loadPlayerMatches(opts);
+    const live = loadPlayerMatches({ ...opts, playerId: playerId || opts.playerId });
     if (live.length && playerId) {
       void writeTennisPlayerLogsCache({
         fetchedAt: new Date().toISOString(),

@@ -1,12 +1,8 @@
+import { aflEnrichedPayloadHasUsableStats } from '@/lib/aflPlayerPropsCache';
 import { NextRequest, NextResponse } from 'next/server';
 import sharedCache from '@/lib/sharedCache';
 import type { CombinedAflGame, CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
-import {
-  AFL_USER_NO_ODDS,
-  filterAflPropRowsByCommenceTime,
-  filterAflPropsEligibleGames,
-} from '@/lib/combinedPropsSnapshotTypes';
-import { aflEnrichedPayloadHasUsableStats } from '@/lib/aflPlayerPropsCache';
+import { AFL_USER_NO_ODDS } from '@/lib/combinedPropsSnapshotTypes';
 import { NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
@@ -16,6 +12,8 @@ import { attachTennisHeadshots } from '@/lib/tennis/headshots';
 import {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
   COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
+  combinedSnapshotAflAssemblyReady,
+  getCombinedPropsSnapshot,
   slimCombinedPropsSnapshotForClient,
 } from '@/lib/combinedPropsSnapshotPaint';
 
@@ -23,6 +21,11 @@ export type { CombinedAflGame, CombinedPlayerProp, CombinedPropsSnapshot } from 
 export {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
   COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
+  combinedSnapshotAflAssemblyReady,
+  filterCombinedSnapshotAflEligibility,
+  getCombinedPropsPaintSnapshot,
+  getCombinedPropsSnapshot,
+  isCombinedPropsSnapshotStale,
   slimCombinedPlayerPropForPaint,
   slimCombinedPropsSnapshotForClient,
 } from '@/lib/combinedPropsSnapshotPaint';
@@ -298,14 +301,11 @@ function withTennisHeadshots(snapshot: CombinedPropsSnapshot): CombinedPropsSnap
   }
 }
 
-export async function getCombinedPropsSnapshot(): Promise<CombinedPropsSnapshot | null> {
-  const snapshot = await sharedCache.getJSON<CombinedPropsSnapshot>(COMBINED_PROPS_SNAPSHOT_CACHE_KEY);
-  return snapshot ? withTennisHeadshots(snapshot) : null;
-}
-
-export async function getCombinedPropsPaintSnapshot(): Promise<CombinedPropsSnapshot | null> {
-  const snapshot = await sharedCache.getJSON<CombinedPropsSnapshot>(COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY);
-  return snapshot ? withTennisHeadshots(snapshot) : null;
+function snapshotReadyToCache(snapshot: CombinedPropsSnapshot): boolean {
+  if (!combinedSnapshotAflAssemblyReady(snapshot)) return false;
+  const props = snapshot.afl?.props ?? [];
+  if (props.length === 0) return true;
+  return aflEnrichedPayloadHasUsableStats({ data: props });
 }
 
 async function writeCombinedPropsSnapshotCaches(snapshot: CombinedPropsSnapshot): Promise<void> {
@@ -321,56 +321,11 @@ async function writeCombinedPropsSnapshotCaches(snapshot: CombinedPropsSnapshot)
   );
 }
 
-export function isCombinedPropsSnapshotStale(snapshot: CombinedPropsSnapshot): boolean {
-  const staleAt = Date.parse(snapshot?.staleAt ?? '');
-  return !Number.isFinite(staleAt) || staleAt <= Date.now();
-}
-
-/**
- * Empty AFL with live games on the slate is a failed assembly, not a cacheable "no odds" result.
- * Caching that blanks the home /props page until TTL even after list starts returning lines.
- */
-export function combinedSnapshotAflAssemblyReady(snapshot: CombinedPropsSnapshot): boolean {
-  const games = snapshot.afl?.games ?? [];
-  const props = snapshot.afl?.props ?? [];
-  if (games.length > 0 && props.length === 0) return false;
-  if (props.length === 0) return true;
-  return aflEnrichedPayloadHasUsableStats({ data: props });
-}
-
 export async function clearCombinedPropsSnapshotCaches(): Promise<void> {
   await Promise.allSettled([
     sharedCache.deleteJSON(COMBINED_PROPS_SNAPSHOT_CACHE_KEY),
     sharedCache.deleteJSON(COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY),
   ]);
-}
-
-/** Drop AFL props/games whose kickoff was more than one hour ago (even from cached snapshots). */
-export function filterCombinedSnapshotAflEligibility(
-  snapshot: CombinedPropsSnapshot,
-  nowMs = Date.now()
-): CombinedPropsSnapshot {
-  const eligibleGames = filterAflPropsEligibleGames(snapshot.afl.games ?? [], nowMs);
-  const eligibleGameIds = new Set(eligibleGames.map((g) => g.gameId));
-  const filteredProps = filterAflPropRowsByCommenceTime(snapshot.afl.props ?? [], eligibleGameIds, nowMs);
-
-  if (
-    filteredProps.length === (snapshot.afl.props?.length ?? 0) &&
-    eligibleGames.length === (snapshot.afl.games?.length ?? 0)
-  ) {
-    return snapshot;
-  }
-
-  return {
-    ...snapshot,
-    afl: {
-      ...snapshot.afl,
-      games: eligibleGames,
-      props: filteredProps,
-      noAflOdds: filteredProps.length === 0,
-      ingestMessage: filteredProps.length === 0 ? AFL_USER_NO_ODDS : snapshot.afl.ingestMessage,
-    },
-  };
 }
 
 export async function buildCombinedPropsSnapshot(
@@ -460,7 +415,7 @@ export async function buildCombinedPropsSnapshot(
     },
   };
 
-  if (snapshot.success && writeCache && !debugStats && combinedSnapshotAflAssemblyReady(snapshot)) {
+  if (snapshot.success && writeCache && !debugStats && snapshotReadyToCache(snapshot)) {
     let toStore = snapshot;
     if (TENNIS_PUBLIC_ENABLED && !(snapshot.tennis?.props?.length)) {
       const previous = await getCombinedPropsSnapshot();

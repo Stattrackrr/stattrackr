@@ -872,6 +872,28 @@ export function tennisLiveEventStage(
   return 'main';
 }
 
+export function findLiveTennisEventForPlayers(
+  live: TennisLiveEventIndex,
+  opts: {
+    playerId?: string | null;
+    opponentId?: string | null;
+    tournamentKey?: string | null;
+    tournamentName?: string | null;
+  }
+): TennisLiveEvent | null {
+  const direct = findLiveTennisEvent(live, opts.tournamentKey, opts.tournamentName);
+  if (direct) return direct;
+  const wanted = [opts.playerId, opts.opponentId]
+    .map((id) => String(id || '').trim())
+    .filter(Boolean);
+  if (!wanted.length) return null;
+  for (const event of live.events) {
+    const pool = new Set([...event.playerIds, ...event.qualifyingPlayerIds]);
+    if (wanted.some((id) => pool.has(id))) return event;
+  }
+  return null;
+}
+
 export function tennisLiveEventPlayerIds(
   live: TennisLiveEventIndex,
   tournamentKey?: string | null,

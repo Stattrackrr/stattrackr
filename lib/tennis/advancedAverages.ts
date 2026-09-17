@@ -20,7 +20,6 @@ import {
 import {
   loadPlayerMatches,
   loadTennisPlayers,
-  tourForPlayer,
   type TennisMatchRow,
   type TennisPlayer,
   type TennisTour,
@@ -331,12 +330,10 @@ export function buildTennisAdvancedAverages(opts: TennisAdvancedAveragesOpts): T
     : 'all';
   const playerName = String(opts.playerName || '').trim();
   const opponentName = String(opts.opponentName || '').trim();
-  const players = opts.players?.length ? opts.players : loadTennisPlayers();
+  const players = Array.isArray(opts.players) ? opts.players : loadTennisPlayers();
   const tour =
     opts.tour ||
     players.find((p) => p.playerId === String(opts.playerId || '').trim())?.tour ||
-    tourForPlayer(opts.playerId || null, playerName) ||
-    tourForPlayer(opts.opponentId || null, opponentName) ||
     'ATP';
   const bestOf: AdvAvgBestOf =
     tour === 'WTA'
@@ -348,20 +345,21 @@ export function buildTennisAdvancedAverages(opts: TennisAdvancedAveragesOpts): T
         : 'all';
   const playerRes = resolvePlayer(playerName, tour, players, opts.playerId);
   const oppRes = opponentName ? resolvePlayer(opponentName, tour, players, opts.opponentId) : null;
-  const playerMatches =
-    opts.playerMatches ??
-    loadPlayerMatches({
-      playerId: playerRes.id,
-      playerName: playerRes.id ? null : playerName,
-      tour,
-    });
-  const opponentMatches = opponentName
-    ? opts.opponentMatches ??
-      loadPlayerMatches({
-        playerId: oppRes?.id,
-        playerName: oppRes?.id ? null : opponentName,
+  const playerMatches = Array.isArray(opts.playerMatches)
+    ? opts.playerMatches
+    : loadPlayerMatches({
+        playerId: playerRes.id,
+        playerName: playerRes.id ? null : playerName,
         tour,
-      })
+      });
+  const opponentMatches = opponentName
+    ? Array.isArray(opts.opponentMatches)
+      ? opts.opponentMatches
+      : loadPlayerMatches({
+          playerId: oppRes?.id,
+          playerName: oppRes?.id ? null : opponentName,
+          tour,
+        })
     : [];
 
   const opponent = opponentName

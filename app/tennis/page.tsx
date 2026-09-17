@@ -61,6 +61,7 @@ import { tennisFlagUrl, tennisIocToIso2 } from '@/lib/tennis/flags';
 import { clientTennisHeadshotUrl, tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
 import { propsSportFromTennisTour } from '@/lib/nbaConstants';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
+import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
 import {
   abortTennisDashboardFetches,
   beginTennisDashboardSession,
@@ -811,6 +812,7 @@ export default function TennisDashboardPage() {
     router.prefetch('/props?sport=all');
     router.prefetch('/props?sport=atp');
     router.prefetch('/props?sport=wta');
+    kickCombinedPropsEarlyFetch();
     tennisDashboardFetch('/api/tennis/next-game?warm=1').catch(() => undefined);
     return () => {
       abortTennisDashboardFetches();
@@ -1053,6 +1055,7 @@ export default function TennisDashboardPage() {
 
   const goBackToPlayerProps = useCallback(() => {
     abortTennisDashboardFetches();
+    kickCombinedPropsEarlyFetch();
     try {
       localStorage.removeItem(NBL_PAGE_STATE_KEY);
     } catch {
@@ -1246,6 +1249,7 @@ export default function TennisDashboardPage() {
         const logsQs = new URLSearchParams();
         if (playerId) logsQs.set('playerId', playerId);
         if (playerName) logsQs.set('player', playerName);
+        if (selectedPlayer?.tour) logsQs.set('tour', selectedPlayer.tour);
         const res = await tennisDashboardFetch(`/api/tennis/matches?${logsQs.toString()}`);
         if (!res.ok) throw new Error(`logs ${res.status}`);
         const data = await res.json();
@@ -1282,7 +1286,7 @@ export default function TennisDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedPlayer?.playerId, selectedPlayer?.name, loadingPlayerFromUrl]);
+  }, [selectedPlayer?.playerId, selectedPlayer?.name, selectedPlayer?.tour, loadingPlayerFromUrl]);
 
   // Game Props: team score logs (schedule + cached quarter scores).
   useEffect(() => {

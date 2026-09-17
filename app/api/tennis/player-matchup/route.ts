@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
-import { tennisDvpProfile } from '@/lib/tennis/data';
 import {
   readTennisComputedCache,
   writeTennisComputedCache,
 } from '@/lib/tennis/dashboardCache';
 import {
-  findCachedTennisDvpEvent,
-  readTennisDvpLiveStore,
-  tennisDvpExtraMatchesForIds,
+  buildTennisDvpWindowsFromRedis,
+  readTennisDvpLiveEvent,
 } from '@/lib/tennis/dvpLiveCache';
 import type { TennisDvpStage } from '@/lib/tennis/dvpShared';
-import { hydrateTennisOverlayLocal } from '@/lib/tennis/ingest';
 import {
+  findLiveTennisEventForPlayers,
   listLiveTennisEventIndex,
   tennisLiveEventPlayerIds,
   tennisLiveEventStage,
@@ -40,20 +38,27 @@ async function tournamentField(opts: {
   stageParam: string;
 }): Promise<{ fieldIds: string[]; fieldSize: number }> {
   const live = await listLiveTennisEventIndex();
+  const liveEvent = findLiveTennisEventForPlayers(live, {
+    playerId: opts.playerId || null,
+    opponentId: opts.opponentId || null,
+    tournamentKey: opts.tournamentKey || null,
+    tournamentName: opts.tournament || null,
+  });
+  const tournamentKey = opts.tournamentKey || liveEvent?.tournamentKey || '';
+  const tournamentName = opts.tournament || liveEvent?.tournamentName || '';
   const stage: TennisDvpStage =
     opts.stageParam === 'main' || opts.stageParam === 'qualifying'
       ? opts.stageParam
       : tennisLiveEventStage(live, {
           playerId: opts.playerId || null,
           opponentId: opts.opponentId || null,
-          tournamentKey: opts.tournamentKey || null,
-          tournamentName: opts.tournament || null,
+          tournamentKey: tournamentKey || null,
+          tournamentName: tournamentName || null,
         });
-  const store = await readTennisDvpLiveStore();
-  const cachedEvent = findCachedTennisDvpEvent(store, {
+  const cachedEvent = await readTennisDvpLiveEvent({
     tour: opts.tour || 'ATP',
-    tournamentKey: opts.tournamentKey || null,
-    tournamentName: opts.tournament || null,
+    tournamentKey: tournamentKey || null,
+    tournamentName: tournamentName || null,
     stage,
   });
   const cachedPlayers =
@@ -66,30 +71,26 @@ async function tournamentField(opts: {
   }
   const extraPlayerIds = tennisLiveEventPlayerIds(
     live,
-    opts.tournamentKey || null,
-    opts.tournament || null,
+    tournamentKey || null,
+    tournamentName || null,
     stage
   );
-  const extraMatches = await tennisDvpExtraMatchesForIds(
-    [...extraPlayerIds, opts.playerId, opts.opponentId].filter(Boolean)
-  );
-  const profile = tennisDvpProfile({
+  const computed = await buildTennisDvpWindowsFromRedis({
     tour: opts.tour || 'ATP',
     opponentName: opts.opponent || null,
     opponentId: opts.opponentId || null,
     playerName: opts.player || null,
     playerId: opts.playerId || null,
-    tournamentName: opts.tournament || null,
-    tournamentKey: opts.tournamentKey || null,
+    tournamentName: tournamentName || null,
+    tournamentKey: tournamentKey || null,
+    extraPlayerIds: [...extraPlayerIds, opts.playerId, opts.opponentId].filter(Boolean),
+    live,
     stage,
-    extraPlayerIds,
-    extraMatches,
-    liveTournamentKeys: live.keys,
-    liveTournamentNames: live.names,
   });
+  const field = computed?.windows.last10 || computed?.windows.season || computed?.windows.last5 || [];
   return {
-    fieldIds: (profile.opponents || []).map((row) => row.id),
-    fieldSize: profile.fieldSize || (profile.opponents || []).length,
+    fieldIds: field.map((row) => row.id),
+    fieldSize: computed?.fieldSize || field.length,
   };
 }
 
@@ -146,7 +147,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(cached);
   }
 
-  await hydrateTennisOverlayLocal();
   const field = await tournamentField({
     tour,
     player,

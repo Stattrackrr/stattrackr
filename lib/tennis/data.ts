@@ -589,6 +589,10 @@ function buildTourMatchIndex(tour: TennisTour): CachedTourMatchIndex {
   return { byPlayerId, byOpponentId, groups };
 }
 
+function emptyTourMatchIndex(): CachedTourMatchIndex {
+  return { byPlayerId: new Map(), byOpponentId: new Map(), groups: [] };
+}
+
 function tourMatchIndex(tour: TennisTour): CachedTourMatchIndex {
   const runtime = dataRuntime();
   const cached = runtime.dvpTours.get(tour);
@@ -858,6 +862,7 @@ export function tennisDvpProfile(opts: {
   activeOnly?: boolean;
   includeField?: boolean;
   stage?: TennisDvpStage;
+  skipOverlay?: boolean;
 }): TennisDvpProfile {
   const tour = opts.tour;
   const year = opts.year && opts.year >= 2000 ? opts.year : TENNIS_CURRENT_YEAR;
@@ -889,11 +894,22 @@ export function tennisDvpProfile(opts: {
       tournamentKey: opts.tournamentKey,
     });
   }
-  const index = tourMatchIndex(tour);
+  const index = opts.skipOverlay ? emptyTourMatchIndex() : tourMatchIndex(tour);
   const extraLookup = extraMatchLookup(opts.extraMatches);
   const extraPlayers = [...(opts.extraPlayers || []), ...playersFromExtraMatches(opts.extraMatches)];
-  const ranked = loadTennisRankings(tour, { limit: 500 });
-  const roster = loadTennisPlayers();
+  const ranked = opts.skipOverlay
+    ? extraPlayers
+        .filter((player) => player.tour === tour && player.rank != null)
+        .map((player) => ({
+          pos: Number(player.rank),
+          playerId: player.playerId,
+          name: player.name,
+          tour: player.tour,
+          points: player.rankPoints ?? null,
+          ioc: player.ioc ?? null,
+        }))
+    : loadTennisRankings(tour, { limit: 500 });
+  const roster = opts.skipOverlay ? extraPlayers : loadTennisPlayers();
   const rosterById = new Map(roster.map((p) => [p.playerId, p]));
   for (const player of extraPlayers) {
     const existing = rosterById.get(player.playerId);

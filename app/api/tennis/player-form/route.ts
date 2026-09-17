@@ -4,7 +4,7 @@ import {
   tennisComputedCacheKey,
   writeTennisComputedCache,
 } from '@/lib/tennis/dashboardCache';
-import { hydrateTennisOverlayLocal } from '@/lib/tennis/ingest';
+import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
 import { buildTennisPlayerForm } from '@/lib/tennis/playerForm';
 import type { TennisTour } from '@/lib/tennis/types';
 
@@ -20,7 +20,32 @@ export async function GET(request: NextRequest) {
   const cached = await readTennisComputedCache<Record<string, unknown>>(cacheKey);
   if (cached?.success) return NextResponse.json(cached);
 
-  await hydrateTennisOverlayLocal();
+  if (!getHydratedTennisOverlay()?.matches?.length) {
+    return NextResponse.json({
+      success: true,
+      tour: tour || 'ATP',
+      player: { id: null, name: player },
+      splitWindow: 30,
+      baseline: {
+        matches: 0,
+        wins: 0,
+        losses: 0,
+        winPct: null,
+        aces: null,
+        totalGames: null,
+        holdPct: null,
+        rpw: null,
+        over215: null,
+        over225: null,
+      },
+      rankBands: [],
+      styleSplits: [],
+      insights: [],
+      opponent: null,
+      recent: [],
+    });
+  }
+
   const payload = buildTennisPlayerForm({
     playerName: player,
     opponentName: opponent || null,

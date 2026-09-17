@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  buildCombinedPropsSnapshot,
   combinedSnapshotAflAssemblyReady,
   filterCombinedSnapshotAflEligibility,
   getCombinedPropsPaintSnapshot,
   getCombinedPropsSnapshot,
   isCombinedPropsSnapshotStale,
   slimCombinedPropsSnapshotForClient,
-  warmCombinedPropsSnapshot,
-} from '@/lib/combinedPropsSnapshot';
+} from '@/lib/combinedPropsSnapshotPaint';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,19 +22,6 @@ function wantsFullCombinedSnapshot(request: NextRequest, cronSecret?: string): b
     request.nextUrl.searchParams.get('full') === '1' ||
     Boolean(cronSecret)
   );
-}
-
-async function resolveClientCombinedSnapshot(
-  fullSnapshot: Awaited<ReturnType<typeof getCombinedPropsSnapshot>>,
-  wantsFull: boolean
-) {
-  if (!fullSnapshot) return null;
-  if (wantsFull) return fullSnapshot;
-  const paintSnapshot = await getCombinedPropsPaintSnapshot();
-  if (paintSnapshot && combinedSnapshotAflAssemblyReady(paintSnapshot)) {
-    return paintSnapshot;
-  }
-  return slimCombinedPropsSnapshotForClient(fullSnapshot);
 }
 
 export async function GET(request: NextRequest) {
@@ -56,22 +41,21 @@ export async function GET(request: NextRequest) {
       if (cachedSnapshot && combinedSnapshotAflAssemblyReady(cachedSnapshot)) {
         const stale = isCombinedPropsSnapshotStale(cachedSnapshot);
         if (stale) {
-          void warmCombinedPropsSnapshot({ origin, cronSecret }).catch((error) => {
-            console.warn(
-              '[Props Combined] Background snapshot refresh failed:',
-              error instanceof Error ? error.message : error
-            );
-          });
+          void import('@/lib/combinedPropsSnapshot')
+            .then(({ warmCombinedPropsSnapshot }) => warmCombinedPropsSnapshot({ origin, cronSecret }))
+            .catch((error) => {
+              console.warn(
+                '[Props Combined] Background snapshot refresh failed:',
+                error instanceof Error ? error.message : error
+              );
+            });
         }
 
         const clientSnapshot = wantsFull
           ? filterCombinedSnapshotAflEligibility(cachedSnapshot)
-          : paintSnapshot && combinedSnapshotAflAssemblyReady(paintSnapshot)
-            ? filterCombinedSnapshotAflEligibility(paintSnapshot)
-            : await resolveClientCombinedSnapshot(
-                filterCombinedSnapshotAflEligibility(cachedSnapshot),
-                wantsFull
-              );
+          : filterCombinedSnapshotAflEligibility(paintSnapshot && combinedSnapshotAflAssemblyReady(paintSnapshot)
+              ? paintSnapshot
+              : slimCombinedPropsSnapshotForClient(cachedSnapshot));
         return NextResponse.json(
           {
             ...clientSnapshot,
@@ -89,6 +73,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const { buildCombinedPropsSnapshot, getCombinedPropsSnapshot: getFullSnapshot } =
+      await import('@/lib/combinedPropsSnapshot');
     const snapshot = await buildCombinedPropsSnapshot({
       origin,
       refresh,
@@ -99,7 +85,7 @@ export async function GET(request: NextRequest) {
 
     const readySnapshot = combinedSnapshotAflAssemblyReady(snapshot)
       ? snapshot
-      : (await getCombinedPropsSnapshot());
+      : await getFullSnapshot();
     const outgoing =
       readySnapshot && combinedSnapshotAflAssemblyReady(readySnapshot) ? readySnapshot : snapshot;
 
