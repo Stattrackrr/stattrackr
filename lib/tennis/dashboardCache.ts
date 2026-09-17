@@ -5,6 +5,7 @@
 
 import sharedCache from '@/lib/sharedCache';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
+import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 
 export const TENNIS_ROSTER_CACHE_KEY = 'tennis_dashboard_roster_v1';
 export const TENNIS_ROSTER_CACHE_TYPE = 'tennis_roster';
@@ -57,7 +58,7 @@ function slimPlayer(player: TennisPlayer): TennisPlayer {
     height: player.height ?? null,
     rank: player.rank ?? null,
     rankPoints: player.rankPoints ?? null,
-    imageUrl: player.imageUrl || null,
+    imageUrl: clientTennisHeadshotUrl(player.playerId, player.imageUrl),
   };
 }
 

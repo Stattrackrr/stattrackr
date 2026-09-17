@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadTennisPlayersCached } from '@/lib/tennis/loadCached';
+import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 import type { TennisTour } from '@/lib/tennis/data';
 
 export async function GET(request: NextRequest) {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
       position: null,
       jersey: p.rank != null ? String(p.rank) : null,
       gender: p.tour === 'WTA' ? 'W' : 'M',
-      imageUrl: p.imageUrl || null,
+      imageUrl: clientTennisHeadshotUrl(p.playerId, p.imageUrl),
     })),
   });
 }

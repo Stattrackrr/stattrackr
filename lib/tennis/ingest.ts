@@ -21,6 +21,7 @@ import {
 } from '@/lib/tennis/apiTennis';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
+import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 import type { TennisMatchRow, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 
 export const TENNIS_OVERLAY_CACHE_KEY = 'tennis_match_overlay_v1';
@@ -415,7 +416,7 @@ export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{
       height: null,
       rank: p.rank,
       rankPoints: p.rankPoints,
-      imageUrl: resolveTennisHeadshotUrl(p.playerId, p.imageUrl),
+      imageUrl: clientTennisHeadshotUrl(p.playerId, resolveTennisHeadshotUrl(p.playerId, p.imageUrl)),
     }))
     .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999) || a.name.localeCompare(b.name));
 
@@ -600,7 +601,7 @@ export async function seedTennisOverlayFromDisk(): Promise<{
     .filter((player) => ids.has(player.playerId))
     .map((player) => ({
       ...player,
-      imageUrl: resolveTennisHeadshotUrl(player.playerId, player.imageUrl),
+      imageUrl: clientTennisHeadshotUrl(player.playerId, resolveTennisHeadshotUrl(player.playerId, player.imageUrl)),
     }));
   const fetchedAt = new Date().toISOString();
   const overlay: TennisMatchOverlay = {

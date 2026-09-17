@@ -58,7 +58,7 @@ import {
   tennisTourLabel,
 } from '@/lib/tennis/chartStats';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
-import { tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
+import { clientTennisHeadshotUrl, tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
 import { propsSportFromTennisTour } from '@/lib/nbaConstants';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import {
@@ -292,7 +292,10 @@ function asTennisPlayer(raw: unknown): NblRosterPlayer | null {
   if (!raw || typeof raw !== 'object') return null;
   const player = raw as NblRosterPlayer;
   if (!isTennisPlayer(player)) return null;
-  return { ...player, imageUrl: player.imageUrl || null };
+  return {
+    ...player,
+    imageUrl: clientTennisHeadshotUrl(player.playerId, player.imageUrl),
+  };
 }
 
 function TennisHeaderEventLine({
@@ -350,27 +353,31 @@ function TennisAnonymousHeadshot({ sizeClass }: { sizeClass: string }) {
 function TennisPlayerAvatar({
   name,
   imageUrl,
+  playerId,
   sizeClass,
 }: {
   name?: string | null;
   imageUrl?: string | null;
+  playerId?: string | null;
   sizeClass: string;
 }) {
+  const src = clientTennisHeadshotUrl(playerId, imageUrl);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     setFailed(false);
-  }, [imageUrl]);
-  if (imageUrl && !failed) {
+  }, [src]);
+  if (src && !failed) {
     return (
       <span
         className={`${sizeClass} relative overflow-hidden rounded-full flex-shrink-0 bg-gray-200 dark:bg-gray-700 ring-1 ring-black/10 dark:ring-white/10`}
       >
         <img
-          src={imageUrl}
+          src={src}
           alt={name || ''}
           className="absolute inset-0 h-full w-full object-cover"
-          style={tennisComAvatarImgStyle(imageUrl)}
+          style={tennisComAvatarImgStyle(src)}
           decoding="async"
+          referrerPolicy="no-referrer"
           onError={() => setFailed(true)}
         />
       </span>
@@ -447,7 +454,7 @@ function readInitialNblSelection(): {
           teamId: null,
           position: null,
           jersey: null,
-          imageUrl: null,
+          imageUrl: clientTennisHeadshotUrl(playerIdParam, null),
           tour: tennisTeamParam === 'WTA' || tennisTeamParam === 'ATP' ? (tennisTeamParam as 'ATP' | 'WTA') : undefined,
         };
     if (sameName && playerIdParam && !player.playerId) {
@@ -783,7 +790,12 @@ export default function TennisDashboardPage() {
         if (cancelled) return;
         if (playersRes.ok) {
           const data = await playersRes.json();
-          setRosterPlayers(Array.isArray(data.players) ? data.players : []);
+          const next: NblRosterPlayer[] = [];
+          for (const row of Array.isArray(data.players) ? data.players : []) {
+            const player = asTennisPlayer(row);
+            if (player) next.push(player);
+          }
+          setRosterPlayers(next);
         }
       } catch {
         /* ignore — search stays empty */
@@ -1566,6 +1578,7 @@ export default function TennisDashboardPage() {
                           {nblPropsMode === 'player' && selectedPlayer ? (
                             <TennisPlayerAvatar
                               name={selectedPlayer.name}
+                              playerId={selectedPlayer.playerId}
                               imageUrl={selectedPlayer.imageUrl}
                               sizeClass="w-10 h-10"
                             />
@@ -1693,6 +1706,7 @@ export default function TennisDashboardPage() {
                           {nblPropsMode === 'player' && selectedPlayer ? (
                             <TennisPlayerAvatar
                               name={selectedPlayer.name}
+                              playerId={selectedPlayer.playerId}
                               imageUrl={selectedPlayer.imageUrl}
                               sizeClass="w-8 h-8"
                             />
@@ -1836,6 +1850,7 @@ export default function TennisDashboardPage() {
                                   >
                                     <TennisPlayerAvatar
                                       name={player.name}
+                                      playerId={player.playerId}
                                       imageUrl={player.imageUrl}
                                       sizeClass="w-8 h-8"
                                     />
@@ -1890,6 +1905,7 @@ export default function TennisDashboardPage() {
                                 >
                                   <TennisPlayerAvatar
                                     name={player.name}
+                                    playerId={player.playerId}
                                     imageUrl={player.imageUrl}
                                     sizeClass="w-8 h-8"
                                   />
@@ -2301,7 +2317,9 @@ export default function TennisDashboardPage() {
                       ) : (
                         <TennisAdvancedAveragesCard
                           isDark={!!mounted && isDark}
+                          playerId={selectedPlayer?.playerId || null}
                           playerName={matchupLeft}
+                          opponentId={displayOpponent ? nextGameOpponentId : null}
                           opponentName={statsOpponent}
                           tour={dvpTour}
                         />
@@ -2498,7 +2516,9 @@ export default function TennisDashboardPage() {
                       ) : (
                         <TennisAdvancedAveragesCard
                           isDark={!!mounted && isDark}
+                          playerId={selectedPlayer?.playerId || null}
                           playerName={matchupLeft}
+                          opponentId={displayOpponent ? nextGameOpponentId : null}
                           opponentName={statsOpponent}
                           tour={dvpTour}
                         />

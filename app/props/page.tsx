@@ -76,6 +76,7 @@ import { prefetchTennisDashboardFromProps } from '@/lib/tennisPropsNavigationPre
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisEventPlaceLabel, tennisTourLabel } from '@/lib/tennis/chartStats';
 import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
+import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 
 interface Game {
   id: number;
@@ -385,10 +386,7 @@ function navigateToTennisDashboardFromProp(
 function tennisPropsHeadshotUrl(
   prop: Pick<PlayerProp, 'headshotUrl' | 'playerId'>
 ): string | null {
-  const direct = String(prop.headshotUrl || '').trim();
-  if (direct) return direct;
-  const id = String(prop.playerId || '').trim();
-  return id ? `/api/tennis/headshot/${encodeURIComponent(id)}` : null;
+  return clientTennisHeadshotUrl(prop.playerId, prop.headshotUrl);
 }
 
 function normalizeAflStatForDashboard(stat: string): string {

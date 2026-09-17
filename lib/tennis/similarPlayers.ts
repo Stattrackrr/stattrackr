@@ -16,6 +16,7 @@ import {
   tennisScoreIsRetired,
 } from '@/lib/tennis/chartStats';
 import { tennisHandForName, type TennisHand } from '@/lib/tennis/hands';
+import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 import {
   loadPlayerMatches,
   loadTennisMatches,
@@ -314,7 +315,7 @@ export function buildTennisSimilarPlayers(opts: {
       playerId: bundle.player.playerId,
       name: bundle.player.name,
       ioc: bundle.player.ioc,
-      imageUrl: bundle.player.imageUrl || null,
+      imageUrl: clientTennisHeadshotUrl(bundle.player.playerId, bundle.player.imageUrl),
       hand: playerHand(bundle.player, bundle.player.name),
       rank: bundle.player.rank,
       similarity: round1(100 / (1 + bundle.distance)),

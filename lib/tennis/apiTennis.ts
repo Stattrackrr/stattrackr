@@ -8,6 +8,7 @@ import path from 'path';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 import { tennisDominanceRatio, resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
 import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
+import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 import { tennisHandForName } from '@/lib/tennis/hands';
 import { lookupTennisSurface, tennisSurfacesMtime } from '@/lib/tennis/surfaces';
 import { derivePointByPointStats, type ApiPointByPointGame } from '@/lib/tennis/pointByPointStats';
@@ -1008,7 +1009,7 @@ export function loadApiTennisPlayers(): ApiTennisPlayer[] | null {
   runtime.players = roster.players.map((p) => ({
     ...p,
     hand: tennisHandForName(p.name) || p.hand,
-    imageUrl: resolveTennisHeadshotUrl(p.playerId, p.imageUrl),
+    imageUrl: clientTennisHeadshotUrl(p.playerId, resolveTennisHeadshotUrl(p.playerId, p.imageUrl)),
   }));
   return runtime.players;
 }

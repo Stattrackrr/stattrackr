@@ -4,7 +4,10 @@
  */
 
 import sharedCache from '@/lib/sharedCache';
-import { buildTennisAdvancedAverages } from '@/lib/tennis/advancedAverages';
+import {
+  averagesPayloadHasRows,
+  buildTennisAdvancedAverages,
+} from '@/lib/tennis/advancedAverages';
 import {
   tennisComputedCacheKey,
   writeTennisComputedCache,
@@ -72,12 +75,16 @@ export async function warmTennisDashboardComputed(): Promise<{ matchups: number 
     const averages = buildTennisAdvancedAverages({
       playerName: player,
       opponentName: opponent,
+      playerId,
+      opponentId: String(row.opponentId || '').trim() || null,
       tour,
     });
-    await writeTennisComputedCache(
-      tennisComputedCacheKey('averages', [player, opponent, tour]),
-      { success: true, ...averages }
-    );
+    if (averagesPayloadHasRows(averages)) {
+      await writeTennisComputedCache(
+        tennisComputedCacheKey('averages', [player, opponent, tour]),
+        { success: true, ...averages }
+      );
+    }
     const matchup = buildTennisPlayerMatchup({
       playerName: player,
       opponentName: opponent,

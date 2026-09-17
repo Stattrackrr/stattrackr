@@ -5,6 +5,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 
 export type TennisHeadshotSource = 'atp' | 'wta' | 'tennis-com' | 'espn' | 'api-tennis' | 'wikipedia';
 
@@ -123,25 +124,43 @@ function withHeadshotCrop(pathOrUrl: string, entry: TennisHeadshotEntry | undefi
   return pathOrUrl.includes('?') ? `${pathOrUrl}&${query}` : `${pathOrUrl}?${query}`;
 }
 
-export function resolveTennisHeadshotUrl(
-  playerId: string | null | undefined,
-  remote?: string | null
-): string | null {
+export function tennisHeadshotLocalFile(playerId: string | null | undefined): {
+  absPath: string;
+  contentType: 'image/jpeg' | 'image/png';
+} | null {
   const id = String(playerId || '').trim();
-  if (!id) return String(remote || '').trim() || null;
+  if (!id) return null;
   const index = loadTennisHeadshotsIndex();
   const entry = index?.byPlayerId?.[id];
+  const ext = entry?.ext === 'png' ? 'png' : 'jpg';
+  const absPath = tennisHeadshotFilePath(id, ext);
+  if (!fs.existsSync(absPath)) return null;
+  return { absPath, contentType: ext === 'png' ? 'image/png' : 'image/jpeg' };
+}
+
+function hasCachedTennisHeadshot(
+  id: string,
+  entry: TennisHeadshotEntry | undefined
+): boolean {
+  if (localHeadshotIds().has(id) || tennisHeadshotLocalFile(id)) return true;
+  if (!entry) return false;
+  return Boolean(entry.ok || String(entry.file || '').trim());
+}
+
+export function resolveTennisHeadshotUrl(
+  playerId: string | null | undefined,
+  _remote?: string | null
+): string | null {
+  const id = String(playerId || '').trim();
+  if (!id) return null;
+  const index = loadTennisHeadshotsIndex();
+  const entry = index?.byPlayerId?.[id];
+  if (!hasCachedTennisHeadshot(id, entry)) return null;
   const stamp = index?.generatedAt || '1';
-  if (localHeadshotIds().has(id)) {
-    const publicPath =
-      String(entry?.file || '').trim() ||
-      tennisHeadshotPublicPath(id, entry?.ext === 'png' ? 'png' : 'jpg');
-    return withHeadshotCrop(publicPath, entry, stamp);
-  }
-  const url = String(entry?.remoteUrl || remote || '').trim();
-  if (!url) return null;
-  if (entry?.source === 'tennis-com' || entry?.source === 'wta') return withHeadshotCrop(url, entry, stamp);
-  return url;
+  const publicPath =
+    String(entry?.file || '').trim() ||
+    tennisHeadshotPublicPath(id, entry?.ext === 'png' ? 'png' : 'jpg');
+  return withHeadshotCrop(publicPath, entry, stamp);
 }
 
 function normHeadshotName(name: string): string {
@@ -180,10 +199,11 @@ export function attachTennisHeadshots<
   try {
     let changed = false;
     const next = rows.map((row) => {
-      if (row.headshotUrl) return row;
-      const url =
-        resolveTennisHeadshotUrl(row.playerId, null) || resolveTennisHeadshotUrlByName(row.playerName);
-      if (!url) return row;
+      const resolved =
+        resolveTennisHeadshotUrl(row.playerId, null) ||
+        resolveTennisHeadshotUrlByName(row.playerName);
+      const url = clientTennisHeadshotUrl(row.playerId, resolved);
+      if (!url || url === row.headshotUrl) return row;
       changed = true;
       return { ...row, headshotUrl: url };
     });

@@ -195,6 +195,7 @@ export function TennisSimilarPlayersCard({
                     alt=""
                     className="w-8 h-8 object-cover"
                     style={tennisComAvatarImgStyle(row.imageUrl)}
+                    referrerPolicy="no-referrer"
                   />
                 </span>
               ) : (

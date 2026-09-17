@@ -1,5 +1,7 @@
+import fs from 'fs';
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
+import { isLocalTennisHeadshotPath } from '@/lib/tennis/headshotDisplay';
+import { resolveTennisHeadshotUrl, tennisHeadshotLocalFile } from '@/lib/tennis/headshots';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -9,13 +11,23 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const url = resolveTennisHeadshotUrl(id, null);
-  if (!url) {
-    return new NextResponse(null, { status: 404, headers: { 'Cache-Control': 'public, max-age=60' } });
+  const local = tennisHeadshotLocalFile(id);
+  if (local) {
+    const body = fs.readFileSync(local.absPath);
+    return new NextResponse(body, {
+      status: 200,
+      headers: {
+        'Content-Type': local.contentType,
+        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+      },
+    });
   }
-  const target = url.startsWith('http') ? url : new URL(url, request.nextUrl.origin).toString();
-  return NextResponse.redirect(target, {
-    status: 302,
-    headers: { 'Cache-Control': 'public, max-age=86400' },
-  });
+  const url = resolveTennisHeadshotUrl(id, null);
+  if (url && isLocalTennisHeadshotPath(url)) {
+    return NextResponse.redirect(new URL(url, request.nextUrl.origin), {
+      status: 302,
+      headers: { 'Cache-Control': 'public, max-age=86400' },
+    });
+  }
+  return new NextResponse(null, { status: 404, headers: { 'Cache-Control': 'public, max-age=60' } });
 }

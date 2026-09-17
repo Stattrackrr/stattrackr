@@ -66,12 +66,16 @@ function FilterSelect<T extends string | number>({
 
 export default function TennisAdvancedAveragesCard({
   isDark = false,
+  playerId = null,
   playerName = null,
+  opponentId = null,
   opponentName = null,
   tour = 'ATP',
 }: {
   isDark?: boolean;
+  playerId?: string | null;
   playerName?: string | null;
+  opponentId?: string | null;
   opponentName?: string | null;
   tour?: 'ATP' | 'WTA' | null;
 }) {
@@ -91,7 +95,7 @@ export default function TennisAdvancedAveragesCard({
 
   useEffect(() => {
     lastOpponentRef.current = null;
-  }, [player]);
+  }, [player, playerId]);
 
   useEffect(() => {
     if (!player) {
@@ -115,6 +119,8 @@ export default function TennisAdvancedAveragesCard({
       vsRank,
     });
     if (opponent) qs.set('opponent', opponent);
+    if (playerId) qs.set('playerId', playerId);
+    if (opponentId) qs.set('opponentId', opponentId);
     lastOpponentRef.current = opponent || null;
     tennisDashboardFetch(`/api/tennis/advanced-averages?${qs.toString()}`)
       .then((res) => {
@@ -135,7 +141,7 @@ export default function TennisAdvancedAveragesCard({
     return () => {
       cancelled = true;
     };
-  }, [player, opponent, tourKey, windowN, averagesBestOf, vsRank]);
+  }, [player, playerId, opponent, opponentId, tourKey, windowN, averagesBestOf, vsRank]);
 
   useEffect(() => {
     if (!opponent) setSide('player');
@@ -273,7 +279,7 @@ export default function TennisAdvancedAveragesCard({
                     {row.label}
                   </td>
                   {ADV_AVG_COLUMNS.map((col) => {
-                    const cell = row.cells[col.key];
+                    const cell = row.cells?.[col.key] ?? { text: '—', tone: 'empty' as const };
                     return (
                       <td
                         key={col.key}

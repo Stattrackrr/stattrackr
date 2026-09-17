@@ -9,7 +9,6 @@ import {
   type AdvAvgCell,
   type AdvAvgColKey,
   type AdvAvgSide,
-  type AdvAvgTableRow,
   type AdvAvgTone,
   type AdvAvgVsRank,
   type AdvAvgWindow,
@@ -20,8 +19,10 @@ import {
   loadTennisPlayers,
   tourForPlayer,
   type TennisMatchRow,
+  type TennisPlayer,
   type TennisTour,
 } from '@/lib/tennis/data';
+import { loadPlayerMatchesCached, loadTennisPlayersCached } from '@/lib/tennis/loadCached';
 import { tennisHandForName } from '@/lib/tennis/hands';
 import { hasTennisRankHistory, tennisRankOnDate } from '@/lib/tennis/rankHistory';
 
@@ -43,18 +44,28 @@ function normName(name: string | null | undefined): string {
 
 function resolvePlayer(
   name: string,
-  preferredTour: TennisTour
+  preferredTour: TennisTour,
+  players: TennisPlayer[],
+  playerId?: string | null
 ): { id: string | null; name: string; hand: 'R' | 'L' | null } {
-  const players = loadTennisPlayers();
+  const id = String(playerId || '').trim();
+  if (id) {
+    const hit = players.find((p) => p.playerId === id);
+    return {
+      id,
+      name: hit?.name || name,
+      hand: normalizeHand(hit?.hand ?? null) || tennisHandForName(hit?.name || name),
+    };
+  }
   const key = normName(name);
-  if (!key) return { id: null, name, hand: null };
+  if (!key) return { id: null, name, hand: tennisHandForName(name) };
   const hit =
     players.find((p) => p.tour === preferredTour && normName(p.name) === key) ||
     players.find((p) => normName(p.name) === key);
   return {
     id: hit?.playerId ?? null,
     name: hit?.name || name,
-    hand: normalizeHand(hit?.hand ?? null),
+    hand: normalizeHand(hit?.hand ?? null) || tennisHandForName(hit?.name || name),
   };
 }
 
@@ -224,15 +235,15 @@ function buildSide(
   windowN: AdvAvgWindow,
   bestOf: AdvAvgBestOf,
   vsRank: AdvAvgVsRank,
-  h2hName: string | null
+  h2hName: string | null,
+  players: TennisPlayer[],
+  matches: TennisMatchRow[],
+  playerId?: string | null,
+  h2hId?: string | null
 ): AdvAvgSide {
-  const resolved = resolvePlayer(name, tour);
-  const h2hResolved = h2hName ? resolvePlayer(h2hName, tour) : null;
-  const pool = loadPlayerMatches({
-    playerId: resolved.id,
-    playerName: resolved.id ? null : name,
-    tour,
-  })
+  const resolved = resolvePlayer(name, tour, players, playerId);
+  const h2hResolved = h2hName ? resolvePlayer(h2hName, tour, players, h2hId) : null;
+  const pool = matches
     .filter((row) => matchesBestOf(row, bestOf) && matchesVsRank(row, vsRank))
     .map((row) => ({
       ...row,
@@ -272,15 +283,28 @@ function buildSide(
   };
 }
 
-export function buildTennisAdvancedAverages(opts: {
+export type TennisAdvancedAveragesOpts = {
   playerName: string;
   opponentName?: string | null;
+  playerId?: string | null;
+  opponentId?: string | null;
   tour?: TennisTour | null;
   window?: number;
   year?: number;
   bestOf?: string | null;
   vsRank?: string | null;
-}): TennisAdvancedAveragesPayload {
+  players?: TennisPlayer[];
+  playerMatches?: TennisMatchRow[];
+  opponentMatches?: TennisMatchRow[];
+};
+
+export function averagesPayloadHasRows(payload: {
+  player?: { matches?: number | null } | null;
+} | null | undefined): boolean {
+  return Number(payload?.player?.matches || 0) > 0;
+}
+
+export function buildTennisAdvancedAverages(opts: TennisAdvancedAveragesOpts): TennisAdvancedAveragesPayload {
   const year =
     opts.year && Number.isFinite(opts.year) && opts.year >= 2000 ? opts.year : TENNIS_CURRENT_YEAR;
   const windowRaw = Number(opts.window);
@@ -292,10 +316,12 @@ export function buildTennisAdvancedAverages(opts: {
     : 'all';
   const playerName = String(opts.playerName || '').trim();
   const opponentName = String(opts.opponentName || '').trim();
+  const players = opts.players?.length ? opts.players : loadTennisPlayers();
   const tour =
     opts.tour ||
-    tourForPlayer(null, playerName) ||
-    tourForPlayer(null, opponentName) ||
+    players.find((p) => p.playerId === String(opts.playerId || '').trim())?.tour ||
+    tourForPlayer(opts.playerId || null, playerName) ||
+    tourForPlayer(opts.opponentId || null, opponentName) ||
     'ATP';
   const bestOf: AdvAvgBestOf =
     tour === 'WTA'
@@ -305,6 +331,23 @@ export function buildTennisAdvancedAverages(opts: {
       : opts.bestOf === '3' || opts.bestOf === '5'
         ? opts.bestOf
         : 'all';
+  const playerRes = resolvePlayer(playerName, tour, players, opts.playerId);
+  const oppRes = opponentName ? resolvePlayer(opponentName, tour, players, opts.opponentId) : null;
+  const playerMatches =
+    opts.playerMatches ??
+    loadPlayerMatches({
+      playerId: playerRes.id,
+      playerName: playerRes.id ? null : playerName,
+      tour,
+    });
+  const opponentMatches = opponentName
+    ? opts.opponentMatches ??
+      loadPlayerMatches({
+        playerId: oppRes?.id,
+        playerName: oppRes?.id ? null : opponentName,
+        tour,
+      })
+    : [];
 
   return {
     tour,
@@ -312,9 +355,74 @@ export function buildTennisAdvancedAverages(opts: {
     window: windowN,
     bestOf,
     vsRank,
-    player: buildSide(playerName, tour, year, windowN, bestOf, vsRank, opponentName || null),
+    player: buildSide(
+      playerName,
+      tour,
+      year,
+      windowN,
+      bestOf,
+      vsRank,
+      opponentName || null,
+      players,
+      playerMatches,
+      playerRes.id,
+      oppRes?.id
+    ),
     opponent: opponentName
-      ? buildSide(opponentName, tour, year, windowN, bestOf, vsRank, playerName)
+      ? buildSide(
+          opponentName,
+          tour,
+          year,
+          windowN,
+          bestOf,
+          vsRank,
+          playerName,
+          players,
+          opponentMatches,
+          oppRes?.id,
+          playerRes.id
+        )
       : null,
   };
+}
+
+export async function buildTennisAdvancedAveragesCached(
+  opts: TennisAdvancedAveragesOpts
+): Promise<TennisAdvancedAveragesPayload> {
+  const roster = opts.players?.length ? opts.players : await loadTennisPlayersCached();
+  const tour =
+    opts.tour ||
+    roster.find((p) => p.playerId === String(opts.playerId || '').trim())?.tour ||
+    'ATP';
+  const playerRes = resolvePlayer(opts.playerName, tour, roster, opts.playerId);
+  const oppRes = opts.opponentName
+    ? resolvePlayer(opts.opponentName, tour, roster, opts.opponentId)
+    : null;
+  const [playerMatches, opponentMatches] = await Promise.all([
+    opts.playerMatches
+      ? Promise.resolve(opts.playerMatches)
+      : loadPlayerMatchesCached({
+          playerId: playerRes.id,
+          playerName: playerRes.id ? null : opts.playerName,
+          tour,
+        }),
+    opts.opponentName
+      ? opts.opponentMatches
+        ? Promise.resolve(opts.opponentMatches)
+        : loadPlayerMatchesCached({
+            playerId: oppRes?.id,
+            playerName: oppRes?.id ? null : opts.opponentName,
+            tour,
+          })
+      : Promise.resolve([]),
+  ]);
+  return buildTennisAdvancedAverages({
+    ...opts,
+    tour,
+    playerId: playerRes.id,
+    opponentId: oppRes?.id,
+    players: roster,
+    playerMatches,
+    opponentMatches,
+  });
 }

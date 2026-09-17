@@ -14,6 +14,7 @@ import {
   type TennisCachedDvpEvent,
 } from '@/lib/tennis/dvpLiveCache';
 import { attachTennisHeadshots, resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
+import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 import {
   listTennisOddsIndex,
   readTennisOddsSnapshot,
@@ -766,7 +767,10 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
         (row) => row.season === TENNIS_CURRENT_YEAR || row.season === TENNIS_CURRENT_YEAR - 1
       );
       const h2hRows = allMatches.filter((row) => isH2hMatch(row, opponent, opponentId));
-      const headshotUrl = resolveTennisHeadshotUrl(playerId, meta?.imageUrl || null);
+      const headshotUrl = clientTennisHeadshotUrl(
+        playerId,
+        resolveTennisHeadshotUrl(playerId, meta?.imageUrl || null)
+      );
       const liveEvent =
         (playerId &&
           liveEvents.events.find(
