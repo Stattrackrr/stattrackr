@@ -157,8 +157,7 @@ function ymdUtc(date: Date): string {
 }
 
 async function ingestLookbackDays(): Promise<number> {
-  const { tennisLogsLookHealthy } = await import('@/lib/tennis/dashboardCache');
-  return (await tennisLogsLookHealthy()) ? TENNIS_INGEST_REFRESH_DAYS : TENNIS_INGEST_LOOKBACK_DAYS;
+  return TENNIS_INGEST_REFRESH_DAYS;
 }
 
 function ingestWindow(now = new Date(), lookbackDays = TENNIS_INGEST_LOOKBACK_DAYS): { start: string; stop: string } {
@@ -172,18 +171,23 @@ async function apiTennisCall(params: Record<string, string>): Promise<any> {
   const key = apiKey();
   if (!key) return null;
   const qs = new URLSearchParams({ APIkey: key, ...params });
-  for (let attempt = 1; attempt <= 4; attempt++) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
     const res = await fetch(`${API_BASE}?${qs.toString()}`, {
       headers: { Accept: 'application/json' },
       cache: 'no-store',
-    });
+      signal: AbortSignal.timeout(20_000),
+    }).catch(() => null);
+    if (!res) {
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 400));
+      continue;
+    }
     if (res.status === 429 || res.status >= 500) {
-      await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+      await new Promise((resolve) => setTimeout(resolve, attempt * 800));
       continue;
     }
     const json = await res.json().catch(() => null);
-    if (!json?.success && attempt < 4) {
-      await new Promise((resolve) => setTimeout(resolve, attempt * 800));
+    if (!json?.success && attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
       continue;
     }
     return json;
@@ -484,9 +488,12 @@ export function applyIncrementalTennisFetch(
   return { cache, added: merged.added, updated: merged.updated };
 }
 
-async function publishOverlayShards(overlay: TennisMatchOverlay | null) {
+async function publishOverlayShards(
+  overlay: TennisMatchOverlay | null,
+  opts?: { onlyPriority?: boolean }
+) {
   const { mergeTennisPlayerLogsIncremental } = await import('@/lib/tennis/dashboardCache');
-  return mergeTennisPlayerLogsIncremental(overlay);
+  return mergeTennisPlayerLogsIncremental(overlay, opts);
 }
 
 export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promise<boolean> {
@@ -595,12 +602,7 @@ export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult & 
     standings: incoming.standings,
   };
   rememberOverlay(overlay);
-  const shards = await publishOverlayShards(overlay);
-  try {
-    await sharedCache.deleteJSON(TENNIS_OVERLAY_CACHE_KEY);
-  } catch {
-    /* giant overlay blob is unused by the props page */
-  }
+  const shards = await publishOverlayShards(overlay, { onlyPriority: true });
 
   return {
     fetchedAt,
