@@ -36,28 +36,6 @@ function kickTennisListRebuild() {
     });
 }
 
-async function withLiveTennisStartTimes<T extends { tennis?: { games?: unknown[]; props?: unknown[] } | null }>(
-  snapshot: T
-): Promise<T> {
-  if (!snapshot?.tennis?.props?.length) return snapshot;
-  try {
-    const { overlayTennisStartTimes } = await import('@/lib/tennis/nextGame');
-    const tennis = snapshot.tennis;
-    const [props, games] = await Promise.all([
-      overlayTennisStartTimes(tennis.props as Array<{ gameDate?: string | null; commenceTime?: string | null }>),
-      overlayTennisStartTimes(
-        (tennis.games || []) as Array<{ commenceTime?: string | null; homeTeam?: string; awayTeam?: string; gameId?: string }>
-      ),
-    ]);
-    return {
-      ...snapshot,
-      tennis: { ...tennis, props, games },
-    };
-  } catch {
-    return snapshot;
-  }
-}
-
 export async function GET(request: NextRequest) {
   const refresh = request.nextUrl.searchParams.get('refresh') === '1';
   const debugStats = request.nextUrl.searchParams.get('debugStats') === '1';
@@ -95,16 +73,15 @@ export async function GET(request: NextRequest) {
                 ? paintSnapshot
                 : slimCombinedPropsSnapshotForClient(cachedSnapshot)
             );
-        const clientSnapshot = await withLiveTennisStartTimes(painted);
         return NextResponse.json(
           {
-            ...clientSnapshot,
+            ...painted,
             cachedSnapshot: true,
             backgroundRefreshStarted: stale || tennisNeedsForm,
             paintSnapshot: !wantsFull,
           },
           {
-            status: clientSnapshot?.success ? 200 : 502,
+            status: painted?.success ? 200 : 502,
             headers: {
               'Cache-Control': COMBINED_CACHE_CONTROL_HIT,
             },
@@ -129,11 +106,9 @@ export async function GET(request: NextRequest) {
     const outgoing =
       readySnapshot && combinedSnapshotAflAssemblyReady(readySnapshot) ? readySnapshot : snapshot;
 
-    const clientSnapshot = await withLiveTennisStartTimes(
-      wantsFull
-        ? filterCombinedSnapshotAflEligibility(outgoing)
-        : slimCombinedPropsSnapshotForClient(filterCombinedSnapshotAflEligibility(outgoing))
-    );
+    const clientSnapshot = wantsFull
+      ? filterCombinedSnapshotAflEligibility(outgoing)
+      : slimCombinedPropsSnapshotForClient(filterCombinedSnapshotAflEligibility(outgoing));
 
     return NextResponse.json(
       {

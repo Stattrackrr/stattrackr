@@ -33,6 +33,61 @@ export {
 
 const COMBINED_PROPS_SNAPSHOT_TTL_SECONDS = 4 * 60 * 60;
 const COMBINED_PROPS_SNAPSHOT_STALE_MS = 15 * 60 * 1000;
+/** Combined paint must never wait on tennis. AFL returns; tennis fills in if it makes the budget. */
+const TENNIS_COMBINED_BUDGET_MS = 2500;
+
+function emptyTennisListPayload() {
+  return {
+    success: false,
+    games: [] as never[],
+    data: [] as never[],
+    gamesCount: 0,
+    propsCount: 0,
+    noTennisOdds: true,
+    noAflOdds: true,
+    ingestMessage: 'Tennis props are still loading.',
+  };
+}
+
+function tennisListFromSnapshot(previous: CombinedPropsSnapshot | null) {
+  const tennis = previous?.tennis;
+  if (!tennis?.props?.length) return emptyTennisListPayload();
+  return {
+    success: tennis.ok !== false,
+    games: tennis.games || [],
+    data: tennis.props,
+    gamesCount: tennis.games?.length || 0,
+    propsCount: tennis.props.length,
+    noTennisOdds: Boolean(tennis.noTennisOdds),
+    noAflOdds: true,
+    ingestMessage: tennis.ingestMessage,
+  };
+}
+
+function withBudget<T>(work: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve(fallback);
+    }, ms);
+    work.then(
+      (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(fallback);
+      }
+    );
+  });
+}
 
 type BookmakerLine = {
   bookmaker: string;
@@ -351,23 +406,17 @@ export async function buildCombinedPropsSnapshot(
     : Promise.resolve(
         NextResponse.json({ success: true, data: [], cached: false, lastUpdated: null, gameDate: null })
       );
-  const tennisPromise = TENNIS_PUBLIC_ENABLED
-    ? getTennisPlayerPropsList({ refresh })
-    : Promise.resolve({
-        success: true,
-        games: [] as never[],
-        data: [] as never[],
-        gamesCount: 0,
-        propsCount: 0,
-        noTennisOdds: true,
-        noAflOdds: true,
-        ingestMessage: 'Tennis props are not available.',
-      });
-  const [nbaResponse, aflResponse, tennisPayload] = await Promise.all([
+  const previousSnapshotPromise = getCombinedPropsSnapshot();
+  const tennisWork = TENNIS_PUBLIC_ENABLED
+    ? getTennisPlayerPropsList({ refresh }).catch(() => null)
+    : Promise.resolve(null);
+  const [nbaResponse, aflResponse, previousSnapshot, tennisFresh] = await Promise.all([
     nbaPromise,
     getAflPlayerPropsList(new Request(aflUrl, { headers })),
-    tennisPromise,
+    previousSnapshotPromise,
+    withBudget(tennisWork, TENNIS_COMBINED_BUDGET_MS, null),
   ]);
+  const tennisPayload = tennisFresh || tennisListFromSnapshot(previousSnapshot);
 
   const [nbaPayload, aflPayload] = await Promise.all([
     nbaResponse.json().catch(() => null),
@@ -419,7 +468,7 @@ export async function buildCombinedPropsSnapshot(
   if (snapshot.success && writeCache && !debugStats && snapshotReadyToCache(snapshot)) {
     let toStore = snapshot;
     if (TENNIS_PUBLIC_ENABLED) {
-      const previous = await getCombinedPropsSnapshot();
+      const previous = previousSnapshot;
       if (!(snapshot.tennis?.props?.length) && previous?.tennis?.props?.length) {
         toStore = { ...snapshot, tennis: previous.tennis };
       } else if (
@@ -432,6 +481,36 @@ export async function buildCombinedPropsSnapshot(
       }
     }
     await writeCombinedPropsSnapshotCaches(withTennisHeadshots(toStore));
+    if (TENNIS_PUBLIC_ENABLED && !tennisFresh) {
+      void tennisWork
+        .then(async (payload) => {
+          if (!payload || payload.success === false) return;
+          const latest = (await getCombinedPropsSnapshot()) || toStore;
+          const nextTennis = aggregateAflProps(payload);
+          if (!nextTennis.props.length) return;
+          const next: CombinedPropsSnapshot = {
+            ...latest,
+            tennis: {
+              ok: true,
+              status: 200,
+              lastUpdated: nextTennis.lastUpdated,
+              nextUpdate: nextTennis.nextUpdate,
+              ingestMessage: payload.ingestMessage ?? nextTennis.ingestMessage,
+              noTennisOdds: Boolean(payload.noTennisOdds) || nextTennis.props.length === 0,
+              games: nextTennis.games,
+              props: nextTennis.props,
+            },
+          };
+          if (!combinedTennisHasFormStats(next) && combinedTennisHasFormStats(latest)) return;
+          await writeCombinedPropsSnapshotCaches(withTennisHeadshots(next));
+        })
+        .catch((error) => {
+          console.warn(
+            '[Props Combined] Background tennis slice failed:',
+            error instanceof Error ? error.message : error
+          );
+        });
+    }
     return withTennisHeadshots(toStore);
   }
 

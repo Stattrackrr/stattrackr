@@ -4885,6 +4885,49 @@ export default function NBALandingPage() {
         launchNbaProgressiveFetch();
       }
 
+      void (async () => {
+        if (aflPropsRef.current.some(isAflCombinedListProp)) {
+          setCombinedPaintUnlocked(true);
+          setAflPropsLoading(false);
+          return;
+        }
+        try {
+          const listRes = await fetchSecondaryPropsList(getSecondaryPropsListUrl('afl', debugStats));
+          const listData = await listRes.json();
+          const aflResult = aggregateAflListPayload(listData);
+          if (!listRes.ok || aflResult.aggregated.length === 0) return;
+          applyCombinedSnapshot(
+            {
+              success: true,
+              snapshotVersion: 1,
+              generatedAt: new Date().toISOString(),
+              staleAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+              nba: {
+                ok: playerPropsRef.current.length > 0,
+                status: 200,
+                cached: true,
+                lastUpdated: null,
+                gameDate: null,
+                props: playerPropsRef.current,
+              },
+              afl: {
+                ok: true,
+                status: listRes.status,
+                lastUpdated: aflResult.lastUpdated ?? null,
+                nextUpdate: aflResult.nextUpdate ?? null,
+                ingestMessage: aflResult.ingestMessage ?? null,
+                noAflOdds: aflResult.noAflOdds === true,
+                games: aflResult.games,
+                props: aflResult.aggregated,
+              },
+            },
+            { persistCaches: false }
+          );
+        } catch {
+          // AFL must paint even if tennis/combined is still hanging.
+        }
+      })();
+
       const params = new URLSearchParams();
       if (forceRefresh) params.set('refresh', '1');
       if (debugStats) params.set('debugStats', '1');
