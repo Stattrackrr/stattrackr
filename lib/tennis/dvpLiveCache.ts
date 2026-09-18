@@ -242,6 +242,7 @@ export async function buildTennisDvpLiveStore(live?: TennisLiveEventIndex): Prom
           window,
           includeField: true,
           stage: board.stage,
+          skipOverlay: true,
         });
         fieldSize = profile.fieldSize;
         tournamentName = profile.tournamentName || tournamentName;

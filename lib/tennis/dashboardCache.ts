@@ -13,7 +13,7 @@ const TENNIS_PLAYER_LOGS_PREFIX = 'tennis_player_logs_v1:';
 const TENNIS_COMPUTED_PREFIX = 'tennis_dash_computed_v1:';
 const TENNIS_SHARDS_MARK_KEY = 'tennis_dashboard_shards_mark_v2';
 
-const LOGS_TTL_SECONDS = 60 * 60 * 24 * 30;
+const LOGS_TTL_SECONDS = 60 * 60 * 24 * 90;
 const COMPUTED_TTL_SECONDS = 6 * 60 * 60;
 const MARK_TTL_SECONDS = 60 * 60 * 24 * 40;
 const MAX_ROSTER_PLAYERS = 2000;
@@ -275,60 +275,144 @@ function groupOverlayGames(overlay: OverlayLike): Map<string, TennisMatchRow[]> 
   return byId;
 }
 
-export async function publishTennisDashboardCache(
+function matchStatCount(row: TennisMatchRow | undefined): number {
+  if (!row) return 0;
+  let n = 0;
+  for (const value of Object.values(row)) {
+    if (value != null && value !== '') n += 1;
+  }
+  return n;
+}
+
+function mergePlayerGames(existing: TennisMatchRow[], incoming: TennisMatchRow[]): {
+  games: TennisMatchRow[];
+  added: number;
+  updated: number;
+} {
+  const byId = new Map<string, TennisMatchRow>();
+  for (const row of existing) {
+    if (row?.matchId) byId.set(row.matchId, row);
+  }
+  let added = 0;
+  let updated = 0;
+  for (const row of incoming) {
+    if (!row?.matchId) continue;
+    const prev = byId.get(row.matchId);
+    if (!prev) {
+      byId.set(row.matchId, row);
+      added += 1;
+      continue;
+    }
+    if (matchStatCount(row) > matchStatCount(prev)) {
+      byId.set(row.matchId, row);
+      updated += 1;
+    }
+  }
+  return { games: capGames([...byId.values()]), added, updated };
+}
+
+function mergeRosterPlayers(primary: TennisPlayer[], extra: TennisPlayer[]): TennisPlayer[] {
+  const byId = new Map<string, TennisPlayer>();
+  for (const player of primary) {
+    const id = String(player?.playerId || '').trim();
+    if (id) byId.set(id, slimPlayer(player));
+  }
+  for (const player of extra) {
+    const id = String(player?.playerId || '').trim();
+    if (!id) continue;
+    const prev = byId.get(id);
+    byId.set(id, slimPlayer(prev ? { ...prev, ...player, imageUrl: player.imageUrl || prev.imageUrl } : player));
+  }
+  return [...byId.values()];
+}
+
+/**
+ * Append newly finished matches onto existing Redis player logs.
+ * Players with no new games are left untouched.
+ */
+export async function mergeTennisPlayerLogsIncremental(
   overlay: OverlayLike | null,
   opts?: { onlyPriority?: boolean }
-): Promise<{ players: number; logs: number; skipped: boolean }> {
+): Promise<{ players: number; logs: number; added: number; updated: number; skipped: boolean }> {
   if (!overlay?.matches?.length && !overlay?.players?.length) {
-    return { players: 0, logs: 0, skipped: true };
+    return { players: 0, logs: 0, added: 0, updated: 0, skipped: true };
   }
   const fetchedAt = overlay.fetchedAt || new Date().toISOString();
   const priorityIds = await collectPriorityPlayerIds();
-  const byId = groupOverlayGames(overlay);
+  const incomingById = groupOverlayGames(overlay);
   const onlyPriority = opts?.onlyPriority === true;
-  const entries = [...byId.entries()]
-    .filter(([playerId]) => !onlyPriority || priorityIds.has(playerId))
-    .sort(([a], [b]) => {
-      const aPri = priorityIds.has(a) ? 0 : 1;
-      const bPri = priorityIds.has(b) ? 0 : 1;
-      return aPri - bPri || a.localeCompare(b);
-    });
+  const playerIds = [...incomingById.keys()].filter((id) => !onlyPriority || priorityIds.has(id));
+  const existingLogs = await readTennisPlayerLogsCacheMany(playerIds);
 
-  if (!onlyPriority) {
-    const mark = await sharedCache.getJSON<{ fetchedAt?: string; logs?: number }>(TENNIS_SHARDS_MARK_KEY);
-    if (mark?.fetchedAt === fetchedAt && (mark.logs || 0) >= entries.length) {
-      return { players: 0, logs: 0, skipped: true };
+  let added = 0;
+  let updated = 0;
+  const payloads: TennisPlayerLogsCache[] = [];
+  for (const playerId of playerIds) {
+    const incoming = incomingById.get(playerId) || [];
+    const prevGames = existingLogs.get(playerId) || [];
+    const merged = mergePlayerGames(prevGames, incoming);
+    added += merged.added;
+    updated += merged.updated;
+    if (merged.added > 0 || merged.updated > 0 || !existingLogs.has(playerId)) {
+      payloads.push({
+        fetchedAt,
+        playerId,
+        playerName: incoming[0]?.playerName || prevGames[0]?.playerName || playerId,
+        tour: incoming[0]?.tour || prevGames[0]?.tour || null,
+        games: merged.games,
+      });
     }
   }
+  const logs = payloads.length ? await writeTennisPlayerLogsCacheMany(payloads) : 0;
 
-  const rosterPlayers = pickRosterPlayers(overlay, priorityIds, byId);
+  const existingRoster = await readTennisRosterCache();
+  const rosterOverlay: OverlayLike = {
+    fetchedAt,
+    matches: overlay.matches,
+    players: mergeRosterPlayers(existingRoster?.players || [], overlay.players || []),
+    standings: {
+      ATP: overlay.standings?.ATP?.length ? overlay.standings.ATP : existingRoster?.standings?.ATP || [],
+      WTA: overlay.standings?.WTA?.length ? overlay.standings.WTA : existingRoster?.standings?.WTA || [],
+    },
+  };
+  const rosterPlayers = pickRosterPlayers(rosterOverlay, priorityIds, incomingById);
   if (rosterPlayers.length) {
     await writeTennisRosterCache({
       fetchedAt,
       players: rosterPlayers,
       standings: {
-        ATP: (overlay.standings?.ATP || []).slice(0, 500),
-        WTA: (overlay.standings?.WTA || []).slice(0, 500),
+        ATP: (rosterOverlay.standings?.ATP || []).slice(0, 500),
+        WTA: (rosterOverlay.standings?.WTA || []).slice(0, 500),
       },
     });
   }
 
-  const logs = await writeTennisPlayerLogsCacheMany(
-    entries.map(([playerId, games]) => ({
-      fetchedAt,
-      playerId,
-      playerName: games[0]?.playerName || playerId,
-      tour: games[0]?.tour || null,
-      games,
-    }))
-  );
-
   if (!onlyPriority) {
     await sharedCache.setJSON(
       TENNIS_SHARDS_MARK_KEY,
-      { fetchedAt, logs, players: rosterPlayers.length },
+      { fetchedAt, logs, players: rosterPlayers.length, added, updated },
       MARK_TTL_SECONDS
     );
   }
-  return { players: rosterPlayers.length, logs, skipped: false };
+  return { players: rosterPlayers.length, logs, added, updated, skipped: false };
+}
+
+export async function tennisLogsLookHealthy(): Promise<boolean> {
+  const roster = await readTennisRosterCache();
+  if (!roster?.players?.length) return false;
+  const sample = roster.players.slice(0, 24).map((player) => player.playerId);
+  const logs = await readTennisPlayerLogsCacheMany(sample);
+  let withGames = 0;
+  for (const games of logs.values()) {
+    if ((games?.length || 0) >= 5) withGames += 1;
+  }
+  return withGames >= 5;
+}
+
+export async function publishTennisDashboardCache(
+  overlay: OverlayLike | null,
+  opts?: { onlyPriority?: boolean }
+): Promise<{ players: number; logs: number; skipped: boolean }> {
+  const result = await mergeTennisPlayerLogsIncremental(overlay, opts);
+  return { players: result.players, logs: result.logs, skipped: result.skipped };
 }

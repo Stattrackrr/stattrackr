@@ -1,7 +1,7 @@
 /**
- * Incremental tennis match ingest: fetch the last 90 days of finished
- * ATP/WTA/Challenger/ITF singles, merge onto the current-season overlay,
- * and persist a gzip blob in Supabase (Redis only if it still fits).
+ * Incremental tennis match ingest: fetch recently finished matches and
+ * append only new/richer games onto existing Redis player-log shards.
+ * Historical games already in cache are left alone.
  */
 
 import sharedCache from '@/lib/sharedCache';
@@ -19,15 +19,15 @@ import {
   type ApiTennisPlayer,
   type ApiTennisStanding,
 } from '@/lib/tennis/apiTennis';
-import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
 import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 import type { TennisMatchRow, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 
 export const TENNIS_OVERLAY_CACHE_KEY = 'tennis_match_overlay_v1';
 export const TENNIS_OVERLAY_CACHE_TYPE = 'tennis_overlay';
-/** API fetch window. Overlay itself keeps the current season so Season/DVP match local. */
+/** Cold-start API window if Redis player logs are missing. Regular 8h runs use 3 days. */
 export const TENNIS_INGEST_LOOKBACK_DAYS = 90;
+export const TENNIS_INGEST_REFRESH_DAYS = 3;
 export const TENNIS_OVERLAY_KEEP_DAYS = 90;
 /** Upstash value limit is 10MB; packed 2026 overlay is ~13MB so Redis is optional. */
 const TENNIS_OVERLAY_REDIS_MAX_BYTES = 8 * 1024 * 1024;
@@ -103,10 +103,21 @@ function pruneOverlayMatches(matches: TennisMatchRow[], keepDays = TENNIS_OVERLA
   const startDate = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()));
   startDate.setUTCDate(startDate.getUTCDate() - keepDays);
   const recentCutoff = ymdUtc(startDate);
-  return matches.filter((row) => {
-    if (Number(row.season) === TENNIS_CURRENT_YEAR) return true;
-    return Boolean(row.date && String(row.date) >= recentCutoff);
-  });
+  const recent = matches.filter((row) => Boolean(row.date && String(row.date) >= recentCutoff));
+  const byId = new Map<string, TennisMatchRow[]>();
+  for (const row of recent) {
+    const id = String(row.playerId || '').trim();
+    if (!id) continue;
+    const list = byId.get(id);
+    if (list) list.push(row);
+    else byId.set(id, [row]);
+  }
+  const out: TennisMatchRow[] = [];
+  for (const games of byId.values()) {
+    const sorted = [...games].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    out.push(...(sorted.length > 80 ? sorted.slice(-80) : sorted));
+  }
+  return out;
 }
 
 export type TennisIngestResult = {
@@ -117,6 +128,10 @@ export type TennisIngestResult = {
   updated: number;
   overlayRows: number;
   warmedUpcoming: boolean;
+  persistOk?: boolean;
+  persistBytes?: number;
+  lookbackDays?: number;
+  shards?: { players: number; logs: number; skipped: boolean; added?: number; updated?: number };
 };
 
 type OverlayRuntime = {
@@ -141,14 +156,9 @@ function ymdUtc(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function overlayAgeMs(overlay: TennisMatchOverlay | null | undefined): number {
-  const ms = overlay?.fetchedAt ? Date.parse(overlay.fetchedAt) : NaN;
-  return Number.isFinite(ms) ? Date.now() - ms : Number.POSITIVE_INFINITY;
-}
-
-function ingestLookbackDays(overlay: TennisMatchOverlay | null | undefined): number {
-  // Regular 8h runs only need recent finished matches. Full 90-day window is for a stale/missing overlay.
-  return overlayAgeMs(overlay) < 3 * 24 * 60 * 60 * 1000 ? 16 : TENNIS_INGEST_LOOKBACK_DAYS;
+async function ingestLookbackDays(): Promise<number> {
+  const { tennisLogsLookHealthy } = await import('@/lib/tennis/dashboardCache');
+  return (await tennisLogsLookHealthy()) ? TENNIS_INGEST_REFRESH_DAYS : TENNIS_INGEST_LOOKBACK_DAYS;
 }
 
 function ingestWindow(now = new Date(), lookbackDays = TENNIS_INGEST_LOOKBACK_DAYS): { start: string; stop: string } {
@@ -476,35 +486,51 @@ export function applyIncrementalTennisFetch(
   return { cache, added: merged.added, updated: merged.updated };
 }
 
-export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promise<void> {
-  const packed = packTennisOverlay(overlay);
-  const packedBytes = Buffer.byteLength(JSON.stringify(packed));
-  const redisWrite =
-    packedBytes <= TENNIS_OVERLAY_REDIS_MAX_BYTES
-      ? sharedCache.setJSON(TENNIS_OVERLAY_CACHE_KEY, packed, TENNIS_OVERLAY_TTL_SECONDS)
-      : sharedCache.deleteJSON(TENNIS_OVERLAY_CACHE_KEY);
-  const supabaseOk = await Promise.all([
-    redisWrite,
-    setNBACache(
-      TENNIS_OVERLAY_CACHE_KEY,
-      TENNIS_OVERLAY_CACHE_TYPE,
-      packed,
-      TENNIS_OVERLAY_SUPABASE_TTL_MINUTES,
-      true
-    ),
-  ]);
-  if (!supabaseOk[1]) {
-    throw new Error(`Failed to persist tennis overlay to Supabase (${overlay.matches.length} matches, ${packedBytes} bytes)`);
-  }
-  rememberOverlay(overlay);
+async function publishOverlayShards(overlay: TennisMatchOverlay | null) {
+  const { mergeTennisPlayerLogsIncremental } = await import('@/lib/tennis/dashboardCache');
+  return mergeTennisPlayerLogsIncremental(overlay);
 }
 
-/** Pull ATP/WTA standings without re-ingesting the 16-day match window. */
+export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promise<boolean> {
+  rememberOverlay(overlay);
+  const packed = packTennisOverlay(overlay);
+  const packedBytes = Buffer.byteLength(JSON.stringify(packed));
+  const fits = packedBytes <= TENNIS_OVERLAY_REDIS_MAX_BYTES;
+  try {
+    if (fits) {
+      await sharedCache.setJSON(TENNIS_OVERLAY_CACHE_KEY, packed, TENNIS_OVERLAY_TTL_SECONDS);
+    } else {
+      await sharedCache.deleteJSON(TENNIS_OVERLAY_CACHE_KEY);
+    }
+  } catch (err) {
+    console.warn('[tennis ingest] overlay Redis write skipped', err);
+  }
+  if (!fits) {
+    console.warn(
+      `[tennis ingest] overlay persist skipped (${overlay.matches.length} matches, ${packedBytes} bytes)`
+    );
+    return false;
+  }
+  const supabaseOk = await setNBACache(
+    TENNIS_OVERLAY_CACHE_KEY,
+    TENNIS_OVERLAY_CACHE_TYPE,
+    packed,
+    TENNIS_OVERLAY_SUPABASE_TTL_MINUTES,
+    true
+  );
+  if (!supabaseOk) {
+    console.warn(
+      `[tennis ingest] overlay Supabase persist skipped (${overlay.matches.length} matches, ${packedBytes} bytes)`
+    );
+    return false;
+  }
+  return true;
+}
+
+/** Pull ATP/WTA standings into the Redis roster. Does not rewrite match history. */
 export async function refreshTennisStandings(): Promise<{ atp: number; wta: number; fetchedAt: string }> {
   const fetchedAt = new Date().toISOString();
   if (!apiKey()) return { atp: 0, wta: 0, fetchedAt };
-  const existing = (await readStoredTennisOverlay()) || getHydratedTennisOverlay();
-  if (!existing?.matches?.length) return { atp: 0, wta: 0, fetchedAt };
   const [atpStandingsJson, wtaStandingsJson] = await Promise.all([
     apiTennisCall({ method: 'get_standings', event_type: 'ATP' }),
     apiTennisCall({ method: 'get_standings', event_type: 'WTA' }),
@@ -540,18 +566,17 @@ export async function refreshTennisStandings(): Promise<{ atp: number; wta: numb
       imageUrl: p.imageUrl,
     });
   }
-  const overlay: TennisMatchOverlay = {
+  const { mergeTennisPlayerLogsIncremental } = await import('@/lib/tennis/dashboardCache');
+  await mergeTennisPlayerLogsIncremental({
     fetchedAt,
-    source: existing.source || 'api-tennis-incremental',
-    matches: existing.matches,
-    players: mergePlayers(existing.players || [], players),
+    matches: [],
+    players,
     standings: {
-      ATP: atpStandings.length ? atpStandings.map((row) => toRanking(row, 'ATP')) : existing.standings?.ATP || [],
-      WTA: wtaStandings.length ? wtaStandings.map((row) => toRanking(row, 'WTA')) : existing.standings?.WTA || [],
+      ATP: atpStandings.map((row) => toRanking(row, 'ATP')),
+      WTA: wtaStandings.map((row) => toRanking(row, 'WTA')),
     },
-  };
-  await saveTennisMatchOverlay(overlay);
-  return { atp: overlay.standings.ATP.length, wta: overlay.standings.WTA.length, fetchedAt };
+  });
+  return { atp: atpStandings.length, wta: wtaStandings.length, fetchedAt };
 }
 
 export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult & { fixtures: ApiTennisFixture[] }> {
@@ -559,46 +584,38 @@ export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult & 
     throw new Error('API_TENNIS_KEY is not configured');
   }
   const fetchedAt = new Date().toISOString();
-  const existingOverlay = (await readStoredTennisOverlay()) || getHydratedTennisOverlay();
-  const incoming = await fetchTennisIncrementalWindow(new Date(), ingestLookbackDays(existingOverlay));
-  if (!incoming.matches.length) {
-    if (existingOverlay?.matches?.length) {
-      rememberOverlay(existingOverlay);
-      return {
-        fetchedAt: existingOverlay.fetchedAt,
-        fixtureCount: incoming.fixtureCount,
-        matchCount: 0,
-        added: 0,
-        updated: 0,
-        overlayRows: existingOverlay.matches.length,
-        warmedUpcoming: false,
-        fixtures: incoming.fixtures,
-      };
-    }
-    throw new Error('Tennis ingest returned 0 matches; refusing to replace overlay');
+  const lookbackDays = await ingestLookbackDays();
+  const incoming = await fetchTennisIncrementalWindow(new Date(), lookbackDays);
+  if (!incoming.matches.length && lookbackDays >= TENNIS_INGEST_LOOKBACK_DAYS) {
+    throw new Error('Tennis ingest returned 0 matches; Redis logs are empty and the API window was empty');
   }
-  const disk = loadApiTennisCacheFromDiskOnly();
-  const prior = mergeTennisCacheWithOverlay(disk, existingOverlay);
-  const applied = applyIncrementalTennisFetch(prior, incoming, fetchedAt);
   const overlay: TennisMatchOverlay = {
     fetchedAt,
     source: 'api-tennis-incremental',
-    matches: pruneOverlayMatches(
-      mergeTennisMatchRows(existingOverlay?.matches || [], incoming.matches).matches
-    ),
-    players: mergePlayers(existingOverlay?.players || [], incoming.players),
+    matches: incoming.matches,
+    players: incoming.players,
     standings: incoming.standings,
   };
-  await saveTennisMatchOverlay(overlay);
+  rememberOverlay(overlay);
+  const shards = await publishOverlayShards(overlay);
+  try {
+    await sharedCache.deleteJSON(TENNIS_OVERLAY_CACHE_KEY);
+  } catch {
+    /* giant overlay blob is unused by the props page */
+  }
 
   return {
     fetchedAt,
     fixtureCount: incoming.fixtureCount,
     matchCount: incoming.matches.length,
-    added: applied.added,
-    updated: applied.updated,
-    overlayRows: overlay.matches.length,
+    added: shards.added || 0,
+    updated: shards.updated || 0,
+    overlayRows: incoming.matches.length,
     warmedUpcoming: false,
+    persistOk: true,
+    persistBytes: 0,
+    lookbackDays,
+    shards,
     fixtures: incoming.fixtures,
   };
 }

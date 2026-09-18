@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { warmCombinedPropsSnapshot } from '@/lib/combinedPropsSnapshot';
 import { buildTennisDvpLiveStore } from '@/lib/tennis/dvpLiveCache';
-import { getHydratedTennisOverlay, hydrateTennisMatchOverlay, refreshTennisStandings } from '@/lib/tennis/ingest';
 import { listLiveTennisEventIndex, warmTennisUpcomingFixtures } from '@/lib/tennis/nextGame';
 import { getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
 
@@ -11,34 +9,20 @@ export const runtime = 'nodejs';
 export const maxDuration = 180;
 
 /**
- * Refresh ATP/WTA rankings, rebuild per-tournament DVP for live/upcoming events,
- * then refresh the props-page list so ranks show as #12/32 (or up to 128 for slams).
+ * Rebuild live/upcoming DVP from Redis player logs (no 14MB overlay hydrate).
+ * Rankings stay on the 8h ingest cron. Combined paint has its own ping.
  */
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);
   if (!auth.authorized) return auth.response;
   try {
-    await hydrateTennisMatchOverlay();
-    let rankings = { atp: 0, wta: 0, fetchedAt: new Date().toISOString() };
     try {
-      rankings = await refreshTennisStandings();
+      await warmTennisUpcomingFixtures({ force: false });
     } catch {
-      /* keep last overlay standings */
-    }
-    try {
-      await warmTennisUpcomingFixtures({ force: true });
-    } catch {
-      /* keep whatever upcoming window is already in memory */
+      /* keep whatever upcoming window is already in Redis */
     }
     const live = await listLiveTennisEventIndex();
     const store = await buildTennisDvpLiveStore(live);
-    let shards = { players: 0, logs: 0, skipped: true };
-    try {
-      const { publishTennisDashboardCache } = await import('@/lib/tennis/dashboardCache');
-      shards = await publishTennisDashboardCache(getHydratedTennisOverlay(), { onlyPriority: true });
-    } catch {
-      /* props-player logs still republish on the 8h ingest cron */
-    }
     let propsCount = 0;
     try {
       const list = await getTennisPlayerPropsList({ refresh: true });
@@ -46,15 +30,9 @@ export async function GET(request: NextRequest) {
     } catch {
       propsCount = 0;
     }
-    try {
-      await warmCombinedPropsSnapshot({ origin: request.nextUrl.origin });
-    } catch {
-      /* keep the previous combined snapshot until the next successful warm */
-    }
     return NextResponse.json({
       success: true,
       builtAt: store.builtAt,
-      rankings,
       events: store.events.length,
       fieldSizes: store.events.map((event) => ({
         tour: event.tour,
@@ -63,7 +41,6 @@ export async function GET(request: NextRequest) {
         fieldSize: event.fieldSize,
       })),
       propsCount,
-      shards,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
