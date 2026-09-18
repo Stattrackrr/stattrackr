@@ -26,7 +26,7 @@ import type { TennisMatchRow, TennisRankingRow, TennisTour } from '@/lib/tennis/
 export const TENNIS_OVERLAY_CACHE_KEY = 'tennis_match_overlay_v1';
 export const TENNIS_OVERLAY_CACHE_TYPE = 'tennis_overlay';
 /** Cold-start API window if Redis player logs are missing. Regular 8h runs use 3 days. */
-export const TENNIS_INGEST_LOOKBACK_DAYS = 90;
+export const TENNIS_INGEST_LOOKBACK_DAYS = 14;
 export const TENNIS_INGEST_REFRESH_DAYS = 3;
 export const TENNIS_OVERLAY_KEEP_DAYS = 90;
 /** Upstash value limit is 10MB; packed 2026 overlay is ~13MB so Redis is optional. */
@@ -381,7 +381,8 @@ export async function hydrateTennisOverlayLocal(): Promise<TennisMatchOverlay | 
 
 export async function fetchTennisIncrementalWindow(
   now = new Date(),
-  lookbackDays = TENNIS_INGEST_LOOKBACK_DAYS
+  lookbackDays = TENNIS_INGEST_LOOKBACK_DAYS,
+  opts?: { includeLower?: boolean }
 ): Promise<{
   matches: TennisMatchRow[];
   players: ApiTennisPlayer[];
@@ -393,9 +394,10 @@ export async function fetchTennisIncrementalWindow(
   const mainEvents = API_TENNIS_SINGLES_EVENTS.filter(
     (event) => event.label === 'ATP' || event.label === 'WTA'
   );
-  const lowerEvents = API_TENNIS_SINGLES_EVENTS.filter(
-    (event) => event.label !== 'ATP' && event.label !== 'WTA'
-  );
+  const lowerEvents =
+    opts?.includeLower === true
+      ? API_TENNIS_SINGLES_EVENTS.filter((event) => event.label !== 'ATP' && event.label !== 'WTA')
+      : [];
   const fetchFixtures = (event: (typeof API_TENNIS_SINGLES_EVENTS)[number]) =>
     apiTennisCall({
       method: 'get_fixtures',
@@ -403,17 +405,13 @@ export async function fetchTennisIncrementalWindow(
       date_stop: stop,
       event_type_key: event.eventType,
     });
-  const [atpStandingsJson, wtaStandingsJson, ...mainBatches] = await Promise.all([
+  const [atpStandingsJson, wtaStandingsJson, ...fixtureBatches] = await Promise.all([
     apiTennisCall({ method: 'get_standings', event_type: 'ATP' }),
     apiTennisCall({ method: 'get_standings', event_type: 'WTA' }),
     ...mainEvents.map(fetchFixtures),
+    ...lowerEvents.map(fetchFixtures),
   ]);
-  const lowerBatches: unknown[] = [];
-  for (const event of lowerEvents) {
-    lowerBatches.push(await fetchFixtures(event));
-  }
   const fixtureEvents = [...mainEvents, ...lowerEvents];
-  const fixtureBatches = [...mainBatches, ...lowerBatches];
 
   const atpStandings = (Array.isArray(atpStandingsJson?.result) ? atpStandingsJson.result : []) as ApiTennisStanding[];
   const wtaStandings = (Array.isArray(wtaStandingsJson?.result) ? wtaStandingsJson.result : []) as ApiTennisStanding[];
