@@ -32,14 +32,26 @@ function tennisHeadshotQuery(url: string): string {
   return q >= 0 ? url.slice(q + 1) : '';
 }
 
-/** Always the cached local file (via headshot API), never a different remote photo. */
+function staticTennisHeadshotPath(playerId: string, stored?: string | null): string {
+  const fromStored = String(stored || '').trim();
+  if (isLocalTennisHeadshotPath(fromStored)) return fromStored;
+  const apiMatch = fromStored.match(/^\/api\/tennis\/headshot\/([^/?#]+)/i);
+  const id = String(playerId || apiMatch?.[1] || '').trim();
+  const file = apiMatch
+    ? `/images/tennis/headshots/${decodeURIComponent(apiMatch[1])}.jpg`
+    : `/images/tennis/headshots/${id}.jpg`;
+  const qs = tennisHeadshotQuery(fromStored);
+  return qs ? `${file}?${qs}` : file;
+}
+
+/** Cached local file from /public — skip the per-id API route in dev. */
 export function clientTennisHeadshotUrl(
   playerId?: string | null,
   stored?: string | null
 ): string | null {
   const id = String(playerId || '').trim();
   const url = String(stored || '').trim();
-  if (id) return tennisHeadshotApiPath(id, tennisHeadshotQuery(url));
-  if (isLocalTennisHeadshotPath(url) || url.startsWith('/api/tennis/headshot/')) return url;
+  if (isLocalTennisHeadshotPath(url)) return url;
+  if (id || url.startsWith('/api/tennis/headshot/')) return staticTennisHeadshotPath(id, url);
   return null;
 }

@@ -172,6 +172,10 @@ function rowSportKickoffLabel(rowSport: 'nba' | 'afl' | 'atp' | 'wta'): string {
   return 'Tipoff';
 }
 
+function kickoffMaxAheadMs(rowSport: 'nba' | 'afl' | 'atp' | 'wta'): number {
+  return isTennisPropsSport(rowSport) ? 21 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+}
+
 function sportSelectorClass(active: boolean, shellDark: boolean): string {
   const base =
     'flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border transition-all duration-200 flex items-center justify-center';
@@ -531,15 +535,18 @@ function TipoffCountdown({
   game,
   isDark,
   label = 'Tipoff',
+  maxAheadMs,
 }: {
   game: Game | null;
   isDark: boolean;
   label?: string;
+  maxAheadMs?: number;
 }) {
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
   const [isBeyond24h, setIsBeyond24h] = useState(false);
   const liveWindowMs = 3 * 60 * 60 * 1000;
+  const aheadLimitMs = maxAheadMs ?? 7 * 24 * 60 * 60 * 1000;
 
   useEffect(() => {
     if (!game) {
@@ -556,7 +563,7 @@ function TipoffCountdown({
       if (
         !Number.isNaN(gameDateTime.getTime()) &&
         gameDateTime.getTime() > now - liveWindowMs &&
-        gameDateTime.getTime() < now + (7 * 24 * 60 * 60 * 1000)
+        gameDateTime.getTime() < now + aheadLimitMs
       ) {
         tipoffDate = gameDateTime;
       }
@@ -574,7 +581,7 @@ function TipoffCountdown({
         if (
           parsedStatus.getTime() > now - liveWindowMs &&
           !isMidnight &&
-          parsedStatus.getTime() < now + (7 * 24 * 60 * 60 * 1000)
+          parsedStatus.getTime() < now + aheadLimitMs
         ) {
           tipoffDate = parsedStatus;
         }
@@ -661,7 +668,7 @@ function TipoffCountdown({
     const interval = setInterval(updateCountdown, 1000);
     
     return () => clearInterval(interval);
-  }, [game]);
+  }, [game, aheadLimitMs]);
 
   if (isGameInProgress) {
     return (
@@ -1102,8 +1109,8 @@ function normalizeNbaTeam(team: string): string {
 
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v6';
 
-const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v17';
-const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v22';
+const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v18';
+const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v23';
 
 
 function aflPropHasHistoricalStats(row: {
@@ -1278,6 +1285,13 @@ function isTennisListProp(row: PlayerProp): boolean {
   );
 }
 
+function tennisListRowsHaveFormStats(props: PlayerProp[]): boolean {
+  const rows = props.filter(isTennisListProp);
+  if (!rows.length) return false;
+  const withStats = rows.filter(aflPropHasHistoricalStats).length;
+  return withStats >= Math.max(1, Math.ceil(rows.length * 0.15));
+}
+
 function resolvePropsRowSport(
   prop: PlayerProp,
   sport: PropsSportMode
@@ -1363,7 +1377,7 @@ function readSecondaryPropsSessionCache(sport: SecondaryPropsSport): SecondaryPr
       ? propsRaw.filter(isTennisListProp)
       : propsRaw;
     const statsFresh = isTennisPropsSport(sport)
-      ? props.length > 0
+      ? tennisListRowsHaveFormStats(props)
       : !aflPropsNeedStatsBackfill(props);
     return {
       props,
@@ -4297,8 +4311,8 @@ export default function NBALandingPage() {
     if (skipPropsRefetchOnceRef.current) {
       skipPropsRefetchOnceRef.current = false;
       const hasWarmRows = isTennisPropsSport(propsSport)
-        ? tennisPropsForTour(aflProps, propsSport).length > 0 ||
-          tennisPropsForTour(tennisCombinedPropsRef.current, propsSport).length > 0
+        ? tennisListRowsHaveFormStats(tennisPropsForTour(aflProps, propsSport)) ||
+          tennisListRowsHaveFormStats(tennisPropsForTour(tennisCombinedPropsRef.current, propsSport))
         : aflProps.length > 0 || aflGames.length > 0;
       if (hasWarmRows) {
         setSecondaryPropsFetchComplete(true);
@@ -4321,8 +4335,8 @@ export default function NBALandingPage() {
     const secondaryWarmHydrateCanSkipFetch = (): boolean => {
       if (isTennisPropsSport(listSport)) {
         return (
-          tennisPropsForTour(aflProps, listSport).length > 0 ||
-          tennisPropsForTour(tennisCombinedPropsRef.current, listSport).length > 0
+          tennisListRowsHaveFormStats(tennisPropsForTour(aflProps, listSport)) ||
+          tennisListRowsHaveFormStats(tennisPropsForTour(tennisCombinedPropsRef.current, listSport))
         );
       }
       const hasListRows = aflProps.some((p) => !isTennisPropStatType(p.statType));
@@ -9396,6 +9410,7 @@ export default function NBALandingPage() {
                                     game={getTipoffGameForRow(prop, rowSport)}
                                     isDark={mounted && isDark}
                                     label={rowSportKickoffLabel(rowSport)}
+                                    maxAheadMs={kickoffMaxAheadMs(rowSport)}
                                   />
                                 </td>
                                 
@@ -10387,7 +10402,7 @@ export default function NBALandingPage() {
                                     </div>
                                     {/* Tipoff Countdown - Next to bookmakers on the right */}
                                     <div className="flex items-start justify-center flex-shrink-0 pr-1 pt-0.5">
-                                      <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} />
+                                      <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} maxAheadMs={kickoffMaxAheadMs(rowSport)} />
                                     </div>
                                   </div>
                                 );
@@ -10395,7 +10410,7 @@ export default function NBALandingPage() {
                               {/* Tipoff Countdown - Show if no bookmakers */}
                               {(!prop.bookmakerLines || prop.bookmakerLines.length === 0) && (
                                 <div className="flex items-center justify-start pr-1">
-                                  <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} />
+                                  <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} maxAheadMs={kickoffMaxAheadMs(rowSport)} />
                                 </div>
                               )}
                             </div>

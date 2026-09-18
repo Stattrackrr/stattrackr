@@ -60,6 +60,19 @@ export function isCombinedPropsSnapshotStale(snapshot: CombinedPropsSnapshot): b
   return !Number.isFinite(staleAt) || staleAt <= Date.now();
 }
 
+export function combinedTennisHasFormStats(snapshot: CombinedPropsSnapshot): boolean {
+  const rows = snapshot.tennis?.props || [];
+  if (!rows.length) return true;
+  const withStats = rows.filter(
+    (row) =>
+      row.last10Avg != null ||
+      row.last5Avg != null ||
+      row.seasonAvg != null ||
+      row.h2hAvg != null
+  ).length;
+  return withStats >= Math.max(1, Math.ceil(rows.length * 0.15));
+}
+
 export function combinedSnapshotAflAssemblyReady(snapshot: CombinedPropsSnapshot): boolean {
   const games = snapshot.afl?.games ?? [];
   const props = snapshot.afl?.props ?? [];

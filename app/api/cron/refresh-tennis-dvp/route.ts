@@ -32,19 +32,19 @@ export async function GET(request: NextRequest) {
     }
     const live = await listLiveTennisEventIndex();
     const store = await buildTennisDvpLiveStore(live);
-    let propsCount = 0;
-    try {
-      const list = await getTennisPlayerPropsList({ refresh: true });
-      propsCount = list.propsCount;
-    } catch {
-      propsCount = 0;
-    }
     let shards = { players: 0, logs: 0, skipped: true };
     try {
       const { publishTennisDashboardCache } = await import('@/lib/tennis/dashboardCache');
       shards = await publishTennisDashboardCache(getHydratedTennisOverlay(), { onlyPriority: true });
     } catch {
       /* props-player logs still republish on the 8h ingest cron */
+    }
+    let propsCount = 0;
+    try {
+      const list = await getTennisPlayerPropsList({ refresh: true });
+      propsCount = list.propsCount;
+    } catch {
+      propsCount = 0;
     }
     try {
       await warmCombinedPropsSnapshot({ origin: request.nextUrl.origin });

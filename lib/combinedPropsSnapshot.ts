@@ -13,6 +13,7 @@ import {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
   COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
   combinedSnapshotAflAssemblyReady,
+  combinedTennisHasFormStats,
   getCombinedPropsSnapshot,
   slimCombinedPropsSnapshotForClient,
 } from '@/lib/combinedPropsSnapshotPaint';
@@ -417,9 +418,16 @@ export async function buildCombinedPropsSnapshot(
 
   if (snapshot.success && writeCache && !debugStats && snapshotReadyToCache(snapshot)) {
     let toStore = snapshot;
-    if (TENNIS_PUBLIC_ENABLED && !(snapshot.tennis?.props?.length)) {
+    if (TENNIS_PUBLIC_ENABLED) {
       const previous = await getCombinedPropsSnapshot();
-      if (previous?.tennis?.props?.length) {
+      if (!(snapshot.tennis?.props?.length) && previous?.tennis?.props?.length) {
+        toStore = { ...snapshot, tennis: previous.tennis };
+      } else if (
+        snapshot.tennis?.props?.length &&
+        !combinedTennisHasFormStats(snapshot) &&
+        previous &&
+        combinedTennisHasFormStats(previous)
+      ) {
         toStore = { ...snapshot, tennis: previous.tennis };
       }
     }

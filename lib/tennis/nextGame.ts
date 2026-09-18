@@ -584,6 +584,77 @@ export function tennisCommenceTimeForMatch(
   return hit.tipoff || null;
 }
 
+export function tennisUpcomingTipoffFor(
+  byPlayerId: Map<string, TennisNextGame>,
+  upcoming: TennisNextGame[],
+  opts: {
+    playerId?: string | null;
+    playerName?: string | null;
+    matchId?: string | null;
+    homeName?: string | null;
+    awayName?: string | null;
+  }
+): string | null {
+  const id = String(opts.playerId || '').trim();
+  const fromId = id ? byPlayerId.get(id) : undefined;
+  if (fromId) {
+    return (
+      tennisCommenceTimeForMatch([fromId], {
+        matchId: fromId.matchId,
+        homeName: fromId.homeName,
+        awayName: fromId.awayName,
+      }) || fromId.tipoff
+    );
+  }
+  const name = String(opts.playerName || '').trim();
+  const fromName = name ? byPlayerId.get(nameKey(name)) : undefined;
+  if (fromName) {
+    return (
+      tennisCommenceTimeForMatch([fromName], {
+        matchId: fromName.matchId,
+        homeName: fromName.homeName,
+        awayName: fromName.awayName,
+      }) || fromName.tipoff
+    );
+  }
+  return tennisCommenceTimeForMatch(upcoming, {
+    matchId: opts.matchId,
+    homeName: opts.homeName,
+    awayName: opts.awayName,
+  });
+}
+
+export async function overlayTennisStartTimes<
+  T extends {
+    playerId?: string | null;
+    playerName?: string;
+    gameId?: string;
+    homeTeam?: string;
+    awayTeam?: string;
+    gameDate?: string | null;
+    commenceTime?: string | null;
+  },
+>(rows: T[]): Promise<T[]> {
+  if (!rows.length) return rows;
+  const byPlayerId = await listUpcomingTennisByPlayer({ waitForFresh: false });
+  const upcoming = uniqueUpcomingFromMap(byPlayerId);
+  if (!byPlayerId.size) return rows;
+  return rows.map((row) => {
+    const tip = tennisUpcomingTipoffFor(byPlayerId, upcoming, {
+      playerId: row.playerId,
+      playerName: row.playerName,
+      matchId: row.gameId,
+      homeName: row.homeTeam,
+      awayName: row.awayTeam,
+    });
+    if (!tip) return row;
+    const next = { ...row };
+    if ('gameDate' in row) next.gameDate = tip;
+    if ('commenceTime' in row) next.commenceTime = tip;
+    return next;
+  });
+}
+
 function uniqueUpcomingFromMap(byPlayerId: Map<string, TennisNextGame>): TennisNextGame[] {
   const byMatch = new Map<string, TennisNextGame>();
   for (const game of byPlayerId.values()) {

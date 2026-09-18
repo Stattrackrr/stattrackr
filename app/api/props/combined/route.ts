@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   combinedSnapshotAflAssemblyReady,
+  combinedTennisHasFormStats,
   filterCombinedSnapshotAflEligibility,
   getCombinedPropsPaintSnapshot,
   getCombinedPropsSnapshot,
@@ -24,6 +25,39 @@ function wantsFullCombinedSnapshot(request: NextRequest, cronSecret?: string): b
   );
 }
 
+function kickTennisListRebuild() {
+  void import('@/lib/tennis/playerPropsList')
+    .then(({ getTennisPlayerPropsList }) => getTennisPlayerPropsList())
+    .catch((error) => {
+      console.warn(
+        '[Props Combined] Background tennis list rebuild failed:',
+        error instanceof Error ? error.message : error
+      );
+    });
+}
+
+async function withLiveTennisStartTimes<T extends { tennis?: { games?: unknown[]; props?: unknown[] } | null }>(
+  snapshot: T
+): Promise<T> {
+  if (!snapshot?.tennis?.props?.length) return snapshot;
+  try {
+    const { overlayTennisStartTimes } = await import('@/lib/tennis/nextGame');
+    const tennis = snapshot.tennis;
+    const [props, games] = await Promise.all([
+      overlayTennisStartTimes(tennis.props as Array<{ gameDate?: string | null; commenceTime?: string | null }>),
+      overlayTennisStartTimes(
+        (tennis.games || []) as Array<{ commenceTime?: string | null; homeTeam?: string; awayTeam?: string; gameId?: string }>
+      ),
+    ]);
+    return {
+      ...snapshot,
+      tennis: { ...tennis, props, games },
+    };
+  } catch {
+    return snapshot;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const refresh = request.nextUrl.searchParams.get('refresh') === '1';
   const debugStats = request.nextUrl.searchParams.get('debugStats') === '1';
@@ -39,6 +73,7 @@ export async function GET(request: NextRequest) {
           ? paintSnapshot
           : await getCombinedPropsSnapshot();
       if (cachedSnapshot && combinedSnapshotAflAssemblyReady(cachedSnapshot)) {
+        const tennisNeedsForm = !combinedTennisHasFormStats(cachedSnapshot);
         const stale = isCombinedPropsSnapshotStale(cachedSnapshot);
         if (stale) {
           void import('@/lib/combinedPropsSnapshot')
@@ -49,18 +84,23 @@ export async function GET(request: NextRequest) {
                 error instanceof Error ? error.message : error
               );
             });
+        } else if (tennisNeedsForm) {
+          kickTennisListRebuild();
         }
 
-        const clientSnapshot = wantsFull
+        const painted = wantsFull
           ? filterCombinedSnapshotAflEligibility(cachedSnapshot)
-          : filterCombinedSnapshotAflEligibility(paintSnapshot && combinedSnapshotAflAssemblyReady(paintSnapshot)
-              ? paintSnapshot
-              : slimCombinedPropsSnapshotForClient(cachedSnapshot));
+          : filterCombinedSnapshotAflEligibility(
+              paintSnapshot && combinedSnapshotAflAssemblyReady(paintSnapshot)
+                ? paintSnapshot
+                : slimCombinedPropsSnapshotForClient(cachedSnapshot)
+            );
+        const clientSnapshot = await withLiveTennisStartTimes(painted);
         return NextResponse.json(
           {
             ...clientSnapshot,
             cachedSnapshot: true,
-            backgroundRefreshStarted: stale,
+            backgroundRefreshStarted: stale || tennisNeedsForm,
             paintSnapshot: !wantsFull,
           },
           {
@@ -89,9 +129,11 @@ export async function GET(request: NextRequest) {
     const outgoing =
       readySnapshot && combinedSnapshotAflAssemblyReady(readySnapshot) ? readySnapshot : snapshot;
 
-    const clientSnapshot = wantsFull
-      ? filterCombinedSnapshotAflEligibility(outgoing)
-      : slimCombinedPropsSnapshotForClient(filterCombinedSnapshotAflEligibility(outgoing));
+    const clientSnapshot = await withLiveTennisStartTimes(
+      wantsFull
+        ? filterCombinedSnapshotAflEligibility(outgoing)
+        : slimCombinedPropsSnapshotForClient(filterCombinedSnapshotAflEligibility(outgoing))
+    );
 
     return NextResponse.json(
       {

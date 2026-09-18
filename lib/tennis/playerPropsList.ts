@@ -5,8 +5,8 @@
  */
 
 import sharedCache from '@/lib/sharedCache';
-import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
-import { readTennisRosterCache } from '@/lib/tennis/dashboardCache';
+import { hydrateTennisMatchOverlay, getHydratedTennisOverlay } from '@/lib/tennis/ingest';
+import { readTennisPlayerLogsCacheMany, readTennisRosterCache } from '@/lib/tennis/dashboardCache';
 import { TENNIS_CURRENT_YEAR, loadPlayerMatches, loadTennisPlayers, tennisDvpProfile } from '@/lib/tennis/data';
 import {
   findCachedTennisDvpEvent,
@@ -25,7 +25,7 @@ import {
 import {
   listLiveTennisEventIndex,
   listUniqueUpcomingTennisGames,
-  tennisCommenceTimeForMatch,
+  tennisUpcomingTipoffFor,
   tennisLiveEventPlayerIds,
   tennisLiveEventStage,
   findLiveTennisEvent,
@@ -54,7 +54,7 @@ import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisMatchRow, TennisTour } from '@/lib/tennis/types';
 
 export const TENNIS_USER_NO_ODDS = 'No odds available. Come back later.';
-export const TENNIS_LIST_CACHE_KEY = 'tennis_player_props_list_v30';
+export const TENNIS_LIST_CACHE_KEY = 'tennis_player_props_list_v31';
 const TENNIS_LIST_CACHE_TTL_SECONDS = 20 * 60;
 const TENNIS_EMPTY_TOUR_TTL_SECONDS = 2 * 60;
 
@@ -163,6 +163,41 @@ function parseLineNumber(raw: string | number | null | undefined): number | null
 function oddsPresent(value: string | undefined): boolean {
   const v = String(value || '').trim();
   return Boolean(v) && v !== 'N/A';
+}
+
+function tennisListHasFormStats(rows: TennisListPropRow[] | null | undefined): boolean {
+  const list = rows || [];
+  if (!list.length) return false;
+  const withStats = list.filter(
+    (row) =>
+      row.last10Avg != null ||
+      row.last5Avg != null ||
+      row.seasonAvg != null ||
+      row.h2hAvg != null
+  ).length;
+  return withStats >= Math.max(1, Math.ceil(list.length * 0.15));
+}
+
+function matchesInFormWindow(rows: TennisMatchRow[]): TennisMatchRow[] {
+  const sorted = [...rows].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  const recent = sorted.filter((row) => {
+    const season = Number(row.season);
+    return season === TENNIS_CURRENT_YEAR || season === TENNIS_CURRENT_YEAR - 1;
+  });
+  return recent.length ? recent : sorted.slice(-40);
+}
+
+async function readUsableTennisListCache(): Promise<TennisPlayerPropsListPayload | null> {
+  const cached = await sharedCache.getJSON<TennisPlayerPropsListPayload>(TENNIS_LIST_CACHE_KEY);
+  if (
+    cached?.success &&
+    Array.isArray(cached.data) &&
+    cached.data.length > 0 &&
+    tennisListHasFormStats(cached.data)
+  ) {
+    return cached;
+  }
+  return null;
 }
 
 function avg(values: number[]): number | null {
@@ -544,13 +579,11 @@ function snapshotToGame(
 
 async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayload> {
   await hydrateTennisMatchOverlay({ allowRemote: false });
-  let playerRows = loadTennisPlayers();
+  const roster = await readTennisRosterCache();
+  let playerRows = roster?.players || [];
   if (!playerRows.length) {
-    playerRows = loadTennisPlayers({ currentOnly: true });
-  }
-  if (!playerRows.length) {
-    const roster = await readTennisRosterCache();
-    playerRows = roster?.players || [];
+    playerRows = loadTennisPlayers();
+    if (!playerRows.length) playerRows = loadTennisPlayers({ currentOnly: true });
   }
   const [index, catalog, players, liveEvents, dvpStore] = await Promise.all([
     listTennisOddsIndex(),
@@ -609,12 +642,34 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
   const matchCache = new Map<string, TennisMatchRow[]>();
   const dvpCache = new Map<string, ReturnType<typeof tennisDvpProfile>>();
   const dvpBoards = new Map<string, TennisCachedDvpEvent>();
+  const listPlayerIds = [
+    ...new Set(
+      snapshots.flatMap((snapshot) => {
+        const home = lookup.find(snapshot.homeName);
+        const away = lookup.find(snapshot.awayName);
+        return [home?.playerId, away?.playerId].filter((id): id is string => Boolean(id));
+      })
+    ),
+  ];
+  const redisLogs = listPlayerIds.length
+    ? await readTennisPlayerLogsCacheMany(listPlayerIds)
+    : new Map<string, TennisMatchRow[]>();
+  if (listPlayerIds.length && redisLogs.size === 0) {
+    const retry = await readTennisPlayerLogsCacheMany(listPlayerIds);
+    retry.forEach((games, id) => redisLogs.set(id, games));
+  }
+  const overlayReady = Boolean(getHydratedTennisOverlay()?.matches?.length);
 
   const matchesFor = (playerName: string, playerId: string | null): TennisMatchRow[] => {
     const key = `${playerId || ''}|${playerName.toLowerCase()}`;
     const cached = matchCache.get(key);
     if (cached) return cached;
-    const rows = loadPlayerMatches({ playerId, playerName });
+    const fromRedis = playerId ? redisLogs.get(playerId) || [] : [];
+    const rows = fromRedis.length
+      ? fromRedis
+      : overlayReady
+        ? loadPlayerMatches({ playerId, playerName })
+        : [];
     matchCache.set(key, rows);
     return rows;
   };
@@ -817,9 +872,7 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
       const opponent = side.isHome ? snapshot.awayName : snapshot.homeName;
       const opponentId = side.opponentMeta?.playerId || null;
       const allMatches = matchesFor(playerName, playerId);
-      const recentMatches = allMatches.filter(
-        (row) => row.season === TENNIS_CURRENT_YEAR || row.season === TENNIS_CURRENT_YEAR - 1
-      );
+      const recentMatches = matchesInFormWindow(allMatches);
       const h2hRows = allMatches.filter((row) => isH2hMatch(row, opponent, opponentId));
       const headshotUrl = clientTennisHeadshotUrl(
         playerId,
@@ -1023,17 +1076,30 @@ async function overlayLiveTennisDvp(
 
 function overlayUpcomingTimes(
   payload: TennisPlayerPropsListPayload,
-  upcoming: Awaited<ReturnType<typeof listUniqueUpcomingTennisGames>>
+  upcoming: Awaited<ReturnType<typeof listUniqueUpcomingTennisGames>>,
+  byPlayerId?: Map<string, TennisNextGame>
 ): TennisPlayerPropsListPayload {
-  if (!upcoming.length) return payload;
-  const tipFor = (gameId: string, home: string, away: string) =>
-    tennisCommenceTimeForMatch(upcoming, { matchId: gameId, homeName: home, awayName: away });
+  if (!upcoming.length && !byPlayerId?.size) return payload;
+  const tipFor = (
+    gameId: string,
+    home: string,
+    away: string,
+    playerId?: string | null,
+    playerName?: string | null
+  ) =>
+    tennisUpcomingTipoffFor(byPlayerId || new Map(), upcoming, {
+      playerId,
+      playerName,
+      matchId: gameId,
+      homeName: home,
+      awayName: away,
+    });
   const games = payload.games.map((game) => {
     const tip = tipFor(game.gameId, game.homeTeam, game.awayTeam);
     return tip && tip !== game.commenceTime ? { ...game, commenceTime: tip } : game;
   });
   const data = payload.data.map((row) => {
-    const tip = tipFor(row.gameId, row.homeTeam, row.awayTeam);
+    const tip = tipFor(row.gameId, row.homeTeam, row.awayTeam, row.playerId, row.playerName);
     return tip && tip !== row.commenceTime ? { ...row, commenceTime: tip } : row;
   });
   return { ...payload, games, data };
@@ -1161,7 +1227,7 @@ export async function applyTennisListLiveOverlay(
   try {
     const byPlayerId = await listUpcomingTennisByPlayer({ waitForFresh: false });
     const upcoming = await listUniqueUpcomingTennisGames({ waitForFresh: false });
-    next = overlayUpcomingTimes(next, upcoming);
+    next = overlayUpcomingTimes(next, upcoming, byPlayerId);
     next = overlayUpcomingOpponentMeta(next, byPlayerId);
   } catch {
     /* keep snapshot times if upcoming is cold */
@@ -1180,10 +1246,12 @@ export async function applyTennisListLiveOverlay(
   return { ...next, data: fillMissingTennisOpponentIoc(next.data) };
 }
 
+let listBuildInflight: Promise<TennisPlayerPropsListPayload> | null = null;
+
 async function loadTennisPlayerPropsList(refresh?: boolean): Promise<TennisPlayerPropsListPayload> {
   if (!refresh) {
-    const cached = await sharedCache.getJSON<TennisPlayerPropsListPayload>(TENNIS_LIST_CACHE_KEY);
-    if (cached?.success && Array.isArray(cached.data) && cached.data.length > 0) {
+    const cached = await readUsableTennisListCache();
+    if (cached) {
       try {
         const data = attachTennisHeadshots(cached.data);
         return data === cached.data ? cached : { ...cached, data };
@@ -1192,12 +1260,30 @@ async function loadTennisPlayerPropsList(refresh?: boolean): Promise<TennisPlaye
       }
     }
   }
-  let payload = await buildTennisPlayerPropsList();
-  if (payload.data.length > 0) {
-    payload = await applyTennisListLiveOverlay(payload);
-    await sharedCache.setJSON(TENNIS_LIST_CACHE_KEY, payload, TENNIS_LIST_CACHE_TTL_SECONDS);
-  }
-  return payload;
+  if (listBuildInflight) return listBuildInflight;
+  listBuildInflight = (async () => {
+    let payload = await buildTennisPlayerPropsList();
+    if (payload.data.length > 0) {
+      payload = await applyTennisListLiveOverlay(payload);
+      if (tennisListHasFormStats(payload.data)) {
+        await sharedCache.setJSON(TENNIS_LIST_CACHE_KEY, payload, TENNIS_LIST_CACHE_TTL_SECONDS);
+        return payload;
+      }
+    }
+    const previous = await readUsableTennisListCache();
+    if (previous) {
+      try {
+        const data = attachTennisHeadshots(previous.data);
+        return data === previous.data ? previous : { ...previous, data };
+      } catch {
+        return previous;
+      }
+    }
+    return payload;
+  })().finally(() => {
+    listBuildInflight = null;
+  });
+  return listBuildInflight;
 }
 
 export async function getTennisPlayerPropsList(opts?: {
