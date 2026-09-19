@@ -1,7 +1,13 @@
 import sharedCache from '@/lib/sharedCache';
 import { TENNIS_CURRENT_YEAR, tennisDvpProfile, type TennisDvpMetricRow, type TennisTour } from '@/lib/tennis/data';
 import { tennisEventPlaceCore } from '@/lib/tennis/chartStats';
-import { TENNIS_DVP_WINDOWS, type TennisDvpStage, type TennisDvpWindow } from '@/lib/tennis/dvpShared';
+import {
+  TENNIS_DVP_WINDOWS,
+  tennisDvpTournamentBestOf,
+  type TennisDvpBestOf,
+  type TennisDvpStage,
+  type TennisDvpWindow,
+} from '@/lib/tennis/dvpShared';
 import { readTennisPlayerLogsCacheMany, readTennisRosterCache } from '@/lib/tennis/dashboardCache';
 import {
   listLiveTennisEventIndex,
@@ -9,7 +15,7 @@ import {
 } from '@/lib/tennis/nextGame';
 import type { TennisMatchRow } from '@/lib/tennis/types';
 
-export const TENNIS_DVP_LIVE_CACHE_KEY = 'tennis_dvp_live_v10';
+export const TENNIS_DVP_LIVE_CACHE_KEY = 'tennis_dvp_live_v13';
 const TENNIS_DVP_LIVE_TTL_SECONDS = 2 * 60 * 60;
 
 export type TennisCachedDvpPlayer = {
@@ -25,6 +31,7 @@ export type TennisCachedDvpPlayer = {
 export type TennisCachedDvpEvent = {
   tour: TennisTour;
   stage: TennisDvpStage;
+  bestOf?: TennisDvpBestOf;
   tournamentKey: string | null;
   tournamentName: string | null;
   fieldSize: number;
@@ -39,9 +46,9 @@ export type TennisDvpLiveStore = {
 
 type Runtime = { store: TennisDvpLiveStore | null; loadedAt: number };
 function runtime(): Runtime {
-  const g = globalThis as typeof globalThis & { __tennisDvpLiveV9?: Runtime };
-  if (!g.__tennisDvpLiveV9) g.__tennisDvpLiveV9 = { store: null, loadedAt: 0 };
-  return g.__tennisDvpLiveV9;
+  const g = globalThis as typeof globalThis & { __tennisDvpLiveV13?: Runtime };
+  if (!g.__tennisDvpLiveV13) g.__tennisDvpLiveV13 = { store: null, loadedAt: 0 };
+  return g.__tennisDvpLiveV13;
 }
 
 function placeKey(name: string | null | undefined): string {
@@ -225,29 +232,24 @@ export async function buildTennisDvpLiveStore(live?: TennisLiveEventIndex): Prom
       boards.push({ stage: 'qualifying', extraPlayerIds: event.qualifyingPlayerIds });
     }
     for (const board of boards) {
+      const profile = tennisDvpProfile({
+        tour: event.tour,
+        year: TENNIS_CURRENT_YEAR,
+        tournamentName: event.tournamentName,
+        tournamentKey: event.tournamentKey,
+        extraPlayerIds: board.extraPlayerIds,
+        extraMatches,
+        liveTournamentKeys: index.keys,
+        liveTournamentNames: index.names,
+        window: 'last10',
+        includeField: true,
+        includeAllWindows: true,
+        stage: board.stage,
+        skipOverlay: true,
+      });
       const windows: TennisCachedDvpEvent['windows'] = {};
-      let fieldSize = 0;
-      let tournamentName = event.tournamentName;
-      let tournamentKey = event.tournamentKey;
       for (const window of TENNIS_DVP_WINDOWS) {
-        const profile = tennisDvpProfile({
-          tour: event.tour,
-          year: TENNIS_CURRENT_YEAR,
-          tournamentName: event.tournamentName,
-          tournamentKey: event.tournamentKey,
-          extraPlayerIds: board.extraPlayerIds,
-          extraMatches,
-          liveTournamentKeys: index.keys,
-          liveTournamentNames: index.names,
-          window,
-          includeField: true,
-          stage: board.stage,
-          skipOverlay: true,
-        });
-        fieldSize = profile.fieldSize;
-        tournamentName = profile.tournamentName || tournamentName;
-        tournamentKey = profile.tournamentKey || tournamentKey;
-        windows[window] = (profile.field || []).map((row) => ({
+        windows[window] = (profile.windows?.[window] || profile.field || []).map((row) => ({
           id: row.id,
           name: row.name,
           ioc: row.ioc,
@@ -257,10 +259,15 @@ export async function buildTennisDvpLiveStore(live?: TennisLiveEventIndex): Prom
           metrics: row.metrics,
         }));
       }
+      const fieldSize = profile.fieldSize;
+      const tournamentName = profile.tournamentName || event.tournamentName;
+      const tournamentKey = profile.tournamentKey || event.tournamentKey;
+      const bestOf = profile.bestOf;
       const last10 = windows.last10 || [];
       events.push({
         tour: event.tour,
         stage: board.stage,
+        bestOf,
         tournamentKey,
         tournamentName,
         fieldSize,
@@ -306,34 +313,33 @@ export async function buildTennisDvpWindowsFromRedis(opts: {
     ]),
     readTennisRosterCache(),
   ]);
+  const profile = tennisDvpProfile({
+    tour: opts.tour,
+    year: opts.year || TENNIS_CURRENT_YEAR,
+    opponentName: opts.opponentName,
+    opponentId: opts.opponentId,
+    playerName: opts.playerName,
+    playerId: opts.playerId,
+    tournamentName: opts.tournamentName,
+    tournamentKey: opts.tournamentKey,
+    extraPlayerIds,
+    extraMatches,
+    extraPlayers: roster?.players || [],
+    liveTournamentKeys: opts.live.keys,
+    liveTournamentNames: opts.live.names,
+    window: 'last10',
+    includeField: true,
+    includeAllWindows: true,
+    stage: opts.stage,
+    skipOverlay: true,
+  });
+  const fieldSize = profile.fieldSize;
+  const tournamentName = profile.tournamentName || opts.tournamentName || null;
+  const tournamentKey = profile.tournamentKey || opts.tournamentKey || null;
+  const bestOf = profile.bestOf;
   const windows: TennisCachedDvpEvent['windows'] = {};
-  let fieldSize = 0;
-  let tournamentName = opts.tournamentName || null;
-  let tournamentKey = opts.tournamentKey || null;
   for (const window of TENNIS_DVP_WINDOWS) {
-    const profile = tennisDvpProfile({
-      tour: opts.tour,
-      year: opts.year || TENNIS_CURRENT_YEAR,
-      opponentName: opts.opponentName,
-      opponentId: opts.opponentId,
-      playerName: opts.playerName,
-      playerId: opts.playerId,
-      tournamentName: opts.tournamentName,
-      tournamentKey: opts.tournamentKey,
-      extraPlayerIds,
-      extraMatches,
-      extraPlayers: roster?.players || [],
-      liveTournamentKeys: opts.live.keys,
-      liveTournamentNames: opts.live.names,
-      window,
-      includeField: true,
-      stage: opts.stage,
-      skipOverlay: true,
-    });
-    fieldSize = profile.fieldSize;
-    tournamentName = profile.tournamentName || tournamentName;
-    tournamentKey = profile.tournamentKey || tournamentKey;
-    windows[window] = (profile.field || []).map((row) => ({
+    windows[window] = (profile.windows?.[window] || profile.field || []).map((row) => ({
       id: row.id,
       name: row.name,
       ioc: row.ioc,
@@ -347,6 +353,7 @@ export async function buildTennisDvpWindowsFromRedis(opts: {
   const event: TennisCachedDvpEvent = {
     tour: opts.tour,
     stage: opts.stage,
+    bestOf,
     tournamentKey,
     tournamentName,
     fieldSize,

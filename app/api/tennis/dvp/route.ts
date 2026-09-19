@@ -4,6 +4,7 @@ import { type TennisTour } from '@/lib/tennis/data';
 import {
   TENNIS_DVP_METRICS,
   TENNIS_DVP_WINDOWS,
+  tennisDvpTournamentBestOf,
   type TennisDvpStage,
   type TennisDvpWindow,
 } from '@/lib/tennis/dvpShared';
@@ -135,6 +136,13 @@ function jsonFromEvent(opts: {
     year: opts.year,
     window: opts.window,
     stage: opts.event.stage || opts.stage,
+    bestOf:
+      opts.event.bestOf ||
+      tennisDvpTournamentBestOf({
+        tour: opts.tour,
+        stage: opts.event.stage || opts.stage,
+        tournamentName: opts.event.tournamentName,
+      }),
     tournamentName: opts.event.tournamentName,
     tournamentKey: opts.event.tournamentKey,
     fieldSize: opts.event.fieldSize,
@@ -217,6 +225,17 @@ export async function GET(request: NextRequest) {
           tournamentName: resolvedName || null,
         });
 
+  const extraPlayerIds = [
+    ...new Set(
+      [
+        ...tennisLiveEventPlayerIds(live, resolvedKey || null, resolvedName || null, stage),
+        playerId,
+        opponentId,
+      ]
+        .map((id) => String(id || '').trim())
+        .filter((id) => /^\d+$/.test(id))
+    ),
+  ];
   const cachedEvent = await readTennisDvpLiveEvent({
     tour,
     tournamentKey: resolvedKey || null,
@@ -239,30 +258,21 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const extraPlayerIds = [
-    ...new Set(
-      [
-        ...tennisLiveEventPlayerIds(live, resolvedKey || null, resolvedName || null, stage),
-        playerId,
-        opponentId,
-      ]
-        .map((id) => String(id || '').trim())
-        .filter((id) => /^\d+$/.test(id))
-    ),
-  ];
-  const computed = await buildTennisDvpWindowsFromRedis({
-    tour,
-    year,
-    opponentName: opponent || null,
-    opponentId: opponentId || null,
-    playerName: player || null,
-    playerId: playerId || null,
-    tournamentName: resolvedName || null,
-    tournamentKey: resolvedKey || null,
-    extraPlayerIds,
-    live,
-    stage,
-  });
+  const computed = extraPlayerIds.length
+    ? await buildTennisDvpWindowsFromRedis({
+        tour,
+        year,
+        opponentName: opponent || null,
+        opponentId: opponentId || null,
+        playerName: player || null,
+        playerId: playerId || null,
+        tournamentName: resolvedName || null,
+        tournamentKey: resolvedKey || null,
+        extraPlayerIds,
+        live,
+        stage,
+      })
+    : null;
   if (computed) {
     opponentId = reconcileOpponentId(
       opponentId,
@@ -288,6 +298,11 @@ export async function GET(request: NextRequest) {
     year,
     window,
     stage,
+    bestOf: tennisDvpTournamentBestOf({
+      tour,
+      stage,
+      tournamentName: resolvedName,
+    }),
     tournamentName: resolvedName || null,
     tournamentKey: resolvedKey || null,
     fieldSize: 0,

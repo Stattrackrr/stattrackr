@@ -356,6 +356,48 @@ export function resolveTennisMatchBestOf(opts: {
   return opts.isGrandSlam ? 5 : 3;
 }
 
+const TENNIS_ROUND_ORDER: Record<string, number> = {
+  R128: 1,
+  R64: 2,
+  R32: 3,
+  R16: 4,
+  QF: 5,
+  RR: 5,
+  SF: 6,
+  BR: 7,
+  F: 8,
+};
+
+export function tennisMatchTimestamp(row: {
+  date?: unknown;
+  game_date?: unknown;
+  tourneyDate?: unknown;
+}): number {
+  const raw = String(row.date || row.game_date || row.tourneyDate || '').trim();
+  if (!raw) return 0;
+  const t = new Date(raw).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
+
+export function tennisRoundOrder(round: unknown): number {
+  const key = String(round || '').toUpperCase().trim();
+  if (TENNIS_ROUND_ORDER[key] != null) return TENNIS_ROUND_ORDER[key];
+  const match = key.match(/(?:ROUND|R)?\s*(\d+)/);
+  return match ? Number(match[1]) : 0;
+}
+
+/** Newest first — same last-N order as the tennis dashboard chart. */
+export function compareTennisMatchesNewestFirst(
+  a: { date?: unknown; game_date?: unknown; tourneyDate?: unknown; season?: unknown; round?: unknown },
+  b: { date?: unknown; game_date?: unknown; tourneyDate?: unknown; season?: unknown; round?: unknown }
+): number {
+  const byTime = tennisMatchTimestamp(b) - tennisMatchTimestamp(a);
+  if (byTime) return byTime;
+  const bySeason = Number(b.season || 0) - Number(a.season || 0);
+  if (bySeason) return bySeason;
+  return tennisRoundOrder(b.round) - tennisRoundOrder(a.round);
+}
+
 /** Return points won % / serve points lost %. Both inputs are 0–100. */
 export function tennisDominanceRatio(
   returnPointsWonPct: number | null | undefined,

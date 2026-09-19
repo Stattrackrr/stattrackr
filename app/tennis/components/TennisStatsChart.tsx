@@ -7,7 +7,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import TennisXAxisTick from '@/app/tennis/components/TennisXAxisTick';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
-import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, formatTennisSetScore, isUnplayedTennisMatch, parseTennisSetsFromPlayerView, resolveTennisMatchBestOf, tennisDominanceRatio, tennisMatchesPlayed, tennisOpponentCode, tennisScoreIsRetired } from '@/lib/tennis/chartStats';
+import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, compareTennisMatchesNewestFirst, formatTennisSetScore, isUnplayedTennisMatch, parseTennisSetsFromPlayerView, resolveTennisMatchBestOf, tennisDominanceRatio, tennisMatchesPlayed, tennisOpponentCode, tennisScoreIsRetired } from '@/lib/tennis/chartStats';
 import {
   TENNIS_OPP_RANK_FILTERS,
   matchTennisOppRank,
@@ -1206,18 +1206,12 @@ export function TennisStatsChart({
       // advanced second-axis values (TOG/DvP/Opp ranks) can join correctly.
       const lastN = parseInt(selectedTimeframe.replace('last', ''), 10);
       if (Number.isFinite(lastN) && lastN > 0) {
-        const sortedNewestFirst = [...baseChartData].sort((a, b) => {
-          const aDate = new Date(a.gameDate || '').getTime();
-          const bDate = new Date(b.gameDate || '').getTime();
-          if (Number.isFinite(aDate) && Number.isFinite(bDate) && aDate !== bDate) return bDate - aDate;
-          const aSeason = (a as { gameSeason?: number }).gameSeason ?? 0;
-          const bSeason = (b as { gameSeason?: number }).gameSeason ?? 0;
-          if (aSeason !== bSeason) return bSeason - aSeason;
-          const aRound = parseRoundIndex(a.round);
-          const bRound = parseRoundIndex(b.round);
-          if (aRound !== bRound) return bRound - aRound;
-          return 0;
-        });
+        const sortedNewestFirst = [...baseChartData].sort((a, b) =>
+          compareTennisMatchesNewestFirst(
+            { date: a.gameDate, season: (a as { gameSeason?: number }).gameSeason, round: a.round },
+            { date: b.gameDate, season: (b as { gameSeason?: number }).gameSeason, round: b.round }
+          )
+        );
         data = sortedNewestFirst.slice(0, lastN);
       } else {
         data = baseChartData;

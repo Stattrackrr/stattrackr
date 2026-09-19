@@ -4,11 +4,20 @@
 
 import path from 'path';
 import { TENNIS_CURRENT_YEAR, TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
-import { tennisEventPlaceCore, tennisLastName, tennisMatchesPlayed, resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
+import {
+  tennisEventPlaceCore,
+  tennisLastName,
+  tennisMatchesPlayed,
+  resolveTennisMatchBestOf,
+  compareTennisMatchesNewestFirst,
+} from '@/lib/tennis/chartStats';
 import {
   TENNIS_DVP_METRICS,
+  TENNIS_DVP_WINDOWS,
   isTennisQualifyingLabel,
+  tennisDvpTournamentBestOf,
   tennisQualifyingEventLabel,
+  type TennisDvpBestOf,
   type TennisDvpMetricKey,
   type TennisDvpStage,
   type TennisDvpWindow,
@@ -369,28 +378,40 @@ function findDvpPlayerId(
   return null;
 }
 
+function dvpMatchKey(row: TennisMatchRow): string {
+  return String(row.matchId || '').trim() || `${matchDateKey(row)}|${row.playerId}|${row.opponentId}`;
+}
+
+function compareDvpMatchesNewestFirst(a: TennisMatchRow, b: TennisMatchRow): number {
+  return compareTennisMatchesNewestFirst(a, b);
+}
+
+function pushUniqueDvpMatch(map: Map<string, TennisMatchRow[]>, id: string, row: TennisMatchRow) {
+  const key = String(id || '').trim();
+  if (!key) return;
+  const list = map.get(key) || [];
+  const matchKey = dvpMatchKey(row);
+  const idx = list.findIndex((prev) => dvpMatchKey(prev) === matchKey);
+  if (idx >= 0) {
+    if (dvpRowRichness(row) >= dvpRowRichness(list[idx])) list[idx] = row;
+  } else {
+    list.push(row);
+  }
+  map.set(key, list);
+}
+
 function extraMatchLookup(rows: TennisMatchRow[] | undefined): {
   byPlayerId: Map<string, TennisMatchRow[]>;
   byOpponentId: Map<string, TennisMatchRow[]>;
 } {
   const byPlayerId = new Map<string, TennisMatchRow[]>();
   const byOpponentId = new Map<string, TennisMatchRow[]>();
-  for (const row of rows || []) {
-    const playerId = String(row.playerId || '').trim();
-    const opponentId = String(row.opponentId || '').trim();
-    if (playerId) {
-      const list = byPlayerId.get(playerId) || [];
-      list.push(row);
-      byPlayerId.set(playerId, list);
-    }
-    if (opponentId) {
-      const list = byOpponentId.get(opponentId) || [];
-      list.push(row);
-      byOpponentId.set(opponentId, list);
-    }
+  for (const row of prepareMatchRows(rows || [])) {
+    pushUniqueDvpMatch(byPlayerId, row.playerId, row);
+    pushUniqueDvpMatch(byOpponentId, row.opponentId, row);
   }
-  for (const list of byPlayerId.values()) list.sort((a, b) => matchDateKey(b).localeCompare(matchDateKey(a)));
-  for (const list of byOpponentId.values()) list.sort((a, b) => matchDateKey(b).localeCompare(matchDateKey(a)));
+  for (const list of byPlayerId.values()) list.sort(compareDvpMatchesNewestFirst);
+  for (const list of byOpponentId.values()) list.sort(compareDvpMatchesNewestFirst);
   return { byPlayerId, byOpponentId };
 }
 
@@ -409,15 +430,9 @@ function mergeDvpMatchRows(overlay: TennisMatchRow[], extra: TennisMatchRow[]): 
   if (!extra.length) return overlay;
   if (!overlay.length) return extra;
   const byKey = new Map<string, TennisMatchRow>();
-  const keyOf = (row: TennisMatchRow) =>
-    String(row.matchId || '').trim() || `${matchDateKey(row)}|${row.playerId}|${row.opponentId}`;
-  for (const row of overlay) byKey.set(keyOf(row), row);
-  for (const row of extra) {
-    const key = keyOf(row);
-    const prev = byKey.get(key);
-    if (!prev || dvpRowRichness(row) >= dvpRowRichness(prev)) byKey.set(key, row);
-  }
-  return [...byKey.values()].sort((a, b) => matchDateKey(b).localeCompare(matchDateKey(a)));
+  for (const row of overlay) byKey.set(dvpMatchKey(row), row);
+  for (const row of extra) byKey.set(dvpMatchKey(row), row);
+  return [...byKey.values()].sort(compareDvpMatchesNewestFirst);
 }
 
 function toAllowedView(row: TennisMatchRow): TennisMatchRow {
@@ -439,7 +454,7 @@ function toAllowedView(row: TennisMatchRow): TennisMatchRow {
 function dvpMean(bucket: DvpBucket | undefined, key: string): number | null {
   const cell = bucket?.sums[key];
   if (!cell || cell.n <= 0) return null;
-  return cell.sum / cell.n;
+  return Math.round((cell.sum / cell.n) * 10) / 10;
 }
 
 function dvpRanks(values: Array<{ id: string; value: number }>): Map<string, number> {
@@ -516,6 +531,10 @@ function sliceDvpWindow(rows: TennisMatchRow[], window: TennisDvpWindow, year: n
   if (window === 'season') return rows.filter((row) => row.season === year);
   const n = window === 'last5' ? 5 : 10;
   return rows.slice(0, n);
+}
+
+function filterDvpRowsByBestOf(rows: TennisMatchRow[], bestOf: TennisDvpBestOf): TennisMatchRow[] {
+  return rows.filter((row) => resolveTennisMatchBestOf(row) === bestOf);
 }
 
 function pushIndexedMatch(map: Map<string, TennisMatchRow[]>, id: string, row: TennisMatchRow) {
@@ -722,11 +741,17 @@ function emptyDvpProfile(opts: {
   tournamentKey?: string | null;
 }): TennisDvpProfile {
   const stage: TennisDvpStage = opts.stage === 'qualifying' ? 'qualifying' : 'main';
+  const bestOf = tennisDvpTournamentBestOf({
+    tour: opts.tour,
+    stage,
+    tournamentName: opts.tournamentName,
+  });
   return {
     tour: opts.tour,
     year: opts.year,
     window: opts.window,
     stage,
+    bestOf,
     tournamentName:
       stage === 'qualifying'
         ? tennisQualifyingEventLabel(opts.tournamentName)
@@ -802,7 +827,14 @@ function bucketsFromRows(rows: TennisMatchRow[], fieldId: string, kind: 'allowed
     for (const metric of TENNIS_DVP_METRICS) {
       if (metric.source === 'own' && kind !== 'own') continue;
       if (metric.source === 'allowed' && kind !== 'allowed') continue;
-      addDvpValue(bucket, metric.key, row[metric.key as keyof TennisMatchRow]);
+      const raw =
+        metric.key === 'totalGames' &&
+        (typeof row.totalGames !== 'number' || !Number.isFinite(row.totalGames)) &&
+        typeof row.gamesWon === 'number' &&
+        typeof row.gamesLost === 'number'
+          ? row.gamesWon + row.gamesLost
+          : row[metric.key as keyof TennisMatchRow];
+      addDvpValue(bucket, metric.key, raw);
     }
   }
   if (!humanTennisDvpName(bucket.name)) bucket.name = fieldId;
@@ -833,6 +865,7 @@ export type TennisDvpProfile = {
   year: number;
   window: TennisDvpWindow;
   stage: TennisDvpStage;
+  bestOf: TennisDvpBestOf;
   tournamentName: string | null;
   tournamentKey: string | null;
   fieldSize: number;
@@ -841,6 +874,7 @@ export type TennisDvpProfile = {
   topSeed: TennisDvpOpponent | null;
   metrics: TennisDvpMetricRow[];
   field?: Array<TennisDvpOpponent & { metrics: TennisDvpMetricRow[] }>;
+  windows?: Partial<Record<TennisDvpWindow, Array<TennisDvpOpponent & { metrics: TennisDvpMetricRow[] }>>>;
 };
 
 /** Per-live-tournament allowed rates, ranked among everyone who played this event (not just who is still alive). */
@@ -861,6 +895,7 @@ export function tennisDvpProfile(opts: {
   liveTournamentNames?: Iterable<string>;
   activeOnly?: boolean;
   includeField?: boolean;
+  includeAllWindows?: boolean;
   stage?: TennisDvpStage;
   skipOverlay?: boolean;
 }): TennisDvpProfile {
@@ -965,21 +1000,47 @@ export function tennisDvpProfile(opts: {
     rankedById,
     rosterById
   );
-  const allowed = new Map<string, DvpBucket>();
-  const own = new Map<string, DvpBucket>();
-  const fillBuckets = (id: string) => {
+  const slam =
+    Boolean(group?.matches.some((row) => row.isGrandSlam)) || isApiGrandSlam(opts.tournamentName);
+  const bestOf = tennisDvpTournamentBestOf({
+    tour,
+    stage,
+    tournamentName: opts.tournamentName || group?.tourneyName,
+    isGrandSlam: slam,
+  });
+  const preparedById = new Map<string, { ownRows: TennisMatchRow[]; vsRows: TennisMatchRow[] }>();
+  const preparedRowsFor = (id: string) => {
+    const hit = preparedById.get(id);
+    if (hit) return hit;
     const overlayOwn = index.byPlayerId.get(id) || [];
     const overlayVs = index.byOpponentId.get(id) || [];
     const extraOwn = extraLookup.byPlayerId.get(id) || [];
     const extraVs = extraLookup.byOpponentId.get(id) || [];
-    const ownRows = mergeDvpMatchRows(overlayOwn, extraOwn);
-    const vsRows = mergeDvpMatchRows(overlayVs, extraVs);
-    const ownSlice = sliceDvpWindow(ownRows.length ? ownRows : vsRows, window, year);
+    const mergedOwn = mergeDvpMatchRows(overlayOwn, extraOwn);
+    const mergedVs = mergeDvpMatchRows(overlayVs, extraVs);
+    const next = {
+      ownRows: filterDvpRowsByBestOf(
+        opts.skipOverlay ? mergedOwn : prepareMatchRows(mergedOwn),
+        bestOf
+      ),
+      vsRows: filterDvpRowsByBestOf(
+        opts.skipOverlay ? mergedVs : prepareMatchRows(mergedVs),
+        bestOf
+      ),
+    };
+    preparedById.set(id, next);
+    return next;
+  };
+  const allowed = new Map<string, DvpBucket>();
+  const own = new Map<string, DvpBucket>();
+  const fillBuckets = (id: string, forWindow: TennisDvpWindow = window) => {
+    const { ownRows, vsRows } = preparedRowsFor(id);
+    const ownSlice = sliceDvpWindow(ownRows.length ? ownRows : vsRows, forWindow, year);
     own.set(id, bucketsFromRows(ownSlice, id, 'own'));
     allowed.set(
       id,
       bucketsFromRows(
-        ownRows.length ? ownSlice.map(toAllowedView) : sliceDvpWindow(vsRows, window, year),
+        ownRows.length ? ownSlice.map(toAllowedView) : sliceDvpWindow(vsRows, forWindow, year),
         id,
         'allowed'
       )
@@ -1004,8 +1065,6 @@ export function tennisDvpProfile(opts: {
   }
   const fieldSize = completeDrawSize(fieldIds.length, cap);
 
-  const slam =
-    Boolean(group?.matches.some((row) => row.isGrandSlam)) || isApiGrandSlam(opts.tournamentName);
   const opponentsUnseeded: TennisDvpOpponent[] = fieldIds
     .map((id) => {
       const rankedRow = rankedById.get(id);
@@ -1069,6 +1128,63 @@ export function tennisDvpProfile(opts: {
     });
 
   const metrics = rowFor(opponentId);
+  const fieldRows = opts.includeField
+    ? opponents.map((row) => ({
+        ...row,
+        metrics: rowFor(row.id),
+      }))
+    : undefined;
+  const windows =
+    opts.includeAllWindows && opts.includeField
+      ? Object.fromEntries(
+          TENNIS_DVP_WINDOWS.map((nextWindow) => {
+            if (nextWindow === window) return [nextWindow, fieldRows || []];
+            const windowAllowed = new Map<string, DvpBucket>();
+            const windowOwn = new Map<string, DvpBucket>();
+            for (const id of fieldIds) {
+              const { ownRows, vsRows } = preparedRowsFor(id);
+              const ownSlice = sliceDvpWindow(ownRows.length ? ownRows : vsRows, nextWindow, year);
+              windowOwn.set(id, bucketsFromRows(ownSlice, id, 'own'));
+              windowAllowed.set(
+                id,
+                bucketsFromRows(
+                  ownRows.length ? ownSlice.map(toAllowedView) : sliceDvpWindow(vsRows, nextWindow, year),
+                  id,
+                  'allowed'
+                )
+              );
+            }
+            const windowBoards = TENNIS_DVP_METRICS.map((metric) => {
+              const source = metric.source === 'own' ? windowOwn : windowAllowed;
+              const values: Array<{ id: string; value: number }> = [];
+              for (const id of fieldIds) {
+                const mean = dvpMean(source.get(id), metric.key);
+                if (mean == null) continue;
+                values.push({ id, value: mean });
+              }
+              return { metric, source, ranks: dvpRanks(values) };
+            });
+            return [
+              nextWindow,
+              opponents.map((row) => ({
+                ...row,
+                metrics: windowBoards.map(({ metric, source, ranks }) => {
+                  const selected = source.get(row.id);
+                  return {
+                    key: metric.key,
+                    label: metric.label,
+                    pct: metric.pct,
+                    value: dvpMean(selected, metric.key),
+                    rank: ranks.get(row.id) ?? null,
+                    matches: selected?.sums[metric.key]?.n || 0,
+                    fieldSize,
+                  };
+                }),
+              })),
+            ];
+          })
+        )
+      : undefined;
 
   const opponent = opponentId
     ? opponents.find((p) => p.id === opponentId) || {
@@ -1092,6 +1208,7 @@ export function tennisDvpProfile(opts: {
     year,
     window,
     stage,
+    bestOf,
     tournamentName:
       stage === 'qualifying'
         ? tennisQualifyingEventLabel(String(opts.tournamentName || '').trim() || group?.tourneyName)
@@ -1102,11 +1219,7 @@ export function tennisDvpProfile(opts: {
     opponents,
     topSeed,
     metrics,
-    field: opts.includeField
-      ? opponents.map((row) => ({
-          ...row,
-          metrics: rowFor(row.id),
-        }))
-      : undefined,
+    field: fieldRows,
+    windows,
   };
 }

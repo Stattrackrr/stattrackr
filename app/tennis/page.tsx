@@ -812,7 +812,6 @@ export default function TennisDashboardPage() {
     router.prefetch('/props?sport=all');
     router.prefetch('/props?sport=atp');
     router.prefetch('/props?sport=wta');
-    kickCombinedPropsEarlyFetch();
     tennisDashboardFetch('/api/tennis/next-game?warm=1').catch(() => undefined);
     return () => {
       abortTennisDashboardFetches();

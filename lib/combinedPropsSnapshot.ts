@@ -43,7 +43,7 @@ function emptyTennisListPayload() {
     data: [] as never[],
     gamesCount: 0,
     propsCount: 0,
-    noTennisOdds: true,
+    noTennisOdds: false,
     noAflOdds: true,
     ingestMessage: 'Tennis props are still loading.',
   };
@@ -406,17 +406,23 @@ export async function buildCombinedPropsSnapshot(
     : Promise.resolve(
         NextResponse.json({ success: true, data: [], cached: false, lastUpdated: null, gameDate: null })
       );
-  const previousSnapshotPromise = getCombinedPropsSnapshot();
+  const previousSnapshot = await getCombinedPropsSnapshot();
   const tennisWork = TENNIS_PUBLIC_ENABLED
     ? getTennisPlayerPropsList({ refresh }).catch(() => null)
     : Promise.resolve(null);
-  const [nbaResponse, aflResponse, previousSnapshot, tennisFresh] = await Promise.all([
+  const haveTennis = (previousSnapshot?.tennis?.props?.length || 0) > 0;
+  const [nbaResponse, aflResponse, tennisFresh] = await Promise.all([
     nbaPromise,
     getAflPlayerPropsList(new Request(aflUrl, { headers })),
-    previousSnapshotPromise,
-    withBudget(tennisWork, TENNIS_COMBINED_BUDGET_MS, null),
+    haveTennis && !refresh
+      ? Promise.resolve(null)
+      : withBudget(tennisWork, TENNIS_COMBINED_BUDGET_MS, null),
   ]);
-  const tennisPayload = tennisFresh || tennisListFromSnapshot(previousSnapshot);
+  if (haveTennis && !refresh) void tennisWork;
+  const tennisPayload =
+    tennisFresh && Array.isArray(tennisFresh.data) && tennisFresh.data.length > 0
+      ? tennisFresh
+      : tennisListFromSnapshot(previousSnapshot);
 
   const [nbaPayload, aflPayload] = await Promise.all([
     nbaResponse.json().catch(() => null),
@@ -459,7 +465,7 @@ export async function buildCombinedPropsSnapshot(
       lastUpdated: tennisAggregated.lastUpdated,
       nextUpdate: tennisAggregated.nextUpdate,
       ingestMessage: tennisPayload?.ingestMessage ?? tennisAggregated.ingestMessage,
-      noTennisOdds: Boolean(tennisPayload?.noTennisOdds) || tennisAggregated.props.length === 0,
+      noTennisOdds: Boolean(tennisPayload?.noTennisOdds) && tennisAggregated.props.length === 0,
       games: tennisAggregated.games,
       props: tennisAggregated.props,
     },

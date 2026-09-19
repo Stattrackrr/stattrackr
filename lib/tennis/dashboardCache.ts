@@ -95,11 +95,31 @@ export async function writeTennisRosterCache(roster: TennisRosterCache): Promise
   await sharedCache.setJSON(TENNIS_ROSTER_CACHE_KEY, roster, LOGS_TTL_SECONDS);
 }
 
+const LOG_MEM_TTL_MS = 60_000;
+const logMem = new Map<string, { at: number; payload: TennisPlayerLogsCache }>();
+
+function rememberPlayerLogs(payload: TennisPlayerLogsCache | null | undefined) {
+  const id = String(payload?.playerId || '').trim();
+  if (!id || !payload?.games?.length) return;
+  logMem.set(id, { at: Date.now(), payload });
+}
+
+function memoryPlayerLogs(playerId: string): TennisPlayerLogsCache | null {
+  const hit = logMem.get(playerId);
+  if (!hit || Date.now() - hit.at > LOG_MEM_TTL_MS) return null;
+  return hit.payload;
+}
+
 export async function readTennisPlayerLogsCache(playerId: string): Promise<TennisPlayerLogsCache | null> {
   const id = String(playerId || '').trim();
   if (!id) return null;
+  const fromMem = memoryPlayerLogs(id);
+  if (fromMem) return fromMem;
   const cached = await sharedCache.getJSON<TennisPlayerLogsCache>(playerLogsKey(id));
-  if (cached?.games && Array.isArray(cached.games)) return cached;
+  if (cached?.games && Array.isArray(cached.games)) {
+    rememberPlayerLogs({ ...cached, playerId: id });
+    return cached;
+  }
   return null;
 }
 
@@ -109,10 +129,25 @@ export async function readTennisPlayerLogsCacheMany(
   const ids = [...new Set(playerIds.map((id) => String(id || '').trim()).filter(Boolean))];
   const out = new Map<string, TennisMatchRow[]>();
   if (!ids.length) return out;
-  const rows = await sharedCache.getJSONMany<TennisPlayerLogsCache>(ids.map(playerLogsKey));
-  ids.forEach((id, i) => {
+  const missing: string[] = [];
+  for (const id of ids) {
+    const fromMem = memoryPlayerLogs(id);
+    if (fromMem?.games?.length) out.set(id, fromMem.games);
+    else missing.push(id);
+  }
+  if (!missing.length) return out;
+  const rows = await sharedCache.getJSONMany<TennisPlayerLogsCache>(missing.map(playerLogsKey));
+  missing.forEach((id, i) => {
     const games = rows[i]?.games;
-    if (games?.length) out.set(id, games);
+    if (!games?.length) return;
+    rememberPlayerLogs({
+      fetchedAt: rows[i]?.fetchedAt || new Date().toISOString(),
+      playerId: id,
+      playerName: rows[i]?.playerName || id,
+      tour: rows[i]?.tour || null,
+      games,
+    });
+    out.set(id, games);
   });
   return out;
 }
@@ -148,6 +183,7 @@ function fitPlayerLogsPayload(payload: TennisPlayerLogsCache): TennisPlayerLogsC
 export async function writeTennisPlayerLogsCache(payload: TennisPlayerLogsCache): Promise<void> {
   const next = fitPlayerLogsPayload(payload);
   if (!next) return;
+  rememberPlayerLogs(next);
   await sharedCache.setJSON(playerLogsKey(next.playerId), next, LOGS_TTL_SECONDS);
 }
 

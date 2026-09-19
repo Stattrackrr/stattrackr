@@ -7,6 +7,7 @@
 import sharedCache from '@/lib/sharedCache';
 import { hydrateTennisMatchOverlay, getHydratedTennisOverlay } from '@/lib/tennis/ingest';
 import { readTennisPlayerLogsCacheMany, readTennisRosterCache } from '@/lib/tennis/dashboardCache';
+import { tennisMatchesPlayed } from '@/lib/tennis/chartStats';
 import { TENNIS_CURRENT_YEAR, loadPlayerMatches, loadTennisPlayers, tennisDvpProfile } from '@/lib/tennis/data';
 import {
   findCachedTennisDvpEvent,
@@ -48,7 +49,7 @@ import {
   type TennisOuLine,
 } from '@/lib/tennis/oddsTypes';
 import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
-import { TENNIS_DVP_METRICS, type TennisDvpMetricKey } from '@/lib/tennis/dvpShared';
+import { TENNIS_DVP_METRICS, tennisDvpTournamentBestOf, type TennisDvpMetricKey } from '@/lib/tennis/dvpShared';
 import { tennisAssignDrawRanks, tennisAssignDrawSeeds } from '@/lib/tennis/seeds';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisMatchRow, TennisTour } from '@/lib/tennis/types';
@@ -670,8 +671,9 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
       : overlayReady
         ? loadPlayerMatches({ playerId, playerName })
         : [];
-    matchCache.set(key, rows);
-    return rows;
+    const prepared = tennisMatchesPlayed(rows);
+    matchCache.set(key, prepared);
+    return prepared;
   };
 
   const boardFor = (
@@ -714,6 +716,7 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
     const board: TennisCachedDvpEvent = {
       tour,
       stage,
+      bestOf: profile.bestOf,
       tournamentKey: profile.tournamentKey,
       tournamentName: profile.tournamentName,
       fieldSize: profile.fieldSize,
@@ -795,6 +798,13 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
       year: TENNIS_CURRENT_YEAR,
       window: 'last10' as const,
       stage,
+      bestOf:
+        board.bestOf ||
+        tennisDvpTournamentBestOf({
+          tour,
+          stage,
+          tournamentName: board.tournamentName || tournamentName,
+        }),
       tournamentName: board.tournamentName,
       tournamentKey: board.tournamentKey,
       fieldSize: board.fieldSize,

@@ -18,6 +18,30 @@ export const TENNIS_DVP_METRICS = [
 export type TennisDvpMetricKey = (typeof TENNIS_DVP_METRICS)[number]['key'];
 
 export type TennisDvpStage = 'main' | 'qualifying';
+export type TennisDvpBestOf = 3 | 5;
+
+function isSlamTournamentName(name: string | null | undefined): boolean {
+  return /australian open|roland garros|french open|\bwimbledon\b|\bus open\b/.test(
+    String(name || '').toLowerCase()
+  );
+}
+
+/** Format of the live event. WTA and qualifying are always best of 3. */
+export function tennisDvpTournamentBestOf(opts: {
+  tour?: string | null;
+  stage?: TennisDvpStage | string | null;
+  tournamentName?: string | null;
+  isGrandSlam?: boolean;
+}): TennisDvpBestOf {
+  if (String(opts.tour || '').toUpperCase() === 'WTA') return 3;
+  if (opts.stage === 'qualifying' || isTennisQualifyingLabel(null, opts.tournamentName)) return 3;
+  if (opts.isGrandSlam || isSlamTournamentName(opts.tournamentName)) return 5;
+  return 3;
+}
+
+export function tennisDvpBestOfLabel(bestOf: TennisDvpBestOf | number | null | undefined): string {
+  return Number(bestOf) === 5 ? 'Best of 5' : 'Best of 3';
+}
 
 export function isTennisQualifyingLabel(
   round?: string | null,

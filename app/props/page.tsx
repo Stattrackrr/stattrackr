@@ -2539,8 +2539,18 @@ export default function NBALandingPage() {
       });
     }
     setTennisCombinedProps((prev) => {
-      if (tennisPropsFromSnapshot != null) return tennisPropsFromSnapshot;
-      return tennisPropsNext.length > 0 ? tennisPropsNext : prev.filter(isTennisListProp);
+      const keep = prev.filter(isTennisListProp);
+      if (tennisPropsFromSnapshot != null && tennisPropsFromSnapshot.length > 0) {
+        return tennisPropsFromSnapshot;
+      }
+      if (
+        tennisPropsFromSnapshot != null &&
+        combinedSnapshot?.tennis?.noTennisOdds === true &&
+        keep.length === 0
+      ) {
+        return tennisPropsFromSnapshot;
+      }
+      return keep.length > 0 ? keep : tennisPropsNext;
     });
     if (!keepSecondaryList) {
       setAflIngestMessage(combinedSnapshot?.afl?.ingestMessage ?? null);
@@ -4771,22 +4781,28 @@ export default function NBALandingPage() {
       const hasAtp = tennisPropsForTour(tennisNow, 'atp').length > 0;
       const hasWta = tennisPropsForTour(tennisNow, 'wta').length > 0;
       if (
+        TENNIS_PUBLIC_ENABLED &&
         !combinedPartialTennisRefetchAttemptedRef.current &&
-        ((hasAtp && !hasWta) || (hasWta && !hasAtp))
+        (!hasAtp || !hasWta)
       ) {
-        const missingTour: 'atp' | 'wta' = hasAtp ? 'wta' : 'atp';
-        const presentTour: 'atp' | 'wta' = hasAtp ? 'atp' : 'wta';
         try {
-          const listUrl = getSecondaryPropsListUrl(missingTour, debugStats);
+          const missingBoth = !hasAtp && !hasWta;
+          const listUrl = missingBoth
+            ? '/api/tennis/player-props/list'
+            : getSecondaryPropsListUrl(hasAtp ? 'wta' : 'atp', debugStats);
           const listRes = await fetchSecondaryPropsList(listUrl);
           const listData = await listRes.json();
-          const { aggregated } = aggregateSecondaryListPayload(listData, missingTour);
-          const missingRows = tennisPropsForTour(aggregated, missingTour);
-          if (missingRows.length > 0) {
-            const presentRows = tennisPropsForTour(tennisNow, presentTour);
+          const { aggregated, games } = aggregateSecondaryListPayload(
+            listData,
+            missingBoth ? 'atp' : hasAtp ? 'wta' : 'atp'
+          );
+          const incoming = aggregated.filter(isTennisListProp);
+          if (incoming.length > 0) {
+            const presentRows = missingBoth
+              ? []
+              : tennisPropsForTour(tennisNow, hasAtp ? 'atp' : 'wta');
             applyCombinedSnapshot(
-              {
-                ...buildProgressiveSnapshot({}),
+              buildProgressiveSnapshot({
                 tennis: {
                   ok: true,
                   status: listRes.status,
@@ -4794,10 +4810,10 @@ export default function NBALandingPage() {
                   nextUpdate: null,
                   ingestMessage: null,
                   noTennisOdds: false,
-                  games: [],
-                  props: [...presentRows, ...missingRows],
+                  games,
+                  props: [...presentRows, ...incoming],
                 },
-              },
+              }),
               { persistCaches: false }
             );
           }
@@ -4928,6 +4944,35 @@ export default function NBALandingPage() {
         }
       })();
 
+      void (async () => {
+        if (!TENNIS_PUBLIC_ENABLED) return;
+        if (tennisCombinedPropsRef.current.some(isTennisListProp)) return;
+        try {
+          const listRes = await fetchSecondaryPropsList('/api/tennis/player-props/list');
+          const listData = await listRes.json();
+          const { aggregated, games } = aggregateSecondaryListPayload(listData, 'atp');
+          const tennisRows = aggregated.filter(isTennisListProp);
+          if (!listRes.ok || tennisRows.length === 0) return;
+          applyCombinedSnapshot(
+            buildProgressiveSnapshot({
+              tennis: {
+                ok: true,
+                status: listRes.status,
+                lastUpdated: null,
+                nextUpdate: null,
+                ingestMessage: null,
+                noTennisOdds: false,
+                games,
+                props: tennisRows,
+              },
+            }),
+            { persistCaches: false }
+          );
+        } catch {
+          // Tennis paints from its own list; combined AFL must stay visible.
+        }
+      })();
+
       const params = new URLSearchParams();
       if (forceRefresh) params.set('refresh', '1');
       if (debugStats) params.set('debugStats', '1');
@@ -4951,7 +4996,9 @@ export default function NBALandingPage() {
           throw new Error(payload?.error || 'Failed to load combined props');
         }
 
-        applyCombinedSnapshot(payload);
+        applyCombinedSnapshot(payload, {
+          persistCaches: (payload?.tennis?.props?.length || 0) > 0,
+        });
         void refillMissingSecondarySlices(payload, debugStats);
         const completeAfterSnapshot = !combinedModeNeedsDataRefresh(
           playerPropsRef.current,

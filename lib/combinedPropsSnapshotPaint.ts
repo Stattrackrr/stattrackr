@@ -62,7 +62,7 @@ export function isCombinedPropsSnapshotStale(snapshot: CombinedPropsSnapshot): b
 
 export function combinedTennisHasFormStats(snapshot: CombinedPropsSnapshot): boolean {
   const rows = snapshot.tennis?.props || [];
-  if (!rows.length) return true;
+  if (!rows.length) return snapshot.tennis?.noTennisOdds === true;
   const withStats = rows.filter(
     (row) =>
       row.last10Avg != null ||

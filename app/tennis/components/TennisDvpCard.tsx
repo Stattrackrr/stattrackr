@@ -1,9 +1,17 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisEventPlaceLabel, tennisLastName } from '@/lib/tennis/chartStats';
-import { TENNIS_DVP_METRICS, type TennisDvpStage, type TennisDvpWindow } from '@/lib/tennis/dvpShared';
+import {
+  TENNIS_DVP_METRICS,
+  tennisDvpBestOfLabel,
+  tennisDvpTournamentBestOf,
+  type TennisDvpBestOf,
+  type TennisDvpStage,
+  type TennisDvpWindow,
+} from '@/lib/tennis/dvpShared';
 import { tennisDashboardFetch, isTennisDashboardAbortError } from '@/lib/tennisDashboardFetch';
 import { TennisTournamentRankInfoButton } from '@/app/tennis/components/TennisTournamentRankInfoButton';
 
@@ -40,6 +48,7 @@ type DvpPayload = {
   tour: 'ATP' | 'WTA';
   year: number;
   window?: TennisDvpWindow;
+  bestOf?: TennisDvpBestOf;
   tournamentName?: string | null;
   fieldSize: number;
   stage?: TennisDvpStage;
@@ -152,6 +161,23 @@ export default function TennisDvpCard({
   const loadedKeyRef = useRef('');
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!viewAll) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setViewAll(false);
+        setMetricOpen(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [viewAll]);
 
   useEffect(() => {
     loadedKeyRef.current = '';
@@ -279,6 +305,14 @@ export default function TennisDvpCard({
   const eventLabel = tennisEventPlaceLabel(payload?.tournamentName || tournamentName);
   const stageLabel =
     (payload?.stage || stage) === 'qualifying' && !/qualif/i.test(eventLabel) ? 'Qualifying' : '';
+  const formatLabel = tennisDvpBestOfLabel(
+    payload?.bestOf ||
+      tennisDvpTournamentBestOf({
+        tour,
+        stage: payload?.stage || stage,
+        tournamentName: payload?.tournamentName || tournamentName,
+      })
+  );
   const hasData = metrics.some((m) => m.value != null);
   const dark = mounted && isDark;
 
@@ -335,7 +369,7 @@ export default function TennisDvpCard({
               isDark={dark}
               label="How DVP ranks work"
               title="Tournament ranks"
-              text={"DVP is calculated every tournament. Each stat is ranked against everyone in that event, not the whole ATP or WTA tour.\nLower ranked players and tournaments can be missing stats, which means these numbers could be less reliable.\nL5, L10, and Season change the averages for every player in that event, not just one player."}
+              text={"DVP is calculated every tournament using only matches in that event's format (best of 3 or best of 5). Each stat is ranked against everyone in that event, not the whole ATP or WTA tour.\nLower ranked players and tournaments can be missing stats, which means these numbers could be less reliable.\nL5, L10, and Season change the averages for every player in that event, not just one player."}
             />
           </div>
           {eventLabel || fieldSize > 0 ? (
@@ -343,6 +377,7 @@ export default function TennisDvpCard({
               {([
                 stageLabel,
                 eventLabel,
+                formatLabel,
                 fieldSize > 0 ? `${fieldSize}` : '',
               ]
                 .filter(Boolean)
@@ -378,74 +413,23 @@ export default function TennisDvpCard({
         <div className="px-3 py-3 flex-shrink-0">
           <div className={`rounded-lg border p-2 relative ${dark ? 'border-gray-600' : 'border-gray-300'}`}>
             <div className={`flex items-center justify-between gap-2 mb-2 ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
-              <div className="text-[11px] font-semibold">{viewAll ? 'Field rankings' : 'Opponent'}</div>
+              <div className="text-[11px] font-semibold">Opponent</div>
               <button
                 type="button"
                 onClick={() => {
-                  setViewAll((on) => !on);
+                  setViewAll(true);
                   setOppOpen(false);
                   setMetricOpen(false);
                 }}
                 className={`px-2 py-0.5 rounded-md text-[11px] font-semibold ${
-                  viewAll
-                    ? 'bg-purple-600 text-white'
-                    : dark
-                      ? 'bg-gray-700 text-gray-200 hover:text-white'
-                      : 'bg-gray-100 text-gray-700 hover:text-gray-900'
+                  dark
+                    ? 'bg-gray-700 text-gray-200 hover:text-white'
+                    : 'bg-gray-100 text-gray-700 hover:text-gray-900'
                 }`}
               >
-                {viewAll ? 'Back' : 'View all'}
+                View all
               </button>
             </div>
-            {viewAll ? (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMetricOpen((open) => !open)}
-                  className={`w-full flex items-center justify-between gap-2 px-2 py-1 rounded-md border text-sm ${
-                    dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                >
-                  <span className="font-semibold truncate">{viewMetricDef.label}</span>
-                  <svg className="w-4 h-4 opacity-70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {metricOpen ? (
-                  <>
-                    <div
-                      className={`absolute z-20 mt-1 left-0 right-0 rounded-md border shadow-lg overflow-hidden ${
-                        dark ? 'bg-slate-800 border-gray-600' : 'bg-white border-gray-300'
-                      }`}
-                    >
-                      <div className="max-h-56 overflow-y-auto custom-scrollbar overscroll-contain">
-                        {TENNIS_DVP_METRICS.map((metric) => (
-                          <button
-                            key={metric.key}
-                            type="button"
-                            onClick={() => {
-                              setViewMetric(metric.key);
-                              setMetricOpen(false);
-                            }}
-                            className={`w-full px-2 py-2 text-sm text-left ${
-                              metric.key === viewMetricDef.key
-                                ? 'bg-purple-600 text-white'
-                                : dark
-                                  ? 'hover:bg-gray-600 text-white'
-                                  : 'hover:bg-gray-100 text-gray-900'
-                            }`}
-                          >
-                            {metric.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="fixed inset-0 z-10" onClick={() => setMetricOpen(false)} />
-                  </>
-                ) : null}
-              </div>
-            ) : (
-              <>
             <button
               type="button"
               onClick={() => setOppOpen((o) => !o)}
@@ -487,7 +471,6 @@ export default function TennisDvpCard({
                           setOppSel(displayDvpName(p.name) || p.name);
                           setOppSelId(p.id && p.id !== 'selected' ? p.id : '');
                           setOppOpen(false);
-                          setViewAll(false);
                         }}
                         className={`w-full flex items-center gap-2 px-2 py-2 text-sm text-left ${
                           dark ? 'hover:bg-gray-600 text-white' : 'hover:bg-gray-100 text-gray-900'
@@ -513,8 +496,6 @@ export default function TennisDvpCard({
                   </div>
                 </div>
                 <div className="fixed inset-0 z-10" onClick={() => setOppOpen(false)} />
-              </>
-            )}
               </>
             )}
           </div>
@@ -550,82 +531,6 @@ export default function TennisDvpCard({
                 </div>
               </div>
             ))}
-          </div>
-        ) : viewAll ? (
-          <div
-            className="overflow-y-scroll overscroll-contain custom-scrollbar flex-1 min-h-0 pr-1 pb-2"
-            onWheel={(e) => e.stopPropagation()}
-          >
-            {viewAllRows.length ? (
-              viewAllRows.map(({ player, metric }) => {
-                const styles = rankStyles(metric?.rank, metric?.fieldSize || fieldSize, dark);
-                const isSelected = Boolean(
-                  (oppSelId && player.id === oppSelId) ||
-                    displayDvpName(player.name).toLowerCase() === displayDvpName(selectedLabel).toLowerCase()
-                );
-                return (
-                  <button
-                    key={player.id}
-                    type="button"
-                    onClick={() => {
-                      setOppSel(displayDvpName(player.name) || player.name);
-                      setOppSelId(player.id);
-                    }}
-                    className={`mx-3 my-1.5 w-[calc(100%-1.5rem)] rounded-lg border-2 px-3 py-2 text-left ${styles.borderColor} ${
-                      isSelected ? (dark ? 'bg-white/10' : 'bg-purple-50') : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {tennisFlagUrl(player.ioc) ? (
-                        <img
-                          src={tennisFlagUrl(player.ioc) || ''}
-                          alt=""
-                          className="w-5 h-3.5 object-cover rounded-[1px] flex-shrink-0"
-                        />
-                      ) : (
-                        <span className="w-5 flex-shrink-0" />
-                      )}
-                      <span className={`min-w-0 flex-1 truncate text-sm font-medium ${dark ? 'text-white' : 'text-gray-900'}`}>
-                        {displayDvpName(player.name) || player.name}
-                        {player.seed ? (
-                          <span className={`ml-1 text-[11px] tabular-nums ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            [{player.seed}]
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className={`font-bold tabular-nums ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
-                        {fmt(metric?.value ?? null, viewMetricDef.pct)}
-                      </span>
-                      <span
-                        className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold ${styles.badgeColor}`}
-                      >
-                        {typeof metric?.rank === 'number' && metric.rank > 0
-                          ? `#${metric.rank}/${metric.fieldSize || fieldSize || '?'}`
-                          : ''}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })
-            ) : (
-              <div className={`px-3 py-3 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
-                No field rankings yet{eventLabel ? ` at ${eventLabel}` : ''}.
-              </div>
-            )}
-            <div
-              className={`flex items-center justify-center gap-4 py-2 text-xs font-medium ${
-                dark ? 'text-gray-400' : 'text-gray-500'
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded bg-red-600 dark:bg-red-500" aria-hidden />
-                Hardest
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded bg-green-600 dark:bg-green-500" aria-hidden />
-                Easiest
-              </span>
-            </div>
           </div>
         ) : !oppSel ? (
           <div className={`px-3 py-3 text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -687,6 +592,200 @@ export default function TennisDvpCard({
           </>
         )}
       </div>
+      {mounted && viewAll
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4"
+              onClick={() => {
+                setViewAll(false);
+                setMetricOpen(false);
+              }}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Field rankings"
+                className={`w-full max-w-md max-h-[64vh] flex flex-col rounded-xl border shadow-2xl ${
+                  dark ? 'bg-[#0b1a2c] border-gray-700' : 'bg-white border-gray-200'
+                }`}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-2 flex-shrink-0">
+                  <div className="min-w-0">
+                    <h3 className={`text-base font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>
+                      Field rankings
+                    </h3>
+                    <div className={`text-[11px] truncate ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {[
+                        stageLabel,
+                        eventLabel,
+                        formatLabel,
+                        fieldSize > 0 ? `${fieldSize}` : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                      {WINDOW_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setSelectedWindow(opt.id)}
+                          className={`px-2 py-1 text-xs font-medium transition-colors ${
+                            selectedWindow === opt.id
+                              ? 'bg-purple-600 text-white'
+                              : dark
+                                ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
+                                : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setViewAll(false);
+                        setMetricOpen(false);
+                      }}
+                      className={`text-xs font-semibold ${
+                        dark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-800'
+                      }`}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div className="px-4 pb-3 flex-shrink-0">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setMetricOpen((open) => !open)}
+                      className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md border text-sm ${
+                        dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                      }`}
+                    >
+                      <span className="font-semibold truncate">{viewMetricDef.label}</span>
+                      <svg className="w-4 h-4 opacity-70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {metricOpen ? (
+                      <div
+                        className={`absolute z-20 mt-1 left-0 right-0 rounded-md border shadow-lg overflow-hidden ${
+                          dark ? 'bg-slate-800 border-gray-600' : 'bg-white border-gray-300'
+                        }`}
+                      >
+                        <div className="max-h-56 overflow-y-auto custom-scrollbar overscroll-contain">
+                          {TENNIS_DVP_METRICS.map((metric) => (
+                            <button
+                              key={metric.key}
+                              type="button"
+                              onClick={() => {
+                                setViewMetric(metric.key);
+                                setMetricOpen(false);
+                              }}
+                              className={`w-full px-2 py-2 text-sm text-left ${
+                                metric.key === viewMetricDef.key
+                                  ? 'bg-purple-600 text-white'
+                                  : dark
+                                    ? 'hover:bg-gray-600 text-white'
+                                    : 'hover:bg-gray-100 text-gray-900'
+                              }`}
+                            >
+                              {metric.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                <div
+                  className="overflow-y-scroll overscroll-contain custom-scrollbar flex-1 min-h-0 px-1 pb-2"
+                  onWheel={(e) => e.stopPropagation()}
+                >
+                  {viewAllRows.length ? (
+                    viewAllRows.map(({ player, metric }) => {
+                      const styles = rankStyles(metric?.rank, metric?.fieldSize || fieldSize, dark);
+                      const isSelected = Boolean(
+                        (oppSelId && player.id === oppSelId) ||
+                          displayDvpName(player.name).toLowerCase() === displayDvpName(selectedLabel).toLowerCase()
+                      );
+                      return (
+                        <button
+                          key={player.id}
+                          type="button"
+                          onClick={() => {
+                            setOppSel(displayDvpName(player.name) || player.name);
+                            setOppSelId(player.id);
+                            setViewAll(false);
+                            setMetricOpen(false);
+                          }}
+                          className={`mx-3 my-1.5 w-[calc(100%-1.5rem)] rounded-lg border-2 px-3 py-2 text-left ${styles.borderColor} ${
+                            isSelected ? (dark ? 'bg-white/10' : 'bg-purple-50') : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {tennisFlagUrl(player.ioc) ? (
+                              <img
+                                src={tennisFlagUrl(player.ioc) || ''}
+                                alt=""
+                                className="w-5 h-3.5 object-cover rounded-[1px] flex-shrink-0"
+                              />
+                            ) : (
+                              <span className="w-5 flex-shrink-0" />
+                            )}
+                            <span className={`min-w-0 flex-1 truncate text-sm font-medium ${dark ? 'text-white' : 'text-gray-900'}`}>
+                              {displayDvpName(player.name) || player.name}
+                              {player.seed ? (
+                                <span className={`ml-1 text-[11px] tabular-nums ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                  [{player.seed}]
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className={`font-bold tabular-nums ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+                              {fmt(metric?.value ?? null, viewMetricDef.pct)}
+                            </span>
+                            <span
+                              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold ${styles.badgeColor}`}
+                            >
+                              {typeof metric?.rank === 'number' && metric.rank > 0
+                                ? `#${metric.rank}/${metric.fieldSize || fieldSize || '?'}`
+                                : ''}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className={`px-4 py-3 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      No field rankings yet{eventLabel ? ` at ${eventLabel}` : ''}.
+                    </div>
+                  )}
+                </div>
+                <div
+                  className={`flex items-center justify-center gap-4 py-2 flex-shrink-0 text-xs font-medium ${
+                    dark ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded bg-red-600 dark:bg-red-500" aria-hidden />
+                    Hardest
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded bg-green-600 dark:bg-green-500" aria-hidden />
+                    Easiest
+                  </span>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
