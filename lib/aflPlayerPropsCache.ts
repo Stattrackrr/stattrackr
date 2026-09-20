@@ -519,10 +519,13 @@ export function aflOddsValuePresent(value: string | null | undefined): boolean {
   return value != null && String(value).trim() !== '' && String(value) !== 'N/A';
 }
 
-/** Props page only shows two-way over/under lines. */
+/** True when the row has both over and under. Over-only and yes/no markets are excluded. */
 export function aflListRowHasTwoWayOdds(row: {
+  statType?: string;
   overOdds?: string;
   underOdds?: string;
+  yesOdds?: string;
+  noOdds?: string;
 }): boolean {
   return aflOddsValuePresent(row.overOdds) && aflOddsValuePresent(row.underOdds);
 }
@@ -575,6 +578,7 @@ export async function listAflPlayerPropsFromCacheWithGames(games: AflGameOdds[])
             item.yesPrice != null ? decimalToAmerican(item.yesPrice) : undefined;
           const noOdds =
             item.noPrice != null ? decimalToAmerican(item.noPrice) : undefined;
+          if (!aflOddsValuePresent(overOdds) || !aflOddsValuePresent(underOdds)) continue;
           props.push({
             gameId: game.gameId,
             homeTeam: game.homeTeam,
