@@ -360,10 +360,11 @@ export async function buildTennisDvpLiveStore(live?: TennisLiveEventIndex): Prom
     events,
   };
   rememberTennisDvpLiveStore(store);
-  await sharedCache.setJSONMany([
-    { key: TENNIS_DVP_LIVE_CACHE_KEY, value: store, ttlSeconds: TENNIS_DVP_LIVE_TTL_SECONDS },
-    ...events.flatMap((event) => dvpEventRedisEntries(event)),
-  ]);
+  // Per-event writes first so a giant pipeline timeout cannot drop the whole board.
+  for (const event of events) {
+    await writeTennisDvpLiveEvent(event);
+  }
+  await sharedCache.setJSON(TENNIS_DVP_LIVE_CACHE_KEY, store, TENNIS_DVP_LIVE_TTL_SECONDS);
   return store;
 }
 

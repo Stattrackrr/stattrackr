@@ -457,8 +457,13 @@ function dvpMean(bucket: DvpBucket | undefined, key: string): number | null {
   return Math.round((cell.sum / cell.n) * 10) / 10;
 }
 
-function dvpRanks(values: Array<{ id: string; value: number }>): Map<string, number> {
-  const sorted = [...values].sort((a, b) => a.value - b.value || a.id.localeCompare(b.id));
+function dvpRanks(
+  values: Array<{ id: string; value: number }>,
+  descending = false
+): Map<string, number> {
+  const sorted = [...values].sort(
+    (a, b) => (descending ? b.value - a.value : a.value - b.value) || a.id.localeCompare(b.id)
+  );
   const out = new Map<string, number>();
   sorted.forEach((row, idx) => out.set(row.id, idx + 1));
   return out;
@@ -827,13 +832,14 @@ function bucketsFromRows(rows: TennisMatchRow[], fieldId: string, kind: 'allowed
     for (const metric of TENNIS_DVP_METRICS) {
       if (metric.source === 'own' && kind !== 'own') continue;
       if (metric.source === 'allowed' && kind !== 'allowed') continue;
+      const fieldKey = metric.key === 'oppGamesWon' ? 'gamesWon' : metric.key;
       const raw =
-        metric.key === 'totalGames' &&
+        fieldKey === 'totalGames' &&
         (typeof row.totalGames !== 'number' || !Number.isFinite(row.totalGames)) &&
         typeof row.gamesWon === 'number' &&
         typeof row.gamesLost === 'number'
           ? row.gamesWon + row.gamesLost
-          : row[metric.key as keyof TennisMatchRow];
+          : row[fieldKey as keyof TennisMatchRow];
       addDvpValue(bucket, metric.key, raw);
     }
   }
@@ -1110,7 +1116,7 @@ export function tennisDvpProfile(opts: {
       if (mean == null) continue;
       values.push({ id, value: mean });
     }
-    return { metric, source, ranks: dvpRanks(values) };
+    return { metric, source, ranks: dvpRanks(values, metric.key === 'oppGamesWon') };
   });
 
   const rowFor = (id: string | null): TennisDvpMetricRow[] =>
@@ -1162,7 +1168,7 @@ export function tennisDvpProfile(opts: {
                 if (mean == null) continue;
                 values.push({ id, value: mean });
               }
-              return { metric, source, ranks: dvpRanks(values) };
+              return { metric, source, ranks: dvpRanks(values, metric.key === 'oppGamesWon') };
             });
             return [
               nextWindow,

@@ -7,6 +7,7 @@ export type TennisDvpWindow = (typeof TENNIS_DVP_WINDOWS)[number];
 export const TENNIS_DVP_METRICS = [
   { key: 'totalGames', label: 'Avg Total Games', pct: false, source: 'allowed' },
   { key: 'gamesWon', label: 'Opp Games Allowed', pct: false, source: 'allowed' },
+  { key: 'oppGamesWon', label: 'Opp Games Won', pct: false, source: 'own' },
   { key: 'aces', label: 'Aces Allowed', pct: false, source: 'allowed' },
   { key: 'breakPointsConverted', label: 'Breaks Allowed', pct: false, source: 'allowed' },
   { key: 'returnPointsWonPct', label: 'Return Pts Allowed', pct: true, source: 'allowed' },

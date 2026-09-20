@@ -263,7 +263,8 @@ type DvpFields = {
 };
 
 function dvpMetricForStat(stat: TennisPropStat): TennisDvpMetricKey {
-  if (stat === 'gamesWon' || stat === 'gamesLost') return 'gamesWon';
+  if (stat === 'gamesWon') return 'oppGamesWon';
+  if (stat === 'gamesLost') return 'gamesWon';
   return 'totalGames';
 }
 
@@ -299,8 +300,15 @@ function dashboardDvpFieldsForStat(
       dvpFieldSize: fieldSize,
     };
   }
-  const metric = opp.metrics?.find((item) => item.key === dvpMetricForStat(stat));
-  if (!metric) return null;
+  const metricKey = dvpMetricForStat(stat);
+  const metric = opp.metrics?.find((item) => item.key === metricKey);
+  if (!metric) {
+    // Don't keep a stale Opp Games Allowed rank on Games Won after the metric split.
+    if (stat === 'gamesWon' && (opp.metrics?.length || 0) > 0) {
+      return { dvpRating: null, dvpStatValue: null, dvpFieldSize: fieldSize };
+    }
+    return null;
+  }
   return {
     dvpRating: metric.rank ?? null,
     dvpStatValue: metric.value ?? null,
