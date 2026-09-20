@@ -690,8 +690,12 @@ export async function refreshTennisOddsSnapshots(opts?: {
       sharedCache.deleteJSON('tennis_props_empty_atp_v1'),
       sharedCache.deleteJSON('tennis_props_empty_wta_v1'),
       sharedCache.deleteJSON('tennis_props_empty_all_v1'),
+      sharedCache.deleteJSON('tennis_player_props_list_v31'),
+      sharedCache.deleteJSON('tennis_player_props_list_v32'),
       sharedCache.deleteJSON('combined_props_snapshot_v6'),
       sharedCache.deleteJSON('combined_props_snapshot_paint_v6'),
+      sharedCache.deleteJSON('combined_props_snapshot_v7'),
+      sharedCache.deleteJSON('combined_props_snapshot_paint_v7'),
     ]).catch(() => undefined);
     const meta: TennisOddsRefreshMeta = {
       fetchedAt: new Date().toISOString(),

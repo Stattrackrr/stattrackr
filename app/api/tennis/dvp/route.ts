@@ -9,16 +9,15 @@ import {
   type TennisDvpWindow,
 } from '@/lib/tennis/dvpShared';
 import {
-  buildTennisDvpWindowsFromRedis,
   findCachedTennisDvpEvent,
   readTennisDvpLiveEvent,
+  readTennisDvpLiveStore,
   type TennisCachedDvpPlayer,
 } from '@/lib/tennis/dvpLiveCache';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import {
   findLiveTennisEventForPlayers,
-  listLiveTennisEventIndex,
-  tennisLiveEventPlayerIds,
+  peekLiveTennisEventIndex,
   tennisLiveEventStage,
 } from '@/lib/tennis/nextGame';
 
@@ -205,83 +204,55 @@ export async function GET(request: NextRequest) {
   const windowRaw = String(request.nextUrl.searchParams.get('window') || '').trim();
   const window: TennisDvpWindow =
     windowRaw === 'last5' || windowRaw === 'season' ? windowRaw : 'last10';
-  const live = await listLiveTennisEventIndex();
-  const liveEvent = findLiveTennisEventForPlayers(live, {
-    playerId: playerId || null,
-    opponentId: opponentId || null,
-    tournamentKey: tournamentKey || null,
-    tournamentName: tournament || null,
-  });
+  const live = peekLiveTennisEventIndex();
+  const liveEvent = live
+    ? findLiveTennisEventForPlayers(live, {
+        playerId: playerId || null,
+        opponentId: opponentId || null,
+        tournamentKey: tournamentKey || null,
+        tournamentName: tournament || null,
+      })
+    : null;
   const resolvedKey = tournamentKey || liveEvent?.tournamentKey || '';
   const resolvedName = tournament || liveEvent?.tournamentName || '';
   const stageParam = String(request.nextUrl.searchParams.get('stage') || '').trim();
   const stage: TennisDvpStage =
     stageParam === 'main' || stageParam === 'qualifying'
       ? stageParam
-      : tennisLiveEventStage(live, {
-          playerId: playerId || null,
-          opponentId: opponentId || null,
-          tournamentKey: resolvedKey || null,
-          tournamentName: resolvedName || null,
-        });
+      : live
+        ? tennisLiveEventStage(live, {
+            playerId: playerId || null,
+            opponentId: opponentId || null,
+            tournamentKey: resolvedKey || null,
+            tournamentName: resolvedName || null,
+          })
+        : 'main';
 
-  const extraPlayerIds = [
-    ...new Set(
-      [
-        ...tennisLiveEventPlayerIds(live, resolvedKey || null, resolvedName || null, stage),
-        playerId,
-        opponentId,
-      ]
-        .map((id) => String(id || '').trim())
-        .filter((id) => /^\d+$/.test(id))
-    ),
-  ];
-  const cachedEvent = await readTennisDvpLiveEvent({
-    tour,
-    tournamentKey: resolvedKey || null,
-    tournamentName: resolvedName || null,
-    stage,
-  });
+  const cachedEvent =
+    (await readTennisDvpLiveEvent({
+      tour,
+      tournamentKey: resolvedKey || null,
+      tournamentName: resolvedName || null,
+      stage,
+    })) ||
+    (await readTennisDvpLiveEvent({
+      tour,
+      tournamentKey: null,
+      tournamentName: resolvedName || null,
+      stage,
+    })) ||
+    findCachedTennisDvpEvent(await readTennisDvpLiveStore(), {
+      tour,
+      tournamentKey: resolvedKey || null,
+      tournamentName: resolvedName || null,
+      stage,
+    });
   if (cachedEvent) {
     const cachedPlayers = cachedEvent.windows[window] || cachedEvent.windows.last10 || [];
     opponentId = reconcileOpponentId(opponentId, opponent, cachedPlayers);
     return NextResponse.json(
       jsonFromEvent({
         event: cachedEvent,
-        tour,
-        year,
-        window,
-        stage,
-        opponentId,
-        opponentName: opponent,
-      })
-    );
-  }
-
-  const computed = extraPlayerIds.length
-    ? await buildTennisDvpWindowsFromRedis({
-        tour,
-        year,
-        opponentName: opponent || null,
-        opponentId: opponentId || null,
-        playerName: player || null,
-        playerId: playerId || null,
-        tournamentName: resolvedName || null,
-        tournamentKey: resolvedKey || null,
-        extraPlayerIds,
-        live,
-        stage,
-      })
-    : null;
-  if (computed) {
-    opponentId = reconcileOpponentId(
-      opponentId,
-      opponent,
-      computed.windows[window] || computed.windows.last10 || []
-    );
-    return NextResponse.json(
-      jsonFromEvent({
-        event: computed,
         tour,
         year,
         window,

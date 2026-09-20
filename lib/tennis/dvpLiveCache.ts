@@ -3,6 +3,7 @@ import { TENNIS_CURRENT_YEAR, tennisDvpProfile, type TennisDvpMetricRow, type Te
 import { tennisEventPlaceCore } from '@/lib/tennis/chartStats';
 import {
   TENNIS_DVP_WINDOWS,
+  isTennisQualifyingLabel,
   tennisDvpTournamentBestOf,
   type TennisDvpBestOf,
   type TennisDvpStage,
@@ -11,12 +12,14 @@ import {
 import { readTennisPlayerLogsCacheMany, readTennisRosterCache } from '@/lib/tennis/dashboardCache';
 import {
   listLiveTennisEventIndex,
+  type TennisLiveEvent,
   type TennisLiveEventIndex,
 } from '@/lib/tennis/nextGame';
+import { readTennisPlayerPropsListCache } from '@/lib/tennis/playerPropsListCache';
 import type { TennisMatchRow } from '@/lib/tennis/types';
 
 export const TENNIS_DVP_LIVE_CACHE_KEY = 'tennis_dvp_live_v13';
-const TENNIS_DVP_LIVE_TTL_SECONDS = 2 * 60 * 60;
+const TENNIS_DVP_LIVE_TTL_SECONDS = 8 * 60 * 60;
 
 export type TennisCachedDvpPlayer = {
   id: string;
@@ -162,19 +165,8 @@ export async function readTennisDvpLiveEvent(opts: {
 }
 
 function isPlausibleTennisDvpField(event: TennisCachedDvpEvent | null | undefined): event is TennisCachedDvpEvent {
-  const n = Number(event?.fieldSize) || 0;
-  return (
-    n === 8 ||
-    n === 16 ||
-    n === 24 ||
-    n === 28 ||
-    n === 32 ||
-    n === 48 ||
-    n === 56 ||
-    n === 64 ||
-    n === 96 ||
-    n === 128
-  );
+  const n = Number(event?.fieldSize) || event?.windows?.last10?.length || 0;
+  return n >= 4 && n <= 128;
 }
 
 export function findCachedTennisDvpEvent(
@@ -219,8 +211,95 @@ export function tennisCachedDvpPlayerHasSample(
   return Boolean(player?.metrics?.some((row) => typeof row.value === 'number' && Number.isFinite(row.value)));
 }
 
+function emptyLiveIndex(): TennisLiveEventIndex {
+  return {
+    keys: new Set(),
+    names: new Set(),
+    playerIdsByKey: new Map(),
+    playerIdsByName: new Map(),
+    events: [],
+  };
+}
+
+async function tennisLiveIndexFromPropsCache(): Promise<TennisLiveEventIndex> {
+  const list = await readTennisPlayerPropsListCache();
+  if (!list?.data?.length) return emptyLiveIndex();
+  const events = new Map<string, TennisLiveEvent>();
+  const addId = (event: TennisLiveEvent, rawId: string, qualifying: boolean) => {
+    const id = String(rawId || '').trim();
+    if (!/^\d+$/.test(id)) return;
+    const bucket = qualifying ? event.qualifyingPlayerIds : event.playerIds;
+    if (!bucket.includes(id)) bucket.push(id);
+  };
+  for (const row of list.data) {
+    const tour: TennisTour = `${row.playerTeam || ''} ${row.team || ''}`.toUpperCase().includes('WTA')
+      ? 'WTA'
+      : 'ATP';
+    const tournamentName = String(row.tournamentName || '').trim() || null;
+    if (!tournamentName) continue;
+    const qualifying = isTennisQualifyingLabel(null, tournamentName);
+    const eventId = `${tour}|${placeKey(tournamentName)}`;
+    let event = events.get(eventId);
+    if (!event) {
+      event = {
+        tour,
+        tournamentKey: null,
+        tournamentName,
+        playerIds: [],
+        qualifyingPlayerIds: [],
+      };
+      events.set(eventId, event);
+    }
+    addId(event, String(row.playerId || ''), qualifying);
+    addId(event, String(row.opponentId || ''), qualifying);
+  }
+  const eventList = [...events.values()];
+  const names = new Set(eventList.map((event) => placeKey(event.tournamentName)).filter(Boolean));
+  return {
+    keys: new Set(),
+    names,
+    playerIdsByKey: new Map(),
+    playerIdsByName: new Map(
+      eventList
+        .map((event) => [placeKey(event.tournamentName), [...event.playerIds]] as const)
+        .filter(([place]) => Boolean(place))
+    ),
+    events: eventList,
+  };
+}
+
+function mergeLiveIndexes(primary: TennisLiveEventIndex, extra: TennisLiveEventIndex): TennisLiveEventIndex {
+  if (!extra.events.length) return primary;
+  if (!primary.events.length) return extra;
+  const events = new Map(primary.events.map((event) => [`${event.tour}|${placeKey(event.tournamentName)}`, { ...event, playerIds: [...event.playerIds], qualifyingPlayerIds: [...event.qualifyingPlayerIds] }]));
+  for (const extraEvent of extra.events) {
+    const id = `${extraEvent.tour}|${placeKey(extraEvent.tournamentName)}`;
+    const current = events.get(id);
+    if (!current) {
+      events.set(id, extraEvent);
+      continue;
+    }
+    for (const playerId of extraEvent.playerIds) {
+      if (!current.playerIds.includes(playerId)) current.playerIds.push(playerId);
+    }
+    for (const playerId of extraEvent.qualifyingPlayerIds) {
+      if (!current.qualifyingPlayerIds.includes(playerId)) current.qualifyingPlayerIds.push(playerId);
+    }
+  }
+  const eventList = [...events.values()];
+  return {
+    keys: new Set([...primary.keys, ...extra.keys]),
+    names: new Set([...primary.names, ...extra.names]),
+    playerIdsByKey: new Map([...primary.playerIdsByKey, ...extra.playerIdsByKey]),
+    playerIdsByName: new Map([...primary.playerIdsByName, ...extra.playerIdsByName]),
+    events: eventList,
+  };
+}
+
 export async function buildTennisDvpLiveStore(live?: TennisLiveEventIndex): Promise<TennisDvpLiveStore> {
-  const index = live || (await listLiveTennisEventIndex());
+  const upcoming = live || (await listLiveTennisEventIndex());
+  const fromProps = await tennisLiveIndexFromPropsCache();
+  const index = mergeLiveIndexes(upcoming, fromProps);
   const extraMatches = await tennisDvpExtraMatchesForIds(
     index.events.flatMap((event) => [...event.playerIds, ...event.qualifyingPlayerIds])
   );

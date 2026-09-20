@@ -1515,9 +1515,9 @@ function selectedGameIdsForProps(
 function propsRowShowsUnderOdds(rowSport: 'nba' | 'afl' | 'atp' | 'wta'): boolean {
   return true;
 }
-const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v16';
-const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v12';
-const COMBINED_PROPS_LS_TS_KEY = 'combined_props_snapshot_ls_ts_v12';
+const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v17';
+const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v13';
+const COMBINED_PROPS_LS_TS_KEY = 'combined_props_snapshot_ls_ts_v13';
 const COMBINED_PROPS_LS_TTL_MS = 30 * 60 * 1000;
 
 type CombinedSnapshotBrowserCache = CombinedPropsSnapshotResponse & {

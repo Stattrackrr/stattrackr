@@ -470,63 +470,20 @@ function withDrawSeeds(
   };
 }
 
-async function loadUpcomingByPlayer(opts?: {
+async function loadUpcomingByPlayer(_opts?: {
   waitForFresh?: boolean;
 }): Promise<Map<string, TennisNextGame>> {
   const runtime = upcomingRuntime();
-  if (runtime.window && isFresh(runtime.window.fetchedAt) && runtime.window.byPlayerId.size) {
-    return runtime.window.byPlayerId;
-  }
-  if (runtime.inflight) {
-    if (opts?.waitForFresh) return runtime.inflight;
-    if (runtime.window?.byPlayerId.size) return runtime.window.byPlayerId;
-    return runtime.inflight;
-  }
+  if (runtime.window?.byPlayerId.size) return runtime.window.byPlayerId;
 
-  const cached = runtime.window?.byPlayerId.size
-    ? {
-        fetchedAt: runtime.window.fetchedAt,
-        byPlayerId: runtime.window.byPlayerId,
-        events: runtime.window.events || [],
-      }
-    : await readUpcomingFromRedis();
-
-  const refresh = async () => {
-    try {
-      const live = await fetchUpcomingLive();
-      if (live.byPlayerId.size) {
-        await writeUpcomingToRedis(live.byPlayerId, live.events);
-        rememberWindow(live.byPlayerId, Date.now(), live.events);
-        return live.byPlayerId;
-      }
-    } catch (err) {
-      console.warn('[tennis-next-game] live fetch failed', err);
-    }
-    if (cached?.byPlayerId.size) {
-      rememberWindow(cached.byPlayerId, cached.fetchedAt, cached.events || []);
-      return cached.byPlayerId;
-    }
-    if (runtime.window?.byPlayerId.size) return runtime.window.byPlayerId;
-    rememberWindow(new Map());
-    return new Map();
-  };
-
+  const cached = await readUpcomingFromRedis();
   if (cached?.byPlayerId.size) {
     rememberWindow(cached.byPlayerId, cached.fetchedAt, cached.events || []);
-    if (isFresh(cached.fetchedAt)) return cached.byPlayerId;
-    runtime.inflight = refresh().finally(() => {
-      runtime.inflight = null;
-    });
-    if (opts?.waitForFresh) return runtime.inflight;
     return cached.byPlayerId;
   }
 
-  runtime.inflight = refresh();
-  try {
-    return await runtime.inflight;
-  } finally {
-    runtime.inflight = null;
-  }
+  rememberWindow(new Map());
+  return new Map();
 }
 
 export async function warmTennisUpcomingFixtures(opts?: { force?: boolean }): Promise<number> {
