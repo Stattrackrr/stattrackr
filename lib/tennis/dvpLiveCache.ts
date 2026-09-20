@@ -259,9 +259,9 @@ async function tennisLiveIndexFromPropsCache(): Promise<TennisLiveEventIndex> {
     keys: new Set(),
     names,
     playerIdsByKey: new Map(),
-    playerIdsByName: new Map(
+    playerIdsByName: new Map<string, string[]>(
       eventList
-        .map((event) => [placeKey(event.tournamentName), [...event.playerIds]] as const)
+        .map((event): [string, string[]] => [placeKey(event.tournamentName), [...event.playerIds]])
         .filter(([place]) => Boolean(place))
     ),
     events: eventList,
