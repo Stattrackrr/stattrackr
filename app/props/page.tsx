@@ -521,6 +521,87 @@ type CombinedPropsSnapshotResponse = {
   };
 };
 
+const TENNIS_RANK_FILTER_OPTIONS: Array<{ label: string; maxRank: number | null }> = [
+  { label: 'All ranks', maxRank: null },
+  { label: 'Top 50', maxRank: 50 },
+  { label: 'Top 100', maxRank: 100 },
+  { label: 'Top 200', maxRank: 200 },
+  { label: 'Top 300', maxRank: 300 },
+];
+const TENNIS_MAX_RANK_STORAGE_KEY = 'tennis_filters_max_rank';
+
+function readTennisMaxRankFilter(): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(TENNIS_MAX_RANK_STORAGE_KEY);
+    if (raw == null || raw === 'all' || raw === '') return null;
+    const n = Number.parseInt(raw, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeTennisMaxRankFilter(maxRank: number | null) {
+  try {
+    window.localStorage.setItem(TENNIS_MAX_RANK_STORAGE_KEY, maxRank == null ? 'all' : String(maxRank));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+function tennisPlayerPassesRankFilter(
+  rank: number | null | undefined,
+  maxRank: number | null
+): boolean {
+  if (maxRank == null) return true;
+  const n = typeof rank === 'number' && Number.isFinite(rank) ? rank : null;
+  if (n == null || n <= 0) return false;
+  return n <= maxRank;
+}
+
+function tennisRankFilterButtonLabel(maxRank: number | null): string {
+  return maxRank == null ? 'Rank' : `Top ${maxRank}`;
+}
+
+function TennisRankFilterOptions({
+  maxRank,
+  isDark,
+  mounted,
+  onSelect,
+}: {
+  maxRank: number | null;
+  isDark: boolean;
+  mounted: boolean;
+  onSelect: (next: number | null) => void;
+}) {
+  return (
+    <div className="p-2 space-y-1">
+      {TENNIS_RANK_FILTER_OPTIONS.map((opt) => {
+        const selected = opt.maxRank === maxRank;
+        return (
+          <button
+            key={opt.label}
+            type="button"
+            onClick={() => onSelect(opt.maxRank)}
+            className={`flex w-full items-center px-3 py-2 rounded text-left text-sm font-medium transition-all ${
+              selected
+                ? mounted && isDark
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-purple-100 text-purple-900'
+                : mounted && isDark
+                  ? 'hover:bg-gray-700 text-gray-300'
+                  : 'hover:bg-gray-50 text-gray-700'
+            }`}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function propsFilterButtonClass(open: boolean, isDark: boolean): string {
   const base = 'relative flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border w-full transition-colors';
   if (open) {
@@ -1905,6 +1986,7 @@ export default function NBALandingPage() {
   const [bookmakerDropdownOpen, setBookmakerDropdownOpen] = useState(false);
   const [propTypeDropdownOpen, setPropTypeDropdownOpen] = useState(false);
   const [gamesDropdownOpen, setGamesDropdownOpen] = useState(false);
+  const [tennisMaxRank, setTennisMaxRank] = useState<number | null>(readTennisMaxRankFilter);
   const [propLineDropdownOpen, setPropLineDropdownOpen] = useState(false);
   const [propLineSort, setPropLineSort] = useState<'none' | 'high' | 'low'>('none');
   const [currentPage, setCurrentPage] = useState(1);
@@ -5339,13 +5421,26 @@ export default function NBALandingPage() {
         if (prop.bookmaker) bms.add(prop.bookmaker);
         if (!Array.from(bms).some((bm) => selectedBookmakers.has(bm))) return false;
       }
-      if (secondaryGameFilterApplies && prop.gameId && !selectedAflGames.has(prop.gameId)) return false;
+      if (
+        isTennisPropsSport(propsSport) &&
+        !tennisPlayerPassesRankFilter(prop.playerRank, tennisMaxRank)
+      ) {
+        return false;
+      }
+      if (
+        !isTennisPropsSport(propsSport) &&
+        secondaryGameFilterApplies &&
+        prop.gameId &&
+        !selectedAflGames.has(prop.gameId)
+      ) {
+        return false;
+      }
       return true;
     });
     return isTennisPropsSport(propsSport)
       ? collapseTennisRowsToPrimaryMarketLine(filtered)
       : filtered;
-  }, [activeSecondaryProps, propsSport, debouncedSearchQuery, selectedPropTypes, selectedBookmakers, selectedAflGames, secondaryGameFilterApplies, getStatLabel]);
+  }, [activeSecondaryProps, propsSport, debouncedSearchQuery, selectedPropTypes, selectedBookmakers, selectedAflGames, secondaryGameFilterApplies, tennisMaxRank, getStatLabel]);
 
   // Combined mode: minimal filters only (search + sort + pagination).
   const filteredCombinedProps = useMemo(() => {
@@ -6937,6 +7032,13 @@ export default function NBALandingPage() {
     saveFiltersToStorage(selectedBookmakers, selectedPropTypes, allIds);
   };
 
+  const applyTennisMaxRank = (next: number | null) => {
+    setTennisMaxRank(next);
+    writeTennisMaxRankFilter(next);
+    setGamesDropdownOpen(false);
+    setCurrentPage(1);
+  };
+
   const toggleAflGame = (gameId: string) => {
     userModifiedAflGamesRef.current = true;
     setSelectedAflGames((prev) => {
@@ -7228,7 +7330,7 @@ export default function NBALandingPage() {
                     className={propsFilterButtonClass(gamesDropdownOpen, shellDark)}
                   >
                     <span className="text-sm font-medium whitespace-nowrap">
-                      Games
+                      {isTennisPropsSport(propsSport) ? tennisRankFilterButtonLabel(tennisMaxRank) : 'Games'}
                     </span>
                     <svg
                       className={`w-4 h-4 transition-transform flex-shrink-0 ${gamesDropdownOpen ? 'rotate-180' : ''}`}
@@ -7258,6 +7360,15 @@ export default function NBALandingPage() {
                             style={getMobileFilterDropdownStyle()}
                           >
                           <div className="p-2 space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
+                            {isTennisPropsSport(propsSport) ? (
+                              <TennisRankFilterOptions
+                                maxRank={tennisMaxRank}
+                                isDark={isDark}
+                                mounted={mounted}
+                                onSelect={applyTennisMaxRank}
+                              />
+                            ) : (
+                              <>
                             {isSecondaryListMode
                               ? aflGamesWithProps.map((game) => {
                                   const isSelected = selectedAflGames.has(game.gameId);
@@ -7355,6 +7466,8 @@ export default function NBALandingPage() {
                                 Select all
                               </button>
                             </div>
+                              </>
+                            )}
                           </div>
                         </div>
                         </>,
@@ -7374,6 +7487,15 @@ export default function NBALandingPage() {
                           }`}
                         >
                           <div className="p-2 space-y-1">
+                            {isTennisPropsSport(propsSport) ? (
+                              <TennisRankFilterOptions
+                                maxRank={tennisMaxRank}
+                                isDark={isDark}
+                                mounted={mounted}
+                                onSelect={applyTennisMaxRank}
+                              />
+                            ) : (
+                              <>
                             {isSecondaryListMode
                               ? aflGamesWithProps.map((game) => {
                                   const isSelected = selectedAflGames.has(game.gameId);
@@ -7473,6 +7595,8 @@ export default function NBALandingPage() {
                                 Select all
                               </button>
                             </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       </>
