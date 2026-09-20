@@ -6,6 +6,10 @@ import {
   filterAflPropsEligibleGames,
 } from '@/lib/combinedPropsSnapshotTypes';
 import { readTennisPlayerPropsListCache } from '@/lib/tennis/playerPropsListCache';
+import {
+  aggregateTennisPropsForPaint,
+  tennisPropsNeedPaintAggregation,
+} from '@/lib/tennis/aggregatePropsForPaint';
 
 /** Full combined snapshot (server). Keep in lockstep with the paint key below. */
 export const COMBINED_PROPS_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_v6';
@@ -91,14 +95,28 @@ export async function getCombinedPropsPaintSnapshot(): Promise<CombinedPropsSnap
   return firstCachedSnapshot(COMBINED_PAINT_READ_KEYS);
 }
 
+function withAggregatedTennisSlice(snapshot: CombinedPropsSnapshot): CombinedPropsSnapshot {
+  const tennis = snapshot.tennis;
+  if (!tennis?.props?.length) return snapshot;
+  if (!tennisPropsNeedPaintAggregation(tennis.props)) return snapshot;
+  return {
+    ...snapshot,
+    tennis: {
+      ...tennis,
+      props: aggregateTennisPropsForPaint(tennis.props),
+    },
+  };
+}
+
 export async function attachCachedTennisSlice(
   snapshot: CombinedPropsSnapshot
 ): Promise<CombinedPropsSnapshot> {
-  if ((snapshot.tennis?.props?.length || 0) > 0) return snapshot;
+  const current = withAggregatedTennisSlice(snapshot);
+  if ((current.tennis?.props?.length || 0) > 0) return current;
   const payload = await readTennisPlayerPropsListCache();
-  if (!payload?.data?.length) return snapshot;
+  if (!payload?.data?.length) return current;
   return {
-    ...snapshot,
+    ...current,
     tennis: {
       ok: true,
       status: 200,
@@ -107,7 +125,7 @@ export async function attachCachedTennisSlice(
       ingestMessage: payload.ingestMessage ?? null,
       noTennisOdds: Boolean(payload.noTennisOdds) && payload.data.length === 0,
       games: payload.games || [],
-      props: payload.data,
+      props: aggregateTennisPropsForPaint(payload.data),
     },
   };
 }

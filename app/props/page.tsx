@@ -83,6 +83,10 @@ import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { tennisEventPlaceLabel, tennisTourLabel } from '@/lib/tennis/chartStats';
 import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
+import {
+  aggregateTennisPropsForPaint,
+  bookmakerLinesFromTennisRow,
+} from '@/lib/tennis/aggregatePropsForPaint';
 import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 
 interface Game {
@@ -1338,7 +1342,15 @@ function tennisBookmakerLineCount(prop: PlayerProp | null | undefined): number {
   if (Array.isArray(prop?.bookmakerLines) && prop.bookmakerLines.length > 0) {
     return prop.bookmakerLines.length;
   }
-  return String(prop?.bookmaker || '').trim() ? 1 : 0;
+  return 0;
+}
+
+function tennisDisplayBookmakerLines(prop: PlayerProp) {
+  return bookmakerLinesFromTennisRow(prop);
+}
+
+function tennisPropsForPaint(rows: PlayerProp[]): PlayerProp[] {
+  return aggregateTennisPropsForPaint(rows.filter(isTennisListProp)) as PlayerProp[];
 }
 
 function tennisTipoffValue(value?: string | null): string {
@@ -1392,8 +1404,8 @@ function mergeTennisPropForPaint(previous: PlayerProp | undefined, next: PlayerP
 
 /** Keep multi-book odds and real start times when a later list fetch is thinner. */
 function preferTennisPropsForPaint(previous: PlayerProp[], incoming: PlayerProp[]): PlayerProp[] {
-  const prevRows = previous.filter(isTennisListProp);
-  const nextRows = incoming.filter(isTennisListProp);
+  const prevRows = tennisPropsForPaint(previous);
+  const nextRows = tennisPropsForPaint(incoming);
   if (!nextRows.length) return prevRows;
   if (!prevRows.length) return nextRows;
   const prevByKey = new Map(prevRows.map((row) => [tennisPropMergeKey(row), row]));
@@ -4244,17 +4256,20 @@ export default function NBALandingPage() {
   }, [todaysGames]); // OPTIMIZATION: Only recreate when todaysGames changes
 
   const getTipoffGameForRow = useCallback((prop: PlayerProp, rowSport: 'nba' | 'afl' | 'atp' | 'wta'): Game | null => {
-    if (prop.gameDate) {
-      const parsedGameDate = new Date(prop.gameDate);
+    const tipoffAt =
+      tennisTipoffValue(prop.gameDate) ||
+      tennisTipoffValue((prop as PlayerProp & { commenceTime?: string | null }).commenceTime);
+    if (tipoffAt) {
+      const parsedGameDate = new Date(tipoffAt);
       if (!Number.isNaN(parsedGameDate.getTime())) {
         if (rowSport === 'afl' || isTennisPropsSport(rowSport)) {
           return {
             id: 0,
-            date: prop.gameDate.slice(0, 10),
-            status: prop.gameDate,
+            date: tipoffAt.slice(0, 10),
+            status: tipoffAt,
             home_team: { id: 0, abbreviation: '' },
             visitor_team: { id: 0, abbreviation: '' },
-            datetime: prop.gameDate
+            datetime: tipoffAt
           };
         }
       }
@@ -4299,10 +4314,12 @@ export default function NBALandingPage() {
     const fromTab = aflProps.filter(
       (p) => isTennisListProp(p) && propsSportFromTennisTour(p.team || p.homeTeamCode) === propsSport
     );
-    if (fromTab.length > 0) return fromTab;
-    return tennisCombinedProps.filter(
-      (p) => isTennisListProp(p) && propsSportFromTennisTour(p.team || p.homeTeamCode) === propsSport
-    );
+    const source = fromTab.length > 0
+      ? fromTab
+      : tennisCombinedProps.filter(
+          (p) => isTennisListProp(p) && propsSportFromTennisTour(p.team || p.homeTeamCode) === propsSport
+        );
+    return tennisPropsForPaint(source);
   }, [propsSport, aflProps, tennisCombinedProps]);
 
   // AFL: games that have at least one prop, and filtered AFL props
@@ -5362,9 +5379,14 @@ export default function NBALandingPage() {
         };
       }
 
+      const synthesized = tennisDisplayBookmakerLines(prop).filter((line) => !isBetwayBookmaker(line.bookmaker));
+      if (synthesized.length === 0) return fallbackBookmakerIsBetway ? null : prop;
       return {
         ...prop,
-        bookmakerLines: [],
+        bookmakerLines: synthesized,
+        bookmaker: synthesized[0]?.bookmaker || prop.bookmaker,
+        overOdds: synthesized[0]?.overOdds || prop.overOdds,
+        underOdds: synthesized[0]?.underOdds || prop.underOdds,
       };
     };
     const mapWithSport = <T extends PlayerProp>(list: T[], sportSource: CombinedSportSource) => {
@@ -5393,23 +5415,25 @@ export default function NBALandingPage() {
         ? [
             ...mapWithSport(
               collapseTennisRowsToPrimaryMarketLine(
-                tennisCombinedProps.filter(
-                  (prop) =>
-                    isAflCommenceTimePropsEligible(prop.gameDate) &&
-                    isTennisListProp(prop) &&
-                    propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'atp'
-                )
+                tennisPropsForPaint(
+                  tennisCombinedProps.filter(
+                    (prop) =>
+                      isTennisListProp(prop) &&
+                      propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'atp'
+                  )
+                ).filter((prop) => isAflCommenceTimePropsEligible(prop.gameDate))
               ),
               'atp'
             ),
             ...mapWithSport(
               collapseTennisRowsToPrimaryMarketLine(
-                tennisCombinedProps.filter(
-                  (prop) =>
-                    isAflCommenceTimePropsEligible(prop.gameDate) &&
-                    isTennisListProp(prop) &&
-                    propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'wta'
-                )
+                tennisPropsForPaint(
+                  tennisCombinedProps.filter(
+                    (prop) =>
+                      isTennisListProp(prop) &&
+                      propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'wta'
+                  )
+                ).filter((prop) => isAflCommenceTimePropsEligible(prop.gameDate))
               ),
               'wta'
             ),
@@ -8422,7 +8446,9 @@ export default function NBALandingPage() {
                             const teamAbbr = normalizeTeam(prop.team);
                             const opponentAbbr = normalizeTeam(prop.opponent);
                             const oddsBookmakerLineCount = (() => {
-                              const lines = prop.bookmakerLines ?? [];
+                              const lines = isTennisPropsSport(rowSport)
+                                ? tennisDisplayBookmakerLines(prop)
+                                : (prop.bookmakerLines ?? []);
                               if (!lines.length) return 0;
                               const filtered =
                                 !isCombinedMode && selectedBookmakers.size > 0
@@ -8805,12 +8831,16 @@ export default function NBALandingPage() {
                                   className={`py-3 px-4 ${singleBookmakerOddsCell ? 'align-middle' : 'align-top'}`}
                                   style={PROPS_DESKTOP_ODDS_COL_STYLE}
                                 >
-                                    {prop.bookmakerLines && prop.bookmakerLines.length > 0 ? (
+                                    {(() => {
+                                      const paintLines = isTennisPropsSport(rowSport)
+                                        ? tennisDisplayBookmakerLines(prop)
+                                        : (prop.bookmakerLines || []);
+                                      return paintLines.length > 0 ? (
                                       (() => {
                                         // Filter bookmakerLines by selected bookmakers (if any are selected)
-                                        let filteredLines = prop.bookmakerLines;
+                                        let filteredLines = paintLines;
                                         if (!isCombinedMode && selectedBookmakers.size > 0) {
-                                          filteredLines = prop.bookmakerLines.filter(line => 
+                                          filteredLines = paintLines.filter(line => 
                                             line.bookmaker && selectedBookmakers.has(line.bookmaker)
                                           );
                                         }
@@ -9097,7 +9127,8 @@ export default function NBALandingPage() {
                                           </div>
                                         );
                                       })()
-                                    )}
+                                    );
+                                    })()}
                                 </td>
                                 
                                 {/* IP Column - Implied Odds */}
@@ -9113,9 +9144,12 @@ export default function NBALandingPage() {
                                       </div>
                                       <div className="flex flex-col gap-0.5">
                                         {(() => {
-                                          const filteredLines = !isCombinedMode && selectedBookmakers.size > 0
-                                            ? (prop.bookmakerLines || []).filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
+                                          const sourceLines = isTennisPropsSport(rowSport)
+                                            ? tennisDisplayBookmakerLines(prop)
                                             : (prop.bookmakerLines || []);
+                                          const filteredLines = !isCombinedMode && selectedBookmakers.size > 0
+                                            ? sourceLines.filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
+                                            : sourceLines;
                                           const { overProb, underProb } = getConsensusImpliedProbabilities(prop, filteredLines);
                                           const showUnderIp = propsRowShowsUnderOdds(rowSport);
                                           return (
@@ -10254,9 +10288,12 @@ export default function NBALandingPage() {
                                     <div className="flex flex-col items-center justify-center rounded-lg border-2 px-3 py-2" style={getStatBoxStyle(null)}>
                                       <div className={`text-[10px] font-semibold mb-1 ${mounted && isDark ? 'text-gray-500 sm:text-gray-300' : 'text-gray-600 sm:text-gray-700'}`}>Books</div>
                                       {(() => {
-                                        const filteredLines = !isCombinedMode && selectedBookmakers.size > 0
-                                          ? (prop.bookmakerLines || []).filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
+                                        const sourceLines = isTennisPropsSport(rowSport)
+                                          ? tennisDisplayBookmakerLines(prop)
                                           : (prop.bookmakerLines || []);
+                                        const filteredLines = !isCombinedMode && selectedBookmakers.size > 0
+                                          ? sourceLines.filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
+                                          : sourceLines;
                                         const { overProb, underProb } = getConsensusImpliedProbabilities(prop, filteredLines);
                                         const showUnderIp = propsRowShowsUnderOdds(rowSport);
 
@@ -10383,10 +10420,13 @@ export default function NBALandingPage() {
                               </div>
                               
                               {/* Bookmaker Odds Section - Horizontally Scrollable */}
-                              {prop.bookmakerLines && prop.bookmakerLines.length > 0 && (() => {
-                                // Group by line value
-                                const linesByValue = new Map<number, typeof prop.bookmakerLines>();
-                                prop.bookmakerLines.forEach(line => {
+                              {(() => {
+                                const paintLines = isTennisPropsSport(rowSport)
+                                  ? tennisDisplayBookmakerLines(prop)
+                                  : (prop.bookmakerLines || []);
+                                if (!paintLines.length) return null;
+                                const linesByValue = new Map<number, typeof paintLines>();
+                                paintLines.forEach(line => {
                                   const lineValue = line.line;
                                   if (!linesByValue.has(lineValue)) {
                                     linesByValue.set(lineValue, []);
@@ -10581,7 +10621,10 @@ export default function NBALandingPage() {
                                 );
                               })()}
                               {/* Tipoff Countdown - Show if no bookmakers */}
-                              {(!prop.bookmakerLines || prop.bookmakerLines.length === 0) && (
+                              {((isTennisPropsSport(rowSport)
+                                ? tennisDisplayBookmakerLines(prop)
+                                : (prop.bookmakerLines || [])
+                              ).length === 0) && (
                                 <div className="flex items-center justify-start pr-1">
                                   <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} maxAheadMs={kickoffMaxAheadMs(rowSport)} />
                                 </div>
