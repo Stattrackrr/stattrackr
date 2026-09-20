@@ -69,7 +69,7 @@ export async function fetchNblSchedule(
   seasonType: NblSeasonType = 'regular'
 ): Promise<RosettaMatch[] | null> {
   const res = await fetchRosettaJson<RosettaMatch[]>(
-    `nbl/matches/in/season/${year}/${seasonType}`
+    `nbl/matches/in/season/${year}/${seasonType}?limit=500`
   );
   if (!res.ok) return null;
   return Array.isArray(res.data) ? res.data : null;

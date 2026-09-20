@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useEffect, useId, useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { NblShotZoneId, NblZoneStat } from '@/lib/nbl/nblShotZones';
 import { NBL_SHOT_ZONE_IDS } from '@/lib/nbl/nblShotZones';
-import { NBL_SHOT_CHART_CACHE_YEARS } from '@/lib/nblTeamCanonical';
+import {
+  NBL_SHOT_CHART_CACHE_YEARS,
+  NBL_SHOT_CHART_SEASON_YEAR,
+  nblSeasonLabel,
+} from '@/lib/nblTeamCanonical';
+
+const SHOT_CHART_SEASON_LABEL = nblSeasonLabel(NBL_SHOT_CHART_SEASON_YEAR);
 
 type ZoneRank = NblZoneStat & { rank: number | null; teamsCompared: number };
 
@@ -24,7 +31,18 @@ type DefensePayload = {
   gamesUsed: number;
   zones: NblZoneStat[];
   ranks: ZoneRank[];
+  pointsAllowed?: number;
+  ftDefense?: {
+    ftm: number;
+    fta: number;
+    ftPct: number;
+    games: number;
+    rank: number | null;
+    teamsCompared: number;
+  };
 };
+
+const NBL_RANK_SCALE = 10;
 
 type NblShotChartProps = {
   isDark?: boolean;
@@ -102,6 +120,43 @@ function getColorForRank(rank: number, fgPct?: number): string {
   return '#6b7280';
 }
 
+function defenseRankPillClass(rank: number): string {
+  if (rank <= 2) return 'bg-rose-500/15 text-rose-500 dark:text-rose-400';
+  if (rank <= 4) return 'bg-orange-500/15 text-orange-500 dark:text-orange-400';
+  if (rank <= 7) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+  return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+}
+
+const THREE_ZONES = new Set<NblShotZoneId>(['leftCorner3', 'rightCorner3', 'aboveBreak3']);
+
+const BREAKDOWN_GROUPS: ReadonlyArray<{
+  id: string;
+  label: string;
+  zones: readonly NblShotZoneId[];
+}> = [
+  { id: 'restricted', label: 'Restricted', zones: ['restricted'] },
+  { id: 'paint', label: 'Paint', zones: ['paint'] },
+  { id: 'midRange', label: 'Mid-Range', zones: ['midRange'] },
+  { id: 'leftCorner3', label: 'Left Corner 3', zones: ['leftCorner3'] },
+  { id: 'rightCorner3', label: 'Right Corner 3', zones: ['rightCorner3'] },
+  { id: 'aboveBreak3', label: 'Beyond the Arc', zones: ['aboveBreak3'] },
+];
+
+function zonePointValue(zone: NblShotZoneId): 2 | 3 {
+  return THREE_ZONES.has(zone) ? 3 : 2;
+}
+
+function formatPerGame(total: number, games: number): string {
+  if (!games || !Number.isFinite(total)) return '—';
+  const per = total / games;
+  return Number.isInteger(per) ? String(per) : per.toFixed(1);
+}
+
+function formatPct(fgm: number, fga: number): string {
+  if (!fga) return '—';
+  return `${((fgm / fga) * 100).toFixed(0)}%`;
+}
+
 function zoneLookup(zones: NblZoneStat[]): Record<NblShotZoneId, NblZoneStat> {
   const out = {} as Record<NblShotZoneId, NblZoneStat>;
   for (const id of NBL_SHOT_ZONE_IDS) {
@@ -133,6 +188,7 @@ export function NblShotChart({
   const [playerData, setPlayerData] = useState<PlayerPayload | null>(null);
   const [defenseData, setDefenseData] = useState<DefensePayload | null>(null);
   const [defenseLoading, setDefenseLoading] = useState(false);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
   const clipId = `nblRoundedCourt-${useId().replace(/:/g, '')}`;
 
   useEffect(() => {
@@ -190,7 +246,8 @@ export function NblShotChart({
   }, [playerName, playerTeam]);
 
   useEffect(() => {
-    if (!showOppDef || !opponentTeam || opponentTeam === 'N/A') {
+    if (!opponentTeam || opponentTeam === 'N/A') {
+      setDefenseData(null);
       return;
     }
     let cancelled = false;
@@ -220,7 +277,7 @@ export function NblShotChart({
     return () => {
       cancelled = true;
     };
-  }, [showOppDef, opponentTeam]);
+  }, [opponentTeam]);
 
   const z = useMemo(() => zoneLookup(playerData?.zones || []), [playerData]);
 
@@ -243,6 +300,61 @@ export function NblShotChart({
   }, [defenseData]);
 
   const hasOppRanks = Boolean(defenseData?.ranks?.some((r) => r.rank != null));
+  const canShowBreakdown = Boolean(opponentTeam && opponentTeam !== 'N/A');
+  const defenseZones = useMemo(() => zoneLookup(defenseData?.zones || []), [defenseData]);
+  const defenseGames = Math.max(0, Number(defenseData?.gamesUsed || 0));
+  const pointsAllowed = Number(defenseData?.pointsAllowed);
+  const hasBoxScorePoints = Number.isFinite(pointsAllowed) && pointsAllowed > 0;
+  const ftDefense = defenseData?.ftDefense;
+
+  const breakdownRows = useMemo(() => {
+    const rows = BREAKDOWN_GROUPS.map((group) => {
+      let fga = 0;
+      let fgm = 0;
+      let pts = 0;
+      const ranks: number[] = [];
+      for (const zone of group.zones) {
+        const row = defenseZones[zone];
+        fga += row.fga;
+        fgm += row.fgm;
+        pts += row.fgm * zonePointValue(zone);
+        const rank = rankings[zone]?.rank;
+        if (rank != null && rank > 0) ranks.push(rank);
+      }
+      const rankPills = group.zones
+        .map((zone) => {
+          const rank = rankings[zone]?.rank;
+          if (rank == null || rank <= 0) return null;
+          const side = zone === 'leftCorner3' ? 'L' : zone === 'rightCorner3' ? 'R' : '';
+          return {
+            rank,
+            label: group.zones.length > 1 && side ? `${side}#${rank}` : `#${rank}`,
+          };
+        })
+        .filter((p): p is { rank: number; label: string } => Boolean(p));
+      return {
+        id: group.id,
+        label: group.label,
+        rankPills,
+        rank: ranks.length ? Math.min(...ranks) : 0,
+        ptsPerGame: formatPerGame(pts, defenseGames),
+        rateLabel: `${formatPct(fgm, fga)} FG · ${formatPerGame(fga, defenseGames)} FGA/g`,
+      };
+    });
+    const ftGames = Math.max(0, Number(ftDefense?.games || defenseGames));
+    const ftRank = Number(ftDefense?.rank || 0);
+    const ftm = Number(ftDefense?.ftm || 0);
+    const fta = Number(ftDefense?.fta || 0);
+    rows.push({
+      id: 'freeThrows',
+      label: 'Free Throws',
+      rankPills: ftRank > 0 ? [{ rank: ftRank, label: `#${ftRank}` }] : [],
+      rank: ftRank > 0 ? ftRank : 0,
+      ptsPerGame: formatPerGame(ftm, ftGames || defenseGames),
+      rateLabel: `${fta > 0 ? `${ftDefense?.ftPct.toFixed(0)}%` : '—'} FT · ${formatPerGame(fta, ftGames || defenseGames)} FTA/g`,
+    });
+    return rows;
+  }, [defenseZones, rankings, defenseGames, ftDefense]);
   const showSkeleton = Boolean(playerName) && loading;
   const showEmpty = Boolean(playerName) && !loading && !error && playerData && playerData.shotCount <= 0;
 
@@ -273,7 +385,7 @@ export function NblShotChart({
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2 relative">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
-          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">NBL26</span>
+          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
           <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
         </div>
         <div className="flex items-center gap-2">
@@ -523,7 +635,7 @@ export function NblShotChart({
     <>
       <div className="flex items-center gap-2">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
-        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">NBL26</span>
+        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
       </div>
       <div className="w-full flex items-center justify-center p-6" style={{ minHeight: '280px' }}>
         <p
@@ -546,7 +658,7 @@ export function NblShotChart({
       <div className="w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-3 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
-          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">NBL26</span>
+          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">Select a player to load shot locations.</p>
       </div>
@@ -566,7 +678,7 @@ export function NblShotChart({
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2 relative">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">NBL26</span>
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
               <button
                 type="button"
                 onMouseEnter={() => setShowTooltip(true)}
@@ -579,7 +691,7 @@ export function NblShotChart({
                 <div className="absolute z-50 left-0 top-8 w-64 px-3 py-2 text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-[#0a1929] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
                   <strong>Shot Chart Views</strong>
                   <br />
-                  Last completed season (NBL26).
+                  Current season ({SHOT_CHART_SEASON_LABEL}).
                   <br />
                   <span className="text-blue-600 dark:text-blue-400">Attempts</span> - Player&apos;s
                   shot distribution
@@ -588,7 +700,7 @@ export function NblShotChart({
                   make distribution
                   <br />
                   <span className="text-purple-600 dark:text-purple-400">Opp Def Rank</span> - Team
-                  defense rankings by zone (lower % = better rank)
+                  defense rankings by zone (lower % = better rank). Thin-sample zones stay blank.
                 </div>
               )}
             </div>
@@ -954,6 +1066,105 @@ export function NblShotChart({
               </div>
             </div>
           )}
+
+          {canShowBreakdown ? (
+            <div className="w-full border-t border-gray-200 dark:border-[#463e6b]/70 pt-2">
+              <button
+                type="button"
+                onClick={() => setBreakdownOpen((open) => !open)}
+                aria-expanded={breakdownOpen}
+                className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left transition-colors ${
+                  breakdownOpen
+                    ? 'bg-violet-500/10 text-violet-200'
+                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5'
+                }`}
+              >
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-bold uppercase tracking-[0.14em]">
+                    In Depth Breakdown
+                  </span>
+                  <span className="block text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                    {hasBoxScorePoints
+                      ? `${formatPerGame(pointsAllowed, defenseGames)} pts allowed · ${defenseGames} ${defenseGames === 1 ? 'game' : 'games'}`
+                      : defenseGames > 0
+                        ? `Pts allowed / game · ${defenseGames} ${defenseGames === 1 ? 'game' : 'games'}`
+                        : 'Pts allowed / game'}
+                  </span>
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 transition-transform ${
+                    breakdownOpen ? 'rotate-180 text-violet-300' : 'text-gray-500'
+                  }`}
+                />
+              </button>
+              <div
+                className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
+                  breakdownOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  {defenseLoading && !defenseData ? (
+                    <div className="mt-1 h-28 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />
+                  ) : (
+                    <div className="mt-1.5 space-y-1.5 pb-0.5">
+                      {breakdownRows.map((row) => {
+                        const rank = row.rank > 0 ? row.rank : 0;
+                        const barPct = rank > 0 ? (rank / NBL_RANK_SCALE) * 100 : 0;
+                        const barColor = rank > 0 ? getColorForRank(rank) : '#6b7280';
+                        return (
+                          <div
+                            key={row.id}
+                            className="rounded-xl border border-gray-200/80 bg-gray-50/80 px-2.5 py-2 dark:border-gray-700/60 dark:bg-white/[0.03]"
+                          >
+                            <div className="mb-1 flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                  {row.label}
+                                </div>
+                                <div className="mt-0.5 flex items-baseline gap-1">
+                                  <span className="text-lg font-bold tabular-nums leading-none text-gray-900 dark:text-white">
+                                    {row.ptsPerGame}
+                                  </span>
+                                  <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+                                    pts/g
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                                {row.rankPills.length ? (
+                                  row.rankPills.map((pill) => (
+                                    <span
+                                      key={pill.label}
+                                      className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${defenseRankPillClass(pill.rank)}`}
+                                    >
+                                      {pill.label}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="rounded-md bg-gray-200 px-1.5 py-0.5 text-[9px] font-bold text-gray-500 dark:bg-gray-800 dark:text-gray-500">
+                                    —
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="relative mb-1.5 h-1.5 overflow-hidden rounded-full bg-gray-200/80 dark:bg-gray-800">
+                              <div
+                                className="absolute inset-y-0 left-0 rounded-full"
+                                style={{ width: `${barPct}%`, backgroundColor: barColor }}
+                              />
+                            </div>
+                            <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                              {row.rateLabel}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </>
       )}
     </div>

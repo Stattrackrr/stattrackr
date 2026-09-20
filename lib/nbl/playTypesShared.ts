@@ -1,9 +1,9 @@
 /**
  * Client-safe NBL attacking play types + edge-matrix shapes.
- * Locked to NBL26 (Rosetta year 2025).
+ * Locked to the current NBL27 season (Rosetta year 2026).
  */
 
-export const NBL_PLAY_TYPE_YEAR = 2025;
+export const NBL_PLAY_TYPE_YEAR = 2026;
 
 export const NBL_PLAY_TYPE_IDS = [
   'primary_bh',

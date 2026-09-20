@@ -1,9 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NBL_PLAY_TYPE_STAT_LABELS } from '@/lib/nbl/playTypesShared';
+import {
+  NBL_PLAY_TYPE_STAT_LABELS,
+  NBL_PLAY_TYPE_YEAR,
+  type NblPlayTypeCell,
+  type NblPlayTypeRoundPick,
+  type NblPlayTypesPayload,
+} from '@/lib/nbl/playTypesShared';
+import { nblSeasonLabel } from '@/lib/nblTeamCanonical';
 import { resolveNblSteTeamCode } from '@/lib/nbl/teamSteStatsShared';
-import type { NblPlayTypeCell, NblPlayTypeRoundPick, NblPlayTypesPayload } from '@/lib/nbl/playTypesShared';
 
 const STAT_HELP = Object.values(NBL_PLAY_TYPE_STAT_LABELS).join(', ');
 
@@ -202,7 +208,8 @@ export function PlayTypesInfoButton({
         >
           <strong>How Play Types work</strong>
           <br />
-          Last completed season (NBL26). Each rotation player is tagged as one attacking type:
+          Current season ({nblSeasonLabel(NBL_PLAY_TYPE_YEAR)}). Each rotation player is tagged as
+          one attacking type:
           Primary Ball Handler, Secondary Ball Handler, 3-Point Shooter, Slasher, Interior, or
           Stretch.
           <br />

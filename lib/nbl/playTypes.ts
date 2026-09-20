@@ -233,7 +233,8 @@ function zonesForYear(playerName: string, year: number) {
   if (!chart?.zones?.length) return null;
   const years = Array.isArray(chart.years) ? chart.years.map((y) => Number(y)) : [];
   if (years.length && years.some((y) => y !== year)) return null;
-  if ((chart.shotCount ?? 0) < MIN_SHOTS_FOR_ZONES) return null;
+  const minShots = (chart.gamesUsed ?? 0) >= MIN_GAMES_FOR_TAG ? MIN_SHOTS_FOR_ZONES : 8;
+  if ((chart.shotCount ?? 0) < minShots) return null;
   return chart.zones;
 }
 
@@ -245,7 +246,7 @@ function buildFeatures(
   const allPlayed = loadPlayerGames(row.playerId, year);
   if (!allPlayed.length) return null;
   const games = usableGames(allPlayed, MIN_GAME_MINUTES);
-  if (games.length < 3) return null;
+  if (!games.length) return null;
   const minutes = games.reduce((s, g) => s + (num(g.minutes) ?? 0), 0);
   if (minutes <= 0) return null;
   const minutesAvg = minutes / games.length;
@@ -418,8 +419,14 @@ type TaggedPlayer = PlayerFeatures & { type: NblPlayTypeId };
 
 const taggedByYear = new Map<string, TaggedPlayer[]>();
 
-function isQualifiedForMatrix(p: PlayerFeatures): boolean {
-  return p.gamesUsed >= MIN_GAMES_FOR_TAG && p.minutes >= MIN_AVG_MINUTES_FOR_TAG;
+function matrixMinGames(players: Array<{ gamesUsed: number }>): number {
+  const seasonMax = Math.max(0, ...players.map((p) => p.gamesUsed));
+  if (seasonMax <= 0) return MIN_GAMES_FOR_TAG;
+  return Math.max(1, Math.min(MIN_GAMES_FOR_TAG, seasonMax));
+}
+
+function isQualifiedForMatrix(p: PlayerFeatures, minGames: number): boolean {
+  return p.gamesUsed >= minGames && p.minutes >= MIN_AVG_MINUTES_FOR_TAG;
 }
 
 function tagSeason(year: number): TaggedPlayer[] {
@@ -435,7 +442,8 @@ function tagSeason(year: number): TaggedPlayer[] {
   }
   if (!features.length) return [];
 
-  const cutPool = features.filter(isQualifiedForMatrix);
+  const minGames = matrixMinGames(features);
+  const cutPool = features.filter((p) => isQualifiedForMatrix(p, minGames));
   const pool = cutPool.length ? cutPool : features;
   const asts = pool.map((p) => p.ast36).sort((a, b) => a - b);
   const usgs = pool
@@ -586,35 +594,45 @@ function buildCellForOpponent(
   clubCode: string,
   stat: NblPlayTypeStatKey
 ): NblPlayTypeCell {
-  const weighted: Array<{ value: number; minutes: number; playerId: string; name: string }> = [];
+  type UsableRow = { value: number; minutes: number; opp: string; playerId: string; name: string };
+  const rows: UsableRow[] = [];
   for (const p of group) {
-    if (!isQualifiedForMatrix(p)) continue;
     const ownCode = resolveNblSteTeamCode(p.row.teamCode || p.row.team);
     if (ownCode === clubCode) continue;
+    for (const g of p.games) {
+      const value = gameStatValue(g, stat);
+      const minutes = num(g.minutes) ?? 0;
+      const opp = opponentCodeForGame(g);
+      if (value == null || minutes < MIN_GAME_MINUTES || !opp) continue;
+      rows.push({ value, minutes, opp, playerId: p.row.playerId, name: p.row.name });
+    }
+  }
 
-    const usable = p.games
-      .map((g) => {
-        const value = gameStatValue(g, stat);
-        const minutes = num(g.minutes) ?? 0;
-        const opp = opponentCodeForGame(g);
-        if (value == null || minutes < MIN_GAME_MINUTES || !opp) return null;
-        return { value, minutes, opp };
-      })
-      .filter((row): row is { value: number; minutes: number; opp: string } => row != null);
+  const vs = rows.filter((row) => row.opp === clubCode);
+  if (!vs.length) return emptyCell();
 
-    const vs = usable.filter((row) => row.opp === clubCode);
-    if (!vs.length) continue;
-    const baselineRows = usable.filter((row) => row.opp !== clubCode);
-    if (baselineRows.length < MIN_BASELINE_GAMES) continue;
-    const baseline = weightedMean(baselineRows);
+  const typeBaselineRows = rows.filter((row) => row.opp !== clubCode);
+  const typeBaseline = typeBaselineRows.length ? weightedMean(typeBaselineRows) : null;
+
+  const weighted: Array<{ value: number; minutes: number; playerId: string; name: string }> = [];
+  const vsByPlayer = new Map<string, UsableRow[]>();
+  for (const row of vs) {
+    const list = vsByPlayer.get(row.playerId) || [];
+    list.push(row);
+    vsByPlayer.set(row.playerId, list);
+  }
+
+  for (const [playerId, playerVs] of vsByPlayer) {
+    const personalRows = rows.filter((row) => row.playerId === playerId && row.opp !== clubCode);
+    const baseline =
+      personalRows.length >= MIN_BASELINE_GAMES ? weightedMean(personalRows) : typeBaseline;
     if (baseline == null) continue;
-
-    for (const row of vs) {
+    for (const row of playerVs) {
       weighted.push({
         value: row.value - baseline,
         minutes: row.minutes,
-        playerId: p.row.playerId,
-        name: p.row.name,
+        playerId,
+        name: row.name,
       });
     }
   }
@@ -654,11 +672,11 @@ export function buildNblPlayTypesPayload(options: {
   stat?: string;
   playerId?: string | null;
 }): NblPlayTypesPayload {
-  const year = NBL_PLAY_TYPE_YEAR;
+  const year = options.year ?? NBL_PLAY_TYPE_YEAR;
   const stat = parseNblPlayTypeStat(options.stat);
   const rosterCount = loadLeaguePlayers(year).length;
   const tagged = tagSeason(year);
-  const matrixPlayers = tagged.filter(isQualifiedForMatrix);
+  const matrixPlayers = tagged.filter((p) => isQualifiedForMatrix(p, matrixMinGames(tagged)));
   const byType = new Map<NblPlayTypeId, TaggedPlayer[]>();
   for (const id of NBL_PLAY_TYPE_IDS) byType.set(id, []);
   for (const p of matrixPlayers) byType.get(p.type)?.push(p);

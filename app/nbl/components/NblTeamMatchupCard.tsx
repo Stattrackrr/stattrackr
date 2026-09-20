@@ -12,7 +12,7 @@ import { NBL_SHOT_CHART_SEASON_YEAR } from '@/lib/nblTeamCanonical';
 
 /** window=0 → full season averages for the active STE season year. */
 const SEASON_WINDOW = 0;
-/** Prefer last completed season until NBL27 (2026) game logs exist. */
+/** Full season averages for the active NBL27 STE season year. */
 const MATCHUP_SEASON_YEAR = NBL_SHOT_CHART_SEASON_YEAR;
 const WINDOWS = [
   { id: 5, label: 'L5' },

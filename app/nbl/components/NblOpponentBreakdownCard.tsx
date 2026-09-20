@@ -27,7 +27,7 @@ export default function NblOpponentBreakdownCard({
   playerName = null,
   lastOpponent = null,
 }: NblOpponentBreakdownCardProps) {
-  const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2025);
+  const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2026);
   const [payload, setPayload] = useState<NblSteStatsPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

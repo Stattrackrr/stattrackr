@@ -1,5 +1,5 @@
-# Single NBL data workflow: Rosetta season stats (2023–2025) + NBL27 tracker bits,
-# SportRadar shot-chart warm for last season only (NBL26 / 2025), then commit.
+# Single NBL data workflow: Rosetta season stats (2023–2025 history + live NBL27),
+# SportRadar shot-chart warm for live NBL27, then commit.
 # Dashboard /api/nbl/shot-chart is cache-only — never hits SportRadar live.
 name: NBL Process Stats
 
@@ -55,21 +55,25 @@ jobs:
             npm run fetch:nbl:player-game-logs -- --year=${YEAR}
           done
 
-      - name: Refresh NBL27 tracker roster / schedule / next matches
+      - name: Refresh NBL27 live season stats
         run: |
           npm run fetch:nbl:schedule -- --year=2026
           npm run fetch:nbl:next-matches -- --year=2026
           npm run fetch:nbl:roster:nbl27
           npm run fetch:nbl:league-player-stats -- --year=2026
           npm run fetch:nbl:ladder -- --year=2026
+          npm run fetch:nbl:team-stats -- --year=2026
+          npm run fetch:nbl:player-game-logs -- --year=2026
+          npm run fetch:nbl:team-game-logs -- --year=2026
+          npm run fetch:nbl:injuries
 
-      - name: Warm shot charts + player/defense aggregates (NBL26 / 2025)
+      - name: Warm shot charts + player/defense aggregates (NBL27)
         run: |
           FORCE_FLAG=""
           if [ "${{ github.event.inputs.force_shot_charts }}" = "true" ]; then
             FORCE_FLAG="--force"
           fi
-          npm run warm:nbl:shot-charts -- --years=2025 --concurrency=3 ${FORCE_FLAG}
+          npm run warm:nbl:shot-charts -- --years=2026 --concurrency=3 ${FORCE_FLAG}
 
       - name: Commit NBL data + shot-chart caches
         run: |
@@ -81,7 +85,10 @@ jobs:
             "data/nbl-roster-*.json" \
             "data/nbl-rosters-by-team-*.json" \
             "data/nbl-next-matches*.json" \
+            "data/nbl-injuries.json" \
+            "data/nbl-player-game-logs-index-*.json" \
             "data/nbl-model/cache/player-logs" \
+            "data/nbl-model/cache/period-scores" \
             "data/nbl-model/cache/shot-charts" \
             "data/nbl-model/cache/shot-chart-players" \
             "data/nbl-model/cache/shot-chart-defense" \

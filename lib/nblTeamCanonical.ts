@@ -6,10 +6,9 @@
 export const NBL_CURRENT_SEASON_YEAR = 2026; // NBL27
 
 /**
- * Shot-chart season: last completed season only (NBL26).
- * NBL27 (2026) is excluded until that season has completed games.
+ * Shot-chart + play-type matrix season: NBL27 only.
  */
-export const NBL_SHOT_CHART_SEASON_YEAR = 2025; // NBL26
+export const NBL_SHOT_CHART_SEASON_YEAR = 2026; // NBL27
 
 /** Seasons warmed into shot-chart / defense disk caches. */
 export const NBL_SHOT_CHART_CACHE_YEARS: readonly number[] = [NBL_SHOT_CHART_SEASON_YEAR];
@@ -49,6 +48,12 @@ export const NBL_CLUBS: ReadonlyArray<{
 
 const CODE_TO_CLUB = new Map(NBL_CLUBS.map((c) => [c.code, c]));
 const ID_TO_CLUB = new Map(NBL_CLUBS.map((c) => [c.id, c]));
+/** Extra schedule / book spellings that do not collapse to name/shortName/code. */
+const EXTRA_NAME_ALIASES: ReadonlyArray<[string, NblClubCode]> = [
+  ['NZ Breakers', 'NZL'],
+  ['New Zealand', 'NZL'],
+];
+
 const NAME_TO_CLUB = new Map(
   NBL_CLUBS.flatMap((c) => [
     [normalizeTeamKey(c.name), c],
@@ -56,6 +61,11 @@ const NAME_TO_CLUB = new Map(
     [normalizeTeamKey(c.code), c],
   ])
 );
+
+for (const [alias, code] of EXTRA_NAME_ALIASES) {
+  const club = CODE_TO_CLUB.get(code);
+  if (club) NAME_TO_CLUB.set(normalizeTeamKey(alias), club);
+}
 
 export function normalizeTeamKey(value: string): string {
   return String(value || '')

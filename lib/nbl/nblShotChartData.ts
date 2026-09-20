@@ -8,6 +8,7 @@
 import fs from 'fs';
 import path from 'path';
 import {
+  getNblClubByCode,
   NBL_CLUBS,
   NBL_SHOT_CHART_CACHE_YEARS,
   NBL_SHOT_CHART_SEASON_YEAR,
@@ -26,6 +27,13 @@ import {
   type NblMatchShotChart,
   type NblRawShot,
 } from '@/lib/nbl/sportRadarShots';
+
+/**
+ * Min opponent FGA in a zone before a team enters that zone's ranking.
+ * 8 was a full-season floor; NBL27 is 1 game, so corners/mid-range almost
+ * never reach 8. 4 still drops 1–2 shot luck zones.
+ */
+const MIN_ZONE_FGA_FOR_RANK = 4;
 
 /** Re-run zone math so older caches pick up classifier updates (e.g. Paint). */
 function withFreshZones(chart: NblMatchShotChart): NblMatchShotChart {
@@ -278,9 +286,117 @@ export type NblDefenseShotChartResult = {
   shotCount: number;
   zones: NblZoneStat[];
   ranks: Array<NblZoneStat & { rank: number | null; teamsCompared: number }>;
+  /** Box-score points conceded (includes FTs). */
+  pointsAllowed?: number;
+  /** Opponent free throws allowed, ranked like other zones (lower FT% = better). */
+  ftDefense?: NblFtDefenseStat;
   generatedAt?: string;
   fromCache?: boolean;
 };
+
+export type NblFtDefenseStat = {
+  ftm: number;
+  fta: number;
+  ftPct: number;
+  games: number;
+  rank: number | null;
+  teamsCompared: number;
+};
+
+type FtBucket = { ftm: number; fta: number; games: Set<string> };
+
+const MIN_FTA_FOR_RANK = MIN_ZONE_FGA_FOR_RANK;
+let ftAllowedMemo: { key: string; byTeam: Map<string, FtBucket> } | null = null;
+
+function defenderNameFromLog(opponent: string | null | undefined, opponentCode: string | null | undefined): string | null {
+  return (
+    resolveNblClubName(opponent) ||
+    getNblClubByCode(opponentCode)?.name ||
+    null
+  );
+}
+
+function loadFtAllowedByTeam(years: number[]): Map<string, FtBucket> {
+  const key = years.join(',');
+  if (ftAllowedMemo?.key === key) return ftAllowedMemo.byTeam;
+  const byTeam = new Map<string, FtBucket>();
+  for (const club of NBL_CLUBS) byTeam.set(club.name, { ftm: 0, fta: 0, games: new Set() });
+  const dir = path.join(process.cwd(), 'data', 'nbl-model', 'cache', 'player-logs');
+  if (fs.existsSync(dir)) {
+    for (const year of years) {
+      const suffix = `-${year}.json`;
+      for (const file of fs.readdirSync(dir)) {
+        if (!file.endsWith(suffix)) continue;
+        try {
+          const payload = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')) as {
+            games?: Array<{
+              matchId?: string | null;
+              date?: string | null;
+              team?: string | null;
+              opponent?: string | null;
+              opponentCode?: string | null;
+              ftMade?: number | null;
+              ftAttempted?: number | null;
+            }>;
+          };
+          for (const game of payload.games || []) {
+            const defender = defenderNameFromLog(game.opponent, game.opponentCode);
+            if (!defender) continue;
+            const bucket = byTeam.get(defender);
+            if (!bucket) continue;
+            bucket.ftm += Number(game.ftMade) || 0;
+            bucket.fta += Number(game.ftAttempted) || 0;
+            bucket.games.add(
+              String(game.matchId || `${game.date || ''}|${defender}|${game.team || ''}`)
+            );
+          }
+        } catch {
+          /* skip corrupt log */
+        }
+      }
+    }
+  }
+  ftAllowedMemo = { key, byTeam };
+  return byTeam;
+}
+
+export function rankFtDefense(team: string, years?: number[]): NblFtDefenseStat {
+  const yrs = years?.length ? years : [...NBL_SHOT_CHART_CACHE_YEARS];
+  const teamName = resolveNblClubName(team) || team;
+  const byTeam = loadFtAllowedByTeam(yrs);
+  const own = byTeam.get(teamName) || { ftm: 0, fta: 0, games: new Set<string>() };
+  const scored: Array<{ team: string; ftPct: number }> = [];
+  for (const [name, bucket] of byTeam) {
+    if (bucket.fta < MIN_FTA_FOR_RANK) continue;
+    scored.push({ team: name, ftPct: (bucket.ftm / bucket.fta) * 100 });
+  }
+  scored.sort((a, b) => a.ftPct - b.ftPct);
+  const idx = scored.findIndex((s) => teamsMatch(s.team, teamName));
+  return {
+    ftm: own.ftm,
+    fta: own.fta,
+    ftPct: own.fta > 0 ? (own.ftm / own.fta) * 100 : 0,
+    games: own.games.size,
+    rank: idx >= 0 ? idx + 1 : null,
+    teamsCompared: scored.length,
+  };
+}
+
+export function opponentPointsConceded(team: string, years?: number[]): number {
+  const teamName = resolveNblClubName(team) || team;
+  const yrs = years?.length ? years : [...NBL_SHOT_CHART_CACHE_YEARS];
+  const games = loadScheduleGames(yrs)
+    .filter(isCompletedGame)
+    .filter((g) => teamsMatch(g.homeTeam, teamName) || teamsMatch(g.awayTeam, teamName));
+  let points = 0;
+  for (const game of games) {
+    const isHome = teamsMatch(game.homeTeam, teamName);
+    const oppScore = isHome ? game.awayScore : game.homeScore;
+    const n = Number(oppScore);
+    if (Number.isFinite(n)) points += n;
+  }
+  return points;
+}
 
 export type NblShotChartManifest = {
   years: number[];
@@ -356,7 +472,7 @@ function listPlayerShotChartCaches(): NblPlayerShotChartResult[] {
 }
 
 /**
- * Rebuild player aggregates from every cached fixture (all teams / years on disk).
+ * Rebuild player aggregates from cached fixtures for the requested seasons only.
  * Writes one file per shooter, then copies onto roster spellings that alias-match.
  */
 export function rebuildPlayerShotChartAggregatesFromFixtures(options?: {
@@ -364,9 +480,24 @@ export function rebuildPlayerShotChartAggregatesFromFixtures(options?: {
   years?: number[];
 }): { playersWritten: number; withShots: number } {
   const years = options?.years?.length ? options.years : [...NBL_SHOT_CHART_CACHE_YEARS];
+  const allowedFixtureIds = new Set(
+    loadScheduleGames(years)
+      .filter(isCompletedGame)
+      .map((game) => fixtureIdOf(game))
+      .filter((id): id is string => Boolean(id))
+  );
+
+  if (fs.existsSync(PLAYER_CACHE_DIR)) {
+    for (const file of fs.readdirSync(PLAYER_CACHE_DIR)) {
+      if (!file.endsWith('.json')) continue;
+      fs.unlinkSync(path.join(PLAYER_CACHE_DIR, file));
+    }
+  }
+
   const byKey = new Map<string, FixtureShotBundle>();
 
   for (const chart of listCachedFixtures()) {
+    if (allowedFixtureIds.size > 0 && !allowedFixtureIds.has(chart.fixtureId)) continue;
     for (const shot of chart.shots) {
       const name = String(shot.name || '').trim();
       const key = normalizeNblShotPlayerKey(name);
@@ -587,7 +718,7 @@ export async function buildTeamDefenseShotChart(options: {
       for (const [team, shots] of byTeam) {
         const agg = aggregateZoneStats(shots.map((s) => ({ zone: s.zone, made: s.made })));
         const z = agg.find((r) => r.zone === zoneRow.zone);
-        if (!z || z.fga < 8) continue;
+        if (!z || z.fga < MIN_ZONE_FGA_FOR_RANK) continue;
         scored.push({ team, fgPct: z.fgPct, fga: z.fga });
       }
       scored.sort((a, b) => a.fgPct - b.fgPct);
@@ -610,6 +741,8 @@ export async function buildTeamDefenseShotChart(options: {
     shotCount: against.length,
     zones,
     ranks,
+    pointsAllowed: opponentPointsConceded(teamName, years),
+    ftDefense: rankFtDefense(teamName, years),
     generatedAt: new Date().toISOString(),
   };
 }
@@ -642,7 +775,13 @@ export function loadPlayerShotChartForApi(
 
 /** Dashboard-safe: prebuilt defense aggregate only. */
 export function loadTeamDefenseShotChartForApi(team: string): NblDefenseShotChartResult | null {
-  return readTeamDefenseShotChartCache(team);
+  const cached = readTeamDefenseShotChartCache(team);
+  if (!cached) return null;
+  return {
+    ...cached,
+    pointsAllowed: opponentPointsConceded(cached.team || team, cached.years),
+    ftDefense: rankFtDefense(cached.team || team, cached.years),
+  };
 }
 
 export function emptyPlayerShotChart(playerName: string, years: number[]): NblPlayerShotChartResult {
