@@ -1,10 +1,11 @@
 {
   "playerId": "c2814f09-84a5-416d-97ef-8441c3f1186e",
-  "name": null,
-  "team": null,
+  "name": "Christian D'Angelo",
+  "team": "Melbourne United",
+  "teamCode": "MEL",
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-14T12:30:02.036Z",
+  "generatedAt": "2026-09-20T16:35:42.565Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 0,
   "games": []

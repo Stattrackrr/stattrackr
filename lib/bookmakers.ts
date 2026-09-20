@@ -382,8 +382,8 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'betvictor': {
     name: 'BetVictor',
     logo: 'BV',
-    logoUrl: getLogoUrl('betvictor.com'),
-    color: '#D4AF37',
+    logoUrl: '/images/bookmakers/betvictor.png?v=20260921c',
+    color: '#00C2F3',
   },
   'sbo': {
     name: 'SBOBET',
@@ -606,6 +606,43 @@ function compactBookKey(key: string): string {
   return key.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
 }
 
+/** Local brand marks in /public/images/bookmakers. Alias keys collapse onto a file slug. */
+const LOCAL_BOOKMAKER_LOGO_SLUGS: Record<string, string> = {
+  betr: 'betr',
+  betrau: 'betr',
+  bet365: 'bet365',
+  bet365au: 'bet365',
+  bet365nl: 'bet365',
+  betfair: 'betfair',
+  betmgm: 'betmgm',
+  betvictor: 'betvictor',
+  bv: 'betvictor',
+  caesars: 'caesars',
+  dabble: 'dabble',
+  dabbleau: 'dabble',
+  draftkings: 'draftkings',
+  fanatics: 'fanatics',
+  fanaticssportsbook: 'fanatics',
+  fanaticsbettingandgaming: 'fanatics',
+  fanduel: 'fanduel',
+  ladbrokes: 'ladbrokes',
+  neds: 'neds',
+  pointsbet: 'pointsbet',
+  pointsbetau: 'pointsbet',
+  sportsbet: 'sportsbet',
+  tab: 'tab',
+  unibet: 'unibet',
+  unibetau: 'unibet',
+  williamhillus: 'caesars',
+};
+
+function localBookmakerLogoUrl(key: string): string | null {
+  const compact = compactBookKey(key);
+  const stripped = compact.replace(/(au|uk|us|eu|nl|fr|se|it|de|ca|ag)$/g, '');
+  const slug = LOCAL_BOOKMAKER_LOGO_SLUGS[compact] || LOCAL_BOOKMAKER_LOGO_SLUGS[stripped] || null;
+  return slug ? `/images/bookmakers/${slug}.png?v=20260921c` : null;
+}
+
 /** Official site used for favicon fallback when a local asset is missing. */
 const BOOK_DOMAINS: Record<string, string> = {
   '10bet': '10bet.com',
@@ -723,7 +760,9 @@ function guessBookDomain(key: string): string {
 
 export function bookmakerLogoCandidates(key: string, preferred?: string | null): string[] {
   const urls: string[] = [];
-  if (preferred) urls.push(preferred);
+  const local = localBookmakerLogoUrl(key);
+  if (local) urls.push(local);
+  if (preferred && preferred !== local) urls.push(preferred);
   const domain = guessBookDomain(key);
   urls.push(getLogoUrl(domain));
   urls.push(`https://icons.duckduckgo.com/ip3/${domain}.ico`);

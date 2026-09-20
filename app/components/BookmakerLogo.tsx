@@ -22,7 +22,8 @@ export default function BookmakerLogo({
       <span
         className={`${className} flex items-center justify-center text-[10px] font-semibold text-white`}
         style={{ backgroundColor: info.color }}
-        aria-hidden
+        title={info.name}
+        aria-label={alt ?? info.name}
       >
         {info.logo}
       </span>
@@ -33,6 +34,7 @@ export default function BookmakerLogo({
     <img
       src={src}
       alt={alt ?? info.name}
+      title={info.name}
       className={className}
       onError={() => setIndex((prev) => prev + 1)}
     />

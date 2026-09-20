@@ -12,6 +12,7 @@
  *   AFL_WARM_LIMIT=0 (0 = no limit)
  *   AFL_WARM_MAX_FAILURES=100 (workflow succeeds if failed count < this; default 100)
  *   AFL_WARM_PLAYER=Nasiah  (only warm players whose name contains this string, case-insensitive)
+ *   AFL_WARM_TEAMS=Sydney,Fremantle,Hawthorn,Brisbane  (finals/current clubs only)
  *   CRON_SECRET=... (sent as Bearer + X-Cron-Secret)
  */
 
@@ -28,6 +29,10 @@ const concurrency = Math.max(1, parseInt(process.env.AFL_WARM_CONCURRENCY || '6'
 const warmLimit = Math.max(0, parseInt(process.env.AFL_WARM_LIMIT || '0', 10));
 const maxFailures = Math.max(0, parseInt(process.env.AFL_WARM_MAX_FAILURES || '100', 10));
 const warmPlayerFilter = (process.env.AFL_WARM_PLAYER || '').trim().toLowerCase();
+const warmTeamFilters = String(process.env.AFL_WARM_TEAMS || '')
+  .split(',')
+  .map((v) => v.trim().toLowerCase())
+  .filter(Boolean);
 const cronSecret = (process.env.CRON_SECRET || '').trim();
 const forceFetchSeasons = new Set(
   String(process.env.AFL_WARM_FORCE_FETCH_SEASONS || String(new Date().getFullYear()))
@@ -151,6 +156,16 @@ function teamForRequest(team) {
   return NICKNAME_TO_FULL[t] || NICKNAME_TO_FULL[t.replace(/\s+/g, ' ')] || t;
 }
 
+function teamMatchesWarmFilter(team) {
+  if (!warmTeamFilters.length) return true;
+  const official = teamForRequest(team).toLowerCase();
+  const raw = String(team || '').trim().toLowerCase();
+  return warmTeamFilters.some((wanted) => {
+    const wantedOfficial = teamForRequest(wanted).toLowerCase();
+    return official === wantedOfficial || raw === wanted || official === wanted;
+  });
+}
+
 const WARM_ZERO_GAMES_RETRIES = Math.max(0, parseInt(process.env.AFL_WARM_ZERO_GAMES_RETRIES || '1', 10));
 const WARM_RETRY_DELAY_MS = Math.max(200, parseInt(process.env.AFL_WARM_RETRY_DELAY_MS || '800', 10));
 const WARM_INTER_REQUEST_DELAY_MS = Math.max(0, parseInt(process.env.AFL_WARM_INTER_REQUEST_DELAY_MS || '0', 10));
@@ -254,11 +269,17 @@ async function main() {
     if (warmPlayerFilter) {
       seasonPlayers = seasonPlayers.filter((p) => p.name.toLowerCase().includes(warmPlayerFilter));
     }
+    if (warmTeamFilters.length) {
+      seasonPlayers = seasonPlayers.filter((p) => teamMatchesWarmFilter(p.team));
+    }
     if (seasonPlayers.length === 0) {
       if (!fallbackPlayers.length) {
         fallbackPlayers = loadActiveAflPlayers();
         if (warmPlayerFilter) {
           fallbackPlayers = fallbackPlayers.filter((p) => p.name.toLowerCase().includes(warmPlayerFilter));
+        }
+        if (warmTeamFilters.length) {
+          fallbackPlayers = fallbackPlayers.filter((p) => teamMatchesWarmFilter(p.team));
         }
       }
       seasonPlayers = fallbackPlayers.map((p) => ({ ...p, season }));
@@ -288,6 +309,9 @@ async function main() {
 
   const uniquePlayerCount = new Set(jobs.map((j) => normalizePlayerName(j.player.name))).size;
   console.log(`[AFL Warm] 🔥 Warming AFL player logs cache (force seasons: ${[...forceFetchSeasons].join(', ') || 'none'})`);
+  if (warmTeamFilters.length) {
+    console.log(`[AFL Warm] 🏆 Team filter: ${warmTeamFilters.join(', ')}`);
+  }
   console.log(`[AFL Warm] 👥 Unique players: ${uniquePlayerCount}`);
   console.log(`[AFL Warm] 📅 Seasons: ${warmSeasons.join(', ')}`);
   for (const season of warmSeasons) {

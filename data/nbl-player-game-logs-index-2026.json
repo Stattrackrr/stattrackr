@@ -1,0 +1,1234 @@
+{
+  "year": 2026,
+  "seasonLabel": "NBL27",
+  "generatedAt": "2026-09-20T16:35:50.026Z",
+  "source": "rosetta.nbl.com.au",
+  "playerCount": 153,
+  "gameRows": 86,
+  "players": [
+    {
+      "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
+      "name": "Akech Aliir",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/92012cd9-65dd-47f1-a51e-a6b5169bf359-2026.json"
+    },
+    {
+      "playerId": "45f14944-075d-47c1-a972-2dcfc073c958",
+      "name": "Alex Higgins-Titsha",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/45f14944-075d-47c1-a972-2dcfc073c958-2026.json"
+    },
+    {
+      "playerId": "67357242-2244-43f0-996c-b15c64e27232",
+      "name": "Amarco Doyle",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/67357242-2244-43f0-996c-b15c64e27232-2026.json"
+    },
+    {
+      "playerId": "378c71b4-8d3d-4161-aaa4-88c69be7309e",
+      "name": "Andrew Carr",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/378c71b4-8d3d-4161-aaa4-88c69be7309e-2026.json"
+    },
+    {
+      "playerId": "145dc428-1473-408f-b295-0004e66f4456",
+      "name": "Angus Brandt",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/145dc428-1473-408f-b295-0004e66f4456-2026.json"
+    },
+    {
+      "playerId": "79fe0730-aca0-4167-97cc-1ef09514cc66",
+      "name": "Angus Glover",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/79fe0730-aca0-4167-97cc-1ef09514cc66-2026.json"
+    },
+    {
+      "playerId": "a9125673-5d09-4a1b-aac1-b403f5bf372a",
+      "name": "Anthony Dell'Orso",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/a9125673-5d09-4a1b-aac1-b403f5bf372a-2026.json"
+    },
+    {
+      "playerId": "265433cd-8c84-4b96-a22d-ec1912b9b785",
+      "name": "Anthony Drmic",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/265433cd-8c84-4b96-a22d-ec1912b9b785-2026.json"
+    },
+    {
+      "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
+      "name": "Anzac Rissetto",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/f0fcd930-bb7b-4b3d-b6df-4303cf7e412b-2026.json"
+    },
+    {
+      "playerId": "c18d40cc-7977-4b30-a1b8-f0fcc14e98ab",
+      "name": "Archie Woodhill",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/c18d40cc-7977-4b30-a1b8-f0fcc14e98ab-2026.json"
+    },
+    {
+      "playerId": "7ea89a63-460c-4530-a6b8-e770aced04e3",
+      "name": "Arnas Velicka",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/7ea89a63-460c-4530-a6b8-e770aced04e3-2026.json"
+    },
+    {
+      "playerId": "7cbda995-8a38-4c4a-be9c-4e36b25ccba2",
+      "name": "Aubrey Chunga",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/7cbda995-8a38-4c4a-be9c-4e36b25ccba2-2026.json"
+    },
+    {
+      "playerId": "b42c71df-100c-4500-b591-dfb079fe4a7e",
+      "name": "Austin Shelley",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/b42c71df-100c-4500-b591-dfb079fe4a7e-2026.json"
+    },
+    {
+      "playerId": "2660102d-2921-4ff0-b421-1df5fad62a1f",
+      "name": "Bailey Hanson",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/2660102d-2921-4ff0-b421-1df5fad62a1f-2026.json"
+    },
+    {
+      "playerId": "75f0d755-2f57-4460-9b0f-41b0eac46e7e",
+      "name": "Ben Ayre",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/75f0d755-2f57-4460-9b0f-41b0eac46e7e-2026.json"
+    },
+    {
+      "playerId": "b1a9c2de-ca6f-4332-b0e0-2a4fdbcedd06",
+      "name": "Ben Gold",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/b1a9c2de-ca6f-4332-b0e0-2a4fdbcedd06-2026.json"
+    },
+    {
+      "playerId": "24a2f29d-6bfd-427a-9cb4-4ac0f4088083",
+      "name": "Ben Griscti",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/24a2f29d-6bfd-427a-9cb4-4ac0f4088083-2026.json"
+    },
+    {
+      "playerId": "3d576bb6-e3a0-445b-84e4-5ed6936d7ad8",
+      "name": "Billy McRae",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/3d576bb6-e3a0-445b-84e4-5ed6936d7ad8-2026.json"
+    },
+    {
+      "playerId": "edb856e2-b660-4276-a621-e7b8fceadc0a",
+      "name": "Blake Neilsen",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/edb856e2-b660-4276-a621-e7b8fceadc0a-2026.json"
+    },
+    {
+      "playerId": "facb68bd-0ceb-44e4-b28c-fdf49dfbd775",
+      "name": "Brandon Knight",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/facb68bd-0ceb-44e4-b28c-fdf49dfbd775-2026.json"
+    },
+    {
+      "playerId": "fcd143b4-3573-4b51-9ead-4707f48d0f20",
+      "name": "Brodie McGregor",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/fcd143b4-3573-4b51-9ead-4707f48d0f20-2026.json"
+    },
+    {
+      "playerId": "e85b6d9a-6520-4af0-a83d-6a9803429c57",
+      "name": "Brody Nunn",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/e85b6d9a-6520-4af0-a83d-6a9803429c57-2026.json"
+    },
+    {
+      "playerId": "41a2b121-3fe0-4e82-b3d3-d6079ed33b8b",
+      "name": "Bryce Cotton",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/41a2b121-3fe0-4e82-b3d3-d6079ed33b8b-2026.json"
+    },
+    {
+      "playerId": "3ffb3584-1aba-4815-a32c-ae7779646051",
+      "name": "Bryce Hamilton",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/3ffb3584-1aba-4815-a32c-ae7779646051-2026.json"
+    },
+    {
+      "playerId": "0b14fdbe-9516-47b3-b317-de92bffd64de",
+      "name": "Bul Kuol",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/0b14fdbe-9516-47b3-b317-de92bffd64de-2026.json"
+    },
+    {
+      "playerId": "322328f8-6ddd-422d-8a17-24a66897100d",
+      "name": "Cameron Huefner",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/322328f8-6ddd-422d-8a17-24a66897100d-2026.json"
+    },
+    {
+      "playerId": "ef79baef-a773-4563-8463-0261d3e0ce8f",
+      "name": "Carlin Davison",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/ef79baef-a773-4563-8463-0261d3e0ce8f-2026.json"
+    },
+    {
+      "playerId": "ac574899-344f-4ec9-9b8e-f2ee16d706c8",
+      "name": "Charles Bediako",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/ac574899-344f-4ec9-9b8e-f2ee16d706c8-2026.json"
+    },
+    {
+      "playerId": "f243749f-0174-4255-b6ff-d0a9896899e8",
+      "name": "Chris Goulding",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/f243749f-0174-4255-b6ff-d0a9896899e8-2026.json"
+    },
+    {
+      "playerId": "c2814f09-84a5-416d-97ef-8441c3f1186e",
+      "name": "Christian D'Angelo",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/c2814f09-84a5-416d-97ef-8441c3f1186e-2026.json"
+    },
+    {
+      "playerId": "0edcc8b5-60a8-4ebe-b75d-5fb3f64d40e6",
+      "name": "Cole Anthony",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/0edcc8b5-60a8-4ebe-b75d-5fb3f64d40e6-2026.json"
+    },
+    {
+      "playerId": "6c3024b9-ffb8-4a9d-bb23-1e99191f98b9",
+      "name": "D'Shawn Schwartz",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/6c3024b9-ffb8-4a9d-bb23-1e99191f98b9-2026.json"
+    },
+    {
+      "playerId": "83f36c6e-d1f1-44cb-8576-78717cc826f2",
+      "name": "Dakota Mathias",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/83f36c6e-d1f1-44cb-8576-78717cc826f2-2026.json"
+    },
+    {
+      "playerId": "b151cb86-4bf1-4b47-8b0c-14c0b9f51604",
+      "name": "Daniel Foster",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/b151cb86-4bf1-4b47-8b0c-14c0b9f51604-2026.json"
+    },
+    {
+      "playerId": "27ab462f-634a-4809-a40e-f102be36c282",
+      "name": "Daniel Grida",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/27ab462f-634a-4809-a40e-f102be36c282-2026.json"
+    },
+    {
+      "playerId": "28a843e9-a597-4c1c-8b6a-10aac0b2ae4e",
+      "name": "Darius Days",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/28a843e9-a597-4c1c-8b6a-10aac0b2ae4e-2026.json"
+    },
+    {
+      "playerId": "d92ec6d5-b731-476a-b4a4-10cc36211bf5",
+      "name": "Dash Daniels",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/d92ec6d5-b731-476a-b4a4-10cc36211bf5-2026.json"
+    },
+    {
+      "playerId": "5dc2188c-e53b-4273-9573-aae63a31bd39",
+      "name": "David Johnson",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/5dc2188c-e53b-4273-9573-aae63a31bd39-2026.json"
+    },
+    {
+      "playerId": "84a1ebbc-7e5c-4423-9987-045086e5ba26",
+      "name": "Dejan Vasiljevic",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/84a1ebbc-7e5c-4423-9987-045086e5ba26-2026.json"
+    },
+    {
+      "playerId": "3f5c80aa-20b9-48b0-8482-9a9beafc963a",
+      "name": "Deonte Williams",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/3f5c80aa-20b9-48b0-8482-9a9beafc963a-2026.json"
+    },
+    {
+      "playerId": "19611d1d-9349-4e39-a3ef-0733577b56e5",
+      "name": "Dylan Windler",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/19611d1d-9349-4e39-a3ef-0733577b56e5-2026.json"
+    },
+    {
+      "playerId": "318cc011-ca3e-4a82-b1cf-fd805b05d6d4",
+      "name": "Elijah Pepper",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/318cc011-ca3e-4a82-b1cf-fd805b05d6d4-2026.json"
+    },
+    {
+      "playerId": "b495af94-c2ca-4bfc-b356-58f847ba4390",
+      "name": "Ellis Biggar",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/b495af94-c2ca-4bfc-b356-58f847ba4390-2026.json"
+    },
+    {
+      "playerId": "02fa3a79-2bc1-4ad7-97be-44aafcb09d91",
+      "name": "Fabijan Krslovic",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/02fa3a79-2bc1-4ad7-97be-44aafcb09d91-2026.json"
+    },
+    {
+      "playerId": "39c99a6c-4190-4abb-9f27-b41f7b2470f5",
+      "name": "Fletcher MacDonald",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/39c99a6c-4190-4abb-9f27-b41f7b2470f5-2026.json"
+    },
+    {
+      "playerId": "06116392-133b-4cac-93a5-a6aefc375717",
+      "name": "Flynn Cameron",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/06116392-133b-4cac-93a5-a6aefc375717-2026.json"
+    },
+    {
+      "playerId": "62a66658-e332-4f12-bbbd-8f1c3c442f93",
+      "name": "Harry Neilson",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/62a66658-e332-4f12-bbbd-8f1c3c442f93-2026.json"
+    },
+    {
+      "playerId": "2d1e9f7f-e241-4797-8b2f-70472f07f4c8",
+      "name": "Harry Rouhliadeff",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/2d1e9f7f-e241-4797-8b2f-70472f07f4c8-2026.json"
+    },
+    {
+      "playerId": "9f292ecd-bd5e-413a-b8d7-8397eaa04b3e",
+      "name": "Harry Wessels",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/9f292ecd-bd5e-413a-b8d7-8397eaa04b3e-2026.json"
+    },
+    {
+      "playerId": "b01fb703-e139-496d-abd9-51e83f5f095d",
+      "name": "Harvey White",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/b01fb703-e139-496d-abd9-51e83f5f095d-2026.json"
+    },
+    {
+      "playerId": "0a5486ee-953a-4fae-920d-4a77de1bdf03",
+      "name": "Hunter Goodrick",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/0a5486ee-953a-4fae-920d-4a77de1bdf03-2026.json"
+    },
+    {
+      "playerId": "830330b0-c5e1-4218-ad3a-c1503bb905ad",
+      "name": "Isaac Humphries",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/830330b0-c5e1-4218-ad3a-c1503bb905ad-2026.json"
+    },
+    {
+      "playerId": "0994d5da-21ea-4720-8dad-71020a214700",
+      "name": "Isaac White",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/0994d5da-21ea-4720-8dad-71020a214700-2026.json"
+    },
+    {
+      "playerId": "54a74f78-bff8-4cdb-99d0-ebd1cc720b47",
+      "name": "Izayah Le'Afa",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/54a74f78-bff8-4cdb-99d0-ebd1cc720b47-2026.json"
+    },
+    {
+      "playerId": "b50568ab-1745-4c99-9360-a270000b3366",
+      "name": "Jack McVeigh",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/b50568ab-1745-4c99-9360-a270000b3366-2026.json"
+    },
+    {
+      "playerId": "00e61e90-d1f1-4ec8-8a72-e7b04c0e5c0b",
+      "name": "Jacob Holt",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/00e61e90-d1f1-4ec8-8a72-e7b04c0e5c0b-2026.json"
+    },
+    {
+      "playerId": "6411557a-9dae-42a7-a8c6-3953529eeaaa",
+      "name": "Jacob Rigoni",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/6411557a-9dae-42a7-a8c6-3953529eeaaa-2026.json"
+    },
+    {
+      "playerId": "02e2dc7e-2adc-48bb-b641-4be8fd8373dd",
+      "name": "Jai Fa'ale",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/02e2dc7e-2adc-48bb-b641-4be8fd8373dd-2026.json"
+    },
+    {
+      "playerId": "a1fe0dc7-5cf6-4e8e-9bbd-26c2564bf1a9",
+      "name": "Jaron Rillie",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/a1fe0dc7-5cf6-4e8e-9bbd-26c2564bf1a9-2026.json"
+    },
+    {
+      "playerId": "be414749-6d0f-4620-857d-a9b017a2c0b4",
+      "name": "Jason Spurgin",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/be414749-6d0f-4620-857d-a9b017a2c0b4-2026.json"
+    },
+    {
+      "playerId": "509b7fe4-bf76-47ca-bb4c-4eea1ca5bdfb",
+      "name": "Jayden Stone",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/509b7fe4-bf76-47ca-bb4c-4eea1ca5bdfb-2026.json"
+    },
+    {
+      "playerId": "cf991943-7063-4624-a62c-1b5970dcb6eb",
+      "name": "Jaylin Galloway",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/cf991943-7063-4624-a62c-1b5970dcb6eb-2026.json"
+    },
+    {
+      "playerId": "a13a2ea7-3918-4cd3-93d2-a33703ce234d",
+      "name": "Jaylin Williams",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/a13a2ea7-3918-4cd3-93d2-a33703ce234d-2026.json"
+    },
+    {
+      "playerId": "17bfb8e3-400e-428d-96a3-64eecea3b6a2",
+      "name": "Jaylon Brown",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/17bfb8e3-400e-428d-96a3-64eecea3b6a2-2026.json"
+    },
+    {
+      "playerId": "44c17e2b-7e6a-43b7-9421-c50c0f001071",
+      "name": "Jed Richardson",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/44c17e2b-7e6a-43b7-9421-c50c0f001071-2026.json"
+    },
+    {
+      "playerId": "de77a2d8-245d-4564-9e53-a62608a8b416",
+      "name": "Jensen Bradtke",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/de77a2d8-245d-4564-9e53-a62608a8b416-2026.json"
+    },
+    {
+      "playerId": "4a3d7bc9-18a9-4106-a201-79643586e4c3",
+      "name": "Jesse Wagstaff",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/4a3d7bc9-18a9-4106-a201-79643586e4c3-2026.json"
+    },
+    {
+      "playerId": "2e2b1ed6-2547-47c2-bb52-f401924a4557",
+      "name": "Jimmy Whitt",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/2e2b1ed6-2547-47c2-bb52-f401924a4557-2026.json"
+    },
+    {
+      "playerId": "5adef25b-648e-442b-983e-020043e7872d",
+      "name": "Jo Lual-Acuil Jr",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/5adef25b-648e-442b-983e-020043e7872d-2026.json"
+    },
+    {
+      "playerId": "55d2550e-3e91-4863-81b8-d2958bd2dd76",
+      "name": "Joe Ingles",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/55d2550e-3e91-4863-81b8-d2958bd2dd76-2026.json"
+    },
+    {
+      "playerId": "71771a51-6f51-4a37-a27e-2a123e775a5c",
+      "name": "John Jenkins",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/71771a51-6f51-4a37-a27e-2a123e775a5c-2026.json"
+    },
+    {
+      "playerId": "1db6c57b-a7f5-43a3-aaaa-4731f2bc57f5",
+      "name": "Johny Narkle",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/1db6c57b-a7f5-43a3-aaaa-4731f2bc57f5-2026.json"
+    },
+    {
+      "playerId": "fc16e0a8-a6b8-4000-b37f-d3a58d98244b",
+      "name": "Jonah Bolden",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/fc16e0a8-a6b8-4000-b37f-d3a58d98244b-2026.json"
+    },
+    {
+      "playerId": "6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9",
+      "name": "Jordan Hunter",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9-2026.json"
+    },
+    {
+      "playerId": "fdf9d29d-b00b-4db0-a69a-cc5eaa23a234",
+      "name": "Josh Bannan",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/fdf9d29d-b00b-4db0-a69a-cc5eaa23a234-2026.json"
+    },
+    {
+      "playerId": "81099730-32f6-4aea-a76e-a48cc806d8e0",
+      "name": "Josh Oduro",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/81099730-32f6-4aea-a76e-a48cc806d8e0-2026.json"
+    },
+    {
+      "playerId": "a63a2562-0d24-4d73-8e3c-51fc9830134b",
+      "name": "Joshua Duach",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/a63a2562-0d24-4d73-8e3c-51fc9830134b-2026.json"
+    },
+    {
+      "playerId": "03695de5-49b2-48ca-8cf9-d3a411b7fb98",
+      "name": "Josiah-Jordan James",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/03695de5-49b2-48ca-8cf9-d3a411b7fb98-2026.json"
+    },
+    {
+      "playerId": "390eb61f-813f-4997-ae70-8e412a3ee696",
+      "name": "Kael Robinson",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/390eb61f-813f-4997-ae70-8e412a3ee696-2026.json"
+    },
+    {
+      "playerId": "69d6f1b5-b1f1-4370-841d-862526017262",
+      "name": "Kazlo Evans Jr",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/69d6f1b5-b1f1-4370-841d-862526017262-2026.json"
+    },
+    {
+      "playerId": "59a777fb-049b-4f99-8bb1-f53516f76953",
+      "name": "Keanu Pinder",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/59a777fb-049b-4f99-8bb1-f53516f76953-2026.json"
+    },
+    {
+      "playerId": "387c51fb-7f66-47b6-bb40-0876ae41bb29",
+      "name": "Keanu Rasmussen",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/387c51fb-7f66-47b6-bb40-0876ae41bb29-2026.json"
+    },
+    {
+      "playerId": "76536695-6c04-4c8a-b104-5ebbabb95879",
+      "name": "Kelan Martin",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/76536695-6c04-4c8a-b104-5ebbabb95879-2026.json"
+    },
+    {
+      "playerId": "e2f8ccd9-5be5-41e2-a04b-be70c7c2af1c",
+      "name": "Keli Leaupepe",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/e2f8ccd9-5be5-41e2-a04b-be70c7c2af1c-2026.json"
+    },
+    {
+      "playerId": "be4c5c96-8667-40f8-98d0-4c1d99641bc5",
+      "name": "Kendric Davis",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/be4c5c96-8667-40f8-98d0-4c1d99641bc5-2026.json"
+    },
+    {
+      "playerId": "a10eef82-dac8-4efd-acd5-cdf867139034",
+      "name": "Kobe Williamson",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/a10eef82-dac8-4efd-acd5-cdf867139034-2026.json"
+    },
+    {
+      "playerId": "52017fdb-600a-4da8-b37c-bf4b227b90ec",
+      "name": "Kouat Noi",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/52017fdb-600a-4da8-b37c-bf4b227b90ec-2026.json"
+    },
+    {
+      "playerId": "37613082-354f-48d0-b16d-0d9ff613f64c",
+      "name": "Kristian Doolittle",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/37613082-354f-48d0-b16d-0d9ff613f64c-2026.json"
+    },
+    {
+      "playerId": "f9b53b9b-9907-43d2-bf0a-d88e58abacf0",
+      "name": "Kyle Adnam",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/f9b53b9b-9907-43d2-bf0a-d88e58abacf0-2026.json"
+    },
+    {
+      "playerId": "3eed080d-4398-49ef-a990-ff5bf86c98ed",
+      "name": "Kyle Bowen",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/3eed080d-4398-49ef-a990-ff5bf86c98ed-2026.json"
+    },
+    {
+      "playerId": "872bdcab-a933-4436-874d-4d94f4e184e8",
+      "name": "Kyrin Galloway",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/872bdcab-a933-4436-874d-4d94f4e184e8-2026.json"
+    },
+    {
+      "playerId": "98ee26c6-adb4-470a-b30e-63c14524d6d1",
+      "name": "Lachlan Bofinger",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/98ee26c6-adb4-470a-b30e-63c14524d6d1-2026.json"
+    },
+    {
+      "playerId": "72703b55-4db2-4e14-b7a4-a38f31c32388",
+      "name": "Lamar Patterson",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/72703b55-4db2-4e14-b7a4-a38f31c32388-2026.json"
+    },
+    {
+      "playerId": "2337cf0e-9ee7-439d-8aec-770b3876368c",
+      "name": "Lat Mayen",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/2337cf0e-9ee7-439d-8aec-770b3876368c-2026.json"
+    },
+    {
+      "playerId": "69a0f400-cf3f-4a5a-9c5d-cfa80cd00ec3",
+      "name": "Lloyd McVeigh",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/69a0f400-cf3f-4a5a-9c5d-cfa80cd00ec3-2026.json"
+    },
+    {
+      "playerId": "23f56f6b-c7d2-434e-8929-9eada1c1a143",
+      "name": "Luca Yates",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/23f56f6b-c7d2-434e-8929-9eada1c1a143-2026.json"
+    },
+    {
+      "playerId": "08c14dd1-935b-4e34-8e1f-97da35d055c9",
+      "name": "Luke Paul",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/08c14dd1-935b-4e34-8e1f-97da35d055c9-2026.json"
+    },
+    {
+      "playerId": "46d53277-6741-4431-80c1-aefd8aff6cc9",
+      "name": "Luke Travers",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/46d53277-6741-4431-80c1-aefd8aff6cc9-2026.json"
+    },
+    {
+      "playerId": "0dd6e2f3-0358-4a6e-a340-fe5279db28fa",
+      "name": "Majok Deng",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/0dd6e2f3-0358-4a6e-a340-fe5279db28fa-2026.json"
+    },
+    {
+      "playerId": "6a42971e-6638-4472-b289-98c544aaa90a",
+      "name": "Makuach Maluach",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/6a42971e-6638-4472-b289-98c544aaa90a-2026.json"
+    },
+    {
+      "playerId": "c6b7202f-6619-422a-8d2b-8e52a8d48935",
+      "name": "Malique Lewis",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/c6b7202f-6619-422a-8d2b-8e52a8d48935-2026.json"
+    },
+    {
+      "playerId": "135b961b-2a30-4044-9d4e-52128c10a33c",
+      "name": "Malith Machar",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/135b961b-2a30-4044-9d4e-52128c10a33c-2026.json"
+    },
+    {
+      "playerId": "9ffab474-7164-40a8-8b80-247393b30895",
+      "name": "Marley Sam",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/9ffab474-7164-40a8-8b80-247393b30895-2026.json"
+    },
+    {
+      "playerId": "db202f21-d605-4ca1-8901-8abbd440f105",
+      "name": "Mason Peatling",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/db202f21-d605-4ca1-8901-8abbd440f105-2026.json"
+    },
+    {
+      "playerId": "0c6e8860-99ba-44d2-9f1a-8b6e58936bb8",
+      "name": "Matt Kenyon",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/0c6e8860-99ba-44d2-9f1a-8b6e58936bb8-2026.json"
+    },
+    {
+      "playerId": "83582125-9e71-4e7c-ae15-07f11333b2da",
+      "name": "Matthew Dellavedova",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/83582125-9e71-4e7c-ae15-07f11333b2da-2026.json"
+    },
+    {
+      "playerId": "9b04b8b2-c234-4c8e-8653-d896d66267a9",
+      "name": "Max Mackinnon",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/9b04b8b2-c234-4c8e-8653-d896d66267a9-2026.json"
+    },
+    {
+      "playerId": "ade09c69-e9b3-46d1-8202-2b778e96409a",
+      "name": "Milton Doyle",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/ade09c69-e9b3-46d1-8202-2b778e96409a-2026.json"
+    },
+    {
+      "playerId": "2e2291aa-36b6-4928-b348-0f5951fbc3b4",
+      "name": "Mitch Norton",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/2e2291aa-36b6-4928-b348-0f5951fbc3b4-2026.json"
+    },
+    {
+      "playerId": "3443c855-3ca4-4274-8cbf-74423c32b425",
+      "name": "Mojave King",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/3443c855-3ca4-4274-8cbf-74423c32b425-2026.json"
+    },
+    {
+      "playerId": "aeb4d203-4032-44a5-a412-584f007d6dfb",
+      "name": "Nate Hinton",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/aeb4d203-4032-44a5-a412-584f007d6dfb-2026.json"
+    },
+    {
+      "playerId": "7f6e18b2-6494-41c7-9791-d72c632317d5",
+      "name": "Nathan Sobey",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/7f6e18b2-6494-41c7-9791-d72c632317d5-2026.json"
+    },
+    {
+      "playerId": "20791487-46a5-4d75-a6a1-17d8013c251f",
+      "name": "Nicholas Stoddart",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/20791487-46a5-4d75-a6a1-17d8013c251f-2026.json"
+    },
+    {
+      "playerId": "c9019743-60ae-4700-852e-6ae15c1cbef6",
+      "name": "Nick Marshall",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/c9019743-60ae-4700-852e-6ae15c1cbef6-2026.json"
+    },
+    {
+      "playerId": "eb26560d-c56e-4409-b482-8b141421ce79",
+      "name": "Nick Rakocevic",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/eb26560d-c56e-4409-b482-8b141421ce79-2026.json"
+    },
+    {
+      "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
+      "name": "Parker Jackson-Cartwright",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/a92c343c-d4f4-4c33-839b-85902ad5a40f-2026.json"
+    },
+    {
+      "playerId": "9b71131b-787a-475d-aa1b-00dc4394f5e2",
+      "name": "Patrick Ryan",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/9b71131b-787a-475d-aa1b-00dc4394f5e2-2026.json"
+    },
+    {
+      "playerId": "e9e270cc-9a5a-4c73-93a6-415e7224af40",
+      "name": "Peitok Machar",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/e9e270cc-9a5a-4c73-93a6-415e7224af40-2026.json"
+    },
+    {
+      "playerId": "72da23d4-1cd5-4424-83fe-714ef33f9c6d",
+      "name": "Preston Le Gassick",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/72da23d4-1cd5-4424-83fe-714ef33f9c6d-2026.json"
+    },
+    {
+      "playerId": "95352144-95bb-4154-963a-b3b90dd915a4",
+      "name": "Reuben Te Rangi",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/95352144-95bb-4154-963a-b3b90dd915a4-2026.json"
+    },
+    {
+      "playerId": "b21f6432-c1e5-446a-b516-d1c981b77c48",
+      "name": "Reyne Smith",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/b21f6432-c1e5-446a-b516-d1c981b77c48-2026.json"
+    },
+    {
+      "playerId": "52e3e7c5-4fa9-4fa2-b8ff-1bf1a4750537",
+      "name": "Rio Bruton",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/52e3e7c5-4fa9-4fa2-b8ff-1bf1a4750537-2026.json"
+    },
+    {
+      "playerId": "96a3897c-483c-4089-b824-2bb65d265828",
+      "name": "Ryley Haywood",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/96a3897c-483c-4089-b824-2bb65d265828-2026.json"
+    },
+    {
+      "playerId": "6a6983d4-e83e-403a-9b3e-04a8535ab545",
+      "name": "Sam Davidson",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/6a6983d4-e83e-403a-9b3e-04a8535ab545-2026.json"
+    },
+    {
+      "playerId": "5bc7a4df-bd9f-4177-ab25-a1de3e4cb0a1",
+      "name": "Sam Froling",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/5bc7a4df-bd9f-4177-ab25-a1de3e4cb0a1-2026.json"
+    },
+    {
+      "playerId": "f36a7c02-4846-4a7d-a778-f8910383c455",
+      "name": "Sam McDaniel",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/f36a7c02-4846-4a7d-a778-f8910383c455-2026.json"
+    },
+    {
+      "playerId": "6096f09f-0ba7-4981-bb32-d62f287b9f96",
+      "name": "Sam Mennenga",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/6096f09f-0ba7-4981-bb32-d62f287b9f96-2026.json"
+    },
+    {
+      "playerId": "6f9d3d60-119f-408f-b8f9-a44978929b2e",
+      "name": "Sam Waardenburg",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/6f9d3d60-119f-408f-b8f9-a44978929b2e-2026.json"
+    },
+    {
+      "playerId": "43ece052-4c0c-4878-8cbe-5fe7055f648d",
+      "name": "Sean Macdonald",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/43ece052-4c0c-4878-8cbe-5fe7055f648d-2026.json"
+    },
+    {
+      "playerId": "f4c4d041-69b8-4757-9142-f5c028a070f2",
+      "name": "Shaun Bruce",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/f4c4d041-69b8-4757-9142-f5c028a070f2-2026.json"
+    },
+    {
+      "playerId": "74d07046-c14c-4b63-8f13-ad04902494a3",
+      "name": "Shea Ili",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/74d07046-c14c-4b63-8f13-ad04902494a3-2026.json"
+    },
+    {
+      "playerId": "05e12749-7b66-44f8-84f7-f437fc90dfb6",
+      "name": "Skylar Mays",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/05e12749-7b66-44f8-84f7-f437fc90dfb6-2026.json"
+    },
+    {
+      "playerId": "bc5d17e5-219c-41b7-994b-1226cc144877",
+      "name": "Sunday Dech",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/bc5d17e5-219c-41b7-994b-1226cc144877-2026.json"
+    },
+    {
+      "playerId": "bf2ff692-c8a9-4e97-bf5e-907ee38b9af1",
+      "name": "Taine Murray",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/bf2ff692-c8a9-4e97-bf5e-907ee38b9af1-2026.json"
+    },
+    {
+      "playerId": "e9ca2cad-5fce-49af-9056-d12b9f7d5df3",
+      "name": "Tana Kopa",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/e9ca2cad-5fce-49af-9056-d12b9f7d5df3-2026.json"
+    },
+    {
+      "playerId": "a793b9cb-fb83-4554-8672-f35ccd77d6b1",
+      "name": "Tanner Krebs",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/a793b9cb-fb83-4554-8672-f35ccd77d6b1-2026.json"
+    },
+    {
+      "playerId": "23283d39-8a83-44ab-84ac-0bcf1c675c92",
+      "name": "Taran Armstrong",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/23283d39-8a83-44ab-84ac-0bcf1c675c92-2026.json"
+    },
+    {
+      "playerId": "f1f3155a-4ff7-445f-9c59-f0f9a9be8a8c",
+      "name": "Todd Blanchfield",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/f1f3155a-4ff7-445f-9c59-f0f9a9be8a8c-2026.json"
+    },
+    {
+      "playerId": "fd0678c3-5b7e-4550-bb6b-5849534e3769",
+      "name": "Tom Wilson",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/fd0678c3-5b7e-4550-bb6b-5849534e3769-2026.json"
+    },
+    {
+      "playerId": "e11926a6-ab96-4a00-9e0f-f343b2f97655",
+      "name": "Torrey Craig",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/e11926a6-ab96-4a00-9e0f-f343b2f97655-2026.json"
+    },
+    {
+      "playerId": "0d441503-80f9-4a7d-a3b1-7c8ab9f5f9f5",
+      "name": "Tukaha Cooper",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/0d441503-80f9-4a7d-a3b1-7c8ab9f5f9f5-2026.json"
+    },
+    {
+      "playerId": "7efc81c9-d26e-4950-97e1-1b9b03b1bacd",
+      "name": "Tyler Harvey",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/7efc81c9-d26e-4950-97e1-1b9b03b1bacd-2026.json"
+    },
+    {
+      "playerId": "ac10899d-d7cc-4994-8ee6-fda299502786",
+      "name": "Tyler Robertson",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/ac10899d-d7cc-4994-8ee6-fda299502786-2026.json"
+    },
+    {
+      "playerId": "fb85d99d-86ac-46f7-b60d-ea33ae00a9fd",
+      "name": "Tyrell Harrison",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/fb85d99d-86ac-46f7-b60d-ea33ae00a9fd-2026.json"
+    },
+    {
+      "playerId": "d027f171-6e10-444c-a837-d07ec2bfb3ff",
+      "name": "Walter Brown",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/d027f171-6e10-444c-a837-d07ec2bfb3ff-2026.json"
+    },
+    {
+      "playerId": "6c6c60a2-caa9-4b1e-ba1d-6c61dccf2592",
+      "name": "Wani Swaka Lo Buluk",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/6c6c60a2-caa9-4b1e-ba1d-6c61dccf2592-2026.json"
+    },
+    {
+      "playerId": "bbb4fedd-9398-4242-8b15-4cc02dc1bd7e",
+      "name": "Will Hynes",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/bbb4fedd-9398-4242-8b15-4cc02dc1bd7e-2026.json"
+    },
+    {
+      "playerId": "9b55dd7f-4988-4e54-a889-36d23705aeb8",
+      "name": "Will Johnston",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/9b55dd7f-4988-4e54-a889-36d23705aeb8-2026.json"
+    },
+    {
+      "playerId": "cd541bbb-db3f-4821-82e1-c3c104d99fd8",
+      "name": "Will Magnay",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/cd541bbb-db3f-4821-82e1-c3c104d99fd8-2026.json"
+    },
+    {
+      "playerId": "3af27cad-ac89-4122-842c-2772197168c5",
+      "name": "William Hickey",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/3af27cad-ac89-4122-842c-2772197168c5-2026.json"
+    },
+    {
+      "playerId": "46fc1fe9-abf7-4e72-9c80-60483ae9da5e",
+      "name": "Xavier Cooks",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/46fc1fe9-abf7-4e72-9c80-60483ae9da5e-2026.json"
+    },
+    {
+      "playerId": "5f85917c-1552-4800-b64a-48cf1023c60c",
+      "name": "Yannis Morin",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/5f85917c-1552-4800-b64a-48cf1023c60c-2026.json"
+    },
+    {
+      "playerId": "46e6eb3e-6631-4361-bc61-6798faab22f8",
+      "name": "Zylan Cheatham",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/46e6eb3e-6631-4361-bc61-6798faab22f8-2026.json"
+    }
+  ]
+}

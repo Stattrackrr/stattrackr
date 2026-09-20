@@ -382,12 +382,27 @@ function isCompletedMatch(meta: FootyinfoMatchMeta | null): boolean {
   return !date || date <= new Date().toISOString().slice(0, 10);
 }
 
+function rowHasPlayedStats(row: Record<string, Cell>): boolean {
+  return ['kicks', 'handballs', 'disposals', 'marks', 'tackles', 'goals', 'hitouts'].some((key) => {
+    const value = cellValue(row, key);
+    return value != null && num(value) > 0;
+  });
+}
+
+function storeMatchMeta(id: number, meta: FootyinfoMatchMeta | null): void {
+  const existing = matchMetaCache.get(id);
+  if (existing && isCompletedMatch(existing) && (!meta || !isCompletedMatch(meta))) {
+    return;
+  }
+  matchMetaCache.set(id, meta);
+}
+
 async function getMatchMetaCached(matchId: number): Promise<FootyinfoMatchMeta | null> {
   if (!matchId) return null;
   if (matchMetaCache.has(matchId)) return matchMetaCache.get(matchId) ?? null;
   const meta = await fetchFootyinfoMatchMeta(matchId);
-  matchMetaCache.set(matchId, meta);
-  return meta;
+  storeMatchMeta(matchId, meta);
+  return matchMetaCache.get(matchId) ?? meta;
 }
 
 /**
@@ -485,12 +500,16 @@ export async function fetchFootyInfoPlayerGameLogs(
       const chunk = matchIds.slice(i, i + concurrency);
       await Promise.all(
         chunk.map(async (id) => {
-          const needMeta = options.skipMemoryCache || !matchMetaCache.has(id);
+          const cachedMeta = matchMetaCache.get(id);
+          const needMeta =
+            options.skipMemoryCache ||
+            !matchMetaCache.has(id) ||
+            Boolean(cachedMeta && !isCompletedMatch(cachedMeta));
           const needKickins = options.skipMemoryCache || !teamKickinsCache.has(id);
           await Promise.all([
             needMeta
               ? fetchFootyinfoMatchMeta(id).then((meta) => {
-                  matchMetaCache.set(id, meta);
+                  storeMatchMeta(id, meta);
                 })
               : Promise.resolve(),
             needKickins
@@ -506,7 +525,7 @@ export async function fetchFootyInfoPlayerGameLogs(
   for (const row of playedRows) {
     const matchId = Number(cellValue(row, 'match_id') || (row.round as Cell)?.linkId || 0);
     const meta = matchMetaCache.get(matchId) ?? null;
-    if (!isCompletedMatch(meta)) continue;
+    if (!isCompletedMatch(meta) && !rowHasPlayedStats(row)) continue;
     const teamTotals = teamKickinsCache.get(matchId) ?? null;
     const kickInsTeam = playerKickinsTeamTotal(row, meta, teamTotals);
     games.push(mapRowToGameLog(row, season, meta, kickInsTeam));

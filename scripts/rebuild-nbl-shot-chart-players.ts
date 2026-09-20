@@ -11,7 +11,7 @@ import { NBL_SHOT_CHART_CACHE_YEARS } from '../lib/nblTeamCanonical';
 
 function loadRosterNames(): string[] {
   const names = new Set<string>();
-  for (const year of [...NBL_SHOT_CHART_CACHE_YEARS, 2026, 2025, 2024, 2023]) {
+  for (const year of NBL_SHOT_CHART_CACHE_YEARS) {
     const file = path.join(process.cwd(), 'data', `nbl-roster-${year}.json`);
     if (!fs.existsSync(file)) continue;
     try {
@@ -30,7 +30,10 @@ function loadRosterNames(): string[] {
 }
 
 const rosterNames = loadRosterNames();
-const result = rebuildPlayerShotChartAggregatesFromFixtures({ rosterNames });
+const result = rebuildPlayerShotChartAggregatesFromFixtures({
+  rosterNames,
+  years: [...NBL_SHOT_CHART_CACHE_YEARS],
+});
 console.log(
   `[rebuild-nbl-shot-chart-players] written=${result.playersWritten} withShots=${result.withShots} rosterNames=${rosterNames.length}`
 );

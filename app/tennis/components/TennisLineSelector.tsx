@@ -266,7 +266,9 @@ export function TennisLineSelector({
                             <BookmakerLogo bookKey={book.name} className="w-5 h-5 rounded object-contain flex-shrink-0" />
                             <div className="flex items-center gap-2 min-w-0">
                               <span className="font-semibold text-sm text-gray-900 dark:text-white">{d.line}</span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{book.name}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                {getBookmakerInfo(book.name).name}
+                              </span>
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
@@ -311,7 +313,9 @@ export function TennisLineSelector({
                             <BookmakerLogo bookKey={book.name} className="w-5 h-5 rounded object-contain flex-shrink-0" />
                             <div className="flex flex-col items-start gap-0.5 min-w-0">
                               <span className="font-semibold text-sm text-gray-900 dark:text-white">ML</span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-full">{book.name}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-full">
+                                {getBookmakerInfo(book.name).name}
+                              </span>
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">

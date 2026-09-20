@@ -1,7 +1,48 @@
 {
   "year": 2026,
-  "generatedAt": "2026-08-24T04:21:48.479Z",
+  "generatedAt": "2026-09-20T16:37:09.544Z",
   "source": "embed-api.eui.connect.sportradar.com",
-  "gameCount": 0,
-  "games": {}
+  "gameCount": 4,
+  "games": {
+    "36e225dc-58ad-11f1-b0d4-e94b8c35b649": {
+      "home_q1": 32,
+      "home_q2": 27,
+      "home_q3": 31,
+      "home_q4": 21,
+      "visitor_q1": 26,
+      "visitor_q2": 27,
+      "visitor_q3": 20,
+      "visitor_q4": 17
+    },
+    "3700706c-58ad-11f1-ae9e-a93048d70593": {
+      "home_q1": 28,
+      "home_q2": 26,
+      "home_q3": 22,
+      "home_q4": 19,
+      "visitor_q1": 24,
+      "visitor_q2": 23,
+      "visitor_q3": 14,
+      "visitor_q4": 20
+    },
+    "36dbeb55-58ad-11f1-a69b-43a6b5595d3e": {
+      "home_q1": 23,
+      "home_q2": 25,
+      "home_q3": 22,
+      "home_q4": 25,
+      "visitor_q1": 25,
+      "visitor_q2": 24,
+      "visitor_q3": 26,
+      "visitor_q4": 22
+    },
+    "36e0e11c-58ad-11f1-93d0-e78395b5c13c": {
+      "home_q1": 24,
+      "home_q2": 13,
+      "home_q3": 25,
+      "home_q4": 17,
+      "visitor_q1": 19,
+      "visitor_q2": 30,
+      "visitor_q3": 16,
+      "visitor_q4": 35
+    }
+  }
 }

@@ -3,61 +3,61 @@
   "playerName": "Jordan Hunter",
   "team": "South East Melbourne Phoenix",
   "years": [
-    2025
+    2026
   ],
-  "gamesUsed": 36,
+  "gamesUsed": 1,
   "fixturesFetched": 0,
-  "fixturesCached": 36,
-  "shotCount": 275,
+  "fixturesCached": 1,
+  "shotCount": 6,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 136,
-      "fgm": 81,
-      "fgPct": 59.55882352941176,
-      "share": 49.45454545454545
+      "fga": 1,
+      "fgm": 1,
+      "fgPct": 100,
+      "share": 16.666666666666664
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 43,
-      "fgm": 22,
-      "fgPct": 51.162790697674424,
-      "share": 15.636363636363637
+      "fga": 1,
+      "fgm": 1,
+      "fgPct": 100,
+      "share": 16.666666666666664
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 1,
+      "fga": 0,
       "fgm": 0,
       "fgPct": 0,
-      "share": 0.36363636363636365
+      "share": 0
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 18,
-      "fgm": 5,
-      "fgPct": 27.77777777777778,
-      "share": 6.545454545454546
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 29,
-      "fgm": 12,
-      "fgPct": 41.37931034482759,
-      "share": 10.545454545454545
+      "fga": 1,
+      "fgm": 1,
+      "fgPct": 100,
+      "share": 16.666666666666664
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 48,
-      "fgm": 14,
-      "fgPct": 29.166666666666668,
-      "share": 17.454545454545457
+      "fga": 3,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 50
     }
   ],
-  "generatedAt": "2026-09-14T12:36:45.952Z"
+  "generatedAt": "2026-09-20T16:41:26.403Z"
 }

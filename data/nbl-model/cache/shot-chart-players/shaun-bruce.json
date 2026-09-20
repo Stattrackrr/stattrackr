@@ -1,63 +1,63 @@
 {
   "mode": "player",
   "playerName": "Shaun Bruce",
-  "team": "Sydney Kings",
+  "team": "Cairns Taipans",
   "years": [
-    2025
+    2026
   ],
-  "gamesUsed": 31,
+  "gamesUsed": 1,
   "fixturesFetched": 0,
-  "fixturesCached": 31,
-  "shotCount": 99,
+  "fixturesCached": 1,
+  "shotCount": 9,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 16,
-      "fgm": 10,
-      "fgPct": 62.5,
-      "share": 16.161616161616163
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 18,
-      "fgm": 7,
-      "fgPct": 38.88888888888889,
-      "share": 18.181818181818183
+      "fga": 2,
+      "fgm": 1,
+      "fgPct": 50,
+      "share": 22.22222222222222
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 1,
-      "fgm": 1,
-      "fgPct": 100,
-      "share": 1.0101010101010102
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 16,
-      "fgm": 5,
-      "fgPct": 31.25,
-      "share": 16.161616161616163
+      "fga": 2,
+      "fgm": 1,
+      "fgPct": 50,
+      "share": 22.22222222222222
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 15,
-      "fgm": 5,
+      "fga": 3,
+      "fgm": 1,
       "fgPct": 33.33333333333333,
-      "share": 15.151515151515152
+      "share": 33.33333333333333
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 33,
-      "fgm": 8,
-      "fgPct": 24.242424242424242,
-      "share": 33.33333333333333
+      "fga": 2,
+      "fgm": 1,
+      "fgPct": 50,
+      "share": 22.22222222222222
     }
   ],
-  "generatedAt": "2026-09-14T12:36:45.952Z"
+  "generatedAt": "2026-09-20T16:41:26.403Z"
 }

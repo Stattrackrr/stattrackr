@@ -3,61 +3,61 @@
   "playerName": "Flynn Cameron",
   "team": "Adelaide 36ers",
   "years": [
-    2025
+    2026
   ],
-  "gamesUsed": 46,
+  "gamesUsed": 1,
   "fixturesFetched": 0,
-  "fixturesCached": 46,
-  "shotCount": 321,
+  "fixturesCached": 1,
+  "shotCount": 9,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 65,
-      "fgm": 42,
-      "fgPct": 64.61538461538461,
-      "share": 20.24922118380062
+      "fga": 3,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 33.33333333333333
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 84,
-      "fgm": 36,
-      "fgPct": 42.857142857142854,
-      "share": 26.168224299065418
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 11.11111111111111
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 6,
+      "fga": 1,
       "fgm": 0,
       "fgPct": 0,
-      "share": 1.8691588785046727
+      "share": 11.11111111111111
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 58,
-      "fgm": 23,
-      "fgPct": 39.6551724137931,
-      "share": 18.06853582554517
+      "fga": 3,
+      "fgm": 2,
+      "fgPct": 66.66666666666666,
+      "share": 33.33333333333333
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 52,
-      "fgm": 19,
-      "fgPct": 36.53846153846153,
-      "share": 16.1993769470405
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 11.11111111111111
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 56,
-      "fgm": 17,
-      "fgPct": 30.357142857142854,
-      "share": 17.445482866043612
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     }
   ],
-  "generatedAt": "2026-09-14T12:36:45.952Z"
+  "generatedAt": "2026-09-20T16:41:26.403Z"
 }

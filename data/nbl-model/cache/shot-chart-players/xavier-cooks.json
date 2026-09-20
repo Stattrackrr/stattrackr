@@ -3,61 +3,61 @@
   "playerName": "Xavier Cooks",
   "team": "Sydney Kings",
   "years": [
-    2025
+    2026
   ],
-  "gamesUsed": 36,
+  "gamesUsed": 1,
   "fixturesFetched": 0,
-  "fixturesCached": 36,
-  "shotCount": 325,
+  "fixturesCached": 1,
+  "shotCount": 12,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 186,
-      "fgm": 123,
-      "fgPct": 66.12903225806451,
-      "share": 57.230769230769226
+      "fga": 5,
+      "fgm": 3,
+      "fgPct": 60,
+      "share": 41.66666666666667
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 120,
-      "fgm": 76,
-      "fgPct": 63.33333333333333,
-      "share": 36.92307692307693
+      "fga": 6,
+      "fgm": 5,
+      "fgPct": 83.33333333333334,
+      "share": 50
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 6,
-      "fgm": 2,
-      "fgPct": 33.33333333333333,
-      "share": 1.8461538461538463
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 2,
+      "fga": 0,
       "fgm": 0,
       "fgPct": 0,
-      "share": 0.6153846153846154
+      "share": 0
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 3,
-      "fgm": 1,
-      "fgPct": 33.33333333333333,
-      "share": 0.9230769230769231
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 8,
-      "fgm": 2,
-      "fgPct": 25,
-      "share": 2.4615384615384617
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 8.333333333333332
     }
   ],
-  "generatedAt": "2026-09-14T12:36:45.952Z"
+  "generatedAt": "2026-09-20T16:41:26.403Z"
 }

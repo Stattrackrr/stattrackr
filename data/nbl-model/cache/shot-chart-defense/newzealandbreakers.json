@@ -2,123 +2,123 @@
   "mode": "defense",
   "team": "New Zealand Breakers",
   "years": [
-    2025
+    2026
   ],
-  "gamesUsed": 17,
+  "gamesUsed": 1,
   "fixturesFetched": 0,
-  "fixturesCached": 17,
-  "shotCount": 1226,
+  "fixturesCached": 1,
+  "shotCount": 72,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 313,
-      "fgm": 226,
-      "fgPct": 72.20447284345049,
-      "share": 25.530179445350733
+      "fga": 30,
+      "fgm": 19,
+      "fgPct": 63.33333333333333,
+      "share": 41.66666666666667
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 298,
-      "fgm": 145,
-      "fgPct": 48.65771812080537,
-      "share": 24.306688417618272
+      "fga": 9,
+      "fgm": 3,
+      "fgPct": 33.33333333333333,
+      "share": 12.5
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 68,
-      "fgm": 26,
-      "fgPct": 38.23529411764706,
-      "share": 5.5464926590538335
+      "fga": 2,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 2.7777777777777777
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 120,
-      "fgm": 53,
-      "fgPct": 44.166666666666664,
-      "share": 9.787928221859707
+      "fga": 3,
+      "fgm": 1,
+      "fgPct": 33.33333333333333,
+      "share": 4.166666666666666
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 171,
-      "fgm": 63,
-      "fgPct": 36.84210526315789,
-      "share": 13.947797716150081
+      "fga": 10,
+      "fgm": 1,
+      "fgPct": 10,
+      "share": 13.88888888888889
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 256,
-      "fgm": 81,
-      "fgPct": 31.640625,
-      "share": 20.880913539967374
+      "fga": 18,
+      "fgm": 5,
+      "fgPct": 27.77777777777778,
+      "share": 25
     }
   ],
   "ranks": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 313,
-      "fgm": 226,
-      "fgPct": 72.20447284345049,
-      "share": 25.530179445350733,
-      "rank": 10,
-      "teamsCompared": 10
+      "fga": 30,
+      "fgm": 19,
+      "fgPct": 63.33333333333333,
+      "share": 41.66666666666667,
+      "rank": 3,
+      "teamsCompared": 8
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 298,
-      "fgm": 145,
-      "fgPct": 48.65771812080537,
-      "share": 24.306688417618272,
-      "rank": 8,
-      "teamsCompared": 10
+      "fga": 9,
+      "fgm": 3,
+      "fgPct": 33.33333333333333,
+      "share": 12.5,
+      "rank": 2,
+      "teamsCompared": 8
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 68,
-      "fgm": 26,
-      "fgPct": 38.23529411764706,
-      "share": 5.5464926590538335,
-      "rank": 6,
-      "teamsCompared": 10
+      "fga": 2,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 2.7777777777777777,
+      "rank": null,
+      "teamsCompared": 6
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 120,
-      "fgm": 53,
-      "fgPct": 44.166666666666664,
-      "share": 9.787928221859707,
-      "rank": 10,
-      "teamsCompared": 10
+      "fga": 3,
+      "fgm": 1,
+      "fgPct": 33.33333333333333,
+      "share": 4.166666666666666,
+      "rank": null,
+      "teamsCompared": 6
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 171,
-      "fgm": 63,
-      "fgPct": 36.84210526315789,
-      "share": 13.947797716150081,
-      "rank": 8,
-      "teamsCompared": 10
+      "fga": 10,
+      "fgm": 1,
+      "fgPct": 10,
+      "share": 13.88888888888889,
+      "rank": 1,
+      "teamsCompared": 8
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 256,
-      "fgm": 81,
-      "fgPct": 31.640625,
-      "share": 20.880913539967374,
-      "rank": 5,
-      "teamsCompared": 10
+      "fga": 18,
+      "fgm": 5,
+      "fgPct": 27.77777777777778,
+      "share": 25,
+      "rank": 3,
+      "teamsCompared": 8
     }
   ],
-  "generatedAt": "2026-08-24T13:58:25.056Z"
+  "generatedAt": "2026-09-20T17:27:57.531Z"
 }

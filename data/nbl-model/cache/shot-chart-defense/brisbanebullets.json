@@ -2,123 +2,123 @@
   "mode": "defense",
   "team": "Brisbane Bullets",
   "years": [
-    2025
+    2026
   ],
-  "gamesUsed": 17,
+  "gamesUsed": 0,
   "fixturesFetched": 0,
-  "fixturesCached": 17,
-  "shotCount": 1191,
+  "fixturesCached": 0,
+  "shotCount": 0,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 395,
-      "fgm": 280,
-      "fgPct": 70.88607594936708,
-      "share": 33.16540722082284
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 276,
-      "fgm": 140,
-      "fgPct": 50.72463768115942,
-      "share": 23.173803526448363
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 60,
-      "fgm": 25,
-      "fgPct": 41.66666666666667,
-      "share": 5.037783375314862
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 123,
-      "fgm": 40,
-      "fgPct": 32.52032520325203,
-      "share": 10.327455919395465
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 123,
-      "fgm": 43,
-      "fgPct": 34.959349593495936,
-      "share": 10.327455919395465
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 214,
-      "fgm": 78,
-      "fgPct": 36.44859813084112,
-      "share": 17.968094038623008
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     }
   ],
   "ranks": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 395,
-      "fgm": 280,
-      "fgPct": 70.88607594936708,
-      "share": 33.16540722082284,
-      "rank": 9,
-      "teamsCompared": 10
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0,
+      "rank": null,
+      "teamsCompared": 8
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 276,
-      "fgm": 140,
-      "fgPct": 50.72463768115942,
-      "share": 23.173803526448363,
-      "rank": 10,
-      "teamsCompared": 10
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0,
+      "rank": null,
+      "teamsCompared": 8
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 60,
-      "fgm": 25,
-      "fgPct": 41.66666666666667,
-      "share": 5.037783375314862,
-      "rank": 8,
-      "teamsCompared": 10
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0,
+      "rank": null,
+      "teamsCompared": 6
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 123,
-      "fgm": 40,
-      "fgPct": 32.52032520325203,
-      "share": 10.327455919395465,
-      "rank": 5,
-      "teamsCompared": 10
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0,
+      "rank": null,
+      "teamsCompared": 6
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 123,
-      "fgm": 43,
-      "fgPct": 34.959349593495936,
-      "share": 10.327455919395465,
-      "rank": 6,
-      "teamsCompared": 10
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0,
+      "rank": null,
+      "teamsCompared": 8
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 214,
-      "fgm": 78,
-      "fgPct": 36.44859813084112,
-      "share": 17.968094038623008,
-      "rank": 10,
-      "teamsCompared": 10
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0,
+      "rank": null,
+      "teamsCompared": 8
     }
   ],
-  "generatedAt": "2026-08-24T13:58:24.706Z"
+  "generatedAt": "2026-09-20T17:27:57.499Z"
 }

@@ -97,15 +97,18 @@ export async function getAflPlayerLogsCacheForPlayer(params: {
   playerName: string;
   teamForRequest: string | null;
 }): Promise<{ base: AflPlayerLogsCachePayload; quarters: AflPlayerLogsCachePayload | null } | null> {
+  let best: { base: AflPlayerLogsCachePayload; quarters: AflPlayerLogsCachePayload | null; n: number } | null = null;
   for (const team of teamLookupVariants(params.teamForRequest)) {
     const key = buildAflPlayerLogsCacheKey({ ...params, teamForRequest: team, includeQuarters: false });
     const base = await getAflPlayerLogsCache(key);
     if (!base || !Array.isArray(base.games) || base.games.length === 0) continue;
+    const n = base.games.length;
+    if (best && n <= best.n) continue;
     const quarterKey = buildAflPlayerLogsCacheKey({ ...params, teamForRequest: team, includeQuarters: true });
     const quarters = await getAflPlayerLogsCache(quarterKey);
-    return { base, quarters };
+    best = { base, quarters, n };
   }
-  return null;
+  return best ? { base: best.base, quarters: best.quarters } : null;
 }
 
 export async function setAflPlayerLogsCacheForPlayer(

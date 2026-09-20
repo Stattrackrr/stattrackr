@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-24T13:58:16.691Z",
+  "generatedAt": "2026-09-20T16:35:19.088Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -11,7 +11,7 @@
       "teamCode": "ADL",
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "headCoach": "Trevor Gleeson",
-      "playerCount": 12,
+      "playerCount": 14,
       "players": [
         {
           "playerId": "24a2f29d-6bfd-427a-9cb4-4ac0f4088083",
@@ -21,7 +21,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "FC",
           "jersey": "14",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e1c78e21ee89436c91a899251eff2792?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c0d7429845574927bde205f71587fad7?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -34,7 +34,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "11",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ebec7e2aa2784c75b8a22c057cc8045f?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a6f07d6358b2486da335f792692cecf0?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -46,8 +46,8 @@
           "teamCode": "ADL",
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
-          "jersey": "",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/64f50238de694272a01393759ae84807?size=800&format=webp",
+          "jersey": "42",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/416bb121539640c6b5d586afcbf51a72?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Sydney Kings",
           "idSource": "rosetta"
@@ -60,7 +60,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "23",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/850f1949c3b54df4b7e2cdbbc052cbf6?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cc371980ed604bdb85bda9fd7db1aded?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Bankstown Bruins - NBL1 East",
           "idSource": "rosetta"
@@ -73,9 +73,22 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "1",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/47b0c190a14e498d86edbe89640c04f1?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6625d956babc43d984f6892fcf614b29?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "b01fb703-e139-496d-abd9-51e83f5f095d",
+          "name": "Harvey White",
+          "team": "Adelaide 36ers",
+          "teamCode": "ADL",
+          "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+          "position": "G",
+          "jersey": "43",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b15f63d3137748b2b7a1484c5cbb6e7a?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Colorado Mesa - NCAA",
           "idSource": "rosetta"
         },
         {
@@ -86,7 +99,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "C",
           "jersey": "8",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/46eaeceb13b84fee87bb0a0def9d2b77?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aebad727186040a8bf900bb61af3f5cf?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -99,9 +112,22 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "2",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2be8eccd36ff46a2b20cc8baaf7d8de5?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5c90c60157dd438599d2d33142c4b271?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "6411557a-9dae-42a7-a8c6-3953529eeaaa",
+          "name": "Jacob Rigoni",
+          "team": "Adelaide 36ers",
+          "teamCode": "ADL",
+          "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+          "position": "F",
+          "jersey": "25",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/46d6763ad3ce4557a9061d6374556d84?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Sturt Sabres - NBL1 Central",
           "idSource": "rosetta"
         },
         {
@@ -112,7 +138,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "12",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9d1b5bdca184435292ede971094d4d6b?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/dd6e9715164a46b589da20f2512f5ec6?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -125,7 +151,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "22",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/26b5a01951934ea5bb6b02c636dcb2e8?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9025aaf5880a4b4d8b39cada095dc233?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -138,7 +164,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "0",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/af762ce997b24370808d9974913e5545?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8c793cb80e5e49499b6c177d7bc56ebf?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -151,7 +177,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "FC",
           "jersey": "31",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2faf49d9842942e384378cfbdeed1a1b?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5a4663a0cf864d76a6533b6d5e8d6f5c?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -164,7 +190,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "F",
           "jersey": "45",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0b2ad14abbe64f729661575aceb79bd1?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fe0d88cad50e41ec82bc2865b396d7bc?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -176,8 +202,21 @@
       "teamCode": "BRI",
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "headCoach": "Will Weaver",
-      "playerCount": 14,
+      "playerCount": 15,
       "players": [
+        {
+          "playerId": "c18d40cc-7977-4b30-a1b8-f0fcc14e98ab",
+          "name": "Archie Woodhill",
+          "team": "Brisbane Bullets",
+          "teamCode": "BRI",
+          "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+          "position": "F",
+          "jersey": "6",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/84b5b9f5be5b493d950e09d8f8cf5607?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Tasmania JackJumpers",
+          "idSource": "rosetta"
+        },
         {
           "playerId": "7ea89a63-460c-4530-a6b8-e770aced04e3",
           "name": "Arnas Velicka",
@@ -185,8 +224,8 @@
           "teamCode": "BRI",
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a39f0e1489834312b59e9f45f207ef77?size=800&format=webp",
+          "jersey": "1",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b32eef80975a47b39919eccab7990de8?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Neptunas - Lithuania",
           "idSource": "rosetta"
@@ -197,9 +236,9 @@
           "team": "Brisbane Bullets",
           "teamCode": "BRI",
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-          "position": null,
+          "position": "G",
           "jersey": "10",
-          "imageUrl": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e35edbdc63dd4e52b9234e5b215c44c7?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Warwick Senators",
           "idSource": "rosetta"
@@ -211,8 +250,8 @@
           "teamCode": "BRI",
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "F",
-          "jersey": "",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2ed70aeeec83415f8965919c93a3fa4d?size=800&format=webp",
+          "jersey": "14",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ee2404c1e6da49449b013d9be2dc2868?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "University of Hawaii - NCAA",
           "idSource": "rosetta"
@@ -225,7 +264,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "F",
           "jersey": "15",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8f8b2ccdce0c428685f7681091bac2fb?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a1eb9934c59043e2a9365aa153b372bb?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -236,9 +275,9 @@
           "team": "Brisbane Bullets",
           "teamCode": "BRI",
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-          "position": null,
+          "position": "F",
           "jersey": "2",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/56c721854f1c41cc85298246ba575678?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d1e4c17b1076432fb1a427a0c03f8730?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Stockton Kings - NBA G League",
           "idSource": "rosetta"
@@ -263,8 +302,8 @@
           "teamCode": "BRI",
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
-          "jersey": "2",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d879cc4cade44e5aa712b827c2902e19?size=800&format=webp",
+          "jersey": "11",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2f12d35e52eb4b5487b1c6bc786ae771?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Perth Wildcats",
           "idSource": "rosetta"
@@ -275,9 +314,9 @@
           "team": "Brisbane Bullets",
           "teamCode": "BRI",
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-          "position": null,
+          "position": "G",
           "jersey": "3",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/20ddc735f39448cbb2e263235f1e8205?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b7324dcc691e4192946bbc9616d493a1?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "LSU - NCAA",
           "idSource": "rosetta"
@@ -290,7 +329,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
           "jersey": "8",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/561142a7fd204201803fbcbd0f85cea4?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d27433ef96a84ccf932d58fade27e798?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -302,8 +341,8 @@
           "teamCode": "BRI",
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fc92eb763ea04e13bf6a18483af9e61c?size=800&format=webp",
+          "jersey": "4",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/536606aed60f426f949a8c383d33a00c?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Memphis Hustle - NBA G League",
           "idSource": "rosetta"
@@ -315,7 +354,7 @@
           "teamCode": "BRI",
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
-          "jersey": null,
+          "jersey": "13",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8605d5e515cf4cf78984df6a667ae519?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "South Adelaide - NBL1 Central",
@@ -329,7 +368,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
           "jersey": "26",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a2fbdbd0d72d45f3ad69436c55d377c6?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d323619548164ca495a3a5ac6070a926?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -342,7 +381,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
           "jersey": "0",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9bc9441fc216481d8cc816403a0d71cc?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aa8e6f8da5584485af169c3ccd3bc0cf?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -355,7 +394,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "FC",
           "jersey": "24",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ef3009bdc5314c6785ec4ad67073ed1b?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2408924e31f044b6821e42f9f968bd10?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -367,7 +406,7 @@
       "teamCode": "CNS",
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "headCoach": "Adam Forde",
-      "playerCount": 14,
+      "playerCount": 16,
       "players": [
         {
           "playerId": "e85b6d9a-6520-4af0-a83d-6a9803429c57",
@@ -377,7 +416,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
           "jersey": "5",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b74e2f7d931a4c6d9ae6a7ab728e0892?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/50a1c6e3ce64400d80a3dc636fc49751?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Tasmania JackJumpers",
           "idSource": "rosetta"
@@ -390,7 +429,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
           "jersey": "9",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/23d8bc0b6fa34a41818eacf09a372e4b?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fcb451463f4642b49b6141dd3623d7dd?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -402,8 +441,8 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
-          "jersey": "6",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f66fc4b2a5784e869d5f17c39ab83a15?size=800&format=webp",
+          "jersey": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b78c6a679f3a4aceabaf7160cf8e62bb?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Sydney Kings",
           "idSource": "rosetta"
@@ -415,8 +454,8 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
-          "jersey": null,
-          "imageUrl": null,
+          "jersey": "3",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8deeb74855da449c83719d638ebf2984?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Petkim Spor - Turkey",
           "idSource": "rosetta"
@@ -428,8 +467,8 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "C",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a97174189caa4bb7af66a3ccbd7b992e?size=800&format=webp",
+          "jersey": "43",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9d94902ce0c447d4b9b99e140add424f?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Illawarra Hawks",
           "idSource": "rosetta"
@@ -441,10 +480,23 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/75d9ab7ea2fb4af79b066e058d88f7cb?size=800&format=webp",
+          "jersey": "25",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/728c0f378bca481fa1673642cfd8ff55?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Akita Northern Happinets - B League",
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "a10eef82-dac8-4efd-acd5-cdf867139034",
+          "name": "Kobe Williamson",
+          "team": "Cairns Taipans",
+          "teamCode": "CNS",
+          "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "position": "F",
+          "jersey": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4b86cf19a96244d6ab025421fbae0624?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Tasmania JackJumpers",
           "idSource": "rosetta"
         },
         {
@@ -455,7 +507,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
           "jersey": "14",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c07537dec0104e339290103974b97c63?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/24ff995be8e149baac0475ba14e046aa?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -467,8 +519,8 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/01bd884f3f8444abaefed1f7e2a5b58b?size=800&format=webp",
+          "jersey": "1",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fb6684435be94fb39344ca12f1ae367e?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -480,8 +532,8 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a1a2b04c7d57428d8672fb5fc89886d0?size=800&format=webp",
+          "jersey": "19",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f5572b0a84264dabb20c5fe0d5771604?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Illawarra Hawks",
           "idSource": "rosetta"
@@ -494,9 +546,22 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
           "jersey": "10",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fb658b67156345afadd2c724e07b1527?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/826398d759634fdfa99316a60adb2136?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Centre of Excellence - Next Star",
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "c6b7202f-6619-422a-8d2b-8e52a8d48935",
+          "name": "Malique Lewis",
+          "team": "Cairns Taipans",
+          "teamCode": "CNS",
+          "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "position": "G",
+          "jersey": "33",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fa48d326e7e34ae8967e3788bd234bcf?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "South East Melbourne Phoenix",
           "idSource": "rosetta"
         },
         {
@@ -507,7 +572,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
           "jersey": "2",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/62e0263dd65342d4a7e5437021354270?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0eb1e2e821994378aea54c374b2894fa?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -519,8 +584,8 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
-          "jersey": "",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72a4f60bf7c544d2a6453a14769bdc29?size=800&format=webp",
+          "jersey": "7",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8de9e79fe73940d8855eb4c307bb3f58?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Sydney Kings",
           "idSource": "rosetta"
@@ -533,7 +598,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
           "jersey": "44",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/98094174e7c346c6aba1e972725b21d1?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72daecd94d104459b7cea919706f3651?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Perth Wildcats",
           "idSource": "rosetta"
@@ -544,9 +609,9 @@
           "team": "Cairns Taipans",
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
-          "position": null,
+          "position": "F",
           "jersey": "22",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a541bfc7fe7f4707a7f630ac5baadf75?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/edf1a945fe1c42db86bdd76b805248f0?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "UNLV - NCAA",
           "idSource": "rosetta"
@@ -558,7 +623,7 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "headCoach": "Justin Tatum",
-      "playerCount": 15,
+      "playerCount": 16,
       "players": [
         {
           "playerId": "67357242-2244-43f0-996c-b15c64e27232",
@@ -579,8 +644,8 @@
           "team": "Illawarra Hawks",
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "position": null,
-          "jersey": null,
+          "position": "G",
+          "jersey": "10",
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Gold Coast Rollers - NBL1 North",
@@ -594,7 +659,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "F",
           "jersey": "11",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f00fc8be9f0d4f8f8ccd87efb2462d62?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f85c82cc0d2f44c9b9256482a56c221b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -606,8 +671,8 @@
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "C",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/3c92600ecdf545b2996aac33f2359b14?size=800&format=webp",
+          "jersey": "7",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6936d1c02ffd42908b6369c459f5e680?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "TNT Tropang 5G - Philippines",
           "idSource": "rosetta"
@@ -618,8 +683,8 @@
           "team": "Illawarra Hawks",
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "position": null,
-          "jersey": null,
+          "position": "F",
+          "jersey": "25",
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Illawarra Hawks - NBL1 East",
@@ -633,9 +698,22 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "F",
           "jersey": "16",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cb5e6b04d2944604abb0f551f6e1923b?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e20808862517486cb2f4657c7bedd64c?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "76536695-6c04-4c8a-b104-5ebbabb95879",
+          "name": "Kelan Martin",
+          "team": "Illawarra Hawks",
+          "teamCode": "ILL",
+          "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "position": "F",
+          "jersey": "30",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e823fb15d5d845028d435c68c8752e39?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "UCAM Murcia - Spain",
           "idSource": "rosetta"
         },
         {
@@ -645,8 +723,8 @@
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/70468109041f49238b7f60d4b4f9ac3a?size=800&format=webp",
+          "jersey": "5",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9aed102967cb40bcaf584135a55a8d74?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
@@ -658,8 +736,8 @@
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "F",
-          "jersey": "13",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/0690378dd57b49649e379f1e1679f6ce?size=800&format=webp",
+          "jersey": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9e6572b0c5c14889875ded55f68ed646?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Brisbane Bullets",
           "idSource": "rosetta"
@@ -672,7 +750,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "F",
           "jersey": "22",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/872ebee9d9a24b989fbe4cf249391e96?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/45ea8d81431f4ff3a64e642841fa094e?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -684,8 +762,8 @@
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4e7b0f3f129e40a09803d2c4345b9d7c?size=800&format=webp",
+          "jersey": "35",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0a8f88b849a74a61b3e8f366257ed975?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Melbourne United",
           "idSource": "rosetta"
@@ -698,7 +776,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "C",
           "jersey": "13",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/042d270b93884995897d6390ceb59ec7?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1327a070e81d4fa6a01111681fa41bc0?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -711,7 +789,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
           "jersey": "21",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6db6e94d32ab48a8912795654a7215ad?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/14b486bd729a4002953d6cb0a9be8f9f?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -724,7 +802,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
           "jersey": "1",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2e20d8fc3871492da91c513e497997ba?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e5492e83a6e9444a8bed248963a200a5?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -737,7 +815,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
           "jersey": "9",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/3334f9494d11405abe45b8cf421e35bc?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e876d884dda0496ab0c8ce6773f01fe7?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -750,7 +828,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
           "jersey": "6",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/eba28794997947248d0352c9d2501d63?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9b9b24dd8fb54e189f1f9f9c8fcae644?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -762,8 +840,21 @@
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "headCoach": "Jacob Chance",
-      "playerCount": 15,
+      "playerCount": 17,
       "players": [
+        {
+          "playerId": "b42c71df-100c-4500-b591-dfb079fe4a7e",
+          "name": "Austin Shelley",
+          "team": "Melbourne United",
+          "teamCode": "MEL",
+          "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "position": "G",
+          "jersey": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7048cadd9a7342f6ad1be15a32ead71c?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Frankston Blues - NBL1 South",
+          "idSource": "rosetta"
+        },
         {
           "playerId": "f243749f-0174-4255-b6ff-d0a9896899e8",
           "name": "Chris Goulding",
@@ -772,7 +863,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "43",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c000719328b34f78a93663ef491932b1?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5b7d30c4d04a41d18fc52f62a611cbda?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -785,7 +876,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "11",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/228d6f5d5a454f54b83154afb52507f4?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/65a9611eb83d4f8ea426adbcfed53d83?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -798,7 +889,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "3",
-          "imageUrl": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/88aceea640ef426cb14319fe874da47b?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Milwaukee Bucks",
           "idSource": "rosetta"
@@ -811,22 +902,22 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "C",
           "jersey": "18",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5b1e5d4c1dda496d8809934b5b23f6e4?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5b0d59d63e8c4ea9bac3c437dd39565b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
         },
         {
-          "playerId": "62a66658-e332-4f12-bbbd-8f1c3c442f93",
-          "name": "Harry Neilson",
+          "playerId": "02e2dc7e-2adc-48bb-b641-4be8fd8373dd",
+          "name": "Jai Fa'ale",
           "team": "Melbourne United",
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "position": "C",
-          "jersey": "16",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fa8260d4d590450fb0bb5a5283566828?size=800&format=webp",
+          "position": "G",
+          "jersey": null,
+          "imageUrl": null,
           "trackerStatus": "incoming",
-          "trackerNote": "Sandringham Sabres - NBL1 South",
+          "trackerNote": "Centre of Excellence - NBL1 East",
           "idSource": "rosetta"
         },
         {
@@ -837,7 +928,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "C",
           "jersey": "50",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d1e634db5b224faaaedb634aeb2b0c7f?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0b4fa3a91f1a43eea1332424a3d4c120?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Brisbane Bullets",
           "idSource": "rosetta"
@@ -850,7 +941,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "F",
           "jersey": "7",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a26e920cd33d4f6f939143086cfd69f3?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f8956dda45664d3bb1d0a5c0589150cf?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Minnesota Timberwolves - NBA",
           "idSource": "rosetta"
@@ -863,7 +954,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "FC",
           "jersey": "2",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/69acda857a5642e483d3168a03abd090?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/971dc3415a644ed89ef0a1a1ea25e682?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "New Orleans Pelicans - NBA",
           "idSource": "rosetta"
@@ -876,7 +967,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "F",
           "jersey": "15",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7e9375354be649eea34fba355452ba25?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/293bff0a0e7e471ca191b4a5273fd5f4?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -889,7 +980,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "GF",
           "jersey": "23",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8cfbc2d770b64ec9aa2bcccde4204d81?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7fb4dce5d8884178a63f0934d3902d69?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cleveland Cavaliers - NBA",
           "idSource": "rosetta"
@@ -902,7 +993,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "9",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/939b60a97224405e8bc566a0f8360f41?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f2652d5c3d4741d4acfd5c2469fee0ec?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -915,7 +1006,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "FC",
           "jersey": "21",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aac8db5f214d40e9809bb4c61f01882c?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/70079138b6e54ea29e86f1908a6c9232?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
@@ -941,7 +1032,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "51",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e799c44893ac449d889452a714ff22a7?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/afa72628d7ed4c938ca1820a6f7501d4?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -954,9 +1045,22 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "12",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7821eeb897ff463c9251043f53456b11?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2e27e42851c24727b9af6e328ef168b1?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "bbb4fedd-9398-4242-8b15-4cc02dc1bd7e",
+          "name": "Will Hynes",
+          "team": "Melbourne United",
+          "teamCode": "MEL",
+          "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "position": "G",
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Ballarat Miners - NBL1 South",
           "idSource": "rosetta"
         }
       ]
@@ -966,7 +1070,7 @@
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "headCoach": "Gordon Herbert",
-      "playerCount": 14,
+      "playerCount": 16,
       "players": [
         {
           "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
@@ -975,10 +1079,23 @@
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e1cb506775c148fd9b02620ea3c3641e?size=800&format=webp",
+          "jersey": "13",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/90f51404bf8445fdbda40543291db231?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Phoenix Hagen - Germany",
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "7cbda995-8a38-4c4a-be9c-4e36b25ccba2",
+          "name": "Aubrey Chunga",
+          "team": "New Zealand Breakers",
+          "teamCode": "NZL",
+          "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "position": "G",
+          "jersey": "18",
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Wellington Saints - NZNBL",
           "idSource": "rosetta"
         },
         {
@@ -988,8 +1105,8 @@
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
-          "jersey": "21",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a2bfdaa1448042ef80542d35b8431e1c?size=800&format=webp",
+          "jersey": "0",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/93737d3b649c4fe3913c09fff505d3a8?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1000,9 +1117,9 @@
           "team": "New Zealand Breakers",
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-          "position": null,
-          "jersey": null,
-          "imageUrl": null,
+          "position": "C",
+          "jersey": "8",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5715bf12feec4bf383b5cec6c1827e40?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Alabama - NCAA",
           "idSource": "rosetta"
@@ -1015,7 +1132,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "G",
           "jersey": "34",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/97da8dd421ea425cbdba5ef32da3a9eb?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/969ad384a82d4142aed6f4d3fda9586d?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Adelaide 36ers",
           "idSource": "rosetta"
@@ -1027,8 +1144,8 @@
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "G",
-          "jersey": "4",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f7e799f028f7420a86d41b19b35b5631?size=800&format=webp",
+          "jersey": "2",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b79d22fafeca4034b7cf0650ccc78628?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1039,9 +1156,9 @@
           "team": "New Zealand Breakers",
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-          "position": null,
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/536eca998edd4e27b1df5504e12116fe?size=800&format=webp",
+          "position": "F",
+          "jersey": "30",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/01840c47e6774d75b87658efaa1c7b43?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Hapoel Jerusalem - Israel",
           "idSource": "rosetta"
@@ -1052,9 +1169,9 @@
           "team": "New Zealand Breakers",
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-          "position": null,
-          "jersey": null,
-          "imageUrl": null,
+          "position": "F",
+          "jersey": "21",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/944113c8aee54623801e282f9df998ef?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Northern Kentucky - NCAA",
           "idSource": "rosetta"
@@ -1065,8 +1182,8 @@
           "team": "New Zealand Breakers",
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-          "position": null,
-          "jersey": null,
+          "position": "G",
+          "jersey": "5",
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Manawatu Jets - NZNBL",
@@ -1080,9 +1197,22 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
           "jersey": "12",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b1220b73eff342508e6660bb4989d12f?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e5a621e25db4df18d3b45bc9361f7ba?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Sydney Kings",
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "3443c855-3ca4-4274-8cbf-74423c32b425",
+          "name": "Mojave King",
+          "team": "New Zealand Breakers",
+          "teamCode": "NZL",
+          "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "position": "G",
+          "jersey": "1",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cf0d61ee1e78463bb0f9a15ef9c90d0a?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
         },
         {
@@ -1093,7 +1223,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "G",
           "jersey": "6",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7dbf7b9311c94e95865754281375f5b0?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aa570c05f87241a588d6d39b1765179f?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1106,7 +1236,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "G",
           "jersey": "1",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f9889a7d26324a0e99462480cd49f963?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8ec714970b4f4393a8945eaf6c32c077?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Palm Beach Atlantic University - NCAA DII",
           "idSource": "rosetta"
@@ -1119,7 +1249,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
           "jersey": "7",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/03c780624e6f417e92c1e7750494247d?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/602dbd4828a34aa787af17c6579fe80d?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1132,7 +1262,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
           "jersey": "3",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/43413a31fe87455785f3d851a9f769ca?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7576309c4c2a439f8744e4bf8883cefc?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1143,9 +1273,9 @@
           "team": "New Zealand Breakers",
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-          "position": "F",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fba38d022ec54ded813661845fe4290a?size=800&format=webp",
+          "position": "G",
+          "jersey": "4",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/17b57bc11d644fc9b5d8726e5c4435c4?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1157,7 +1287,7 @@
       "teamCode": "PER",
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "headCoach": "John Rillie",
-      "playerCount": 13,
+      "playerCount": 15,
       "players": [
         {
           "playerId": "45f14944-075d-47c1-a972-2dcfc073c958",
@@ -1166,8 +1296,8 @@
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/014efbdc9eab4384af5367640a9aa669?size=800&format=webp",
+          "jersey": "27",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/81cafd82623d453e96672f64717b0b23?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
@@ -1178,9 +1308,9 @@
           "team": "Perth Wildcats",
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
-          "position": null,
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/35b8876a2d88463f8135bed9add7f48b?size=800&format=webp",
+          "position": "F",
+          "jersey": "26",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ea5f7850171348afa8a079e14370e0d9?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Veltex Shizuoka - Japan",
           "idSource": "rosetta"
@@ -1191,11 +1321,37 @@
           "team": "Perth Wildcats",
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
-          "position": null,
+          "position": "G",
           "jersey": "2",
-          "imageUrl": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/dd570850b59d4340afcb3178dd0866a7?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "University of Arizona - NCAA",
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Blake Nielsen",
+          "team": "Perth Wildcats",
+          "teamCode": "PER",
+          "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "St Edward's - NCAA",
+          "idSource": "unmatched"
+        },
+        {
+          "playerId": "facb68bd-0ceb-44e4-b28c-fdf49dfbd775",
+          "name": "Brandon Knight",
+          "team": "Perth Wildcats",
+          "teamCode": "PER",
+          "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "position": "G",
+          "jersey": "17",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72042e59bf6c47869e49eb60dbc08b99?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Mets de Guaynabo - Puerto Rico",
           "idSource": "rosetta"
         },
         {
@@ -1206,7 +1362,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
           "jersey": "25",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/59348f6fd6a140189a6c226b4e17e38d?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/18d0acde97f5476ab600c57f515a5237?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1219,7 +1375,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "G",
           "jersey": "3",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ff8518aa7d974e30a2f841ec3a68a825?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/77612d10438648118121b68ea7423b51?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1232,7 +1388,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "G",
           "jersey": "40",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e34c46a55f846988521f59f0598a6ce?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c2cc5ea484a241118485202810668e25?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1245,7 +1401,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "G",
           "jersey": "9",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5905f7c172fe4b009b335c41f6fc7a6c?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f4c065e558874427b29ad7a2d6e4bfad?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1258,7 +1414,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
           "jersey": "24",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6f3488aeedc045f69f95aa25929e2530?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1ae20634fc5a4f6b9d482a62fa4baf82?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1269,9 +1425,9 @@
           "team": "Perth Wildcats",
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
-          "position": null,
+          "position": "G",
           "jersey": "33",
-          "imageUrl": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d1ec50a5e61f4908a08940531a0c5918?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Gold Coast Rollers - NBL1 North",
           "idSource": "rosetta"
@@ -1284,7 +1440,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
           "jersey": "0",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/451590d91ccb47e192606590020abb56?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/31ef0bfce1374222988cac93584e6c69?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1297,7 +1453,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
           "jersey": "5",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/66449ae66836405480cc29c01c83c532?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c1253737cf374ada9ce1ae522dc51585?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1308,9 +1464,9 @@
           "team": "Perth Wildcats",
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
-          "position": null,
-          "jersey": null,
-          "imageUrl": null,
+          "position": "G",
+          "jersey": "13",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a46f26a3716a43ee8a820548e125d29c?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Eastern Suns - NBL1 West",
           "idSource": "rosetta"
@@ -1321,9 +1477,9 @@
           "team": "Perth Wildcats",
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
-          "position": null,
-          "jersey": null,
-          "imageUrl": null,
+          "position": "G",
+          "jersey": "8",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9239b88d901a4ef88681d2cf570ff236?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Keilor Thunder - NBL1 South",
           "idSource": "rosetta"
@@ -1335,7 +1491,7 @@
       "teamCode": "SEM",
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "headCoach": "Josh King",
-      "playerCount": 13,
+      "playerCount": 14,
       "players": [
         {
           "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -1345,7 +1501,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "F",
           "jersey": "7",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9ab43bd0ff0548c1be36d5ca4da938e6?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d3e6511d611241c1a1332ac76cdf7f4a?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1358,7 +1514,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
           "jersey": "5",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7b3fc6e955cd41b9a2279d083859624a?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/45a8b8db005c4463bd960096521125c4?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1369,9 +1525,9 @@
           "team": "South East Melbourne Phoenix",
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-          "position": null,
+          "position": "F",
           "jersey": "99",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9c459fb2e0ac401697c88ed6b5c01f0f?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aa5b390825814a8b86d89f739fa47383?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Rostock Seawolves - Germany",
           "idSource": "rosetta"
@@ -1384,7 +1540,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
           "jersey": "11",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2c7bfabdc8a34dcfbba264de07945d30?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e8df9b6d9e64950aac3a41a1b3f8043?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1397,7 +1553,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
           "jersey": "4",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/75dc93b580f6474f8fca0bb4a24a53ad?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/456410246a4747979cf1d8030b76c67d?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Melbourne United",
           "idSource": "rosetta"
@@ -1409,8 +1565,8 @@
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "C",
-          "jersey": "4",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/43909f9c187a47ddbb1f1762c8e2e319?size=800&format=webp",
+          "jersey": "8",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/34321c69dec24791ba68dcc0e932c5af?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1422,8 +1578,8 @@
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "F",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1e9084f6349f4e00b1e22ecdabdabeec?size=800&format=webp",
+          "jersey": "10",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/13429ee31d6543ba9101d3a7bd5261da?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Sydney Kings",
           "idSource": "rosetta"
@@ -1436,7 +1592,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "C",
           "jersey": "1",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d2af720101ef4ed69867952f08d7e738?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/02596ca88608482698479a4bdebd02b2?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1449,7 +1605,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
           "jersey": "20",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aa27b55933214883a167c37888ef9da9?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/31618183c5ce46ff8fbd140b934485cd?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1462,9 +1618,22 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "F",
           "jersey": "2",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/02653b27649c4db692b5dae4ca6db3b4?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cc13e0adf30e4b2f8879ca0fa64acd46?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "6a6983d4-e83e-403a-9b3e-04a8535ab545",
+          "name": "Sam Davidson",
+          "team": "South East Melbourne Phoenix",
+          "teamCode": "SEM",
+          "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "position": null,
+          "jersey": "3",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a5ce8c9efc5445a6a0caf61770e0384e?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Dandenong Rangers - NBL1 South",
           "idSource": "rosetta"
         },
         {
@@ -1473,9 +1642,9 @@
           "team": "South East Melbourne Phoenix",
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-          "position": null,
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c49adad7ecda497fa6e06b47a3aeb2fe?size=800&format=webp",
+          "position": "G",
+          "jersey": "9",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8fab66501a7641c48f5e2d29302800ab?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Budućnost - Montenegro",
           "idSource": "rosetta"
@@ -1487,8 +1656,8 @@
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
-          "jersey": "",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/994d3841cf4749adb4ef92b1a72eae63?size=800&format=webp",
+          "jersey": "13",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4133b1022edb4f78a01b69635dae7770?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Melbourne United",
           "idSource": "rosetta"
@@ -1499,9 +1668,9 @@
           "team": "South East Melbourne Phoenix",
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-          "position": null,
-          "jersey": null,
-          "imageUrl": null,
+          "position": "F",
+          "jersey": "12",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c5f1c5b857c14249ae62db4f296172da?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Joventut Badalona - Spain",
           "idSource": "rosetta"
@@ -1513,7 +1682,7 @@
       "teamCode": "SYD",
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "headCoach": "Brian Goorjian",
-      "playerCount": 11,
+      "playerCount": 15,
       "players": [
         {
           "playerId": "378c71b4-8d3d-4161-aaa4-88c69be7309e",
@@ -1521,11 +1690,24 @@
           "team": "Sydney Kings",
           "teamCode": "SYD",
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "position": "F",
+          "jersey": "11",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c0941da17b3446a88399d8174e12f848?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Rip City Remix - NBA G League",
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "2660102d-2921-4ff0-b421-1df5fad62a1f",
+          "name": "Bailey Hanson",
+          "team": "Sydney Kings",
+          "teamCode": "SYD",
+          "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": null,
           "jersey": null,
           "imageUrl": null,
           "trackerStatus": "incoming",
-          "trackerNote": "Rip City Remix - NBA G League",
+          "trackerNote": "Norths Bears - NBL1 East",
           "idSource": "rosetta"
         },
         {
@@ -1535,8 +1717,8 @@
           "teamCode": "SYD",
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "C",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7a14d177353d4d5cae26ceecbeee041c?size=800&format=webp",
+          "jersey": "9",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/89fe22d26e9843a0a1bacfed7be31eae?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Saint Mary's - NCAA",
           "idSource": "rosetta"
@@ -1549,7 +1731,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "F",
           "jersey": "14",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8d67a58391704195868a47001f95d552?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/531139c45eb448e0a28dc7147dd2e678?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1561,8 +1743,8 @@
           "teamCode": "SYD",
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "G",
-          "jersey": "",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6d8c3a1746a746f5ac1914ca53ed42f5?size=800&format=webp",
+          "jersey": "7",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/90e77f3b80744a7e98b240d414f9ceec?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Missouri - NCAA",
           "idSource": "rosetta"
@@ -1588,9 +1770,22 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "G",
           "jersey": "1",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/59ba8f111c334c3f93ea1667c3bc3e1a?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d5e563db6e6145d4bbfea3ce7041ac2d?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "98ee26c6-adb4-470a-b30e-63c14524d6d1",
+          "name": "Lachlan Bofinger",
+          "team": "Sydney Kings",
+          "teamCode": "SYD",
+          "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "position": null,
+          "jersey": "22",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f1c6aeb5d646467f97e9480551bbb27b?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Norths Bears - NBL1 East",
           "idSource": "rosetta"
         },
         {
@@ -1601,7 +1796,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "G",
           "jersey": "15",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/bdc39a5c95094494be5e44ef18843bfd?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fae2a4b073f14ca68d21d05e9fd5b26c?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1614,9 +1809,22 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "G",
           "jersey": "8",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/713a9159e6244d8898f5caf32df40fe9?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f79c0017927b43f68c337044f53cb6b4?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "e9e270cc-9a5a-4c73-93a6-415e7224af40",
+          "name": "Peitok Machar",
+          "team": "Sydney Kings",
+          "teamCode": "SYD",
+          "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "position": null,
+          "jersey": "13",
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "McNeese State",
           "idSource": "rosetta"
         },
         {
@@ -1627,7 +1835,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "F",
           "jersey": "2",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d8e3872276834c78a71280ba38dcc837?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5009f2d2da2c4c3b81576de2026192d5?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1640,9 +1848,22 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "G",
           "jersey": "3",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/61f980eb5de743ebbd35c59ac6c86cc9?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e2bf011fd914b668ae9c149d416d747?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "9b55dd7f-4988-4e54-a889-36d23705aeb8",
+          "name": "Will Johnston",
+          "team": "Sydney Kings",
+          "teamCode": "SYD",
+          "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "position": null,
+          "jersey": "4",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c370afac5b944e7db322c105a0ba109f?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Richmond - NCAA",
           "idSource": "rosetta"
         },
         {
@@ -1653,7 +1874,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "F",
           "jersey": "10",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ad2f42dc983343deba4c094f2ddf3e6c?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4114a7e865e0417888c87082be3e1292?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1674,8 +1895,8 @@
           "teamCode": "TAS",
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/46cb5f3faed245a791acbd61542e2f80?size=800&format=webp",
+          "jersey": "3",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/77d467a4e7354260b3cd134d60536b5c?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1700,8 +1921,8 @@
           "teamCode": "TAS",
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "F",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/739772c4bb4f4a29ab24f11b0aed5f24?size=800&format=webp",
+          "jersey": "12",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d103a6c035e44f9e83f6d31f908a8198?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Marquette - NCAA",
           "idSource": "rosetta"
@@ -1713,8 +1934,8 @@
           "teamCode": "TAS",
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "F",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e3b51b49103948409bd5c45192979f11?size=800&format=webp",
+          "jersey": "0",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/38e9f49d567c408d8e252f40ad54876e?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1726,8 +1947,8 @@
           "teamCode": "TAS",
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a6f060c188e54ef99a1c0a8a059413b9?size=800&format=webp",
+          "jersey": "31",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7a4e2b9b30b24c769a09b82d7acc8e95?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Noblesville Boom - G League",
           "idSource": "rosetta"
@@ -1740,7 +1961,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
           "jersey": "7",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/95641c8328fe4c3b9bdfa96ef57e1d74?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/78b27ed7a0f14fe6adad856060e6037f?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1752,8 +1973,8 @@
           "teamCode": "TAS",
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "F",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b4fee71f1d8b48fe8f538ee2ab6b3232?size=800&format=webp",
+          "jersey": "4",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6b374d71ea9d41c6ad3ae5250a46ec4d?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
@@ -1766,7 +1987,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "F",
           "jersey": "33",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/233ccfd50b6e4688b028576f802e7fc7?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5359c23ff63740f0b1bdc0c62fb37385?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1779,7 +2000,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "F",
           "jersey": "5",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/120a0442a57a4223af753a8e8fa3b126?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ff951a256080456b97b3c14f8bfa6739?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1792,7 +2013,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
           "jersey": "11",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/66f55d47051345d6941b107d54c3f646?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1c82121e8ba249e79a1b832a711ffe08?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1817,8 +2038,8 @@
           "teamCode": "TAS",
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
-          "jersey": null,
-          "imageUrl": null,
+          "jersey": "8",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d9a6ea1061014dc5a666bd94a0d2a0d9?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1830,8 +2051,8 @@
           "teamCode": "TAS",
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
-          "jersey": null,
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/16cd685eb2394ae1bfda890a87d7b90a?size=800&format=webp",
+          "jersey": "1",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f738f8a18950480f873f0617c8049bfd?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Dubai Basketball - EuroLeague",
           "idSource": "rosetta"
@@ -1844,7 +2065,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "C",
           "jersey": "22",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/24b38353096147649f17404adfccb81f?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f2f0bd14e6b748ca9c639449a1cd3299?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"

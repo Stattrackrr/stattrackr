@@ -1,8 +1,8 @@
 #!/usr/bin/env tsx
-/** Print NBL play-type tags for a season (default 2025 / NBL26). */
+/** Print NBL play-type tags for a season (default 2026 / NBL27). */
 import { buildNblPlayTypesPayload, NBL_PLAY_TYPE_IDS } from '../lib/nbl/playTypes';
 
-const year = Number(process.argv.find((a) => a.startsWith('--year='))?.slice(7) || 2025);
+const year = Number(process.argv.find((a) => a.startsWith('--year='))?.slice(7) || 2026);
 const payload = buildNblPlayTypesPayload({ year, stat: 'points' });
 
 console.log(`${payload.seasonLabel} tagged ${payload.taggedCount} players\n`);

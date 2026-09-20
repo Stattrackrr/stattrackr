@@ -1,63 +1,63 @@
 {
   "mode": "player",
   "playerName": "Jack McVeigh",
-  "team": "Tasmania JackJumpers",
+  "team": "Cairns Taipans",
   "years": [
-    2025
+    2026
   ],
-  "gamesUsed": 18,
+  "gamesUsed": 1,
   "fixturesFetched": 0,
-  "fixturesCached": 18,
-  "shotCount": 273,
+  "fixturesCached": 1,
+  "shotCount": 7,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 40,
-      "fgm": 33,
-      "fgPct": 82.5,
-      "share": 14.652014652014653
+      "fga": 1,
+      "fgm": 1,
+      "fgPct": 100,
+      "share": 14.285714285714285
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 70,
-      "fgm": 38,
-      "fgPct": 54.285714285714285,
-      "share": 25.64102564102564
+      "fga": 3,
+      "fgm": 1,
+      "fgPct": 33.33333333333333,
+      "share": 42.857142857142854
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 29,
-      "fgm": 13,
-      "fgPct": 44.827586206896555,
-      "share": 10.622710622710622
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 14.285714285714285
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 23,
-      "fgm": 13,
-      "fgPct": 56.52173913043478,
-      "share": 8.424908424908425
+      "fga": 1,
+      "fgm": 1,
+      "fgPct": 100,
+      "share": 14.285714285714285
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 39,
-      "fgm": 14,
-      "fgPct": 35.8974358974359,
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
       "share": 14.285714285714285
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 72,
-      "fgm": 20,
-      "fgPct": 27.77777777777778,
-      "share": 26.373626373626376
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     }
   ],
-  "generatedAt": "2026-09-14T12:36:45.952Z"
+  "generatedAt": "2026-09-20T16:41:26.403Z"
 }

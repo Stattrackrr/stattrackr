@@ -46,13 +46,11 @@ import { supabase } from '@/lib/supabaseClient';
 import { useViewerProfile } from '@/hooks/useViewerProfile';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
 import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
-import { Search } from 'lucide-react';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
 import { TENNIS_AI_UNDER_MAINTENANCE, TENNIS_CURRENT_YEAR, TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
 import {
   defaultTennisGameStat,
   tennisEventPlaceLabel,
-  tennisLastName,
   tennisMatchesPlayed,
   tennisRoundLabel,
   tennisTourLabel,
@@ -93,10 +91,6 @@ type NblRosterPlayer = {
 };
 
 const TENNIS_TOURS = new Set(['ATP', 'WTA', 'GRAND SLAM']);
-const TENNIS_TOUR_FILTER_LOGOS: Record<string, string> = {
-  ATP: '/images/atp-logo.webp',
-  WTA: '/images/wta-logo.png',
-};
 
 function tennisPlayerTour(
   player: { tour?: string | null; team?: string | null } | null | undefined
@@ -155,8 +149,6 @@ const tennisNextGameClientCache = new Map<
   string,
   { savedAt: number; payload: TennisNextGameClient }
 >();
-const tennisNextGameInflight = new Set<string>();
-
 type TennisNextGameClient = {
   opponent: string | null;
   opponentId: string | null;
@@ -678,8 +670,6 @@ export default function TennisDashboardPage() {
   const [playerVsContainerTab, setPlayerVsContainerTab] = useState<TennisFormContainerTab>(
     TENNIS_AI_UNDER_MAINTENANCE ? 'similar' : 'overview'
   );
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [rosterPlayers, setRosterPlayers] = useState<NblRosterPlayer[]>([]);
   const [rosterLoading, setRosterLoading] = useState(true);
   const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
@@ -739,7 +729,6 @@ export default function TennisDashboardPage() {
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
   const journalDropdownRef = useRef<HTMLDivElement | null>(null);
   const settingsDropdownRef = useRef<HTMLDivElement | null>(null);
-  const searchDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const {
     containerStyle,
@@ -770,31 +759,6 @@ export default function TennisDashboardPage() {
     setNextGameTipoff(tipRaw && !Number.isNaN(tipRaw.getTime()) ? tipRaw : null);
     setIsGameInProgress(payload.live);
   }, []);
-
-  const prefetchNextGame = useCallback(
-    async (playerId: string, tour: 'ATP' | 'WTA' | null, playerName?: string | null) => {
-      const id = String(playerId || '').trim();
-      if (!id || readTennisNextGameClient(id) || tennisNextGameInflight.has(id)) return;
-      tennisNextGameInflight.add(id);
-      try {
-        const qs = new URLSearchParams({ playerId: id });
-        if (tour) qs.set('tour', tour);
-        const name = String(playerName || '').trim();
-        if (name) qs.set('player', name);
-        const res = await tennisDashboardFetch(`/api/tennis/next-game?${qs.toString()}`);
-        const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
-        if (!res.ok || !data) return;
-        const payload = parseTennisNextGameClient(data);
-        writeTennisNextGameClient(id, payload);
-        if (selectedPlayerIdRef.current === id) applyUpcoming(id, payload);
-      } catch {
-        /* keep waiting for the selected-player fetch */
-      } finally {
-        tennisNextGameInflight.delete(id);
-      }
-    },
-    [applyUpcoming]
-  );
 
   selectedPlayerIdRef.current = String(selectedPlayer?.playerId || '').trim() || null;
 
@@ -861,7 +825,6 @@ export default function TennisDashboardPage() {
     setChartTimeframe(restored.chartTimeframe);
     setMainChartStat(restored.mainChartStat);
     setNblGameFilters(restored.nblGameFilters);
-    if (restored.searchQuery) setSearchQuery(restored.searchQuery);
     try {
       const url = new URL(window.location.href);
       const lineRaw = url.searchParams.get('line');
@@ -917,16 +880,6 @@ export default function TennisDashboardPage() {
     };
   }, []);
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (searchDropdownRef.current && !searchDropdownRef.current.contains(e.target as Node)) {
-        setShowSearchDropdown(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   // Game Props has no DVP tab — fall back to Player Matchup.
   useEffect(() => {
     if (nblPropsMode === 'team' && nblRightTab === 'dvp') {
@@ -973,7 +926,6 @@ export default function TennisDashboardPage() {
     if (!isTennisPlayer(selectedPlayer)) {
       setSelectedPlayer(null);
       setSelectedTeam(null);
-      setSearchQuery('');
       setLoadingPlayerFromUrl(false);
       setStatsLoadingForPlayer(false);
       return;
@@ -1001,7 +953,6 @@ export default function TennisDashboardPage() {
       const tour = tennisPlayerTour(match);
       setSelectedPlayer(match);
       setSelectedTeam(tour || match.team || null);
-      setSearchQuery(match.name);
     } else {
       const tour = tennisPlayerTour(selectedPlayer);
       if (tour && String(selectedPlayer.team || '').toUpperCase() !== tour) {
@@ -1153,57 +1104,6 @@ export default function TennisDashboardPage() {
       window.history.replaceState({}, '', next);
     }
   }, [tennisUrlSyncKey]);
-
-  const filteredPlayers = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    const pool = rosterPlayers;
-    if (!q) return pool.slice(0, 20);
-    return pool
-      .filter((p) => {
-        const name = String(p.name || '').toLowerCase();
-        const last = tennisLastName(p.name).toLowerCase();
-        const team = String(p.team || p.tour || '').toLowerCase();
-        const code = String(p.teamCode || p.tour || '').toLowerCase();
-        return name.includes(q) || last.startsWith(q) || team.includes(q) || code.includes(q);
-      })
-      .slice(0, 20);
-  }, [rosterPlayers, searchQuery]);
-
-  const selectPlayer = (player: NblRosterPlayer) => {
-    const tour = tennisPlayerTour(player);
-    setSelectedPlayer({ ...player, tour: tour || player.tour, team: tour || player.team });
-    setSelectedTeam(tour || player.team || null);
-    setSearchQuery(player.name);
-    setShowSearchDropdown(false);
-    setSelectedPlayerGameLogs([]);
-    setStatsLoadingForPlayer(true);
-    setLoadingPlayerFromUrl(false);
-    setChartDelayElapsed(false);
-    setTennisOddsBooks([]);
-    setSelectedTennisBookIndex(0);
-    setTennisOddsHomeTeam('');
-    setTennisOddsAwayTeam('');
-    setTennisGameLineValue(null);
-    lastOddsMatchupKeyRef.current = null;
-    tennisLineFromUrlRef.current = null;
-    preferredTennisBookmakerRef.current = null;
-    hasIncomingTennisBookOrLineRef.current = false;
-    tennisIncomingStatRef.current = null;
-    setPropsOpponentFallback(null);
-    setPropsOpponentIocFallback(null);
-    setPropsOpponentIdFallback(null);
-    const playerId = String(player.playerId || '').trim();
-    const cached = readTennisNextGameClient(playerId);
-    if (playerId && cached) applyUpcoming(playerId, cached);
-  };
-
-  useEffect(() => {
-    if (!showSearchDropdown) return;
-    for (const player of filteredPlayers.slice(0, 12)) {
-      const id = String(player.playerId || '').trim();
-      if (id) void prefetchNextGame(id, tennisPlayerTour(player), player.name);
-    }
-  }, [showSearchDropdown, filteredPlayers, prefetchNextGame]);
 
   // Load game logs whenever a player is selected (cache-first soft remount, then network).
   useEffect(() => {
@@ -1612,7 +1512,7 @@ export default function TennisDashboardPage() {
       ]
         .filter(Boolean)
         .join(' · ')
-    : 'Search for a player below';
+    : 'Open a player from Player Props';
   const showHeaderEventLine = Boolean(
     selectedPlayer && (headerTourLabel || headerPlace || headerRound || headerSurface || headerEventSuffix)
   );
@@ -1690,7 +1590,6 @@ export default function TennisDashboardPage() {
                 {/* 2. Header */}
                 <div
                   className={`relative z-[60] rounded-lg ${TENNIS_DASH_CARD_GLOW} p-2.5 sm:p-4 md:p-6 w-full min-w-0 flex-shrink-0 mr-0 overflow-visible`}
-                  ref={searchDropdownRef}
                 >
                   <div className="flex flex-col gap-1.5 lg:gap-3">
                     {/* Desktop: player info | matchup | spacer */}
@@ -1886,149 +1785,6 @@ export default function TennisDashboardPage() {
                             <span className="text-gray-400 dark:text-gray-500 text-xs font-medium">
                               {'Select Player'}
                             </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Search + dropdown */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 lg:mt-0">
-                      <div className="flex-1 relative min-w-0">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setShowSearchDropdown(true);
-                          }}
-                          onFocus={() => setShowSearchDropdown(true)}
-                          placeholder="Search current ATP / WTA players..."
-                          className={`w-full pl-9 pr-3 py-2 rounded-lg border text-sm placeholder-gray-500 dark:placeholder-gray-400 ${
-                            isDark
-                              ? 'bg-[#0f172a] border-gray-600 text-white focus:ring-purple-500 focus:border-purple-500'
-                              : 'bg-gray-50 border-gray-300 text-gray-900 focus:ring-purple-500 focus:border-purple-500'
-                          }`}
-                          aria-label={
-                            nblPropsMode === 'team' ? 'Search tennis tours' : 'Search tennis players'
-                          }
-                          autoComplete="off"
-                        />
-                        {showSearchDropdown && (
-                          <div
-                            className={`absolute left-0 right-0 top-full mt-1 rounded-lg border shadow-lg z-[120] max-h-72 overflow-y-auto ${
-                              isDark ? 'bg-[#0f172a] border-gray-600' : 'bg-white border-gray-200'
-                            }`}
-                          >
-                            {nblPropsMode === 'team' ? (
-                              rosterLoading ? (
-                                <div
-                                  className={`px-3 py-4 text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-                                >
-                                  Loading players…
-                                </div>
-                              ) : filteredPlayers.length === 0 ? (
-                                <div
-                                  className={`px-3 py-4 text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-                                >
-                                  No players match
-                                </div>
-                              ) : (
-                                filteredPlayers.map((player) => {
-                                  const tour = tennisPlayerTour(player);
-                                  const tourLogo = tour ? TENNIS_TOUR_FILTER_LOGOS[tour] : '';
-                                  return (
-                                  <button
-                                    key={player.playerId || `${player.name}|${player.team}`}
-                                    type="button"
-                                    onClick={() => selectPlayer(player)}
-                                    className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 ${
-                                      isDark
-                                        ? 'hover:bg-[#1e293b] text-gray-100'
-                                        : 'hover:bg-gray-50 text-gray-900'
-                                    }`}
-                                  >
-                                    <TennisPlayerAvatar
-                                      name={player.name}
-                                      playerId={player.playerId}
-                                      imageUrl={player.imageUrl}
-                                      sizeClass="w-8 h-8"
-                                    />
-                                    <span className="min-w-0 flex-1">
-                                      <span className="font-medium block truncate">{player.name}</span>
-                                      <span
-                                        className={`text-xs block truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                                      >
-                                        {tour || player.tour || player.team}
-                                        {player.jersey ? ` · #${player.jersey}` : ''}
-                                      </span>
-                                    </span>
-                                    {tourLogo ? (
-                                      <img
-                                        src={tourLogo}
-                                        alt=""
-                                        className="w-5 h-5 object-contain flex-shrink-0 opacity-80"
-                                      />
-                                    ) : null}
-                                  </button>
-                                  );
-                                })
-                              )
-                            ) : rosterLoading ? (
-                              <div
-                                className={`px-3 py-4 text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-                              >
-                                Loading players…
-                              </div>
-                            ) : filteredPlayers.length === 0 ? (
-                              <div
-                                className={`px-3 py-4 text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-                              >
-                                {rosterPlayers.length === 0
-                                  ? 'No current players in cache'
-                                  : 'No players match'}
-                              </div>
-                            ) : (
-                              filteredPlayers.map((player) => {
-                                const tour = tennisPlayerTour(player);
-                                const tourLogo = tour ? TENNIS_TOUR_FILTER_LOGOS[tour] : '';
-                                return (
-                                <button
-                                  key={player.playerId || `${player.name}|${player.team}`}
-                                  type="button"
-                                  onClick={() => selectPlayer(player)}
-                                  className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 ${
-                                    isDark
-                                      ? 'hover:bg-[#1e293b] text-gray-100'
-                                      : 'hover:bg-gray-50 text-gray-900'
-                                  }`}
-                                >
-                                  <TennisPlayerAvatar
-                                    name={player.name}
-                                    playerId={player.playerId}
-                                    imageUrl={player.imageUrl}
-                                    sizeClass="w-8 h-8"
-                                  />
-                                  <span className="min-w-0 flex-1">
-                                    <span className="font-medium block truncate">{player.name}</span>
-                                    <span
-                                      className={`text-xs block truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                                    >
-                                      {tour || player.team}
-                                      {player.jersey ? ` · #${player.jersey}` : ''}
-                                    </span>
-                                  </span>
-                                  {tourLogo ? (
-                                    <img
-                                      src={tourLogo}
-                                      alt=""
-                                      className="w-5 h-5 object-contain flex-shrink-0 opacity-80"
-                                    />
-                                  ) : null}
-                                </button>
-                                );
-                              })
-                            )}
                           </div>
                         )}
                       </div>

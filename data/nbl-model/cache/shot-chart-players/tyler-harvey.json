@@ -3,61 +3,61 @@
   "playerName": "Tyler Harvey",
   "team": "Illawarra Hawks",
   "years": [
-    2025
+    2026
   ],
-  "gamesUsed": 42,
+  "gamesUsed": 1,
   "fixturesFetched": 0,
-  "fixturesCached": 42,
-  "shotCount": 622,
+  "fixturesCached": 1,
+  "shotCount": 11,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 55,
-      "fgm": 36,
-      "fgPct": 65.45454545454545,
-      "share": 8.842443729903538
+      "fga": 3,
+      "fgm": 1,
+      "fgPct": 33.33333333333333,
+      "share": 27.27272727272727
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 191,
-      "fgm": 93,
-      "fgPct": 48.69109947643979,
-      "share": 30.70739549839228
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 32,
-      "fgm": 11,
-      "fgPct": 34.375,
-      "share": 5.144694533762058
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 89,
-      "fgm": 34,
-      "fgPct": 38.20224719101123,
-      "share": 14.308681672025724
+      "fga": 1,
+      "fgm": 1,
+      "fgPct": 100,
+      "share": 9.090909090909092
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 87,
-      "fgm": 28,
-      "fgPct": 32.18390804597701,
-      "share": 13.987138263665594
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 9.090909090909092
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 168,
-      "fgm": 64,
-      "fgPct": 38.095238095238095,
-      "share": 27.009646302250808
+      "fga": 6,
+      "fgm": 2,
+      "fgPct": 33.33333333333333,
+      "share": 54.54545454545454
     }
   ],
-  "generatedAt": "2026-09-14T12:36:45.952Z"
+  "generatedAt": "2026-09-20T16:41:26.403Z"
 }

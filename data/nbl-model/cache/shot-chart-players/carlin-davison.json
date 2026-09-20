@@ -1,30 +1,30 @@
 {
   "mode": "player",
   "playerName": "Carlin Davison",
-  "team": "New Zealand Breakers",
+  "team": "NZ Breakers",
   "years": [
-    2025
+    2026
   ],
-  "gamesUsed": 20,
+  "gamesUsed": 1,
   "fixturesFetched": 0,
-  "fixturesCached": 20,
-  "shotCount": 92,
+  "fixturesCached": 1,
+  "shotCount": 2,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 39,
-      "fgm": 25,
-      "fgPct": 64.1025641025641,
-      "share": 42.391304347826086
+      "fga": 1,
+      "fgm": 1,
+      "fgPct": 100,
+      "share": 50
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 26,
-      "fgm": 11,
-      "fgPct": 42.30769230769231,
-      "share": 28.26086956521739
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "midRange",
@@ -37,27 +37,27 @@
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 13,
-      "fgm": 7,
-      "fgPct": 53.84615384615385,
-      "share": 14.130434782608695
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 50
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 8,
-      "fgm": 3,
-      "fgPct": 37.5,
-      "share": 8.695652173913043
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 6,
-      "fgm": 2,
-      "fgPct": 33.33333333333333,
-      "share": 6.521739130434782
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     }
   ],
-  "generatedAt": "2026-09-14T12:36:45.952Z"
+  "generatedAt": "2026-09-20T16:41:26.403Z"
 }

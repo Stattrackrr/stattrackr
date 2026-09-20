@@ -3,61 +3,61 @@
   "playerName": "Dylan Windler",
   "team": "Perth Wildcats",
   "years": [
-    2025
+    2026
   ],
-  "gamesUsed": 31,
+  "gamesUsed": 1,
   "fixturesFetched": 0,
-  "fixturesCached": 31,
-  "shotCount": 298,
+  "fixturesCached": 1,
+  "shotCount": 6,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 64,
-      "fgm": 43,
-      "fgPct": 67.1875,
-      "share": 21.476510067114095
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 16.666666666666664
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 66,
-      "fgm": 31,
-      "fgPct": 46.96969696969697,
-      "share": 22.14765100671141
+      "fga": 2,
+      "fgm": 1,
+      "fgPct": 50,
+      "share": 33.33333333333333
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 4,
-      "fgm": 1,
-      "fgPct": 25,
-      "share": 1.342281879194631
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 44,
-      "fgm": 27,
-      "fgPct": 61.36363636363637,
-      "share": 14.76510067114094
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 16.666666666666664
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 42,
-      "fgm": 17,
-      "fgPct": 40.476190476190474,
-      "share": 14.093959731543624
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 78,
-      "fgm": 27,
-      "fgPct": 34.61538461538461,
-      "share": 26.174496644295303
+      "fga": 2,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 33.33333333333333
     }
   ],
-  "generatedAt": "2026-09-14T12:36:45.952Z"
+  "generatedAt": "2026-09-20T16:41:26.403Z"
 }
