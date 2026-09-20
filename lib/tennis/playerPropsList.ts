@@ -55,7 +55,6 @@ import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisMatchRow, TennisTour } from '@/lib/tennis/types';
 import {
   TENNIS_LIST_CACHE_KEY,
-  TENNIS_LIST_CACHE_TTL_SECONDS,
   readTennisPlayerPropsListCache,
   writeTennisPlayerPropsListCache,
 } from '@/lib/tennis/playerPropsListCache';
@@ -1341,7 +1340,7 @@ async function loadTennisPlayerPropsList(refresh?: boolean): Promise<TennisPlaye
     if (payload.data.length > 0) {
       payload = await applyTennisListLiveOverlay(payload);
       if (payload.data.length > 0) {
-        await sharedCache.setJSON(TENNIS_LIST_CACHE_KEY, payload, TENNIS_LIST_CACHE_TTL_SECONDS);
+        await writeTennisPlayerPropsListCache(payload);
         return payload;
       }
     }

@@ -15,7 +15,7 @@ import {
   combinedSnapshotAflAssemblyReady,
   combinedTennisHasFormStats,
   getCombinedPropsSnapshot,
-  slimCombinedPropsSnapshotForClient,
+  persistCombinedPropsSnapshot,
 } from '@/lib/combinedPropsSnapshotPaint';
 
 export type { CombinedAflGame, CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
@@ -31,7 +31,6 @@ export {
   slimCombinedPropsSnapshotForClient,
 } from '@/lib/combinedPropsSnapshotPaint';
 
-const COMBINED_PROPS_SNAPSHOT_TTL_SECONDS = 4 * 60 * 60;
 const COMBINED_PROPS_SNAPSHOT_STALE_MS = 15 * 60 * 1000;
 /** Combined paint must never wait on tennis. AFL returns; tennis fills in if it makes the budget. */
 const TENNIS_COMBINED_BUDGET_MS = 2500;
@@ -361,20 +360,12 @@ function snapshotReadyToCache(snapshot: CombinedPropsSnapshot): boolean {
   if (!combinedSnapshotAflAssemblyReady(snapshot)) return false;
   const props = snapshot.afl?.props ?? [];
   if (props.length === 0) return true;
+  if (snapshot.afl?.noAflOdds) return true;
   return aflEnrichedPayloadHasUsableStats({ data: props });
 }
 
 async function writeCombinedPropsSnapshotCaches(snapshot: CombinedPropsSnapshot): Promise<void> {
-  await sharedCache.setJSON(
-    COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
-    snapshot,
-    COMBINED_PROPS_SNAPSHOT_TTL_SECONDS
-  );
-  await sharedCache.setJSON(
-    COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
-    slimCombinedPropsSnapshotForClient(snapshot),
-    COMBINED_PROPS_SNAPSHOT_TTL_SECONDS
-  );
+  await persistCombinedPropsSnapshot(snapshot);
 }
 
 export async function clearCombinedPropsSnapshotCaches(): Promise<void> {

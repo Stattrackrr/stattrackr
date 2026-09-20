@@ -1,9 +1,10 @@
-# Keep /api/props/combined Redis snapshot warm between heavier WC ingest runs.
+# Keep /api/props/combined Redis snapshot warm between heavier ingest runs.
+# Writes tennis list + combined caches. Page GET stays cache-only.
 name: Props Combined Cache Ping
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/20 * * * *'
   workflow_dispatch:
 
 concurrency:
@@ -13,9 +14,9 @@ concurrency:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
-      - name: Ping combined props snapshot
+      - name: Fill combined props snapshot
         env:
           PROD_URL: ${{ secrets.PROD_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
@@ -25,8 +26,28 @@ jobs:
             echo "Missing PROD_URL or CRON_SECRET"
             exit 1
           fi
-          curl -fsS "${PROD_URL}/api/props/combined" \
-            -H "x-cron-secret: ${CRON_SECRET}" \
+          PROD="${PROD_URL%/}"
+          case "$PROD" in
+            http://*) PROD="https://${PROD#http://}" ;;
+          esac
+          EFFECTIVE=$(curl -sS -o /dev/null -w "%{url_effective}" -L --max-time 20 "${PROD}/" || true)
+          ORIGIN=$(printf '%s' "$EFFECTIVE" | sed -E 's#(https?://[^/]+).*#\1#')
+          case "$ORIGIN" in
+            http://*|https://*) ;;
+            *) ORIGIN="$PROD" ;;
+          esac
+          URL="${ORIGIN}/api/cron/refresh-combined-props?sync=1"
+          echo "Canonical cron URL: $URL"
+          HTTP_STATUS=$(curl -sS -o /tmp/combined-cron.json -w "%{http_code}" --max-time 170 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "X-Cron-Secret: ${CRON_SECRET}" \
             -H "Accept: application/json" \
-            -o /dev/null
+            "$URL" || true)
+          BODY=$(cat /tmp/combined-cron.json || true)
+          echo "Response ($HTTP_STATUS): $BODY"
+          OK=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(j.success === true ? 'true' : 'false'); } catch { process.stdout.write('false'); }" "$BODY")
+          if [ "${HTTP_STATUS:-000}" != "200" ] || [ "$OK" != "true" ]; then
+            echo "Combined props cache fill failed"
+            exit 1
+          fi
           echo "Combined props cache ping OK"

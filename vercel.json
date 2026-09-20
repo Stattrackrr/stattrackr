@@ -26,6 +26,10 @@
       "schedule": "*/30 * * * *"
     },
     {
+      "path": "/api/cron/refresh-combined-props",
+      "schedule": "*/20 * * * *"
+    },
+    {
       "path": "/api/cron/refresh-tennis-upcoming",
       "schedule": "*/10 * * * *"
     },
@@ -93,6 +97,9 @@
       "maxDuration": 300
     },
     "app/api/cron/refresh-tennis-odds/route.ts": {
+      "maxDuration": 180
+    },
+    "app/api/cron/refresh-combined-props/route.ts": {
       "maxDuration": 180
     },
     "app/api/cron/refresh-tennis-upcoming/route.ts": {

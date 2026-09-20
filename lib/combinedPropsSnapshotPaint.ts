@@ -1,5 +1,5 @@
 import sharedCache from '@/lib/sharedCache';
-import type { CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
+import type { CombinedAflGame, CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
 import {
   AFL_USER_NO_ODDS,
   filterAflPropRowsByCommenceTime,
@@ -13,15 +13,31 @@ export const COMBINED_PROPS_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_v6';
 /** Browser paint payload — no per-row game logs or other dashboard-only fields. */
 export const COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_paint_v6';
 
+const COMBINED_SNAPSHOT_LAST_GOOD_KEY = 'combined_props_snapshot_last_good_v1';
+const COMBINED_PAINT_LAST_GOOD_KEY = 'combined_props_snapshot_paint_last_good_v1';
+const COMBINED_PROPS_SNAPSHOT_TTL_SECONDS = 8 * 60 * 60;
+const COMBINED_PROPS_LAST_GOOD_TTL_SECONDS = 7 * 24 * 60 * 60;
+
 const COMBINED_SNAPSHOT_READ_KEYS = [
   COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
   'combined_props_snapshot_v7',
+  COMBINED_SNAPSHOT_LAST_GOOD_KEY,
 ] as const;
 
 const COMBINED_PAINT_READ_KEYS = [
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
   'combined_props_snapshot_paint_v7',
+  COMBINED_PAINT_LAST_GOOD_KEY,
 ] as const;
+
+export function combinedSnapshotPropCount(snapshot: CombinedPropsSnapshot | null | undefined): number {
+  if (!snapshot) return 0;
+  return (
+    (snapshot.nba?.props?.length || 0) +
+    (snapshot.afl?.props?.length || 0) +
+    (snapshot.tennis?.props?.length || 0)
+  );
+}
 
 /** Strip fields the props list never renders (saves parse/hydrate work in the browser). */
 export function slimCombinedPlayerPropForPaint(prop: CombinedPlayerProp): CombinedPlayerProp {
@@ -57,11 +73,14 @@ export function slimCombinedPropsSnapshotForClient(
 }
 
 async function firstCachedSnapshot(keys: readonly string[]): Promise<CombinedPropsSnapshot | null> {
+  let empty: CombinedPropsSnapshot | null = null;
   for (const key of keys) {
     const snapshot = await sharedCache.getJSON<CombinedPropsSnapshot>(key);
-    if (snapshot && typeof snapshot === 'object') return snapshot;
+    if (!snapshot || typeof snapshot !== 'object') continue;
+    if (combinedSnapshotPropCount(snapshot) > 0) return snapshot;
+    empty ??= snapshot;
   }
-  return null;
+  return empty;
 }
 
 export async function getCombinedPropsSnapshot(): Promise<CombinedPropsSnapshot | null> {
@@ -93,8 +112,6 @@ export async function attachCachedTennisSlice(
   };
 }
 
-const COMBINED_PROPS_SNAPSHOT_TTL_SECONDS = 4 * 60 * 60;
-
 function tennisDvpRowKey(row: {
   playerName?: string | null;
   gameId?: string | null;
@@ -103,6 +120,53 @@ function tennisDvpRowKey(row: {
   opponent?: string | null;
 }): string {
   return `${row.playerName || ''}|${row.gameId || ''}|${row.statType || ''}|${row.line ?? ''}|${row.opponent || ''}`;
+}
+
+function preservePopulatedSportSlices(
+  next: CombinedPropsSnapshot,
+  previous: CombinedPropsSnapshot | null
+): CombinedPropsSnapshot {
+  if (!previous) return next;
+  if (combinedSnapshotPropCount(next) === 0 && combinedSnapshotPropCount(previous) > 0) {
+    return previous;
+  }
+  return {
+    ...next,
+    nba: next.nba?.props?.length ? next.nba : previous.nba,
+    tennis: next.tennis?.props?.length ? next.tennis : previous.tennis,
+    afl: next.afl?.props?.length
+      ? next.afl
+      : next.afl?.noAflOdds
+        ? next.afl
+        : previous.afl?.props?.length
+          ? previous.afl
+          : next.afl,
+  };
+}
+
+/** Write live keys and a 7-day last-good copy. Never persist an empty slate over populated props. */
+export async function persistCombinedPropsSnapshot(
+  snapshot: CombinedPropsSnapshot
+): Promise<CombinedPropsSnapshot> {
+  const previous =
+    (await getCombinedPropsSnapshot()) || (await getCombinedPropsPaintSnapshot());
+  const merged = preservePopulatedSportSlices(snapshot, previous);
+  if (combinedSnapshotPropCount(merged) === 0 && combinedSnapshotPropCount(previous) > 0) {
+    return previous!;
+  }
+  const paint = slimCombinedPropsSnapshotForClient(merged);
+  const entries: Array<{ key: string; value: CombinedPropsSnapshot; ttlSeconds: number }> = [
+    { key: COMBINED_PROPS_SNAPSHOT_CACHE_KEY, value: merged, ttlSeconds: COMBINED_PROPS_SNAPSHOT_TTL_SECONDS },
+    { key: COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY, value: paint, ttlSeconds: COMBINED_PROPS_SNAPSHOT_TTL_SECONDS },
+  ];
+  if (combinedSnapshotPropCount(merged) > 0) {
+    entries.push(
+      { key: COMBINED_SNAPSHOT_LAST_GOOD_KEY, value: merged, ttlSeconds: COMBINED_PROPS_LAST_GOOD_TTL_SECONDS },
+      { key: COMBINED_PAINT_LAST_GOOD_KEY, value: paint, ttlSeconds: COMBINED_PROPS_LAST_GOOD_TTL_SECONDS }
+    );
+  }
+  await sharedCache.setJSONMany(entries);
+  return merged;
 }
 
 export async function patchCombinedSnapshotTennisDvp(
@@ -137,23 +201,10 @@ export async function patchCombinedSnapshotTennisDvp(
   };
   const full = patchSnapshot(await getCombinedPropsSnapshot());
   const paint = patchSnapshot(await getCombinedPropsPaintSnapshot());
-  const writes: Array<Promise<unknown>> = [];
-  if (full) {
-    writes.push(
-      sharedCache.setJSON(COMBINED_PROPS_SNAPSHOT_CACHE_KEY, full, COMBINED_PROPS_SNAPSHOT_TTL_SECONDS)
-    );
-  }
-  if (paint || full) {
-    writes.push(
-      sharedCache.setJSON(
-        COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
-        slimCombinedPropsSnapshotForClient(paint || full!),
-        COMBINED_PROPS_SNAPSHOT_TTL_SECONDS
-      )
-    );
-  }
-  if (writes.length) await Promise.all(writes);
-  return (full || paint)?.tennis?.props.filter((prop) => prop.dvpRating != null).length || 0;
+  const source = full || paint;
+  if (!source) return 0;
+  const stored = await persistCombinedPropsSnapshot(source);
+  return stored.tennis?.props.filter((prop) => prop.dvpRating != null).length || 0;
 }
 
 export function isCombinedPropsSnapshotStale(snapshot: CombinedPropsSnapshot): boolean {
@@ -177,8 +228,82 @@ export function combinedTennisHasFormStats(snapshot: CombinedPropsSnapshot): boo
 export function combinedSnapshotAflAssemblyReady(snapshot: CombinedPropsSnapshot): boolean {
   const games = snapshot.afl?.games ?? [];
   const props = snapshot.afl?.props ?? [];
-  if (games.length > 0 && props.length === 0) return false;
+  // Only treat AFL as "still assembling" when games exist, props are empty, and
+  // odds ingest has not marked the slate as having no markets. An off-week /
+  // finals game with no player odds must not blank tennis/NBA.
+  if (games.length > 0 && props.length === 0 && snapshot.afl?.noAflOdds === false) {
+    return false;
+  }
   return true;
+}
+
+function emptyCombinedSnapshot(now = Date.now()): CombinedPropsSnapshot {
+  return {
+    success: true,
+    snapshotVersion: 1,
+    generatedAt: new Date(now).toISOString(),
+    staleAt: new Date(now + 15 * 60 * 1000).toISOString(),
+    nba: { ok: false, status: 204, cached: true, lastUpdated: null, gameDate: null, props: [] },
+    afl: {
+      ok: false,
+      status: 204,
+      lastUpdated: null,
+      nextUpdate: null,
+      ingestMessage: null,
+      noAflOdds: true,
+      games: [],
+      props: [],
+    },
+    tennis: {
+      ok: false,
+      status: 204,
+      lastUpdated: null,
+      nextUpdate: null,
+      ingestMessage: null,
+      noTennisOdds: true,
+      games: [],
+      props: [],
+    },
+  };
+}
+
+/** Cron-only: write the tennis slice onto combined Redis keys without a full rebuild. */
+export async function upsertCombinedSnapshotTennisFromList(payload: {
+  data?: unknown[];
+  games?: CombinedAflGame[];
+  lastUpdated?: string | null;
+  nextUpdate?: string | null;
+  ingestMessage?: string | null;
+  noTennisOdds?: boolean;
+}): Promise<number> {
+  const props = (Array.isArray(payload.data) ? payload.data : []) as CombinedPlayerProp[];
+  if (!props.length) {
+    const existing = (await getCombinedPropsSnapshot()) || (await getCombinedPropsPaintSnapshot());
+    return existing?.tennis?.props?.length || 0;
+  }
+  const now = Date.now();
+  const existing =
+    (await getCombinedPropsSnapshot()) ||
+    (await getCombinedPropsPaintSnapshot()) ||
+    emptyCombinedSnapshot(now);
+  const next: CombinedPropsSnapshot = {
+    ...existing,
+    success: true,
+    generatedAt: new Date(now).toISOString(),
+    staleAt: new Date(now + 15 * 60 * 1000).toISOString(),
+    tennis: {
+      ok: true,
+      status: 200,
+      lastUpdated: payload.lastUpdated ?? null,
+      nextUpdate: payload.nextUpdate ?? null,
+      ingestMessage: payload.ingestMessage ?? null,
+      noTennisOdds: false,
+      games: payload.games || [],
+      props,
+    },
+  };
+  const stored = await persistCombinedPropsSnapshot(next);
+  return stored.tennis?.props?.length || 0;
 }
 
 export function filterCombinedSnapshotAflEligibility(
