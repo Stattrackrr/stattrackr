@@ -59,10 +59,7 @@ function placeKey(name: string | null | undefined): string {
 }
 
 function namesMatch(a: string, b: string): boolean {
-  if (!a || !b) return false;
-  if (a === b) return true;
-  if (a.length >= 5 && b.length >= 5 && (a.includes(b) || b.includes(a))) return true;
-  return false;
+  return Boolean(a && b && a === b);
 }
 
 export function rememberTennisDvpLiveStore(store: TennisDvpLiveStore | null) {
@@ -299,7 +296,19 @@ function mergeLiveIndexes(primary: TennisLiveEventIndex, extra: TennisLiveEventI
 export async function buildTennisDvpLiveStore(live?: TennisLiveEventIndex): Promise<TennisDvpLiveStore> {
   const upcoming = live || (await listLiveTennisEventIndex());
   const fromProps = await tennisLiveIndexFromPropsCache();
-  const index = mergeLiveIndexes(upcoming, fromProps);
+  const propsPlaces = new Set(
+    fromProps.events.map((event) => `${event.tour}|${placeKey(event.tournamentName)}`)
+  );
+  const upcomingForProps: TennisLiveEventIndex =
+    propsPlaces.size > 0
+      ? {
+          ...upcoming,
+          events: upcoming.events.filter((event) =>
+            propsPlaces.has(`${event.tour}|${placeKey(event.tournamentName)}`)
+          ),
+        }
+      : upcoming;
+  const index = mergeLiveIndexes(upcomingForProps, fromProps);
   const extraMatches = await tennisDvpExtraMatchesForIds(
     index.events.flatMap((event) => [...event.playerIds, ...event.qualifyingPlayerIds])
   );
