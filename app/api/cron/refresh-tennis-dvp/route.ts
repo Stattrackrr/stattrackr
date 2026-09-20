@@ -5,7 +5,7 @@ import { rebuildTennisDvpStore, tennisDvpStoreSummary } from '@/lib/tennis/refre
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 180;
+export const maxDuration = 300;
 
 async function runTennisDvpRebuild() {
   const store = await rebuildTennisDvpStore();

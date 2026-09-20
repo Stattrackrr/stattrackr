@@ -998,10 +998,13 @@ export function tennisDvpProfile(opts: {
   if (seedPlayerId) fieldSet.add(seedPlayerId);
 
   const cap = dvpFieldCap(opts.tournamentName, group, stage);
+  // Live slates (Davis Cup especially) can have more than 32 nominated players.
+  // Never drop someone who is actually in this event just to fit a draw cap —
+  // that is what left props DVP as N/A for the lower-ranked opponent.
   const fieldIds = trimDvpField(
     [...fieldSet],
     cap,
-    [seedOpponentId, seedPlayerId],
+    liveField ? [seedOpponentId, seedPlayerId, ...extraPlayerIds] : [seedOpponentId, seedPlayerId],
     extraPlayerIds,
     rankedById,
     rosterById
@@ -1062,7 +1065,7 @@ export function tennisDvpProfile(opts: {
     const next = trimDvpField(
       [...fieldIds, opponentId],
       cap,
-      [opponentId, seedPlayerId],
+      liveField ? [opponentId, seedPlayerId, ...extraPlayerIds] : [opponentId, seedPlayerId],
       extraPlayerIds,
       rankedById,
       rosterById

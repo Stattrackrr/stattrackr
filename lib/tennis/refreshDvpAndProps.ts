@@ -21,11 +21,14 @@ export function tennisDvpStoreSummary(store: Awaited<ReturnType<typeof buildTenn
   };
 }
 
-/** Rebuild DVP boards, then bake ranks onto the tennis list + combined snapshot. */
+/**
+ * Refresh the tennis list first so new match player IDs are in Redis, then rebuild
+ * live DVP fields from those nominees (not a 32-draw cap) and bake ranks onto props.
+ */
 export async function rebuildTennisDvpAndBakeProps() {
-  const store = await rebuildTennisDvpStore();
   const tennis = await getTennisPlayerPropsList({ refresh: true });
   const tennisCombined = await upsertCombinedSnapshotTennisFromList(tennis);
+  const store = await rebuildTennisDvpStore();
   const baked = await bakeCachedTennisDvp();
   const fromList = tennis.data.filter(
     (row) => typeof row.dvpRating === 'number' && Number.isFinite(row.dvpRating) && row.dvpRating > 0

@@ -1,5 +1,6 @@
-# Rebuild live/upcoming tennis DVP boards and refresh props-page ranks.
-# Redis player logs only — do not hydrate the overlay blob.
+# Rebuild live/upcoming tennis DVP boards and bake ranks onto the props list.
+# Keeps every nominated live-event player in the field (Davis Cup etc. are not
+# trimmed to a 32-draw cap). Redis player logs only — do not hydrate the overlay blob.
 name: Tennis DVP
 
 on:
@@ -47,7 +48,7 @@ jobs:
           esac
           URL="${ORIGIN}/api/cron/refresh-tennis-dvp"
           echo "Canonical cron URL: $URL"
-          echo "Building live/upcoming tennis DVP..."
+          echo "Building live/upcoming tennis DVP (keep nominated player IDs, then bake ranks)..."
 
           call_cron() {
             local target="$1"
