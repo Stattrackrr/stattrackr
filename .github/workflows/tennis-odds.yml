@@ -1,5 +1,5 @@
-# Pull The Odds API tennis catalog onto production so ATP/WTA props stay populated.
-# Hits production /api/cron/refresh-tennis-odds.
+# Pull The Odds API tennis catalog, rebuild DVP boards, and bake ranks onto props.
+# Hits production /api/cron/refresh-tennis-odds which also builds DVP.
 name: Tennis Odds Ingest
 
 on:
@@ -17,7 +17,7 @@ env:
 jobs:
   refresh_odds:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - name: Check PROD_URL and CRON_SECRET
         id: check
@@ -29,7 +29,7 @@ jobs:
             echo "configured=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Refresh tennis odds snapshots
+      - name: Refresh tennis odds and bake DVP
         if: steps.check.outputs.configured == 'true'
         env:
           PROD_URL: ${{ secrets.PROD_URL }}
@@ -47,7 +47,7 @@ jobs:
           esac
           URL="${ORIGIN}/api/cron/refresh-tennis-odds?force=1"
           echo "Canonical cron URL: $URL"
-          echo "Refreshing tennis odds snapshots..."
+          echo "Refreshing tennis odds snapshots and DVP..."
 
           call_cron() {
             local target="$1"
@@ -67,7 +67,7 @@ jobs:
             rm -f "$hdr" "$body"
           }
 
-          call_cron "$URL" 180
+          call_cron "$URL" 280
           if [ "$HTTP_STATUS" = "301" ] || [ "$HTTP_STATUS" = "302" ] || [ "$HTTP_STATUS" = "307" ] || [ "$HTTP_STATUS" = "308" ]; then
             echo "Edge redirect $HTTP_STATUS -> $LOCATION"
             case "$LOCATION" in
@@ -75,7 +75,7 @@ jobs:
               /*) TARGET="${ORIGIN}${LOCATION}" ;;
               *) TARGET="${ORIGIN}/${LOCATION}" ;;
             esac
-            call_cron "$TARGET" 180
+            call_cron "$TARGET" 280
           fi
           echo "Response ($HTTP_STATUS): $BODY"
           OK=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(j.success === true ? 'true' : 'false'); } catch { process.stdout.write('false'); }" "$BODY")
@@ -83,4 +83,4 @@ jobs:
             echo "Tennis odds ingest failed (HTTP ${HTTP_STATUS:-unknown})"
             exit 1
           fi
-          echo "Tennis odds ingest ok"
+          echo "Tennis odds + DVP ingest ok"

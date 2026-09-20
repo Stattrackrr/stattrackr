@@ -1,26 +1,17 @@
 import { after, NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { buildTennisDvpLiveStore } from '@/lib/tennis/dvpLiveCache';
-import { listLiveTennisEventIndex } from '@/lib/tennis/nextGame';
 import { bakeCachedTennisDvp } from '@/lib/tennis/playerPropsList';
+import { rebuildTennisDvpStore, tennisDvpStoreSummary } from '@/lib/tennis/refreshDvpAndProps';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 180;
 
 async function runTennisDvpRebuild() {
-  const live = await listLiveTennisEventIndex();
-  const store = await buildTennisDvpLiveStore(live);
+  const store = await rebuildTennisDvpStore();
   const baked = await bakeCachedTennisDvp();
   return {
-    builtAt: store.builtAt,
-    events: store.events.length,
-    fieldSizes: store.events.map((event) => ({
-      tour: event.tour,
-      stage: event.stage,
-      tournament: event.tournamentName,
-      fieldSize: event.fieldSize,
-    })),
+    ...tennisDvpStoreSummary(store),
     propsCount: baked.props,
     propsWithDvp: baked.withDvp,
   };

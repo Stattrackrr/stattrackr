@@ -1,15 +1,13 @@
 import { after, NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { upsertCombinedSnapshotTennisFromList } from '@/lib/combinedPropsSnapshotPaint';
-import { getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
+import { rebuildTennisDvpAndBakeProps } from '@/lib/tennis/refreshDvpAndProps';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 180;
+export const maxDuration = 300;
 
 async function fillCombinedPropsCaches(origin: string, cronSecret?: string) {
-  const tennis = await getTennisPlayerPropsList({ refresh: true });
-  const tennisProps = await upsertCombinedSnapshotTennisFromList(tennis);
+  const dvp = await rebuildTennisDvpAndBakeProps();
   const { warmCombinedPropsSnapshot } = await import('@/lib/combinedPropsSnapshot');
   const snapshot = await warmCombinedPropsSnapshot({
     origin,
@@ -17,8 +15,10 @@ async function fillCombinedPropsCaches(origin: string, cronSecret?: string) {
     refresh: false,
   });
   return {
-    tennisList: tennis.data.length,
-    tennisCombined: tennisProps,
+    tennisList: dvp.tennisList,
+    tennisCombined: dvp.tennisCombined,
+    propsWithDvp: dvp.propsWithDvp,
+    dvpEvents: dvp.events,
     combinedAfl: snapshot.afl?.props?.length || 0,
     combinedNba: snapshot.nba?.props?.length || 0,
     combinedTennis: snapshot.tennis?.props?.length || 0,
