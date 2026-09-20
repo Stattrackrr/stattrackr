@@ -26,6 +26,9 @@ export async function readTennisPlayerPropsListCache(): Promise<TennisListCacheP
   return null;
 }
 
-export async function writeTennisPlayerPropsListCache(payload: TennisListCachePayload): Promise<void> {
+export async function writeTennisPlayerPropsListCache(payload: {
+  data: unknown[];
+  [key: string]: unknown;
+}): Promise<void> {
   await sharedCache.setJSON(TENNIS_LIST_CACHE_KEY, payload, TENNIS_LIST_CACHE_TTL_SECONDS);
 }
