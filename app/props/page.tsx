@@ -8846,7 +8846,7 @@ export default function NBALandingPage() {
                                         }
                                         
                                         // Group bookmakers by line value
-                                        const linesByValue = new Map<number, typeof prop.bookmakerLines>();
+                                        const linesByValue = new Map<number, typeof paintLines>();
                                         filteredLines.forEach(line => {
                                           const lineValue = line.line;
                                           if (!linesByValue.has(lineValue)) {

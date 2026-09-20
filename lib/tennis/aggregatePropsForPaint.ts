@@ -26,7 +26,6 @@ type TennisPaintRow = {
     overOdds?: string | null;
     underOdds?: string | null;
   }> | null;
-  [key: string]: unknown;
 };
 
 function tennisPaintTipoff(value?: string | null): string {
