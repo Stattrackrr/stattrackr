@@ -190,6 +190,16 @@ export async function patchCombinedSnapshotTennisDvp(
         byKey.get(tennisDvpRowKey(prop)) ||
         byKey.get(`${prop.playerName}|${prop.gameId || ''}|${prop.statType}|${prop.line}|`);
       if (!hit || hit.dvpRating == null) return prop;
+      const prevField = Number(prop.dvpFieldSize) || 0;
+      const nextField = Number(hit.dvpFieldSize) || 0;
+      if (
+        typeof prop.dvpRating === 'number' &&
+        Number.isFinite(prop.dvpRating) &&
+        prop.dvpRating > 0 &&
+        prevField > nextField
+      ) {
+        return prop;
+      }
       return {
         ...prop,
         dvpRating: hit.dvpRating,

@@ -1330,6 +1330,76 @@ function aflPropsMissingPositionLabels(props: PlayerProp[]): boolean {
   return !listed.some(aflPropHasPositionLabel);
 }
 
+function tennisPropMergeKey(prop: PlayerProp): string {
+  return `${prop.playerName}|${prop.gameId || ''}|${prop.statType}|${prop.line}`;
+}
+
+function tennisBookmakerLineCount(prop: PlayerProp | null | undefined): number {
+  if (Array.isArray(prop?.bookmakerLines) && prop.bookmakerLines.length > 0) {
+    return prop.bookmakerLines.length;
+  }
+  return String(prop?.bookmaker || '').trim() ? 1 : 0;
+}
+
+function tennisTipoffValue(value?: string | null): string {
+  const raw = String(value || '').trim();
+  if (!raw || raw === 'N/A') return '';
+  const parsed = Date.parse(raw);
+  if (!Number.isFinite(parsed)) return '';
+  const date = new Date(parsed);
+  const dateOnly = !raw.includes('T') && date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
+  return dateOnly ? '' : raw;
+}
+
+function mergeTennisPropForPaint(previous: PlayerProp | undefined, next: PlayerProp): PlayerProp {
+  if (!previous) return next;
+  const nextBooks = tennisBookmakerLineCount(next);
+  const prevBooks = tennisBookmakerLineCount(previous);
+  const bookmakerLines =
+    nextBooks >= prevBooks && Array.isArray(next.bookmakerLines) && next.bookmakerLines.length > 0
+      ? next.bookmakerLines
+      : previous.bookmakerLines?.length
+        ? previous.bookmakerLines
+        : next.bookmakerLines;
+  const gameDate = tennisTipoffValue(next.gameDate) || tennisTipoffValue(previous.gameDate) || next.gameDate || previous.gameDate;
+  const primary = bookmakerLines?.[0];
+  const nextRank = typeof next.dvpRating === 'number' && Number.isFinite(next.dvpRating) && next.dvpRating > 0;
+  const prevRank = typeof previous.dvpRating === 'number' && Number.isFinite(previous.dvpRating) && previous.dvpRating > 0;
+  const prevField = Number(previous.dvpFieldSize) || 0;
+  const nextField = Number(next.dvpFieldSize) || 0;
+  const keepPrevDvp = prevRank && (!nextRank || prevField > nextField);
+  return {
+    ...next,
+    gameDate,
+    bookmakerLines,
+    bookmaker: nextBooks >= prevBooks ? next.bookmaker || previous.bookmaker : previous.bookmaker || next.bookmaker,
+    overOdds: primary?.overOdds || next.overOdds || previous.overOdds,
+    underOdds: primary?.underOdds || next.underOdds || previous.underOdds,
+    dvpRating: keepPrevDvp ? previous.dvpRating : next.dvpRating ?? previous.dvpRating,
+    dvpStatValue: keepPrevDvp ? previous.dvpStatValue : next.dvpStatValue ?? previous.dvpStatValue,
+    dvpFieldSize: keepPrevDvp ? previous.dvpFieldSize : next.dvpFieldSize ?? previous.dvpFieldSize,
+    last5Avg: next.last5Avg ?? previous.last5Avg,
+    last10Avg: next.last10Avg ?? previous.last10Avg,
+    h2hAvg: next.h2hAvg ?? previous.h2hAvg,
+    seasonAvg: next.seasonAvg ?? previous.seasonAvg,
+    streak: next.streak ?? previous.streak,
+    last5HitRate: next.last5HitRate ?? previous.last5HitRate,
+    last10HitRate: next.last10HitRate ?? previous.last10HitRate,
+    h2hHitRate: next.h2hHitRate ?? previous.h2hHitRate,
+    seasonHitRate: next.seasonHitRate ?? previous.seasonHitRate,
+  };
+}
+
+/** Keep multi-book odds and real start times when a later list fetch is thinner. */
+function preferTennisPropsForPaint(previous: PlayerProp[], incoming: PlayerProp[]): PlayerProp[] {
+  const prevRows = previous.filter(isTennisListProp);
+  const nextRows = incoming.filter(isTennisListProp);
+  if (!nextRows.length) return prevRows;
+  if (!prevRows.length) return nextRows;
+  const prevByKey = new Map(prevRows.map((row) => [tennisPropMergeKey(row), row]));
+  return nextRows.map((row) => mergeTennisPropForPaint(prevByKey.get(tennisPropMergeKey(row)), row));
+}
+
 function preferAflPropsForCombined(primary: PlayerProp[], fallback: PlayerProp[]): PlayerProp[] {
   const primaryAfl = primary.filter(isAflCombinedListProp);
   const fallbackAfl = fallback.filter(isAflCombinedListProp);
@@ -1594,11 +1664,12 @@ function writeTennisTourSessionCaches(opts: {
         if (opts.noTennisOdds) sessionStorage.removeItem(key);
         continue;
       }
+      const existing = readSecondaryPropsSessionCache(sport);
       sessionStorage.setItem(
         key,
         JSON.stringify({
-          props: tourProps,
-          games: tourGames,
+          props: preferTennisPropsForPaint(existing.props, tourProps),
+          games: tourGames.length > 0 ? tourGames : existing.games,
           selectedGameIds: opts.selectedGameIds,
           timestamp: opts.now,
         })
@@ -1630,7 +1701,7 @@ async function fetchSecondaryPropsList(url: string): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { cache: 'default', signal: controller.signal });
+    return await fetch(url, { cache: 'no-store', signal: controller.signal });
   } finally {
     clearTimeout(timeoutId);
   }
@@ -2146,8 +2217,22 @@ export default function NBALandingPage() {
       const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
       const existing = keyToRow.get(key);
       const bl = { bookmaker: r.bookmaker, line: r.line, overOdds: r.overOdds || 'N/A', underOdds: r.underOdds || 'N/A' };
+      const incomingLines =
+        Array.isArray(r.bookmakerLines) && r.bookmakerLines.length > 0
+          ? r.bookmakerLines.map((line: { bookmaker?: string; line?: number; overOdds?: string; underOdds?: string }) => ({
+              bookmaker: line.bookmaker || r.bookmaker,
+              line: typeof line.line === 'number' ? line.line : r.line,
+              overOdds: line.overOdds || r.overOdds || 'N/A',
+              underOdds: line.underOdds || r.underOdds || 'N/A',
+            }))
+          : [bl];
       if (existing) {
-        existing.bookmakerLines.push(bl);
+        for (const line of incomingLines) {
+          const duplicate = existing.bookmakerLines.some(
+            (row) => row.bookmaker === line.bookmaker && row.line === line.line
+          );
+          if (!duplicate) existing.bookmakerLines.push(line);
+        }
         if (!existing.opponentName && typeof r.opponent === 'string') {
           existing.opponentName = r.opponent;
         }
@@ -2177,8 +2262,8 @@ export default function NBALandingPage() {
           opponentName: typeof r.opponent === 'string' ? r.opponent : null,
           statType: r.statType,
           line: r.line,
-          commenceTime: r.commenceTime || '',
-          bookmakerLines: [bl],
+          commenceTime: r.commenceTime || r.gameDate || '',
+          bookmakerLines: incomingLines,
           last5Avg: r.last5Avg,
           last10Avg: r.last10Avg,
           h2hAvg: r.h2hAvg,
@@ -2368,6 +2453,16 @@ export default function NBALandingPage() {
         const aflPropsForCache = Array.isArray(paintSnapshot?.afl?.props) ? paintSnapshot.afl.props : [];
         const aflGamesForCache = Array.isArray(paintSnapshot?.afl?.games) ? paintSnapshot.afl.games : [];
         const selectedGameIds = getSelectedAflGameIdsForCache(aflGamesForCache.map((game) => game.gameId));
+        const tennisPropsForCache = Array.isArray(paintSnapshot?.tennis?.props) ? paintSnapshot.tennis.props : [];
+        const tennisGamesForCache = Array.isArray(paintSnapshot?.tennis?.games) ? paintSnapshot.tennis.games : [];
+        const existingCombined = readCombinedSnapshotBrowserCache();
+        const existingCombinedTennis = Array.isArray(existingCombined?.tennis?.props)
+          ? existingCombined.tennis.props
+          : [];
+        const mergedTennisProps = preferTennisPropsForPaint(existingCombinedTennis, tennisPropsForCache);
+        if (paintSnapshot?.tennis && mergedTennisProps.length > 0) {
+          paintSnapshot.tennis = { ...paintSnapshot.tennis, props: mergedTennisProps };
+        }
 
         sessionStorage.setItem(
           COMBINED_PROPS_CACHE_KEY,
@@ -2432,10 +2527,8 @@ export default function NBALandingPage() {
           }
         }
 
-        const tennisPropsForCache = Array.isArray(paintSnapshot?.tennis?.props) ? paintSnapshot.tennis.props : [];
-        const tennisGamesForCache = Array.isArray(paintSnapshot?.tennis?.games) ? paintSnapshot.tennis.games : [];
         writeTennisTourSessionCaches({
-          props: tennisPropsForCache,
+          props: mergedTennisProps.length > 0 ? mergedTennisProps : tennisPropsForCache,
           games: tennisGamesForCache,
           selectedGameIds,
           now,
@@ -2540,7 +2633,7 @@ export default function NBALandingPage() {
     setTennisCombinedProps((prev) => {
       const keep = prev.filter(isTennisListProp);
       if (tennisPropsFromSnapshot != null && tennisPropsFromSnapshot.length > 0) {
-        return tennisPropsFromSnapshot;
+        return preferTennisPropsForPaint(keep, tennisPropsFromSnapshot);
       }
       if (
         tennisPropsFromSnapshot != null &&
@@ -2977,13 +3070,13 @@ export default function NBALandingPage() {
               persistCaches: false,
               selectedGameIds: Array.isArray(parsed?.selectedGameIds) ? parsed.selectedGameIds : undefined,
             });
-            const tennisHydrate = [
-              ...readTennisTourPropsFromCaches('atp'),
-              ...readTennisTourPropsFromCaches('wta'),
-              ...(Array.isArray(parsed?.tennis?.props)
-                ? (parsed.tennis.props as PlayerProp[]).filter(isTennisListProp)
-                : []),
-            ];
+            const tennisFromSnapshot = Array.isArray(parsed?.tennis?.props)
+              ? (parsed.tennis.props as PlayerProp[]).filter(isTennisListProp)
+              : [];
+            const tennisHydrate = preferTennisPropsForPaint(
+              [...readTennisTourPropsFromCaches('atp'), ...readTennisTourPropsFromCaches('wta')],
+              tennisFromSnapshot
+            );
             if (tennisHydrate.length > 0) {
               paintedTennisProps = tennisHydrate;
               setTennisCombinedProps(tennisHydrate);
@@ -4378,6 +4471,10 @@ export default function NBALandingPage() {
 
     const commitSecondaryProps = (props: PlayerProp[]) => {
       if (secondaryListSportRef.current !== listSport) return;
+      if (isTennisPropsSport(listSport)) {
+        setAflProps((prev) => preferTennisPropsForPaint(prev.filter(isTennisListProp), props));
+        return;
+      }
       setAflProps(props);
     };
 
@@ -4475,10 +4572,15 @@ export default function NBALandingPage() {
               setAflIngestMessage(result.ingestMessage ?? null);
               setAflLastUpdated(result.lastUpdated ?? null);
               try {
+                const existing = isTennisPropsSport(listSport)
+                  ? readSecondaryPropsSessionCache(listSport)
+                  : null;
                 sessionStorage.setItem(
                   cacheKey,
                   JSON.stringify({
-                    props: retryAggregated,
+                    props: existing
+                      ? preferTennisPropsForPaint(existing.props, retryAggregated)
+                      : retryAggregated,
                     games: retryGames,
                     selectedGameIds: getSelectedAflGameIdsForCache(
                       retryGames.length > 0 ? retryGames.map((g) => g.gameId) : []
@@ -4545,8 +4647,13 @@ export default function NBALandingPage() {
             setAflIngestMessage(result.ingestMessage ?? null);
             setAflLastUpdated(result.lastUpdated ?? null);
             try {
+              const existing = isTennisPropsSport(listSport)
+                ? readSecondaryPropsSessionCache(listSport)
+                : null;
               const toCache = {
-                props: propsToCommit,
+                props: existing
+                  ? preferTennisPropsForPaint(existing.props, propsToCommit)
+                  : propsToCommit,
                 games,
                 selectedGameIds: getSelectedAflGameIdsForCache(
                   games.length > 0 ? games.map((g) => g.gameId) : []
@@ -4797,6 +4904,10 @@ export default function NBALandingPage() {
           );
           const incoming = aggregated.filter(isTennisListProp);
           if (incoming.length > 0) {
+            if (missingBoth && tennisCombinedPropsRef.current.some((row) => tennisBookmakerLineCount(row) > 1)) {
+              combinedPartialTennisRefetchAttemptedRef.current = true;
+              return;
+            }
             const presentRows = missingBoth
               ? []
               : tennisPropsForTour(tennisNow, hasAtp ? 'atp' : 'wta');
@@ -4952,6 +5063,7 @@ export default function NBALandingPage() {
           const { aggregated, games } = aggregateSecondaryListPayload(listData, 'atp');
           const tennisRows = aggregated.filter(isTennisListProp);
           if (!listRes.ok || tennisRows.length === 0) return;
+          if (tennisCombinedPropsRef.current.some((row) => tennisBookmakerLineCount(row) > 1)) return;
           applyCombinedSnapshot(
             buildProgressiveSnapshot({
               tennis: {
@@ -4985,7 +5097,7 @@ export default function NBALandingPage() {
 
         if (!payload) {
           const response = await fetch(combinedUrl, {
-            cache: forceRefresh || debugStats ? 'no-store' : 'default',
+            cache: 'no-store',
           });
           payload = (await response.json().catch(() => null)) as CombinedPropsSnapshotResponse | null;
           if (!response.ok || !payload?.success || (!payload?.nba?.ok && !payload?.afl?.ok && !payload?.tennis?.ok)) {

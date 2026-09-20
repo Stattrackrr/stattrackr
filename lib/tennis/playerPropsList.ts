@@ -1103,12 +1103,17 @@ export async function overlayLiveTennisDvp(
     const stat = asTennisPropStat(row.statType);
     if (!stat) return withIoc;
     const next = dashboardDvpFieldsForStat(stat, opp, board?.fieldSize ?? null);
-    if (!next) return withIoc;
+    const nextRank = typeof next?.dvpRating === 'number' && Number.isFinite(next.dvpRating) && next.dvpRating > 0;
+    const prevRank = typeof row.dvpRating === 'number' && Number.isFinite(row.dvpRating) && row.dvpRating > 0;
+    if (!nextRank) return withIoc;
+    const prevField = Number(row.dvpFieldSize) || 0;
+    const nextField = Number(next?.dvpFieldSize) || 0;
+    if (prevRank && prevField > nextField) return withIoc;
     return {
       ...withIoc,
-      dvpRating: next.dvpRating,
-      dvpStatValue: next.dvpStatValue,
-      dvpFieldSize: next.dvpFieldSize,
+      dvpRating: next!.dvpRating,
+      dvpStatValue: next!.dvpStatValue,
+      dvpFieldSize: next!.dvpFieldSize,
     };
   });
   const games = payload.games.map((game) => {

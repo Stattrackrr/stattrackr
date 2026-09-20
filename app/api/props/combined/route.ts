@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 const COMBINED_CACHE_CONTROL = 'private, no-store';
-const COMBINED_CACHE_CONTROL_HIT = 'public, s-maxage=120, stale-while-revalidate=600';
+const COMBINED_CACHE_CONTROL_HIT = 'private, no-store';
 
 function emptyCombinedShell(): CombinedPropsSnapshot {
   const now = new Date().toISOString();
