@@ -1,10 +1,10 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-08-04T05:23:28.577Z",
+  "generatedAt": "2026-09-21T18:38:05.330Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 165,
-  "gameRows": 3661,
+  "playerCount": 195,
+  "gameRows": 4367,
   "players": [
     {
       "playerId": "bdad9a20-d7a4-471d-928f-91b4f2930c21",
@@ -41,7 +41,15 @@
     {
       "playerId": "7b6c2af9-f79b-4cf2-9930-675821c616ef",
       "name": "Alex McNaught",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 2,
+      "cacheFile": "nbl-model/cache/player-logs/7b6c2af9-f79b-4cf2-9930-675821c616ef-2025.json"
+    },
+    {
+      "playerId": "7b6c2af9-f79b-4cf2-9930-675821c616ef",
+      "name": "Alex McNaught",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/7b6c2af9-f79b-4cf2-9930-675821c616ef-2025.json"
@@ -127,12 +135,28 @@
       "cacheFile": "nbl-model/cache/player-logs/2af413b6-88d0-45a1-a036-1ce92473f039-2025.json"
     },
     {
+      "playerId": "2af413b6-88d0-45a1-a036-1ce92473f039",
+      "name": "Blake Jones",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 2,
+      "cacheFile": "nbl-model/cache/player-logs/2af413b6-88d0-45a1-a036-1ce92473f039-2025.json"
+    },
+    {
       "playerId": "e85b6d9a-6520-4af0-a83d-6a9803429c57",
       "name": "Brody Nunn",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "gameCount": 9,
       "cacheFile": "nbl-model/cache/player-logs/e85b6d9a-6520-4af0-a83d-6a9803429c57-2025.json"
+    },
+    {
+      "playerId": "41a2b121-3fe0-4e82-b3d3-d6079ed33b8b",
+      "name": "Bryce Cotton",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 41,
+      "cacheFile": "nbl-model/cache/player-logs/41a2b121-3fe0-4e82-b3d3-d6079ed33b8b-2025.json"
     },
     {
       "playerId": "41a2b121-3fe0-4e82-b3d3-d6079ed33b8b",
@@ -185,7 +209,15 @@
     {
       "playerId": "ef79baef-a773-4563-8463-0261d3e0ce8f",
       "name": "Carlin Davison",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 34,
+      "cacheFile": "nbl-model/cache/player-logs/ef79baef-a773-4563-8463-0261d3e0ce8f-2025.json"
+    },
+    {
+      "playerId": "ef79baef-a773-4563-8463-0261d3e0ce8f",
+      "name": "Carlin Davison",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 34,
       "cacheFile": "nbl-model/cache/player-logs/ef79baef-a773-4563-8463-0261d3e0ce8f-2025.json"
@@ -207,11 +239,19 @@
       "cacheFile": "nbl-model/cache/player-logs/065cf78e-aa0f-4195-8fc7-cddf8b4794ac-2025.json"
     },
     {
+      "playerId": "065cf78e-aa0f-4195-8fc7-cddf8b4794ac",
+      "name": "Che Brogan",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 4,
+      "cacheFile": "nbl-model/cache/player-logs/065cf78e-aa0f-4195-8fc7-cddf8b4794ac-2025.json"
+    },
+    {
       "playerId": "f243749f-0174-4255-b6ff-d0a9896899e8",
       "name": "Chris Goulding",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 29,
+      "gameCount": 28,
       "cacheFile": "nbl-model/cache/player-logs/f243749f-0174-4255-b6ff-d0a9896899e8-2025.json"
     },
     {
@@ -277,6 +317,22 @@
       "teamCode": "ADL",
       "gameCount": 42,
       "cacheFile": "nbl-model/cache/player-logs/84a1ebbc-7e5c-4423-9987-045086e5ba26-2025.json"
+    },
+    {
+      "playerId": "84a1ebbc-7e5c-4423-9987-045086e5ba26",
+      "name": "Dejan Vasiljevic",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 42,
+      "cacheFile": "nbl-model/cache/player-logs/84a1ebbc-7e5c-4423-9987-045086e5ba26-2025.json"
+    },
+    {
+      "playerId": "93583e5b-367b-42b8-aee2-6620b50ce6c2",
+      "name": "Deng Manyang",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 1,
+      "cacheFile": "nbl-model/cache/player-logs/93583e5b-367b-42b8-aee2-6620b50ce6c2-2025.json"
     },
     {
       "playerId": "93583e5b-367b-42b8-aee2-6620b50ce6c2",
@@ -351,6 +407,14 @@
       "cacheFile": "nbl-model/cache/player-logs/06116392-133b-4cac-93a5-a6aefc375717-2025.json"
     },
     {
+      "playerId": "06116392-133b-4cac-93a5-a6aefc375717",
+      "name": "Flynn Cameron",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 42,
+      "cacheFile": "nbl-model/cache/player-logs/06116392-133b-4cac-93a5-a6aefc375717-2025.json"
+    },
+    {
       "playerId": "8f9aeb57-6629-473a-a503-09dfff6f3ae5",
       "name": "Goc Malual",
       "team": "Sydney Kings",
@@ -407,6 +471,22 @@
       "cacheFile": "nbl-model/cache/player-logs/830330b0-c5e1-4218-ad3a-c1503bb905ad-2025.json"
     },
     {
+      "playerId": "830330b0-c5e1-4218-ad3a-c1503bb905ad",
+      "name": "Isaac Humphries",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 42,
+      "cacheFile": "nbl-model/cache/player-logs/830330b0-c5e1-4218-ad3a-c1503bb905ad-2025.json"
+    },
+    {
+      "playerId": "0994d5da-21ea-4720-8dad-71020a214700",
+      "name": "Isaac White",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 41,
+      "cacheFile": "nbl-model/cache/player-logs/0994d5da-21ea-4720-8dad-71020a214700-2025.json"
+    },
+    {
       "playerId": "0994d5da-21ea-4720-8dad-71020a214700",
       "name": "Isaac White",
       "team": "Adelaide 36ers",
@@ -417,7 +497,15 @@
     {
       "playerId": "09763f95-e11e-429f-b00e-7a7f472177cf",
       "name": "Izaiah Brockington",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 33,
+      "cacheFile": "nbl-model/cache/player-logs/09763f95-e11e-429f-b00e-7a7f472177cf-2025.json"
+    },
+    {
+      "playerId": "09763f95-e11e-429f-b00e-7a7f472177cf",
+      "name": "Izaiah Brockington",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 33,
       "cacheFile": "nbl-model/cache/player-logs/09763f95-e11e-429f-b00e-7a7f472177cf-2025.json"
@@ -425,7 +513,7 @@
     {
       "playerId": "54a74f78-bff8-4cdb-99d0-ebd1cc720b47",
       "name": "Izayah Le'Afa",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/54a74f78-bff8-4cdb-99d0-ebd1cc720b47-2025.json"
@@ -433,7 +521,15 @@
     {
       "playerId": "c922ea7b-4118-4430-a981-14a37572db7b",
       "name": "Jack Andrew",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 8,
+      "cacheFile": "nbl-model/cache/player-logs/c922ea7b-4118-4430-a981-14a37572db7b-2025.json"
+    },
+    {
+      "playerId": "c922ea7b-4118-4430-a981-14a37572db7b",
+      "name": "Jack Andrew",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/c922ea7b-4118-4430-a981-14a37572db7b-2025.json"
@@ -575,6 +671,14 @@
       "cacheFile": "nbl-model/cache/player-logs/71771a51-6f51-4a37-a27e-2a123e775a5c-2025.json"
     },
     {
+      "playerId": "71771a51-6f51-4a37-a27e-2a123e775a5c",
+      "name": "John Jenkins",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 18,
+      "cacheFile": "nbl-model/cache/player-logs/71771a51-6f51-4a37-a27e-2a123e775a5c-2025.json"
+    },
+    {
       "playerId": "1db6c57b-a7f5-43a3-aaaa-4731f2bc57f5",
       "name": "Johny Narkle",
       "team": "Illawarra Hawks",
@@ -617,10 +721,26 @@
     {
       "playerId": "5c7ec83d-9427-4afc-a325-a753fe6abde0",
       "name": "Karim Lopez",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 31,
       "cacheFile": "nbl-model/cache/player-logs/5c7ec83d-9427-4afc-a325-a753fe6abde0-2025.json"
+    },
+    {
+      "playerId": "5c7ec83d-9427-4afc-a325-a753fe6abde0",
+      "name": "Karim Lopez",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 31,
+      "cacheFile": "nbl-model/cache/player-logs/5c7ec83d-9427-4afc-a325-a753fe6abde0-2025.json"
+    },
+    {
+      "playerId": "387c51fb-7f66-47b6-bb40-0876ae41bb29",
+      "name": "Keanu Rasmussen",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 15,
+      "cacheFile": "nbl-model/cache/player-logs/387c51fb-7f66-47b6-bb40-0876ae41bb29-2025.json"
     },
     {
       "playerId": "387c51fb-7f66-47b6-bb40-0876ae41bb29",
@@ -753,7 +873,15 @@
     {
       "playerId": "6dd411fc-79f8-409d-aca8-6b9f43f59c47",
       "name": "Liam Judd",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 2,
+      "cacheFile": "nbl-model/cache/player-logs/6dd411fc-79f8-409d-aca8-6b9f43f59c47-2025.json"
+    },
+    {
+      "playerId": "6dd411fc-79f8-409d-aca8-6b9f43f59c47",
+      "name": "Liam Judd",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/6dd411fc-79f8-409d-aca8-6b9f43f59c47-2025.json"
@@ -789,6 +917,14 @@
       "teamCode": "SEM",
       "gameCount": 4,
       "cacheFile": "nbl-model/cache/player-logs/a6b5a951-716b-4892-b850-5cdbcd77871f-2025.json"
+    },
+    {
+      "playerId": "28d424fa-f1b2-4583-84f1-525ff5c38a73",
+      "name": "Magok Manyang",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/28d424fa-f1b2-4583-84f1-525ff5c38a73-2025.json"
     },
     {
       "playerId": "28d424fa-f1b2-4583-84f1-525ff5c38a73",
@@ -863,6 +999,14 @@
       "cacheFile": "nbl-model/cache/player-logs/0c6e8860-99ba-44d2-9f1a-8b6e58936bb8-2025.json"
     },
     {
+      "playerId": "0c6e8860-99ba-44d2-9f1a-8b6e58936bb8",
+      "name": "Matt Kenyon",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 41,
+      "cacheFile": "nbl-model/cache/player-logs/0c6e8860-99ba-44d2-9f1a-8b6e58936bb8-2025.json"
+    },
+    {
       "playerId": "83582125-9e71-4e7c-ae15-07f11333b2da",
       "name": "Matthew Dellavedova",
       "team": "Sydney Kings",
@@ -881,10 +1025,26 @@
     {
       "playerId": "bb1c3618-7c4e-4b2b-8263-f15144a0d0b3",
       "name": "Max Darling",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 22,
       "cacheFile": "nbl-model/cache/player-logs/bb1c3618-7c4e-4b2b-8263-f15144a0d0b3-2025.json"
+    },
+    {
+      "playerId": "bb1c3618-7c4e-4b2b-8263-f15144a0d0b3",
+      "name": "Max Darling",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 22,
+      "cacheFile": "nbl-model/cache/player-logs/bb1c3618-7c4e-4b2b-8263-f15144a0d0b3-2025.json"
+    },
+    {
+      "playerId": "c946f7e6-4321-403c-bc8c-f9a359254733",
+      "name": "Michael Harris",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 17,
+      "cacheFile": "nbl-model/cache/player-logs/c946f7e6-4321-403c-bc8c-f9a359254733-2025.json"
     },
     {
       "playerId": "c946f7e6-4321-403c-bc8c-f9a359254733",
@@ -951,6 +1111,14 @@
       "cacheFile": "nbl-model/cache/player-logs/eb26560d-c56e-4409-b482-8b141421ce79-2025.json"
     },
     {
+      "playerId": "eb26560d-c56e-4409-b482-8b141421ce79",
+      "name": "Nick Rakocevic",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 39,
+      "cacheFile": "nbl-model/cache/player-logs/eb26560d-c56e-4409-b482-8b141421ce79-2025.json"
+    },
+    {
       "playerId": "fc35a1fb-d6b9-40ce-a539-53f1116b6067",
       "name": "Nicolas Tata",
       "team": "Melbourne United",
@@ -977,7 +1145,15 @@
     {
       "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
       "name": "Parker Jackson-Cartwright",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 34,
+      "cacheFile": "nbl-model/cache/player-logs/a92c343c-d4f4-4c33-839b-85902ad5a40f-2025.json"
+    },
+    {
+      "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
+      "name": "Parker Jackson-Cartwright",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 34,
       "cacheFile": "nbl-model/cache/player-logs/a92c343c-d4f4-4c33-839b-85902ad5a40f-2025.json"
@@ -1001,7 +1177,15 @@
     {
       "playerId": "95352144-95bb-4154-963a-b3b90dd915a4",
       "name": "Reuben Te Rangi",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 34,
+      "cacheFile": "nbl-model/cache/player-logs/95352144-95bb-4154-963a-b3b90dd915a4-2025.json"
+    },
+    {
+      "playerId": "95352144-95bb-4154-963a-b3b90dd915a4",
+      "name": "Reuben Te Rangi",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 34,
       "cacheFile": "nbl-model/cache/player-logs/95352144-95bb-4154-963a-b3b90dd915a4-2025.json"
@@ -1017,7 +1201,7 @@
     {
       "playerId": "f7b67b4a-478f-4544-baf8-7923643e3585",
       "name": "Rob Baker II",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 25,
       "cacheFile": "nbl-model/cache/player-logs/f7b67b4a-478f-4544-baf8-7923643e3585-2025.json"
@@ -1025,7 +1209,15 @@
     {
       "playerId": "24f1f4d9-c856-46f8-a152-f62b0e9b1f39",
       "name": "Robert Loe",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 30,
+      "cacheFile": "nbl-model/cache/player-logs/24f1f4d9-c856-46f8-a152-f62b0e9b1f39-2025.json"
+    },
+    {
+      "playerId": "24f1f4d9-c856-46f8-a152-f62b0e9b1f39",
+      "name": "Robert Loe",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 30,
       "cacheFile": "nbl-model/cache/player-logs/24f1f4d9-c856-46f8-a152-f62b0e9b1f39-2025.json"
@@ -1057,7 +1249,15 @@
     {
       "playerId": "6096f09f-0ba7-4981-bb32-d62f287b9f96",
       "name": "Sam Mennenga",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 28,
+      "cacheFile": "nbl-model/cache/player-logs/6096f09f-0ba7-4981-bb32-d62f287b9f96-2025.json"
+    },
+    {
+      "playerId": "6096f09f-0ba7-4981-bb32-d62f287b9f96",
+      "name": "Sam Mennenga",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 28,
       "cacheFile": "nbl-model/cache/player-logs/6096f09f-0ba7-4981-bb32-d62f287b9f96-2025.json"
@@ -1073,7 +1273,15 @@
     {
       "playerId": "05180ec9-e559-40cc-8b48-198da892c37d",
       "name": "Sean Bairstow",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 24,
+      "cacheFile": "nbl-model/cache/player-logs/05180ec9-e559-40cc-8b48-198da892c37d-2025.json"
+    },
+    {
+      "playerId": "05180ec9-e559-40cc-8b48-198da892c37d",
+      "name": "Sean Bairstow",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 24,
       "cacheFile": "nbl-model/cache/player-logs/05180ec9-e559-40cc-8b48-198da892c37d-2025.json"
@@ -1113,7 +1321,15 @@
     {
       "playerId": "3cb6b666-d6bf-41bb-b471-a63bb17c236c",
       "name": "Tai Webster",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 16,
+      "cacheFile": "nbl-model/cache/player-logs/3cb6b666-d6bf-41bb-b471-a63bb17c236c-2025.json"
+    },
+    {
+      "playerId": "3cb6b666-d6bf-41bb-b471-a63bb17c236c",
+      "name": "Tai Webster",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 16,
       "cacheFile": "nbl-model/cache/player-logs/3cb6b666-d6bf-41bb-b471-a63bb17c236c-2025.json"
@@ -1137,7 +1353,15 @@
     {
       "playerId": "635563c3-4946-466f-8d6c-417b58d0049f",
       "name": "Taylor Britt",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 20,
+      "cacheFile": "nbl-model/cache/player-logs/635563c3-4946-466f-8d6c-417b58d0049f-2025.json"
+    },
+    {
+      "playerId": "635563c3-4946-466f-8d6c-417b58d0049f",
+      "name": "Taylor Britt",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 20,
       "cacheFile": "nbl-model/cache/player-logs/635563c3-4946-466f-8d6c-417b58d0049f-2025.json"
@@ -1233,7 +1457,15 @@
     {
       "playerId": "0d441503-80f9-4a7d-a3b1-7c8ab9f5f9f5",
       "name": "Tukaha Cooper",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 2,
+      "cacheFile": "nbl-model/cache/player-logs/0d441503-80f9-4a7d-a3b1-7c8ab9f5f9f5-2025.json"
+    },
+    {
+      "playerId": "0d441503-80f9-4a7d-a3b1-7c8ab9f5f9f5",
+      "name": "Tukaha Cooper",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/0d441503-80f9-4a7d-a3b1-7c8ab9f5f9f5-2025.json"
@@ -1317,6 +1549,14 @@
       "teamCode": "SYD",
       "gameCount": 36,
       "cacheFile": "nbl-model/cache/player-logs/46fc1fe9-abf7-4e72-9c80-60483ae9da5e-2025.json"
+    },
+    {
+      "playerId": "46e6eb3e-6631-4361-bc61-6798faab22f8",
+      "name": "Zylan Cheatham",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 42,
+      "cacheFile": "nbl-model/cache/player-logs/46e6eb3e-6631-4361-bc61-6798faab22f8-2025.json"
     },
     {
       "playerId": "46e6eb3e-6631-4361-bc61-6798faab22f8",

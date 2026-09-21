@@ -1,17 +1,17 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-20T16:35:50.026Z",
+  "generatedAt": "2026-09-21T18:39:25.669Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 153,
-  "gameRows": 86,
+  "gameRows": 104,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
       "name": "Akech Aliir",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/92012cd9-65dd-47f1-a51e-a6b5169bf359-2026.json"
     },
     {
@@ -51,7 +51,7 @@
       "name": "Angus Glover",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/79fe0730-aca0-4167-97cc-1ef09514cc66-2026.json"
     },
     {
@@ -131,7 +131,7 @@
       "name": "Ben Gold",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/b1a9c2de-ca6f-4332-b0e0-2a4fdbcedd06-2026.json"
     },
     {
@@ -259,7 +259,7 @@
       "name": "D'Shawn Schwartz",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/6c3024b9-ffb8-4a9d-bb23-1e99191f98b9-2026.json"
     },
     {
@@ -267,7 +267,7 @@
       "name": "Dakota Mathias",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/83f36c6e-d1f1-44cb-8576-78717cc826f2-2026.json"
     },
     {
@@ -275,7 +275,7 @@
       "name": "Daniel Foster",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/b151cb86-4bf1-4b47-8b0c-14c0b9f51604-2026.json"
     },
     {
@@ -299,7 +299,7 @@
       "name": "Dash Daniels",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/d92ec6d5-b731-476a-b4a4-10cc36211bf5-2026.json"
     },
     {
@@ -307,7 +307,7 @@
       "name": "David Johnson",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/5dc2188c-e53b-4273-9573-aae63a31bd39-2026.json"
     },
     {
@@ -411,7 +411,7 @@
       "name": "Hunter Goodrick",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/0a5486ee-953a-4fae-920d-4a77de1bdf03-2026.json"
     },
     {
@@ -595,7 +595,7 @@
       "name": "Jordan Hunter",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9-2026.json"
     },
     {
@@ -795,7 +795,7 @@
       "name": "Majok Deng",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/0dd6e2f3-0358-4a6e-a340-fe5279db28fa-2026.json"
     },
     {
@@ -907,7 +907,7 @@
       "name": "Nicholas Stoddart",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/20791487-46a5-4d75-a6a1-17d8013c251f-2026.json"
     },
     {
@@ -915,7 +915,7 @@
       "name": "Nick Marshall",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/c9019743-60ae-4700-852e-6ae15c1cbef6-2026.json"
     },
     {
@@ -1059,7 +1059,7 @@
       "name": "Skylar Mays",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/05e12749-7b66-44f8-84f7-f437fc90dfb6-2026.json"
     },
     {
@@ -1091,7 +1091,7 @@
       "name": "Tanner Krebs",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/a793b9cb-fb83-4554-8672-f35ccd77d6b1-2026.json"
     },
     {
@@ -1099,7 +1099,7 @@
       "name": "Taran Armstrong",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/23283d39-8a83-44ab-84ac-0bcf1c675c92-2026.json"
     },
     {
@@ -1195,7 +1195,7 @@
       "name": "Will Magnay",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/cd541bbb-db3f-4821-82e1-c3c104d99fd8-2026.json"
     },
     {
@@ -1219,7 +1219,7 @@
       "name": "Yannis Morin",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/5f85917c-1552-4800-b64a-48cf1023c60c-2026.json"
     },
     {

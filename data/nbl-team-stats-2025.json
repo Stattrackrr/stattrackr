@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-08-24T13:56:38.821Z",
+  "generatedAt": "2026-09-21T18:37:28.590Z",
   "source": "rosetta.nbl.com.au",
   "teams": [
     {
@@ -90,7 +90,7 @@
       "results": null
     },
     {
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "games": 33,

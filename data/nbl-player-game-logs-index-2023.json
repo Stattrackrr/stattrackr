@@ -1,10 +1,10 @@
 {
   "year": 2023,
   "seasonLabel": "NBL24",
-  "generatedAt": "2026-08-04T05:23:58.507Z",
+  "generatedAt": "2026-09-21T18:38:53.439Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 141,
-  "gameRows": 2835,
+  "gameRows": 2834,
   "players": [
     {
       "playerId": "3af8bb38-1c97-4b43-99f0-378a95dfdd79",
@@ -41,7 +41,7 @@
     {
       "playerId": "7b6c2af9-f79b-4cf2-9930-675821c616ef",
       "name": "Alex McNaught",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/7b6c2af9-f79b-4cf2-9930-675821c616ef-2023.json"
@@ -97,7 +97,7 @@
     {
       "playerId": "f3ad8d8e-6451-4d9b-8348-d8d9b38ba16e",
       "name": "Anthony Lamb",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 22,
       "cacheFile": "nbl-model/cache/player-logs/f3ad8d8e-6451-4d9b-8348-d8d9b38ba16e-2023.json"
@@ -185,7 +185,7 @@
     {
       "playerId": "d467875f-0cf2-4fc1-9129-adfc44c69fdf",
       "name": "Cameron Gliddon",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 23,
       "cacheFile": "nbl-model/cache/player-logs/d467875f-0cf2-4fc1-9129-adfc44c69fdf-2023.json"
@@ -201,7 +201,7 @@
     {
       "playerId": "ef79baef-a773-4563-8463-0261d3e0ce8f",
       "name": "Carlin Davison",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 0,
       "cacheFile": "nbl-model/cache/player-logs/ef79baef-a773-4563-8463-0261d3e0ce8f-2023.json"
@@ -219,7 +219,7 @@
       "name": "Chris Goulding",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 33,
+      "gameCount": 32,
       "cacheFile": "nbl-model/cache/player-logs/f243749f-0174-4255-b6ff-d0a9896899e8-2023.json"
     },
     {
@@ -257,7 +257,7 @@
     {
       "playerId": "eb537a8b-c889-42f5-86d2-f2aad3a67eb8",
       "name": "Dane Pineau",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 24,
       "cacheFile": "nbl-model/cache/player-logs/eb537a8b-c889-42f5-86d2-f2aad3a67eb8-2023.json"
@@ -265,7 +265,7 @@
     {
       "playerId": "50dcbfcb-3e9f-4ae7-a628-de6c7ed8d5f2",
       "name": "Daniel Fotu",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/50dcbfcb-3e9f-4ae7-a628-de6c7ed8d5f2-2023.json"
@@ -313,7 +313,7 @@
     {
       "playerId": "197300ea-0705-4358-8f2b-b1fcd1c7eed2",
       "name": "Dominique Kelman-Poto",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/197300ea-0705-4358-8f2b-b1fcd1c7eed2-2023.json"
@@ -337,7 +337,7 @@
     {
       "playerId": "5fda4fdf-ab76-4bab-98d7-be3c92aecdca",
       "name": "Finn Delany",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 19,
       "cacheFile": "nbl-model/cache/player-logs/5fda4fdf-ab76-4bab-98d7-be3c92aecdca-2023.json"
@@ -425,7 +425,7 @@
     {
       "playerId": "54a74f78-bff8-4cdb-99d0-ebd1cc720b47",
       "name": "Izayah Le'Afa",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 30,
       "cacheFile": "nbl-model/cache/player-logs/54a74f78-bff8-4cdb-99d0-ebd1cc720b47-2023.json"
@@ -593,7 +593,7 @@
     {
       "playerId": "73e7fc16-ee8b-46cd-a45a-f7f11cc8d02b",
       "name": "Justinian Jessup",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/73e7fc16-ee8b-46cd-a45a-f7f11cc8d02b-2023.json"
@@ -753,7 +753,7 @@
     {
       "playerId": "6e596ff7-c694-411c-a409-16e9f62ac8b7",
       "name": "Mangok Mathiang",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 30,
       "cacheFile": "nbl-model/cache/player-logs/6e596ff7-c694-411c-a409-16e9f62ac8b7-2023.json"
@@ -761,7 +761,7 @@
     {
       "playerId": "3cb1f805-3931-4801-8acb-98978ce6fd4f",
       "name": "Mantas Rubštavičius",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 25,
       "cacheFile": "nbl-model/cache/player-logs/3cb1f805-3931-4801-8acb-98978ce6fd4f-2023.json"
@@ -801,7 +801,7 @@
     {
       "playerId": "bb1c3618-7c4e-4b2b-8263-f15144a0d0b3",
       "name": "Max Darling",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/bb1c3618-7c4e-4b2b-8263-f15144a0d0b3-2023.json"
@@ -873,7 +873,7 @@
     {
       "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
       "name": "Parker Jackson-Cartwright",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 30,
       "cacheFile": "nbl-model/cache/player-logs/a92c343c-d4f4-4c33-839b-85902ad5a40f-2023.json"
@@ -1041,7 +1041,7 @@
     {
       "playerId": "f348be35-0d31-4f9a-ad60-d04d06ba420a",
       "name": "Tom Abercrombie",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 30,
       "cacheFile": "nbl-model/cache/player-logs/f348be35-0d31-4f9a-ad60-d04d06ba420a-2023.json"
@@ -1105,7 +1105,7 @@
     {
       "playerId": "6c103a7c-c3fe-45fb-a41b-e68c646b8414",
       "name": "Will McDowell-White",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 24,
       "cacheFile": "nbl-model/cache/player-logs/6c103a7c-c3fe-45fb-a41b-e68c646b8414-2023.json"
@@ -1129,7 +1129,7 @@
     {
       "playerId": "46e6eb3e-6631-4361-bc61-6798faab22f8",
       "name": "Zylan Cheatham",
-      "team": "New Zealand Breakers",
+      "team": "NZ Breakers",
       "teamCode": "NZL",
       "gameCount": 19,
       "cacheFile": "nbl-model/cache/player-logs/46e6eb3e-6631-4361-bc61-6798faab22f8-2023.json"

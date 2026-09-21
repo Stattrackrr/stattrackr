@@ -5,7 +5,7 @@
   "teamCode": "CNS",
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-08-24T13:57:37.837Z",
+  "generatedAt": "2026-09-21T18:38:29.099Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 14,
   "games": [
@@ -465,7 +465,7 @@
       "date": "2025-02-01T06:30:00",
       "season": 2024,
       "round": null,
-      "opponent": "New Zealand Breakers",
+      "opponent": "NZ Breakers",
       "opponentCode": "NZL",
       "isHome": false,
       "team": "Cairns Taipans",

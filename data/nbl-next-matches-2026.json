@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-20T16:35:12.821Z",
+  "generatedAt": "2026-09-21T18:38:55.969Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-      "name": "Tasmania JackJumpers",
-      "team_code": "TAS",
-      "nextMatches": [
-        {
-          "id": "b6d2e488-8730-4329-923f-d7eaefca3487",
-          "match_slug": "tasmania-jackjumpers-v-south-east-melbourne-phoenix-men-21-09-2026",
-          "match_title": "Tasmania JackJumpers v South East Melbourne Phoenix men 21-09-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=JACKJUMP27",
-          "external_id": "36e80b8c-58ad-11f1-ab03-2572c13c410b",
-          "start_time_datetime": "2026-09-21T09:30:00",
-          "is_home": true,
-          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-          "opponent_name": "South East Melbourne Phoenix",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
-          "venue": "MyState Bank Arena",
-          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
-        }
-      ]
-    },
-    {
-      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-      "name": "South East Melbourne Phoenix",
-      "team_code": "SEM",
-      "nextMatches": [
-        {
-          "id": "b6d2e488-8730-4329-923f-d7eaefca3487",
-          "match_slug": "tasmania-jackjumpers-v-south-east-melbourne-phoenix-men-21-09-2026",
-          "match_title": "Tasmania JackJumpers v South East Melbourne Phoenix men 21-09-2026",
-          "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
-          "external_id": "36e80b8c-58ad-11f1-ab03-2572c13c410b",
-          "start_time_datetime": "2026-09-21T09:30:00",
-          "is_home": false,
-          "opponent_id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-          "opponent_name": "Tasmania JackJumpers",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-          "venue": "MyState Bank Arena",
-          "opponent_logo_blurhash": "L25$batj01ah1hWW^Moe00V[.kSz"
-        }
-      ]
-    },
     {
       "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "name": "Brisbane Bullets",
@@ -107,6 +65,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/TAS.png",
           "venue": "Cairns Convention Centre",
           "opponent_logo_blurhash": "L25$batj01ah1hWW^Moe00V[.kSz"
+        }
+      ]
+    },
+    {
+      "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+      "name": "Tasmania JackJumpers",
+      "team_code": "TAS",
+      "nextMatches": [
+        {
+          "id": "d799ba4d-b461-4521-a0e1-6fd6fa8f7853",
+          "match_slug": "cairns-taipans-v-tasmania-jackjumpers-men-23-09-2026",
+          "match_title": "Cairns Taipans v Tasmania JackJumpers men 23-09-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=JACKJUMP27",
+          "external_id": "36e0818b-58ad-11f1-89d2-fb9d3a8baf78",
+          "start_time_datetime": "2026-09-23T09:30:00",
+          "is_home": false,
+          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "opponent_name": "Cairns Taipans",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
+          "venue": "Cairns Convention Centre",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
+      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+      "name": "South East Melbourne Phoenix",
+      "team_code": "SEM",
+      "nextMatches": [
+        {
+          "id": "58674729-cdf3-4418-ba2e-2309bdd8a4aa",
+          "match_slug": "south-east-melbourne-phoenix-v-melbourne-united-men-24-09-2026",
+          "match_title": "South East Melbourne Phoenix v Melbourne United men 24-09-2026",
+          "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
+          "external_id": "3705a1db-58ad-11f1-af46-11cc539397b9",
+          "start_time_datetime": "2026-09-24T09:30:00",
+          "is_home": true,
+          "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "opponent_name": "Melbourne United",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
         }
       ]
     },

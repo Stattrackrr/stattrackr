@@ -5,7 +5,7 @@
   "teamCode": "BRI",
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-08-24T13:57:37.151Z",
+  "generatedAt": "2026-09-21T18:38:28.117Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 9,
   "games": [
@@ -219,7 +219,7 @@
       "date": "2025-01-24T06:30:00",
       "season": 2024,
       "round": null,
-      "opponent": "New Zealand Breakers",
+      "opponent": "NZ Breakers",
       "opponentCode": "NZL",
       "isHome": false,
       "team": "Brisbane Bullets",
