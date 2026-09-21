@@ -7,6 +7,7 @@
  */
 import fs from 'fs';
 import path from 'path';
+import { nblUtcIso } from '../lib/nbl/nblTime';
 import { fetchNblNextMatches } from '../lib/nbl/rosettaLeague';
 import { nblSeasonLabel } from '../lib/nblTeamCanonical';
 
@@ -31,7 +32,15 @@ async function main() {
       id: r.id ?? null,
       name: r.name ?? '',
       team_code: r.team_code ?? null,
-      nextMatches: Array.isArray(r.nextMatches) ? r.nextMatches : [],
+      nextMatches: Array.isArray(r.nextMatches)
+        ? r.nextMatches.map((m) => {
+            const start = nblUtcIso(
+              (m.start_time_datetime as string | null | undefined) ||
+                (m.start_time as string | null | undefined)
+            );
+            return start ? { ...m, start_time_datetime: start } : m;
+          })
+        : [],
     };
   });
 

@@ -34,31 +34,12 @@ export const NBL_PLAY_TYPE_FULL_LABELS: Record<NblPlayTypeId, string> = {
   stretch_four: 'Stretch',
 };
 
-export type NblPlayTypeStatKey =
-  | 'points'
-  | 'assists'
-  | 'rebounds'
-  | 'threeMade'
-  | 'pra'
-  | 'pr'
-  | 'pa'
-  | 'ra'
-  | 'fgMade'
-  | 'steals'
-  | 'blocks';
+export type NblPlayTypeStatKey = 'points' | 'assists' | 'rebounds';
 
 export const NBL_PLAY_TYPE_STAT_LABELS: Record<NblPlayTypeStatKey, string> = {
-  points: 'Points',
-  assists: 'Assists',
-  rebounds: 'Rebounds',
-  threeMade: '3PM',
-  pra: 'PRA',
-  pr: 'P+R',
-  pa: 'P+A',
-  ra: 'R+A',
-  fgMade: 'FGM',
-  steals: 'Steals',
-  blocks: 'Blocks',
+  points: 'PTS',
+  assists: 'AST',
+  rebounds: 'REB',
 };
 
 export const NBL_PLAY_TYPE_STAT_ALIASES: Record<string, NblPlayTypeStatKey> = {
@@ -71,22 +52,6 @@ export const NBL_PLAY_TYPE_STAT_ALIASES: Record<string, NblPlayTypeStatKey> = {
   reb: 'rebounds',
   rebound: 'rebounds',
   rebounds: 'rebounds',
-  threes: 'threeMade',
-  threemade: 'threeMade',
-  '3pm': 'threeMade',
-  fg3m: 'threeMade',
-  pra: 'pra',
-  pr: 'pr',
-  pa: 'pa',
-  ra: 'ra',
-  fgm: 'fgMade',
-  fgmade: 'fgMade',
-  stl: 'steals',
-  steal: 'steals',
-  steals: 'steals',
-  blk: 'blocks',
-  block: 'blocks',
-  blocks: 'blocks',
 };
 
 export type NblPlayTypePlayerRow = {

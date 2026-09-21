@@ -10,7 +10,10 @@ import {
   NBL_CURRENT_SEASON_YEAR,
   nblSeasonLabel,
 } from '@/lib/nblTeamCanonical';
+import { nblUsagePct } from '@/lib/nbl/advancedRates';
+import { loadNblTeamBoxes, nblTeamBoxKey } from '@/lib/nbl/teamBoxScores';
 import { resolveNblSteTeamCode } from '@/lib/nbl/teamSteStatsShared';
+import { nblRosettaYearStamp } from '@/lib/nbl/ladderSeason';
 import { listNblUpcomingRoundGames } from '@/lib/nbl/nextGame';
 import { readPlayerShotChartCache } from '@/lib/nbl/nblShotChartData';
 import type { NblGameLogRow, NblLeaguePlayerStatRow } from '@/lib/nbl/rosettaTypes';
@@ -146,50 +149,30 @@ function loadPlayerGames(playerId: string, year: number): NblGameLogRow[] {
 type TeamGameTotals = { fga: number; fta: number; tov: number; minutes: number };
 
 function teamGameKey(matchId: string, teamCode: string | null, team: string): string | null {
-  const id = String(matchId || '').trim();
-  const code = resolveNblSteTeamCode(teamCode || team);
-  if (!id || !code) return null;
-  return `${id}::${code}`;
+  return nblTeamBoxKey(matchId, resolveNblSteTeamCode(teamCode || team));
 }
 
-const teamTotalsByYear = new Map<number, Map<string, TeamGameTotals>>();
-
 function loadYearTeamTotals(year: number): Map<string, TeamGameTotals> {
-  const cached = teamTotalsByYear.get(year);
-  if (cached) return cached;
   const totals = new Map<string, TeamGameTotals>();
-  const dir = playerLogsDir();
-  if (!fs.existsSync(dir)) {
-    teamTotalsByYear.set(year, totals);
-    return totals;
+  for (const [key, box] of loadNblTeamBoxes(year)) {
+    totals.set(key, { fga: box.fga, fta: box.fta, tov: box.tov, minutes: box.minutes });
   }
-  const suffix = `-${year}.json`;
-  for (const file of fs.readdirSync(dir)) {
-    if (!file.endsWith(suffix)) continue;
-    const games = loadPlayerGames(file.slice(0, -suffix.length), year);
-    for (const g of games) {
-      const key = teamGameKey(g.matchId, g.teamCode, g.team);
-      if (!key) continue;
-      const prev = totals.get(key) ?? { fga: 0, fta: 0, tov: 0, minutes: 0 };
-      prev.fga += num(g.fgAttempted) ?? 0;
-      prev.fta += num(g.ftAttempted) ?? 0;
-      prev.tov += num(g.turnovers) ?? 0;
-      prev.minutes += num(g.minutes) ?? 0;
-      totals.set(key, prev);
-    }
-  }
-  teamTotalsByYear.set(year, totals);
   return totals;
 }
 
 function gameUsagePct(game: NblGameLogRow, team: TeamGameTotals | undefined): number | null {
   const mp = num(game.minutes) ?? 0;
-  if (mp < MIN_GAME_MINUTES || !team || team.minutes <= 0) return null;
-  const playerPoss =
-    (num(game.fgAttempted) ?? 0) + 0.44 * (num(game.ftAttempted) ?? 0) + (num(game.turnovers) ?? 0);
-  const teamPoss = team.fga + 0.44 * team.fta + team.tov;
-  if (teamPoss <= 0) return null;
-  return (100 * playerPoss * (team.minutes / 5)) / (mp * teamPoss);
+  if (mp < MIN_GAME_MINUTES || !team) return null;
+  return nblUsagePct({
+    mp,
+    fga: num(game.fgAttempted) ?? 0,
+    fta: num(game.ftAttempted) ?? 0,
+    tov: num(game.turnovers) ?? 0,
+    teamMp: team.minutes,
+    teamFga: team.fga,
+    teamFta: team.fta,
+    teamTov: team.tov,
+  });
 }
 
 function weightedUsagePct(
@@ -362,47 +345,6 @@ function gameStatValue(game: NblGameLogRow, stat: NblPlayTypeStatKey): number | 
       return num(game.assists);
     case 'rebounds':
       return num(game.rebounds);
-    case 'threeMade':
-      return num(game.threeMade);
-    case 'steals':
-      return num(game.steals);
-    case 'blocks':
-      return num(game.blocks);
-    case 'pra':
-      if (game.pra != null && Number.isFinite(Number(game.pra))) return Number(game.pra);
-      {
-        const pts = num(game.points);
-        const reb = num(game.rebounds);
-        const ast = num(game.assists);
-        if (pts == null || reb == null || ast == null) return null;
-        return pts + reb + ast;
-      }
-    case 'pr':
-      if (game.pr != null && Number.isFinite(Number(game.pr))) return Number(game.pr);
-      {
-        const pts = num(game.points);
-        const reb = num(game.rebounds);
-        if (pts == null || reb == null) return null;
-        return pts + reb;
-      }
-    case 'pa':
-      if (game.pa != null && Number.isFinite(Number(game.pa))) return Number(game.pa);
-      {
-        const pts = num(game.points);
-        const ast = num(game.assists);
-        if (pts == null || ast == null) return null;
-        return pts + ast;
-      }
-    case 'ra':
-      if (game.ra != null && Number.isFinite(Number(game.ra))) return Number(game.ra);
-      {
-        const reb = num(game.rebounds);
-        const ast = num(game.assists);
-        if (reb == null || ast == null) return null;
-        return reb + ast;
-      }
-    case 'fgMade':
-      return num(game.fgMade);
     case 'points':
     default:
       return num(game.points);
@@ -419,10 +361,29 @@ type TaggedPlayer = PlayerFeatures & { type: NblPlayTypeId };
 
 const taggedByYear = new Map<string, TaggedPlayer[]>();
 
-function matrixMinGames(players: Array<{ gamesUsed: number }>): number {
-  const seasonMax = Math.max(0, ...players.map((p) => p.gamesUsed));
-  if (seasonMax <= 0) return MIN_GAMES_FOR_TAG;
-  return Math.max(1, Math.min(MIN_GAMES_FOR_TAG, seasonMax));
+function medianInt(values: number[]): number {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor((sorted.length - 1) / 2)];
+}
+
+/**
+ * Early-season floor: require as many games as a typical team has played
+ * (median of team maxima), not the league max. Phoenix playing twice must
+ * not drop every 1-game club (TAS) out of the matrix.
+ */
+function matrixMinGames(
+  players: Array<{ gamesUsed: number; row: { teamCode?: string | null; team?: string | null } }>
+): number {
+  const byTeam = new Map<string, number>();
+  for (const p of players) {
+    const code = resolveNblSteTeamCode(p.row.teamCode || p.row.team);
+    if (!code || p.gamesUsed <= 0) continue;
+    byTeam.set(code, Math.max(byTeam.get(code) ?? 0, p.gamesUsed));
+  }
+  const played = [...byTeam.values()];
+  if (!played.length) return MIN_GAMES_FOR_TAG;
+  return Math.max(1, Math.min(MIN_GAMES_FOR_TAG, medianInt(played)));
 }
 
 function isQualifiedForMatrix(p: PlayerFeatures, minGames: number): boolean {
@@ -430,7 +391,7 @@ function isQualifiedForMatrix(p: PlayerFeatures, minGames: number): boolean {
 }
 
 function tagSeason(year: number): TaggedPlayer[] {
-  const cacheKey = `${year}:${TAG_SCHEMA}`;
+  const cacheKey = `${year}:${TAG_SCHEMA}:${nblRosettaYearStamp(year)}`;
   const cached = taggedByYear.get(cacheKey);
   if (cached) return cached;
   const league = loadLeaguePlayers(year);
@@ -471,31 +432,6 @@ function seasonStatValue(row: NblLeaguePlayerStatRow, stat: NblPlayTypeStatKey):
       return num(row.assists);
     case 'rebounds':
       return num(row.rebounds);
-    case 'threeMade':
-      return num(row.threeMade);
-    case 'steals':
-      return num(row.steals);
-    case 'blocks':
-      return num(row.blocks);
-    case 'pra':
-      return num(row.pra);
-    case 'pr': {
-      const pts = num(row.points);
-      const reb = num(row.rebounds);
-      return pts != null && reb != null ? pts + reb : null;
-    }
-    case 'pa': {
-      const pts = num(row.points);
-      const ast = num(row.assists);
-      return pts != null && ast != null ? pts + ast : null;
-    }
-    case 'ra': {
-      const reb = num(row.rebounds);
-      const ast = num(row.assists);
-      return reb != null && ast != null ? reb + ast : null;
-    }
-    case 'fgMade':
-      return null;
     case 'points':
     default:
       return num(row.points);
@@ -555,7 +491,7 @@ function buildRoundPicks(
     if (!teamCode) continue;
     const matchup = opponentByTeam.get(teamCode);
     if (!matchup) continue;
-    const useThreeRate = stat === 'threeMade' || p.type === 'three_shooter' || p.type === 'stretch_four';
+    const useThreeRate = p.type === 'three_shooter' || p.type === 'stretch_four';
     const pct = useThreeRate ? round1(p.threeRate * 100) : p.usgPct != null ? round1(p.usgPct) : null;
     const statValue = seasonStatValue(p.row, stat);
     picks.push({

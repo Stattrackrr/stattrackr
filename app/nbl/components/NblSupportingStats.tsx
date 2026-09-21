@@ -113,7 +113,12 @@ export type SupportingStatKind =
   | 'plusMinus'
   | 'efficiency';
 
-const PCT_KINDS = new Set<SupportingStatKind>(['fgPct', 'twoPct', 'threePct', 'ftPct']);
+const PCT_KINDS = new Set<SupportingStatKind>([
+  'fgPct',
+  'twoPct',
+  'threePct',
+  'ftPct',
+]);
 
 /** Labels for every supporting kind (also used for averages / empty copy). */
 const ALL_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
@@ -401,6 +406,16 @@ export function supportingOptionsForMain(
     case 'plusMinus':
     case 'efficiency':
       options = IMPACT_TOGGLE_OPTIONS;
+      break;
+    case 'usgPct':
+    case 'tsPct':
+    case 'pace':
+      options = POINTS_TOGGLE_OPTIONS;
+      break;
+    case 'trebPct':
+    case 'orebPct':
+    case 'drebPct':
+      options = REBOUNDS_TOGGLE_OPTIONS;
       break;
     default:
       options = DEFAULT_TOGGLE_OPTIONS;

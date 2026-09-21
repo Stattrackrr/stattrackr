@@ -11,8 +11,6 @@ import {
 import { nblSeasonLabel } from '@/lib/nblTeamCanonical';
 import { resolveNblSteTeamCode } from '@/lib/nbl/teamSteStatsShared';
 
-const STAT_HELP = Object.values(NBL_PLAY_TYPE_STAT_LABELS).join(', ');
-
 function fmtBoost(value: number | null): string {
   if (value == null || !Number.isFinite(value)) return '—';
   const rounded = Math.round(value * 10) / 10;
@@ -90,6 +88,46 @@ function fmtStat(value: number | null | undefined): string {
 function fmtPct(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return '';
   return `${Math.round(value)}%`;
+}
+
+const MATRIX_STAT_CHIPS = ['PTS', 'AST', 'REB'] as const;
+
+function chartStatLabel(stat: string): string {
+  const key = String(stat || '').trim();
+  if (key in NBL_PLAY_TYPE_STAT_LABELS) {
+    return NBL_PLAY_TYPE_STAT_LABELS[key as keyof typeof NBL_PLAY_TYPE_STAT_LABELS];
+  }
+  const map: Record<string, string> = {
+    minutes: 'MINS',
+    threeMade: '3PM',
+    threeAttempted: '3PA',
+    threePct: '3P%',
+    fgMade: 'FGM',
+    fgAttempted: 'FGA',
+    fgPct: 'FG%',
+    twoMade: '2PM',
+    twoAttempted: '2PA',
+    twoPct: '2P%',
+    ftMade: 'FTM',
+    ftAttempted: 'FTA',
+    ftPct: 'FT%',
+    pra: 'PRA',
+    pr: 'PR',
+    pa: 'PA',
+    ra: 'RA',
+    steals: 'STL',
+    blocks: 'BLK',
+    turnovers: 'TO',
+    fouls: 'PF',
+    usgPct: 'USG%',
+    tsPct: 'TS%',
+    trebPct: 'TREB%',
+    orebPct: 'OREB%',
+    drebPct: 'DREB%',
+    pace: 'PACE',
+    efficiency: 'EFF',
+  };
+  return map[key] || key.toUpperCase();
 }
 
 function opponentShort(pick: NblPlayTypeRoundPick, teams: NblPlayTypesPayload['teams']): string {
@@ -214,11 +252,11 @@ export function PlayTypesInfoButton({
           Stretch.
           <br />
           <br />
-          Each cell is how that type performed against that team compared with their own average on
-          the selected stat. Green means they beat their usual line. Red means they came in under
-          it.
+          Each cell is how that type performed against that team compared with their own average.
+          Green means they beat their usual line. Red means they came in under it.
           <br />
           <br />
+          The matrix only follows PTS, AST, or REB on the main chart.
           The purple column is the current opponent. This player&apos;s type sits on the top row.
         </span>
       ) : null}
@@ -352,17 +390,37 @@ export default function NblDvpCard({
   }
 
   if (!payload.statSupported) {
+    const current = chartStatLabel(selectedStat);
     return (
-      <p className={`text-[11px] leading-snug py-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-        This matrix tracks {STAT_HELP}. Switch the chart to one of those stats to see type-vs-team
-        boosts
-        {payload.player ? ` for ${payload.player.typeLabel}s` : ''}.
-      </p>
+      <div className="py-3 px-0.5">
+        <p className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+          Matrix is PTS, AST, or REB
+        </p>
+        <p className={`text-xs mt-1.5 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          Chart is on {current}. Switch to one of these to see type-vs-team boosts
+          {payload.player ? ` for ${payload.player.typeLabel}s` : ''}.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {MATRIX_STAT_CHIPS.map((chip) => (
+            <span
+              key={chip}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
+                isDark ? 'bg-white/10 text-gray-200' : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              {chip}
+            </span>
+          ))}
+        </div>
+      </div>
     );
   }
 
   return (
     <div className={loading ? 'opacity-70' : ''}>
+    <p className={`text-[11px] font-semibold tracking-wide mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+      Showing {payload.statLabel ?? 'PTS'}
+    </p>
     <table className="w-full table-fixed border-collapse">
       <thead>
         <tr>

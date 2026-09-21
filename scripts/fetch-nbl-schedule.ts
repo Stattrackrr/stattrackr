@@ -5,6 +5,7 @@
  */
 import fs from 'fs';
 import path from 'path';
+import { nblUtcIso } from '../lib/nbl/nblTime';
 import { fetchNblSchedule } from '../lib/nbl/rosettaLeague';
 import { nblSeasonLabel } from '../lib/nblTeamCanonical';
 
@@ -21,7 +22,7 @@ async function main() {
   const games = matches.map((m) => ({
     id: m.id,
     externalId: m.external_id ?? null,
-    startTime: m.start_time_datetime || m.start_time || null,
+    startTime: nblUtcIso(m.start_time_datetime || m.start_time) || m.start_time_datetime || m.start_time || null,
     round: m.round ?? null,
     status: m.match_status || m.status || null,
     homeTeam: m.home_team?.name ?? '',

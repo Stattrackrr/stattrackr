@@ -1,6 +1,22 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { NBL_CURRENT_SEASON_YEAR } from '@/lib/nblTeamCanonical';
+
+type NblPlayerRating = {
+  playerId: string;
+  name: string;
+  team: string;
+  games: number;
+  minutes: number;
+  offRtg: number | null;
+  defRtg: number | null;
+};
+
+type NblPlayerRatingsPayload = {
+  year: number;
+  players: NblPlayerRating[];
+};
 
 type LineupPlayer = {
   playerId: string | null;
@@ -27,66 +43,19 @@ type TeamLineup = {
   } | null;
 };
 
-/** Browser-warmed headshot URLs — chips can paint opaque on first frame. */
-const warmedHeadshots = new Set<string>();
-
-/** In-memory lineup responses so revisiting a team paints immediately. */
 const lineupCache = new Map<
   string,
   { team: TeamLineup | null; opponent: TeamLineup | null; at: number }
 >();
 const LINEUP_CACHE_TTL_MS = 30 * 60 * 1000;
 
-function collectLineupImageUrls(...sides: Array<TeamLineup | null | undefined>): string[] {
-  const urls: string[] = [];
-  for (const side of sides) {
-    if (!side) continue;
-    for (const p of side.lineup.starters || []) {
-      const u = p.imageUrl?.trim();
-      if (u) urls.push(u);
-    }
-    for (const p of side.lineup.bench || []) {
-      const u = p.imageUrl?.trim();
-      if (u) urls.push(u);
-    }
-  }
-  return urls;
-}
-
-function preloadHeadshots(urls: string[]): Promise<void> {
-  const unique = [...new Set(urls.map((u) => u.trim()).filter(Boolean))].filter(
-    (u) => !warmedHeadshots.has(u)
-  );
-  if (!unique.length) return Promise.resolve();
-  if (typeof window === 'undefined') return Promise.resolve();
-
-  return Promise.all(
-    unique.map(
-      (src) =>
-        new Promise<void>((resolve) => {
-          let settled = false;
-          const finish = () => {
-            if (settled) return;
-            settled = true;
-            resolve();
-          };
-          const timer = window.setTimeout(finish, 4000);
-          const img = new window.Image();
-          img.decoding = 'async';
-          img.onload = () => {
-            warmedHeadshots.add(src);
-            window.clearTimeout(timer);
-            finish();
-          };
-          img.onerror = () => {
-            window.clearTimeout(timer);
-            finish();
-          };
-          img.src = src;
-        })
-    )
-  ).then(() => undefined);
-}
+const RATINGS_CACHE_VER = 2;
+let ratingsCache: {
+  year: number;
+  ver: number;
+  payload: NblPlayerRatingsPayload;
+  at: number;
+} | null = null;
 
 function normalizeName(name: string): string {
   return (name || '')
@@ -108,16 +77,9 @@ function nameMatches(lineupName: string, selected?: string | null): boolean {
   return aw[aw.length - 1] === bw[bw.length - 1];
 }
 
-function shortLastName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length <= 1) return name;
-  return parts[parts.length - 1];
-}
-
 function shortTeamLabel(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length <= 1) return name;
-  // Prefer last word for NBL clubs ("Illawarra Hawks" → "Hawks")
   return parts[parts.length - 1];
 }
 
@@ -133,135 +95,100 @@ function formatMatchDate(tipoff?: string | null): string | null {
   });
 }
 
-function PlayerChip({
-  name,
-  jersey,
-  slot,
-  imageUrl,
+function lookupRating(
+  byId: Map<string, NblPlayerRating>,
+  byName: Map<string, NblPlayerRating>,
+  player: LineupPlayer | null | undefined
+): NblPlayerRating | null {
+  if (!player) return null;
+  const id = String(player.playerId || '').trim();
+  if (id && byId.has(id)) return byId.get(id) ?? null;
+  return byName.get(normalizeName(player.name)) ?? null;
+}
+
+function fmtRtg(n: number | null | undefined): string {
+  return n != null && Number.isFinite(n) ? n.toFixed(1) : '—';
+}
+
+function barWidthPct(value: number | null | undefined, max: number): number {
+  if (value == null || !Number.isFinite(value) || max <= 0) return 0;
+  return Math.max(0, Math.min(100, (value / max) * 100));
+}
+
+function maxLineupRating(
+  players: LineupPlayer[],
+  byId: Map<string, NblPlayerRating>,
+  byName: Map<string, NblPlayerRating>
+): number {
+  let max = 0;
+  for (const p of players) {
+    const r = lookupRating(byId, byName, p);
+    if (r?.offRtg != null) max = Math.max(max, r.offRtg);
+    if (r?.defRtg != null) max = Math.max(max, r.defRtg);
+  }
+  return max > 0 ? max : 100;
+}
+
+function ButterflyRow({
+  player,
+  offRtg,
+  defRtg,
+  maxRtg,
   isDark,
   highlight,
 }: {
-  name: string;
-  jersey?: string | null;
-  slot: string;
-  imageUrl?: string | null;
+  player: LineupPlayer;
+  offRtg: number | null;
+  defRtg: number | null;
+  maxRtg: number;
   isDark: boolean;
   highlight?: boolean;
 }) {
-  const badge = jersey && String(jersey).trim() ? String(jersey).trim() : '–';
-  const pos = (slot || '–').toUpperCase();
-  const src = imageUrl?.trim() || null;
-  const [photoReady, setPhotoReady] = useState(() => Boolean(src && warmedHeadshots.has(src)));
-
-  useEffect(() => {
-    setPhotoReady(Boolean(src && warmedHeadshots.has(src)));
-  }, [src]);
-
+  const track = isDark ? 'bg-white/[0.07]' : 'bg-gray-100';
+  const defFill = highlight ? 'bg-red-600' : 'bg-red-700';
+  const offFill = highlight ? 'bg-emerald-400' : 'bg-emerald-500';
   return (
-    <div
-      className={`relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 min-w-0 transition-colors ${
-        highlight
-          ? 'bg-purple-500/20 ring-2 ring-purple-500'
-          : isDark
-            ? 'bg-[#0d2137] ring-1 ring-white/10 hover:ring-white/20'
-            : 'bg-white ring-1 ring-gray-200 hover:ring-gray-300'
-      }`}
-    >
-      <div className="relative flex-shrink-0 w-9 h-9">
-        <div
-          className={`absolute inset-0 rounded-full flex items-center justify-center text-xs font-bold ${
-            isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600'
-          }`}
-          aria-hidden={photoReady}
-        >
-          {shortLastName(name).slice(0, 1)}
-        </div>
-        {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={src}
-            alt=""
-            decoding="async"
-            onLoad={() => {
-              warmedHeadshots.add(src);
-              setPhotoReady(true);
-            }}
-            className={`absolute inset-0 w-9 h-9 rounded-full object-cover object-top ${
-              photoReady ? 'opacity-100' : 'opacity-0'
-            }`}
-          />
-        ) : null}
-        <span
-          className={`absolute -bottom-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-0.5 rounded-md text-[9px] font-bold flex items-center justify-center ${
-            isDark ? 'bg-gray-950 text-white ring-1 ring-white/20' : 'bg-gray-900 text-white'
-          }`}
-        >
-          {badge}
-        </span>
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div
-          className={`truncate text-sm font-semibold leading-tight ${
-            isDark ? 'text-white' : 'text-gray-900'
-          }`}
-        >
-          {name}
-        </div>
-        <div
-          className={`text-[10px] font-semibold tracking-wide uppercase mt-0.5 ${
-            isDark ? 'text-gray-400' : 'text-gray-500'
-          }`}
-        >
-          {pos}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PlayerColumn({
-  title,
-  players,
-  isDark,
-  selectedPlayerName,
-}: {
-  title: string;
-  players: LineupPlayer[];
-  isDark: boolean;
-  selectedPlayerName?: string | null;
-}) {
-  return (
-    <div className="min-w-0 flex-1">
-      <div
-        className={`text-[10px] font-bold tracking-wide uppercase mb-2 ${
-          isDark ? 'text-gray-400' : 'text-gray-500'
+    <div className="flex items-center min-w-0">
+      <span
+        className={`w-[2.6rem] shrink-0 text-[12px] tabular-nums ${
+          isDark ? 'text-red-400' : 'text-red-800'
         }`}
       >
-        {title}
+        {fmtRtg(defRtg)}
+      </span>
+      <div
+        className={`mx-1.5 flex h-2 min-w-[1.25rem] flex-1 items-center justify-end overflow-hidden rounded-full ${track}`}
+      >
+        <div
+          className={`h-full rounded-full ${defFill}`}
+          style={{ width: `${barWidthPct(defRtg, maxRtg)}%`, transition: 'width 400ms ease' }}
+        />
       </div>
-      {players.length ? (
-        <div className="space-y-2">
-          {players.map((p) => (
-            <PlayerChip
-              key={`${title}-${p.slot || p.position || 'x'}-${p.playerId || p.name}`}
-              name={p.name}
-              jersey={p.jersey}
-              slot={p.slot || p.positionLabel || p.position || '–'}
-              imageUrl={p.imageUrl}
-              isDark={isDark}
-              highlight={nameMatches(p.name, selectedPlayerName)}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>None listed</p>
-      )}
+      <span
+        className={`shrink-0 max-w-[46%] px-2.5 text-center text-[12px] font-semibold leading-tight truncate ${
+          highlight ? 'text-purple-400' : isDark ? 'text-gray-100' : 'text-gray-900'
+        }`}
+        title={player.name}
+      >
+        {player.name}
+      </span>
+      <div className={`mx-1.5 h-2 min-w-[1.25rem] flex-1 overflow-hidden rounded-full ${track}`}>
+        <div
+          className={`h-full rounded-full ${offFill}`}
+          style={{ width: `${barWidthPct(offRtg, maxRtg)}%`, transition: 'width 400ms ease' }}
+        />
+      </div>
+      <span
+        className={`w-[2.6rem] shrink-0 text-right text-[12px] tabular-nums font-semibold ${
+          isDark ? 'text-emerald-300' : 'text-emerald-700'
+        }`}
+      >
+        {fmtRtg(offRtg)}
+      </span>
     </div>
   );
 }
 
-/** Most recent game for the player's team — selector for both sides; starters left, bench right. */
 export function NblTeamSelectionsCard({
   isDark = false,
   playerTeam,
@@ -279,6 +206,9 @@ export function NblTeamSelectionsCard({
   const [activeTeam, setActiveTeam] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ratings, setRatings] = useState<NblPlayerRating[] | null>(
+    ratingsCache?.ver === RATINGS_CACHE_VER ? ratingsCache.payload.players : null
+  );
 
   useEffect(() => {
     const t = playerTeam?.trim();
@@ -299,7 +229,6 @@ export function NblTeamSelectionsCard({
       setActiveTeam(cached.team?.team || null);
       setError(null);
       setLoading(false);
-      void preloadHeadshots(collectLineupImageUrls(cached.team, cached.opponent));
       return;
     }
 
@@ -320,13 +249,10 @@ export function NblTeamSelectionsCard({
         if (cancelled) return;
         const team = (json.team ?? null) as TeamLineup | null;
         const opp = (json.opponent ?? null) as TeamLineup | null;
-        const urls = collectLineupImageUrls(team, opp);
         lineupCache.set(cacheKey, { team, opponent: opp, at: Date.now() });
         setPlayerSide(team);
         setOtherSide(opp);
         setActiveTeam(team?.team || null);
-        // Warm headshots in the background — chips reveal photos as they land.
-        void preloadHeadshots(urls);
       })
       .catch((e) => {
         if (cancelled) return;
@@ -344,6 +270,31 @@ export function NblTeamSelectionsCard({
     };
   }, [playerTeam]);
 
+  useEffect(() => {
+    if (
+      ratingsCache &&
+      ratingsCache.ver === RATINGS_CACHE_VER &&
+      Date.now() - ratingsCache.at < LINEUP_CACHE_TTL_MS
+    ) {
+      setRatings(ratingsCache.payload.players);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/nbl/player-ratings?year=${NBL_CURRENT_SEASON_YEAR}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('ratings'))))
+      .then((data: NblPlayerRatingsPayload) => {
+        if (cancelled) return;
+        ratingsCache = { year: data.year, ver: RATINGS_CACHE_VER, payload: data, at: Date.now() };
+        setRatings(Array.isArray(data.players) ? data.players : []);
+      })
+      .catch(() => {
+        if (!cancelled) setRatings([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const teamOptions = useMemo(() => {
     const opts: TeamLineup[] = [];
     if (playerSide) opts.push(playerSide);
@@ -360,16 +311,26 @@ export function NblTeamSelectionsCard({
   const bench = active?.lineup.bench || [];
   const matchDate = formatMatchDate(playerSide?.match?.tipoff || otherSide?.match?.tipoff);
 
+  const ratingById = useMemo(() => {
+    const m = new Map<string, NblPlayerRating>();
+    for (const r of ratings || []) m.set(r.playerId, r);
+    return m;
+  }, [ratings]);
+  const ratingByName = useMemo(() => {
+    const m = new Map<string, NblPlayerRating>();
+    for (const r of ratings || []) m.set(normalizeName(r.name), r);
+    return m;
+  }, [ratings]);
+
+  const maxRtg = maxLineupRating([...starters, ...bench], ratingById, ratingByName);
+
+  const muted = isDark ? 'text-gray-500' : 'text-gray-400';
+  const heading = isDark ? 'text-gray-200' : 'text-gray-800';
+
   return (
     <div className="w-full px-3">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-3">
-        <h3
-          className={`text-sm font-semibold justify-self-start ${
-            isDark ? 'text-gray-200' : 'text-gray-800'
-          }`}
-        >
-          Most recent lineup
-        </h3>
+        <h3 className={`text-sm font-semibold justify-self-start ${heading}`}>Most recent lineup</h3>
 
         <div className="justify-self-center">
           {!error && teamOptions.length > 1 ? (
@@ -394,17 +355,9 @@ export function NblTeamSelectionsCard({
                   >
                     {logo ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={logo}
-                        alt={opt.team}
-                        className="w-6 h-6 object-contain"
-                      />
+                      <img src={logo} alt={opt.team} className="w-6 h-6 object-contain" />
                     ) : (
-                      <span
-                        className={`text-[10px] font-bold ${
-                          isDark ? 'text-gray-300' : 'text-gray-700'
-                        }`}
-                      >
+                      <span className={`text-[10px] font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                         {shortTeamLabel(opt.team).slice(0, 3).toUpperCase()}
                       </span>
                     )}
@@ -417,18 +370,9 @@ export function NblTeamSelectionsCard({
               const logo = resolveTeamLogo?.(active.team) ?? null;
               return logo ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={logo}
-                  alt={active.team}
-                  title={active.team}
-                  className="w-7 h-7 object-contain"
-                />
+                <img src={logo} alt={active.team} title={active.team} className="w-7 h-7 object-contain" />
               ) : (
-                <span
-                  className={`text-[11px] font-bold tracking-wide uppercase ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
+                <span className={`text-[11px] font-bold tracking-wide uppercase ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   {shortTeamLabel(active.team)}
                 </span>
               );
@@ -438,45 +382,78 @@ export function NblTeamSelectionsCard({
 
         <div className="justify-self-end">
           {matchDate ? (
-            <span
-              className={`text-[10px] font-medium truncate ${
-                isDark ? 'text-gray-500' : 'text-gray-400'
-              }`}
-            >
-              {matchDate}
-            </span>
+            <span className={`text-[10px] font-medium truncate ${muted}`}>{matchDate}</span>
           ) : null}
         </div>
       </div>
 
       {!playerTeam?.trim() && (
-        <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-          Select a player or team to see their most recent starting five and bench.
-        </p>
+        <p className={`text-xs ${muted}`}>Select a player or team to see their most recent starting five and bench.</p>
       )}
 
-      {playerTeam?.trim() && loading && !active && (
-        <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Loading…</p>
-      )}
+      {playerTeam?.trim() && loading && !active && <p className={`text-xs ${muted}`}>Loading…</p>}
 
-      {error && (
-        <p className={`text-xs ${isDark ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
-      )}
+      {error && <p className={`text-xs ${isDark ? 'text-red-400' : 'text-red-600'}`}>{error}</p>}
 
       {!error && active && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
-          <PlayerColumn
-            title="Starting 5"
-            players={starters}
-            isDark={isDark}
-            selectedPlayerName={selectedPlayerName}
-          />
-          <PlayerColumn
-            title="Bench"
-            players={bench}
-            isDark={isDark}
-            selectedPlayerName={selectedPlayerName}
-          />
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center min-w-0">
+            <span className={`w-[2.6rem] shrink-0 text-[10px] font-bold tracking-wide uppercase ${isDark ? 'text-red-500/90' : 'text-red-800'}`}>
+              DRtg
+            </span>
+            <span className="flex-1" />
+            <span className={`w-[2.6rem] shrink-0 text-right text-[10px] font-bold tracking-wide uppercase ${isDark ? 'text-emerald-400/80' : 'text-emerald-700'}`}>
+              ORtg
+            </span>
+          </div>
+
+          <div>
+            <div className={`text-[10px] font-bold tracking-wide uppercase mb-2 text-center ${muted}`}>Starting 5</div>
+            {starters.length ? (
+              <div className="space-y-2.5">
+                {starters.map((p) => {
+                  const r = lookupRating(ratingById, ratingByName, p);
+                  return (
+                    <ButterflyRow
+                      key={`st-${p.slot || p.position || 'x'}-${p.playerId || p.name}`}
+                      player={p}
+                      offRtg={r?.offRtg ?? null}
+                      defRtg={r?.defRtg ?? null}
+                      maxRtg={maxRtg}
+                      isDark={isDark}
+                      highlight={nameMatches(p.name, selectedPlayerName)}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <p className={`text-[11px] ${muted}`}>None listed</p>
+            )}
+          </div>
+
+          <div>
+            <div className={`text-[10px] font-bold tracking-wide uppercase mb-2 text-center ${muted}`}>Bench</div>
+            {bench.length ? (
+              <div className="space-y-2.5">
+                {bench.map((p) => {
+                  const r = lookupRating(ratingById, ratingByName, p);
+                  return (
+                    <ButterflyRow
+                      key={`bn-${p.slot || p.position || 'x'}-${p.playerId || p.name}`}
+                      player={p}
+                      offRtg={r?.offRtg ?? null}
+                      defRtg={r?.defRtg ?? null}
+                      maxRtg={maxRtg}
+                      isDark={isDark}
+                      highlight={nameMatches(p.name, selectedPlayerName)}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <p className={`text-[11px] ${muted}`}>None listed</p>
+            )}
+          </div>
         </div>
       )}
     </div>

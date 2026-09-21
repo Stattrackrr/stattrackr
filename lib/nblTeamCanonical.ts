@@ -52,6 +52,18 @@ const ID_TO_CLUB = new Map(NBL_CLUBS.map((c) => [c.id, c]));
 const EXTRA_NAME_ALIASES: ReadonlyArray<[string, NblClubCode]> = [
   ['NZ Breakers', 'NZL'],
   ['New Zealand', 'NZL'],
+  ['SE Melbourne Phoenix', 'SEM'],
+  ['S.E. Melbourne Phoenix', 'SEM'],
+  ['Southeast Melbourne Phoenix', 'SEM'],
+  ['South East Melbourne', 'SEM'],
+  ['Tasmania Jack Jumpers', 'TAS'],
+  ['Brisbane', 'BRI'],
+  ['Adelaide', 'ADL'],
+  ['Perth', 'PER'],
+  ['Sydney', 'SYD'],
+  ['Cairns', 'CNS'],
+  ['Illawarra', 'ILL'],
+  ['Tasmania', 'TAS'],
 ];
 
 const NAME_TO_CLUB = new Map(

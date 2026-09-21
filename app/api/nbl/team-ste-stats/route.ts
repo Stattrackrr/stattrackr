@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { nblRosettaYearStamp } from '@/lib/nbl/ladderSeason';
 import { NBL_CURRENT_SEASON_YEAR, NBL_SHOT_CHART_SEASON_YEAR } from '@/lib/nblTeamCanonical';
 import { buildNblSteStatsPayload } from '@/lib/nbl/teamSteStats';
 
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   const windowN = Number.isFinite(windowParam) && windowParam >= 0 ? Math.trunc(windowParam) : 0;
   const refresh = request.nextUrl.searchParams.get('refresh') === '1';
 
-  const cacheKey = `${year}:${windowN}`;
+  const cacheKey = `${year}:${windowN}:${nblRosettaYearStamp(year)}`;
   const cached = cache.get(cacheKey);
   if (!refresh && cached && cached.expiresAt > Date.now()) {
     return NextResponse.json(cached.data);
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
         year: NBL_SHOT_CHART_SEASON_YEAR,
         window: windowN,
       });
-      cache.set(`${NBL_SHOT_CHART_SEASON_YEAR}:${windowN}`, {
+      cache.set(`${NBL_SHOT_CHART_SEASON_YEAR}:${windowN}:${nblRosettaYearStamp(NBL_SHOT_CHART_SEASON_YEAR)}`, {
         expiresAt: Date.now() + TTL_MS,
         data: fallback,
       });

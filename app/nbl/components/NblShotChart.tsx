@@ -303,8 +303,6 @@ export function NblShotChart({
   const canShowBreakdown = Boolean(opponentTeam && opponentTeam !== 'N/A');
   const defenseZones = useMemo(() => zoneLookup(defenseData?.zones || []), [defenseData]);
   const defenseGames = Math.max(0, Number(defenseData?.gamesUsed || 0));
-  const pointsAllowed = Number(defenseData?.pointsAllowed);
-  const hasBoxScorePoints = Number.isFinite(pointsAllowed) && pointsAllowed > 0;
   const ftDefense = defenseData?.ftDefense;
 
   const breakdownRows = useMemo(() => {
@@ -1073,27 +1071,18 @@ export function NblShotChart({
                 type="button"
                 onClick={() => setBreakdownOpen((open) => !open)}
                 aria-expanded={breakdownOpen}
-                className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left transition-colors ${
+                className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
                   breakdownOpen
-                    ? 'bg-violet-500/10 text-violet-200'
-                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5'
+                    ? 'bg-purple-600 text-white border-purple-600'
+                    : isDark
+                      ? 'bg-[#0a1929] text-gray-100 border-gray-600 hover:bg-gray-800'
+                      : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
                 }`}
               >
-                <span className="min-w-0">
-                  <span className="block text-[11px] font-bold uppercase tracking-[0.14em]">
-                    In Depth Breakdown
-                  </span>
-                  <span className="block text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                    {hasBoxScorePoints
-                      ? `${formatPerGame(pointsAllowed, defenseGames)} pts allowed · ${defenseGames} ${defenseGames === 1 ? 'game' : 'games'}`
-                      : defenseGames > 0
-                        ? `Pts allowed / game · ${defenseGames} ${defenseGames === 1 ? 'game' : 'games'}`
-                        : 'Pts allowed / game'}
-                  </span>
-                </span>
+                <span>Defensive Analysis</span>
                 <ChevronDown
                   className={`h-4 w-4 shrink-0 transition-transform ${
-                    breakdownOpen ? 'rotate-180 text-violet-300' : 'text-gray-500'
+                    breakdownOpen ? 'rotate-180' : isDark ? 'text-gray-300' : 'text-gray-500'
                   }`}
                 />
               </button>

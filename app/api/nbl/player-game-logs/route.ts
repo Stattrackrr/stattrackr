@@ -4,6 +4,7 @@ import path from 'path';
 import { enrichGameLogsFromSchedule } from '@/lib/nbl/enrichGameLogsFromSchedule';
 import { fetchNormalizedPlayerGameLogs, withComputedNblBoxStats } from '@/lib/nbl/rosettaPlayer';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
+import { enrichNblGamesAdvancedRates } from '@/lib/nbl/teamBoxScores';
 import {
   NBL_CHART_HISTORY_YEARS,
   NBL_CURRENT_SEASON_YEAR,
@@ -11,7 +12,10 @@ import {
 } from '@/lib/nblTeamCanonical';
 
 function finalizeGames(games: NblGameLogRow[], year: number): NblGameLogRow[] {
-  return enrichGameLogsFromSchedule(games, year).map((g) => withComputedNblBoxStats(g));
+  return enrichNblGamesAdvancedRates(
+    enrichGameLogsFromSchedule(games, year).map((g) => withComputedNblBoxStats(g)),
+    year
+  );
 }
 function parseYears(request: NextRequest): number[] {
   const yearsParam = String(request.nextUrl.searchParams.get('years') || '').trim();

@@ -4,6 +4,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { nblUtcIso, parseNblUtcMs } from '@/lib/nbl/nblTime';
 import {
   NBL_CLUBS,
   NBL_CURRENT_SEASON_YEAR,
@@ -96,13 +97,14 @@ function fromNextMatchesSnapshot(
   if (!row?.nextMatches?.length) return null;
 
   const upcoming = [...row.nextMatches]
-    .filter((m) => m.start_time_datetime && Date.parse(String(m.start_time_datetime)) >= nowMs)
-    .sort(
-      (a, b) =>
-        Date.parse(String(a.start_time_datetime)) - Date.parse(String(b.start_time_datetime))
-    );
+    .filter((m) => {
+      const t = parseNblUtcMs(m.start_time_datetime);
+      return Number.isFinite(t) && t >= nowMs;
+    })
+    .sort((a, b) => parseNblUtcMs(a.start_time_datetime) - parseNblUtcMs(b.start_time_datetime));
   const match = upcoming[0] ?? null;
-  if (!match?.start_time_datetime || !match.opponent_name) return null;
+  const tipoff = nblUtcIso(match?.start_time_datetime);
+  if (!tipoff || !match?.opponent_name) return null;
 
   const teamName = resolveNblClubName(row.name || team) || row.name || team;
   const opponent = resolveNblClubName(match.opponent_name) || match.opponent_name;
@@ -113,7 +115,7 @@ function fromNextMatchesSnapshot(
     opponent,
     opponentCode: null,
     opponentLogo: match.opponent_logo ? String(match.opponent_logo) : null,
-    tipoff: String(match.start_time_datetime),
+    tipoff,
     matchId: match.id ?? null,
     venue: match.venue ? String(match.venue) : null,
     isHome,
@@ -133,17 +135,16 @@ function fromScheduleSnapshot(team: string, year: number, nowMs: number): NblNex
   );
   if (!matching.length) return null;
 
-  matching.sort(
-    (a, b) => Date.parse(String(a.startTime || 0)) - Date.parse(String(b.startTime || 0))
-  );
+  matching.sort((a, b) => parseNblUtcMs(a.startTime) - parseNblUtcMs(b.startTime));
   const nextUpcoming = matching.find((g) => {
-    const t = Date.parse(String(g.startTime || 0));
+    const t = parseNblUtcMs(g.startTime);
     if (!Number.isFinite(t) || t < nowMs) return false;
     const status = String(g.status || '').toLowerCase();
     return status !== 'complete' && status !== 'completed' && status !== 'final';
   });
   const game = nextUpcoming ?? null;
-  if (!game?.startTime) return null;
+  const tipoff = nblUtcIso(game?.startTime);
+  if (!game || !tipoff) return null;
 
   const isHome = teamsMatch(game.homeTeam, team);
   const teamName =
@@ -158,7 +159,7 @@ function fromScheduleSnapshot(team: string, year: number, nowMs: number): NblNex
     opponent,
     opponentCode: (isHome ? game.awayTeamCode : game.homeTeamCode) ?? null,
     opponentLogo: (isHome ? game.awayLogo : game.homeLogo) ?? null,
-    tipoff: String(game.startTime),
+    tipoff,
     matchId: game.id ?? null,
     venue: game.venue ?? null,
     isHome,
@@ -236,13 +237,13 @@ export function listNblUpcomingRoundGames(
   }
 
   const games = [...byKey.values()].sort(
-    (a, b) => Date.parse(a.tipoff) - Date.parse(b.tipoff)
+    (a, b) => parseNblUtcMs(a.tipoff) - parseNblUtcMs(b.tipoff)
   );
   if (!games.length) return [];
-  const start = Date.parse(games[0].tipoff);
+  const start = parseNblUtcMs(games[0].tipoff);
   if (!Number.isFinite(start)) return games;
   return games.filter((game) => {
-    const t = Date.parse(game.tipoff);
+    const t = parseNblUtcMs(game.tipoff);
     return Number.isFinite(t) && t - start <= ROUND_WINDOW_MS;
   });
 }

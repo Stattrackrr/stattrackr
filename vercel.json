@@ -81,6 +81,9 @@
     "app/api/afl/odds/refresh/route.ts": {
       "maxDuration": 360
     },
+    "app/api/nbl/odds/refresh/route.ts": {
+      "maxDuration": 60
+    },
     "app/api/afl/player-props/refresh/route.ts": {
       "maxDuration": 120
     },

@@ -204,6 +204,13 @@ export type NblGameLogRow = {
   pa: number | null;
   /** Rebounds + Assists. */
   ra: number | null;
+  /** SpatialJam box-score rates (0–100 except pace). */
+  usgPct?: number | null;
+  tsPct?: number | null;
+  trebPct?: number | null;
+  orebPct?: number | null;
+  drebPct?: number | null;
+  pace?: number | null;
 };
 
 /** Normalized season averages row for league snapshot. */

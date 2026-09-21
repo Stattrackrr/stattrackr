@@ -74,6 +74,25 @@ export function nblLadderSnapshotPath(year: number): string {
   return path.join(process.cwd(), 'data', `nbl-ladder-${year}.json`);
 }
 
+/** mtimes of Rosetta season files so in-memory API caches drop after a refresh. */
+export function nblRosettaYearStamp(year: number): string {
+  const files = [
+    nblLadderSnapshotPath(year),
+    path.join(process.cwd(), 'data', `nbl-schedule-${year}.json`),
+    path.join(process.cwd(), 'data', `nbl-league-player-stats-${year}.json`),
+    path.join(process.cwd(), 'data', `nbl-player-game-logs-index-${year}.json`),
+  ];
+  return files
+    .map((file) => {
+      try {
+        return String(fs.statSync(file).mtimeMs);
+      } catch {
+        return '0';
+      }
+    })
+    .join(':');
+}
+
 export function nblLadderHasPlayedGames(teams: NblLadderTeamRow[] | undefined): boolean {
   return Array.isArray(teams) && teams.some((row) => Number(row.played) > 0);
 }

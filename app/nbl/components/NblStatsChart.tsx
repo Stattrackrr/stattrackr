@@ -91,11 +91,13 @@ const STAT_PRIORITY = [
   'twoPct',
   'plusMinus',
   'efficiency',
+  'tsPct',
+  'pace',
 ];
 const META_SKIP = new Set(['season', 'game_number', 'matchId', 'date', 'game_date', 'opponent', 'opponentCode', 'isHome', 'team', 'teamCode', 'result', 'venue', 'round', '__nblGameIndex']);
 /** All numeric game-log stats are shown on the main chart pills. */
-const STATS_HIDDEN = new Set<string>([]);
-const PCT_STATS = new Set(['fgPct', 'twoPct', 'threePct', 'ftPct']);
+const STATS_HIDDEN = new Set<string>(['usgPct', 'trebPct', 'orebPct', 'drebPct']);
+const PCT_STATS = new Set(['fgPct', 'twoPct', 'threePct', 'ftPct', 'usgPct', 'tsPct', 'trebPct', 'orebPct', 'drebPct']);
 const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024', 'season2023'] as const;
 
 interface NblChartTooltipProps {
@@ -480,6 +482,12 @@ function formatStatLabel(key: string): string {
     twoPct: '2P%',
     plusMinus: '+/-',
     efficiency: 'EFF',
+    usgPct: 'USG%',
+    tsPct: 'TS%',
+    trebPct: 'TREB%',
+    orebPct: 'OREB%',
+    drebPct: 'DREB%',
+    pace: 'PACE',
   };
   if (map[key]) return map[key];
   return key
@@ -867,6 +875,7 @@ export function NblStatsChart({
 
   const [internalSelectedStat, setInternalSelectedStat] = useState<string>('');
   const [lineValue, setLineValue] = useState(0);
+  const [lineSyncedStat, setLineSyncedStat] = useState(selectedStatProp || 'points');
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const [showSplitsFilters, setShowSplitsFilters] = useState(false);
   const [splitResultFilter, setSplitResultFilter] = useState<NblSplitResultFilter>('all');
@@ -1294,8 +1303,10 @@ export function NblStatsChart({
       };
     }
 
+    const incomingLine =
+      externalLineValue != null && Number.isFinite(externalLineValue) ? externalLineValue : null;
     const maxValue = Math.max(...values);
-    const lineHigh = Number.isFinite(lineValue) ? lineValue : 0;
+    const lineHigh = incomingLine != null ? incomingLine : 0;
     const peak = Math.max(maxValue, lineHigh, 0);
     const pctCap = PCT_STATS.has(selectedStat) ? Math.max(Math.ceil(peak / 10) * 10, 10) : null;
     const max = pctCap != null
@@ -1314,9 +1325,22 @@ export function NblStatsChart({
       domain: [0, max] as [number, number],
       ticks,
     };
-  }, [chartData, selectedStat, lineValue]);
+  }, [chartData, selectedStat, externalLineValue]);
 
   const selectedStatLabel = useMemo(() => formatStatLabel(selectedStat || 'stat'), [selectedStat]);
+
+  if (lineSyncedStat !== selectedStat) {
+    setLineSyncedStat(selectedStat);
+    if (externalLineValue != null && Number.isFinite(externalLineValue)) {
+      const [min, max] = yAxisConfig.domain;
+      const clamped = Math.max(min, Math.min(max, externalLineValue));
+      setLineValue(hasDecimalValues ? Math.round(clamped * 10) / 10 : Math.round(clamped * 2) / 2);
+    } else if (Number.isFinite(statAverage)) {
+      setLineValue(
+        hasDecimalValues ? Math.round(statAverage * 10) / 10 : Math.round(statAverage * 2) / 2
+      );
+    }
+  }
 
   const emitTransientLine = useCallback((value: number) => {
     if (!Number.isFinite(value)) return;
