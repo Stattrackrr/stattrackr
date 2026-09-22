@@ -6,6 +6,7 @@ export const runtime = 'nodejs';
 
 /**
  * GET /api/nbl/player-props?player=...&stat=points&team=...&opponent=...
+ * Reads the PulseScore board / line snapshots. Live pull is cron-only.
  */
 export async function GET(request: NextRequest) {
   try {

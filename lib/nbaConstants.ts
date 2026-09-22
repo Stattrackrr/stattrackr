@@ -103,8 +103,16 @@ export function tennisLogoForTour(tour?: string | null): string {
 }
 
 export type TennisPropsSport = 'atp' | 'wta';
-export type PropsSportMode = 'nba' | 'afl' | 'atp' | 'wta' | 'combined';
-export type SecondaryPropsSport = 'afl' | 'atp' | 'wta';
+export type PropsSportMode = 'nba' | 'afl' | 'nbl' | 'atp' | 'wta' | 'combined';
+export type SecondaryPropsSport = 'afl' | 'nbl' | 'atp' | 'wta';
+export type PropsRowSport = 'nba' | 'afl' | 'nbl' | 'atp' | 'wta';
+
+export const NBL_PUBLIC_ENABLED = true;
+export const NBL_LOGO_PATH = '/images/nbl-logo.png';
+
+export function isNblPropsSport(mode: string | null | undefined): mode is 'nbl' {
+  return mode === 'nbl';
+}
 
 export function isTennisPropsSport(mode: string | null | undefined): mode is TennisPropsSport {
   return mode === 'atp' || mode === 'wta';
@@ -128,12 +136,12 @@ export function propsSportFromTennisTour(tour?: string | null): TennisPropsSport
 }
 
 export function secondaryListSportForMode(mode: PropsSportMode): SecondaryPropsSport {
-  if (mode === 'atp' || mode === 'wta') return mode;
+  if (mode === 'atp' || mode === 'wta' || mode === 'nbl') return mode;
   return 'afl';
 }
 
 export function isSecondaryPropsSport(mode: PropsSportMode): mode is SecondaryPropsSport {
-  return mode === 'afl' || isTennisPropsSport(mode);
+  return mode === 'afl' || mode === 'nbl' || isTennisPropsSport(mode);
 }
 
 export function defaultPropsSport(): PropsSportMode {
@@ -144,6 +152,7 @@ export function resolvePropsSportParam(sportParam: string | null): PropsSportMod
   if (sportParam === 'world-cup' || sportParam === 'worldcup') return 'combined';
   if (sportParam === 'combined' || sportParam === 'all' || sportParam == null) return 'combined';
   if (sportParam === 'afl') return 'afl';
+  if (sportParam === 'nbl') return 'nbl';
   if (sportParam === 'wta') return TENNIS_PUBLIC_ENABLED ? 'wta' : 'combined';
   if (sportParam === 'atp' || sportParam === 'tennis') return TENNIS_PUBLIC_ENABLED ? 'atp' : 'combined';
   if (sportParam === 'nba') return NBA_PUBLIC_ENABLED ? 'nba' : 'combined';
@@ -154,6 +163,8 @@ export function propsPathForSport(mode: PropsSportMode, testEventCode?: string |
   const basePath =
     mode === 'afl'
       ? '/props?sport=afl'
+      : mode === 'nbl'
+        ? '/props?sport=nbl'
       : mode === 'wta'
         ? '/props?sport=wta'
       : mode === 'atp'

@@ -1,10 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import {
-  fetchNblInjuriesFromBasketballComAu,
-  type NblInjuryRow,
-} from '@/lib/nbl/basketballComAuInjuries';
+import type { NblInjuryRow } from '@/lib/nbl/basketballComAuInjuries';
+import { omitPlayersWhoPlayedLatestGame } from '@/lib/nbl/nblInjuryActiveFilter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,8 +14,10 @@ type InjuriesPayload = {
   injuries: NblInjuryRow[];
 };
 
-const TTL_MS = 1000 * 60 * 30;
-let cached: { expiresAt: number; data: InjuriesPayload } | null = null;
+/**
+ * GET /api/nbl/injuries — snapshot only (`data/nbl-injuries.json`).
+ * Live scrape happens in `scripts/fetch-nbl-injuries.ts`, not per request.
+ */
 
 function readSnapshot(): InjuriesPayload | null {
   const file = path.join(process.cwd(), 'data', 'nbl-injuries.json');
@@ -29,48 +29,17 @@ function readSnapshot(): InjuriesPayload | null {
   }
 }
 
-export async function GET(request: NextRequest) {
-  const refresh = request.nextUrl.searchParams.get('refresh') === '1';
-  const now = Date.now();
-
-  if (!refresh && cached && cached.expiresAt > now) {
-    return NextResponse.json(cached.data);
-  }
-
-  try {
-    const { injuries, sourceUrl } = await fetchNblInjuriesFromBasketballComAu();
-    if (!injuries.length) {
-      const snapshot = readSnapshot();
-      if (snapshot?.injuries?.length) {
-        cached = { expiresAt: now + TTL_MS, data: snapshot };
-        return NextResponse.json(snapshot);
-      }
-      return NextResponse.json(
-        { error: 'NBL injury list unavailable', injuries: [] },
-        { status: 502 }
-      );
-    }
-
-    const data: InjuriesPayload = {
-      generatedAt: new Date().toISOString(),
-      source: 'basketball.com.au',
-      sourceUrl,
-      injuries,
-    };
-    cached = { expiresAt: now + TTL_MS, data };
-    return NextResponse.json(data);
-  } catch (e) {
-    const snapshot = readSnapshot();
-    if (snapshot?.injuries?.length) {
-      cached = { expiresAt: now + TTL_MS, data: snapshot };
-      return NextResponse.json(snapshot);
-    }
+export async function GET() {
+  const snapshot = readSnapshot();
+  if (!snapshot) {
     return NextResponse.json(
-      {
-        error: e instanceof Error ? e.message : 'Failed to load NBL injuries',
-        injuries: [],
-      },
+      { error: 'NBL injury list unavailable', injuries: [] },
       { status: 502 }
     );
   }
+
+  return NextResponse.json({
+    ...snapshot,
+    injuries: omitPlayersWhoPlayedLatestGame(snapshot.injuries || []),
+  });
 }

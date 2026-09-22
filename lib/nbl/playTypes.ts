@@ -1,6 +1,7 @@
 /**
- * Tag NBL players into attacking play types from season logs + shot zones,
+ * Tag NBL players into attacking play types from on-court usage + shot zones,
  * then build type × opponent boost cells (vs each player's own average).
+ * Per team, the highest-usage creator is Primary BH and the next is Second BH.
  */
 
 import fs from 'fs';
@@ -51,15 +52,18 @@ export {
   parseNblPlayTypeStat,
 } from '@/lib/nbl/playTypesShared';
 
-const TAG_SCHEMA = 'v5';
+const TAG_SCHEMA = 'v7';
 const MIN_GAMES_FOR_TAG = 8;
 const MIN_AVG_MINUTES_FOR_TAG = 15;
 const MIN_GAME_MINUTES = 10;
 const MIN_SHOTS_FOR_ZONES = 20;
+/** Backup creators below this on-court usage are slashers, not Second BH. */
+const MIN_SECOND_BH_USG = 13;
 const SIGNIFICANT_GAMES = 10;
 const SIGNIFICANT_PLAYERS = 4;
 const SIGNIFICANT_MINUTES = 140;
-const MIN_BASELINE_GAMES = 3;
+/** Shrink 1-game matchups toward the type average so a 30-point night is not +21. */
+const MATCHUP_SHRINK_K = 3;
 
 type PosFamily = 'G' | 'F' | 'C';
 
@@ -85,6 +89,8 @@ type PlayerFeatures = {
   hasZones: boolean;
 };
 
+type TaggedPlayer = PlayerFeatures & { type: NblPlayTypeId };
+
 function num(v: unknown): number | null {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
@@ -92,15 +98,6 @@ function num(v: unknown): number | null {
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
-}
-
-function percentile(sortedAsc: number[], p: number): number {
-  if (!sortedAsc.length) return 0;
-  const idx = Math.max(0, Math.min(sortedAsc.length - 1, (sortedAsc.length - 1) * p));
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi) return sortedAsc[lo];
-  return sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (idx - lo);
 }
 
 function positionFamily(pos: string | null | undefined): PosFamily {
@@ -279,36 +276,48 @@ function buildFeatures(
   };
 }
 
-function classifyPlayer(
-  p: PlayerFeatures,
-  cuts: { astP80: number; astP65: number; usgP45: number }
-): NblPlayTypeId {
-  const threeRate = p.threeShare != null ? Math.max(p.threeRate, p.threeShare) : p.threeRate;
+function threeRateOf(p: PlayerFeatures): number {
+  return p.threeShare != null ? Math.max(p.threeRate, p.threeShare) : p.threeRate;
+}
+
+function isInteriorOnly(p: PlayerFeatures): boolean {
+  if (p.pos === 'G') return false;
+  if (p.astPerGame >= 3) return false;
+  if (threeRateOf(p) >= 0.33) return false;
+  const restricted = p.restrictedShare;
+  const paint = p.paintShare;
+  if (restricted != null) {
+    return restricted >= 0.42 || (paint != null && paint + restricted >= 0.48);
+  }
+  return p.twoRate >= 0.58;
+}
+
+/** Spot-up 3 specialists — they do not run the offense. */
+function isPureThreeSpacer(p: PlayerFeatures): boolean {
+  return threeRateOf(p) >= 0.55 && p.astPerGame < 4;
+}
+
+function isBallHandlerCandidate(p: PlayerFeatures): boolean {
+  if (p.usgPct == null || !Number.isFinite(p.usgPct)) return false;
+  if (isInteriorOnly(p)) return false;
+  if (isPureThreeSpacer(p)) return false;
+  if (p.pos === 'G') return true;
+  return p.astPerGame >= 2.5;
+}
+
+function classifyScoringRole(p: PlayerFeatures): NblPlayTypeId {
+  const threeRate = threeRateOf(p);
   const restricted = p.restrictedShare;
   const paint = p.paintShare;
   const isGuard = p.pos === 'G';
   const isCenter = p.pos === 'C';
   const isBig = p.pos === 'C' || p.pos === 'F';
   const stretchCut = isCenter ? 0.34 : 0.4;
-  const usageOk = p.usgPct != null && p.usgPct >= cuts.usgP45;
 
-  // Ball-handlers are guards. Forwards with assists are stretch/slash/interior, not BH.
   if (
     isGuard &&
-    p.astPerGame >= 3.6 &&
-    p.ast36 >= cuts.astP80 &&
-    (usageOk || p.ast36 >= cuts.astP80 + 0.8)
-  ) {
-    return 'primary_bh';
-  }
-  if (isGuard && p.astPerGame >= 2.5 && p.ast36 >= cuts.astP65 && threeRate < 0.62) {
-    return 'secondary_bh';
-  }
-  if (
-    isGuard &&
-    p.threeMade >= 1.15 &&
-    (p.threeRate >= 0.47 || (p.threeShare ?? 0) >= 0.48) &&
-    p.astPerGame < 4
+    p.threeMade >= 0.9 &&
+    (threeRate >= 0.47 || p.threeRate >= 0.5)
   ) {
     return 'three_shooter';
   }
@@ -333,10 +342,51 @@ function classifyPlayer(
   ) {
     return 'slasher';
   }
-  if (isGuard && p.threeMade >= 0.9 && (p.threeRate >= 0.44 || (p.threeShare ?? 0) >= 0.46)) {
+  if (isGuard && p.threeMade >= 0.8 && threeRate >= 0.44) {
     return 'three_shooter';
   }
   return isCenter ? 'post_up' : 'slasher';
+}
+
+function teamCodeForPlayer(p: PlayerFeatures): string {
+  return resolveNblSteTeamCode(p.row.teamCode || p.row.team) || '_';
+}
+
+/**
+ * Per team: highest on-court USG among handlers is Primary BH, 2nd is Second BH.
+ * Everyone else is tagged from shot profile (3PT / interior / stretch / slasher).
+ */
+function assignPlayTypes(features: PlayerFeatures[], minGames: number): TaggedPlayer[] {
+  const typeById = new Map<string, NblPlayTypeId>();
+  const byTeam = new Map<string, PlayerFeatures[]>();
+  for (const p of features) {
+    if (!isQualifiedForMatrix(p, minGames)) continue;
+    const code = teamCodeForPlayer(p);
+    const list = byTeam.get(code) || [];
+    list.push(p);
+    byTeam.set(code, list);
+  }
+  for (const group of byTeam.values()) {
+    const handlers = group
+      .filter(isBallHandlerCandidate)
+      .sort((a, b) => {
+        const usgA = a.usgPct ?? 0;
+        const usgB = b.usgPct ?? 0;
+        if (Math.abs(usgB - usgA) >= 1.5) return usgB - usgA;
+        if (b.astPerGame !== a.astPerGame) return b.astPerGame - a.astPerGame;
+        return usgB - usgA;
+      });
+    const primary = handlers[0];
+    if (primary) typeById.set(primary.row.playerId, 'primary_bh');
+    const secondary = handlers[1];
+    if (secondary && (secondary.usgPct ?? 0) >= MIN_SECOND_BH_USG) {
+      typeById.set(secondary.row.playerId, 'secondary_bh');
+    }
+  }
+  return features.map((p) => ({
+    ...p,
+    type: typeById.get(p.row.playerId) ?? classifyScoringRole(p),
+  }));
 }
 
 function gameStatValue(game: NblGameLogRow, stat: NblPlayTypeStatKey): number | null {
@@ -356,8 +406,6 @@ function weightedMean(rows: Array<{ value: number; minutes: number }>): number |
   if (weight <= 0) return null;
   return rows.reduce((sum, row) => sum + row.value * row.minutes, 0) / weight;
 }
-
-type TaggedPlayer = PlayerFeatures & { type: NblPlayTypeId };
 
 const taggedByYear = new Map<string, TaggedPlayer[]>();
 
@@ -403,27 +451,24 @@ function tagSeason(year: number): TaggedPlayer[] {
   }
   if (!features.length) return [];
 
-  const minGames = matrixMinGames(features);
-  const cutPool = features.filter((p) => isQualifiedForMatrix(p, minGames));
-  const pool = cutPool.length ? cutPool : features;
-  const asts = pool.map((p) => p.ast36).sort((a, b) => a - b);
-  const usgs = pool
-    .map((p) => p.usgPct)
-    .filter((n): n is number => n != null && Number.isFinite(n))
-    .sort((a, b) => a - b);
-  const cuts = {
-    astP80: percentile(asts, 0.8),
-    astP65: percentile(asts, 0.65),
-    usgP45: percentile(usgs, 0.45),
-  };
-
-  const tagged = features.map((p) => ({ ...p, type: classifyPlayer(p, cuts) }));
+  const tagged = assignPlayTypes(features, matrixMinGames(features));
   taggedByYear.set(cacheKey, tagged);
   return tagged;
 }
 
 function emptyCell(): NblPlayTypeCell {
-  return { boost: null, games: 0, players: 0, minutes: 0, significant: false, names: [] };
+  return {
+    boost: null,
+    allowed: null,
+    league: null,
+    rank: null,
+    fieldSize: NBL_CLUBS.length,
+    games: 0,
+    players: 0,
+    minutes: 0,
+    significant: false,
+    names: [],
+  };
 }
 
 function seasonStatValue(row: NblLeaguePlayerStatRow, stat: NblPlayTypeStatKey): number | null {
@@ -525,82 +570,112 @@ function opponentCodeForGame(game: NblGameLogRow): string | null {
   return resolveNblSteTeamCode(game.opponentCode || game.opponent);
 }
 
-function buildCellForOpponent(
-  group: TaggedPlayer[],
-  clubCode: string,
-  stat: NblPlayTypeStatKey
-): NblPlayTypeCell {
-  type UsableRow = { value: number; minutes: number; opp: string; playerId: string; name: string };
+type UsableRow = { value: number; minutes: number; opp: string; playerId: string; name: string };
+
+function collectTypeGames(group: TaggedPlayer[], stat: NblPlayTypeStatKey): UsableRow[] {
   const rows: UsableRow[] = [];
   for (const p of group) {
     const ownCode = resolveNblSteTeamCode(p.row.teamCode || p.row.team);
-    if (ownCode === clubCode) continue;
     for (const g of p.games) {
       const value = gameStatValue(g, stat);
       const minutes = num(g.minutes) ?? 0;
       const opp = opponentCodeForGame(g);
       if (value == null || minutes < MIN_GAME_MINUTES || !opp) continue;
+      if (ownCode && opp === ownCode) continue;
       rows.push({ value, minutes, opp, playerId: p.row.playerId, name: p.row.name });
     }
   }
+  return rows;
+}
 
-  const vs = rows.filter((row) => row.opp === clubCode);
-  if (!vs.length) return emptyCell();
-
-  const typeBaselineRows = rows.filter((row) => row.opp !== clubCode);
-  const typeBaseline = typeBaselineRows.length ? weightedMean(typeBaselineRows) : null;
-
-  const weighted: Array<{ value: number; minutes: number; playerId: string; name: string }> = [];
-  const vsByPlayer = new Map<string, UsableRow[]>();
-  for (const row of vs) {
-    const list = vsByPlayer.get(row.playerId) || [];
-    list.push(row);
-    vsByPlayer.set(row.playerId, list);
-  }
-
-  for (const [playerId, playerVs] of vsByPlayer) {
-    const personalRows = rows.filter((row) => row.playerId === playerId && row.opp !== clubCode);
-    const baseline =
-      personalRows.length >= MIN_BASELINE_GAMES ? weightedMean(personalRows) : typeBaseline;
-    if (baseline == null) continue;
-    for (const row of playerVs) {
-      weighted.push({
-        value: row.value - baseline,
-        minutes: row.minutes,
-        playerId,
-        name: row.name,
-      });
-    }
-  }
-
-  if (!weighted.length) return emptyCell();
-
+function namesFromRows(rows: UsableRow[]): string[] {
   const byPlayerMinutes = new Map<string, { name: string; minutes: number }>();
-  for (const row of weighted) {
+  for (const row of rows) {
     const prev = byPlayerMinutes.get(row.playerId);
     byPlayerMinutes.set(row.playerId, {
       name: row.name,
       minutes: (prev?.minutes ?? 0) + row.minutes,
     });
   }
-  const names = [...byPlayerMinutes.values()]
+  return [...byPlayerMinutes.values()]
     .sort((a, b) => b.minutes - a.minutes)
     .slice(0, 3)
     .map((row) => row.name);
+}
 
-  const games = weighted.length;
-  const players = byPlayerMinutes.size;
-  const minutes = round1(weighted.reduce((sum, row) => sum + row.minutes, 0));
-  const boost = weightedMean(weighted);
+/** Position DVP: what this team allows to the type vs the type's league average. */
+function buildTypeMatchupCells(
+  group: TaggedPlayer[],
+  stat: NblPlayTypeStatKey
+): Record<string, NblPlayTypeCell> {
+  const cells: Record<string, NblPlayTypeCell> = {};
+  for (const club of NBL_CLUBS) cells[club.code] = emptyCell();
+  if (!group.length) return cells;
 
-  return {
-    boost: boost != null ? round1(boost) : null,
-    games,
-    players,
-    minutes,
-    significant: games >= SIGNIFICANT_GAMES && players >= SIGNIFICANT_PLAYERS && minutes >= SIGNIFICANT_MINUTES,
-    names,
-  };
+  const rows = collectTypeGames(group, stat);
+  const league = weightedMean(rows);
+  if (league == null) return cells;
+
+  const allowedByCode = new Map<string, number>();
+  for (const club of NBL_CLUBS) {
+    const vs = rows.filter((row) => row.opp === club.code);
+    const allowed = vs.length ? weightedMean(vs) : null;
+    if (allowed != null) allowedByCode.set(club.code, allowed);
+  }
+
+  const ranked = [...allowedByCode.entries()].sort(
+    (a, b) => a[1] - b[1] || a[0].localeCompare(b[0])
+  );
+  const rankByCode = new Map<string, number>();
+  ranked.forEach(([code], idx) => rankByCode.set(code, idx + 1));
+  const fieldSize = ranked.length;
+
+  for (const club of NBL_CLUBS) {
+    const vs = rows.filter((row) => row.opp === club.code);
+    if (!vs.length) continue;
+    const allowed = allowedByCode.get(club.code);
+    if (allowed == null) continue;
+    const games = vs.length;
+    const players = new Set(vs.map((row) => row.playerId)).size;
+    const minutes = round1(vs.reduce((sum, row) => sum + row.minutes, 0));
+    const shrink = games / (games + MATCHUP_SHRINK_K);
+    const boost = (allowed - league) * shrink;
+    cells[club.code] = {
+      boost: round1(boost),
+      allowed: round1(allowed),
+      league: round1(league),
+      rank: rankByCode.get(club.code) ?? null,
+      fieldSize,
+      games,
+      players,
+      minutes,
+      significant:
+        games >= SIGNIFICANT_GAMES && players >= SIGNIFICANT_PLAYERS && minutes >= SIGNIFICANT_MINUTES,
+      names: namesFromRows(vs),
+    };
+  }
+  return cells;
+}
+
+export function lookupNblPlayerPlayType(opts: {
+  playerId?: string | null;
+  playerName?: string | null;
+}): NblPlayTypeId | null {
+  const tagged = tagSeason(NBL_PLAY_TYPE_YEAR);
+  const id = String(opts.playerId || '').trim();
+  if (id) {
+    const hit = tagged.find((p) => p.row.playerId === id);
+    if (hit) return hit.type;
+  }
+  const name = String(opts.playerName || '').trim().toLowerCase();
+  if (!name) return null;
+  const exact = tagged.find((p) => p.row.name.toLowerCase() === name);
+  if (exact) return exact.type;
+  const loose = tagged.find((p) => {
+    const taggedName = p.row.name.toLowerCase();
+    return taggedName.includes(name) || name.includes(taggedName);
+  });
+  return loose?.type ?? null;
 }
 
 export function buildNblPlayTypesPayload(options: {
@@ -625,10 +700,9 @@ export function buildNblPlayTypesPayload(options: {
 
   const rows: NblPlayTypeMatrixRow[] = NBL_PLAY_TYPE_IDS.map((type) => {
     const group = byType.get(type) || [];
-    const cells: Record<string, NblPlayTypeCell> = {};
-    for (const club of NBL_CLUBS) {
-      cells[club.code] = stat ? buildCellForOpponent(group, club.code, stat) : emptyCell();
-    }
+    const cells = stat ? buildTypeMatchupCells(group, stat) : Object.fromEntries(
+      NBL_CLUBS.map((club) => [club.code, emptyCell()])
+    );
     return {
       type,
       label: NBL_PLAY_TYPE_LABELS[type],

@@ -2,9 +2,13 @@ import sharedCache from '@/lib/sharedCache';
 import { TENNIS_CURRENT_YEAR, tennisDvpProfile, type TennisDvpMetricRow, type TennisTour } from '@/lib/tennis/data';
 import { tennisEventPlaceCore } from '@/lib/tennis/chartStats';
 import {
+  TENNIS_DVP_METRICS,
   TENNIS_DVP_WINDOWS,
   isTennisQualifyingLabel,
   tennisDvpTournamentBestOf,
+  tennisFillMetricRank,
+  tennisLiveFieldRank,
+  tennisPositiveRank,
   type TennisDvpBestOf,
   type TennisDvpStage,
   type TennisDvpWindow,
@@ -15,6 +19,7 @@ import {
   type TennisLiveEvent,
   type TennisLiveEventIndex,
 } from '@/lib/tennis/nextGame';
+import { tennisAssignDrawRanks } from '@/lib/tennis/seeds';
 import { readTennisPlayerPropsListCache } from '@/lib/tennis/playerPropsListCache';
 import type { TennisMatchRow } from '@/lib/tennis/types';
 
@@ -152,8 +157,9 @@ export async function readTennisDvpLiveEvent(opts: {
   if (eventKey) {
     const stored = await sharedCache.getJSON<TennisCachedDvpEvent>(eventKey);
     if (isPlausibleTennisDvpField(stored)) {
-      rememberTennisDvpLiveEvent(stored);
-      return stored;
+      const ready = ensureTennisDvpBoardRanks(stored);
+      if (ready) rememberTennisDvpLiveEvent(ready);
+      return ready;
     }
     return fromMem;
   }
@@ -183,7 +189,7 @@ export function findCachedTennisDvpEvent(
     (event) => event.tour === opts.tour && (event.stage || 'main') === stage
   );
   const accept = (event: TennisCachedDvpEvent | undefined) =>
-    isPlausibleTennisDvpField(event) ? event : null;
+    isPlausibleTennisDvpField(event) ? ensureTennisDvpBoardRanks(event) : null;
   if (key) {
     return accept(sameTour.find((event) => event.tournamentKey === key));
   }
@@ -206,6 +212,49 @@ export function tennisCachedDvpPlayerHasSample(
   player: TennisCachedDvpPlayer | null | undefined
 ): boolean {
   return Boolean(player?.metrics?.some((row) => typeof row.value === 'number' && Number.isFinite(row.value)));
+}
+
+function emptyDvpMetrics(fieldSize: number, rank: number | null): TennisDvpMetricRow[] {
+  return TENNIS_DVP_METRICS.map((metric) => ({
+    key: metric.key,
+    label: metric.label,
+    pct: metric.pct,
+    value: null,
+    rank,
+    matches: 0,
+    fieldSize,
+  }));
+}
+
+export function ensureTennisDvpBoardRanks(
+  board: TennisCachedDvpEvent | null | undefined
+): TennisCachedDvpEvent | null {
+  if (!board) return null;
+  for (const window of TENNIS_DVP_WINDOWS) {
+    const rows = board.windows?.[window];
+    if (!rows?.length) continue;
+    if (!rows.every((row) => tennisPositiveRank(row.drawRank) != null)) {
+      const assigned = tennisAssignDrawRanks(rows);
+      for (const row of rows) {
+        if (tennisPositiveRank(row.drawRank) == null) {
+          row.drawRank = assigned.get(row.id) ?? null;
+        }
+      }
+    }
+    const fieldSize = board.fieldSize || rows.length;
+    for (const row of rows) {
+      const fallback = tennisLiveFieldRank(row);
+      if (!row.metrics?.length) {
+        row.metrics = emptyDvpMetrics(fieldSize, fallback);
+        continue;
+      }
+      for (const metric of row.metrics) {
+        metric.rank = tennisFillMetricRank(metric.rank, row);
+        if (!metric.fieldSize) metric.fieldSize = fieldSize;
+      }
+    }
+  }
+  return board;
 }
 
 function emptyLiveIndex(): TennisLiveEventIndex {

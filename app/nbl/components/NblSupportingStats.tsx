@@ -346,6 +346,10 @@ export function supportingOptionsForMain(
   let options: { value: SupportingStatKind; label: string }[];
   switch (main) {
     case 'points':
+    case 'q1_pts':
+    case 'q2_pts':
+    case 'q3_pts':
+    case 'q4_pts':
       options = POINTS_TOGGLE_OPTIONS;
       break;
     case 'fgMade':
@@ -369,11 +373,19 @@ export function supportingOptionsForMain(
       options = FT_TOGGLE_OPTIONS;
       break;
     case 'rebounds':
+    case 'q1_reb':
+    case 'q2_reb':
+    case 'q3_reb':
+    case 'q4_reb':
     case 'offensiveRebounds':
     case 'defensiveRebounds':
       options = REBOUNDS_TOGGLE_OPTIONS;
       break;
     case 'assists':
+    case 'q1_ast':
+    case 'q2_ast':
+    case 'q3_ast':
+    case 'q4_ast':
       options = ASSISTS_TOGGLE_OPTIONS;
       break;
     case 'pra':

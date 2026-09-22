@@ -16,6 +16,7 @@ import {
   TENNIS_DVP_WINDOWS,
   isTennisQualifyingLabel,
   tennisDvpTournamentBestOf,
+  tennisFillMetricRank,
   tennisQualifyingEventLabel,
   type TennisDvpBestOf,
   type TennisDvpMetricKey,
@@ -1125,12 +1126,13 @@ export function tennisDvpProfile(opts: {
   const rowFor = (id: string | null): TennisDvpMetricRow[] =>
     metricBoards.map(({ metric, source, ranks }) => {
       const selected = id ? source.get(id) : undefined;
+      const opp = id ? opponents.find((row) => row.id === id) || null : null;
       return {
         key: metric.key,
         label: metric.label,
         pct: metric.pct,
         value: id ? dvpMean(selected, metric.key) : null,
-        rank: id ? ranks.get(id) ?? null : null,
+        rank: id ? tennisFillMetricRank(ranks.get(id), opp) : null,
         matches: selected?.sums[metric.key]?.n || 0,
         fieldSize,
       };
@@ -1184,7 +1186,7 @@ export function tennisDvpProfile(opts: {
                     label: metric.label,
                     pct: metric.pct,
                     value: dvpMean(selected, metric.key),
-                    rank: ranks.get(row.id) ?? null,
+                    rank: tennisFillMetricRank(ranks.get(row.id), row),
                     matches: selected?.sums[metric.key]?.n || 0,
                     fieldSize,
                   };

@@ -1,6 +1,6 @@
 import type { MouseEvent as ReactMouseEvent } from 'react';
 
-export type PropsDashboardSport = 'nba' | 'afl' | 'atp' | 'wta';
+export type PropsDashboardSport = 'nba' | 'afl' | 'nbl' | 'atp' | 'wta';
 
 function normalizeTennisStat(stat: string): string {
   const value = String(stat || '').trim();
@@ -116,6 +116,27 @@ export function nbaDashboardHref(opts: {
   return `/nba/research/dashboard?${q.toString()}`;
 }
 
+export function nblDashboardHref(opts: {
+  playerName: string;
+  team?: string | null;
+  opponent?: string | null;
+  statType?: string | null;
+  line?: number | null;
+  bookmaker?: string | null;
+}): string {
+  const q = new URLSearchParams();
+  q.set('mode', 'player');
+  q.set('name', opts.playerName);
+  if (opts.team) q.set('team', opts.team);
+  if (opts.opponent) q.set('opponent', opts.opponent);
+  const stat = String(opts.statType || 'points').trim() || 'points';
+  q.set('stat', stat);
+  if (opts.line != null && Number.isFinite(opts.line)) q.set('line', String(opts.line));
+  const book = String(opts.bookmaker || '').trim();
+  if (book) q.set('bookmaker', book);
+  return `/nbl?${q.toString()}`;
+}
+
 export function propsDashboardHref(opts: {
   sport: PropsDashboardSport;
   playerName: string;
@@ -130,6 +151,7 @@ export function propsDashboardHref(opts: {
 }): string {
   if (opts.sport === 'atp' || opts.sport === 'wta') return tennisDashboardHref(opts);
   if (opts.sport === 'afl') return aflDashboardHref(opts);
+  if (opts.sport === 'nbl') return nblDashboardHref(opts);
   return nbaDashboardHref(opts);
 }
 

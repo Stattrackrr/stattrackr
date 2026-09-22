@@ -204,6 +204,19 @@ export type NblGameLogRow = {
   pa: number | null;
   /** Rebounds + Assists. */
   ra: number | null;
+  /** PBP-derived points / rebounds / assists by quarter (null when the fixture has no PBP cache). */
+  q1_pts?: number | null;
+  q2_pts?: number | null;
+  q3_pts?: number | null;
+  q4_pts?: number | null;
+  q1_reb?: number | null;
+  q2_reb?: number | null;
+  q3_reb?: number | null;
+  q4_reb?: number | null;
+  q1_ast?: number | null;
+  q2_ast?: number | null;
+  q3_ast?: number | null;
+  q4_ast?: number | null;
   /** SpatialJam box-score rates (0–100 except pace). */
   usgPct?: number | null;
   tsPct?: number | null;

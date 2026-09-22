@@ -8,6 +8,7 @@ import {
   TENNIS_DVP_METRICS,
   tennisDvpBestOfLabel,
   tennisDvpTournamentBestOf,
+  tennisFillMetricRank,
   type TennisDvpBestOf,
   type TennisDvpStage,
   type TennisDvpWindow,
@@ -27,6 +28,7 @@ type DvpOpponent = {
   ioc: string | null;
   rankPos: number | null;
   seed?: number | null;
+  drawRank?: number | null;
 };
 
 type DvpMetricRow = {
@@ -72,7 +74,7 @@ function displayDvpName(...candidates: Array<string | null | undefined>): string
 }
 
 function fmt(value: number | null | undefined, pct: boolean): string {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
   return pct ? `${value.toFixed(1)}%` : value.toFixed(1);
 }
 
@@ -298,7 +300,13 @@ export default function TennisDvpCard({
     matches: 0,
     fieldSize: payload?.fieldSize || 0,
   }));
-  const metrics: DvpMetricRow[] = selected?.metrics?.length ? selected.metrics : emptyMetrics;
+  const metrics: DvpMetricRow[] = (selected?.metrics?.length ? selected.metrics : emptyMetrics).map(
+    (metric) => ({
+      ...metric,
+      rank: tennisFillMetricRank(metric.rank, selected),
+      fieldSize: metric.fieldSize || payload?.fieldSize || 0,
+    })
+  );
   const selectedLabel = displayDvpName(selected?.name, oppSel, opponentName) || 'Opponent';
   const flagUrl = tennisFlagUrl(selected?.ioc);
   const fieldSize = payload?.fieldSize || 0;
@@ -313,7 +321,6 @@ export default function TennisDvpCard({
         tournamentName: payload?.tournamentName || tournamentName,
       })
   );
-  const hasData = metrics.some((m) => m.value != null);
   const dark = mounted && isDark;
 
   const oppOptions = useMemo(() => {
@@ -329,6 +336,7 @@ export default function TennisDvpCard({
         ioc: selected?.ioc ?? null,
         rankPos: selected?.rankPos ?? null,
         seed: selected?.seed ?? null,
+        drawRank: selected?.drawRank ?? null,
         metrics: selected?.metrics || [],
       },
       ...cleaned,
@@ -340,11 +348,12 @@ export default function TennisDvpCard({
     return [...fieldPlayers]
       .map((player) => {
         const metric = player.metrics.find((row) => row.key === viewMetricDef.key) || null;
-        return { player, metric };
+        const rank = tennisFillMetricRank(metric?.rank, player);
+        return { player, metric, rank };
       })
       .sort((a, b) => {
-        const ar = a.metric?.rank && a.metric.rank > 0 ? a.metric.rank : 9999;
-        const br = b.metric?.rank && b.metric.rank > 0 ? b.metric.rank : 9999;
+        const ar = a.rank ?? 9999;
+        const br = b.rank ?? 9999;
         return ar - br || displayDvpName(a.player.name).localeCompare(displayDvpName(b.player.name));
       });
   }, [fieldPlayers, viewMetricDef.key]);
@@ -540,12 +549,6 @@ export default function TennisDvpCard({
           <div className={`px-3 py-3 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
             DvP is only available for live or upcoming tournaments.
           </div>
-        ) : !hasData ? (
-          <div className={`px-3 py-3 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
-            No DvP sample yet for {tennisLastName(selectedLabel)}
-            {eventLabel ? ` at ${eventLabel}` : ''}
-            {selectedWindow === 'last5' ? ' (L5)' : selectedWindow === 'season' ? ' (season)' : ' (L10)'}.
-          </div>
         ) : (
           <>
             <div
@@ -709,8 +712,8 @@ export default function TennisDvpCard({
                   onWheel={(e) => e.stopPropagation()}
                 >
                   {viewAllRows.length ? (
-                    viewAllRows.map(({ player, metric }) => {
-                      const styles = rankStyles(metric?.rank, metric?.fieldSize || fieldSize, dark);
+                    viewAllRows.map(({ player, metric, rank }) => {
+                      const styles = rankStyles(rank, metric?.fieldSize || fieldSize, dark);
                       const isSelected = Boolean(
                         (oppSelId && player.id === oppSelId) ||
                           displayDvpName(player.name).toLowerCase() === displayDvpName(selectedLabel).toLowerCase()
@@ -753,8 +756,8 @@ export default function TennisDvpCard({
                             <span
                               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold ${styles.badgeColor}`}
                             >
-                              {typeof metric?.rank === 'number' && metric.rank > 0
-                                ? `#${metric.rank}/${metric.fieldSize || fieldSize || '?'}`
+                              {typeof rank === 'number' && rank > 0
+                                ? `#${rank}/${metric?.fieldSize || fieldSize || '?'}`
                                 : ''}
                             </span>
                           </div>

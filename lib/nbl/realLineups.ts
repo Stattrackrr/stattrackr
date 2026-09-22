@@ -12,7 +12,8 @@ import {
   resolveNblClubName,
 } from '@/lib/nblTeamCanonical';
 import {
-  fetchNblMatchLineupsFromSportRadar,
+  getNblMatchLineups,
+  readCachedNblMatchLineups,
   type NblMatchLineups,
   type NblTeamLineupFromMatch,
 } from '@/lib/nbl/sportRadarLineups';
@@ -171,6 +172,7 @@ export async function buildRealLineups(options: {
   team: string;
   opponent?: string | null;
   year?: number;
+  cacheOnly?: boolean;
 }): Promise<{
   team: NblTeamRealLineup | null;
   opponent: NblTeamRealLineup | null;
@@ -197,7 +199,9 @@ export async function buildRealLineups(options: {
     return { sharedMatch: false, team: null, opponent: null };
   }
 
-  const match = await fetchNblMatchLineupsFromSportRadar(fixtureId);
+  const match = await getNblMatchLineups(fixtureId, {
+    cacheOnly: options.cacheOnly !== false,
+  });
   if (!match) {
     return { sharedMatch: false, team: null, opponent: null };
   }
@@ -217,5 +221,70 @@ export async function buildRealLineups(options: {
       oppSide && oppSide.starters.length > 0
         ? sideToCard(oppSide, match, teamGame)
         : null,
+  };
+}
+
+async function mapPool<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let idx = 0;
+  async function worker() {
+    while (idx < items.length) {
+      const i = idx++;
+      results[i] = await fn(items[i]);
+    }
+  }
+  const n = Math.max(1, Math.min(concurrency, items.length || 1));
+  await Promise.all(Array.from({ length: n }, () => worker()));
+  return results;
+}
+
+/** Warm lineup disk cache from SportRadar. Dashboard APIs stay cache-only. */
+export async function warmNblLineups(options: {
+  years: number[];
+  concurrency?: number;
+  forceRefresh?: boolean;
+}): Promise<{
+  years: number[];
+  games: number;
+  fixtures: number;
+  fetched: number;
+  cached: number;
+  missing: number;
+}> {
+  const concurrency = options.concurrency ?? 2;
+  const games = loadCompletedGames(options.years);
+  const fixtureIds = [
+    ...new Set(games.map((g) => fixtureIdForGame(g)).filter((id): id is string => Boolean(id))),
+  ];
+
+  let fetched = 0;
+  let cached = 0;
+  let missing = 0;
+
+  await mapPool(fixtureIds, concurrency, async (fixtureId) => {
+    const existing = readCachedNblMatchLineups(fixtureId);
+    if (existing && !options.forceRefresh) {
+      cached += 1;
+      return;
+    }
+    const live = await getNblMatchLineups(fixtureId, {
+      cacheOnly: false,
+      forceRefresh: options.forceRefresh,
+    });
+    if (live) fetched += 1;
+    else missing += 1;
+  });
+
+  return {
+    years: options.years,
+    games: games.length,
+    fixtures: fixtureIds.length,
+    fetched,
+    cached,
+    missing,
   };
 }

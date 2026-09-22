@@ -51,6 +51,7 @@ import {
   resolveNblClubName,
 } from '@/lib/nblTeamCanonical';
 import { defaultNblTeamStat, isNblTeamGameStat } from '@/lib/nbl/teamGameLogsShared';
+import { nblQuarterParentStat } from '@/lib/nbl/pbpShared';
 import {
   nblBookLines,
   nblOddsMarketForStat,
@@ -107,7 +108,7 @@ function getNblTeamAbbrev(teamName: string): string {
 
 const NBL_TEAM_FILTER_OPTIONS = ['All', ...NBL_CLUBS.map((c) => c.name)];
 const NBL_PAGE_STATE_KEY = 'nblPageState:v1';
-const NBL_PLAYER_LOGS_CACHE_PREFIX = 'nblPlayerLogsCache:v2';
+const NBL_PLAYER_LOGS_CACHE_PREFIX = 'nblPlayerLogsCache:v3';
 const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const CHART_DISPLAY_DELAY_MS = 120;
 const NBL_CHART_TIMEFRAMES: readonly NblChartTimeframe[] = [
@@ -913,9 +914,10 @@ export default function NblDashboardPage() {
   const nblOddsOpponent = nextGameOpponent
     ? resolveNblClubName(nextGameOpponent) || nextGameOpponent
     : null;
-  const nblOddsMarket = nblOddsMarketForStat(nblPropsMode, mainChartStat);
+  const nblOddsStat = nblQuarterParentStat(mainChartStat) ?? mainChartStat;
+  const nblOddsMarket = nblOddsMarketForStat(nblPropsMode, nblOddsStat);
   const nblDisplayOddsBooks =
-    nblPropsMode === 'player' ? nblPlayerOddsByStat[mainChartStat] ?? EMPTY_NBL_ODDS_BOOKS : nblOddsBooks;
+    nblPropsMode === 'player' ? nblPlayerOddsByStat[nblOddsStat] ?? EMPTY_NBL_ODDS_BOOKS : nblOddsBooks;
 
   const setMainChartStatAndResetLine = useCallback((stat: string | ((prev: string) => string)) => {
     setMainChartStat(stat);

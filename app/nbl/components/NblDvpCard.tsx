@@ -28,13 +28,13 @@ function boostChipClasses(boost: number | null, isDark: boolean): { tone: string
   if (boost > 0.15) {
     return {
       tone: isDark ? 'text-emerald-300' : 'text-emerald-700',
-      wrap: isDark ? 'bg-emerald-400/15' : 'bg-emerald-50',
+      wrap: isDark ? 'bg-emerald-500/20' : 'bg-emerald-50',
     };
   }
   if (boost < -0.15) {
     return {
       tone: isDark ? 'text-red-300' : 'text-red-700',
-      wrap: isDark ? 'bg-red-400/15' : 'bg-red-50',
+      wrap: isDark ? 'bg-red-500/20' : 'bg-red-50',
     };
   }
   return {
@@ -47,20 +47,21 @@ function sampleAlpha(cell: NblPlayTypeCell | undefined): number {
   if (!cell || cell.boost == null) return 0.16;
   const gamePart = Math.min(1, cell.games / 14);
   const playerPart = Math.min(1, cell.players / 5);
-  const confidence = 0.35 + 0.65 * Math.min(gamePart, playerPart);
-  return cell.significant ? Math.max(0.58, confidence) : Math.min(0.38, confidence);
+  const confidence = 0.5 + 0.5 * Math.min(gamePart, playerPart);
+  return cell.significant ? Math.max(0.64, confidence) : Math.max(0.5, confidence);
 }
 
 function cellBackground(cell: NblPlayTypeCell | undefined, isDark: boolean, emphasize: boolean): string {
   const boost = cell?.boost;
   if (boost == null || !Number.isFinite(boost)) {
-    return isDark ? 'rgba(148,163,184,0.08)' : 'rgba(148,163,184,0.12)';
+    return isDark ? 'rgba(148,163,184,0.10)' : 'rgba(148,163,184,0.12)';
   }
-  const mag = Math.min(1, Math.abs(boost) / 2.8);
-  const alpha = sampleAlpha(cell) * (0.34 + 0.66 * mag) * (emphasize ? 1.12 : 0.9);
-  if (boost > 0.15) return `rgba(16, 185, 129, ${Math.min(0.88, alpha)})`;
-  if (boost < -0.15) return `rgba(239, 68, 68, ${Math.min(0.88, alpha)})`;
-  return isDark ? 'rgba(148,163,184,0.10)' : 'rgba(148,163,184,0.14)';
+  const mag = Math.min(1, Math.abs(boost) / 2.0);
+  const alpha = sampleAlpha(cell) * (0.62 + 0.38 * mag) * (emphasize ? 1.1 : 1);
+  const capped = Math.min(isDark ? 0.62 : 0.42, alpha);
+  if (boost > 0.15) return `rgba(16, 185, 129, ${capped})`;
+  if (boost < -0.15) return `rgba(239, 68, 68, ${capped})`;
+  return isDark ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.14)';
 }
 
 function cellTextClass(cell: NblPlayTypeCell | undefined, isDark: boolean, emphasize: boolean): string {
@@ -68,16 +69,24 @@ function cellTextClass(cell: NblPlayTypeCell | undefined, isDark: boolean, empha
   if (boost == null || !Number.isFinite(boost)) {
     return isDark ? 'text-slate-500' : 'text-slate-400';
   }
-  if (!cell?.significant && !emphasize) return isDark ? 'text-slate-400' : 'text-slate-500';
-  if (boost > 0.15) return isDark ? 'text-emerald-100' : 'text-emerald-900';
-  if (boost < -0.15) return isDark ? 'text-red-100' : 'text-red-900';
+  if (boost > 0.15) return isDark ? 'text-emerald-200' : 'text-emerald-900';
+  if (boost < -0.15) return isDark ? 'text-red-200' : 'text-red-900';
+  if (!cell?.significant && !emphasize) return isDark ? 'text-slate-300' : 'text-slate-500';
   return isDark ? 'text-slate-200' : 'text-slate-700';
 }
 
 function cellTitle(rowLabel: string, teamName: string, cell: NblPlayTypeCell | undefined): string {
   if (!cell || cell.boost == null) return `${rowLabel} vs ${teamName}: no sample`;
   const names = cell.names.length ? ` · ${cell.names.join(', ')}` : '';
-  return `${rowLabel} vs ${teamName}: ${fmtBoost(cell.boost)} (${cell.games} g, ${cell.players} players, ${Math.round(cell.minutes)} min)${names}`;
+  const allowed =
+    cell.allowed != null && cell.league != null
+      ? `allowed ${cell.allowed.toFixed(1)} vs ${cell.league.toFixed(1)} type avg`
+      : fmtBoost(cell.boost);
+  const rank =
+    typeof cell.rank === 'number' && cell.rank > 0
+      ? ` · #${cell.rank}/${cell.fieldSize || 10}`
+      : '';
+  return `${rowLabel} vs ${teamName}: ${fmtBoost(cell.boost)} (${allowed}${rank} · ${cell.games} g, ${cell.players} players)${names}`;
 }
 
 function fmtStat(value: number | null | undefined): string {
@@ -247,17 +256,17 @@ export function PlayTypesInfoButton({
           <strong>How Play Types work</strong>
           <br />
           Current season ({nblSeasonLabel(NBL_PLAY_TYPE_YEAR)}). Each rotation player is tagged as
-          one attacking type:
-          Primary Ball Handler, Secondary Ball Handler, 3-Point Shooter, Slasher, Interior, or
-          Stretch.
+          one attacking type. On each team, the highest on-court usage creator is Primary BH and
+          the next is Second BH. Everyone else is 3PT (mainly threes), Interior (mainly paint),
+          Stretch (bigs who space), or Slasher.
           <br />
           <br />
-          Each cell is how that type performed against that team compared with their own average.
-          Green means they beat their usual line. Red means they came in under it.
+          Each cell is a position matchup: what that team allows to this type versus the type&apos;s
+          league average. Green is an easier matchup. Red means they hold that type down.
           <br />
           <br />
-          The matrix only follows PTS, AST, or REB on the main chart.
-          The purple column is the current opponent. This player&apos;s type sits on the top row.
+          The matrix follows PTS, AST, or REB on the main chart.
+          The purple column is the current opponent. This player&apos;s type is highlighted on the left.
         </span>
       ) : null}
     </span>
@@ -333,15 +342,7 @@ export default function NblDvpCard({
     });
   }, [payload?.teams, opponentCode]);
 
-  const rows = useMemo(() => {
-    const list = payload?.rows ?? [];
-    if (!playerType) return list;
-    return [...list].sort((a, b) => {
-      if (a.type === playerType) return -1;
-      if (b.type === playerType) return 1;
-      return 0;
-    });
-  }, [payload?.rows, playerType]);
+  const rows = payload?.rows ?? [];
 
   const weekPicks = useMemo(() => {
     const slate = (payload?.roundPicks ?? []).filter(

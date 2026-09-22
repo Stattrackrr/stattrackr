@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { NBL_CURRENT_SEASON_YEAR } from '@/lib/nblTeamCanonical';
 import { buildRealLineups } from '@/lib/nbl/realLineups';
 
+/**
+ * GET /api/nbl/lineups — disk cache only (no live SportRadar).
+ * Warm with `scripts/warm-nbl-lineups.ts`.
+ */
 export async function GET(request: NextRequest) {
   const team = request.nextUrl.searchParams.get('team')?.trim() || '';
   const opponent = request.nextUrl.searchParams.get('opponent')?.trim() || '';
@@ -32,7 +36,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       year: Number.isFinite(year) ? year : NBL_CURRENT_SEASON_YEAR,
       predicted: false,
-      source: 'sportradar-embed',
+      source: 'cache',
       sharedMatch: result.sharedMatch,
       team: result.team,
       opponent: result.opponent,

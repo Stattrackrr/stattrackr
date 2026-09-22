@@ -6,12 +6,16 @@
 import { decimalToAmerican } from '@/lib/currencyUtils';
 import { resolveNblClubName } from '@/lib/nblTeamCanonical';
 import sharedCache from '@/lib/sharedCache';
-import { NBL_PLAYER_PROP_STAT_TO_MARKET, type NblBookRow, type NblPropLine } from '@/lib/nbl/oddsTypes';
+import {
+  NBL_PLAYER_PROP_STAT_TO_MARKET,
+  nblPreferOuLines,
+  type NblBookRow,
+  type NblPropLine,
+} from '@/lib/nbl/oddsTypes';
 
 const PULSESCORE_BASE = 'https://api.pulsescore.net/api';
-const CACHE_KEY = 'nbl_ps_board_v1';
+const CACHE_KEY = 'nbl_ps_board_v2';
 const CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
-const FRESH_MS = 2 * 60 * 1000;
 
 const BOOKS: ReadonlyArray<{ slug: string; name: string }> = [
   { slug: 'sportsbet-com-au', name: 'Sportsbet' },
@@ -140,24 +144,40 @@ function eventsFromLeague(league: PulseLeague): PulseEvent[] {
   }));
 }
 
-async function fetchBookNblEvents(slug: string): Promise<PulseEvent[]> {
-  const payload = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/leagues`);
-  const leagues = leaguesFrom(payload).filter((l) => isNblLeagueName(l.name || l.league));
-  const embedded = leagues.flatMap(eventsFromLeague);
-  if (embedded.length) return embedded;
+function eventFromPayload(page: unknown): PulseEvent | null {
+  if (!page || typeof page !== 'object') return null;
+  const p = page as { data?: PulseEvent } & PulseEvent;
+  if (p.data && typeof p.data === 'object' && (p.data.markets || p.data.eventId)) return p.data;
+  if (p.markets || p.eventId) return p;
+  return null;
+}
 
-  const out: PulseEvent[] = [];
-  for (const league of leagues) {
-    const label = league.name || league.league;
-    if (!label) continue;
-    const page = await fetchJson(
-      `${PULSESCORE_BASE}/${slug}/basketball/leagues/${encodeURIComponent(label)}/events`
-    );
-    const p = page as { events?: PulseEvent[] } | null;
-    const events = Array.isArray(p?.events) ? p!.events! : [];
-    for (const ev of events) out.push({ ...ev, league: ev.league || label });
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function hydrateEventMarkets(slug: string, ev: PulseEvent): Promise<PulseEvent> {
+  const id = String(ev.eventId || '').trim();
+  if (!id) return ev;
+  const page = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/events/${encodeURIComponent(id)}`);
+  const detail = eventFromPayload(page);
+  const nextMarkets = detail?.markets;
+  if (Array.isArray(nextMarkets) && nextMarkets.length > (ev.markets?.length || 0)) {
+    return { ...ev, ...detail, markets: nextMarkets, league: ev.league || detail?.league };
   }
-  return out;
+  return ev;
+}
+
+async function fetchBookNblEvents(slug: string): Promise<PulseEvent[]> {
+  const payload = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/leagues?limit=30`);
+  const leagues = leaguesFrom(payload).filter((l) => isNblLeagueName(l.name || l.league));
+  const out = leagues.flatMap(eventsFromLeague);
+  const hydrated: PulseEvent[] = [];
+  for (const ev of out) {
+    await sleep(1100);
+    hydrated.push(await hydrateEventMarkets(slug, ev));
+  }
+  return hydrated;
 }
 
 function mergeBoard(byBook: Array<{ name: string; events: PulseEvent[] }>): PulseNblGame[] {
@@ -195,17 +215,26 @@ async function refreshBoard(): Promise<PulseNblBoard> {
   if (games.length) {
     memoryBoard = games;
     await sharedCache.setJSON(CACHE_KEY, board, CACHE_TTL_SECONDS);
+    const { persistNblPlayerPropSnapshots } = await import('@/lib/nbl/playerPropSnapshots');
+    void persistNblPlayerPropSnapshots(games).catch((err) => {
+      console.warn(
+        '[PulseScore NBL] snapshot persist failed',
+        err instanceof Error ? err.message : err
+      );
+    });
   }
   return board;
 }
 
-export async function getNblPulseScoreBoard(): Promise<PulseNblGame[]> {
+export async function getNblPulseScoreBoard(options?: { force?: boolean }): Promise<PulseNblGame[]> {
   const cached = await sharedCache.getJSON<PulseNblBoard>(CACHE_KEY);
-  const cachedAge = cached?.lastUpdated ? Date.now() - Date.parse(cached.lastUpdated) : Infinity;
-  if (cached?.games?.length && Number.isFinite(cachedAge) && cachedAge < FRESH_MS) {
+  if (cached?.games?.length) {
     memoryBoard = cached.games;
-    return cached.games;
+    if (!options?.force) return cached.games;
+  } else if (!options?.force) {
+    return memoryBoard ?? [];
   }
+
   if (!pulseKey()) return cached?.games?.length ? cached.games : memoryBoard ?? [];
   if (!inflight) {
     inflight = refreshBoard().finally(() => {
@@ -282,18 +311,42 @@ export function namesMatch(playerQuery: string, outcomeName: string): boolean {
   return b.includes(a) || a.includes(b);
 }
 
-function marketStat(rawName: string): { stat: string; threshold: number } | null {
+function marketStat(
+  rawName: string
+): { stat: string; kind: 'ou' | 'milestone'; threshold?: number } | null {
   const n = String(rawName || '').trim();
-  if (/score and win/i.test(n)) return null;
-  let m = n.match(/^(?:to score\s+)?(\d+)\+\s*points$/i);
-  if (m) return { stat: 'points', threshold: Number(m[1]) };
-  m = n.match(/^(?:to record\s+)?(\d+)\+\s*rebounds$/i);
-  if (m) return { stat: 'rebounds', threshold: Number(m[1]) };
-  m = n.match(/^(?:to record\s+)?(\d+)\+\s*assists$/i);
-  if (m) return { stat: 'assists', threshold: Number(m[1]) };
-  m = n.match(/^(?:to (?:make|record)\s+)?(\d+)\+\s*(?:made\s+)?threes$/i);
-  if (m) return { stat: 'threeMade', threshold: Number(m[1]) };
+  const blob = n.toLowerCase();
+  if (/score and win|first basket|double.?double|triple.?double|most points|to win/i.test(n)) {
+    return null;
+  }
+  let m = n.match(/(?:to score\s+)?(\d+)\+\s*points\b/i);
+  if (m) return { stat: 'points', kind: 'milestone', threshold: Number(m[1]) };
+  m = n.match(/(?:to record\s+)?(\d+)\+\s*rebounds\b/i);
+  if (m) return { stat: 'rebounds', kind: 'milestone', threshold: Number(m[1]) };
+  m = n.match(/(?:to record\s+)?(\d+)\+\s*assists\b/i);
+  if (m) return { stat: 'assists', kind: 'milestone', threshold: Number(m[1]) };
+  m = n.match(/(?:to (?:make|record)\s+)?(\d+)\+\s*(?:made\s+)?threes\b/i);
+  if (m) return { stat: 'threeMade', kind: 'milestone', threshold: Number(m[1]) };
+
+  if (/\bplayer[_\s-]*points\b|\bpoints (o\/u|over\/under)\b/.test(blob)) {
+    return { stat: 'points', kind: 'ou' };
+  }
+  if (/\bplayer[_\s-]*rebounds\b|\brebounds (o\/u|over\/under)\b/.test(blob)) {
+    return { stat: 'rebounds', kind: 'ou' };
+  }
+  if (/\bplayer[_\s-]*assists\b|\bassists (o\/u|over\/under)\b/.test(blob)) {
+    return { stat: 'assists', kind: 'ou' };
+  }
+  if (/\bplayer[_\s-]*threes\b|\bthrees (o\/u|over\/under)\b/.test(blob)) {
+    return { stat: 'threeMade', kind: 'ou' };
+  }
   return null;
+}
+
+function selectionSide(sel: PulseSelection): 'over' | 'under' {
+  const blob = `${sel.canonicalOutcome || ''} ${sel.rawName || ''} ${sel.name || ''}`.toLowerCase();
+  if (/\bunder\b/.test(blob)) return 'under';
+  return 'over';
 }
 
 function americanFromDecimal(odds: number | undefined): string {
@@ -343,24 +396,45 @@ export function pulseBooksForPlayer(game: PulseNblGame, player: string, stat: st
       if (market.isActive === false) continue;
       const parsed = marketStat(market.rawName || market.name || '');
       if (!parsed || parsed.stat !== stat) continue;
-      const chartLine = parsed.threshold - 0.5;
-      const label = `${parsed.threshold}+`;
       for (const sel of market.selections || []) {
         if (sel.isActive === false) continue;
         const selName = stripPlayerLabel(sel.rawName || sel.name || '');
         if (!namesMatch(player, selName)) continue;
-        const over = americanFromDecimal(sel.odds);
-        if (over === 'N/A') continue;
-        byLine.set(label, {
-          line: String(chartLine),
-          over,
+        const price = americanFromDecimal(sel.odds);
+        if (price === 'N/A') continue;
+
+        if (parsed.kind === 'milestone' && parsed.threshold != null) {
+          const chartLine = parsed.threshold - 0.5;
+          const label = `${parsed.threshold}+`;
+          byLine.set(`ms:${label}`, {
+            line: String(chartLine),
+            over: price,
+            under: 'N/A',
+            kind: 'milestone',
+            label,
+          });
+          continue;
+        }
+
+        const rawLine =
+          typeof sel.line === 'number' && Number.isFinite(sel.line) ? sel.line : null;
+        if (rawLine == null) continue;
+        const key = `ou:${rawLine}`;
+        const existing = byLine.get(key) ?? {
+          line: String(rawLine),
+          over: 'N/A',
           under: 'N/A',
-          kind: 'milestone',
-          label,
-        });
+          kind: 'ou' as const,
+          label: String(rawLine),
+        };
+        if (selectionSide(sel) === 'under') existing.under = price;
+        else existing.over = price;
+        byLine.set(key, existing);
       }
     }
-    const lines = [...byLine.values()].sort((a, b) => parseFloat(a.line) - parseFloat(b.line));
+    const lines = nblPreferOuLines(
+      [...byLine.values()].sort((a, b) => parseFloat(a.line) - parseFloat(b.line))
+    );
     if (!lines.length) continue;
     const main = pickMainLine(lines, stat);
     rows.push({

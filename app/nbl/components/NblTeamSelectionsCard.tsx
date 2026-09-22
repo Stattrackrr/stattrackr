@@ -110,29 +110,39 @@ function fmtRtg(n: number | null | undefined): string {
   return n != null && Number.isFinite(n) ? n.toFixed(1) : '—';
 }
 
-function barWidthPct(value: number | null | undefined, max: number): number {
-  if (value == null || !Number.isFinite(value) || max <= 0) return 0;
-  return Math.max(0, Math.min(100, (value / max) * 100));
+function barWidthPct(value: number | null | undefined, min: number, max: number): number {
+  if (value == null || !Number.isFinite(value) || max <= min) return 0;
+  return Math.max(8, Math.min(100, ((value - min) / (max - min)) * 100));
 }
 
-function maxLineupRating(
+function lineupRatingRange(
   players: LineupPlayer[],
   byId: Map<string, NblPlayerRating>,
   byName: Map<string, NblPlayerRating>
-): number {
-  let max = 0;
+): { min: number; max: number } {
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
   for (const p of players) {
     const r = lookupRating(byId, byName, p);
-    if (r?.offRtg != null) max = Math.max(max, r.offRtg);
-    if (r?.defRtg != null) max = Math.max(max, r.defRtg);
+    if (r?.offRtg != null) {
+      min = Math.min(min, r.offRtg);
+      max = Math.max(max, r.offRtg);
+    }
+    if (r?.defRtg != null) {
+      min = Math.min(min, r.defRtg);
+      max = Math.max(max, r.defRtg);
+    }
   }
-  return max > 0 ? max : 100;
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: 0, max: 100 };
+  const pad = Math.max(3, (max - min) * 0.28);
+  return { min: min - pad, max };
 }
 
 function ButterflyRow({
   player,
   offRtg,
   defRtg,
+  minRtg,
   maxRtg,
   isDark,
   highlight,
@@ -140,42 +150,49 @@ function ButterflyRow({
   player: LineupPlayer;
   offRtg: number | null;
   defRtg: number | null;
+  minRtg: number;
   maxRtg: number;
   isDark: boolean;
   highlight?: boolean;
 }) {
-  const track = isDark ? 'bg-white/[0.07]' : 'bg-gray-100';
-  const defFill = highlight ? 'bg-red-600' : 'bg-red-700';
-  const offFill = highlight ? 'bg-emerald-400' : 'bg-emerald-500';
+  const track = isDark
+    ? 'bg-black/40 ring-1 ring-inset ring-white/[0.06]'
+    : 'bg-gray-200/80 ring-1 ring-inset ring-black/[0.04]';
+  const defFill = highlight
+    ? 'bg-gradient-to-l from-red-400 to-red-600 shadow-[0_0_12px_rgba(248,113,113,0.55)]'
+    : 'bg-gradient-to-l from-red-500 to-red-800 shadow-[0_0_10px_rgba(239,68,68,0.42)]';
+  const offFill = highlight
+    ? 'bg-gradient-to-r from-emerald-300 to-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.55)]'
+    : 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.42)]';
   return (
     <div className="flex items-center min-w-0">
       <span
-        className={`w-[2.6rem] shrink-0 text-[12px] tabular-nums ${
+        className={`w-[2.6rem] shrink-0 text-[12px] tabular-nums font-semibold ${
           isDark ? 'text-red-400' : 'text-red-800'
         }`}
       >
         {fmtRtg(defRtg)}
       </span>
       <div
-        className={`mx-1.5 flex h-2 min-w-[1.25rem] flex-1 items-center justify-end overflow-hidden rounded-full ${track}`}
+        className={`mx-1.5 flex h-3.5 min-w-[1.5rem] flex-1 items-center justify-end overflow-hidden rounded-[3px] ${track}`}
       >
         <div
-          className={`h-full rounded-full ${defFill}`}
-          style={{ width: `${barWidthPct(defRtg, maxRtg)}%`, transition: 'width 400ms ease' }}
+          className={`h-full rounded-[2px] ${defFill}`}
+          style={{ width: `${barWidthPct(defRtg, minRtg, maxRtg)}%`, transition: 'width 400ms ease' }}
         />
       </div>
       <span
-        className={`shrink-0 max-w-[46%] px-2.5 text-center text-[12px] font-semibold leading-tight truncate ${
+        className={`w-[9.25rem] shrink-0 px-2 text-center text-[12px] font-semibold leading-tight truncate ${
           highlight ? 'text-purple-400' : isDark ? 'text-gray-100' : 'text-gray-900'
         }`}
         title={player.name}
       >
         {player.name}
       </span>
-      <div className={`mx-1.5 h-2 min-w-[1.25rem] flex-1 overflow-hidden rounded-full ${track}`}>
+      <div className={`mx-1.5 h-3.5 min-w-[1.5rem] flex-1 overflow-hidden rounded-[3px] ${track}`}>
         <div
-          className={`h-full rounded-full ${offFill}`}
-          style={{ width: `${barWidthPct(offRtg, maxRtg)}%`, transition: 'width 400ms ease' }}
+          className={`h-full rounded-[2px] ${offFill}`}
+          style={{ width: `${barWidthPct(offRtg, minRtg, maxRtg)}%`, transition: 'width 400ms ease' }}
         />
       </div>
       <span
@@ -322,7 +339,11 @@ export function NblTeamSelectionsCard({
     return m;
   }, [ratings]);
 
-  const maxRtg = maxLineupRating([...starters, ...bench], ratingById, ratingByName);
+  const { min: minRtg, max: maxRtg } = lineupRatingRange(
+    [...starters, ...bench],
+    ratingById,
+    ratingByName
+  );
 
   const muted = isDark ? 'text-gray-500' : 'text-gray-400';
   const heading = isDark ? 'text-gray-200' : 'text-gray-800';
@@ -330,7 +351,7 @@ export function NblTeamSelectionsCard({
   return (
     <div className="w-full px-3">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-3">
-        <h3 className={`text-sm font-semibold justify-self-start ${heading}`}>Most recent lineup</h3>
+        <h3 className={`text-sm font-semibold justify-self-start ${heading}`}>Roster breakdown</h3>
 
         <div className="justify-self-center">
           {!error && teamOptions.length > 1 ? (
@@ -398,19 +419,19 @@ export function NblTeamSelectionsCard({
       {!error && active && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center min-w-0">
-            <span className={`w-[2.6rem] shrink-0 text-[10px] font-bold tracking-wide uppercase ${isDark ? 'text-red-500/90' : 'text-red-800'}`}>
-              DRtg
+            <span className={`shrink-0 text-[10px] font-bold tracking-wide ${isDark ? 'text-red-500/90' : 'text-red-800'}`}>
+              Defensive rating
             </span>
             <span className="flex-1" />
-            <span className={`w-[2.6rem] shrink-0 text-right text-[10px] font-bold tracking-wide uppercase ${isDark ? 'text-emerald-400/80' : 'text-emerald-700'}`}>
-              ORtg
+            <span className={`shrink-0 text-right text-[10px] font-bold tracking-wide ${isDark ? 'text-emerald-400/80' : 'text-emerald-700'}`}>
+              Offensive rating
             </span>
           </div>
 
           <div>
             <div className={`text-[10px] font-bold tracking-wide uppercase mb-2 text-center ${muted}`}>Starting 5</div>
             {starters.length ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {starters.map((p) => {
                   const r = lookupRating(ratingById, ratingByName, p);
                   return (
@@ -419,6 +440,7 @@ export function NblTeamSelectionsCard({
                       player={p}
                       offRtg={r?.offRtg ?? null}
                       defRtg={r?.defRtg ?? null}
+                      minRtg={minRtg}
                       maxRtg={maxRtg}
                       isDark={isDark}
                       highlight={nameMatches(p.name, selectedPlayerName)}
@@ -434,7 +456,7 @@ export function NblTeamSelectionsCard({
           <div>
             <div className={`text-[10px] font-bold tracking-wide uppercase mb-2 text-center ${muted}`}>Bench</div>
             {bench.length ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {bench.map((p) => {
                   const r = lookupRating(ratingById, ratingByName, p);
                   return (
@@ -443,6 +465,7 @@ export function NblTeamSelectionsCard({
                       player={p}
                       offRtg={r?.offRtg ?? null}
                       defRtg={r?.defRtg ?? null}
+                      minRtg={minRtg}
                       maxRtg={maxRtg}
                       isDark={isDark}
                       highlight={nameMatches(p.name, selectedPlayerName)}

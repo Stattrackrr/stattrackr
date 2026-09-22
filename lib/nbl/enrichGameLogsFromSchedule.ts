@@ -20,7 +20,7 @@ function dayKey(value: string | null | undefined): string {
   return String(value || '').slice(0, 10);
 }
 
-function loadScheduleGames(year: number): ScheduleGame[] {
+export function loadNblScheduleGames(year: number): ScheduleGame[] {
   const file = path.join(process.cwd(), 'data', `nbl-schedule-${year}.json`);
   if (!fs.existsSync(file)) return [];
   try {
@@ -31,7 +31,10 @@ function loadScheduleGames(year: number): ScheduleGame[] {
   }
 }
 
-function findScheduleMatch(game: NblGameLogRow, schedule: ScheduleGame[]): ScheduleGame | null {
+export function findNblScheduleMatch(
+  game: NblGameLogRow,
+  schedule: ScheduleGame[]
+): ScheduleGame | null {
   const byId = schedule.find((s) => s.id === game.matchId || s.externalId === game.matchId);
   if (byId) return byId;
 
@@ -57,12 +60,12 @@ export function enrichGameLogsFromSchedule(
   year: number = NBL_CURRENT_SEASON_YEAR
 ): NblGameLogRow[] {
   if (!games.length) return games;
-  const schedule = loadScheduleGames(year);
+  const schedule = loadNblScheduleGames(year);
   if (!schedule.length) return games;
 
   return games.map((game) => {
     if (game.result && game.venue) return game;
-    const match = findScheduleMatch(game, schedule);
+    const match = findNblScheduleMatch(game, schedule);
     if (!match) return game;
 
     let result = game.result;

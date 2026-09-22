@@ -39,7 +39,8 @@ export function combinedSnapshotPropCount(snapshot: CombinedPropsSnapshot | null
   return (
     (snapshot.nba?.props?.length || 0) +
     (snapshot.afl?.props?.length || 0) +
-    (snapshot.tennis?.props?.length || 0)
+    (snapshot.tennis?.props?.length || 0) +
+    (snapshot.nbl?.props?.length || 0)
   );
 }
 
@@ -73,6 +74,7 @@ export function slimCombinedPropsSnapshotForClient(
     tennis: snapshot.tennis
       ? { ...snapshot.tennis, props: mapProps(snapshot.tennis.props) }
       : snapshot.tennis,
+    nbl: snapshot.nbl ? { ...snapshot.nbl, props: mapProps(snapshot.nbl.props) } : snapshot.nbl,
   };
 }
 
@@ -152,6 +154,7 @@ function preservePopulatedSportSlices(
     ...next,
     nba: next.nba?.props?.length ? next.nba : previous.nba,
     tennis: next.tennis?.props?.length ? next.tennis : previous.tennis,
+    nbl: next.nbl?.props?.length ? next.nbl : previous.nbl,
     afl: next.afl?.props?.length
       ? next.afl
       : next.afl?.noAflOdds
@@ -292,6 +295,16 @@ function emptyCombinedSnapshot(now = Date.now()): CombinedPropsSnapshot {
       games: [],
       props: [],
     },
+    nbl: {
+      ok: false,
+      status: 204,
+      lastUpdated: null,
+      nextUpdate: null,
+      ingestMessage: null,
+      noNblOdds: true,
+      games: [],
+      props: [],
+    },
   };
 }
 
@@ -332,6 +345,45 @@ export async function upsertCombinedSnapshotTennisFromList(payload: {
   };
   const stored = await persistCombinedPropsSnapshot(next);
   return stored.tennis?.props?.length || 0;
+}
+
+/** Cron-only: write the NBL slice onto combined Redis keys without a full rebuild. */
+export async function upsertCombinedSnapshotNblFromList(payload: {
+  data?: unknown[];
+  games?: CombinedAflGame[];
+  lastUpdated?: string | null;
+  nextUpdate?: string | null;
+  ingestMessage?: string | null;
+  noNblOdds?: boolean;
+}): Promise<number> {
+  const props = (Array.isArray(payload.data) ? payload.data : []) as CombinedPlayerProp[];
+  if (!props.length) {
+    const existing = (await getCombinedPropsSnapshot()) || (await getCombinedPropsPaintSnapshot());
+    return existing?.nbl?.props?.length || 0;
+  }
+  const now = Date.now();
+  const existing =
+    (await getCombinedPropsSnapshot()) ||
+    (await getCombinedPropsPaintSnapshot()) ||
+    emptyCombinedSnapshot(now);
+  const next: CombinedPropsSnapshot = {
+    ...existing,
+    success: true,
+    generatedAt: new Date(now).toISOString(),
+    staleAt: new Date(now + 15 * 60 * 1000).toISOString(),
+    nbl: {
+      ok: true,
+      status: 200,
+      lastUpdated: payload.lastUpdated ?? null,
+      nextUpdate: payload.nextUpdate ?? null,
+      ingestMessage: payload.ingestMessage ?? null,
+      noNblOdds: false,
+      games: payload.games || [],
+      props,
+    },
+  };
+  const stored = await persistCombinedPropsSnapshot(next);
+  return stored.nbl?.props?.length || 0;
 }
 
 export function filterCombinedSnapshotAflEligibility(

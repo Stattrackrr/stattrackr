@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { enrichGameLogsFromSchedule } from '@/lib/nbl/enrichGameLogsFromSchedule';
-import { fetchNormalizedPlayerGameLogs, withComputedNblBoxStats } from '@/lib/nbl/rosettaPlayer';
+import { overlayNblQuarterPoints } from '@/lib/nbl/nblPbpData';
+import { withComputedNblBoxStats } from '@/lib/nbl/rosettaPlayer';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
 import { enrichNblGamesAdvancedRates } from '@/lib/nbl/teamBoxScores';
 import {
@@ -11,9 +12,22 @@ import {
   nblSeasonLabel,
 } from '@/lib/nblTeamCanonical';
 
-function finalizeGames(games: NblGameLogRow[], year: number): NblGameLogRow[] {
-  return enrichNblGamesAdvancedRates(
-    enrichGameLogsFromSchedule(games, year).map((g) => withComputedNblBoxStats(g)),
+/**
+ * GET /api/nbl/player-game-logs — disk cache only.
+ * Rosetta fetch happens in `scripts/fetch-nbl-player-game-logs.ts`, not per request.
+ */
+
+function finalizeGames(
+  games: NblGameLogRow[],
+  year: number,
+  playerName?: string | null
+): NblGameLogRow[] {
+  return overlayNblQuarterPoints(
+    enrichNblGamesAdvancedRates(
+      enrichGameLogsFromSchedule(games, year).map((g) => withComputedNblBoxStats(g)),
+      year
+    ),
+    playerName,
     year
   );
 }
@@ -49,79 +63,41 @@ function cachePath(playerId: string, year: number): string {
   );
 }
 
-function readCachedGames(playerId: string, year: number): NblGameLogRow[] | null {
+function readCachedPayload(playerId: string, year: number): {
+  games: NblGameLogRow[];
+  name: string | null;
+  team: string | null;
+} | null {
   const file = cachePath(playerId, year);
   if (!fs.existsSync(file)) return null;
   try {
     const cached = JSON.parse(fs.readFileSync(file, 'utf8')) as {
       games?: NblGameLogRow[];
+      name?: string | null;
+      team?: string | null;
     };
     const cachedGames = Array.isArray(cached.games) ? cached.games : [];
-    // Older caches predate 2PT/EFF fields — treat as miss so we refresh from Rosetta.
-    const sample = cachedGames[0];
-    const cacheHasExtendedStats =
-      sample != null &&
-      Object.prototype.hasOwnProperty.call(sample, 'twoMade') &&
-      Object.prototype.hasOwnProperty.call(sample, 'efficiency') &&
-      Object.prototype.hasOwnProperty.call(sample, 'pr');
-    if (!cacheHasExtendedStats && cachedGames.length > 0) return null;
-    return cachedGames.map((g) => withComputedNblBoxStats(g));
+    return {
+      games: cachedGames.map((g) => withComputedNblBoxStats(g)),
+      name: cached.name ? String(cached.name) : null,
+      team: cached.team ? String(cached.team) : null,
+    };
   } catch {
     return null;
   }
 }
 
-function writeCache(
+function loadYearGames(
   playerId: string,
   year: number,
-  games: NblGameLogRow[],
   meta: { name: string | null; team: string | null }
-) {
-  try {
-    const file = cachePath(playerId, year);
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(
-      file,
-      JSON.stringify(
-        {
-          playerId,
-          name: meta.name,
-          team: meta.team,
-          year,
-          seasonLabel: nblSeasonLabel(year),
-          generatedAt: new Date().toISOString(),
-          source: 'rosetta.nbl.com.au',
-          gameCount: games.length,
-          games,
-        },
-        null,
-        2
-      )
-    );
-  } catch {
-    /* cache write is best-effort */
-  }
-}
-
-async function loadYearGames(
-  playerId: string,
-  year: number,
-  live: boolean,
-  meta: { name: string | null; team: string | null }
-): Promise<NblGameLogRow[]> {
-  if (!live) {
-    const cached = readCachedGames(playerId, year);
-    if (cached != null) {
-      return finalizeGames(cached, year);
-    }
-  }
-
-  const games = finalizeGames(
-    await fetchNormalizedPlayerGameLogs(playerId, year, 'regular'),
-    year
-  );
-  writeCache(playerId, year, games, meta);
-  return games;
+): NblGameLogRow[] {
+  const cached = readCachedPayload(playerId, year);
+  if (cached == null) return [];
+  const name = meta.name || cached.name;
+  if (!meta.name && cached.name) meta.name = cached.name;
+  if (!meta.team && cached.team) meta.team = cached.team;
+  return finalizeGames(cached.games, year, name);
 }
 
 function mergeGames(batches: NblGameLogRow[][]): NblGameLogRow[] {
@@ -141,7 +117,6 @@ function mergeGames(batches: NblGameLogRow[][]): NblGameLogRow[] {
 export async function GET(request: NextRequest) {
   const playerId = String(request.nextUrl.searchParams.get('playerId') || '').trim();
   const name = String(request.nextUrl.searchParams.get('name') || '').trim().toLowerCase();
-  const live = request.nextUrl.searchParams.get('live') === '1';
   const years = parseYears(request);
 
   let resolvedId = playerId;
@@ -171,6 +146,26 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  if (resolvedId && !resolvedName) {
+    for (const y of years.length ? years : [NBL_CURRENT_SEASON_YEAR]) {
+      const rosterFile = path.join(process.cwd(), 'data', `nbl-roster-${y}.json`);
+      if (!fs.existsSync(rosterFile)) continue;
+      try {
+        const roster = JSON.parse(fs.readFileSync(rosterFile, 'utf8')) as {
+          players?: Array<{ playerId: string; name: string; team?: string }>;
+        };
+        const hit = (roster.players || []).find((p) => p.playerId === resolvedId);
+        if (hit) {
+          resolvedName = hit.name;
+          resolvedTeam = hit.team ?? resolvedTeam;
+          break;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   if (!resolvedId) {
     return NextResponse.json(
       { error: 'Provide playerId or exact name query param' },
@@ -179,20 +174,17 @@ export async function GET(request: NextRequest) {
   }
 
   const meta = { name: resolvedName, team: resolvedTeam };
-  const batches = await Promise.all(
-    years.map((y) => loadYearGames(resolvedId, y, live, meta))
-  );
-  const games = mergeGames(batches);
+  const games = mergeGames(years.map((y) => loadYearGames(resolvedId, y, meta)));
 
   return NextResponse.json({
     playerId: resolvedId,
-    name: resolvedName,
-    team: resolvedTeam,
+    name: meta.name || resolvedName,
+    team: meta.team || resolvedTeam,
     years,
     year: years[0] ?? NBL_CURRENT_SEASON_YEAR,
     seasonLabel: years.map(nblSeasonLabel).join('+'),
     generatedAt: new Date().toISOString(),
-    source: 'rosetta.nbl.com.au',
+    source: 'cache',
     gameCount: games.length,
     games,
   });

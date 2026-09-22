@@ -9,6 +9,7 @@ export type PropsPageWarmSnapshot = {
   playerProps: unknown[];
   aflProps: unknown[];
   tennisCombinedProps: unknown[];
+  nblCombinedProps?: unknown[];
   aflGames: unknown[];
   todaysGames: unknown[];
   selectedAflGameIds: string[];
@@ -52,7 +53,8 @@ function parseStoredPropsSport(raw: string | null | undefined): PropsSportMode |
     value === 'nba' ||
     value === 'afl' ||
     value === 'atp' ||
-    value === 'wta'
+    value === 'wta' ||
+    value === 'nbl'
   ) {
     return value;
   }

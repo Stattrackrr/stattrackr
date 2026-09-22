@@ -1,0 +1,66 @@
+# Snapshot PulseScore NBL player O/U + milestone lines (Sportsbet / TAB)
+# before books take markets down. Closing snapshot is frozen after tip.
+name: NBL Player Prop Snapshots
+
+on:
+  schedule:
+    # Every 2 hours — NBL props usually post 4–8h before tip.
+    - cron: '20 */2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: nbl-player-prop-snapshots
+  cancel-in-progress: false
+
+env:
+  TZ: Australia/Brisbane
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          lfs: false
+
+      - name: Check PulseScore key
+        id: check
+        run: |
+          if [ -z "${{ secrets.PULSESCORE_API_KEY }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "PULSESCORE_API_KEY not set; skipping NBL player-prop snapshots"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        if: steps.check.outputs.configured == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.check.outputs.configured == 'true'
+        run: npm ci
+
+      - name: Snapshot PulseScore NBL player lines
+        if: steps.check.outputs.configured == 'true'
+        env:
+          PULSESCORE_API_KEY: ${{ secrets.PULSESCORE_API_KEY }}
+        run: npm run snapshot:nbl:player-props
+
+      - name: Commit player-prop snapshots
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          bash scripts/ci-commit-data-files.sh "chore(data): NBL PulseScore player-prop snapshots [skip ci]" \
+            "data/nbl-model/cache/player-prop-lines" \
+            "data/nbl-model/cache/player-props-list.json"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}

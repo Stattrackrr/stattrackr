@@ -13,6 +13,7 @@ import {
   ingestApiFixtures,
   loadApiTennisCache,
   registerTennisOverlayGetter,
+  tourFromEventType,
   type ApiPlayerInfo,
   type ApiTennisCache,
   type ApiTennisFixture,
@@ -496,6 +497,67 @@ async function publishOverlayShards(
   return mergeTennisPlayerLogsIncremental(overlay, opts);
 }
 
+/**
+ * Write finished singles (including ITF/Challenger) from an already-fetched
+ * fixture window onto Redis player logs. Upcoming already pays for that API
+ * call; without this, live ITF opponents stay on the DVP board with empty samples.
+ */
+export async function seedTennisLogsFromFixtures(
+  fixtures: ApiTennisFixture[],
+  playerIds: string[]
+): Promise<{ matches: number; added: number; updated: number; logs: number; missing: number }> {
+  const empty = { matches: 0, added: 0, updated: 0, logs: 0, missing: 0 };
+  const ids = [...new Set(playerIds.map((id) => String(id || '').trim()).filter((id) => /^\d+$/.test(id)))];
+  if (!fixtures.length || !ids.length) return empty;
+  const { mergeTennisPlayerLogsIncremental, readTennisPlayerLogsCacheMany } = await import(
+    '@/lib/tennis/dashboardCache'
+  );
+  const existing = await readTennisPlayerLogsCacheMany(ids);
+  const missing = ids.filter((id) => !(existing.get(id)?.length));
+  if (!missing.length) return { ...empty, missing: 0 };
+  const want = new Set(missing);
+  const relevant = fixtures.filter(
+    (fx) =>
+      want.has(String(fx.first_player_key ?? '').trim()) ||
+      want.has(String(fx.second_player_key ?? '').trim())
+  );
+  if (!relevant.length) return { ...empty, missing: missing.length };
+  const players = new Map<string, ApiPlayerInfo>();
+  const seen = new Set<string>();
+  const matches: TennisMatchRow[] = [];
+  for (const tour of ['ATP', 'WTA'] as const) {
+    const batch = relevant.filter((fx) => tourFromEventType(fx.event_type_type) === tour);
+    if (!batch.length) continue;
+    matches.push(...ingestApiFixtures(batch, players, tour, seen));
+  }
+  if (!matches.length) return { ...empty, missing: missing.length };
+  const result = await mergeTennisPlayerLogsIncremental(
+    {
+      fetchedAt: new Date().toISOString(),
+      matches,
+      players: [...players.values()].map((p) => ({
+        playerId: p.playerId,
+        name: p.name,
+        tour: p.tour,
+        ioc: p.ioc,
+        hand: null,
+        height: null,
+        rank: p.rank,
+        rankPoints: p.rankPoints,
+        imageUrl: p.imageUrl,
+      })),
+    },
+    { onlyPriority: false }
+  );
+  return {
+    matches: matches.length,
+    added: result.added,
+    updated: result.updated,
+    logs: result.logs,
+    missing: missing.length,
+  };
+}
+
 export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promise<boolean> {
   rememberOverlay(overlay);
   const packed = packTennisOverlay(overlay);
@@ -590,7 +652,9 @@ export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult & 
   }
   const fetchedAt = new Date().toISOString();
   const lookbackDays = await ingestLookbackDays();
-  const incoming = await fetchTennisIncrementalWindow(new Date(), lookbackDays);
+  const incoming = await fetchTennisIncrementalWindow(new Date(), lookbackDays, {
+    includeLower: true,
+  });
   if (!incoming.matches.length && lookbackDays >= TENNIS_INGEST_LOOKBACK_DAYS) {
     throw new Error('Tennis ingest returned 0 matches; Redis logs are empty and the API window was empty');
   }

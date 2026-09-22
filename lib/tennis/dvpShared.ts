@@ -59,3 +59,24 @@ export function tennisQualifyingEventLabel(name: string | null | undefined): str
   if (/qualif/i.test(raw)) return raw;
   return `${raw} Qualifying`;
 }
+
+export function tennisPositiveRank(value: unknown): number | null {
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Live-field ATP/WTA order. Used when a player has no last-10 DVP sample. */
+export function tennisLiveFieldRank(player: {
+  drawRank?: number | null;
+  seed?: number | null;
+} | null | undefined): number | null {
+  if (!player) return null;
+  return tennisPositiveRank(player.drawRank) ?? tennisPositiveRank(player.seed);
+}
+
+export function tennisFillMetricRank(
+  rank: unknown,
+  player: { drawRank?: number | null; seed?: number | null } | null | undefined
+): number | null {
+  return tennisPositiveRank(rank) ?? tennisLiveFieldRank(player);
+}

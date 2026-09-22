@@ -13,6 +13,7 @@ import {
 const SHOT_CHART_SEASON_LABEL = nblSeasonLabel(NBL_SHOT_CHART_SEASON_YEAR);
 
 type ZoneRank = NblZoneStat & { rank: number | null; teamsCompared: number };
+type ScoringRank = NblZoneStat & { rank: number | null; playersCompared: number; pts?: number };
 
 type PlayerPayload = {
   success: boolean;
@@ -21,6 +22,15 @@ type PlayerPayload = {
   shotCount: number;
   gamesUsed: number;
   zones: NblZoneStat[];
+  ranks?: ScoringRank[];
+  ftScoring?: {
+    ftm: number;
+    fta: number;
+    ftPct: number;
+    games: number;
+    rank: number | null;
+    playersCompared: number;
+  };
 };
 
 type DefensePayload = {
@@ -127,6 +137,53 @@ function defenseRankPillClass(rank: number): string {
   return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
 }
 
+function scoringRankPillClass(rank: number): string {
+  if (rank <= 2) return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+  if (rank <= 4) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+  if (rank <= 7) return 'bg-orange-500/15 text-orange-500 dark:text-orange-400';
+  return 'bg-rose-500/15 text-rose-500 dark:text-rose-400';
+}
+
+function getColorForScoringRank(rank: number): string {
+  if (rank <= 2) return '#10b981';
+  if (rank <= 4) return '#fbbf24';
+  if (rank <= 7) return '#f97316';
+  return '#ef4444';
+}
+
+/** Rank a player's own zones 1–10: most volume = #1, least = #10. Zero volume is unranked. */
+function selfRanksToTen(volumes: number[]): number[] {
+  const n = volumes.length;
+  const out = new Array<number>(n).fill(0);
+  const scored = volumes
+    .map((v, i) => ({ v, i }))
+    .filter((x) => x.v > 0)
+    .sort((a, b) => b.v - a.v);
+  const counted = scored.length;
+  if (counted === 0) return out;
+  let pos = 0;
+  while (pos < scored.length) {
+    let end = pos;
+    while (end + 1 < scored.length && scored[end + 1].v === scored[pos].v) end += 1;
+    const ten = counted === 1 ? 1 : Math.round(1 + (pos / (counted - 1)) * 9);
+    for (let k = pos; k <= end; k += 1) {
+      out[scored[k].i] = Math.min(NBL_RANK_SCALE, Math.max(1, ten));
+    }
+    pos = end + 1;
+  }
+  return out;
+}
+
+type BreakdownRow = {
+  id: string;
+  label: string;
+  rankPills: { rank: number; label: string }[];
+  rank: number;
+  compared: number;
+  ptsPerGame: string;
+  rateLabel: string;
+};
+
 const THREE_ZONES = new Set<NblShotZoneId>(['leftCorner3', 'rightCorner3', 'aboveBreak3']);
 
 const BREAKDOWN_GROUPS: ReadonlyArray<{
@@ -147,7 +204,7 @@ function zonePointValue(zone: NblShotZoneId): 2 | 3 {
 }
 
 function formatPerGame(total: number, games: number): string {
-  if (!games || !Number.isFinite(total)) return '—';
+  if (!games || !Number.isFinite(total) || total === 0) return '—';
   const per = total / games;
   return Number.isInteger(per) ? String(per) : per.toFixed(1);
 }
@@ -174,6 +231,170 @@ function zoneLookup(zones: NblZoneStat[]): Record<NblShotZoneId, NblZoneStat> {
   return out;
 }
 
+function RateChips({ label, isDark }: { label: string; isDark: boolean }) {
+  if (!label || label === '—') return null;
+  const parts = label
+    .split(' · ')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (!parts.length) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {parts.map((part) => {
+        const match = part.match(/^(\S+)\s+(.+)$/);
+        const value = match?.[1] || part;
+        const unit = match?.[2] || '';
+        return (
+          <span
+            key={part}
+            className={`inline-flex items-baseline gap-0.5 rounded-md px-1.5 py-0.5 tabular-nums ${
+              isDark ? 'bg-white/10' : 'bg-gray-200/90'
+            }`}
+          >
+            <span
+              className={`text-[11px] font-bold leading-none ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}
+            >
+              {value}
+            </span>
+            {unit ? (
+              <span
+                className={`text-[9px] font-semibold leading-none ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}
+              >
+                {unit}
+              </span>
+            ) : null}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function AnalysisAccordion({
+  title,
+  open,
+  onToggle,
+  isDark,
+  loading,
+  rows,
+  invert,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  isDark: boolean;
+  loading: boolean;
+  rows: BreakdownRow[];
+  invert: boolean;
+}) {
+  return (
+    <div className="w-full">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
+          open
+            ? 'bg-purple-600 text-white border-purple-600'
+            : isDark
+              ? 'bg-[#0a1929] text-gray-100 border-gray-600 hover:bg-gray-800'
+              : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
+        }`}
+      >
+        <span>{title}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 transition-transform ${
+            open ? 'rotate-180' : isDark ? 'text-gray-300' : 'text-gray-500'
+          }`}
+        />
+      </button>
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
+          open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        }`}
+      >
+        <div className="overflow-hidden">
+          {loading ? (
+            <div className="mt-1 h-28 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />
+          ) : (
+            <div className="mt-1.5 space-y-1.5 pb-0.5">
+              {rows.map((row) => {
+                const rank = row.rank > 0 ? row.rank : 0;
+                const compared = row.compared > 0 ? row.compared : invert ? 0 : NBL_RANK_SCALE;
+                const barPct =
+                  rank > 0 && compared > 0
+                    ? invert
+                      ? ((compared - rank + 1) / compared) * 100
+                      : (rank / compared) * 100
+                    : 0;
+                const barColor =
+                  rank > 0
+                    ? invert
+                      ? getColorForScoringRank(rank)
+                      : getColorForRank(rank)
+                    : '#6b7280';
+                const pillClass = invert ? scoringRankPillClass : defenseRankPillClass;
+                const isEmpty = row.ptsPerGame === '—' && row.rank <= 0;
+                return (
+                  <div
+                    key={row.id}
+                    className="rounded-xl border border-gray-200/80 bg-gray-50/80 px-2.5 py-2 dark:border-gray-700/60 dark:bg-white/[0.03]"
+                  >
+                    <div className={`flex items-start justify-between gap-2 ${isEmpty ? '' : 'mb-1'}`}>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                          {row.label}
+                        </div>
+                        {isEmpty ? null : (
+                          <div className="mt-0.5 flex items-baseline gap-1">
+                            <span className="text-lg font-bold tabular-nums leading-none text-gray-900 dark:text-white">
+                              {row.ptsPerGame}
+                            </span>
+                            <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+                              pts/g
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                        {row.rankPills.map((pill) => (
+                          <span
+                            key={pill.label}
+                            className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${pillClass(pill.rank)}`}
+                          >
+                            {pill.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {isEmpty ? null : (
+                      <>
+                        <div className="relative mb-1.5 h-1.5 overflow-hidden rounded-full bg-gray-200/80 dark:bg-gray-800">
+                          <div
+                            className="absolute inset-y-0 left-0 rounded-full"
+                            style={{ width: `${barPct}%`, backgroundColor: barColor }}
+                          />
+                        </div>
+                        {row.rateLabel !== '—' ? (
+                          <RateChips label={row.rateLabel} isDark={isDark} />
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function NblShotChart({
   isDark = true,
   playerName,
@@ -189,6 +410,7 @@ export function NblShotChart({
   const [defenseData, setDefenseData] = useState<DefensePayload | null>(null);
   const [defenseLoading, setDefenseLoading] = useState(false);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const [playerAnalysisOpen, setPlayerAnalysisOpen] = useState(true);
   const clipId = `nblRoundedCourt-${useId().replace(/:/g, '')}`;
 
   useEffect(() => {
@@ -227,6 +449,8 @@ export function NblShotChart({
             shotCount: 0,
             gamesUsed: Number(json?.gamesUsed || 0),
             zones: Array.isArray(json?.zones) ? json.zones : [],
+            ranks: Array.isArray(json?.ranks) ? json.ranks : [],
+            ftScoring: json?.ftScoring,
           });
           return;
         }
@@ -300,13 +524,16 @@ export function NblShotChart({
   }, [defenseData]);
 
   const hasOppRanks = Boolean(defenseData?.ranks?.some((r) => r.rank != null));
+  const canShowPlayerBreakdown = Boolean(playerName);
   const canShowBreakdown = Boolean(opponentTeam && opponentTeam !== 'N/A');
   const defenseZones = useMemo(() => zoneLookup(defenseData?.zones || []), [defenseData]);
   const defenseGames = Math.max(0, Number(defenseData?.gamesUsed || 0));
   const ftDefense = defenseData?.ftDefense;
+  const playerGames = Math.max(0, Number(playerData?.gamesUsed || 0));
+  const ftScoring = playerData?.ftScoring;
 
   const breakdownRows = useMemo(() => {
-    const rows = BREAKDOWN_GROUPS.map((group) => {
+    const rows: BreakdownRow[] = BREAKDOWN_GROUPS.map((group) => {
       let fga = 0;
       let fgm = 0;
       let pts = 0;
@@ -335,6 +562,7 @@ export function NblShotChart({
         label: group.label,
         rankPills,
         rank: ranks.length ? Math.min(...ranks) : 0,
+        compared: NBL_RANK_SCALE,
         ptsPerGame: formatPerGame(pts, defenseGames),
         rateLabel: `${formatPct(fgm, fga)} FG · ${formatPerGame(fga, defenseGames)} FGA/g`,
       };
@@ -348,11 +576,71 @@ export function NblShotChart({
       label: 'Free Throws',
       rankPills: ftRank > 0 ? [{ rank: ftRank, label: `#${ftRank}` }] : [],
       rank: ftRank > 0 ? ftRank : 0,
+      compared: NBL_RANK_SCALE,
       ptsPerGame: formatPerGame(ftm, ftGames || defenseGames),
       rateLabel: `${fta > 0 ? `${ftDefense?.ftPct.toFixed(0)}%` : '—'} FT · ${formatPerGame(fta, ftGames || defenseGames)} FTA/g`,
     });
     return rows;
   }, [defenseZones, rankings, defenseGames, ftDefense]);
+
+  const playerBreakdownRows = useMemo(() => {
+    const byMakes = showMakes;
+    const ftGames = Math.max(0, Number(ftScoring?.games || playerGames));
+    const ftm = Number(ftScoring?.ftm || 0);
+    const fta = Number(ftScoring?.fta || 0);
+    const zoneRows = BREAKDOWN_GROUPS.map((group) => {
+      let fga = 0;
+      let fgm = 0;
+      let pts = 0;
+      for (const zone of group.zones) {
+        const row = z[zone];
+        fga += row.fga;
+        fgm += row.fgm;
+        pts += row.fgm * zonePointValue(zone);
+      }
+      return { group, fga, fgm, pts };
+    });
+    const volumes = [
+      ...zoneRows.map((row) => (byMakes ? row.fgm : row.fga)),
+      byMakes ? ftm : fta,
+    ];
+    const selfRanks = selfRanksToTen(volumes);
+    const rows: BreakdownRow[] = zoneRows.map((row, idx) => {
+      const volume = byMakes ? row.fgm : row.fga;
+      const empty = volume <= 0;
+      const rank = empty ? 0 : selfRanks[idx] || 0;
+      return {
+        id: row.group.id,
+        label: row.group.label,
+        rankPills: rank > 0 ? [{ rank, label: `#${rank}` }] : [],
+        rank,
+        compared: NBL_RANK_SCALE,
+        ptsPerGame: empty ? '—' : formatPerGame(row.pts, playerGames),
+        rateLabel: empty
+          ? '—'
+          : byMakes
+            ? `${formatPct(row.fgm, row.fga)} FG · ${formatPerGame(row.fgm, playerGames)} FGM/g`
+            : `${formatPct(row.fgm, row.fga)} FG · ${formatPerGame(row.fga, playerGames)} FGA/g`,
+      };
+    });
+    const ftVolume = byMakes ? ftm : fta;
+    const ftEmpty = ftVolume <= 0;
+    const ftRank = ftEmpty ? 0 : selfRanks[selfRanks.length - 1] || 0;
+    rows.push({
+      id: 'freeThrows',
+      label: 'Free Throws',
+      rankPills: ftRank > 0 ? [{ rank: ftRank, label: `#${ftRank}` }] : [],
+      rank: ftRank,
+      compared: NBL_RANK_SCALE,
+      ptsPerGame: ftEmpty ? '—' : formatPerGame(ftm, ftGames || playerGames),
+      rateLabel: ftEmpty
+        ? '—'
+        : byMakes
+          ? `${fta > 0 ? `${ftScoring?.ftPct.toFixed(0)}%` : '—'} FT · ${formatPerGame(ftm, ftGames || playerGames)} FTM/g`
+          : `${fta > 0 ? `${ftScoring?.ftPct.toFixed(0)}%` : '—'} FT · ${formatPerGame(fta, ftGames || playerGames)} FTA/g`,
+    });
+    return rows;
+  }, [z, playerGames, ftScoring, showMakes]);
   const showSkeleton = Boolean(playerName) && loading;
   const showEmpty = Boolean(playerName) && !loading && !error && playerData && playerData.shotCount <= 0;
 
@@ -737,6 +1025,7 @@ export function NblShotChart({
                   onClick={() => {
                     setShowOppDef(true);
                     setShowMakes(false);
+                    setBreakdownOpen(true);
                   }}
                   className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
                     showOppDef
@@ -1065,93 +1354,30 @@ export function NblShotChart({
             </div>
           )}
 
-          {canShowBreakdown ? (
-            <div className="w-full border-t border-gray-200 dark:border-[#463e6b]/70 pt-2">
-              <button
-                type="button"
-                onClick={() => setBreakdownOpen((open) => !open)}
-                aria-expanded={breakdownOpen}
-                className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
-                  breakdownOpen
-                    ? 'bg-purple-600 text-white border-purple-600'
-                    : isDark
-                      ? 'bg-[#0a1929] text-gray-100 border-gray-600 hover:bg-gray-800'
-                      : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
-                }`}
-              >
-                <span>Defensive Analysis</span>
-                <ChevronDown
-                  className={`h-4 w-4 shrink-0 transition-transform ${
-                    breakdownOpen ? 'rotate-180' : isDark ? 'text-gray-300' : 'text-gray-500'
-                  }`}
+          {(!showOppDef && canShowPlayerBreakdown) || (showOppDef && canShowBreakdown) ? (
+            <div className="w-full space-y-2 border-t border-gray-200 dark:border-[#463e6b]/70 pt-2">
+              {!showOppDef && canShowPlayerBreakdown ? (
+                <AnalysisAccordion
+                  title={showMakes ? 'Make Analysis' : 'Attempt Analysis'}
+                  open={playerAnalysisOpen}
+                  onToggle={() => setPlayerAnalysisOpen((open) => !open)}
+                  isDark={isDark}
+                  loading={loading && !playerData}
+                  rows={playerBreakdownRows}
+                  invert
                 />
-              </button>
-              <div
-                className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
-                  breakdownOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                }`}
-              >
-                <div className="overflow-hidden">
-                  {defenseLoading && !defenseData ? (
-                    <div className="mt-1 h-28 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />
-                  ) : (
-                    <div className="mt-1.5 space-y-1.5 pb-0.5">
-                      {breakdownRows.map((row) => {
-                        const rank = row.rank > 0 ? row.rank : 0;
-                        const barPct = rank > 0 ? (rank / NBL_RANK_SCALE) * 100 : 0;
-                        const barColor = rank > 0 ? getColorForRank(rank) : '#6b7280';
-                        return (
-                          <div
-                            key={row.id}
-                            className="rounded-xl border border-gray-200/80 bg-gray-50/80 px-2.5 py-2 dark:border-gray-700/60 dark:bg-white/[0.03]"
-                          >
-                            <div className="mb-1 flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                  {row.label}
-                                </div>
-                                <div className="mt-0.5 flex items-baseline gap-1">
-                                  <span className="text-lg font-bold tabular-nums leading-none text-gray-900 dark:text-white">
-                                    {row.ptsPerGame}
-                                  </span>
-                                  <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">
-                                    pts/g
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex shrink-0 flex-wrap justify-end gap-1">
-                                {row.rankPills.length ? (
-                                  row.rankPills.map((pill) => (
-                                    <span
-                                      key={pill.label}
-                                      className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${defenseRankPillClass(pill.rank)}`}
-                                    >
-                                      {pill.label}
-                                    </span>
-                                  ))
-                                ) : (
-                                  <span className="rounded-md bg-gray-200 px-1.5 py-0.5 text-[9px] font-bold text-gray-500 dark:bg-gray-800 dark:text-gray-500">
-                                    —
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="relative mb-1.5 h-1.5 overflow-hidden rounded-full bg-gray-200/80 dark:bg-gray-800">
-                              <div
-                                className="absolute inset-y-0 left-0 rounded-full"
-                                style={{ width: `${barPct}%`, backgroundColor: barColor }}
-                              />
-                            </div>
-                            <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                              {row.rateLabel}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
+              ) : null}
+              {showOppDef && canShowBreakdown ? (
+                <AnalysisAccordion
+                  title="Defensive Analysis"
+                  open={breakdownOpen}
+                  onToggle={() => setBreakdownOpen((open) => !open)}
+                  isDark={isDark}
+                  loading={defenseLoading && !defenseData}
+                  rows={breakdownRows}
+                  invert={false}
+                />
+              ) : null}
             </div>
           ) : null}
         </>

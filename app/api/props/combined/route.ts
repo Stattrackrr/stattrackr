@@ -7,7 +7,9 @@ import {
   getCombinedPropsSnapshot,
   slimCombinedPropsSnapshotForClient,
 } from '@/lib/combinedPropsSnapshotPaint';
-import type { CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
+import type { CombinedAflGame, CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
+import { getNblPlayerPropsList } from '@/lib/nbl/playerPropsList';
+import { overlayLiveTennisDvp } from '@/lib/tennis/playerPropsList';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -44,6 +46,68 @@ function emptyCombinedShell(): CombinedPropsSnapshot {
       games: [],
       props: [],
     },
+    nbl: {
+      ok: false,
+      status: 204,
+      lastUpdated: null,
+      nextUpdate: null,
+      ingestMessage: 'No odds available. Come back later.',
+      noNblOdds: true,
+      games: [],
+      props: [],
+    },
+  };
+}
+
+async function overlayCombinedTennisDvp(
+  snapshot: CombinedPropsSnapshot
+): Promise<CombinedPropsSnapshot> {
+  const tennis = snapshot.tennis;
+  if (!tennis?.props?.length) return snapshot;
+  try {
+    const overlaid = await overlayLiveTennisDvp({
+      success: true,
+      data: tennis.props,
+      games: tennis.games || [],
+      propsCount: tennis.props.length,
+      gamesCount: tennis.games?.length || 0,
+      lastUpdated: tennis.lastUpdated ?? null,
+      nextUpdate: tennis.nextUpdate ?? null,
+      noTennisOdds: Boolean(tennis.noTennisOdds),
+      noAflOdds: true,
+      ingestMessage: tennis.ingestMessage ?? null,
+    } as unknown as Parameters<typeof overlayLiveTennisDvp>[0]);
+    return {
+      ...snapshot,
+      tennis: {
+        ...tennis,
+        props: overlaid.data as unknown as CombinedPlayerProp[],
+        games: (overlaid.games?.length ? overlaid.games : tennis.games) as CombinedAflGame[],
+      },
+    };
+  } catch {
+    return snapshot;
+  }
+}
+
+async function attachCachedNblList(
+  snapshot: CombinedPropsSnapshot
+): Promise<CombinedPropsSnapshot> {
+  if ((snapshot.nbl?.props?.length || 0) > 0) return snapshot;
+  const payload = await getNblPlayerPropsList();
+  if (!payload.data.length) return snapshot;
+  return {
+    ...snapshot,
+    nbl: {
+      ok: true,
+      status: 200,
+      lastUpdated: payload.lastUpdated ?? null,
+      nextUpdate: payload.nextUpdate ?? null,
+      ingestMessage: payload.ingestMessage ?? null,
+      noNblOdds: Boolean(payload.noNblOdds) && payload.data.length === 0,
+      games: payload.games || [],
+      props: payload.data,
+    },
   };
 }
 
@@ -64,11 +128,12 @@ export async function GET(request: NextRequest) {
       : filterCombinedSnapshotAflEligibility(
           paintSnapshot || slimCombinedPropsSnapshotForClient(source)
         );
-    const withTennis = await attachCachedTennisSlice(painted);
-    const hasProps = combinedSnapshotPropCount(withTennis) > 0;
+    const withTennis = await overlayCombinedTennisDvp(await attachCachedTennisSlice(painted));
+    const withNbl = await attachCachedNblList(withTennis);
+    const hasProps = combinedSnapshotPropCount(withNbl) > 0;
     return NextResponse.json(
       {
-        ...withTennis,
+        ...withNbl,
         cachedSnapshot: true,
         backgroundRefreshStarted: false,
         paintSnapshot: !wantsFull,

@@ -2,8 +2,13 @@
  * NBL real starters/bench via SportRadar Connect embed API
  * (same feed as the Atrium/Synergy box score on nbl.com.au).
  *
+ * Dashboard reads disk cache. Live fetch is for warm scripts only.
+ *
  * GET https://embed-api.eui.connect.sportradar.com/v1/embed/{websiteId}/fixture_detail?fixtureId={rosettaExternalId}&sub=statistics
  */
+
+import fs from 'fs';
+import path from 'path';
 
 export const NBL_SPORTRADAR_WEBSITE_ID = '298';
 export const NBL_SPORTRADAR_EMBED_BASE =
@@ -48,6 +53,33 @@ type SrPersonRow = {
   didNotPlayReason?: string | null;
 };
 
+const LINEUP_CACHE_DIR = path.join(process.cwd(), 'data', 'nbl-model', 'cache', 'lineups');
+
+function lineupCachePath(fixtureId: string): string {
+  return path.join(LINEUP_CACHE_DIR, `${fixtureId}.json`);
+}
+
+export function readCachedNblMatchLineups(fixtureId: string): NblMatchLineups | null {
+  const id = String(fixtureId || '').trim();
+  if (!id) return null;
+  const file = lineupCachePath(id);
+  if (!fs.existsSync(file)) return null;
+  try {
+    const cached = JSON.parse(fs.readFileSync(file, 'utf8')) as NblMatchLineups;
+    if (!cached || !Array.isArray(cached.teams) || cached.teams.length === 0) return null;
+    return cached;
+  } catch {
+    return null;
+  }
+}
+
+export function writeCachedNblMatchLineups(payload: NblMatchLineups): void {
+  const id = String(payload.fixtureId || '').trim();
+  if (!id || !payload.teams?.length) return;
+  fs.mkdirSync(LINEUP_CACHE_DIR, { recursive: true });
+  fs.writeFileSync(lineupCachePath(id), `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
 function mapPerson(row: SrPersonRow): NblLineupPlayer | null {
   const name = String(row.personName || row.name || '').trim();
   if (!name) return null;
@@ -81,6 +113,33 @@ function sideLineup(
     starters,
     bench,
   };
+}
+
+export async function getNblMatchLineups(
+  fixtureId: string,
+  options: {
+    cacheOnly?: boolean;
+    forceRefresh?: boolean;
+    websiteId?: string;
+    signal?: AbortSignal;
+  } = {}
+): Promise<NblMatchLineups | null> {
+  const id = String(fixtureId || '').trim();
+  if (!id) return null;
+  if (!options.forceRefresh) {
+    const cached = readCachedNblMatchLineups(id);
+    if (cached) return cached;
+  }
+  if (options.cacheOnly) return null;
+  const live = await fetchNblMatchLineupsFromSportRadar(id, options);
+  if (live) {
+    try {
+      writeCachedNblMatchLineups(live);
+    } catch {
+      /* Vercel FS is read-only */
+    }
+  }
+  return live;
 }
 
 export async function fetchNblMatchLineupsFromSportRadar(

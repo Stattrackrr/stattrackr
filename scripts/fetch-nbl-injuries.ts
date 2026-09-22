@@ -6,9 +6,11 @@
 import fs from 'fs';
 import path from 'path';
 import { fetchNblInjuriesFromBasketballComAu } from '../lib/nbl/basketballComAuInjuries';
+import { omitPlayersWhoPlayedLatestGame } from '../lib/nbl/nblInjuryActiveFilter';
 
 async function main() {
-  const { injuries, sourceUrl } = await fetchNblInjuriesFromBasketballComAu();
+  const { injuries: rawInjuries, sourceUrl } = await fetchNblInjuriesFromBasketballComAu();
+  const injuries = omitPlayersWhoPlayedLatestGame(rawInjuries);
   if (!injuries.length) throw new Error('No NBL injuries parsed from basketball.com.au');
   const file = path.join(process.cwd(), 'data', 'nbl-injuries.json');
   const payload = {

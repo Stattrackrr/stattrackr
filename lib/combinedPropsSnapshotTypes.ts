@@ -63,6 +63,10 @@ export type CombinedPlayerProp = {
   aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
   /** DFS role short label (e.g. INS MID). */
   aflDfsRole?: string | null;
+  /** NBL roster slot (G / F / C / G/F / F/C). */
+  nblPosition?: string | null;
+  /** NBL play type id (primary_bh, three_shooter, …). */
+  nblPlayType?: string | null;
 };
 
 export type CombinedAflGame = {
@@ -103,6 +107,16 @@ export type CombinedPropsSnapshot = {
     nextUpdate: string | null;
     ingestMessage: string | null;
     noTennisOdds: boolean;
+    games: CombinedAflGame[];
+    props: CombinedPlayerProp[];
+  };
+  nbl?: {
+    ok: boolean;
+    status: number;
+    lastUpdated: string | null;
+    nextUpdate: string | null;
+    ingestMessage: string | null;
+    noNblOdds: boolean;
     games: CombinedAflGame[];
     props: CombinedPlayerProp[];
   };

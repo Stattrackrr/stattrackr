@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { findNblOddsGame, getNblOddsCache, refreshNblOddsData } from '@/lib/nbl/refreshNblOdds';
+import { findNblOddsGame, getNblOddsCache } from '@/lib/nbl/refreshNblOdds';
 import { resolveNblClubName } from '@/lib/nblTeamCanonical';
 
 export const dynamic = 'force-dynamic';
@@ -7,15 +7,11 @@ export const runtime = 'nodejs';
 
 /**
  * GET /api/nbl/odds?team=...&opponent=...
- * Cached NBL game odds (H2H, spread, total). Refreshes once if the cache is empty.
+ * Reads the stored odds snapshot. The Odds API is refreshed on cron, not per request.
  */
 export async function GET(request: NextRequest) {
   try {
-    let cache = await getNblOddsCache();
-    if (!cache?.games?.length) {
-      const refreshed = await refreshNblOddsData();
-      if (refreshed.cachePayload) cache = refreshed.cachePayload;
-    }
+    const cache = await getNblOddsCache();
 
     const games = cache?.games ?? [];
     const lastUpdated = cache?.lastUpdated ?? '';

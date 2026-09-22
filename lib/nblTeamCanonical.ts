@@ -56,6 +56,10 @@ const EXTRA_NAME_ALIASES: ReadonlyArray<[string, NblClubCode]> = [
   ['S.E. Melbourne Phoenix', 'SEM'],
   ['Southeast Melbourne Phoenix', 'SEM'],
   ['South East Melbourne', 'SEM'],
+  ['South East Melb', 'SEM'],
+  ['SE Melb', 'SEM'],
+  ['SE Melbourne', 'SEM'],
+  ['Melbourne', 'MEL'],
   ['Tasmania Jack Jumpers', 'TAS'],
   ['Brisbane', 'BRI'],
   ['Adelaide', 'ADL'],
@@ -97,10 +101,17 @@ export function getNblClubById(id: string | null | undefined) {
 
 export function resolveNblClubName(input: string | null | undefined): string | null {
   if (!input) return null;
-  const direct = NAME_TO_CLUB.get(normalizeTeamKey(input));
+  const key = normalizeTeamKey(input);
+  const direct = NAME_TO_CLUB.get(key);
   if (direct) return direct.name;
   const byCode = getNblClubByCode(input);
   if (byCode) return byCode.name;
+  if (key.includes('southeast') || (key.includes('phoenix') && key.includes('melb'))) {
+    return CODE_TO_CLUB.get('SEM')!.name;
+  }
+  if (key === 'melbourne' || key === 'united' || key === 'melbourneunited') {
+    return CODE_TO_CLUB.get('MEL')!.name;
+  }
   return String(input).trim() || null;
 }
 

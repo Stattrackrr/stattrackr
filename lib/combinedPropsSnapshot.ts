@@ -8,6 +8,7 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
 import { getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
+import { getNblPlayerPropsList } from '@/lib/nbl/playerPropsList';
 import { attachTennisHeadshots } from '@/lib/tennis/headshots';
 import {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
@@ -60,6 +61,36 @@ function tennisListFromSnapshot(previous: CombinedPropsSnapshot | null) {
     noTennisOdds: Boolean(tennis.noTennisOdds),
     noAflOdds: true,
     ingestMessage: tennis.ingestMessage,
+  };
+}
+
+function nblListFromSnapshot(previous: CombinedPropsSnapshot | null) {
+  const nbl = previous?.nbl;
+  if (!nbl?.props?.length) {
+    return {
+      success: true,
+      data: [] as CombinedPlayerProp[],
+      games: [] as CombinedAflGame[],
+      propsCount: 0,
+      gamesCount: 0,
+      lastUpdated: null as string | null,
+      nextUpdate: null as string | null,
+      noAflOdds: true,
+      noNblOdds: true,
+      ingestMessage: 'No odds available. Come back later.',
+    };
+  }
+  return {
+    success: nbl.ok !== false,
+    games: nbl.games || [],
+    data: nbl.props,
+    gamesCount: nbl.games?.length || 0,
+    propsCount: nbl.props.length,
+    lastUpdated: nbl.lastUpdated ?? null,
+    nextUpdate: nbl.nextUpdate ?? null,
+    noNblOdds: Boolean(nbl.noNblOdds),
+    noAflOdds: true,
+    ingestMessage: nbl.ingestMessage,
   };
 }
 
@@ -402,18 +433,26 @@ export async function buildCombinedPropsSnapshot(
     ? getTennisPlayerPropsList({ refresh }).catch(() => null)
     : Promise.resolve(null);
   const haveTennis = (previousSnapshot?.tennis?.props?.length || 0) > 0;
-  const [nbaResponse, aflResponse, tennisFresh] = await Promise.all([
+  const haveNbl = (previousSnapshot?.nbl?.props?.length || 0) > 0;
+  const [nbaResponse, aflResponse, tennisFresh, nblFresh] = await Promise.all([
     nbaPromise,
     getAflPlayerPropsList(new Request(aflUrl, { headers })),
     haveTennis && !refresh
       ? Promise.resolve(null)
       : withBudget(tennisWork, TENNIS_COMBINED_BUDGET_MS, null),
+    haveNbl && !refresh
+      ? Promise.resolve(null)
+      : getNblPlayerPropsList({ refresh }).catch(() => null),
   ]);
   if (haveTennis && !refresh) void tennisWork;
   const tennisPayload =
     tennisFresh && Array.isArray(tennisFresh.data) && tennisFresh.data.length > 0
       ? tennisFresh
       : tennisListFromSnapshot(previousSnapshot);
+  const nblPayload =
+    nblFresh && Array.isArray(nblFresh.data) && nblFresh.data.length > 0
+      ? nblFresh
+      : nblListFromSnapshot(previousSnapshot);
 
   const [nbaPayload, aflPayload] = await Promise.all([
     nbaResponse.json().catch(() => null),
@@ -427,7 +466,7 @@ export async function buildCombinedPropsSnapshot(
   // sport responded. A sport that's out of season (e.g. NBA odds cache empty →
   // 503) should not blank out the other sport's props.
   const snapshot: CombinedPropsSnapshot = {
-    success: nbaResponse.ok || aflResponse.ok || Boolean(tennisPayload?.success),
+    success: nbaResponse.ok || aflResponse.ok || Boolean(tennisPayload?.success) || Boolean(nblPayload?.success),
     snapshotVersion: 1,
     generatedAt: new Date(now).toISOString(),
     staleAt: new Date(now + COMBINED_PROPS_SNAPSHOT_STALE_MS).toISOString(),
@@ -460,9 +499,19 @@ export async function buildCombinedPropsSnapshot(
       games: tennisAggregated.games,
       props: tennisAggregated.props,
     },
+    nbl: {
+      ok: Boolean(nblPayload?.success),
+      status: nblPayload?.success === false ? 500 : 200,
+      lastUpdated: nblPayload?.lastUpdated ?? null,
+      nextUpdate: nblPayload?.nextUpdate ?? null,
+      ingestMessage: nblPayload?.ingestMessage ?? null,
+      noNblOdds: Boolean(nblPayload?.noNblOdds) || !nblPayload?.data?.length,
+      games: Array.isArray(nblPayload?.games) ? nblPayload.games : [],
+      props: Array.isArray(nblPayload?.data) ? nblPayload.data : [],
+    },
   };
 
-  if (snapshot.success && writeCache && !debugStats && snapshotReadyToCache(snapshot)) {
+    if (snapshot.success && writeCache && !debugStats && snapshotReadyToCache(snapshot)) {
     let toStore = snapshot;
     if (TENNIS_PUBLIC_ENABLED) {
       const previous = previousSnapshot;
@@ -476,6 +525,9 @@ export async function buildCombinedPropsSnapshot(
       ) {
         toStore = { ...snapshot, tennis: previous.tennis };
       }
+    }
+    if (!(toStore.nbl?.props?.length) && previousSnapshot?.nbl?.props?.length) {
+      toStore = { ...toStore, nbl: previousSnapshot.nbl };
     }
     await writeCombinedPropsSnapshotCaches(withTennisHeadshots(toStore));
     if (TENNIS_PUBLIC_ENABLED && !tennisFresh) {

@@ -311,8 +311,7 @@ export default function LeftSidebar({
     { name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" /> },
     {
       name: "NBL",
-      href: "/nbl",
-      comingSoon: true,
+      href: "/props?sport=nbl",
       logo: <SportLogo sport="nbl" />,
     },
     {

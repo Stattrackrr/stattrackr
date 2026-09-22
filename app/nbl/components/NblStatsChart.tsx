@@ -12,6 +12,14 @@ import {
   NBL_TEAM_QUARTER_STAT_KEYS,
   NBL_TEAM_STAT_OPTIONS,
 } from '@/lib/nbl/teamGameLogsShared';
+import {
+  isNblPlayerQuarterStat,
+  isNblQuarterParentStat,
+  nblPlayerQuarterKeysForParent,
+  nblPlayerQuarterStatKey,
+  parseNblPlayerQuarterStat,
+  type NblQuarterParentStat,
+} from '@/lib/nbl/pbpShared';
 
 type NblAdvancedFilterKey =
   | 'dvp_rank'
@@ -53,8 +61,20 @@ const CHART_STAT_TO_ADVANCED_OPPONENT_FILTER: Record<
   Exclude<NblAdvancedFilterKey, 'dvp_rank' | 'minutes' | null>
 > = {
   points: 'rank_points',
+  q1_pts: 'rank_points',
+  q2_pts: 'rank_points',
+  q3_pts: 'rank_points',
+  q4_pts: 'rank_points',
   rebounds: 'rank_rebounds',
+  q1_reb: 'rank_rebounds',
+  q2_reb: 'rank_rebounds',
+  q3_reb: 'rank_rebounds',
+  q4_reb: 'rank_rebounds',
   assists: 'rank_assists',
+  q1_ast: 'rank_assists',
+  q2_ast: 'rank_assists',
+  q3_ast: 'rank_assists',
+  q4_ast: 'rank_assists',
   steals: 'rank_steals',
   blocks: 'rank_blocks',
   threeMade: 'rank_threes',
@@ -99,6 +119,10 @@ const META_SKIP = new Set(['season', 'game_number', 'matchId', 'date', 'game_dat
 const STATS_HIDDEN = new Set<string>(['usgPct', 'trebPct', 'orebPct', 'drebPct']);
 const PCT_STATS = new Set(['fgPct', 'twoPct', 'threePct', 'ftPct', 'usgPct', 'tsPct', 'trebPct', 'orebPct', 'drebPct']);
 const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024', 'season2023'] as const;
+
+function quarterPickerOptions(parent: NblQuarterParentStat) {
+  return ([1, 2, 3, 4] as const).map((n) => ({ n, key: nblPlayerQuarterStatKey(parent, n) }));
+}
 
 interface NblChartTooltipProps {
   active?: boolean;
@@ -465,6 +489,18 @@ function formatStatLabel(key: string): string {
     threeMade: '3PM',
     threeAttempted: '3PA',
     threePct: '3P%',
+    q1_pts: 'Q1 PTS',
+    q2_pts: 'Q2 PTS',
+    q3_pts: 'Q3 PTS',
+    q4_pts: 'Q4 PTS',
+    q1_reb: 'Q1 REB',
+    q2_reb: 'Q2 REB',
+    q3_reb: 'Q3 REB',
+    q4_reb: 'Q4 REB',
+    q1_ast: 'Q1 AST',
+    q2_ast: 'Q2 AST',
+    q3_ast: 'Q3 AST',
+    q4_ast: 'Q4 AST',
     fgMade: 'FGM',
     fgAttempted: 'FGA',
     steals: 'STL',
@@ -863,6 +899,19 @@ export function NblStatsChart({
     return ordered;
   }, [logsForStatOptions, mode]);
 
+  const pillStats = useMemo(
+    () => availableStats.filter((k) => !isNblPlayerQuarterStat(k)),
+    [availableStats]
+  );
+
+  const hasPlayerQuarterSplits = useCallback(
+    (parent: NblQuarterParentStat | null) =>
+      mode !== 'team' &&
+      !!parent &&
+      nblPlayerQuarterKeysForParent(parent).some((k) => availableStats.includes(k)),
+    [availableStats, mode]
+  );
+
   const preferredDefaultStat = useMemo(() => {
     if (!availableStats.length) return '';
     if (mode === 'team') {
@@ -877,16 +926,38 @@ export function NblStatsChart({
   const [lineValue, setLineValue] = useState(0);
   const [lineSyncedStat, setLineSyncedStat] = useState(selectedStatProp || 'points');
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
+  const [isQuarterDropdownOpen, setIsQuarterDropdownOpen] = useState(false);
   const [showSplitsFilters, setShowSplitsFilters] = useState(false);
   const [splitResultFilter, setSplitResultFilter] = useState<NblSplitResultFilter>('all');
   const [splitVenueFilter, setSplitVenueFilter] = useState<string>('all');
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
+  const quarterDropdownRef = useRef<HTMLDivElement>(null);
   const venueDropdownRef = useRef<HTMLDivElement>(null);
   const [isVenueDropdownOpen, setIsVenueDropdownOpen] = useState(false);
   const lineSyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutoSyncedStatRef = useRef<string | null>(null);
 
   const selectedStat = selectedStatProp ?? internalSelectedStat;
+  const selectedQuarterMeta = parseNblPlayerQuarterStat(selectedStat);
+  const selectedQuarter = selectedQuarterMeta?.n ?? null;
+  const quarterParent: NblQuarterParentStat | null = selectedQuarterMeta?.parent
+    ?? (isNblQuarterParentStat(selectedStat) ? selectedStat : null);
+  const showQuarterPicker = hasPlayerQuarterSplits(quarterParent);
+
+  const applySelectedStat = useCallback((v: string) => {
+    setIsQuarterDropdownOpen(false);
+    if (onSelectedStatChange) {
+      onSelectedStatChange(v);
+    } else {
+      setInternalSelectedStat(v);
+    }
+  }, [onSelectedStatChange]);
+
+  useEffect(() => {
+    if (!isNblQuarterParentStat(selectedStat) && !isNblPlayerQuarterStat(selectedStat)) {
+      setIsQuarterDropdownOpen(false);
+    }
+  }, [selectedStat]);
 
   // When Advanced is open, keep opponent-rank advanced selection in sync with the
   // currently selected main stat (for supported AFL opponent-rank stats).
@@ -1060,10 +1131,13 @@ export function NblStatsChart({
   }, [filteredGameLogs, splitResultFilter, splitVenueFilter, nblGameFilters]);
 
   const chartSourceLogs = useMemo(() => {
-    if (mode !== 'team' || !NBL_TEAM_QUARTER_STAT_KEYS.has(selectedStat)) {
-      return splitFilteredGameLogs;
+    if (mode === 'team' && NBL_TEAM_QUARTER_STAT_KEYS.has(selectedStat)) {
+      return splitFilteredGameLogs.filter((g) => Boolean((g as { hasPeriodScores?: boolean }).hasPeriodScores));
     }
-    return splitFilteredGameLogs.filter((g) => Boolean((g as { hasPeriodScores?: boolean }).hasPeriodScores));
+    if (mode !== 'team' && isNblPlayerQuarterStat(selectedStat)) {
+      return splitFilteredGameLogs.filter((g) => toNumericValue((g as Record<string, unknown>)[selectedStat]) != null);
+    }
+    return splitFilteredGameLogs;
   }, [mode, selectedStat, splitFilteredGameLogs]);
 
   const effectiveSeason = useCallback((g: Record<string, unknown>) => resolveGameSeason(g) ?? 0, [resolveGameSeason]);
@@ -1541,19 +1615,16 @@ export function NblStatsChart({
           style={{ scrollbarWidth: 'thin' }}
         >
           <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
-            {availableStats.map((k) => (
+            {pillStats.map((k) => (
               <StatPill
                 key={k}
                 label={formatStatLabel(k)}
                 value={k}
-                isSelected={selectedStat === k}
-                onSelect={(v) => {
-                  if (onSelectedStatChange) {
-                    onSelectedStatChange(v);
-                  } else {
-                    setInternalSelectedStat(v);
-                  }
-                }}
+                isSelected={
+                  selectedStat === k ||
+                  (quarterParent != null && k === quarterParent && selectedQuarter != null)
+                }
+                onSelect={applySelectedStat}
                 isDark={isDark}
                 darker
               />
@@ -1609,7 +1680,10 @@ export function NblStatsChart({
           <div className="relative" ref={timeframeDropdownRef}>
             <button
               type="button"
-              onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
+              onClick={() => {
+                setIsQuarterDropdownOpen(false);
+                setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen);
+              }}
               className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               <span className="truncate">{timeframeLabels[selectedTimeframe] || 'L10'}</span>
@@ -1642,33 +1716,68 @@ export function NblStatsChart({
               </>
             )}
           </div>
-          {setShowAdvancedFilters != null && (
-            <button
-              type="button"
-              onClick={() => {
-                if (showAdvancedFilters) {
-                  setSelectedAdvancedFilter(null);
-                  resetAdvancedRanges();
-                }
-                setShowAdvancedFilters(!showAdvancedFilters);
-              }}
-              className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 relative ${showAdvancedFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
-            >
-              Advanced
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setShowSplitsFilters((prev) => !prev)}
-            className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 relative lg:ml-auto ${showSplitsFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
-          >
-            Splits
-          </button>
-          {slotRightOfControls != null && (
-            <div className="flex items-center flex-shrink-0">
-              {slotRightOfControls}
-            </div>
-          )}
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto flex-shrink-0">
+            {showQuarterPicker && (
+              <div className="relative" ref={quarterDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTimeframeDropdownOpen(false);
+                    setIsQuarterDropdownOpen(!isQuarterDropdownOpen);
+                  }}
+                  className={`px-2.5 py-1.5 h-[32px] min-w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                    selectedQuarter != null
+                      ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
+                      : ''
+                  }`}
+                  aria-label={`Choose quarter for ${quarterParent || 'stat'}`}
+                  aria-expanded={isQuarterDropdownOpen}
+                >
+                  <span className="truncate">{selectedQuarter != null ? `Q${selectedQuarter}` : 'Quarter'}</span>
+                  <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isQuarterDropdownOpen && (
+                  <>
+                    <div className="absolute top-full right-0 mt-1 w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => applySelectedStat(quarterParent || 'points')}
+                        className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                          selectedStat === quarterParent
+                            ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                            : 'text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        All
+                      </button>
+                      {quarterParent && quarterPickerOptions(quarterParent).map((opt) => (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => applySelectedStat(opt.key)}
+                          className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                            selectedStat === opt.key
+                              ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                              : 'text-gray-900 dark:text-white'
+                          }`}
+                        >
+                          {opt.n}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsQuarterDropdownOpen(false)} aria-hidden />
+                  </>
+                )}
+              </div>
+            )}
+            {slotRightOfControls != null && (
+              <div className="flex items-center flex-shrink-0">
+                {slotRightOfControls}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -39,6 +39,7 @@ import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
 import { formatAflFantasyDfsPositionLabel } from '@/lib/aflDfsRoleLabels';
+import { formatNblPropsPositionLabel } from '@/lib/nbl/playTypesShared';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';
@@ -54,15 +55,18 @@ import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import {
   defaultPropsSport,
   isSecondaryPropsSport,
+  isNblPropsSport,
   isTennisPropsSport,
   isTennisSportParam,
   tennisTourFromPropsSport,
   propsSportFromTennisTour,
   secondaryListSportForMode,
   NBA_PUBLIC_ENABLED,
+  NBL_PUBLIC_ENABLED,
   TENNIS_PUBLIC_ENABLED,
   propsPathForSport,
   resolvePropsSportParam,
+  NBL_LOGO_PATH,
   TENNIS_LOGO_PATH,
   WTA_LOGO_PATH,
   TENNIS_LOGO_TOGGLE_CLASS,
@@ -78,6 +82,7 @@ import {
   isUnmodifiedLeftClick,
   propsDashboardHref,
   tennisDashboardHref,
+  nblDashboardHref,
 } from '@/lib/propsDashboardLinks';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
@@ -147,6 +152,8 @@ interface PlayerProp {
   aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
   /** DFS role short label (e.g. INS MID); optional when not in DFS map. */
   aflDfsRole?: string | null;
+  nblPosition?: string | null;
+  nblPlayType?: string | null;
   /** Player's actual club when home/away on the odds row may be swapped. */
   playerTeam?: string | null;
   playerIoc?: string | null;
@@ -169,13 +176,13 @@ function secondarySportKickoffLabel(sport: PropsSportMode): string {
   return 'Tipoff';
 }
 
-function rowSportKickoffLabel(rowSport: 'nba' | 'afl' | 'atp' | 'wta'): string {
+function rowSportKickoffLabel(rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta'): string {
   if (rowSport === 'afl') return 'Bounce';
   if (isTennisPropsSport(rowSport)) return 'Start';
   return 'Tipoff';
 }
 
-function kickoffMaxAheadMs(rowSport: 'nba' | 'afl' | 'atp' | 'wta'): number {
+function kickoffMaxAheadMs(rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta'): number {
   return isTennisPropsSport(rowSport) ? 21 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
 }
 
@@ -193,7 +200,7 @@ function sportSelectorClass(active: boolean, shellDark: boolean): string {
 }
 
 function sportSelectorLogoClass(
-  sport: 'nba' | 'afl' | 'atp' | 'wta',
+  sport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta',
   extraClass = 'w-10 h-10 lg:w-12 lg:h-12 object-contain'
 ): string {
   if (sport === 'atp') return extraClass;
@@ -205,13 +212,15 @@ function sportSelectorLogoClass(
 }
 
 function sportSelectorGlow(
-  sport: 'nba' | 'afl' | 'atp' | 'wta',
+  sport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta',
   active: boolean
 ): CSSProperties | undefined {
   if (!active) return undefined;
   const palette =
     sport === 'afl'
       ? { ring: '#fb923c', glow: 'rgba(249,115,22,0.95)', fill: '#431407' }
+      : sport === 'nbl'
+        ? { ring: '#fbbf24', glow: 'rgba(245,158,11,0.95)', fill: '#451a03' }
       : sport === 'wta'
         ? { ring: '#e9d5ff', glow: 'rgba(232,121,249,1)', fill: '#3b0764' }
         : sport === 'atp'
@@ -224,12 +233,21 @@ function sportSelectorGlow(
   };
 }
 
-function formatPropsRowStatLine(statType: string, line: number, label: string): string {
+function formatPropsRowStatLine(
+  statType: string,
+  line: number,
+  label: string,
+  opts?: { milestone?: boolean }
+): string {
   if (statType === 'moneyline') return label;
   if (statType === 'spread') {
     if (!Number.isFinite(line)) return label;
     const signed = line > 0 ? `+${line}` : String(line);
     return `${label} ${signed}`;
+  }
+  if (opts?.milestone && Number.isFinite(line)) {
+    const threshold = Number.isInteger(line) ? line : Math.round(line + 0.5);
+    return `${label} ${threshold}+`;
   }
   return `${label} ${line > 0 ? 'Over' : 'Under'} ${Math.abs(line)}`;
 }
@@ -306,12 +324,12 @@ function propsRowStatLineClassName(
 }
 
 function dvpColorBands(
-  rowSport: 'nba' | 'afl' | 'atp' | 'wta',
+  rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta',
   fieldSize?: number | null
 ): { easyMin: number; hardMax: number } {
   if (rowSport === 'afl') return { easyMin: 13, hardMax: 6 };
-  if (isTennisPropsSport(rowSport)) {
-    const n = Math.max(Number(fieldSize) || 0, 1);
+  if (rowSport === 'nbl' || isTennisPropsSport(rowSport)) {
+    const n = Math.max(Number(fieldSize) || (rowSport === 'nbl' ? 10 : 0), 1);
     return {
       easyMin: Math.max(2, Math.ceil((n * 2) / 3)),
       hardMax: Math.max(1, Math.floor(n / 3)),
@@ -321,17 +339,19 @@ function dvpColorBands(
 }
 
 function dvpRankText(
-  rowSport: 'nba' | 'afl' | 'atp' | 'wta',
+  rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta',
   rank: number,
   fieldSize?: number | null
 ): string {
-  if (isTennisPropsSport(rowSport) && Number(fieldSize) > 0) return `#${rank}/${fieldSize}`;
+  if ((isTennisPropsSport(rowSport) || rowSport === 'nbl') && Number(fieldSize) > 0) {
+    return `#${rank}/${fieldSize}`;
+  }
   return `#${rank}`;
 }
 
 function propsListRowKey(
   prop: PlayerProp,
-  rowSport: 'nba' | 'afl' | 'atp' | 'wta'
+  rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta'
 ): string {
   return `${rowSport}|${prop.playerName}|${prop.statType}|${prop.line}|${prop.gameId ?? ''}|${prop.opponent ?? ''}`;
 }
@@ -479,8 +499,96 @@ interface AflGameForProps {
   surface?: string | null;
 }
 
-type CombinedSportSource = 'nba' | 'afl' | 'atp' | 'wta';
+type CombinedSportSource = 'nba' | 'afl' | 'nbl' | 'atp' | 'wta';
 type CombinedPlayerPropRow = PlayerProp & { sportSource?: CombinedSportSource };
+
+function combinedPlayerCollapseKey(prop: CombinedPlayerPropRow): string {
+  const sport = prop.sportSource || 'nba';
+  const id = String(prop.playerId || '').trim();
+  if (id) return `${sport}|id:${id}`;
+  return `${sport}|name:${String(prop.playerName || '').trim().toLowerCase()}`;
+}
+
+function combinedMarketPriority(prop: CombinedPlayerPropRow): number {
+  const sport = prop.sportSource;
+  const tennisKey = tennisPropsMarketKey(prop.statType);
+  if (sport === 'atp' || sport === 'wta' || tennisKey) {
+    const order: Record<TennisPropsMarketKey, number> = {
+      totalGames: 0,
+      gamesWon: 1,
+      totalSets: 2,
+      spread: 3,
+      gamesLost: 4,
+      moneyline: 5,
+    };
+    return tennisKey ? order[tennisKey] : 9;
+  }
+  const stat = normalizeSecondaryPropStatType(prop.statType);
+  if (sport === 'nbl') {
+    if (stat === 'points') return 0;
+    if (stat === 'rebounds') return 1;
+    if (stat === 'assists') return 2;
+    if (stat === 'threeMade') return 3;
+    return 4;
+  }
+  if (sport === 'afl') {
+    if (stat === 'disposals' || stat === 'disposals_over') return 0;
+    if (stat === 'goals_over') return 1;
+    if (stat === 'marks') return 2;
+    if (stat === 'tackles') return 3;
+    if (stat === 'kicks') return 4;
+    if (stat === 'handballs') return 5;
+    if (stat === 'fantasy_points') return 6;
+    if (stat === 'anytime_goal_scorer') return 7;
+    return 8;
+  }
+  const nba = String(prop.statType || '').toUpperCase();
+  if (nba === 'PTS') return 0;
+  if (nba === 'PRA') return 1;
+  if (nba === 'REB') return 2;
+  if (nba === 'AST') return 3;
+  if (nba === 'THREES' || nba === 'FG3M') return 4;
+  if (nba === 'PR') return 5;
+  if (nba === 'PA') return 6;
+  if (nba === 'RA') return 7;
+  return 8;
+}
+
+function combinedRowQualityScore(prop: CombinedPlayerPropRow): number {
+  const hitPct = (hr?: { hits: number; total: number } | null) =>
+    hr && hr.total > 0 ? (hr.hits / hr.total) * 100 : -1;
+  const books =
+    (Array.isArray(prop.bookmakerLines) ? prop.bookmakerLines.length : 0) ||
+    (String(prop.bookmaker || '').trim() ? 1 : 0);
+  return books * 1000 + hitPct(prop.last10HitRate) * 10 + hitPct(prop.last5HitRate);
+}
+
+function preferCombinedRow(current: CombinedPlayerPropRow, next: CombinedPlayerPropRow): CombinedPlayerPropRow {
+  const prio = combinedMarketPriority(next) - combinedMarketPriority(current);
+  if (prio < 0) return next;
+  if (prio > 0) return current;
+  return combinedRowQualityScore(next) > combinedRowQualityScore(current) ? next : current;
+}
+
+/** Combined landing list: one pill per player. Sport pages keep every market. */
+function collapseCombinedPropsToOnePerPlayer(rows: CombinedPlayerPropRow[]): CombinedPlayerPropRow[] {
+  const winner = new Map<string, CombinedPlayerPropRow>();
+  for (const row of rows) {
+    const key = combinedPlayerCollapseKey(row);
+    const existing = winner.get(key);
+    winner.set(key, existing ? preferCombinedRow(existing, row) : row);
+  }
+  const seen = new Set<string>();
+  const out: CombinedPlayerPropRow[] = [];
+  for (const row of rows) {
+    const key = combinedPlayerCollapseKey(row);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const chosen = winner.get(key);
+    if (chosen) out.push(chosen);
+  }
+  return out;
+}
 
 type CombinedPropsSnapshotResponse = {
   success: boolean;
@@ -516,6 +624,16 @@ type CombinedPropsSnapshotResponse = {
     nextUpdate?: string | null;
     ingestMessage?: string | null;
     noTennisOdds?: boolean;
+    games?: AflGameForProps[];
+    props?: PlayerProp[];
+  };
+  nbl?: {
+    ok: boolean;
+    status: number;
+    lastUpdated?: string | null;
+    nextUpdate?: string | null;
+    ingestMessage?: string | null;
+    noNblOdds?: boolean;
     games?: AflGameForProps[];
     props?: PlayerProp[];
   };
@@ -817,7 +935,7 @@ function SportMark({
   compact = false,
   tiny = false,
 }: {
-  sport: 'nba' | 'afl' | 'atp' | 'wta';
+  sport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta';
   tour?: string | null;
   isDark: boolean;
   compact?: boolean;
@@ -825,6 +943,7 @@ function SportMark({
 }) {
   const [imgError, setImgError] = useState(false);
   const isAfl = sport === 'afl';
+  const isNbl = sport === 'nbl';
   const isTennis = isTennisPropsSport(sport);
   const tennisTour = sport === 'wta' ? 'WTA' : sport === 'atp' ? 'ATP' : String(tour || '').toUpperCase() === 'WTA' ? 'WTA' : 'ATP';
   const imgClass = isTennis
@@ -863,10 +982,12 @@ function SportMark({
       }`;
   const src = isAfl
     ? '/images/afl-logo.png'
+    : isNbl
+      ? NBL_LOGO_PATH
     : isTennis
       ? tennisLogoForTour(tennisTour)
       : '/images/nba-logo.png'
-  const label = isAfl ? 'AFL' : isTennis ? tennisTour : 'NBA';
+  const label = isAfl ? 'AFL' : isNbl ? 'NBL' : isTennis ? tennisTour : 'NBA';
 
   return (
     <span className="inline-flex items-center justify-center" aria-label={label} title={label}>
@@ -1192,6 +1313,7 @@ function normalizeNbaTeam(team: string): string {
 }
 
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v6';
+const NBL_PROPS_CACHE_KEY = 'nbl_props_list_cache_v3';
 
 const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v18';
 const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v23';
@@ -1379,9 +1501,9 @@ function tennisListRowsHaveFormStats(props: PlayerProp[]): boolean {
 function resolvePropsRowSport(
   prop: PlayerProp,
   sport: PropsSportMode
-): 'nba' | 'afl' | 'atp' | 'wta' {
+): CombinedSportSource {
   if (sport !== 'combined') {
-    if (sport === 'nba' || sport === 'afl' || sport === 'atp' || sport === 'wta') {
+    if (sport === 'nba' || sport === 'afl' || sport === 'nbl' || sport === 'atp' || sport === 'wta') {
       return sport;
     }
     return 'nba';
@@ -1391,6 +1513,7 @@ function resolvePropsRowSport(
   const tennis = propsSportFromTennisTour(prop.team || prop.homeTeamCode);
   if (tennis) return tennis;
   if (isTennisPropStatType(prop.statType)) return 'atp';
+  if (isNblListPropStatType(prop.statType)) return 'nbl';
   if (
     isAflExclusivePropStatType(prop.statType) ||
     prop.aflFantasyPosition ||
@@ -1401,8 +1524,17 @@ function resolvePropsRowSport(
   return 'nba';
 }
 
+function isNblListPropStatType(statType: string): boolean {
+  const n = normalizeSecondaryPropStatType(statType);
+  return n === 'points' || n === 'rebounds' || n === 'assists' || n === 'threemade';
+}
+
+function isNblListProp(row: PlayerProp): boolean {
+  return isNblListPropStatType(row.statType);
+}
+
 function isAflCombinedListProp(row: PlayerProp): boolean {
-  return !isTennisPropStatType(row.statType);
+  return !isTennisPropStatType(row.statType) && !isNblListPropStatType(row.statType);
 }
 
 function aflPropHasPositionLabel(row: PlayerProp): boolean {
@@ -1592,11 +1724,13 @@ function isCombinedSecondaryPaintReady(
 function combinedModeHasVisibleRows(
   nbaProps: PlayerProp[],
   aflProps: PlayerProp[],
-  tennisProps: PlayerProp[] = []
+  tennisProps: PlayerProp[] = [],
+  nblProps: PlayerProp[] = []
 ): boolean {
   if (nbaProps.length > 0) return true;
   if (aflProps.some(isAflCombinedListProp)) return true;
   if (tennisProps.some((prop) => isTennisPropStatType(prop.statType))) return true;
+  if (nblProps.some(isNblListProp)) return true;
   return false;
 }
 
@@ -1674,7 +1808,14 @@ function selectedGameIdsForProps(
   return new Set(propIds);
 }
 
-function propsRowShowsUnderOdds(rowSport: 'nba' | 'afl' | 'atp' | 'wta'): boolean {
+function propsRowShowsUnderOdds(
+  rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta',
+  underOdds?: string | null
+): boolean {
+  if (rowSport === 'nbl') {
+    const u = String(underOdds || '').trim();
+    return u !== '' && u !== 'N/A';
+  }
   return true;
 }
 const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v17';
@@ -1732,6 +1873,7 @@ function readTennisTourPropsFromCaches(tour: 'atp' | 'wta'): PlayerProp[] {
 function getSecondaryPropsCacheKey(sport: SecondaryPropsSport): string {
   if (sport === 'atp') return ATP_PROPS_CACHE_KEY;
   if (sport === 'wta') return WTA_PROPS_CACHE_KEY;
+  if (sport === 'nbl') return NBL_PROPS_CACHE_KEY;
   return AFL_PROPS_CACHE_KEY;
 }
 
@@ -1779,6 +1921,9 @@ function getSecondaryPropsListUrl(sport: SecondaryPropsSport, debugStats: boolea
     params.set('tour', sport === 'wta' ? 'WTA' : 'ATP');
     if (refresh) params.set('refresh', '1');
     return `/api/tennis/player-props/list?${params.toString()}`;
+  }
+  if (sport === 'nbl') {
+    return '/api/nbl/player-props/list';
   }
   const base = '/api/afl/player-props/list';
   const params = new URLSearchParams();
@@ -2139,6 +2284,9 @@ export default function NBALandingPage() {
   const [tennisCombinedProps, setTennisCombinedProps] = useState<PlayerProp[]>([]);
   const tennisCombinedPropsRef = useRef<PlayerProp[]>([]);
   tennisCombinedPropsRef.current = tennisCombinedProps;
+  const [nblCombinedProps, setNblCombinedProps] = useState<PlayerProp[]>([]);
+  const nblCombinedPropsRef = useRef<PlayerProp[]>([]);
+  nblCombinedPropsRef.current = nblCombinedProps;
   /** AFL slice parked while ATP/WTA is using the secondary list bucket. */
   const combinedAflHoldRef = useRef<{ props: PlayerProp[]; games: AflGameForProps[] } | null>(null);
   const aflPropsRef = useRef<PlayerProp[]>([]);
@@ -2294,6 +2442,8 @@ export default function NBALandingPage() {
       opponentTeamId?: string | null;
       aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
       aflDfsRole?: string | null;
+      nblPosition?: string | null;
+      nblPlayType?: string | null;
       playerIoc?: string | null;
       playerRank?: number | null;
       opponentId?: string | null;
@@ -2336,6 +2486,12 @@ export default function NBALandingPage() {
         if (!existing.aflDfsRole && r.aflDfsRole) {
           existing.aflDfsRole = r.aflDfsRole;
         }
+        if (!existing.nblPosition && r.nblPosition) {
+          existing.nblPosition = r.nblPosition;
+        }
+        if (!existing.nblPlayType && r.nblPlayType) {
+          existing.nblPlayType = r.nblPlayType;
+        }
         if (!existing.opponentId && r.opponentId != null) {
           existing.opponentId = String(r.opponentId);
         }
@@ -2376,6 +2532,8 @@ export default function NBALandingPage() {
           opponentTeamId: r.opponentTeamId != null ? String(r.opponentTeamId) : null,
           aflFantasyPosition: r.aflFantasyPosition ?? null,
           aflDfsRole: r.aflDfsRole ?? null,
+          nblPosition: r.nblPosition ?? null,
+          nblPlayType: r.nblPlayType ?? null,
           playerIoc: r.playerIoc ?? null,
           playerRank: r.playerRank ?? null,
           opponentId: r.opponentId != null ? String(r.opponentId) : null,
@@ -2452,6 +2610,8 @@ export default function NBALandingPage() {
         headshotUrl: a.headshotUrl ?? null,
         aflFantasyPosition: a.aflFantasyPosition ?? null,
         aflDfsRole: a.aflDfsRole ?? null,
+        nblPosition: a.nblPosition ?? null,
+        nblPlayType: a.nblPlayType ?? null,
         playerTeam,
         playerIoc: a.playerIoc ?? null,
         playerRank: a.playerRank ?? null,
@@ -2628,6 +2788,22 @@ export default function NBALandingPage() {
           now,
           noTennisOdds: paintSnapshot?.tennis?.noTennisOdds === true,
         });
+
+        const nblPropsForCache = Array.isArray(paintSnapshot?.nbl?.props) ? paintSnapshot.nbl.props : [];
+        const nblGamesForCache = Array.isArray(paintSnapshot?.nbl?.games) ? paintSnapshot.nbl.games : [];
+        if (paintSnapshot?.nbl?.noNblOdds) {
+          sessionStorage.removeItem(NBL_PROPS_CACHE_KEY);
+        } else if (nblPropsForCache.length > 0 || nblGamesForCache.length > 0) {
+          sessionStorage.setItem(
+            NBL_PROPS_CACHE_KEY,
+            JSON.stringify({
+              props: nblPropsForCache,
+              games: nblGamesForCache,
+              selectedGameIds: nblGamesForCache.map((game) => game.gameId),
+              timestamp: now,
+            })
+          );
+        }
       } catch {
         // Ignore session cache write failures.
       }
@@ -2684,10 +2860,18 @@ export default function NBALandingPage() {
     initialFetchCompletedRef.current = true;
     mergedNba.calculatedKeys.forEach((key) => calculatedKeysRef.current.add(key));
 
+    const nblFromSnapshot = Array.isArray(combinedSnapshot?.nbl?.props)
+      ? combinedSnapshot.nbl.props
+      : null;
+    const nblPropsNext =
+      nblFromSnapshot && nblFromSnapshot.length > 0
+        ? nblFromSnapshot
+        : nblCombinedPropsRef.current.filter(isNblListProp);
     const combinedVisible = combinedModeHasVisibleRows(
       mergedNba.props,
       aflPropsNext,
-      tennisPropsNext
+      tennisPropsNext,
+      nblPropsNext
     );
     const { missingAfl } = combinedModeMissingSecondarySlice(
       aflPropsNext,
@@ -2698,7 +2882,7 @@ export default function NBALandingPage() {
       isCombinedSecondaryPaintReady(aflPropsNext, oddsFlagsNext) || combinedVisible;
 
     const activeSport = propsSportRef.current;
-    const keepSecondaryList = isTennisPropsSport(activeSport);
+    const keepSecondaryList = isTennisPropsSport(activeSport) || isNblPropsSport(activeSport);
 
     setPlayerProps(mergedNba.props);
     setPropsWithCalculatedStats(mergedNba.calculatedMap);
@@ -2724,6 +2908,17 @@ export default function NBALandingPage() {
         return prev;
       });
     }
+    if (nblFromSnapshot && nblFromSnapshot.length > 0) {
+      setNblCombinedProps(nblFromSnapshot);
+      if (isNblPropsSport(activeSport)) {
+        setAflProps(nblFromSnapshot);
+        const nblGames = Array.isArray(combinedSnapshot?.nbl?.games) ? combinedSnapshot.nbl.games : [];
+        if (nblGames.length > 0) setAflGames(nblGames);
+      }
+    } else if (combinedSnapshot?.nbl?.noNblOdds === true && nblCombinedPropsRef.current.length === 0) {
+      setNblCombinedProps([]);
+    }
+
     setTennisCombinedProps((prev) => {
       const keep = prev.filter(isTennisListProp);
       if (tennisPropsFromSnapshot != null && tennisPropsFromSnapshot.length > 0) {
@@ -2796,6 +2991,7 @@ export default function NBALandingPage() {
         playerProps: playerPropsRef.current,
         aflProps: aflPropsRef.current,
         tennisCombinedProps: tennisCombinedPropsRef.current,
+        nblCombinedProps: nblCombinedPropsRef.current,
         aflGames: aflGamesRef.current,
         todaysGames: todaysGamesRef.current,
         selectedAflGameIds: Array.from(selectedAflGamesRef.current),
@@ -2827,6 +3023,7 @@ export default function NBALandingPage() {
   const [aflPlayerNumbers, setAflPlayerNumbers] = useState<Record<string, number>>({});
   // AFL team logos (normalized name -> url) for matchup display
   const [aflLogoByTeam, setAflLogoByTeam] = useState<Record<string, string>>({});
+  const [nblLogoByTeam, setNblLogoByTeam] = useState<Record<string, string>>({});
 
   // Mobile bottom nav dropdown state
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
@@ -3112,6 +3309,7 @@ export default function NBALandingPage() {
         setPropsSport(restoredSport);
         if (restoredSport === 'afl') secondaryListSportRef.current = 'afl';
         if (isTennisPropsSport(restoredSport)) secondaryListSportRef.current = restoredSport;
+        if (restoredSport === 'nbl') secondaryListSportRef.current = 'nbl';
         
       }
       setPlayerProps(warmSnapshot.playerProps as PlayerProp[]);
@@ -3119,6 +3317,11 @@ export default function NBALandingPage() {
       setTennisCombinedProps(
         Array.isArray(warmSnapshot.tennisCombinedProps)
           ? (warmSnapshot.tennisCombinedProps as PlayerProp[])
+          : []
+      );
+      setNblCombinedProps(
+        Array.isArray(warmSnapshot.nblCombinedProps)
+          ? (warmSnapshot.nblCombinedProps as PlayerProp[]).filter(isNblListProp)
           : []
       );
       setAflGames(warmSnapshot.aflGames as AflGameForProps[]);
@@ -3153,10 +3356,14 @@ export default function NBALandingPage() {
           const nbaProps = Array.isArray(parsed?.nba?.props) ? parsed.nba.props : [];
           const aflPropsCached = Array.isArray(parsed?.afl?.props) ? parsed.afl.props : [];
           const aflGamesCached = Array.isArray(parsed?.afl?.games) ? parsed.afl.games : [];
+          const nblPropsCached = Array.isArray(parsed?.nbl?.props) ? parsed.nbl.props : [];
+          const tennisPropsCached = Array.isArray(parsed?.tennis?.props) ? parsed.tennis.props : [];
           const hasSnapshotData =
             nbaProps.length > 0 ||
             aflPropsCached.length > 0 ||
-            aflGamesCached.length > 0;
+            aflGamesCached.length > 0 ||
+            nblPropsCached.length > 0 ||
+            tennisPropsCached.length > 0;
           if (hasSnapshotData) {
             let snapshotForApply: CombinedPropsSnapshotResponse = parsed;
 
@@ -3174,6 +3381,9 @@ export default function NBALandingPage() {
             if (tennisHydrate.length > 0) {
               paintedTennisProps = tennisHydrate;
               setTennisCombinedProps(tennisHydrate);
+            }
+            if (nblPropsCached.length > 0) {
+              setNblCombinedProps(nblPropsCached.filter(isNblListProp));
             }
             paintedNbaProps = nbaProps;
             paintedAflProps = aflPropsCached;
@@ -3280,7 +3490,8 @@ export default function NBALandingPage() {
       sportParam === 'afl' ||
       isTennisSportParam(sportParam) ||
       sportParam === 'combined' ||
-      sportParam === 'all')
+      sportParam === 'all' ||
+      sportParam === 'nbl')
     ) {
       let secondaryRestoreCanSkipFetch = false;
       try {
@@ -3318,7 +3529,9 @@ export default function NBALandingPage() {
         } else if (!restoredCombinedSnapshot) {
           const secondaryCacheKey = isTennisSportParam(sportParam)
             ? getSecondaryPropsCacheKey(sportParam === 'wta' ? 'wta' : 'atp')
-            : AFL_PROPS_CACHE_KEY;
+            : sportParam === 'nbl'
+              ? getSecondaryPropsCacheKey('nbl')
+              : AFL_PROPS_CACHE_KEY;
           const raw = sessionStorage.getItem(secondaryCacheKey);
           if (raw) {
             const parsed = JSON.parse(raw) as {
@@ -3337,7 +3550,9 @@ export default function NBALandingPage() {
                     propsSportFromTennisTour(p.team || p.homeTeamCode) ===
                       (sportParam === 'wta' ? 'wta' : 'atp')
                 )
-              : cachedPropsRaw;
+              : sportParam === 'nbl'
+                ? cachedPropsRaw.filter(isNblListProp)
+                : cachedPropsRaw.filter((p) => !isTennisPropStatType(p.statType) && !isNblListProp(p));
             const cachedGames = Array.isArray(parsed?.games) ? parsed.games : [];
             const hasPaintableSecondaryRows =
               isTennisSportParam(sportParam)
@@ -3379,16 +3594,19 @@ export default function NBALandingPage() {
                 setSelectedAflGames(selected);
                 restoredAflCache = true;
               }
-              if (sportParam === 'afl' || isTennisSportParam(sportParam)) {
+              if (sportParam === 'afl' || isTennisSportParam(sportParam) || sportParam === 'nbl') {
                 const listSport: SecondaryPropsSport = isTennisSportParam(sportParam)
                   ? sportParam === 'wta'
                     ? 'wta'
                     : 'atp'
-                  : 'afl';
+                  : sportParam === 'nbl'
+                    ? 'nbl'
+                    : 'afl';
                 secondaryListSportRef.current = listSport;
                 secondaryRestoreCanSkipFetch = true;
                 secondarySkipFetchSportRef.current = listSport;
                 secondaryWarmHydrateRef.current = true;
+                if (sportParam === 'nbl') setNblCombinedProps(cachedProps);
               }
             }
           }
@@ -3396,7 +3614,7 @@ export default function NBALandingPage() {
       } catch {
         // ignore cache parse errors
       }
-      if (sportParam === 'afl' || isTennisSportParam(sportParam)) {
+      if (sportParam === 'afl' || isTennisSportParam(sportParam) || sportParam === 'nbl') {
         if (restoredAflCache) {
           setSecondaryPropsFetchComplete(secondaryRestoreCanSkipFetch);
           setAflPropsLoading(!secondaryRestoreCanSkipFetch);
@@ -3419,10 +3637,17 @@ export default function NBALandingPage() {
             setTennisCombinedProps(tennisHydrate);
           }
         }
+        const nblHydrate = nblCombinedPropsRef.current.some(isNblListProp)
+          ? nblCombinedPropsRef.current.filter(isNblListProp)
+          : readSecondaryPropsSessionCache('nbl').props.filter(isNblListProp);
+        if (nblHydrate.length > 0) {
+          setNblCombinedProps(nblHydrate);
+        }
         const hasCombinedPaint = combinedModeHasVisibleRows(
           paintedNbaProps,
           paintedAflProps,
-          paintedTennisProps
+          paintedTennisProps,
+          nblHydrate
         );
         const { missingAfl } = combinedModeMissingSecondarySlice(
           paintedAflProps,
@@ -4118,6 +4343,10 @@ export default function NBALandingPage() {
       'PR': 'Points + Rebounds',
       'PA': 'Points + Assists',
       'RA': 'Rebounds + Assists',
+      points: 'Points',
+      rebounds: 'Rebounds',
+      assists: 'Assists',
+      threeMade: '3-Pointers',
       // AFL
       'disposals': 'Disposals',
       'disposals_over': 'Disposals Over',
@@ -4337,14 +4566,14 @@ export default function NBALandingPage() {
     return matchedGame || null;
   }, [todaysGames]); // OPTIMIZATION: Only recreate when todaysGames changes
 
-  const getTipoffGameForRow = useCallback((prop: PlayerProp, rowSport: 'nba' | 'afl' | 'atp' | 'wta'): Game | null => {
+  const getTipoffGameForRow = useCallback((prop: PlayerProp, rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta'): Game | null => {
     const tipoffAt =
       tennisTipoffValue(prop.gameDate) ||
       tennisTipoffValue((prop as PlayerProp & { commenceTime?: string | null }).commenceTime);
     if (tipoffAt) {
       const parsedGameDate = new Date(tipoffAt);
       if (!Number.isNaN(parsedGameDate.getTime())) {
-        if (rowSport === 'afl' || isTennisPropsSport(rowSport)) {
+        if (rowSport === 'afl' || rowSport === 'nbl' || isTennisPropsSport(rowSport)) {
           return {
             id: 0,
             date: tipoffAt.slice(0, 10),
@@ -4392,7 +4621,13 @@ export default function NBALandingPage() {
   const shouldApplyNbaGameFilter = selectedGames.size > 0 && gamesWithProps.length > 0;
 
   const activeSecondaryProps = useMemo(() => {
-    if (!isTennisPropsSport(propsSport)) return aflProps;
+    if (isNblPropsSport(propsSport)) {
+      const fromTab = aflProps.filter(isNblListProp);
+      return fromTab.length > 0 ? fromTab : nblCombinedProps.filter(isNblListProp);
+    }
+    if (!isTennisPropsSport(propsSport)) {
+      return aflProps.filter((p) => !isTennisPropStatType(p.statType) && !isNblListProp(p));
+    }
     const fromTab = aflProps.filter(
       (p) => isTennisListProp(p) && propsSportFromTennisTour(p.team || p.homeTeamCode) === propsSport
     );
@@ -4402,7 +4637,7 @@ export default function NBALandingPage() {
           (p) => isTennisListProp(p) && propsSportFromTennisTour(p.team || p.homeTeamCode) === propsSport
         );
     return tennisPropsForPaint(source);
-  }, [propsSport, aflProps, tennisCombinedProps]);
+  }, [propsSport, aflProps, tennisCombinedProps, nblCombinedProps]);
 
   // AFL: games that have at least one prop, and filtered AFL props
   const aflGamesWithProps = useMemo(() => {
@@ -4432,6 +4667,8 @@ export default function NBALandingPage() {
     activeSecondaryProps.forEach((p) => p.statType && types.add(p.statType));
     const order = isTennisPropsSport(propsSport)
         ? ['moneyline', 'spread', 'totalGames', 'gamesWon', 'gamesLost', 'totalSets']
+        : isNblPropsSport(propsSport)
+          ? ['points', 'rebounds', 'assists', 'threeMade']
         : ['disposals', 'disposals_over', 'anytime_goal_scorer', 'goals_over'];
     return Array.from(types).sort((a, b) => {
       const ai = order.indexOf(a);
@@ -4487,8 +4724,8 @@ export default function NBALandingPage() {
     if (!isSecondaryListMode) return;
     const eligibleProps =
       propsSport === 'afl'
-        ? aflProps.filter((p) => !isTennisPropStatType(p.statType))
-        : isTennisPropsSport(propsSport)
+        ? aflProps.filter((p) => !isTennisPropStatType(p.statType) && !isNblListProp(p))
+        : isTennisPropsSport(propsSport) || isNblPropsSport(propsSport)
           ? activeSecondaryProps
           : aflProps;
     const propGameIds = propGameIdsFromRows(eligibleProps);
@@ -4514,6 +4751,8 @@ export default function NBALandingPage() {
       const hasWarmRows = isTennisPropsSport(propsSport)
         ? tennisListRowsHaveFormStats(tennisPropsForTour(aflProps, propsSport)) ||
           tennisListRowsHaveFormStats(tennisPropsForTour(tennisCombinedPropsRef.current, propsSport))
+        : isNblPropsSport(propsSport)
+          ? aflProps.some(isNblListProp) || nblCombinedPropsRef.current.some(isNblListProp)
         : aflProps.length > 0 || aflGames.length > 0;
       if (hasWarmRows) {
         setSecondaryPropsFetchComplete(true);
@@ -4529,7 +4768,9 @@ export default function NBALandingPage() {
     const hasVisibleSecondaryRows = isTennisPropsSport(listSport)
       ? tennisPropsForTour(aflProps, listSport).length > 0 ||
         tennisPropsForTour(tennisCombinedPropsRef.current, listSport).length > 0
-      : aflProps.length > 0 || aflGames.length > 0;
+      : listSport === 'nbl'
+        ? aflProps.some(isNblListProp) || nblCombinedPropsRef.current.some(isNblListProp)
+      : aflProps.some((p) => !isTennisPropStatType(p.statType) && !isNblListProp(p)) || aflGames.length > 0;
     const canReplaceSecondaryProps = (aggregated: PlayerProp[]) =>
       aggregated.length > 0 || !hasVisibleSecondaryRows;
 
@@ -4540,11 +4781,14 @@ export default function NBALandingPage() {
           tennisListRowsHaveFormStats(tennisPropsForTour(tennisCombinedPropsRef.current, listSport))
         );
       }
-      const hasListRows = aflProps.some((p) => !isTennisPropStatType(p.statType));
+      if (listSport === 'nbl') {
+        return aflProps.some(isNblListProp) || nblCombinedPropsRef.current.some(isNblListProp);
+      }
+      const hasListRows = aflProps.some((p) => !isTennisPropStatType(p.statType) && !isNblListProp(p));
       if (!hasListRows) return false;
       if (listSport === 'afl' && aflPropsMissingPositionLabels(aflProps)) return false;
       if (listSport === 'afl' && aflPropsMissingHistoricalStats(aflProps)) {
-        return aflProps.some((p) => !isTennisPropStatType(p.statType));
+        return aflProps.some((p) => !isTennisPropStatType(p.statType) && !isNblListProp(p));
       }
       return true;
     };
@@ -4573,6 +4817,9 @@ export default function NBALandingPage() {
       if (isTennisPropsSport(listSport)) {
         setAflProps((prev) => preferTennisPropsForPaint(prev.filter(isTennisListProp), props));
         return;
+      }
+      if (listSport === 'nbl') {
+        setNblCombinedProps(props);
       }
       setAflProps(props);
     };
@@ -4862,6 +5109,16 @@ export default function NBALandingPage() {
         games: [],
         props: tennisCombinedPropsRef.current.filter(isTennisListProp),
       },
+      nbl: slice.nbl ?? {
+        ok: nblCombinedPropsRef.current.some(isNblListProp),
+        status: 200,
+        lastUpdated: null,
+        nextUpdate: null,
+        ingestMessage: null,
+        noNblOdds: nblCombinedPropsRef.current.length === 0,
+        games: [],
+        props: nblCombinedPropsRef.current.filter(isNblListProp),
+      },
     });
 
     const launchNbaProgressiveFetch = () => {
@@ -5031,6 +5288,39 @@ export default function NBALandingPage() {
         }
         combinedPartialTennisRefetchAttemptedRef.current = true;
       }
+
+      if (
+        isOnPropsPage() &&
+        (propsSportRef.current === 'combined' || propsSportRef.current === 'nbl') &&
+        !nblCombinedPropsRef.current.some(isNblListProp) &&
+        !(Array.isArray(payload?.nbl?.props) && payload.nbl.props.some(isNblListProp))
+      ) {
+        try {
+          const listRes = await fetchSecondaryPropsList('/api/nbl/player-props/list');
+          const listData = await listRes.json();
+          const { aggregated, games } = aggregateSecondaryListPayload(listData, 'nbl');
+          const incoming = aggregated.filter(isNblListProp);
+          if (incoming.length > 0) {
+            applyCombinedSnapshot(
+              buildProgressiveSnapshot({
+                nbl: {
+                  ok: true,
+                  status: listRes.status,
+                  lastUpdated: null,
+                  nextUpdate: null,
+                  ingestMessage: null,
+                  noNblOdds: false,
+                  games,
+                  props: incoming,
+                },
+              }),
+              { persistCaches: false }
+            );
+          }
+        } catch {
+          // ignore NBL refill errors
+        }
+      }
     };
 
     const fetchCombinedProps = async () => {
@@ -5053,7 +5343,8 @@ export default function NBALandingPage() {
         combinedModeHasVisibleRows(
           playerPropsRef.current,
           aflPropsRef.current,
-          tennisCombinedPropsRef.current
+          tennisCombinedPropsRef.current,
+          nblCombinedPropsRef.current
         ) &&
         !combinedModeNeedsDataRefresh(
           playerPropsRef.current,
@@ -5094,7 +5385,8 @@ export default function NBALandingPage() {
         combinedModeHasVisibleRows(
           playerPropsRef.current,
           aflPropsRef.current,
-          tennisCombinedPropsRef.current
+          tennisCombinedPropsRef.current,
+          nblCombinedPropsRef.current
         );
 
       if (!hasWarmCombinedCache) {
@@ -5183,6 +5475,34 @@ export default function NBALandingPage() {
         }
       })();
 
+      void (async () => {
+        if (nblCombinedPropsRef.current.some(isNblListProp)) return;
+        try {
+          const listRes = await fetchSecondaryPropsList('/api/nbl/player-props/list');
+          const listData = await listRes.json();
+          const { aggregated, games } = aggregateSecondaryListPayload(listData, 'nbl');
+          const nblRows = aggregated.filter(isNblListProp);
+          if (!listRes.ok || nblRows.length === 0) return;
+          applyCombinedSnapshot(
+            buildProgressiveSnapshot({
+              nbl: {
+                ok: true,
+                status: listRes.status,
+                lastUpdated: null,
+                nextUpdate: null,
+                ingestMessage: null,
+                noNblOdds: false,
+                games,
+                props: nblRows,
+              },
+            }),
+            { persistCaches: false }
+          );
+        } catch {
+          // NBL paints from its own list cache; other sports stay visible.
+        }
+      })();
+
       const params = new URLSearchParams();
       if (forceRefresh) params.set('refresh', '1');
       if (debugStats) params.set('debugStats', '1');
@@ -5199,15 +5519,15 @@ export default function NBALandingPage() {
             cache: 'no-store',
           });
           payload = (await response.json().catch(() => null)) as CombinedPropsSnapshotResponse | null;
-          if (!response.ok || !payload?.success || (!payload?.nba?.ok && !payload?.afl?.ok && !payload?.tennis?.ok)) {
+          if (!response.ok || !payload?.success || (!payload?.nba?.ok && !payload?.afl?.ok && !payload?.tennis?.ok && !payload?.nbl?.ok)) {
             throw new Error(payload?.error || 'Failed to load combined props');
           }
-        } else if (!payload?.success || (!payload?.nba?.ok && !payload?.afl?.ok && !payload?.tennis?.ok)) {
+        } else if (!payload?.success || (!payload?.nba?.ok && !payload?.afl?.ok && !payload?.tennis?.ok && !payload?.nbl?.ok)) {
           throw new Error(payload?.error || 'Failed to load combined props');
         }
 
         applyCombinedSnapshot(payload, {
-          persistCaches: (payload?.tennis?.props?.length || 0) > 0,
+          persistCaches: (payload?.tennis?.props?.length || 0) > 0 || (payload?.nbl?.props?.length || 0) > 0,
         });
         void refillMissingSecondarySlices(payload, debugStats);
         const completeAfterSnapshot = !combinedModeNeedsDataRefresh(
@@ -5276,7 +5596,7 @@ export default function NBALandingPage() {
         } catch (fallbackError) {
           console.error('[Props] Failed to load combined props:', fallbackError);
           setCombinedFetchComplete(
-            combinedModeHasVisibleRows(playerPropsRef.current, aflPropsRef.current, tennisCombinedPropsRef.current)
+            combinedModeHasVisibleRows(playerPropsRef.current, aflPropsRef.current, tennisCombinedPropsRef.current, nblCombinedPropsRef.current)
           );
           setCombinedPropsLoading(false);
           setPropsLoading(false);
@@ -5388,6 +5708,20 @@ export default function NBALandingPage() {
       .catch(() => {});
   }, [propsSport]);
 
+  useEffect(() => {
+    if (propsSport !== 'nbl' && propsSport !== 'combined') return;
+    if (Object.keys(nblLogoByTeam).length > 0) return;
+    fetch('/api/nbl/team-logos', { cache: 'force-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { logoByTeam?: Record<string, string> } | null) => {
+        if (data?.logoByTeam && typeof data.logoByTeam === 'object' && Object.keys(data.logoByTeam).length > 0) {
+          setNblLogoByTeam(data.logoByTeam);
+          for (const url of Object.values(data.logoByTeam)) warmImage(url);
+        }
+      })
+      .catch(() => {});
+  }, [propsSport, nblLogoByTeam]);
+
   const secondaryGameFilterApplies = useMemo(() => {
     if (selectedAflGames.size === 0) return false;
     return activeSecondaryProps.some((p) => p.gameId && selectedAflGames.has(p.gameId));
@@ -5498,7 +5832,7 @@ export default function NBALandingPage() {
         .filter((prop): prop is PlayerProp => prop !== null)
         .map((prop) => ({ ...prop, sportSource }));
     };
-    return [
+    return collapseCombinedPropsToOnePerPlayer([
       ...mapWithSport(playerProps, 'nba'),
       ...mapWithSport(
         aflProps.filter(
@@ -5534,8 +5868,12 @@ export default function NBALandingPage() {
             ),
           ]
         : []),
-    ] as CombinedPlayerPropRow[];
-  }, [playerProps, aflProps, tennisCombinedProps, debouncedSearchQuery, getStatLabel, propsSport, combinedPaintUnlocked]);
+      ...mapWithSport(
+        nblCombinedProps.filter((prop) => isAflCommenceTimePropsEligible(prop.gameDate)),
+        'nbl'
+      ),
+    ]);
+  }, [playerProps, aflProps, tennisCombinedProps, nblCombinedProps, debouncedSearchQuery, getStatLabel, propsSport, combinedPaintUnlocked]);
 
   const displaySortedCombinedProps = useMemo(() => {
     const percent = (hitRate?: { hits: number; total: number } | null) =>
@@ -6510,6 +6848,8 @@ export default function NBALandingPage() {
         })();
         if (teamAbbr) warmImage(getEspnLogoUrl(teamAbbr));
         if (opponentAbbr) warmImage(getEspnLogoUrl(opponentAbbr));
+      } else if (rowSport === 'nbl') {
+        if (prop.headshotUrl) warmImage(prop.headshotUrl);
       } else if (rowSport === 'afl') {
         const staticHeadshot = getAflPlayerHeadshotUrl(prop.playerName);
         const headshotUrl = staticHeadshot ?? aflPortraitExtras[prop.playerName] ?? null;
@@ -6539,8 +6879,11 @@ export default function NBALandingPage() {
     if (!TENNIS_PUBLIC_ENABLED && isTennisPropsSport(nextMode)) {
       nextMode = 'combined';
     }
+    if (!NBL_PUBLIC_ENABLED && nextMode === 'nbl') {
+      nextMode = 'combined';
+    }
     let combinedWarm = false;
-    if (isTennisPropsSport(nextMode) && !isTennisPropsSport(propsSport)) {
+    if ((isTennisPropsSport(nextMode) || nextMode === 'nbl') && !isTennisPropsSport(propsSport) && propsSport !== 'nbl') {
       const aflSlice = aflProps.filter(isAflCombinedListProp);
       if (aflSlice.length > 0) {
         combinedAflHoldRef.current = { props: aflSlice, games: [...aflGames] };
@@ -6635,12 +6978,75 @@ export default function NBALandingPage() {
               games: aflGames,
               props: aflProps,
             },
+            nbl: {
+              ok: nblCombinedProps.length > 0,
+              status: 200,
+              lastUpdated: null,
+              nextUpdate: null,
+              ingestMessage: null,
+              noNblOdds: nblCombinedProps.length === 0,
+              games: [],
+              props: nblCombinedProps,
+            },
           });
         } catch {
           // ignore cache write failures
         }
       }
 
+
+      if (propsSport === 'nbl' && aflProps.length > 0) {
+        setNblCombinedProps(aflProps);
+        let restoredAflProps: PlayerProp[] = [];
+        let restoredAflGames: AflGameForProps[] = [];
+        const heldAfl = combinedAflHoldRef.current;
+        if (heldAfl && heldAfl.props.length > 0) {
+          const liveHeld = applyLiveAflPropsCutoff(heldAfl.props, heldAfl.games);
+          if (!liveHeld.noAflOdds) {
+            restoredAflProps = liveHeld.props;
+            restoredAflGames = liveHeld.games;
+          }
+        }
+        if (restoredAflProps.length === 0) {
+          const aflCached = readSecondaryPropsSessionCache('afl');
+          if (aflCached.props.length > 0 || aflCached.games.length > 0) {
+            const liveAfl = applyLiveAflPropsCutoff(aflCached.props, aflCached.games);
+            if (!liveAfl.noAflOdds) {
+              restoredAflProps = liveAfl.props;
+              restoredAflGames = liveAfl.games;
+            }
+          }
+        }
+        if (restoredAflProps.length === 0) {
+          try {
+            const raw = sessionStorage.getItem(COMBINED_PROPS_CACHE_KEY);
+            if (raw) {
+              const parsed = JSON.parse(raw) as CombinedPropsSnapshotResponse & { timestamp?: number };
+              const snapshotAfl = Array.isArray(parsed?.afl?.props) ? parsed.afl.props.filter(isAflCombinedListProp) : [];
+              const snapshotGames = Array.isArray(parsed?.afl?.games) ? parsed.afl.games : [];
+              if (snapshotAfl.length > 0 || snapshotGames.length > 0) {
+                const liveSnap = applyLiveAflPropsCutoff(snapshotAfl, snapshotGames);
+                if (!liveSnap.noAflOdds) {
+                  restoredAflProps = liveSnap.props;
+                  restoredAflGames = liveSnap.games;
+                }
+              }
+            }
+          } catch {
+            // ignore snapshot parse errors
+          }
+        }
+        if (restoredAflProps.length > 0) {
+          const matchedAflGames = gamesMatchingProps(restoredAflProps, restoredAflGames);
+          setAflProps(restoredAflProps);
+          setAflGames(matchedAflGames.length > 0 ? matchedAflGames : restoredAflGames);
+        }
+        combinedWarm = true;
+        combinedWarmToggleRef.current = true;
+        setCombinedPaintUnlocked(true);
+        setAflPropsLoading(false);
+        setSecondaryPropsFetchComplete(true);
+      }
 
       if (isTennisPropsSport(propsSport)) {
         const leavingTour = propsSport as 'atp' | 'wta';
@@ -6724,7 +7130,7 @@ export default function NBALandingPage() {
         );
         const canPaint =
           isCombinedSecondaryPaintReady(restoredAflProps, combinedOddsFlagsRef.current) ||
-          combinedModeHasVisibleRows(playerProps, restoredAflProps, tennisMerged);
+          combinedModeHasVisibleRows(playerProps, restoredAflProps, tennisMerged, nblCombinedProps);
         setCombinedPaintUnlocked(canPaint);
         setCombinedFetchComplete(!needsCombinedRefresh && canPaint);
         setCombinedPropsLoading(needsCombinedRefresh && !canPaint);
@@ -6829,7 +7235,9 @@ export default function NBALandingPage() {
                     isTennisListProp(p) &&
                     propsSportFromTennisTour(p.team || p.homeTeamCode) === nextMode
                 )
-              : cachedPropsRaw;
+              : nextMode === 'nbl'
+                ? cachedPropsRaw.filter(isNblListProp)
+              : cachedPropsRaw.filter((p) => !isTennisPropStatType(p.statType) && !isNblListProp(p));
             const cachedGames = Array.isArray(parsed?.games) ? parsed.games : [];
             const hasPaintableSecondaryRows = isTennisPropsSport(nextMode)
               ? cachedProps.length > 0
@@ -6854,7 +7262,7 @@ export default function NBALandingPage() {
         propsSport === 'combined' &&
         aflProps.length > 0
       ) {
-        const aflRows = aflProps.filter((p) => !isTennisPropStatType(p.statType));
+        const aflRows = aflProps.filter((p) => !isTennisPropStatType(p.statType) && !isNblListProp(p));
         const matchedGames = gamesMatchingProps(aflRows, aflGames);
         setAflGames(matchedGames);
         const selected = selectedGameIdsForProps(aflRows, matchedGames);
@@ -6865,6 +7273,16 @@ export default function NBALandingPage() {
         setAflPropsLoading(false);
         secondarySkipFetchSportRef.current = 'afl';
         secondaryWarmHydrateRef.current = true;
+      }
+
+      if (!secondaryRestoredFromCache && nextMode === 'nbl') {
+        const nblRows = nblCombinedProps.filter(isNblListProp);
+        if (nblRows.length > 0) {
+          applySecondaryHydrate(nblRows, []);
+        } else {
+          setAflProps([]);
+          setAflGames([]);
+        }
       }
 
       if (!secondaryRestoredFromCache && isTennisPropsSport(nextMode)) {
@@ -6942,11 +7360,12 @@ export default function NBALandingPage() {
       !NBA_PUBLIC_ENABLED && nextMode === 'nba' ? 'combined' : nextMode;
     const path = propsPathForSport(effectiveMode, testCode);
     router.replace(path, { scroll: false });
-  }, [router, mergeNbaPropsWithStoredCalculatedStats, setSecondaryPropsFetchComplete, propsSport, aflProps, aflGames, aflLastUpdated, aflIngestMessage, playerProps, applyCombinedSnapshot, persistCombinedSnapshotCaches]);
+  }, [router, mergeNbaPropsWithStoredCalculatedStats, setSecondaryPropsFetchComplete, propsSport, aflProps, aflGames, aflLastUpdated, aflIngestMessage, playerProps, nblCombinedProps, applyCombinedSnapshot, persistCombinedSnapshotCaches]);
 
-  const toggleSportSelection = useCallback((sport: 'nba' | 'afl' | 'atp' | 'wta') => {
+  const toggleSportSelection = useCallback((sport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta') => {
     
     if (isTennisPropsSport(sport) && !TENNIS_PUBLIC_ENABLED) return;
+    if (sport === 'nbl' && !NBL_PUBLIC_ENABLED) return;
     // Combined means "no explicit single-sport filter selected".
     // Clicking an active sport toggles it off back to combined.
     const nextMode: PropsSportMode = propsSport === sport ? 'combined' : sport;
@@ -7243,6 +7662,25 @@ export default function NBALandingPage() {
                   decoding="async"
                 />
               </button>
+              {NBL_PUBLIC_ENABLED && (
+              <button
+                type="button"
+                onClick={() => toggleSportSelection('nbl')}
+                className={sportSelectorClass(propsSport === 'nbl', shellDark)}
+                style={sportSelectorGlow('nbl', propsSport === 'nbl')}
+                aria-label="NBL"
+                aria-pressed={propsSport === 'nbl'}
+              >
+                <img
+                  src={NBL_LOGO_PATH}
+                  alt=""
+                  className={sportSelectorLogoClass('nbl')}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+              </button>
+              )}
               {TENNIS_PUBLIC_ENABLED && (
                 <>
                   <button
@@ -8621,6 +9059,26 @@ export default function NBALandingPage() {
                                 return;
                               }
 
+                              if (rowSport === 'nbl' || isNblPropsSport(propsSport)) {
+                                const href = nblDashboardHref({
+                                  playerName: prop.playerName,
+                                  team: prop.team,
+                                  opponent: prop.opponent,
+                                  statType: prop.statType,
+                                  line:
+                                    typeof lineValue === 'number' && Number.isFinite(lineValue)
+                                      ? lineValue
+                                      : Number.isFinite(prop.line)
+                                        ? prop.line
+                                        : null,
+                                  bookmaker: bookmakerName || prop.bookmaker,
+                                });
+                                snapshotPropsPageBeforeLeave();
+                                router.push(href);
+                                setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
+                                return;
+                              }
+
                               const team = prop.team || '';
                               const opponent = prop.opponent || '';
 
@@ -8728,7 +9186,7 @@ export default function NBALandingPage() {
                                   navigatingRef.current = true;
                                   setNavigatingToPlayer(true);
 
-                                  if (rowSport === 'afl' || isTennisPropsSport(rowSport)) {
+                                  if (rowSport === 'afl' || rowSport === 'nbl' || isTennisPropsSport(rowSport)) {
                                     navigateToSecondaryDashboard();
                                     return;
                                   }
@@ -8781,7 +9239,7 @@ export default function NBALandingPage() {
                                       if (navigatingRef.current) return;
                                       navigatingRef.current = true;
                                       setNavigatingToPlayer(true);
-                                      if (rowSport === 'afl' || isTennisPropsSport(rowSport)) {
+                                      if (rowSport === 'afl' || rowSport === 'nbl' || isTennisPropsSport(rowSport)) {
                                         navigateToSecondaryDashboard();
                                         return;
                                       }
@@ -8837,6 +9295,15 @@ export default function NBALandingPage() {
                                         size="md"
                                       />
                                     )}
+                                    {rowSport === 'nbl' && (
+                                      <AflPropsPlayerAvatar
+                                        headshotUrl={prop.headshotUrl || null}
+                                        jerseyNumber={null}
+                                        isDark={isDark}
+                                        mounted={mounted}
+                                        size="md"
+                                      />
+                                    )}
                                     <div className="min-w-0 flex-1 overflow-hidden">
                                       <div className="flex items-center gap-1.5 min-w-0">
                                         <div className={`font-semibold truncate min-w-0 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -8871,6 +9338,16 @@ export default function NBALandingPage() {
                                           </div>
                                         ) : null;
                                       })()}
+                                      {rowSport === 'nbl' && (() => {
+                                        const nblPosLine = formatNblPropsPositionLabel(prop.nblPosition, prop.nblPlayType);
+                                        return nblPosLine ? (
+                                          <div
+                                            className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                                          >
+                                            {nblPosLine}
+                                          </div>
+                                        ) : null;
+                                      })()}
                                       
                                       {isTennisPropsSport(rowSport) && (
                                         <div
@@ -8885,7 +9362,9 @@ export default function NBALandingPage() {
                                           isDark: !!(mounted && isDark),
                                         })}
                                       >
-                                        {formatPropsRowStatLine(prop.statType, prop.line, getStatLabel(prop.statType))}
+                                        {formatPropsRowStatLine(prop.statType, prop.line, getStatLabel(prop.statType), {
+                                          milestone: rowSport === 'nbl' && (!prop.underOdds || prop.underOdds === 'N/A'),
+                                        })}
                                       </div>
                                       <div className="flex items-center gap-2 mt-1">
                                         {rowSport === 'afl' ? (() => {
@@ -8925,7 +9404,7 @@ export default function NBALandingPage() {
                                               )}
                                             </div>
                                           );
-                                        })() : isTennisPropsSport(rowSport) ? (
+                                        })(                                        ) : isTennisPropsSport(rowSport) ? (
                                           <TennisPropsOpponentLine
                                             opponentName={prop.opponent || prop.awayTeam || ''}
                                             opponentIoc={prop.opponentIoc || tennisIocFromListedPlayer(prop.opponent || '', playerProps)}
@@ -8933,7 +9412,35 @@ export default function NBALandingPage() {
                                             isDark={isDark}
                                             mounted={mounted}
                                           />
-                                        ) : (
+                                        ) : rowSport === 'nbl' ? (() => {
+                                          const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
+                                          const tryNblLogo = (name: string): string | null => {
+                                            if (!name) return null;
+                                            if (nblLogoByTeam[name]) return nblLogoByTeam[name];
+                                            const key = n(name);
+                                            for (const [logoKey, url] of Object.entries(nblLogoByTeam)) {
+                                              if (n(logoKey) === key) return url;
+                                            }
+                                            return null;
+                                          };
+                                          const homeLogoUrl = tryNblLogo(prop.team || prop.homeTeam || '');
+                                          const awayLogoUrl = tryNblLogo(prop.opponent || prop.awayTeam || '');
+                                          return (
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              {homeLogoUrl ? (
+                                                <img src={homeLogoUrl} alt={prop.team || ''} className="w-8 h-8 object-contain flex-shrink-0" />
+                                              ) : (
+                                                <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+                                              )}
+                                              <span className={`text-xs flex-shrink-0 ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>vs</span>
+                                              {awayLogoUrl ? (
+                                                <img src={awayLogoUrl} alt={prop.opponent || ''} className="w-8 h-8 object-contain flex-shrink-0" />
+                                              ) : (
+                                                <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+                                              )}
+                                            </div>
+                                          );
+                                        })() : (
                                           <>
                                             <img src={teamLogoUrl} alt={prop.team} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                             <img src={opponentLogoUrl} alt={prop.opponent} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -9060,7 +9567,7 @@ export default function NBALandingPage() {
                                                           return (
                                                             <>
                                                               <span className={`${mounted && isDark ? 'text-green-400' : 'text-green-600'} text-[10px] 2xl:text-xs`}>O {formatOddsValue(line.overOdds)}</span>
-                                                              {propsRowShowsUnderOdds(rowSport) && (
+                                                              {propsRowShowsUnderOdds(rowSport, line.underOdds) && (
                                                                 <>
                                                                   <span className={`${mounted && isDark ? 'text-gray-500' : 'text-gray-400'} text-[10px] 2xl:text-xs`}>|</span>
                                                                   <span className={`${mounted && isDark ? 'text-red-400' : 'text-red-600'} text-[10px] 2xl:text-xs`}>U {formatOddsValue(line.underOdds)}</span>
@@ -9201,7 +9708,7 @@ export default function NBALandingPage() {
                                                                     return (
                                                                       <>
                                                                         <span className="text-green-400 font-medium text-[10px] 2xl:text-xs">O {formatOddsValue(line.overOdds)}</span>
-                                                                        {propsRowShowsUnderOdds(rowSport) && (
+                                                                        {propsRowShowsUnderOdds(rowSport, line.underOdds) && (
                                                                           <>
                                                                             <span className="text-gray-500 text-[10px] 2xl:text-xs">|</span>
                                                                             <span className="text-red-400 font-medium text-[10px] 2xl:text-xs">U {formatOddsValue(line.underOdds)}</span>
@@ -9244,7 +9751,7 @@ export default function NBALandingPage() {
                                             )}
                                             <div className={`text-sm ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                               <div>Over: {prop.overOdds && prop.overOdds !== 'N/A' ? prop.overOdds : '—'}</div>
-                                              {propsRowShowsUnderOdds(rowSport) && (
+                                              {propsRowShowsUnderOdds(rowSport, prop.underOdds) && (
                                                 <div>Under: {prop.underOdds && prop.underOdds !== 'N/A' ? prop.underOdds : '—'}</div>
                                               )}
                                             </div>
@@ -9275,7 +9782,7 @@ export default function NBALandingPage() {
                                             ? sourceLines.filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
                                             : sourceLines;
                                           const { overProb, underProb } = getConsensusImpliedProbabilities(prop, filteredLines);
-                                          const showUnderIp = propsRowShowsUnderOdds(rowSport);
+                                          const showUnderIp = propsRowShowsUnderOdds(rowSport, prop.underOdds);
                                           return (
                                             <>
                                               <div className={`text-sm font-semibold ${overProb != null ? (showUnderIp && overProb < (underProb ?? 0) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') : ''}`}>
@@ -10128,9 +10635,24 @@ export default function NBALandingPage() {
                                 if (navigatingRef.current) return;
                                 navigatingRef.current = true;
                                 setNavigatingToPlayer(true);
-                                if (rowSport === 'afl' || isTennisPropsSport(rowSport)) {
+                                if (rowSport === 'afl' || rowSport === 'nbl' || isTennisPropsSport(rowSport)) {
                                   if (isTennisPropsSport(rowSport)) {
                                     navigateToTennisDashboardFromProp(prop, router);
+                                    setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
+                                    return;
+                                  }
+                                  if (rowSport === 'nbl') {
+                                    snapshotPropsPageBeforeLeave();
+                                    router.push(
+                                      nblDashboardHref({
+                                        playerName: prop.playerName,
+                                        team: prop.team,
+                                        opponent: prop.opponent,
+                                        statType: prop.statType,
+                                        line: Number.isFinite(prop.line) ? prop.line : null,
+                                        bookmaker: prop.bookmaker,
+                                      })
+                                    );
                                     setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
                                     return;
                                   }
@@ -10229,6 +10751,14 @@ export default function NBALandingPage() {
                                   ) : isTennisPropsSport(rowSport) ? (
                                     <AflPropsPlayerAvatar
                                       headshotUrl={tennisPropsHeadshotUrl(prop)}
+                                      jerseyNumber={null}
+                                      isDark={isDark}
+                                      mounted={mounted}
+                                      size="sm"
+                                    />
+                                  ) : rowSport === 'nbl' ? (
+                                    <AflPropsPlayerAvatar
+                                      headshotUrl={prop.headshotUrl || null}
                                       jerseyNumber={null}
                                       isDark={isDark}
                                       mounted={mounted}
@@ -10340,7 +10870,35 @@ export default function NBALandingPage() {
                                               )}
                                             </>
                                           );
-                                        })() : isTennisPropsSport(rowSport) ? null : (
+                                        })() : isTennisPropsSport(rowSport) ? null : rowSport === 'nbl' ? (() => {
+                                          const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
+                                          const tryNblLogo = (name: string): string | null => {
+                                            if (!name) return null;
+                                            if (nblLogoByTeam[name]) return nblLogoByTeam[name];
+                                            const key = n(name);
+                                            for (const [logoKey, url] of Object.entries(nblLogoByTeam)) {
+                                              if (n(logoKey) === key) return url;
+                                            }
+                                            return null;
+                                          };
+                                          const homeLogoUrl = tryNblLogo(prop.team || prop.homeTeam || '');
+                                          const awayLogoUrl = tryNblLogo(prop.opponent || prop.awayTeam || '');
+                                          return (
+                                            <>
+                                              {homeLogoUrl ? (
+                                                <img src={homeLogoUrl} alt={prop.team || ''} className="w-5 h-5 object-contain" />
+                                              ) : (
+                                                <div className={`w-5 h-5 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+                                              )}
+                                              <span className={`text-[10px] leading-none ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>vs</span>
+                                              {awayLogoUrl ? (
+                                                <img src={awayLogoUrl} alt={prop.opponent || ''} className="w-5 h-5 object-contain" />
+                                              ) : (
+                                                <div className={`w-5 h-5 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+                                              )}
+                                            </>
+                                          );
+                                        })() : (
                                           <>
                                             {teamLogoUrl && (
                                               <img
@@ -10376,6 +10934,16 @@ export default function NBALandingPage() {
                                         </div>
                                       ) : null;
                                     })()}
+                                    {rowSport === 'nbl' && (() => {
+                                      const nblPosLine = formatNblPropsPositionLabel(prop.nblPosition, prop.nblPlayType);
+                                      return nblPosLine ? (
+                                        <div
+                                          className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                                        >
+                                          {nblPosLine}
+                                        </div>
+                                      ) : null;
+                                    })()}
                                     
                                     {isTennisPropsSport(rowSport) && (
                                       <>
@@ -10404,7 +10972,9 @@ export default function NBALandingPage() {
                                         mobile: true,
                                       })}
                                     >
-                                      {formatPropsRowStatLine(prop.statType, prop.line, getStatLabel(prop.statType))}
+                                      {formatPropsRowStatLine(prop.statType, prop.line, getStatLabel(prop.statType), {
+                                        milestone: rowSport === 'nbl' && (!prop.underOdds || prop.underOdds === 'N/A'),
+                                      })}
                                     </div>
                                   </div>
                                   {/* Bookmaker IP Box - darker text on mobile */}
@@ -10419,7 +10989,7 @@ export default function NBALandingPage() {
                                           ? sourceLines.filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
                                           : sourceLines;
                                         const { overProb, underProb } = getConsensusImpliedProbabilities(prop, filteredLines);
-                                        const showUnderIp = propsRowShowsUnderOdds(rowSport);
+                                        const showUnderIp = propsRowShowsUnderOdds(rowSport, prop.underOdds);
 
                                         return (
                                           <>
@@ -10617,7 +11187,7 @@ export default function NBALandingPage() {
                                               <span className={`font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`} style={{ fontSize: '12px' }}>
                                                 O {formatOddsValue(bookmaker.overOdds)}
                                               </span>
-                                              {propsRowShowsUnderOdds(rowSport) && (
+                                              {propsRowShowsUnderOdds(rowSport, bookmaker.underOdds) && (
                                                 <>
                                                   <span className={mounted && isDark ? 'text-gray-500' : 'text-gray-400'} style={{ fontSize: '11px' }}>|</span>
                                                   <span className={`font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`} style={{ fontSize: '12px' }}>
@@ -10720,7 +11290,7 @@ export default function NBALandingPage() {
                                                             <span className={`text-xs font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
                                                               O {formatOddsValue(line.overOdds)}
                                                             </span>
-                                                            {propsRowShowsUnderOdds(rowSport) && (
+                                                            {propsRowShowsUnderOdds(rowSport, line.underOdds) && (
                                                               <span className={`text-xs font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
                                                                 U {formatOddsValue(line.underOdds)}
                                                               </span>
@@ -11137,12 +11707,14 @@ export default function NBALandingPage() {
                 placeholder={
                   propsSport === 'afl'
                       ? 'Search AFL players...'
+                      : propsSport === 'nbl'
+                        ? 'Search NBL players...'
                       : isTennisPropsSport(propsSport)
                         ? `Search ${propsSport === 'wta' ? 'WTA' : 'ATP'} players...`
                       : propsSport === 'combined'
                         ? TENNIS_PUBLIC_ENABLED
-                          ? 'Search NBA, AFL, ATP or WTA players...'
-                          : 'Search NBA or AFL players...'
+                          ? 'Search NBA, AFL, NBL, ATP or WTA players...'
+                          : 'Search NBA, AFL or NBL players...'
                         : 'Search NBA players...'
                 }
                 className={`w-full px-4 py-2.5 rounded-lg border text-sm ${
@@ -11170,11 +11742,13 @@ export default function NBALandingPage() {
                 <ul className="space-y-1">
                   {findPlayerResults.map((player, idx) => {
                     const tennisTour = propsSportFromTennisTour(player.team);
-                    const findSport: 'nba' | 'afl' | 'atp' | 'wta' =
+                    const findSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta' =
                       isTennisPropsSport(propsSport) || tennisTour
                         ? tennisTour || (propsSport === 'wta' ? 'wta' : 'atp')
                         : propsSport === 'afl'
                           ? 'afl'
+                          : propsSport === 'nbl'
+                            ? 'nbl'
                           : 'nba';
                     const findHref = propsDashboardHref({
                       sport: findSport,
@@ -11196,6 +11770,9 @@ export default function NBALandingPage() {
                               playerId: player.playerId,
                               tour: player.team,
                             });
+                            snapshotPropsPageBeforeLeave();
+                            router.push(findHref);
+                          } else if (propsSport === 'nbl') {
                             snapshotPropsPageBeforeLeave();
                             router.push(findHref);
                           } else if (propsSport === 'afl') {

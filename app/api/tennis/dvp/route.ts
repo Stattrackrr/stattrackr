@@ -5,13 +5,17 @@ import {
   TENNIS_DVP_METRICS,
   TENNIS_DVP_WINDOWS,
   tennisDvpTournamentBestOf,
+  tennisFillMetricRank,
   type TennisDvpStage,
   type TennisDvpWindow,
 } from '@/lib/tennis/dvpShared';
 import {
+  buildTennisDvpWindowsFromRedis,
   findCachedTennisDvpEvent,
   readTennisDvpLiveEvent,
   readTennisDvpLiveStore,
+  tennisCachedDvpPlayerHasSample,
+  type TennisCachedDvpEvent,
   type TennisCachedDvpPlayer,
 } from '@/lib/tennis/dvpLiveCache';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
@@ -173,19 +177,73 @@ function jsonFromEvent(opts: {
       seed: row.seed ?? null,
       drawRank: row.drawRank ?? null,
     })),
-    metrics: selected?.metrics?.length
-      ? selected.metrics
-      : TENNIS_DVP_METRICS.map((metric) => ({
-          key: metric.key,
-          label: metric.label,
-          pct: metric.pct,
-          value: null,
-          rank: null,
-          matches: 0,
-          fieldSize: opts.event.fieldSize,
-        })),
+    metrics: (selected?.metrics?.length ? selected.metrics : TENNIS_DVP_METRICS.map((metric) => ({
+      key: metric.key,
+      label: metric.label,
+      pct: metric.pct,
+      value: null,
+      rank: null,
+      matches: 0,
+      fieldSize: opts.event.fieldSize,
+    }))).map((metric) => ({
+      ...metric,
+      rank: tennisFillMetricRank(metric.rank, selected),
+      fieldSize: metric.fieldSize || opts.event.fieldSize,
+    })),
     windows,
   };
+}
+
+async function eventWithFreshSample(opts: {
+  event: TennisCachedDvpEvent;
+  tour: TennisTour;
+  year: number;
+  window: TennisDvpWindow;
+  stage: TennisDvpStage;
+  opponentId: string;
+  opponentName: string;
+  playerId: string;
+  playerName: string;
+  tournamentKey: string;
+  tournamentName: string;
+  extraPlayerIds: string[];
+}): Promise<TennisCachedDvpEvent> {
+  const field = opts.event.windows[opts.window] || opts.event.windows.last10 || [];
+  const selected = findCachedDvpPlayer(field, opts.opponentId, opts.opponentName);
+  if (tennisCachedDvpPlayerHasSample(selected)) return opts.event;
+  const extraPlayerIds = [
+    ...new Set(
+      [
+        ...field.map((row) => row.id),
+        ...opts.extraPlayerIds,
+        opts.opponentId,
+        opts.playerId,
+      ]
+        .map((id) => String(id || '').trim())
+        .filter(Boolean)
+    ),
+  ];
+  if (extraPlayerIds.length < 2) return opts.event;
+  const rebuilt = await buildTennisDvpWindowsFromRedis({
+    tour: opts.tour,
+    year: opts.year,
+    opponentName: opts.opponentName || null,
+    opponentId: opts.opponentId || null,
+    playerName: opts.playerName || null,
+    playerId: opts.playerId || null,
+    tournamentName: opts.tournamentName || opts.event.tournamentName,
+    tournamentKey: opts.tournamentKey || opts.event.tournamentKey,
+    extraPlayerIds,
+    live: peekLiveTennisEventIndex() || {
+      keys: new Set(),
+      names: new Set(),
+      playerIdsByKey: new Map(),
+      playerIdsByName: new Map(),
+      events: [],
+    },
+    stage: opts.event.stage || opts.stage,
+  });
+  return rebuilt || opts.event;
 }
 
 export async function GET(request: NextRequest) {
@@ -250,9 +308,26 @@ export async function GET(request: NextRequest) {
   if (cachedEvent) {
     const cachedPlayers = cachedEvent.windows[window] || cachedEvent.windows.last10 || [];
     opponentId = reconcileOpponentId(opponentId, opponent, cachedPlayers);
+    const event = await eventWithFreshSample({
+      event: cachedEvent,
+      tour,
+      year,
+      window,
+      stage,
+      opponentId,
+      opponentName: opponent,
+      playerId,
+      playerName: player,
+      tournamentKey: resolvedKey,
+      tournamentName: resolvedName,
+      extraPlayerIds: [
+        ...(liveEvent?.playerIds || []),
+        ...(liveEvent?.qualifyingPlayerIds || []),
+      ],
+    });
     return NextResponse.json(
       jsonFromEvent({
-        event: cachedEvent,
+        event,
         tour,
         year,
         window,

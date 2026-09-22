@@ -88,7 +88,15 @@ export type NblPlayTypeRoundPick = {
 };
 
 export type NblPlayTypeCell = {
+  /** Allowed minus type league average, shrunk by sample. Positive = easier matchup. */
   boost: number | null;
+  /** Minutes-weighted PTS/AST/REB this team allowed to this type. */
+  allowed: number | null;
+  /** Minutes-weighted type average across the league. */
+  league: number | null;
+  /** 1 = hardest (allows least to this type), 10 = easiest. */
+  rank: number | null;
+  fieldSize: number;
   games: number;
   players: number;
   minutes: number;
@@ -144,4 +152,35 @@ export function parseNblPlayTypeStat(raw: string | null | undefined): NblPlayTyp
 /** Unknown stats fall back to points for callers that always need a key. */
 export function normalizeNblPlayTypeStat(raw: string | null | undefined): NblPlayTypeStatKey {
   return parseNblPlayTypeStat(raw) ?? 'points';
+}
+
+/** Roster G/F/C (including GF/FC) for the props-page line under the name. */
+export function formatNblRosterPosition(raw: string | null | undefined): string | null {
+  const s = String(raw || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '');
+  if (!s) return null;
+  if (s === 'GF' || s === 'FG') return 'G/F';
+  if (s === 'FC' || s === 'CF') return 'F/C';
+  if (s === 'GC' || s === 'CG') return 'G/C';
+  if (s === 'G' || s === 'F' || s === 'C') return s;
+  if (s.includes('G') && s.includes('F')) return 'G/F';
+  if (s.includes('F') && s.includes('C')) return 'F/C';
+  if (s.includes('C')) return 'C';
+  if (s.includes('F')) return 'F';
+  if (s.includes('G')) return 'G';
+  return s;
+}
+
+/** AFL-style "MID - INS MID": roster position plus play type. */
+export function formatNblPropsPositionLabel(
+  position: string | null | undefined,
+  playType: NblPlayTypeId | string | null | undefined
+): string | null {
+  const pos = formatNblRosterPosition(position);
+  const typeKey = String(playType || '').trim() as NblPlayTypeId;
+  const type = typeKey && typeKey in NBL_PLAY_TYPE_LABELS ? NBL_PLAY_TYPE_LABELS[typeKey] : null;
+  if (pos && type) return `${pos} - ${type}`;
+  return pos || type || null;
 }

@@ -422,9 +422,17 @@ async function fetchUpcomingLive(): Promise<{
     ((Array.isArray(batch?.result) ? batch.result : []) as ApiTennisFixture[])
   );
   const indexed = indexFixtures(fixtures);
+  const events = unionLiveEvents(upcomingRuntime().window?.events, indexed.events);
+  rememberWindow(indexed.byPlayerId, Date.now(), events);
+  try {
+    const { seedTennisLogsFromFixtures } = await import('@/lib/tennis/ingest');
+    await seedTennisLogsFromFixtures(fixtures, [...indexed.byPlayerId.keys()]);
+  } catch {
+    /* DVP logs are best-effort; upcoming still publishes */
+  }
   return {
     byPlayerId: indexed.byPlayerId,
-    events: unionLiveEvents(upcomingRuntime().window?.events, indexed.events),
+    events,
   };
 }
 

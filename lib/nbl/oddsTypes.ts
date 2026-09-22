@@ -77,11 +77,40 @@ export function nblOuHasOdds(row: { line?: string; over?: string; under?: string
 
 export function nblBookLines(book: NblBookRow | undefined): NblPropLine[] {
   if (!book) return [];
-  if (book.lines?.length) return book.lines;
+  if (book.lines?.length) return nblPreferOuLines(book.lines);
   if (nblOuHasOdds(book.Total)) {
     return [{ ...book.Total, kind: 'ou', label: book.Total.line }];
   }
   return [];
+}
+
+/** Props-page milestone band (decimal). Dashboard is unfiltered. */
+export const NBL_PROPS_MILESTONE_MIN_DECIMAL = 1.55;
+export const NBL_PROPS_MILESTONE_MAX_DECIMAL = 2.6;
+
+export function nblAmericanToDecimal(raw: string | undefined | null): number | null {
+  if (raw == null || raw === 'N/A') return null;
+  const n = Number(String(raw).replace(/[^0-9.+-]/g, ''));
+  if (!Number.isFinite(n) || n === 0) return null;
+  if (n > 0) return n / 100 + 1;
+  return 100 / Math.abs(n) + 1;
+}
+
+export function nblMilestoneOddsInPropsBand(overOdds: string | undefined | null): boolean {
+  const dec = nblAmericanToDecimal(overOdds);
+  if (dec == null) return false;
+  return dec >= NBL_PROPS_MILESTONE_MIN_DECIMAL && dec <= NBL_PROPS_MILESTONE_MAX_DECIMAL;
+}
+
+export function nblPreferOuLines(lines: NblPropLine[]): NblPropLine[] {
+  const twoWay = lines.filter((l) => l.kind === 'ou' && l.under !== 'N/A' && l.over !== 'N/A');
+  return twoWay.length ? twoWay : lines;
+}
+
+export function nblFilterMilestoneLinesForPropsPage(lines: NblPropLine[]): NblPropLine[] {
+  const preferred = nblPreferOuLines(lines);
+  if (preferred.some((l) => l.kind === 'ou')) return preferred;
+  return preferred.filter((l) => nblMilestoneOddsInPropsBand(l.over));
 }
 
 export function nblLineMatchingValue(

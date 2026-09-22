@@ -162,6 +162,26 @@ function loadPlayerGames(playerId: string, year: number): NblGameLogRow[] {
   }
 }
 
+function similarProduction(target: NblLeaguePlayerStatRow, peer: NblLeaguePlayerStatRow): boolean {
+  const tMin = numOrNull(target.minutes) ?? 0;
+  const pMin = numOrNull(peer.minutes) ?? 0;
+  if (tMin >= 18 && pMin < Math.max(15, tMin * 0.65)) return false;
+  const tPts = numOrNull(target.points) ?? 0;
+  const pPts = numOrNull(peer.points) ?? 0;
+  if (tPts >= 12 && pPts < tPts * 0.55) return false;
+  const tAst = numOrNull(target.assists) ?? 0;
+  const pAst = numOrNull(peer.assists) ?? 0;
+  if (tAst >= 4 && pAst < tAst * 0.4) return false;
+  return true;
+}
+
+function sameTeam(a: string | null | undefined, b: string | null | undefined): boolean {
+  const ca = resolveNblClubName(String(a || ''));
+  const cb = resolveNblClubName(String(b || ''));
+  if (ca && cb) return normalizeTeamKey(ca) === normalizeTeamKey(cb);
+  return normalizeTeamKey(String(a || '')) === normalizeTeamKey(String(b || ''));
+}
+
 function opponentMatches(
   game: NblGameLogRow,
   opponentCode: string | null,
@@ -219,7 +239,7 @@ export function buildNblSimilarPlayers(options: {
   const opponentName =
     resolveNblClubName(options.opponent) || String(options.opponent || '').trim() || null;
 
-  const players = loadLeaguePlayers(year).filter((p) => (p.games ?? 0) >= 5);
+  const players = loadLeaguePlayers(year);
   const target =
     players.find((p) => p.playerId === options.playerId) ||
     players.find(
@@ -247,7 +267,12 @@ export function buildNblSimilarPlayers(options: {
 
   const family = positionFamily(target.position);
   const pool = players.filter(
-    (p) => p.playerId !== target.playerId && positionFamily(p.position) === family
+    (p) =>
+      p.playerId !== target.playerId &&
+      (p.games ?? 0) >= 1 &&
+      positionFamily(p.position) === family &&
+      !sameTeam(p.team, target.team) &&
+      similarProduction(target, p)
   );
   if (!pool.length) return empty;
 
@@ -288,9 +313,9 @@ export function buildNblSimilarPlayers(options: {
   type CandidateGame = NblSimilarPlayerRow & { distance: number };
   const byPlayerId = new Map<string, CandidateGame>();
 
-  // One line per player for the season: closest peers who faced this opponent,
-  // each shown once using their most recent game vs that team.
-  for (const { player, distance } of scored) {
+  // Closest same-position peers only; then keep this-season games vs the opponent.
+  const peerWindow = scored.slice(0, Math.max(limit * 2, 12));
+  for (const { player, distance } of peerWindow) {
     if (byPlayerId.size >= limit) break;
     if (byPlayerId.has(player.playerId)) continue;
 
@@ -299,10 +324,12 @@ export function buildNblSimilarPlayers(options: {
       .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
     const g = games[0];
     if (!g) continue;
+    const gameMins = numOrNull(g.minutes);
+    if (gameMins != null && gameMins < 8) continue;
 
     const matchId = String(g.matchId || '').trim();
     if (!matchId) continue;
-    const mins = numOrNull(g.minutes);
+    const mins = gameMins;
     const value = STAT_FROM_LOG[stat](g);
     byPlayerId.set(player.playerId, {
       matchId,
