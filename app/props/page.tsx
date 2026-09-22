@@ -35,6 +35,7 @@ import {
   filterAflPropsEligibleGames,
 } from '@/lib/combinedPropsSnapshotTypes';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
+import { resolveNblClubName } from '@/lib/nblTeamCanonical';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
@@ -1014,6 +1015,7 @@ function SecondaryGameMatchupLogos({
   awayTeamLogo,
   sport,
   aflLogoByTeam,
+  nblLogoByTeam = {},
   isDark,
   mounted,
   size = 'md',
@@ -1026,6 +1028,7 @@ function SecondaryGameMatchupLogos({
   awayTeamLogo?: string | null;
   sport: PropsSportMode;
   aflLogoByTeam: Record<string, string>;
+  nblLogoByTeam?: Record<string, string>;
   isDark: boolean;
   mounted: boolean;
   size?: 'sm' | 'md';
@@ -1055,6 +1058,44 @@ function SecondaryGameMatchupLogos({
           {shortName(awayName)}
         </span>
         <img src={awayLogo} alt="" className={`${imgClass} object-contain flex-shrink-0`} />
+      </div>
+    );
+  }
+
+  if (isNblPropsSport(sport)) {
+    const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const tryNblLogo = (name: string, fallback?: string | null): string | null => {
+      const direct = String(fallback || '').trim();
+      if (direct.startsWith('http') || direct.startsWith('/')) return direct;
+      if (!name) return null;
+      if (nblLogoByTeam[name]) return nblLogoByTeam[name];
+      const official = resolveNblClubName(name);
+      if (official && nblLogoByTeam[official]) return nblLogoByTeam[official];
+      const key = n(official || name);
+      for (const [logoKey, url] of Object.entries(nblLogoByTeam)) {
+        if (n(logoKey) === key) return url;
+      }
+      return null;
+    };
+    const homeLogoUrl =
+      tryNblLogo(homeTeam, homeTeamLogo) || tryNblLogo(homeTeamCode || '');
+    const awayLogoUrl =
+      tryNblLogo(awayTeam, awayTeamLogo) || tryNblLogo(awayTeamCode || '');
+    const homeAlt = resolveNblClubName(homeTeam) || homeTeam;
+    const awayAlt = resolveNblClubName(awayTeam) || awayTeam;
+    return (
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        {homeLogoUrl ? (
+          <img src={homeLogoUrl} alt={homeAlt} className={`${imgClass} object-contain flex-shrink-0`} />
+        ) : (
+          <div className={`${imgClass} rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+        )}
+        <span className={`${vsClass} ${vsWeight} flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
+        {awayLogoUrl ? (
+          <img src={awayLogoUrl} alt={awayAlt} className={`${imgClass} object-contain flex-shrink-0`} />
+        ) : (
+          <div className={`${imgClass} rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+        )}
       </div>
     );
   }
@@ -7824,6 +7865,7 @@ export default function NBALandingPage() {
                                         awayTeamLogo={game.awayTeamLogo}
                                         sport={propsSport}
                                         aflLogoByTeam={aflLogoByTeam}
+                                        nblLogoByTeam={nblLogoByTeam}
                                         isDark={isDark}
                                         mounted={mounted}
                                         size="md"
@@ -7951,6 +7993,7 @@ export default function NBALandingPage() {
                                         awayTeamLogo={game.awayTeamLogo}
                                         sport={propsSport}
                                         aflLogoByTeam={aflLogoByTeam}
+                                        nblLogoByTeam={nblLogoByTeam}
                                         isDark={isDark}
                                         mounted={mounted}
                                         size="md"

@@ -58,6 +58,7 @@ import {
   parseNblOddsLine,
   type NblBookRow,
 } from '@/lib/nbl/oddsTypes';
+import { normalizeNblStat } from '@/lib/propsDashboardLinks';
 import {
   NBL_PLAY_TYPE_FULL_LABELS,
   type NblPlayTypeId,
@@ -152,6 +153,37 @@ function nblPlayerLogsCacheKey(playerId: string): string {
   return `${NBL_PLAYER_LOGS_CACHE_PREFIX}:${playerId}:${NBL_CHART_HISTORY_YEARS.join(',')}`;
 }
 
+function parseIncomingNblLine(raw: string | null | undefined): number | null {
+  if (!raw?.trim()) return null;
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeNblBookName(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '');
+}
+
+function nblBookHasLineValue(book: NblBookRow | undefined, value: number | null): boolean {
+  if (!book || value == null || !Number.isFinite(value)) return false;
+  if (
+    nblBookLines(book).some((l) => {
+      const n = parseNblOddsLine(l.line);
+      return n != null && Math.abs(n - value) < 0.01;
+    })
+  ) {
+    return true;
+  }
+  const total = parseNblOddsLine(book.Total?.line);
+  const spread = parseNblOddsLine(book.Spread?.line);
+  return (
+    (total != null && Math.abs(total - value) < 0.01) ||
+    (spread != null && Math.abs(spread - value) < 0.01)
+  );
+}
+
 function readPersistedNblPageState(): Partial<PersistedNblPageState> | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -174,6 +206,8 @@ function readInitialNblSelection(): {
   nblGameFilters: NblGameFiltersState;
   searchQuery: string;
   fromUrl: boolean;
+  incomingLine: number | null;
+  incomingBookmaker: string | null;
 } {
   const empty = {
     selectedPlayer: null as NblRosterPlayer | null,
@@ -186,6 +220,8 @@ function readInitialNblSelection(): {
     nblGameFilters: { ...DEFAULT_NBL_GAME_FILTERS },
     searchQuery: '',
     fromUrl: false,
+    incomingLine: null as number | null,
+    incomingBookmaker: null as string | null,
   };
   if (typeof window === 'undefined') return empty;
 
@@ -220,6 +256,8 @@ function readInitialNblSelection(): {
         };
     const tf = url.searchParams.get('tf')?.trim() || '';
     const stat = url.searchParams.get('stat')?.trim() || '';
+    const incomingLine = parseIncomingNblLine(url.searchParams.get('line'));
+    const incomingBookmaker = url.searchParams.get('bookmaker')?.trim() || null;
     return {
       ...empty,
       selectedPlayer: player,
@@ -227,12 +265,14 @@ function readInitialNblSelection(): {
       nblPropsMode: 'player',
       nblRightTab: 'dvp',
       searchQuery: player.name,
-      mainChartStat: stat || empty.mainChartStat,
+      mainChartStat: stat ? normalizeNblStat(stat) : empty.mainChartStat,
       chartTimeframe:
         tf && (NBL_CHART_TIMEFRAMES as readonly string[]).includes(tf)
           ? (tf as NblChartTimeframe)
           : empty.chartTimeframe,
       fromUrl: true,
+      incomingLine,
+      incomingBookmaker,
     };
   }
 
@@ -240,6 +280,8 @@ function readInitialNblSelection(): {
   if (modeParam === 'team' && teamParam) {
     const tf = url.searchParams.get('tf')?.trim() || '';
     const stat = url.searchParams.get('stat')?.trim() || '';
+    const incomingLine = parseIncomingNblLine(url.searchParams.get('line'));
+    const incomingBookmaker = url.searchParams.get('bookmaker')?.trim() || null;
     const persistedPlayer =
       persisted?.selectedPlayer && typeof persisted.selectedPlayer === 'object'
         ? (persisted.selectedPlayer as NblRosterPlayer)
@@ -258,6 +300,8 @@ function readInitialNblSelection(): {
           ? (tf as NblChartTimeframe)
           : empty.chartTimeframe,
       fromUrl: true,
+      incomingLine,
+      incomingBookmaker,
     };
   }
 
@@ -311,6 +355,8 @@ function readInitialNblSelection(): {
         : { ...DEFAULT_NBL_GAME_FILTERS },
     searchQuery: player?.name || (mode === 'team' ? String(persisted.selectedTeam || '') : ''),
     fromUrl: false,
+    incomingLine: null,
+    incomingBookmaker: null,
   };
 }
 
@@ -378,6 +424,9 @@ export default function NblDashboardPage() {
   const [selectedNblBookIndex, setSelectedNblBookIndex] = useState(0);
   const [nblGameLineValue, setNblGameLineValue] = useState<number | null>(null);
   const nblOddsBoardKeyRef = useRef('');
+  const preferredNblBookmakerRef = useRef<string | null>(null);
+  const hasIncomingNblBookOrLineRef = useRef(false);
+  const incomingAppliedForKeyRef = useRef<string | null>(null);
 
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -423,6 +472,14 @@ export default function NblDashboardPage() {
     setMainChartStat(restored.mainChartStat);
     setNblGameFilters(restored.nblGameFilters);
     if (restored.searchQuery) setSearchQuery(restored.searchQuery);
+    if (restored.incomingLine != null) {
+      setNblGameLineValue(restored.incomingLine);
+      hasIncomingNblBookOrLineRef.current = true;
+    }
+    if (restored.incomingBookmaker) {
+      preferredNblBookmakerRef.current = restored.incomingBookmaker;
+      hasIncomingNblBookOrLineRef.current = true;
+    }
     setSelectionHydrated(true);
   }, []);
 
@@ -635,6 +692,9 @@ export default function NblDashboardPage() {
       if (mainChartStat) url.searchParams.set('stat', mainChartStat);
       else url.searchParams.delete('stat');
       url.searchParams.set('tf', chartTimeframe);
+      if (nblGameLineValue != null && Number.isFinite(nblGameLineValue)) {
+        url.searchParams.set('line', String(nblGameLineValue));
+      } else url.searchParams.delete('line');
       url.searchParams.delete('player');
     } else if (nblPropsMode === 'team' && selectedTeam) {
       url.searchParams.set('mode', 'team');
@@ -644,6 +704,9 @@ export default function NblDashboardPage() {
       if (mainChartStat) url.searchParams.set('stat', mainChartStat);
       else url.searchParams.delete('stat');
       url.searchParams.set('tf', chartTimeframe);
+      if (nblGameLineValue != null && Number.isFinite(nblGameLineValue)) {
+        url.searchParams.set('line', String(nblGameLineValue));
+      } else url.searchParams.delete('line');
       const nextOpp =
         nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—'
           ? nextGameOpponent
@@ -658,6 +721,8 @@ export default function NblDashboardPage() {
       url.searchParams.delete('player');
       url.searchParams.delete('stat');
       url.searchParams.delete('tf');
+      url.searchParams.delete('line');
+      url.searchParams.delete('bookmaker');
     }
     const next = url.toString();
     if (window.location.href !== next) {
@@ -671,6 +736,7 @@ export default function NblDashboardPage() {
     nextGameOpponent,
     mainChartStat,
     chartTimeframe,
+    nblGameLineValue,
     selectionHydrated,
   ]);
 
@@ -922,7 +988,25 @@ export default function NblDashboardPage() {
   const setMainChartStatAndResetLine = useCallback((stat: string | ((prev: string) => string)) => {
     setMainChartStat(stat);
     setNblGameLineValue(null);
+    hasIncomingNblBookOrLineRef.current = false;
+    preferredNblBookmakerRef.current = null;
   }, []);
+
+  useEffect(() => {
+    const key =
+      nblPropsMode === 'player'
+        ? String(selectedPlayer?.name || '').trim()
+        : String(selectedTeam || '').trim();
+    if (!key) return;
+    if (incomingAppliedForKeyRef.current == null) {
+      incomingAppliedForKeyRef.current = key;
+      return;
+    }
+    if (incomingAppliedForKeyRef.current === key) return;
+    incomingAppliedForKeyRef.current = key;
+    hasIncomingNblBookOrLineRef.current = false;
+    preferredNblBookmakerRef.current = null;
+  }, [nblPropsMode, selectedPlayer?.name, selectedTeam]);
 
   useEffect(() => {
     const team = nblOddsTeam ? resolveNblClubName(nblOddsTeam) || nblOddsTeam : null;
@@ -970,8 +1054,10 @@ export default function NblDashboardPage() {
         }
         setNblOddsHomeTeam(typeof data?.homeTeam === 'string' ? data.homeTeam : team!);
         setNblOddsAwayTeam(typeof data?.awayTeam === 'string' ? data.awayTeam : opponent!);
-        setSelectedNblBookIndex(0);
-        setNblGameLineValue(null);
+        if (!hasIncomingNblBookOrLineRef.current) {
+          setSelectedNblBookIndex(0);
+          setNblGameLineValue(null);
+        }
       } catch {
         if (!cancelled) {
           nblOddsBoardKeyRef.current = '';
@@ -1005,19 +1091,8 @@ export default function NblDashboardPage() {
       return parseNblOddsLine(nblOddsMarket === 'spread' ? book.Spread?.line : book.Total?.line);
     };
     const book = nblDisplayOddsBooks[selectedNblBookIndex] ?? nblDisplayOddsBooks[0];
-    const bookHasLine = (value: number | null): boolean => {
-      if (value == null || !book) return false;
-      if (nblPropsMode === 'player') {
-        return nblBookLines(book).some((l) => {
-          const n = parseNblOddsLine(l.line);
-          return n != null && Math.abs(n - value) < 0.01;
-        });
-      }
-      const n = preferredLine(book);
-      return n != null && Math.abs(n - value) < 0.01;
-    };
     setNblGameLineValue((current) => {
-      if (bookHasLine(current)) return current;
+      if (current != null && Number.isFinite(current)) return current;
       const parsed = preferredLine(book);
       if (parsed != null) return parsed;
       const withData = nblDisplayOddsBooks.find((b) => preferredLine(b) != null);
@@ -1028,6 +1103,45 @@ export default function NblDashboardPage() {
       if (withData >= 0 && withData !== selectedNblBookIndex) setSelectedNblBookIndex(withData);
     }
   }, [nblPropsMode, nblOddsMarket, nblDisplayOddsBooks, selectedNblBookIndex]);
+
+  useEffect(() => {
+    if (!nblDisplayOddsBooks.length) return;
+    const preferredBook = preferredNblBookmakerRef.current;
+    if (preferredBook) {
+      const preferredNorm = normalizeNblBookName(preferredBook);
+      const preferredIndex = nblDisplayOddsBooks.findIndex((b) => {
+        const bookNorm = normalizeNblBookName(b.name);
+        return (
+          bookNorm === preferredNorm ||
+          bookNorm.includes(preferredNorm) ||
+          preferredNorm.includes(bookNorm)
+        );
+      });
+      if (preferredIndex >= 0) {
+        if (preferredIndex !== selectedNblBookIndex) setSelectedNblBookIndex(preferredIndex);
+        preferredNblBookmakerRef.current = null;
+        return;
+      }
+    }
+    if (!hasIncomingNblBookOrLineRef.current) return;
+    const incoming = nblGameLineValue;
+    if (incoming == null || !Number.isFinite(incoming)) return;
+    if (nblBookHasLineValue(nblDisplayOddsBooks[selectedNblBookIndex], incoming)) return;
+    const idx = nblDisplayOddsBooks.findIndex((b) => nblBookHasLineValue(b, incoming));
+    if (idx >= 0 && idx !== selectedNblBookIndex) setSelectedNblBookIndex(idx);
+  }, [nblDisplayOddsBooks, selectedNblBookIndex, nblGameLineValue]);
+
+  useEffect(() => {
+    const onTransientLine = (e: Event) => {
+      const value = (e as CustomEvent<{ value: number }>).detail?.value;
+      if (value == null || !Number.isFinite(value)) return;
+      setNblGameLineValue((prev) =>
+        prev != null && Number.isFinite(prev) && Math.abs(prev - value) < 0.01 ? prev : value
+      );
+    };
+    window.addEventListener('transient-line', onTransientLine);
+    return () => window.removeEventListener('transient-line', onTransientLine);
+  }, []);
 
   // Mark tipoff LIVE for ~2.5h after start.
   useEffect(() => {

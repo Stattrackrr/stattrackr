@@ -116,6 +116,31 @@ export function nbaDashboardHref(opts: {
   return `/nba/research/dashboard?${q.toString()}`;
 }
 
+export function normalizeNblStat(stat: string): string {
+  const n = String(stat || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
+  if (!n || n === 'pts' || n === 'point' || n === 'points') return 'points';
+  if (n === 'reb' || n === 'rebs' || n === 'rebound' || n === 'rebounds') return 'rebounds';
+  if (n === 'ast' || n === 'assist' || n === 'assists') return 'assists';
+  if (
+    n === 'threemade' ||
+    n === 'threes' ||
+    n === '3pm' ||
+    n === 'fg3m' ||
+    n === '3pointers' ||
+    n === '3pointer'
+  ) {
+    return 'threeMade';
+  }
+  if (n === 'pra') return 'pra';
+  if (n === 'pr') return 'pr';
+  if (n === 'pa') return 'pa';
+  if (n === 'ra') return 'ra';
+  return String(stat || 'points').trim() || 'points';
+}
+
 export function nblDashboardHref(opts: {
   playerName: string;
   team?: string | null;
@@ -129,7 +154,7 @@ export function nblDashboardHref(opts: {
   q.set('name', opts.playerName);
   if (opts.team) q.set('team', opts.team);
   if (opts.opponent) q.set('opponent', opts.opponent);
-  const stat = String(opts.statType || 'points').trim() || 'points';
+  const stat = normalizeNblStat(String(opts.statType || 'points'));
   q.set('stat', stat);
   if (opts.line != null && Number.isFinite(opts.line)) q.set('line', String(opts.line));
   const book = String(opts.bookmaker || '').trim();
