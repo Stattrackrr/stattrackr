@@ -1,0 +1,212 @@
+{
+  "fixtureId": "36dbeb55-58ad-11f1-a69b-43a6b5595d3e",
+  "homeTeam": "Melbourne United",
+  "awayTeam": "Adelaide 36ers",
+  "homeScore": "95",
+  "awayScore": "97",
+  "tipoff": "2026-09-19T09:30:00",
+  "teams": [
+    {
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "isHome": true,
+      "starters": [
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "jersey": "43",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5b7d30c4d04a41d18fc52f62a611cbda?size=400",
+          "starter": true
+        },
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "jersey": "2",
+          "position": "FC",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/971dc3415a644ed89ef0a1a1ea25e682?size=400",
+          "starter": true
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "jersey": "12",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2e27e42851c24727b9af6e328ef168b1?size=400",
+          "starter": true
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "jersey": "18",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5b0d59d63e8c4ea9bac3c437dd39565b?size=400",
+          "starter": true
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "jersey": "23",
+          "position": "GF",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7fb4dce5d8884178a63f0934d3902d69?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "024d5bb0-7d7d-11f0-af8e-d779047302e8",
+          "name": "Christian D'Angelo",
+          "jersey": "11",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/65a9611eb83d4f8ea426adbcfed53d83?size=400",
+          "starter": false
+        },
+        {
+          "personId": "07948bc9-9cf5-11f1-8acf-bd9f13bc3d7d",
+          "name": "Will Hynes",
+          "jersey": "24",
+          "position": "G",
+          "imageUrl": null,
+          "starter": false
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "jersey": "7",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f8956dda45664d3bb1d0a5c0589150cf?size=400",
+          "starter": false
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "jersey": "3",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/88aceea640ef426cb14319fe874da47b?size=400",
+          "starter": false
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "jersey": "21",
+          "position": "FC",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/70079138b6e54ea29e86f1908a6c9232?size=400",
+          "starter": false
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "jersey": "15",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/293bff0a0e7e471ca191b4a5273fd5f4?size=400",
+          "starter": false
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f2652d5c3d4741d4acfd5c2469fee0ec?size=400",
+          "starter": false
+        },
+        {
+          "personId": "77ae4eb1-410d-11f0-b973-2902fc2f936f",
+          "name": "Austin Shelley",
+          "jersey": "5",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7048cadd9a7342f6ad1be15a32ead71c?size=400",
+          "starter": false
+        }
+      ]
+    },
+    {
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "isHome": false,
+      "starters": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "jersey": "11",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a6f07d6358b2486da335f792692cecf0?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "jersey": "1",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6625d956babc43d984f6892fcf614b29?size=400",
+          "starter": true
+        },
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "jersey": "45",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fe0d88cad50e41ec82bc2865b396d7bc?size=400",
+          "starter": true
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "jersey": "25",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/46d6763ad3ce4557a9061d6374556d84?size=400",
+          "starter": true
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "jersey": "31",
+          "position": "FC",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5a4663a0cf864d76a6533b6d5e8d6f5c?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "jersey": "0",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8c793cb80e5e49499b6c177d7bc56ebf?size=400",
+          "starter": false
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "jersey": "2",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5c90c60157dd438599d2d33142c4b271?size=400",
+          "starter": false
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "jersey": "22",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9025aaf5880a4b4d8b39cada095dc233?size=400",
+          "starter": false
+        },
+        {
+          "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+          "name": "Ben Griscti",
+          "jersey": "14",
+          "position": "FC",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c0d7429845574927bde205f71587fad7?size=400",
+          "starter": false
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "jersey": "23",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cc371980ed604bdb85bda9fd7db1aded?size=400",
+          "starter": false
+        }
+      ]
+    }
+  ]
+}

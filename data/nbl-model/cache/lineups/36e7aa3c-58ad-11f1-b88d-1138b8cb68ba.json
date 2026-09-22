@@ -1,0 +1,212 @@
+{
+  "fixtureId": "36e7aa3c-58ad-11f1-b88d-1138b8cb68ba",
+  "homeTeam": "Brisbane Bullets",
+  "awayTeam": "NZ Breakers",
+  "homeScore": "88",
+  "awayScore": "85",
+  "tipoff": "2026-09-22T09:30:00",
+  "teams": [
+    {
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "isHome": true,
+      "starters": [
+        {
+          "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
+          "name": "Tyrell Harrison",
+          "jersey": "24",
+          "position": "FC",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2408924e31f044b6821e42f9f968bd10?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+          "name": "Max Mackinnon",
+          "jersey": "3",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b7324dcc691e4192946bbc9616d493a1?size=400",
+          "starter": true
+        },
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "jersey": "4",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/536606aed60f426f949a8c383d33a00c?size=400",
+          "starter": true
+        },
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "jersey": "2",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d1e4c17b1076432fb1a427a0c03f8730?size=400",
+          "starter": true
+        },
+        {
+          "personId": "d386e7f0-7113-11f1-918a-cbf06337e292",
+          "name": "Arnas Velicka",
+          "jersey": "1",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b32eef80975a47b39919eccab7990de8?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "1cea90ee-4809-11f0-b563-ed9943899ab6",
+          "name": "Jacob Holt",
+          "jersey": "15",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a1eb9934c59043e2a9365aa153b372bb?size=400",
+          "starter": false
+        },
+        {
+          "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+          "name": "Mitch Norton",
+          "jersey": "8",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d27433ef96a84ccf932d58fade27e798?size=400",
+          "starter": false
+        },
+        {
+          "personId": "506a8485-410d-11f0-8bae-9dbbf7342624",
+          "name": "Lat Mayen",
+          "jersey": "11",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2f12d35e52eb4b5487b1c6bc786ae771?size=400",
+          "starter": false
+        },
+        {
+          "personId": "6ae51b44-410d-11f0-b4e3-9dbbf7342624",
+          "name": "Archie Woodhill",
+          "jersey": "6",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/84b5b9f5be5b493d950e09d8f8cf5607?size=400",
+          "starter": false
+        },
+        {
+          "personId": "6ba529fd-410d-11f0-9fb7-9dbbf7342624",
+          "name": "Joshua Duach",
+          "jersey": "5",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ca599129245f408b890c7840101b0553?size=400",
+          "starter": false
+        },
+        {
+          "personId": "77506203-410d-11f0-8a9c-2902fc2f936f",
+          "name": "Harry Rouhliadeff",
+          "jersey": "14",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ee2404c1e6da49449b013d9be2dc2868?size=400",
+          "starter": false
+        },
+        {
+          "personId": "c9355cc4-6078-11f1-a995-9961c8b996e1",
+          "name": "Rio Bruton",
+          "jersey": "13",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8605d5e515cf4cf78984df6a667ae519?size=400",
+          "starter": false
+        }
+      ]
+    },
+    {
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "isHome": false,
+      "starters": [
+        {
+          "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+          "name": "Dejan Vasiljevic",
+          "jersey": "34",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/969ad384a82d4142aed6f4d3fda9586d?size=400",
+          "starter": true
+        },
+        {
+          "personId": "5188b88d-410d-11f0-8e81-9dbbf7342624",
+          "name": "Izayah Le'Afa",
+          "jersey": "2",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b79d22fafeca4034b7cf0650ccc78628?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "jersey": "3",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7576309c4c2a439f8744e4bf8883cefc?size=400",
+          "starter": true
+        },
+        {
+          "personId": "75b6b600-410d-11f0-b796-2902fc2f936f",
+          "name": "Parker Jackson-Cartwright",
+          "jersey": "6",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aa570c05f87241a588d6d39b1765179f?size=400",
+          "starter": true
+        },
+        {
+          "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+          "name": "Charles Bediako",
+          "jersey": "8",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5715bf12feec4bf383b5cec6c1827e40?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+          "name": "Reuben Te Rangi",
+          "jersey": "7",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/602dbd4828a34aa787af17c6579fe80d?size=400",
+          "starter": false
+        },
+        {
+          "personId": "38c6176c-4e77-11f1-a102-57d499ff2e20",
+          "name": "Preston Le Gassick",
+          "jersey": "1",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8ec714970b4f4393a8945eaf6c32c077?size=400",
+          "starter": false
+        },
+        {
+          "personId": "50cb4bdd-410d-11f0-aa4b-9dbbf7342624",
+          "name": "Kouat Noi",
+          "jersey": "12",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e5a621e25db4df18d3b45bc9361f7ba?size=400",
+          "starter": false
+        },
+        {
+          "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
+          "name": "Mojave King",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cf0d61ee1e78463bb0f9a15ef9c90d0a?size=400",
+          "starter": false
+        },
+        {
+          "personId": "6be49392-410d-11f0-b2dd-9dbbf7342624",
+          "name": "Anzac Rissetto",
+          "jersey": "13",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/90f51404bf8445fdbda40543291db231?size=400",
+          "starter": false
+        },
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "jersey": "0",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/93737d3b649c4fe3913c09fff505d3a8?size=400",
+          "starter": false
+        }
+      ]
+    }
+  ]
+}

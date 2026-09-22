@@ -13,6 +13,18 @@ const TENNIS_RUNTIME_DATA = [
   './data/tennis/headshots.json',
 ] as const;
 
+const NBL_SCHEDULE_TRACE = ['./data/nbl-schedule-*.json', './data/nbl-roster-*.json'] as const;
+const NBL_LINEUP_TRACE = [
+  ...NBL_SCHEDULE_TRACE,
+  './data/nbl-model/cache/lineups/**/*',
+] as const;
+const NBL_PLAYER_LOG_TRACE = [
+  ...NBL_SCHEDULE_TRACE,
+  './data/nbl-model/cache/player-logs/**/*',
+  './data/nbl-model/cache/pbp/**/*',
+  './data/nbl-model/cache/pbp-chem/**/*',
+] as const;
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
   // Vercel file tracing omits @sparticuz/chromium/bin/*.br unless explicitly included
@@ -37,10 +49,12 @@ const nextConfig: NextConfig = {
     '/api/afl/injuries/route': ['./data/afl-injuries.json'],
     '/api/nbl/injuries': ['./data/nbl-injuries.json'],
     '/api/nbl/injuries/route': ['./data/nbl-injuries.json'],
-    '/api/nbl/lineups': ['./data/nbl-model/cache/lineups/**/*'],
-    '/api/nbl/lineups/route': ['./data/nbl-model/cache/lineups/**/*'],
-    '/api/nbl/predicted-starters': ['./data/nbl-model/cache/lineups/**/*'],
-    '/api/nbl/predicted-starters/route': ['./data/nbl-model/cache/lineups/**/*'],
+    '/api/nbl/lineups': [...NBL_LINEUP_TRACE],
+    '/api/nbl/lineups/route': [...NBL_LINEUP_TRACE],
+    '/api/nbl/predicted-starters': [...NBL_LINEUP_TRACE],
+    '/api/nbl/predicted-starters/route': [...NBL_LINEUP_TRACE],
+    '/api/nbl/player-game-logs': [...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/player-game-logs/route': [...NBL_PLAYER_LOG_TRACE],
     '/api/tennis/matches': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/matches/route': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/player-matchup': [...TENNIS_RUNTIME_DATA],

@@ -1,0 +1,204 @@
+{
+  "fixtureId": "36e80b8c-58ad-11f1-ab03-2572c13c410b",
+  "homeTeam": "Tasmania JackJumpers",
+  "awayTeam": "South East Melbourne Phoenix",
+  "homeScore": "96",
+  "awayScore": "91",
+  "tipoff": "2026-09-21T09:30:00",
+  "teams": [
+    {
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "isHome": true,
+      "starters": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "jersey": "31",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7a4e2b9b30b24c769a09b82d7acc8e95?size=400",
+          "starter": true
+        },
+        {
+          "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+          "name": "Majok Deng",
+          "jersey": "5",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ff951a256080456b97b3c14f8bfa6739?size=400",
+          "starter": true
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "jersey": "22",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f2f0bd14e6b748ca9c639449a1cd3299?size=400",
+          "starter": true
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "jersey": "1",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f738f8a18950480f873f0617c8049bfd?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "jersey": "11",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1c82121e8ba249e79a1b832a711ffe08?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1398b91444f8492db1105c27e2a2c520?size=400",
+          "starter": false
+        },
+        {
+          "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+          "name": "Jed Richardson",
+          "jersey": "4",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6b374d71ea9d41c6ad3ae5250a46ec4d?size=400",
+          "starter": false
+        },
+        {
+          "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+          "name": "Ryley Haywood",
+          "jersey": "8",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d9a6ea1061014dc5a666bd94a0d2a0d9?size=400",
+          "starter": false
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "jersey": "7",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/78b27ed7a0f14fe6adad856060e6037f?size=400",
+          "starter": false
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "jersey": "12",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d103a6c035e44f9e83f6d31f908a8198?size=400",
+          "starter": false
+        }
+      ]
+    },
+    {
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "isHome": false,
+      "starters": [
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "jersey": "13",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4133b1022edb4f78a01b69635dae7770?size=400",
+          "starter": true
+        },
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "jersey": "1",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/02596ca88608482698479a4bdebd02b2?size=400",
+          "starter": true
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8fab66501a7641c48f5e2d29302800ab?size=400",
+          "starter": true
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "jersey": "99",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aa5b390825814a8b86d89f739fa47383?size=400",
+          "starter": true
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "jersey": "4",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/456410246a4747979cf1d8030b76c67d?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "jersey": "5",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/45a8b8db005c4463bd960096521125c4?size=400",
+          "starter": false
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "jersey": "11",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e8df9b6d9e64950aac3a41a1b3f8043?size=400",
+          "starter": false
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "jersey": "10",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/13429ee31d6543ba9101d3a7bd5261da?size=400",
+          "starter": false
+        },
+        {
+          "personId": "5ec9c9d2-410d-11f0-a085-9dbbf7342624",
+          "name": "Patrick Ryan",
+          "jersey": "2",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cc13e0adf30e4b2f8879ca0fa64acd46?size=400",
+          "starter": false
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "jersey": "7",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d3e6511d611241c1a1332ac76cdf7f4a?size=400",
+          "starter": false
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "jersey": "12",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c5f1c5b857c14249ae62db4f296172da?size=400",
+          "starter": false
+        },
+        {
+          "personId": "b41a16c8-8c4f-11f0-81af-012b0061dfcc",
+          "name": "Sam Davidson",
+          "jersey": "3",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a5ce8c9efc5445a6a0caf61770e0384e?size=400",
+          "starter": false
+        }
+      ]
+    }
+  ]
+}

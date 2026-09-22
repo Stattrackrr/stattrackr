@@ -186,28 +186,27 @@ export async function buildRealLineups(options: {
     ...NBL_CHART_HISTORY_YEARS.filter((y) => y !== year),
   ];
   const games = loadCompletedGames(years);
+  const cacheOnly = options.cacheOnly !== false;
 
-  const teamGame = games.find(
-    (g) => teamsMatch(g.homeTeam, team) || teamsMatch(g.awayTeam, team)
-  );
-  if (!teamGame) {
-    return { sharedMatch: false, team: null, opponent: null };
+  // Newest completed game may not be warmed yet. Walk back until a cached
+  // (or live, when allowed) box score with starters exists.
+  let teamGame: (ScheduleGame & { year: number }) | null = null;
+  let match: NblMatchLineups | null = null;
+  let teamSide: NblTeamLineupFromMatch | null = null;
+  for (const game of games) {
+    if (!(teamsMatch(game.homeTeam, team) || teamsMatch(game.awayTeam, team))) continue;
+    const fixtureId = fixtureIdForGame(game);
+    if (!fixtureId) continue;
+    const found = await getNblMatchLineups(fixtureId, { cacheOnly });
+    if (!found) continue;
+    const side = pickTeamSide(found, team);
+    if (!side?.starters.length) continue;
+    teamGame = game;
+    match = found;
+    teamSide = side;
+    break;
   }
-
-  const fixtureId = fixtureIdForGame(teamGame);
-  if (!fixtureId) {
-    return { sharedMatch: false, team: null, opponent: null };
-  }
-
-  const match = await getNblMatchLineups(fixtureId, {
-    cacheOnly: options.cacheOnly !== false,
-  });
-  if (!match) {
-    return { sharedMatch: false, team: null, opponent: null };
-  }
-
-  const teamSide = pickTeamSide(match, team);
-  if (!teamSide?.starters.length) {
+  if (!teamGame || !match || !teamSide) {
     return { sharedMatch: false, team: null, opponent: null };
   }
 

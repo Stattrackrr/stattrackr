@@ -1,0 +1,2773 @@
+{
+  "fixtureId": "36e80b8c-58ad-11f1-ab03-2572c13c410b",
+  "homeTeam": "Tasmania JackJumpers",
+  "awayTeam": "South East Melbourne Phoenix",
+  "homeTeamCode": "TAS",
+  "awayTeamCode": "SEM",
+  "lineupValid": true,
+  "players": [
+    {
+      "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+      "name": "Akech Aliir",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 2,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+      "name": "Angus Glover",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 8,
+      "assistedMakes": 3,
+      "assists": 2,
+      "ptsCreated": 6,
+      "finds": [
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+      "name": "Ben Gold",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+      "name": "D'Shawn Schwartz",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 4,
+      "assistedMakes": 3,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+      "name": "Dakota Mathias",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 5,
+      "assistedMakes": 4,
+      "assists": 3,
+      "ptsCreated": 4,
+      "finds": [
+        {
+          "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+          "name": "Majok Deng",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 2,
+          "pts": 5
+        }
+      ]
+    },
+    {
+      "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+      "name": "Daniel Foster",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 1,
+      "assistedMakes": 0,
+      "assists": 3,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+      "name": "Dash Daniels",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 5,
+      "assistedMakes": 2,
+      "assists": 4,
+      "ptsCreated": 10,
+      "finds": [
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+      "name": "David Johnson",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 10,
+      "assistedMakes": 2,
+      "assists": 6,
+      "ptsCreated": 12,
+      "finds": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+      "name": "Hunter Goodrick",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 1,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+      "name": "Jordan Hunter",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 4,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+      "name": "Majok Deng",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+      "name": "Nicholas Stoddart",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 1,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+      "name": "Nick Marshall",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 4,
+      "assistedMakes": 3,
+      "assists": 3,
+      "ptsCreated": 4,
+      "finds": [
+        {
+          "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+          "name": "Majok Deng",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+      "name": "Skylar Mays",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 5,
+      "assistedMakes": 1,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+      "name": "Tanner Krebs",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+      "name": "Taran Armstrong",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 8,
+      "assistedMakes": 3,
+      "assists": 3,
+      "ptsCreated": 7,
+      "finds": [
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+      "name": "Will Magnay",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 6,
+      "ptsCreated": 14,
+      "finds": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+      "name": "Yannis Morin",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    }
+  ],
+  "onOff": [
+    {
+      "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+      "name": "Akech Aliir",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "minutes": 13.2,
+      "teammates": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "onMin": 1.1,
+          "offMin": 12.1,
+          "onPoss": 3,
+          "offPoss": 40,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "onMin": 5,
+          "offMin": 8.2,
+          "onPoss": 18,
+          "offPoss": 25,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "onMin": 7.8,
+          "offMin": 5.4,
+          "onPoss": 26,
+          "offPoss": 17,
+          "onPts": 3,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "onMin": 0,
+          "offMin": 13.2,
+          "onPoss": 0,
+          "offPoss": 43,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "onMin": 7.9,
+          "offMin": 5.3,
+          "onPoss": 26,
+          "offPoss": 17,
+          "onPts": 2,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "onMin": 6.9,
+          "offMin": 6.3,
+          "onPoss": 20,
+          "offPoss": 23,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "onMin": 13.2,
+          "offMin": 0,
+          "onPoss": 43,
+          "offPoss": 0,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "onMin": 6.7,
+          "offMin": 6.5,
+          "onPoss": 22,
+          "offPoss": 21,
+          "onPts": 2,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "onMin": 4.3,
+          "offMin": 8.9,
+          "onPoss": 14,
+          "offPoss": 29,
+          "onPts": 3,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+      "name": "Angus Glover",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "minutes": 25.5,
+      "teammates": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "onMin": 2.7,
+          "offMin": 22.7,
+          "onPoss": 9,
+          "offPoss": 81,
+          "onPts": 0,
+          "offPts": 21,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "onMin": 12.2,
+          "offMin": 13.3,
+          "onPoss": 49,
+          "offPoss": 41,
+          "onPts": 13,
+          "offPts": 8,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "onMin": 14.5,
+          "offMin": 10.9,
+          "onPoss": 52,
+          "offPoss": 38,
+          "onPts": 8,
+          "offPts": 13,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "onMin": 12.3,
+          "offMin": 13.2,
+          "onPoss": 47,
+          "offPoss": 43,
+          "onPts": 8,
+          "offPts": 13,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "onMin": 14.9,
+          "offMin": 10.6,
+          "onPoss": 52,
+          "offPoss": 38,
+          "onPts": 5,
+          "offPts": 16,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "onMin": 12.2,
+          "offMin": 13.3,
+          "onPoss": 37,
+          "offPoss": 53,
+          "onPts": 8,
+          "offPts": 13,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "onMin": 12.1,
+          "offMin": 13.4,
+          "onPoss": 42,
+          "offPoss": 48,
+          "onPts": 13,
+          "offPts": 8,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "onMin": 13.2,
+          "offMin": 12.3,
+          "onPoss": 43,
+          "offPoss": 47,
+          "onPts": 13,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "onMin": 7.9,
+          "offMin": 17.6,
+          "onPoss": 29,
+          "offPoss": 61,
+          "onPts": 16,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+      "name": "Ben Gold",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 25.4,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 11.4,
+          "offMin": 14,
+          "onPoss": 40,
+          "offPoss": 49,
+          "onPts": 3,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 20.5,
+          "offMin": 4.9,
+          "onPoss": 71,
+          "offPoss": 18,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+          "name": "Majok Deng",
+          "onMin": 9.8,
+          "offMin": 15.6,
+          "onPoss": 37,
+          "offPoss": 52,
+          "onPts": 2,
+          "offPts": 3,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 20.5,
+          "offMin": 4.9,
+          "onPoss": 74,
+          "offPoss": 15,
+          "onPts": 2,
+          "offPts": 3,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 16.6,
+          "offMin": 8.8,
+          "onPoss": 55,
+          "offPoss": 34,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 17.9,
+          "offMin": 7.5,
+          "onPoss": 61,
+          "offPoss": 28,
+          "onPts": 3,
+          "offPts": 2,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 4.9,
+          "offMin": 20.5,
+          "onPoss": 18,
+          "offPoss": 71,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+      "name": "D'Shawn Schwartz",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "minutes": 26.8,
+      "teammates": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "onMin": 10.9,
+          "offMin": 15.9,
+          "onPoss": 33,
+          "offPoss": 61,
+          "onPts": 2,
+          "offPts": 10,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "onMin": 19.2,
+          "offMin": 7.6,
+          "onPoss": 70,
+          "offPoss": 24,
+          "onPts": 5,
+          "offPts": 7,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "onMin": 21,
+          "offMin": 5.8,
+          "onPoss": 72,
+          "offPoss": 22,
+          "onPts": 10,
+          "offPts": 2,
+          "onReb": 5,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "onMin": 12.3,
+          "offMin": 14.5,
+          "onPoss": 46,
+          "offPoss": 48,
+          "onPts": 8,
+          "offPts": 4,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "onMin": 19.8,
+          "offMin": 7,
+          "onPoss": 64,
+          "offPoss": 30,
+          "onPts": 8,
+          "offPts": 4,
+          "onReb": 5,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "onMin": 12.3,
+          "offMin": 14.5,
+          "onPoss": 47,
+          "offPoss": 47,
+          "onPts": 9,
+          "offPts": 3,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "onMin": 8.1,
+          "offMin": 18.7,
+          "onPoss": 29,
+          "offPoss": 65,
+          "onPts": 4,
+          "offPts": 8,
+          "onReb": 1,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "onMin": 0,
+          "offMin": 26.8,
+          "onPoss": 0,
+          "offPoss": 94,
+          "onPts": 0,
+          "offPts": 12,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "onMin": 3.6,
+          "offMin": 23.2,
+          "onPoss": 15,
+          "offPoss": 79,
+          "onPts": 2,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+      "name": "Dakota Mathias",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 35.1,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 21.1,
+          "offMin": 14,
+          "onPoss": 73,
+          "offPoss": 49,
+          "onPts": 11,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 29,
+          "offMin": 6.1,
+          "onPoss": 99,
+          "offPoss": 23,
+          "onPts": 11,
+          "offPts": 3,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+          "name": "Majok Deng",
+          "onMin": 15.9,
+          "offMin": 19.2,
+          "onPoss": 57,
+          "offPoss": 65,
+          "onPts": 3,
+          "offPts": 11,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 20.5,
+          "offMin": 14.6,
+          "onPoss": 74,
+          "offPoss": 48,
+          "onPts": 10,
+          "offPts": 4,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 23.4,
+          "offMin": 11.7,
+          "onPoss": 77,
+          "offPoss": 45,
+          "onPts": 7,
+          "offPts": 7,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 21.6,
+          "offMin": 13.4,
+          "onPoss": 78,
+          "offPoss": 44,
+          "onPts": 11,
+          "offPts": 3,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 8.9,
+          "offMin": 26.2,
+          "onPoss": 30,
+          "offPoss": 92,
+          "onPts": 3,
+          "offPts": 11,
+          "onReb": 2,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+      "name": "Daniel Foster",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "minutes": 14.9,
+      "teammates": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "onMin": 1.1,
+          "offMin": 13.8,
+          "onPoss": 2,
+          "offPoss": 49,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "onMin": 7,
+          "offMin": 7.8,
+          "onPoss": 30,
+          "offPoss": 21,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "onMin": 3.9,
+          "offMin": 11,
+          "onPoss": 13,
+          "offPoss": 38,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "onMin": 8.1,
+          "offMin": 6.7,
+          "onPoss": 29,
+          "offPoss": 22,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "onMin": 9,
+          "offMin": 5.9,
+          "onPoss": 31,
+          "offPoss": 20,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "onMin": 6.7,
+          "offMin": 8.1,
+          "onPoss": 17,
+          "offPoss": 34,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "onMin": 12.1,
+          "offMin": 2.8,
+          "onPoss": 42,
+          "offPoss": 9,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "onMin": 6.7,
+          "offMin": 8.1,
+          "onPoss": 22,
+          "offPoss": 29,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "onMin": 4.8,
+          "offMin": 10.1,
+          "onPoss": 18,
+          "offPoss": 33,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+      "name": "Dash Daniels",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "minutes": 24.2,
+      "teammates": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "onMin": 10.2,
+          "offMin": 14,
+          "onPoss": 31,
+          "offPoss": 57,
+          "onPts": 5,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "onMin": 16.9,
+          "offMin": 7.3,
+          "onPoss": 57,
+          "offPoss": 31,
+          "onPts": 5,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "onMin": 19.2,
+          "offMin": 5,
+          "onPoss": 70,
+          "offPoss": 18,
+          "onPts": 9,
+          "offPts": 2,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 0
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "onMin": 11,
+          "offMin": 13.2,
+          "onPoss": 43,
+          "offPoss": 45,
+          "onPts": 6,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "onMin": 12.2,
+          "offMin": 12,
+          "onPoss": 40,
+          "offPoss": 48,
+          "onPts": 5,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "onMin": 12.2,
+          "offMin": 12,
+          "onPoss": 49,
+          "offPoss": 39,
+          "onPts": 6,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "onMin": 7,
+          "offMin": 17.1,
+          "onPoss": 30,
+          "offPoss": 58,
+          "onPts": 6,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "onMin": 5,
+          "offMin": 19.2,
+          "onPoss": 18,
+          "offPoss": 70,
+          "onPts": 2,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "onMin": 3,
+          "offMin": 21.2,
+          "onPoss": 14,
+          "offPoss": 74,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+      "name": "David Johnson",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 26.6,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 20,
+          "offMin": 6.5,
+          "onPoss": 72,
+          "offPoss": 21,
+          "onPts": 23,
+          "offPts": 3,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 6,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 19.9,
+          "offMin": 6.6,
+          "onPoss": 68,
+          "offPoss": 25,
+          "onPts": 26,
+          "offPts": 0,
+          "onReb": 5,
+          "offReb": 1,
+          "onAst": 4,
+          "offAst": 2
+        },
+        {
+          "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+          "name": "Majok Deng",
+          "onMin": 5.2,
+          "offMin": 21.3,
+          "onPoss": 20,
+          "offPoss": 73,
+          "onPts": 7,
+          "offPts": 19,
+          "onReb": 2,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 6
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 21.6,
+          "offMin": 4.9,
+          "onPoss": 78,
+          "offPoss": 15,
+          "onPts": 24,
+          "offPts": 2,
+          "onReb": 5,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 3
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 17.9,
+          "offMin": 8.7,
+          "onPoss": 61,
+          "offPoss": 32,
+          "onPts": 17,
+          "offPts": 9,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 5,
+          "offAst": 1
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 14.9,
+          "offMin": 11.7,
+          "onPoss": 48,
+          "offPoss": 45,
+          "onPts": 7,
+          "offPts": 19,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 4,
+          "offAst": 2
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 6.6,
+          "offMin": 19.9,
+          "onPoss": 25,
+          "offPoss": 68,
+          "onPts": 0,
+          "offPts": 26,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 2,
+          "offAst": 4
+        }
+      ]
+    },
+    {
+      "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+      "name": "Hunter Goodrick",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "minutes": 7.9,
+      "teammates": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "onMin": 0,
+          "offMin": 7.9,
+          "onPoss": 0,
+          "offPoss": 29,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 6,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "onMin": 3,
+          "offMin": 4.9,
+          "onPoss": 14,
+          "offPoss": 15,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "onMin": 3.1,
+          "offMin": 4.8,
+          "onPoss": 11,
+          "offPoss": 18,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "onMin": 3.6,
+          "offMin": 4.3,
+          "onPoss": 15,
+          "offPoss": 14,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 5,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "onMin": 0,
+          "offMin": 7.9,
+          "onPoss": 0,
+          "offPoss": 29,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 6,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "onMin": 4.9,
+          "offMin": 3,
+          "onPoss": 15,
+          "offPoss": 14,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "onMin": 7.9,
+          "offMin": 0,
+          "onPoss": 29,
+          "offPoss": 0,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 6,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "onMin": 4.8,
+          "offMin": 3.1,
+          "onPoss": 18,
+          "offPoss": 11,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 5,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "onMin": 4.3,
+          "offMin": 3.6,
+          "onPoss": 14,
+          "offPoss": 15,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+      "name": "Jordan Hunter",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "minutes": 12,
+      "teammates": [
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "onMin": 10.2,
+          "offMin": 1.8,
+          "onPoss": 31,
+          "offPoss": 5,
+          "onPts": 9,
+          "offPts": 0,
+          "onReb": 5,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "onMin": 11.7,
+          "offMin": 0.2,
+          "onPoss": 35,
+          "offPoss": 1,
+          "onPts": 9,
+          "offPts": 0,
+          "onReb": 5,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "onMin": 10.9,
+          "offMin": 1.1,
+          "onPoss": 33,
+          "offPoss": 3,
+          "onPts": 9,
+          "offPts": 0,
+          "onReb": 5,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "onMin": 0,
+          "offMin": 12,
+          "onPoss": 0,
+          "offPoss": 36,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "onMin": 10.1,
+          "offMin": 1.8,
+          "onPoss": 31,
+          "offPoss": 5,
+          "onPts": 6,
+          "offPts": 3,
+          "onReb": 5,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "onMin": 2.7,
+          "offMin": 9.2,
+          "onPoss": 9,
+          "offPoss": 27,
+          "onPts": 3,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "onMin": 1.1,
+          "offMin": 10.9,
+          "onPoss": 2,
+          "offPoss": 34,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "onMin": 1.1,
+          "offMin": 10.9,
+          "onPoss": 3,
+          "offPoss": 33,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "onMin": 0,
+          "offMin": 12,
+          "onPoss": 0,
+          "offPoss": 36,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+      "name": "Majok Deng",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 15.9,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 6.1,
+          "offMin": 9.8,
+          "onPoss": 20,
+          "offPoss": 37,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 15.1,
+          "offMin": 0.8,
+          "onPoss": 55,
+          "offPoss": 2,
+          "onPts": 4,
+          "offPts": 2,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 15.9,
+          "offMin": 0,
+          "onPoss": 57,
+          "offPoss": 0,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 9.8,
+          "offMin": 6.1,
+          "onPoss": 37,
+          "offPoss": 20,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 10.7,
+          "offMin": 5.2,
+          "onPoss": 37,
+          "offPoss": 20,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 5.2,
+          "offMin": 10.7,
+          "onPoss": 20,
+          "offPoss": 37,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 0.8,
+          "offMin": 15.1,
+          "onPoss": 2,
+          "offPoss": 55,
+          "onPts": 2,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+      "name": "Nicholas Stoddart",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 10.2,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 7.7,
+          "offMin": 2.6,
+          "onPoss": 25,
+          "offPoss": 9,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 2.8,
+          "offMin": 7.4,
+          "onPoss": 7,
+          "offPoss": 27,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+          "name": "Majok Deng",
+          "onMin": 0.8,
+          "offMin": 9.4,
+          "onPoss": 2,
+          "offPoss": 32,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 8.9,
+          "offMin": 1.3,
+          "onPoss": 30,
+          "offPoss": 4,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 4.9,
+          "offMin": 5.3,
+          "onPoss": 18,
+          "offPoss": 16,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 9.1,
+          "offMin": 1.1,
+          "onPoss": 29,
+          "offPoss": 5,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 6.6,
+          "offMin": 3.6,
+          "onPoss": 25,
+          "offPoss": 9,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+      "name": "Nick Marshall",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 28.3,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 16.6,
+          "offMin": 11.7,
+          "onPoss": 52,
+          "offPoss": 40,
+          "onPts": 10,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 22,
+          "offMin": 6.3,
+          "onPoss": 70,
+          "offPoss": 22,
+          "onPts": 5,
+          "offPts": 5,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+          "name": "Majok Deng",
+          "onMin": 10.7,
+          "offMin": 17.7,
+          "onPoss": 37,
+          "offPoss": 55,
+          "onPts": 0,
+          "offPts": 10,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 23.4,
+          "offMin": 4.9,
+          "onPoss": 77,
+          "offPoss": 15,
+          "onPts": 7,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 16.6,
+          "offMin": 11.7,
+          "onPoss": 55,
+          "offPoss": 37,
+          "onPts": 3,
+          "offPts": 7,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 14.9,
+          "offMin": 13.4,
+          "onPoss": 48,
+          "offPoss": 44,
+          "onPts": 10,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 9.1,
+          "offMin": 19.2,
+          "onPoss": 29,
+          "offPoss": 63,
+          "onPts": 5,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+      "name": "Skylar Mays",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "minutes": 28.8,
+      "teammates": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "onMin": 11.7,
+          "offMin": 17.1,
+          "onPoss": 35,
+          "offPoss": 63,
+          "onPts": 9,
+          "offPts": 9,
+          "onReb": 2,
+          "offReb": 4,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "onMin": 16.9,
+          "offMin": 11.9,
+          "onPoss": 57,
+          "offPoss": 41,
+          "onPts": 8,
+          "offPts": 10,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "onMin": 21,
+          "offMin": 7.8,
+          "onPoss": 72,
+          "offPoss": 26,
+          "onPts": 10,
+          "offPts": 8,
+          "onReb": 5,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "onMin": 14,
+          "offMin": 14.8,
+          "onPoss": 52,
+          "offPoss": 46,
+          "onPts": 9,
+          "offPts": 9,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "onMin": 22.3,
+          "offMin": 6.5,
+          "onPoss": 74,
+          "offPoss": 24,
+          "onPts": 10,
+          "offPts": 8,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "onMin": 14.5,
+          "offMin": 14.3,
+          "onPoss": 52,
+          "offPoss": 46,
+          "onPts": 13,
+          "offPts": 5,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "onMin": 3.9,
+          "offMin": 24.9,
+          "onPoss": 13,
+          "offPoss": 85,
+          "onPts": 5,
+          "offPts": 13,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "onMin": 7.8,
+          "offMin": 21,
+          "onPoss": 26,
+          "offPoss": 72,
+          "onPts": 8,
+          "offPts": 10,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "onMin": 3.1,
+          "offMin": 25.7,
+          "onPoss": 11,
+          "offPoss": 87,
+          "onPts": 0,
+          "offPts": 18,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+      "name": "Tanner Krebs",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "minutes": 26.7,
+      "teammates": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "onMin": 10.1,
+          "offMin": 16.6,
+          "onPoss": 31,
+          "offPoss": 53,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "onMin": 12.2,
+          "offMin": 14.5,
+          "onPoss": 40,
+          "offPoss": 44,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "onMin": 22.3,
+          "offMin": 4.4,
+          "onPoss": 74,
+          "offPoss": 10,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "onMin": 19.8,
+          "offMin": 6.9,
+          "onPoss": 64,
+          "offPoss": 20,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "onMin": 11.7,
+          "offMin": 15,
+          "onPoss": 38,
+          "offPoss": 46,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "onMin": 12.2,
+          "offMin": 14.5,
+          "onPoss": 37,
+          "offPoss": 47,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "onMin": 6.7,
+          "offMin": 20,
+          "onPoss": 17,
+          "offPoss": 67,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "onMin": 6.9,
+          "offMin": 19.8,
+          "onPoss": 20,
+          "offPoss": 64,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "onMin": 4.9,
+          "offMin": 21.8,
+          "onPoss": 15,
+          "offPoss": 69,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+      "name": "Taran Armstrong",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 32.6,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 21.1,
+          "offMin": 11.5,
+          "onPoss": 70,
+          "offPoss": 40,
+          "onPts": 9,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+          "name": "Majok Deng",
+          "onMin": 15.1,
+          "offMin": 17.5,
+          "onPoss": 55,
+          "offPoss": 55,
+          "onPts": 10,
+          "offPts": 9,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 29,
+          "offMin": 3.6,
+          "onPoss": 99,
+          "offPoss": 11,
+          "onPts": 19,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 20.5,
+          "offMin": 12.1,
+          "onPoss": 71,
+          "offPoss": 39,
+          "onPts": 10,
+          "offPts": 9,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 22,
+          "offMin": 10.6,
+          "onPoss": 70,
+          "offPoss": 40,
+          "onPts": 15,
+          "offPts": 4,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 19.9,
+          "offMin": 12.7,
+          "onPoss": 68,
+          "offPoss": 42,
+          "onPts": 9,
+          "offPts": 10,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 2.8,
+          "offMin": 29.8,
+          "onPoss": 7,
+          "offPoss": 103,
+          "onPts": 4,
+          "offPts": 15,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+      "name": "Will Magnay",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 26,
+      "teammates": [
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 21.1,
+          "offMin": 4.9,
+          "onPoss": 70,
+          "offPoss": 18,
+          "onPts": 8,
+          "offPts": 6,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 6,
+          "offAst": 0
+        },
+        {
+          "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
+          "name": "Majok Deng",
+          "onMin": 6.1,
+          "offMin": 19.9,
+          "onPoss": 20,
+          "offPoss": 68,
+          "onPts": 0,
+          "offPts": 14,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 1,
+          "offAst": 5
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 21.1,
+          "offMin": 4.9,
+          "onPoss": 73,
+          "offPoss": 15,
+          "onPts": 6,
+          "offPts": 8,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 5,
+          "offAst": 1
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 11.4,
+          "offMin": 14.6,
+          "onPoss": 40,
+          "offPoss": 48,
+          "onPts": 10,
+          "offPts": 4,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 3
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 16.6,
+          "offMin": 9.4,
+          "onPoss": 52,
+          "offPoss": 36,
+          "onPts": 12,
+          "offPts": 2,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 2
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 20,
+          "offMin": 6,
+          "onPoss": 72,
+          "offPoss": 16,
+          "onPts": 14,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 2
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 7.7,
+          "offMin": 18.3,
+          "onPoss": 25,
+          "offPoss": 63,
+          "onPts": 6,
+          "offPts": 8,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 5
+        }
+      ]
+    },
+    {
+      "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+      "name": "Yannis Morin",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "minutes": 20.2,
+      "teammates": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "onMin": 0,
+          "offMin": 20.2,
+          "onPoss": 0,
+          "offPoss": 72,
+          "onPts": 0,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "onMin": 11,
+          "offMin": 9.2,
+          "onPoss": 43,
+          "offPoss": 29,
+          "onPts": 4,
+          "offPts": 3,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "onMin": 14,
+          "offMin": 6.2,
+          "onPoss": 52,
+          "offPoss": 20,
+          "onPts": 4,
+          "offPts": 3,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "onMin": 12.3,
+          "offMin": 7.9,
+          "onPoss": 46,
+          "offPoss": 26,
+          "onPts": 4,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "onMin": 11.7,
+          "offMin": 8.5,
+          "onPoss": 38,
+          "offPoss": 34,
+          "onPts": 3,
+          "offPts": 4,
+          "onReb": 5,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "onMin": 14.9,
+          "offMin": 5.3,
+          "onPoss": 52,
+          "offPoss": 20,
+          "onPts": 7,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "onMin": 9,
+          "offMin": 11.2,
+          "onPoss": 31,
+          "offPoss": 41,
+          "onPts": 3,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "onMin": 7.9,
+          "offMin": 12.3,
+          "onPoss": 26,
+          "offPoss": 46,
+          "onPts": 3,
+          "offPts": 4,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "onMin": 0,
+          "offMin": 20.2,
+          "onPoss": 0,
+          "offPoss": 72,
+          "onPts": 0,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    }
+  ],
+  "fetchedAt": "2026-09-22T16:05:40.716Z"
+}

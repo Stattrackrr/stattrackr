@@ -1,0 +1,3379 @@
+{
+  "fixtureId": "36dbeb55-58ad-11f1-a69b-43a6b5595d3e",
+  "homeTeam": "Melbourne United",
+  "awayTeam": "Adelaide 36ers",
+  "homeTeamCode": "MEL",
+  "awayTeamCode": "ADL",
+  "lineupValid": true,
+  "players": [
+    {
+      "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+      "name": "Ben Griscti",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 1,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+      "name": "Bryce Cotton",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 9,
+      "assistedMakes": 5,
+      "assists": 7,
+      "ptsCreated": 17,
+      "finds": [
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+      "name": "Chris Goulding",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+      "name": "Cole Anthony",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 10,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+      "name": "Deonte Williams",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+      "name": "Fabijan Krslovic",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 3,
+      "assistedMakes": 3,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+      "name": "Flynn Cameron",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 6,
+      "ptsCreated": 15,
+      "finds": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+      "name": "Isaac White",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 3,
+      "assistedMakes": 3,
+      "assists": 2,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+      "name": "Jacob Rigoni",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 3,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+      "name": "Joe Ingles",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 5,
+      "assistedMakes": 2,
+      "assists": 7,
+      "ptsCreated": 12,
+      "finds": [
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+      "name": "Josh Oduro",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 5,
+      "assistedMakes": 4,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 3,
+          "pts": 6
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+      "name": "Keanu Rasmussen",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 2,
+      "ptsCreated": 6,
+      "finds": [
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+      "name": "Kyle Bowen",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+      "name": "Luke Travers",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 5,
+      "assistedMakes": 3,
+      "assists": 6,
+      "ptsCreated": 11,
+      "finds": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 3,
+          "pts": 6
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+      "name": "Malith Machar",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+      "name": "Matt Kenyon",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 3,
+      "assistedMakes": 3,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+      "name": "Nick Rakocevic",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 5,
+      "assistedMakes": 3,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+      "name": "Sam Waardenburg",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+      "name": "Tom Wilson",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+      "name": "Zylan Cheatham",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 6,
+      "assistedMakes": 5,
+      "assists": 3,
+      "ptsCreated": 7,
+      "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    }
+  ],
+  "onOff": [
+    {
+      "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+      "name": "Ben Griscti",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "minutes": 5.8,
+      "teammates": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "onMin": 3.6,
+          "offMin": 2.2,
+          "onPoss": 15,
+          "offPoss": 5,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "onMin": 5.8,
+          "offMin": 0,
+          "onPoss": 20,
+          "offPoss": 0,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "onMin": 0,
+          "offMin": 5.8,
+          "onPoss": 0,
+          "offPoss": 20,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "onMin": 4.2,
+          "offMin": 1.6,
+          "onPoss": 13,
+          "offPoss": 7,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "onMin": 2.9,
+          "offMin": 2.8,
+          "onPoss": 9,
+          "offPoss": 11,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "onMin": 2.8,
+          "offMin": 2.9,
+          "onPoss": 11,
+          "offPoss": 9,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "onMin": 3.7,
+          "offMin": 2,
+          "onPoss": 12,
+          "offPoss": 8,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "onMin": 0,
+          "offMin": 5.8,
+          "onPoss": 0,
+          "offPoss": 20,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "onMin": 0,
+          "offMin": 5.8,
+          "onPoss": 0,
+          "offPoss": 20,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+      "name": "Bryce Cotton",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "minutes": 37,
+      "teammates": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "onMin": 35.7,
+          "offMin": 1.3,
+          "onPoss": 110,
+          "offPoss": 4,
+          "onPts": 28,
+          "offPts": 1,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 7,
+          "offAst": 0
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "onMin": 17,
+          "offMin": 20.1,
+          "onPoss": 53,
+          "offPoss": 61,
+          "onPts": 14,
+          "offPts": 15,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 6
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "onMin": 24.4,
+          "offMin": 12.6,
+          "onPoss": 76,
+          "offPoss": 38,
+          "onPts": 21,
+          "offPts": 8,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 4
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "onMin": 23.3,
+          "offMin": 13.8,
+          "onPoss": 72,
+          "offPoss": 42,
+          "onPts": 15,
+          "offPts": 14,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 6,
+          "offAst": 1
+        },
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "onMin": 17.6,
+          "offMin": 19.5,
+          "onPoss": 54,
+          "offPoss": 60,
+          "onPts": 20,
+          "offPts": 9,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 5,
+          "offAst": 2
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "onMin": 14.6,
+          "offMin": 22.4,
+          "onPoss": 41,
+          "offPoss": 73,
+          "onPts": 12,
+          "offPts": 17,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 4,
+          "offAst": 3
+        },
+        {
+          "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+          "name": "Ben Griscti",
+          "onMin": 2.9,
+          "offMin": 34.1,
+          "onPoss": 9,
+          "offPoss": 105,
+          "onPts": 1,
+          "offPts": 28,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 7
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "onMin": 3,
+          "offMin": 34.1,
+          "onPoss": 11,
+          "offPoss": 103,
+          "onPts": 2,
+          "offPts": 27,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 7
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "onMin": 9.7,
+          "offMin": 27.3,
+          "onPoss": 30,
+          "offPoss": 84,
+          "onPts": 3,
+          "offPts": 26,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 5
+        }
+      ]
+    },
+    {
+      "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+      "name": "Chris Goulding",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 27.2,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 17.1,
+          "offMin": 10.1,
+          "onPoss": 52,
+          "offPoss": 30,
+          "onPts": 7,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 11,
+          "offMin": 16.2,
+          "onPoss": 31,
+          "offPoss": 51,
+          "onPts": 2,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 21.6,
+          "offMin": 5.6,
+          "onPoss": 63,
+          "offPoss": 19,
+          "onPts": 7,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 14.3,
+          "offMin": 12.9,
+          "onPoss": 47,
+          "offPoss": 35,
+          "onPts": 5,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 11.9,
+          "offMin": 15.4,
+          "onPoss": 33,
+          "offPoss": 49,
+          "onPts": 5,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 14.8,
+          "offMin": 12.4,
+          "onPoss": 46,
+          "offPoss": 36,
+          "onPts": 2,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 4.2,
+          "offMin": 23,
+          "onPoss": 12,
+          "offPoss": 70,
+          "onPts": 0,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 14,
+          "offMin": 13.2,
+          "onPoss": 44,
+          "offPoss": 38,
+          "onPts": 0,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 0,
+          "offMin": 27.2,
+          "onPoss": 0,
+          "offPoss": 82,
+          "onPts": 0,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+      "name": "Cole Anthony",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 21.7,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 10,
+          "offMin": 11.8,
+          "onPoss": 33,
+          "offPoss": 37,
+          "onPts": 6,
+          "offPts": 24,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "onMin": 14.8,
+          "offMin": 6.9,
+          "onPoss": 46,
+          "offPoss": 24,
+          "onPts": 17,
+          "offPts": 13,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 2.6,
+          "offMin": 19.2,
+          "onPoss": 8,
+          "offPoss": 62,
+          "onPts": 9,
+          "offPts": 21,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 15.3,
+          "offMin": 6.5,
+          "onPoss": 47,
+          "offPoss": 23,
+          "onPts": 11,
+          "offPts": 19,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 17.2,
+          "offMin": 4.5,
+          "onPoss": 58,
+          "offPoss": 12,
+          "onPts": 27,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 0,
+          "offMin": 21.7,
+          "onPoss": 0,
+          "offPoss": 70,
+          "onPts": 0,
+          "offPts": 30,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 5.9,
+          "offMin": 15.9,
+          "onPoss": 19,
+          "offPoss": 51,
+          "onPts": 11,
+          "offPts": 19,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 16.2,
+          "offMin": 5.5,
+          "onPoss": 52,
+          "offPoss": 18,
+          "onPts": 26,
+          "offPts": 4,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 5,
+          "offMin": 16.7,
+          "onPoss": 17,
+          "offPoss": 53,
+          "onPts": 13,
+          "offPts": 17,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+      "name": "Deonte Williams",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "minutes": 3,
+      "teammates": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "onMin": 3,
+          "offMin": 0,
+          "onPoss": 11,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "onMin": 3,
+          "offMin": 0,
+          "onPoss": 11,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "onMin": 3,
+          "offMin": 0,
+          "onPoss": 11,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "onMin": 0,
+          "offMin": 3,
+          "onPoss": 0,
+          "offPoss": 11,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "onMin": 3,
+          "offMin": 0,
+          "onPoss": 11,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "onMin": 0,
+          "offMin": 3,
+          "onPoss": 0,
+          "offPoss": 11,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "onMin": 0,
+          "offMin": 3,
+          "onPoss": 0,
+          "offPoss": 11,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+          "name": "Ben Griscti",
+          "onMin": 0,
+          "offMin": 3,
+          "onPoss": 0,
+          "offPoss": 11,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "onMin": 0,
+          "offMin": 3,
+          "onPoss": 0,
+          "offPoss": 11,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+      "name": "Fabijan Krslovic",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 15.1,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 5.4,
+          "offMin": 9.8,
+          "onPoss": 15,
+          "offPoss": 30,
+          "onPts": 0,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "onMin": 11,
+          "offMin": 4.2,
+          "onPoss": 31,
+          "offPoss": 14,
+          "onPts": 4,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 10.8,
+          "offMin": 4.4,
+          "onPoss": 31,
+          "offPoss": 14,
+          "onPts": 4,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 5.5,
+          "offMin": 9.7,
+          "onPoss": 20,
+          "offPoss": 25,
+          "onPts": 4,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 12.6,
+          "offMin": 2.6,
+          "onPoss": 37,
+          "offPoss": 8,
+          "onPts": 8,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 2.6,
+          "offMin": 12.6,
+          "onPoss": 8,
+          "offPoss": 37,
+          "onPts": 0,
+          "offPts": 8,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 3.1,
+          "offMin": 12.1,
+          "onPoss": 8,
+          "offPoss": 37,
+          "onPts": 4,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 9.8,
+          "offMin": 5.4,
+          "onPoss": 30,
+          "offPoss": 15,
+          "onPts": 8,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 0,
+          "offMin": 15.1,
+          "onPoss": 0,
+          "offPoss": 45,
+          "onPts": 0,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+      "name": "Flynn Cameron",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "minutes": 19.8,
+      "teammates": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "onMin": 17.6,
+          "offMin": 2.2,
+          "onPoss": 60,
+          "offPoss": 5,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 6,
+          "offAst": 0
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "onMin": 12.9,
+          "offMin": 7,
+          "onPoss": 40,
+          "offPoss": 25,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 5,
+          "offAst": 1
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "onMin": 8.8,
+          "offMin": 11,
+          "onPoss": 30,
+          "offPoss": 35,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 5
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "onMin": 17,
+          "offMin": 2.9,
+          "onPoss": 53,
+          "offPoss": 12,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 5,
+          "offAst": 1
+        },
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "onMin": 8.1,
+          "offMin": 11.7,
+          "onPoss": 28,
+          "offPoss": 37,
+          "onPts": 3,
+          "offPts": 3,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 3
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "onMin": 3.7,
+          "offMin": 16.1,
+          "onPoss": 12,
+          "offPoss": 53,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 5
+        },
+        {
+          "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+          "name": "Ben Griscti",
+          "onMin": 5.8,
+          "offMin": 14.1,
+          "onPoss": 20,
+          "offPoss": 45,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 5
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "onMin": 3,
+          "offMin": 16.9,
+          "onPoss": 11,
+          "offPoss": 54,
+          "onPts": 3,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 4
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "onMin": 2.5,
+          "offMin": 17.3,
+          "onPoss": 6,
+          "offPoss": 59,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 6
+        }
+      ]
+    },
+    {
+      "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+      "name": "Isaac White",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "minutes": 17.5,
+      "teammates": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "onMin": 15.2,
+          "offMin": 2.3,
+          "onPoss": 46,
+          "offPoss": 6,
+          "onPts": 10,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "onMin": 3.7,
+          "offMin": 13.8,
+          "onPoss": 12,
+          "offPoss": 40,
+          "onPts": 3,
+          "offPts": 7,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "onMin": 7.2,
+          "offMin": 10.3,
+          "onPoss": 21,
+          "offPoss": 31,
+          "onPts": 3,
+          "offPts": 7,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "onMin": 11.6,
+          "offMin": 5.9,
+          "onPoss": 31,
+          "offPoss": 21,
+          "onPts": 4,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "onMin": 14.6,
+          "offMin": 2.8,
+          "onPoss": 41,
+          "offPoss": 11,
+          "onPts": 7,
+          "offPts": 3,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "onMin": 13,
+          "offMin": 4.4,
+          "onPoss": 42,
+          "offPoss": 10,
+          "onPts": 7,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+          "name": "Ben Griscti",
+          "onMin": 3.7,
+          "offMin": 13.8,
+          "onPoss": 12,
+          "offPoss": 40,
+          "onPts": 3,
+          "offPts": 7,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "onMin": 0,
+          "offMin": 17.5,
+          "onPoss": 0,
+          "offPoss": 52,
+          "onPts": 0,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "onMin": 0.9,
+          "offMin": 16.6,
+          "onPoss": 3,
+          "offPoss": 49,
+          "onPts": 3,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+      "name": "Jacob Rigoni",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "minutes": 24.6,
+      "teammates": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "onMin": 22,
+          "offMin": 2.6,
+          "onPoss": 69,
+          "offPoss": 8,
+          "onPts": 3,
+          "offPts": 5,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "onMin": 8.8,
+          "offMin": 15.8,
+          "onPoss": 30,
+          "offPoss": 47,
+          "onPts": 5,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "onMin": 10.7,
+          "offMin": 13.9,
+          "onPoss": 35,
+          "offPoss": 42,
+          "onPts": 3,
+          "offPts": 5,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "onMin": 23.3,
+          "offMin": 1.3,
+          "onPoss": 72,
+          "offPoss": 5,
+          "onPts": 3,
+          "offPts": 5,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "onMin": 11.5,
+          "offMin": 13.1,
+          "onPoss": 37,
+          "offPoss": 40,
+          "onPts": 5,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "onMin": 11.6,
+          "offMin": 13,
+          "onPoss": 31,
+          "offPoss": 46,
+          "onPts": 8,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+          "name": "Ben Griscti",
+          "onMin": 4.2,
+          "offMin": 20.4,
+          "onPoss": 13,
+          "offPoss": 64,
+          "onPts": 5,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "onMin": 0,
+          "offMin": 24.6,
+          "onPoss": 0,
+          "offPoss": 77,
+          "onPts": 0,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "onMin": 6.4,
+          "offMin": 18.2,
+          "onPoss": 21,
+          "offPoss": 56,
+          "onPts": 0,
+          "offPts": 8,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+      "name": "Joe Ingles",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 25.6,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 6.1,
+          "offMin": 19.5,
+          "onPoss": 21,
+          "offPoss": 62,
+          "onPts": 3,
+          "offPts": 9,
+          "onReb": 1,
+          "offReb": 4,
+          "onAst": 2,
+          "offAst": 5
+        },
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "onMin": 14,
+          "offMin": 11.7,
+          "onPoss": 44,
+          "offPoss": 39,
+          "onPts": 6,
+          "offPts": 6,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 4,
+          "offAst": 3
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 9.8,
+          "offMin": 15.9,
+          "onPoss": 30,
+          "offPoss": 53,
+          "onPts": 7,
+          "offPts": 5,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 5
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 16.1,
+          "offMin": 9.5,
+          "onPoss": 52,
+          "offPoss": 31,
+          "onPts": 8,
+          "offPts": 4,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 5,
+          "offAst": 2
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 16.4,
+          "offMin": 9.2,
+          "onPoss": 57,
+          "offPoss": 26,
+          "onPts": 5,
+          "offPts": 7,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 5,
+          "offAst": 2
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 7.2,
+          "offMin": 18.4,
+          "onPoss": 22,
+          "offPoss": 61,
+          "onPts": 7,
+          "offPts": 5,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 5
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 16.2,
+          "offMin": 9.4,
+          "onPoss": 52,
+          "offPoss": 31,
+          "onPts": 2,
+          "offPts": 10,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 4,
+          "offAst": 3
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 11.1,
+          "offMin": 14.6,
+          "onPoss": 36,
+          "offPoss": 47,
+          "onPts": 7,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 3,
+          "offAst": 4
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 5.6,
+          "offMin": 20,
+          "onPoss": 18,
+          "offPoss": 65,
+          "onPts": 3,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 1,
+          "offAst": 6
+        }
+      ]
+    },
+    {
+      "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+      "name": "Josh Oduro",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 19.8,
+      "teammates": [
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "onMin": 17.1,
+          "offMin": 2.7,
+          "onPoss": 52,
+          "offPoss": 11,
+          "onPts": 14,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 5.4,
+          "offMin": 14.5,
+          "onPoss": 15,
+          "offPoss": 48,
+          "onPts": 2,
+          "offPts": 12,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 18.6,
+          "offMin": 1.2,
+          "onPoss": 58,
+          "offPoss": 5,
+          "onPts": 12,
+          "offPts": 2,
+          "onReb": 6,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 9.5,
+          "offMin": 10.3,
+          "onPoss": 32,
+          "offPoss": 31,
+          "onPts": 6,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 6,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 8.2,
+          "offMin": 11.6,
+          "onPoss": 24,
+          "offPoss": 39,
+          "onPts": 4,
+          "offPts": 10,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 10,
+          "offMin": 9.9,
+          "onPoss": 33,
+          "offPoss": 30,
+          "onPts": 10,
+          "offPts": 4,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 1.7,
+          "offMin": 18.2,
+          "onPoss": 6,
+          "offPoss": 57,
+          "onPts": 0,
+          "offPts": 14,
+          "onReb": 2,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 6.1,
+          "offMin": 13.7,
+          "onPoss": 21,
+          "offPoss": 42,
+          "onPts": 8,
+          "offPts": 6,
+          "onReb": 5,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 2.7,
+          "offMin": 17.1,
+          "onPoss": 11,
+          "offPoss": 52,
+          "onPts": 0,
+          "offPts": 14,
+          "onReb": 2,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+      "name": "Keanu Rasmussen",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "minutes": 9.7,
+      "teammates": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "onMin": 9.5,
+          "offMin": 0.3,
+          "onPoss": 28,
+          "offPoss": 2,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "onMin": 2.5,
+          "offMin": 7.2,
+          "onPoss": 6,
+          "offPoss": 24,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "onMin": 7.8,
+          "offMin": 1.9,
+          "onPoss": 25,
+          "offPoss": 5,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "onMin": 6.4,
+          "offMin": 3.4,
+          "onPoss": 21,
+          "offPoss": 9,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "onMin": 9.7,
+          "offMin": 0,
+          "onPoss": 30,
+          "offPoss": 0,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "onMin": 2.2,
+          "offMin": 7.5,
+          "onPoss": 7,
+          "offPoss": 23,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "onMin": 0.9,
+          "offMin": 8.8,
+          "onPoss": 3,
+          "offPoss": 27,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+          "name": "Ben Griscti",
+          "onMin": 0,
+          "offMin": 9.7,
+          "onPoss": 0,
+          "offPoss": 30,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "onMin": 0,
+          "offMin": 9.7,
+          "onPoss": 0,
+          "offPoss": 30,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+      "name": "Kyle Bowen",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 11.7,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 1.7,
+          "offMin": 10,
+          "onPoss": 6,
+          "offPoss": 31,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "onMin": 4.2,
+          "offMin": 7.5,
+          "onPoss": 12,
+          "offPoss": 25,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 3.1,
+          "offMin": 8.6,
+          "onPoss": 8,
+          "offPoss": 29,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 4.7,
+          "offMin": 7,
+          "onPoss": 17,
+          "offPoss": 20,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 7,
+          "offMin": 4.7,
+          "onPoss": 23,
+          "offPoss": 14,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 3.6,
+          "offMin": 8,
+          "onPoss": 9,
+          "offPoss": 28,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 5.9,
+          "offMin": 5.8,
+          "onPoss": 19,
+          "offPoss": 18,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 11.1,
+          "offMin": 0.6,
+          "onPoss": 36,
+          "offPoss": 1,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 5.6,
+          "offMin": 6.1,
+          "onPoss": 18,
+          "offPoss": 19,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+      "name": "Luke Travers",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 30.4,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 18.6,
+          "offMin": 11.8,
+          "onPoss": 58,
+          "offPoss": 37,
+          "onPts": 4,
+          "offPts": 7,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 5,
+          "offAst": 1
+        },
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "onMin": 21.6,
+          "offMin": 8.8,
+          "onPoss": 63,
+          "offPoss": 32,
+          "onPts": 6,
+          "offPts": 5,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 4,
+          "offAst": 2
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 10.8,
+          "offMin": 19.6,
+          "onPoss": 31,
+          "offPoss": 64,
+          "onPts": 7,
+          "offPts": 4,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 4
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 18.9,
+          "offMin": 11.5,
+          "onPoss": 62,
+          "offPoss": 33,
+          "onPts": 7,
+          "offPts": 4,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 3
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 13,
+          "offMin": 17.4,
+          "onPoss": 39,
+          "offPoss": 56,
+          "onPts": 7,
+          "offPts": 4,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 3,
+          "offAst": 3
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 15.3,
+          "offMin": 15.1,
+          "onPoss": 47,
+          "offPoss": 48,
+          "onPts": 4,
+          "offPts": 7,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 4
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 4.7,
+          "offMin": 25.7,
+          "onPoss": 17,
+          "offPoss": 78,
+          "onPts": 2,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 1,
+          "offAst": 5
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 16.1,
+          "offMin": 14.3,
+          "onPoss": 52,
+          "offPoss": 43,
+          "onPts": 7,
+          "offPts": 4,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 3,
+          "offAst": 3
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 2.7,
+          "offMin": 27.7,
+          "onPoss": 11,
+          "offPoss": 84,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 1,
+          "offAst": 5
+        }
+      ]
+    },
+    {
+      "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+      "name": "Malith Machar",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 6.7,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 2.7,
+          "offMin": 4,
+          "onPoss": 11,
+          "offPoss": 12,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "onMin": 0,
+          "offMin": 6.7,
+          "onPoss": 0,
+          "offPoss": 23,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 0,
+          "offMin": 6.7,
+          "onPoss": 0,
+          "offPoss": 23,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 2.7,
+          "offMin": 4,
+          "onPoss": 11,
+          "offPoss": 12,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 5,
+          "offMin": 1.7,
+          "onPoss": 17,
+          "offPoss": 6,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 0,
+          "offMin": 6.7,
+          "onPoss": 0,
+          "offPoss": 23,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 5,
+          "offMin": 1.7,
+          "onPoss": 17,
+          "offPoss": 6,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 5.6,
+          "offMin": 1.1,
+          "onPoss": 18,
+          "offPoss": 5,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 5.6,
+          "offMin": 1.1,
+          "onPoss": 18,
+          "offPoss": 5,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+      "name": "Matt Kenyon",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "minutes": 20.5,
+      "teammates": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "onMin": 18.8,
+          "offMin": 1.7,
+          "onPoss": 59,
+          "offPoss": 7,
+          "onPts": 8,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "onMin": 8.1,
+          "offMin": 12.4,
+          "onPoss": 28,
+          "offPoss": 38,
+          "onPts": 3,
+          "offPts": 5,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "onMin": 7.9,
+          "offMin": 12.6,
+          "onPoss": 26,
+          "offPoss": 40,
+          "onPts": 3,
+          "offPts": 5,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "onMin": 11.5,
+          "offMin": 9,
+          "onPoss": 37,
+          "offPoss": 29,
+          "onPts": 5,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "onMin": 17.6,
+          "offMin": 2.9,
+          "onPoss": 54,
+          "offPoss": 12,
+          "onPts": 8,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "onMin": 13,
+          "offMin": 7.4,
+          "onPoss": 42,
+          "offPoss": 24,
+          "onPts": 5,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+          "name": "Ben Griscti",
+          "onMin": 2.8,
+          "offMin": 17.6,
+          "onPoss": 11,
+          "offPoss": 55,
+          "onPts": 0,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "onMin": 0,
+          "offMin": 20.5,
+          "onPoss": 0,
+          "offPoss": 66,
+          "onPts": 0,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "onMin": 2.2,
+          "offMin": 18.3,
+          "onPoss": 7,
+          "offPoss": 59,
+          "onPts": 0,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+      "name": "Nick Rakocevic",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "minutes": 24.4,
+      "teammates": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "onMin": 24,
+          "offMin": 0.4,
+          "onPoss": 74,
+          "offPoss": 3,
+          "onPts": 13,
+          "offPts": 1,
+          "onReb": 9,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "onMin": 12.9,
+          "offMin": 11.6,
+          "onPoss": 40,
+          "offPoss": 37,
+          "onPts": 7,
+          "offPts": 7,
+          "onReb": 5,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "onMin": 10.7,
+          "offMin": 13.8,
+          "onPoss": 35,
+          "offPoss": 42,
+          "onPts": 9,
+          "offPts": 5,
+          "onReb": 5,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "onMin": 24.4,
+          "offMin": 0,
+          "onPoss": 76,
+          "offPoss": 1,
+          "onPts": 14,
+          "offPts": 0,
+          "onReb": 9,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "onMin": 7.9,
+          "offMin": 16.5,
+          "onPoss": 26,
+          "offPoss": 51,
+          "onPts": 4,
+          "offPts": 10,
+          "onReb": 2,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "onMin": 7.2,
+          "offMin": 17.3,
+          "onPoss": 21,
+          "offPoss": 56,
+          "onPts": 0,
+          "offPts": 14,
+          "onReb": 1,
+          "offReb": 8,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+          "name": "Ben Griscti",
+          "onMin": 0,
+          "offMin": 24.4,
+          "onPoss": 0,
+          "offPoss": 77,
+          "onPts": 0,
+          "offPts": 14,
+          "onReb": 0,
+          "offReb": 9,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "onMin": 3,
+          "offMin": 21.5,
+          "onPoss": 11,
+          "offPoss": 66,
+          "onPts": 2,
+          "offPts": 12,
+          "onReb": 1,
+          "offReb": 8,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "onMin": 7.8,
+          "offMin": 16.6,
+          "onPoss": 25,
+          "offPoss": 52,
+          "onPts": 7,
+          "offPts": 7,
+          "onReb": 4,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+      "name": "Sam Waardenburg",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 25.3,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 9.5,
+          "offMin": 15.8,
+          "onPoss": 32,
+          "offPoss": 53,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "onMin": 14.3,
+          "offMin": 11.1,
+          "onPoss": 47,
+          "offPoss": 38,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 5.5,
+          "offMin": 19.8,
+          "onPoss": 20,
+          "offPoss": 65,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 18.9,
+          "offMin": 6.5,
+          "onPoss": 62,
+          "offPoss": 23,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 7.6,
+          "offMin": 17.7,
+          "onPoss": 24,
+          "offPoss": 61,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 17.2,
+          "offMin": 8.1,
+          "onPoss": 58,
+          "offPoss": 27,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 7,
+          "offMin": 18.4,
+          "onPoss": 23,
+          "offPoss": 62,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 16.4,
+          "offMin": 8.9,
+          "onPoss": 57,
+          "offPoss": 28,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 5,
+          "offMin": 20.3,
+          "onPoss": 17,
+          "offPoss": 68,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+      "name": "Tom Wilson",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 16,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 8.2,
+          "offMin": 7.8,
+          "onPoss": 24,
+          "offPoss": 23,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "onMin": 11.9,
+          "offMin": 4.2,
+          "onPoss": 33,
+          "offPoss": 14,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 12.6,
+          "offMin": 3.4,
+          "onPoss": 37,
+          "offPoss": 10,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 13,
+          "offMin": 3.1,
+          "onPoss": 39,
+          "offPoss": 8,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 7.6,
+          "offMin": 8.4,
+          "onPoss": 24,
+          "offPoss": 23,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 0,
+          "offMin": 16,
+          "onPoss": 0,
+          "offPoss": 47,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 3.6,
+          "offMin": 12.4,
+          "onPoss": 9,
+          "offPoss": 38,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 7.2,
+          "offMin": 8.8,
+          "onPoss": 22,
+          "offPoss": 25,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 0,
+          "offMin": 16,
+          "onPoss": 0,
+          "offPoss": 47,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+      "name": "Zylan Cheatham",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "minutes": 37.3,
+      "teammates": [
+        {
+          "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
+          "name": "Flynn Cameron",
+          "onMin": 17.6,
+          "offMin": 19.7,
+          "onPoss": 60,
+          "offPoss": 58,
+          "onPts": 6,
+          "offPts": 12,
+          "onReb": 2,
+          "offReb": 5,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "onMin": 24,
+          "offMin": 13.3,
+          "onPoss": 74,
+          "offPoss": 44,
+          "onPts": 10,
+          "offPts": 8,
+          "onReb": 6,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "onMin": 22,
+          "offMin": 15.3,
+          "onPoss": 69,
+          "offPoss": 49,
+          "onPts": 10,
+          "offPts": 8,
+          "onReb": 2,
+          "offReb": 5,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "onMin": 35.7,
+          "offMin": 1.6,
+          "onPoss": 110,
+          "offPoss": 8,
+          "onPts": 18,
+          "offPts": 0,
+          "onReb": 7,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "onMin": 18.8,
+          "offMin": 18.6,
+          "onPoss": 59,
+          "offPoss": 59,
+          "onPts": 12,
+          "offPts": 6,
+          "onReb": 6,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "onMin": 15.2,
+          "offMin": 22.2,
+          "onPoss": 46,
+          "offPoss": 72,
+          "onPts": 7,
+          "offPts": 11,
+          "onReb": 5,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+          "name": "Ben Griscti",
+          "onMin": 3.6,
+          "offMin": 33.7,
+          "onPoss": 15,
+          "offPoss": 103,
+          "onPts": 0,
+          "offPts": 18,
+          "onReb": 0,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "onMin": 3,
+          "offMin": 34.4,
+          "onPoss": 11,
+          "offPoss": 107,
+          "onPts": 2,
+          "offPts": 16,
+          "onReb": 0,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "onMin": 9.5,
+          "offMin": 27.9,
+          "onPoss": 28,
+          "offPoss": 90,
+          "onPts": 7,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 3
+        }
+      ]
+    }
+  ],
+  "fetchedAt": "2026-09-22T16:05:45.804Z"
+}

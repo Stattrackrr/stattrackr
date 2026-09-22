@@ -1,0 +1,220 @@
+{
+  "fixtureId": "36e0e11c-58ad-11f1-93d0-e78395b5c13c",
+  "homeTeam": "Perth Wildcats",
+  "awayTeam": "South East Melbourne Phoenix",
+  "homeScore": "79",
+  "awayScore": "100",
+  "tipoff": "2026-09-19T11:30:00",
+  "teams": [
+    {
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "isHome": true,
+      "starters": [
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "jersey": "2",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/dd570850b59d4340afcb3178dd0866a7?size=400",
+          "starter": true
+        },
+        {
+          "personId": "51510092-410d-11f0-80a3-9dbbf7342624",
+          "name": "Jo Lual-Acuil Jr",
+          "jersey": "0",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/31ef0bfce1374222988cac93584e6c69?size=400",
+          "starter": true
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "jersey": "5",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c1253737cf374ada9ce1ae522dc51585?size=400",
+          "starter": true
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "jersey": "40",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c2cc5ea484a241118485202810668e25?size=400",
+          "starter": true
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "jersey": "3",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/77612d10438648118121b68ea7423b51?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "27885508-95e4-11f1-abbe-93e32340823d",
+          "name": "Jimmy Whitt",
+          "jersey": "33",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d1ec50a5e61f4908a08940531a0c5918?size=400",
+          "starter": false
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "jersey": "25",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/18d0acde97f5476ab600c57f515a5237?size=400",
+          "starter": false
+        },
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "jersey": "26",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ea5f7850171348afa8a079e14370e0d9?size=400",
+          "starter": false
+        },
+        {
+          "personId": "3f5430fd-8dd0-11f0-9214-61af560dfc9e",
+          "name": "Tana Kopa",
+          "jersey": "8",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9239b88d901a4ef88681d2cf570ff236?size=400",
+          "starter": false
+        },
+        {
+          "personId": "4b998bf4-95e4-11f1-8a0a-3dfcf4a739d2",
+          "name": "Marley Sam",
+          "jersey": "13",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a46f26a3716a43ee8a820548e125d29c?size=400",
+          "starter": false
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "jersey": "27",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/81cafd82623d453e96672f64717b0b23?size=400",
+          "starter": false
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "jersey": "24",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1ae20634fc5a4f6b9d482a62fa4baf82?size=400",
+          "starter": false
+        }
+      ]
+    },
+    {
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "isHome": false,
+      "starters": [
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "jersey": "13",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4133b1022edb4f78a01b69635dae7770?size=400",
+          "starter": true
+        },
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "jersey": "1",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/02596ca88608482698479a4bdebd02b2?size=400",
+          "starter": true
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8fab66501a7641c48f5e2d29302800ab?size=400",
+          "starter": true
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "jersey": "99",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aa5b390825814a8b86d89f739fa47383?size=400",
+          "starter": true
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "jersey": "4",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/456410246a4747979cf1d8030b76c67d?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "jersey": "5",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/45a8b8db005c4463bd960096521125c4?size=400",
+          "starter": false
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "jersey": "11",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e8df9b6d9e64950aac3a41a1b3f8043?size=400",
+          "starter": false
+        },
+        {
+          "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
+          "name": "Hunter Goodrick",
+          "jersey": "10",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/13429ee31d6543ba9101d3a7bd5261da?size=400",
+          "starter": false
+        },
+        {
+          "personId": "5ec9c9d2-410d-11f0-a085-9dbbf7342624",
+          "name": "Patrick Ryan",
+          "jersey": "2",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cc13e0adf30e4b2f8879ca0fa64acd46?size=400",
+          "starter": false
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "jersey": "7",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d3e6511d611241c1a1332ac76cdf7f4a?size=400",
+          "starter": false
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "jersey": "12",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c5f1c5b857c14249ae62db4f296172da?size=400",
+          "starter": false
+        },
+        {
+          "personId": "b41a16c8-8c4f-11f0-81af-012b0061dfcc",
+          "name": "Sam Davidson",
+          "jersey": "3",
+          "position": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a5ce8c9efc5445a6a0caf61770e0384e?size=400",
+          "starter": false
+        }
+      ]
+    }
+  ]
+}
