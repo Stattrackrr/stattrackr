@@ -1176,7 +1176,7 @@ export default function NblDashboardPage() {
               <div className={mainContentClassName} style={mainContentStyle}>
                 {/* 1. Filter By — mobile only */}
                 <div
-                  className={`lg:hidden rounded-lg ${NBL_DASH_CARD_GLOW} px-3 md:px-4 pt-3 md:pt-4 pb-4 md:pb-5 relative overflow-visible`}
+                  className={`order-1 lg:hidden rounded-lg ${NBL_DASH_CARD_GLOW} px-3 md:px-4 pt-3 md:pt-4 pb-4 md:pb-5 relative overflow-visible`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white">
@@ -1229,7 +1229,7 @@ export default function NblDashboardPage() {
 
                 {/* 2. Header */}
                 <div
-                  className={`relative z-[60] rounded-lg ${NBL_DASH_CARD_GLOW} p-2.5 sm:p-4 md:p-6 w-full min-w-0 flex-shrink-0 mr-0 overflow-visible`}
+                  className={`order-2 lg:order-none relative z-[60] rounded-lg ${NBL_DASH_CARD_GLOW} p-2.5 sm:p-4 md:p-6 w-full min-w-0 flex-shrink-0 mr-0 overflow-visible`}
                   ref={searchDropdownRef}
                 >
                   <div className="flex flex-col gap-1.5 lg:gap-3">
@@ -1597,7 +1597,7 @@ export default function NblDashboardPage() {
 
                 {/* 3. Chart container — AFL heights */}
                 <div
-                  className={`chart-container-no-focus relative z-10 rounded-lg p-0 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden ${NBL_DASH_CARD_GLOW} ${
+                  className={`order-3 lg:order-none chart-container-no-focus relative z-10 rounded-lg p-0 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden ${NBL_DASH_CARD_GLOW} ${
                     showAdvancedFilters
                       ? 'sm:pt-0 sm:pr-0 sm:pb-0 sm:pl-0 md:pt-1 md:pr-0 md:pb-0 md:pl-0 lg:pt-2 lg:pr-0 lg:pb-0 lg:pl-0'
                       : 'sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0'
@@ -1797,7 +1797,7 @@ export default function NblDashboardPage() {
                 {/* 4. Supporting stats (player mode) */}
                 {nblPropsMode === 'player' && (
                   <div
-                    className={`w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 ${
+                    className={`order-4 lg:order-none w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 ${
                       showAdvancedFilters ? 'lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-7' : 'lg:px-3 xl:px-4'
                     }`}
                   >
@@ -1846,7 +1846,7 @@ export default function NblDashboardPage() {
 
                 {nblPropsMode === 'player' && (
                   <div
-                    className={`w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} py-3 sm:py-4 md:py-4 px-0 ${
+                    className={`order-6 lg:order-none w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} py-3 sm:py-4 md:py-4 px-0 ${
                       showAdvancedFilters ? 'lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-7' : 'lg:px-3 xl:px-4'
                     }`}
                   >
@@ -1903,7 +1903,7 @@ export default function NblDashboardPage() {
                 {/* 4b. Lineup under chart — Game Props */}
                 {nblPropsMode === 'team' && (
                   <div
-                    className={`w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}
+                    className={`hidden lg:flex w-full min-w-0 flex-col rounded-lg ${NBL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}
                   >
                     <NblTeamSelectionsCard
                       isDark={!!mounted && isDark}
@@ -1917,7 +1917,7 @@ export default function NblDashboardPage() {
 
                 {/* 4.5 DVP | Breakdown | Matchup — mobile */}
                 <div
-                  className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 max-h-[60vh] min-h-0`}
+                  className={`order-5 lg:hidden w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 max-h-[60vh] min-h-0`}
                 >
                   {showEmptyShell ? (
                     <div className="min-h-[280px]" />
@@ -2064,7 +2064,7 @@ export default function NblDashboardPage() {
                 {/* 4.52 Player vs Team / Similar Players — mobile (player mode) */}
                 {nblPropsMode === 'player' && (
                   <div
-                    className={`lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4`}
+                    className={`order-8 lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4`}
                   >
                     <div className="flex gap-1.5 mb-2">
                       <button
@@ -2124,7 +2124,7 @@ export default function NblDashboardPage() {
 
                 {/* 4.55 Lineups — mobile */}
                 <div
-                  className={`lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4`}
+                  className={`order-9 lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4`}
                 >
                   <NblTeamSelectionsCard
                     isDark={!!mounted && isDark}
@@ -2138,7 +2138,7 @@ export default function NblDashboardPage() {
                 {/* Game Log — mobile, directly under lineups (NBA parity) */}
                 {nblPropsMode === 'player' && (
                   <div
-                    className={`lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} overflow-hidden`}
+                    className={`order-11 lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} overflow-hidden`}
                   >
                     <NblBoxScore
                       gameLogs={selectedPlayerGameLogs}
@@ -2152,7 +2152,7 @@ export default function NblDashboardPage() {
 
                 {/* 4.6 Injuries — mobile */}
                 <div
-                  className={`lg:hidden rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 w-full min-w-0 flex flex-col max-h-[50vh] min-h-0`}
+                  className={`order-10 lg:hidden rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 w-full min-w-0 flex flex-col max-h-[50vh] min-h-0`}
                 >
                   {nblPropsMode === 'player' && !selectedPlayer ? (
                     <div className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">
@@ -2182,13 +2182,13 @@ export default function NblDashboardPage() {
                 </div>
 
                 {/* 4.7 Ladder — mobile */}
-                <div className={`lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 pb-8 sm:pb-10`}>
+                <div className={`order-12 lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 pb-8 sm:pb-10`}>
                   <NblLadderCard isDark={!!mounted && isDark} logoByTeam={logoByTeam} />
                 </div>
 
                 {/* 5. Shot chart — mobile (desktop lives in right panel, same as NBA) */}
                 {nblPropsMode === 'player' ? (
-                  <div className="lg:hidden w-full min-w-0">
+                  <div className="order-7 lg:hidden w-full min-w-0">
                     <NblShotChart
                       isDark={!!mounted && isDark}
                       playerName={selectedPlayer?.name}

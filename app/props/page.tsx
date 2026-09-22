@@ -339,13 +339,10 @@ function dvpColorBands(
 }
 
 function dvpRankText(
-  rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta',
+  _rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta',
   rank: number,
-  fieldSize?: number | null
+  _fieldSize?: number | null
 ): string {
-  if ((isTennisPropsSport(rowSport) || rowSport === 'nbl') && Number(fieldSize) > 0) {
-    return `#${rank}/${fieldSize}`;
-  }
   return `#${rank}`;
 }
 
@@ -9426,17 +9423,17 @@ export default function NBALandingPage() {
                                           const homeLogoUrl = tryNblLogo(prop.team || prop.homeTeam || '');
                                           const awayLogoUrl = tryNblLogo(prop.opponent || prop.awayTeam || '');
                                           return (
-                                            <div className="flex items-center gap-2 flex-wrap">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
                                               {homeLogoUrl ? (
-                                                <img src={homeLogoUrl} alt={prop.team || ''} className="w-8 h-8 object-contain flex-shrink-0" />
+                                                <img src={homeLogoUrl} alt={prop.team || ''} className="w-6 h-6 object-contain flex-shrink-0" />
                                               ) : (
-                                                <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+                                                <div className={`w-6 h-6 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
                                               )}
                                               <span className={`text-xs flex-shrink-0 ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>vs</span>
                                               {awayLogoUrl ? (
-                                                <img src={awayLogoUrl} alt={prop.opponent || ''} className="w-8 h-8 object-contain flex-shrink-0" />
+                                                <img src={awayLogoUrl} alt={prop.opponent || ''} className="w-6 h-6 object-contain flex-shrink-0" />
                                               ) : (
-                                                <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+                                                <div className={`w-6 h-6 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
                                               )}
                                             </div>
                                           );
