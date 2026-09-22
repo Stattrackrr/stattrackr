@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-21T18:39:05.835Z",
+  "generatedAt": "2026-09-22T17:40:18.412Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 153,
+  "playerCount": 154,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -132,7 +132,7 @@
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
-      "jersey": null,
+      "jersey": "5",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7048cadd9a7342f6ad1be15a32ead71c?size=800&format=webp"
     },
     {
@@ -141,8 +141,8 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
-      "position": null,
-      "jersey": null,
+      "position": "G",
+      "jersey": "5",
       "imageUrl": null
     },
     {
@@ -921,7 +921,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
-      "position": null,
+      "position": "F",
       "jersey": "22",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f1c6aeb5d646467f97e9480551bbb27b?size=800&format=webp"
     },
@@ -1102,7 +1102,7 @@
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
-      "jersey": null,
+      "jersey": "9",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cf0d61ee1e78463bb0f9a15ef9c90d0a?size=800&format=webp"
     },
     {
@@ -1181,7 +1181,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
-      "position": null,
+      "position": "G",
       "jersey": "13",
       "imageUrl": null
     },
@@ -1194,6 +1194,16 @@
       "position": "G",
       "jersey": "1",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8ec714970b4f4393a8945eaf6c32c077?size=800&format=webp"
+    },
+    {
+      "playerId": "ae8a3211-24db-4a85-8f0f-73e2082f5aa3",
+      "name": "Raheim Brown Jr",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
     },
     {
       "playerId": "95352144-95bb-4154-963a-b3b90dd915a4",
@@ -1472,7 +1482,7 @@
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
-      "jersey": null,
+      "jersey": "24",
       "imageUrl": null
     },
     {

@@ -1,14 +1,14 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-09-21T18:37:27.313Z",
+  "generatedAt": "2026-09-22T17:38:42.528Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 179,
   "games": [
     {
       "id": "24d0eebf-20c2-11f1-91dc-039d1426885f",
       "externalId": "24d0eebf-20c2-11f1-91dc-039d1426885f",
-      "startTime": "2026-04-05T04:30:00",
+      "startTime": "2026-04-05T04:30:00.000Z",
       "round": "CHAMPIONSHIP",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -27,7 +27,7 @@
     {
       "id": "bd142077-20c1-11f1-95cc-79df6334c739",
       "externalId": "bd142077-20c1-11f1-95cc-79df6334c739",
-      "startTime": "2026-04-01T08:30:00",
+      "startTime": "2026-04-01T08:30:00.000Z",
       "round": "CHAMPIONSHIP",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -46,7 +46,7 @@
     {
       "id": "9c76716d-20c1-11f1-910d-d9b3c42477f2",
       "externalId": "9c76716d-20c1-11f1-910d-d9b3c42477f2",
-      "startTime": "2026-03-29T03:30:00",
+      "startTime": "2026-03-29T03:30:00.000Z",
       "round": "CHAMPIONSHIP",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -65,7 +65,7 @@
     {
       "id": "796d28c2-20c1-11f1-9853-a7e939f66594",
       "externalId": "796d28c2-20c1-11f1-9853-a7e939f66594",
-      "startTime": "2026-03-27T08:30:00",
+      "startTime": "2026-03-27T08:30:00.000Z",
       "round": "CHAMPIONSHIP",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -84,7 +84,7 @@
     {
       "id": "63d262c8-18fe-11f1-915f-c5312baefae1",
       "externalId": "63d262c8-18fe-11f1-915f-c5312baefae1",
-      "startTime": "2026-03-21T08:00:00",
+      "startTime": "2026-03-21T08:00:00.000Z",
       "round": "CHAMPIONSHIP",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -103,7 +103,7 @@
     {
       "id": "0d86ffcb-1804-11f1-9da2-a5a245925967",
       "externalId": "0d86ffcb-1804-11f1-9da2-a5a245925967",
-      "startTime": "2026-03-17T08:30:00",
+      "startTime": "2026-03-17T08:30:00.000Z",
       "round": "PLAYOFF 1",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -122,7 +122,7 @@
     {
       "id": "2f781bb9-18fe-11f1-be21-03773903b9b5",
       "externalId": "2f781bb9-18fe-11f1-be21-03773903b9b5",
-      "startTime": "2026-03-14T09:00:00",
+      "startTime": "2026-03-14T09:00:00.000Z",
       "round": "PLAYOFF 2",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -141,7 +141,7 @@
     {
       "id": "a657ddb1-1803-11f1-a846-b9cdc188d753",
       "externalId": "a657ddb1-1803-11f1-a846-b9cdc188d753",
-      "startTime": "2026-03-14T06:30:00",
+      "startTime": "2026-03-14T06:30:00.000Z",
       "round": "PLAYOFF 1",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -160,7 +160,7 @@
     {
       "id": "07aa3ed0-12aa-11f1-bd67-995301109fe8",
       "externalId": "07aa3ed0-12aa-11f1-bd67-995301109fe8",
-      "startTime": "2026-03-11T08:30:00",
+      "startTime": "2026-03-11T08:30:00.000Z",
       "round": "PLAYOFF 2",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -179,7 +179,7 @@
     {
       "id": "e63caa04-12a9-11f1-9db3-b7438687a6df",
       "externalId": "e63caa04-12a9-11f1-9db3-b7438687a6df",
-      "startTime": "2026-03-10T08:30:00",
+      "startTime": "2026-03-10T08:30:00.000Z",
       "round": "PLAYOFF 1",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -198,7 +198,7 @@
     {
       "id": "97f9a75f-12a9-11f1-86ce-7bb9c5b9d346",
       "externalId": "97f9a75f-12a9-11f1-86ce-7bb9c5b9d346",
-      "startTime": "2026-03-07T09:00:00",
+      "startTime": "2026-03-07T09:00:00.000Z",
       "round": "ELIMINATION",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -217,7 +217,7 @@
     {
       "id": "823c4aaf-0e53-11f1-ba23-e15bd0d338f6",
       "externalId": "823c4aaf-0e53-11f1-ba23-e15bd0d338f6",
-      "startTime": "2026-03-05T08:30:00",
+      "startTime": "2026-03-05T08:30:00.000Z",
       "round": "QUALIFIER",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -236,7 +236,7 @@
     {
       "id": "5a535599-0e53-11f1-b8db-cdd30de0f91d",
       "externalId": "5a535599-0e53-11f1-b8db-cdd30de0f91d",
-      "startTime": "2026-03-04T08:30:00",
+      "startTime": "2026-03-04T08:30:00.000Z",
       "round": "SEEDING",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -255,7 +255,7 @@
     {
       "id": "b2710ab3-4bef-11f0-91f3-f7ae306e78a8",
       "externalId": "b2710ab3-4bef-11f0-91f3-f7ae306e78a8",
-      "startTime": "2026-02-20T10:30:00",
+      "startTime": "2026-02-20T10:30:00.000Z",
       "round": "22",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -274,7 +274,7 @@
     {
       "id": "b28e54da-4bef-11f0-86e2-abf05c51dbb7",
       "externalId": "b28e54da-4bef-11f0-86e2-abf05c51dbb7",
-      "startTime": "2026-02-20T08:30:00",
+      "startTime": "2026-02-20T08:30:00.000Z",
       "round": "22",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -293,7 +293,7 @@
     {
       "id": "b276a37d-4bef-11f0-91d4-2d91e5671953",
       "externalId": "b276a37d-4bef-11f0-91d4-2d91e5671953",
-      "startTime": "2026-02-19T08:30:00",
+      "startTime": "2026-02-19T08:30:00.000Z",
       "round": "22",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -312,7 +312,7 @@
     {
       "id": "b272ec12-4bef-11f0-bcaf-8566c32332b5",
       "externalId": "b272ec12-4bef-11f0-bcaf-8566c32332b5",
-      "startTime": "2026-02-19T06:30:00",
+      "startTime": "2026-02-19T06:30:00.000Z",
       "round": "22",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -331,7 +331,7 @@
     {
       "id": "b27937e8-4bef-11f0-9b65-e7c335595f42",
       "externalId": "b27937e8-4bef-11f0-9b65-e7c335595f42",
-      "startTime": "2026-02-18T08:30:00",
+      "startTime": "2026-02-18T08:30:00.000Z",
       "round": "22",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -350,7 +350,7 @@
     {
       "id": "b2757773-4bef-11f0-b4cf-438852f8f17e",
       "externalId": "b2757773-4bef-11f0-b4cf-438852f8f17e",
-      "startTime": "2026-02-15T05:30:00",
+      "startTime": "2026-02-15T05:30:00.000Z",
       "round": "21",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -369,7 +369,7 @@
     {
       "id": "b2758702-4bef-11f0-9233-5b42e4531c6f",
       "externalId": "b2758702-4bef-11f0-9233-5b42e4531c6f",
-      "startTime": "2026-02-15T03:30:00",
+      "startTime": "2026-02-15T03:30:00.000Z",
       "round": "21",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -388,7 +388,7 @@
     {
       "id": "b274d640-4bef-11f0-bca8-67aa3f2ff9f5",
       "externalId": "b274d640-4bef-11f0-bca8-67aa3f2ff9f5",
-      "startTime": "2026-02-14T09:00:00",
+      "startTime": "2026-02-14T09:00:00.000Z",
       "round": "21",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -407,7 +407,7 @@
     {
       "id": "b281e20a-4bef-11f0-b56d-6d11c9352f8d",
       "externalId": "b281e20a-4bef-11f0-b56d-6d11c9352f8d",
-      "startTime": "2026-02-14T06:30:00",
+      "startTime": "2026-02-14T06:30:00.000Z",
       "round": "21",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -426,7 +426,7 @@
     {
       "id": "b27a4bad-4bef-11f0-997d-0b013169c635",
       "externalId": "b27a4bad-4bef-11f0-997d-0b013169c635",
-      "startTime": "2026-02-13T10:30:00",
+      "startTime": "2026-02-13T10:30:00.000Z",
       "round": "21",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -445,7 +445,7 @@
     {
       "id": "b2729d93-4bef-11f0-bd84-931632ab30f1",
       "externalId": "b2729d93-4bef-11f0-bd84-931632ab30f1",
-      "startTime": "2026-02-13T08:30:00",
+      "startTime": "2026-02-13T08:30:00.000Z",
       "round": "21",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -464,7 +464,7 @@
     {
       "id": "b2a91b89-4bef-11f0-9702-0f125a33c37a",
       "externalId": "b2a91b89-4bef-11f0-9702-0f125a33c37a",
-      "startTime": "2026-02-12T08:30:00",
+      "startTime": "2026-02-12T08:30:00.000Z",
       "round": "21",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -483,7 +483,7 @@
     {
       "id": "b26aed8e-4bef-11f0-8d0b-7d8c00260a69",
       "externalId": "b26aed8e-4bef-11f0-8d0b-7d8c00260a69",
-      "startTime": "2026-02-08T05:30:00",
+      "startTime": "2026-02-08T05:30:00.000Z",
       "round": "20",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -502,7 +502,7 @@
     {
       "id": "b2675eab-4bef-11f0-a636-a1cf9306875a",
       "externalId": "b2675eab-4bef-11f0-a636-a1cf9306875a",
-      "startTime": "2026-02-08T03:30:00",
+      "startTime": "2026-02-08T03:30:00.000Z",
       "round": "20",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -521,7 +521,7 @@
     {
       "id": "b26f08e5-4bef-11f0-9b72-2b5bbafc199b",
       "externalId": "b26f08e5-4bef-11f0-9b72-2b5bbafc199b",
-      "startTime": "2026-02-07T09:00:00",
+      "startTime": "2026-02-07T09:00:00.000Z",
       "round": "20",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -540,7 +540,7 @@
     {
       "id": "b28ce4e1-4bef-11f0-8285-750b2dd8cf1d",
       "externalId": "b28ce4e1-4bef-11f0-8285-750b2dd8cf1d",
-      "startTime": "2026-02-07T06:30:00",
+      "startTime": "2026-02-07T06:30:00.000Z",
       "round": "20",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -559,7 +559,7 @@
     {
       "id": "b271c0de-4bef-11f0-889c-6f7b3f296308",
       "externalId": "b271c0de-4bef-11f0-889c-6f7b3f296308",
-      "startTime": "2026-02-06T10:30:00",
+      "startTime": "2026-02-06T10:30:00.000Z",
       "round": "20",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -578,7 +578,7 @@
     {
       "id": "b2669c85-4bef-11f0-a5a1-45d92a8f67bd",
       "externalId": "b2669c85-4bef-11f0-a5a1-45d92a8f67bd",
-      "startTime": "2026-02-06T08:30:00",
+      "startTime": "2026-02-06T08:30:00.000Z",
       "round": "20",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -597,7 +597,7 @@
     {
       "id": "b26142ab-4bef-11f0-ae16-3972d4a527b8",
       "externalId": "b26142ab-4bef-11f0-ae16-3972d4a527b8",
-      "startTime": "2026-02-05T08:30:00",
+      "startTime": "2026-02-05T08:30:00.000Z",
       "round": "20",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -616,7 +616,7 @@
     {
       "id": "b28bf2a9-4bef-11f0-a670-e7ea492f5de5",
       "externalId": "b28bf2a9-4bef-11f0-a670-e7ea492f5de5",
-      "startTime": "2026-02-05T06:30:00",
+      "startTime": "2026-02-05T06:30:00.000Z",
       "round": "20",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -635,7 +635,7 @@
     {
       "id": "b260edae-4bef-11f0-98aa-b9d013d7809a",
       "externalId": "b260edae-4bef-11f0-98aa-b9d013d7809a",
-      "startTime": "2026-02-01T05:30:00",
+      "startTime": "2026-02-01T05:30:00.000Z",
       "round": "19",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -654,7 +654,7 @@
     {
       "id": "b28c003b-4bef-11f0-8ec3-bbc504167c78",
       "externalId": "b28c003b-4bef-11f0-8ec3-bbc504167c78",
-      "startTime": "2026-02-01T03:30:00",
+      "startTime": "2026-02-01T03:30:00.000Z",
       "round": "19",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -673,7 +673,7 @@
     {
       "id": "b28fc609-4bef-11f0-8354-6bbf481c9dbd",
       "externalId": "b28fc609-4bef-11f0-8354-6bbf481c9dbd",
-      "startTime": "2026-01-31T09:00:00",
+      "startTime": "2026-01-31T09:00:00.000Z",
       "round": "19",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -692,7 +692,7 @@
     {
       "id": "b27e00c9-4bef-11f0-8cce-373c052dc412",
       "externalId": "b27e00c9-4bef-11f0-8cce-373c052dc412",
-      "startTime": "2026-01-31T06:30:00",
+      "startTime": "2026-01-31T06:30:00.000Z",
       "round": "19",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -711,7 +711,7 @@
     {
       "id": "b285b429-4bef-11f0-9ae7-cb2bdca9c6f4",
       "externalId": "b285b429-4bef-11f0-9ae7-cb2bdca9c6f4",
-      "startTime": "2026-01-30T08:30:00",
+      "startTime": "2026-01-30T08:30:00.000Z",
       "round": "19",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -730,7 +730,7 @@
     {
       "id": "b2690246-4bef-11f0-a825-4115284f2e91",
       "externalId": "b2690246-4bef-11f0-a825-4115284f2e91",
-      "startTime": "2026-01-30T06:30:00",
+      "startTime": "2026-01-30T06:30:00.000Z",
       "round": "19",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -749,7 +749,7 @@
     {
       "id": "b26bd3ce-4bef-11f0-bbe6-9b02d5153837",
       "externalId": "b26bd3ce-4bef-11f0-bbe6-9b02d5153837",
-      "startTime": "2026-01-29T08:30:00",
+      "startTime": "2026-01-29T08:30:00.000Z",
       "round": "19",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -768,7 +768,7 @@
     {
       "id": "b282f791-4bef-11f0-a50a-d71216bffd5c",
       "externalId": "b282f791-4bef-11f0-a50a-d71216bffd5c",
-      "startTime": "2026-01-28T10:30:00",
+      "startTime": "2026-01-28T10:30:00.000Z",
       "round": "19",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -787,7 +787,7 @@
     {
       "id": "b266e903-4bef-11f0-9cab-41ba0d454dfc",
       "externalId": "b266e903-4bef-11f0-9cab-41ba0d454dfc",
-      "startTime": "2026-01-28T08:30:00",
+      "startTime": "2026-01-28T08:30:00.000Z",
       "round": "19",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -806,7 +806,7 @@
     {
       "id": "b275869a-4bef-11f0-954a-b31681696f40",
       "externalId": "b275869a-4bef-11f0-954a-b31681696f40",
-      "startTime": "2026-01-26T08:30:00",
+      "startTime": "2026-01-26T08:30:00.000Z",
       "round": "18",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -825,7 +825,7 @@
     {
       "id": "b2614f8a-4bef-11f0-a809-b947d0e3eafa",
       "externalId": "b2614f8a-4bef-11f0-a809-b947d0e3eafa",
-      "startTime": "2026-01-25T05:30:00",
+      "startTime": "2026-01-25T05:30:00.000Z",
       "round": "18",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -844,7 +844,7 @@
     {
       "id": "b264adb3-4bef-11f0-8f86-f7367f0af8fe",
       "externalId": "b264adb3-4bef-11f0-8f86-f7367f0af8fe",
-      "startTime": "2026-01-25T03:30:00",
+      "startTime": "2026-01-25T03:30:00.000Z",
       "round": "18",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -863,7 +863,7 @@
     {
       "id": "b261b75e-4bef-11f0-803a-bf4a75ed2375",
       "externalId": "b261b75e-4bef-11f0-803a-bf4a75ed2375",
-      "startTime": "2026-01-24T09:00:00",
+      "startTime": "2026-01-24T09:00:00.000Z",
       "round": "18",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -882,7 +882,7 @@
     {
       "id": "b266fe75-4bef-11f0-b744-5f21da19a0fe",
       "externalId": "b266fe75-4bef-11f0-b744-5f21da19a0fe",
-      "startTime": "2026-01-24T06:30:00",
+      "startTime": "2026-01-24T06:30:00.000Z",
       "round": "18",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -901,7 +901,7 @@
     {
       "id": "b25a01d7-4bef-11f0-aaaf-21683dc436c5",
       "externalId": "b25a01d7-4bef-11f0-aaaf-21683dc436c5",
-      "startTime": "2026-01-23T06:30:00",
+      "startTime": "2026-01-23T06:30:00.000Z",
       "round": "18",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -920,7 +920,7 @@
     {
       "id": "b2741816-4bef-11f0-9a39-876c79b96794",
       "externalId": "b2741816-4bef-11f0-9a39-876c79b96794",
-      "startTime": "2026-01-22T10:30:00",
+      "startTime": "2026-01-22T10:30:00.000Z",
       "round": "18",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -939,7 +939,7 @@
     {
       "id": "b25616a8-4bef-11f0-9a91-3fd9cdc8f1b9",
       "externalId": "b25616a8-4bef-11f0-9a91-3fd9cdc8f1b9",
-      "startTime": "2026-01-22T08:30:00",
+      "startTime": "2026-01-22T08:30:00.000Z",
       "round": "18",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -958,7 +958,7 @@
     {
       "id": "b254b252-4bef-11f0-83d3-91dadb0cb999",
       "externalId": "b254b252-4bef-11f0-83d3-91dadb0cb999",
-      "startTime": "2026-01-21T08:30:00",
+      "startTime": "2026-01-21T08:30:00.000Z",
       "round": "18",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -977,7 +977,7 @@
     {
       "id": "b27eb8e2-4bef-11f0-ad13-0f742927f015",
       "externalId": "b27eb8e2-4bef-11f0-ad13-0f742927f015",
-      "startTime": "2026-01-21T06:30:00",
+      "startTime": "2026-01-21T06:30:00.000Z",
       "round": "18",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -996,7 +996,7 @@
     {
       "id": "b2713b63-4bef-11f0-a268-87e6a155244b",
       "externalId": "b2713b63-4bef-11f0-a268-87e6a155244b",
-      "startTime": "2026-01-18T03:30:00",
+      "startTime": "2026-01-18T03:30:00.000Z",
       "round": "17",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -1015,7 +1015,7 @@
     {
       "id": "b24b6e4c-4bef-11f0-baa2-55e0c73fcc94",
       "externalId": "b24b6e4c-4bef-11f0-baa2-55e0c73fcc94",
-      "startTime": "2026-01-17T10:30:00",
+      "startTime": "2026-01-17T10:30:00.000Z",
       "round": "17",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -1034,7 +1034,7 @@
     {
       "id": "b24f1cb5-4bef-11f0-b4d7-4f4cd43b9dce",
       "externalId": "b24f1cb5-4bef-11f0-b4d7-4f4cd43b9dce",
-      "startTime": "2026-01-17T08:00:00",
+      "startTime": "2026-01-17T08:00:00.000Z",
       "round": "17",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -1053,7 +1053,7 @@
     {
       "id": "b2612e9b-4bef-11f0-98fe-933162362355",
       "externalId": "b2612e9b-4bef-11f0-98fe-933162362355",
-      "startTime": "2026-01-16T10:30:00",
+      "startTime": "2026-01-16T10:30:00.000Z",
       "round": "17",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -1072,7 +1072,7 @@
     {
       "id": "b2521ec7-4bef-11f0-868d-35d49e4d3f0e",
       "externalId": "b2521ec7-4bef-11f0-868d-35d49e4d3f0e",
-      "startTime": "2026-01-15T10:30:00",
+      "startTime": "2026-01-15T10:30:00.000Z",
       "round": "17",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -1091,7 +1091,7 @@
     {
       "id": "b249636f-4bef-11f0-8a3e-ff733b9275b0",
       "externalId": "b249636f-4bef-11f0-8a3e-ff733b9275b0",
-      "startTime": "2026-01-12T08:30:00",
+      "startTime": "2026-01-12T08:30:00.000Z",
       "round": "16",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -1110,7 +1110,7 @@
     {
       "id": "b2479931-4bef-11f0-9e48-e3ab37cba7df",
       "externalId": "b2479931-4bef-11f0-9e48-e3ab37cba7df",
-      "startTime": "2026-01-11T05:30:00",
+      "startTime": "2026-01-11T05:30:00.000Z",
       "round": "16",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -1129,7 +1129,7 @@
     {
       "id": "b25032fc-4bef-11f0-9f55-d922ae3738da",
       "externalId": "b25032fc-4bef-11f0-9f55-d922ae3738da",
-      "startTime": "2026-01-11T03:30:00",
+      "startTime": "2026-01-11T03:30:00.000Z",
       "round": "16",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -1148,7 +1148,7 @@
     {
       "id": "b247524c-4bef-11f0-a76a-d57e2e06c908",
       "externalId": "b247524c-4bef-11f0-a76a-d57e2e06c908",
-      "startTime": "2026-01-10T09:00:00",
+      "startTime": "2026-01-10T09:00:00.000Z",
       "round": "16",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -1167,7 +1167,7 @@
     {
       "id": "b24207b7-4bef-11f0-b94d-5b42e4531c6f",
       "externalId": "b24207b7-4bef-11f0-b94d-5b42e4531c6f",
-      "startTime": "2026-01-09T08:30:00",
+      "startTime": "2026-01-09T08:30:00.000Z",
       "round": "16",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -1186,7 +1186,7 @@
     {
       "id": "b245e256-4bef-11f0-a465-3bb81d630de9",
       "externalId": "b245e256-4bef-11f0-a465-3bb81d630de9",
-      "startTime": "2026-01-09T06:30:00",
+      "startTime": "2026-01-09T06:30:00.000Z",
       "round": "16",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -1205,7 +1205,7 @@
     {
       "id": "b2404c59-4bef-11f0-8c28-8566c32332b5",
       "externalId": "b2404c59-4bef-11f0-8c28-8566c32332b5",
-      "startTime": "2026-01-08T08:30:00",
+      "startTime": "2026-01-08T08:30:00.000Z",
       "round": "16",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -1224,7 +1224,7 @@
     {
       "id": "b23e2c62-4bef-11f0-89bb-f7ae306e78a8",
       "externalId": "b23e2c62-4bef-11f0-89bb-f7ae306e78a8",
-      "startTime": "2026-01-07T08:30:00",
+      "startTime": "2026-01-07T08:30:00.000Z",
       "round": "16",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -1243,7 +1243,7 @@
     {
       "id": "b2616df6-4bef-11f0-8b96-cb9793633933",
       "externalId": "b2616df6-4bef-11f0-8b96-cb9793633933",
-      "startTime": "2026-01-05T08:30:00",
+      "startTime": "2026-01-05T08:30:00.000Z",
       "round": "15",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -1262,7 +1262,7 @@
     {
       "id": "b2373519-4bef-11f0-a742-7d8c00260a69",
       "externalId": "b2373519-4bef-11f0-a742-7d8c00260a69",
-      "startTime": "2026-01-04T05:30:00",
+      "startTime": "2026-01-04T05:30:00.000Z",
       "round": "15",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -1281,7 +1281,7 @@
     {
       "id": "b23a85ed-4bef-11f0-8dfa-750b2dd8cf1d",
       "externalId": "b23a85ed-4bef-11f0-8dfa-750b2dd8cf1d",
-      "startTime": "2026-01-04T03:30:00",
+      "startTime": "2026-01-04T03:30:00.000Z",
       "round": "15",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -1300,7 +1300,7 @@
     {
       "id": "b23a1c03-4bef-11f0-847e-2d91e5671953",
       "externalId": "b23a1c03-4bef-11f0-847e-2d91e5671953",
-      "startTime": "2026-01-03T09:00:00",
+      "startTime": "2026-01-03T09:00:00.000Z",
       "round": "15",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -1319,7 +1319,7 @@
     {
       "id": "b236b66b-4bef-11f0-b141-6d11c9352f8d",
       "externalId": "b236b66b-4bef-11f0-b141-6d11c9352f8d",
-      "startTime": "2026-01-03T06:30:00",
+      "startTime": "2026-01-03T06:30:00.000Z",
       "round": "15",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -1338,7 +1338,7 @@
     {
       "id": "b236ec74-4bef-11f0-acf5-9b02d5153837",
       "externalId": "b236ec74-4bef-11f0-acf5-9b02d5153837",
-      "startTime": "2026-01-02T08:30:00",
+      "startTime": "2026-01-02T08:30:00.000Z",
       "round": "15",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -1357,7 +1357,7 @@
     {
       "id": "b22dc792-4bef-11f0-a362-bbc504167c78",
       "externalId": "b22dc792-4bef-11f0-a362-bbc504167c78",
-      "startTime": "2026-01-01T08:30:00",
+      "startTime": "2026-01-01T08:30:00.000Z",
       "round": "15",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -1376,7 +1376,7 @@
     {
       "id": "b22c3b8a-4bef-11f0-b19a-a1cf9306875a",
       "externalId": "b22c3b8a-4bef-11f0-b19a-a1cf9306875a",
-      "startTime": "2025-12-31T08:30:00",
+      "startTime": "2025-12-31T08:30:00.000Z",
       "round": "15",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -1395,7 +1395,7 @@
     {
       "id": "b250752d-4bef-11f0-af55-21274c8aac22",
       "externalId": "b250752d-4bef-11f0-af55-21274c8aac22",
-      "startTime": "2025-12-31T06:30:00",
+      "startTime": "2025-12-31T06:30:00.000Z",
       "round": "15",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -1414,7 +1414,7 @@
     {
       "id": "b2581188-4bef-11f0-9b02-715d84b30bd2",
       "externalId": "b2581188-4bef-11f0-9b02-715d84b30bd2",
-      "startTime": "2025-12-30T08:30:00",
+      "startTime": "2025-12-30T08:30:00.000Z",
       "round": "14",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -1433,7 +1433,7 @@
     {
       "id": "b228ee36-4bef-11f0-acd7-5f21da19a0fe",
       "externalId": "b228ee36-4bef-11f0-acd7-5f21da19a0fe",
-      "startTime": "2025-12-29T08:30:00",
+      "startTime": "2025-12-29T08:30:00.000Z",
       "round": "14",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -1452,7 +1452,7 @@
     {
       "id": "b226d577-4bef-11f0-b286-79c2d724b26f",
       "externalId": "b226d577-4bef-11f0-b286-79c2d724b26f",
-      "startTime": "2025-12-28T03:30:00",
+      "startTime": "2025-12-28T03:30:00.000Z",
       "round": "14",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -1471,7 +1471,7 @@
     {
       "id": "b225ec91-4bef-11f0-ab26-f7367f0af8fe",
       "externalId": "b225ec91-4bef-11f0-ab26-f7367f0af8fe",
-      "startTime": "2025-12-27T09:00:00",
+      "startTime": "2025-12-27T09:00:00.000Z",
       "round": "14",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -1490,7 +1490,7 @@
     {
       "id": "b222d9de-4bef-11f0-845e-bf4a75ed2375",
       "externalId": "b222d9de-4bef-11f0-845e-bf4a75ed2375",
-      "startTime": "2025-12-26T08:30:00",
+      "startTime": "2025-12-26T08:30:00.000Z",
       "round": "14",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -1509,7 +1509,7 @@
     {
       "id": "b22022d7-4bef-11f0-98e9-0f125a33c37a",
       "externalId": "b22022d7-4bef-11f0-98e9-0f125a33c37a",
-      "startTime": "2025-12-25T09:30:00",
+      "startTime": "2025-12-25T09:30:00.000Z",
       "round": "14",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -1528,7 +1528,7 @@
     {
       "id": "b2331552-4bef-11f0-aa1c-6bbf481c9dbd",
       "externalId": "b2331552-4bef-11f0-aa1c-6bbf481c9dbd",
-      "startTime": "2025-12-24T06:30:00",
+      "startTime": "2025-12-24T06:30:00.000Z",
       "round": "14",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -1547,7 +1547,7 @@
     {
       "id": "b22f304c-4bef-11f0-a86c-4115284f2e91",
       "externalId": "b22f304c-4bef-11f0-a86c-4115284f2e91",
-      "startTime": "2025-12-23T09:00:00",
+      "startTime": "2025-12-23T09:00:00.000Z",
       "round": "13",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -1566,7 +1566,7 @@
     {
       "id": "b233874d-4bef-11f0-8db7-41ba0d454dfc",
       "externalId": "b233874d-4bef-11f0-8db7-41ba0d454dfc",
-      "startTime": "2025-12-22T08:30:00",
+      "startTime": "2025-12-22T08:30:00.000Z",
       "round": "13",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -1585,7 +1585,7 @@
     {
       "id": "b23193dd-4bef-11f0-9f67-cb2bdca9c6f4",
       "externalId": "b23193dd-4bef-11f0-9f67-cb2bdca9c6f4",
-      "startTime": "2025-12-21T05:30:00",
+      "startTime": "2025-12-21T05:30:00.000Z",
       "round": "13",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -1604,7 +1604,7 @@
     {
       "id": "b231a59a-4bef-11f0-84f4-e7ea492f5de5",
       "externalId": "b231a59a-4bef-11f0-84f4-e7ea492f5de5",
-      "startTime": "2025-12-21T03:30:00",
+      "startTime": "2025-12-21T03:30:00.000Z",
       "round": "13",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -1623,7 +1623,7 @@
     {
       "id": "b21dca73-4bef-11f0-b110-876c79b96794",
       "externalId": "b21dca73-4bef-11f0-b110-876c79b96794",
-      "startTime": "2025-12-20T09:00:00",
+      "startTime": "2025-12-20T09:00:00.000Z",
       "round": "13",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -1642,7 +1642,7 @@
     {
       "id": "b215e9ec-4bef-11f0-9a36-67aa3f2ff9f5",
       "externalId": "b215e9ec-4bef-11f0-9a36-67aa3f2ff9f5",
-      "startTime": "2025-12-20T06:30:00",
+      "startTime": "2025-12-20T06:30:00.000Z",
       "round": "13",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -1661,7 +1661,7 @@
     {
       "id": "b222db5b-4bef-11f0-a519-3972d4a527b8",
       "externalId": "b222db5b-4bef-11f0-a519-3972d4a527b8",
-      "startTime": "2025-12-19T08:30:00",
+      "startTime": "2025-12-19T08:30:00.000Z",
       "round": "13",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -1680,7 +1680,7 @@
     {
       "id": "b217a699-4bef-11f0-bc08-933162362355",
       "externalId": "b217a699-4bef-11f0-bc08-933162362355",
-      "startTime": "2025-12-18T10:30:00",
+      "startTime": "2025-12-18T10:30:00.000Z",
       "round": "13",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -1699,7 +1699,7 @@
     {
       "id": "b21d4ec5-4bef-11f0-b6b6-91dadb0cb999",
       "externalId": "b21d4ec5-4bef-11f0-b6b6-91dadb0cb999",
-      "startTime": "2025-12-18T08:30:00",
+      "startTime": "2025-12-18T08:30:00.000Z",
       "round": "13",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -1718,7 +1718,7 @@
     {
       "id": "b21aeb47-4bef-11f0-be7c-3fd9cdc8f1b9",
       "externalId": "b21aeb47-4bef-11f0-be7c-3fd9cdc8f1b9",
-      "startTime": "2025-12-17T08:30:00",
+      "startTime": "2025-12-17T08:30:00.000Z",
       "round": "13",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -1737,7 +1737,7 @@
     {
       "id": "b23759e2-4bef-11f0-a3a3-3ff857533451",
       "externalId": "b23759e2-4bef-11f0-a3a3-3ff857533451",
-      "startTime": "2025-12-14T05:30:00",
+      "startTime": "2025-12-14T05:30:00.000Z",
       "round": "12",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -1756,7 +1756,7 @@
     {
       "id": "b23ef780-4bef-11f0-9dc2-0b013169c635",
       "externalId": "b23ef780-4bef-11f0-9dc2-0b013169c635",
-      "startTime": "2025-12-14T03:30:00",
+      "startTime": "2025-12-14T03:30:00.000Z",
       "round": "12",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -1775,7 +1775,7 @@
     {
       "id": "b2209f97-4bef-11f0-b0d4-abf05c51dbb7",
       "externalId": "b2209f97-4bef-11f0-b0d4-abf05c51dbb7",
-      "startTime": "2025-12-13T09:00:00",
+      "startTime": "2025-12-13T09:00:00.000Z",
       "round": "12",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -1794,7 +1794,7 @@
     {
       "id": "b2240a8a-4bef-11f0-87c0-b947d0e3eafa",
       "externalId": "b2240a8a-4bef-11f0-87c0-b947d0e3eafa",
-      "startTime": "2025-12-13T06:30:00",
+      "startTime": "2025-12-13T06:30:00.000Z",
       "round": "12",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -1813,7 +1813,7 @@
     {
       "id": "b210ece7-4bef-11f0-a566-55e0c73fcc94",
       "externalId": "b210ece7-4bef-11f0-a566-55e0c73fcc94",
-      "startTime": "2025-12-12T10:30:00",
+      "startTime": "2025-12-12T10:30:00.000Z",
       "round": "12",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -1832,7 +1832,7 @@
     {
       "id": "b239f201-4bef-11f0-a45e-438852f8f17e",
       "externalId": "b239f201-4bef-11f0-a45e-438852f8f17e",
-      "startTime": "2025-12-12T08:30:00",
+      "startTime": "2025-12-12T08:30:00.000Z",
       "round": "12",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -1851,7 +1851,7 @@
     {
       "id": "b21a7ada-4bef-11f0-9241-0f742927f015",
       "externalId": "b21a7ada-4bef-11f0-9241-0f742927f015",
-      "startTime": "2025-12-11T08:30:00",
+      "startTime": "2025-12-11T08:30:00.000Z",
       "round": "12",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -1870,7 +1870,7 @@
     {
       "id": "b21be2ad-4bef-11f0-b9fc-33265c8cddeb",
       "externalId": "b21be2ad-4bef-11f0-b9fc-33265c8cddeb",
-      "startTime": "2025-12-10T08:30:00",
+      "startTime": "2025-12-10T08:30:00.000Z",
       "round": "12",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -1889,7 +1889,7 @@
     {
       "id": "b2208500-4bef-11f0-b419-1738d9104f5f",
       "externalId": "b2208500-4bef-11f0-b419-1738d9104f5f",
-      "startTime": "2025-12-07T05:30:00",
+      "startTime": "2025-12-07T05:30:00.000Z",
       "round": "11",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -1908,7 +1908,7 @@
     {
       "id": "b217968b-4bef-11f0-b4ca-931632ab30f1",
       "externalId": "b217968b-4bef-11f0-b4ca-931632ab30f1",
-      "startTime": "2025-12-07T03:30:00",
+      "startTime": "2025-12-07T03:30:00.000Z",
       "round": "11",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -1927,7 +1927,7 @@
     {
       "id": "b20decaf-4bef-11f0-9b49-5b42e4531c6f",
       "externalId": "b20decaf-4bef-11f0-9b49-5b42e4531c6f",
-      "startTime": "2025-12-06T09:00:00",
+      "startTime": "2025-12-06T09:00:00.000Z",
       "round": "11",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -1946,7 +1946,7 @@
     {
       "id": "b20b4968-4bef-11f0-82b0-cb2dd7ebaa67",
       "externalId": "b20b4968-4bef-11f0-82b0-cb2dd7ebaa67",
-      "startTime": "2025-12-06T06:30:00",
+      "startTime": "2025-12-06T06:30:00.000Z",
       "round": "11",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -1965,7 +1965,7 @@
     {
       "id": "b2317162-4bef-11f0-b94a-2b5bbafc199b",
       "externalId": "b2317162-4bef-11f0-b94a-2b5bbafc199b",
-      "startTime": "2025-12-05T08:30:00",
+      "startTime": "2025-12-05T08:30:00.000Z",
       "round": "11",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -1984,7 +1984,7 @@
     {
       "id": "b208f7fb-4bef-11f0-87f5-b9d013d7809a",
       "externalId": "b208f7fb-4bef-11f0-87f5-b9d013d7809a",
-      "startTime": "2025-12-04T10:30:00",
+      "startTime": "2025-12-04T10:30:00.000Z",
       "round": "11",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -2003,7 +2003,7 @@
     {
       "id": "b20f3271-4bef-11f0-a1b1-35d49e4d3f0e",
       "externalId": "b20f3271-4bef-11f0-a1b1-35d49e4d3f0e",
-      "startTime": "2025-12-04T08:30:00",
+      "startTime": "2025-12-04T08:30:00.000Z",
       "round": "11",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -2022,7 +2022,7 @@
     {
       "id": "b204326e-4bef-11f0-a4c0-7d8c00260a69",
       "externalId": "b204326e-4bef-11f0-a4c0-7d8c00260a69",
-      "startTime": "2025-12-03T06:30:00",
+      "startTime": "2025-12-03T06:30:00.000Z",
       "round": "11",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -2041,7 +2041,7 @@
     {
       "id": "b20644c0-4bef-11f0-b8aa-f5ae3adda2b9",
       "externalId": "b20644c0-4bef-11f0-b8aa-f5ae3adda2b9",
-      "startTime": "2025-11-23T05:30:00",
+      "startTime": "2025-11-23T05:30:00.000Z",
       "round": "10",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -2060,7 +2060,7 @@
     {
       "id": "b2051732-4bef-11f0-b522-cb9793633933",
       "externalId": "b2051732-4bef-11f0-b522-cb9793633933",
-      "startTime": "2025-11-23T03:30:00",
+      "startTime": "2025-11-23T03:30:00.000Z",
       "round": "10",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -2079,7 +2079,7 @@
     {
       "id": "b2033949-4bef-11f0-a420-49eef7ac4b75",
       "externalId": "b2033949-4bef-11f0-a420-49eef7ac4b75",
-      "startTime": "2025-11-22T09:00:00",
+      "startTime": "2025-11-22T09:00:00.000Z",
       "round": "10",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -2098,7 +2098,7 @@
     {
       "id": "b2084e1a-4bef-11f0-b353-8566c32332b5",
       "externalId": "b2084e1a-4bef-11f0-b353-8566c32332b5",
-      "startTime": "2025-11-22T06:30:00",
+      "startTime": "2025-11-22T06:30:00.000Z",
       "round": "10",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -2117,7 +2117,7 @@
     {
       "id": "b2045be6-4bef-11f0-8af5-373c052dc412",
       "externalId": "b2045be6-4bef-11f0-8af5-373c052dc412",
-      "startTime": "2025-11-21T10:30:00",
+      "startTime": "2025-11-21T10:30:00.000Z",
       "round": "10",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -2136,7 +2136,7 @@
     {
       "id": "b202cacb-4bef-11f0-a92a-69185882ba54",
       "externalId": "b202cacb-4bef-11f0-a92a-69185882ba54",
-      "startTime": "2025-11-21T08:30:00",
+      "startTime": "2025-11-21T08:30:00.000Z",
       "round": "10",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -2155,7 +2155,7 @@
     {
       "id": "b201c7e9-4bef-11f0-a9a7-750b2dd8cf1d",
       "externalId": "b201c7e9-4bef-11f0-a9a7-750b2dd8cf1d",
-      "startTime": "2025-11-20T08:30:00",
+      "startTime": "2025-11-20T08:30:00.000Z",
       "round": "10",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -2174,7 +2174,7 @@
     {
       "id": "b22c940a-4bef-11f0-b917-b31681696f40",
       "externalId": "b22c940a-4bef-11f0-b917-b31681696f40",
-      "startTime": "2025-11-19T08:30:00",
+      "startTime": "2025-11-19T08:30:00.000Z",
       "round": "10",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -2193,7 +2193,7 @@
     {
       "id": "b201a305-4bef-11f0-86d8-575706f46ef7",
       "externalId": "b201a305-4bef-11f0-86d8-575706f46ef7",
-      "startTime": "2025-11-16T05:30:00",
+      "startTime": "2025-11-16T05:30:00.000Z",
       "round": "9",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -2212,7 +2212,7 @@
     {
       "id": "b1fe1cf5-4bef-11f0-aed8-dfb7e30c44c3",
       "externalId": "b1fe1cf5-4bef-11f0-aed8-dfb7e30c44c3",
-      "startTime": "2025-11-16T03:30:00",
+      "startTime": "2025-11-16T03:30:00.000Z",
       "round": "9",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -2231,7 +2231,7 @@
     {
       "id": "b1fa97d6-4bef-11f0-a4b5-41ba0d454dfc",
       "externalId": "b1fa97d6-4bef-11f0-a4b5-41ba0d454dfc",
-      "startTime": "2025-11-15T09:00:00",
+      "startTime": "2025-11-15T09:00:00.000Z",
       "round": "9",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -2250,7 +2250,7 @@
     {
       "id": "b1ff4361-4bef-11f0-a9f6-2d91e5671953",
       "externalId": "b1ff4361-4bef-11f0-a9f6-2d91e5671953",
-      "startTime": "2025-11-15T06:30:00",
+      "startTime": "2025-11-15T06:30:00.000Z",
       "round": "9",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -2269,7 +2269,7 @@
     {
       "id": "b1fe0687-4bef-11f0-b056-6d11c9352f8d",
       "externalId": "b1fe0687-4bef-11f0-b056-6d11c9352f8d",
-      "startTime": "2025-11-14T08:30:00",
+      "startTime": "2025-11-14T08:30:00.000Z",
       "round": "9",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -2288,7 +2288,7 @@
     {
       "id": "b1f8a034-4bef-11f0-abc8-e7ea492f5de5",
       "externalId": "b1f8a034-4bef-11f0-abc8-e7ea492f5de5",
-      "startTime": "2025-11-13T08:30:00",
+      "startTime": "2025-11-13T08:30:00.000Z",
       "round": "9",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -2307,7 +2307,7 @@
     {
       "id": "b213faff-4bef-11f0-a179-5d6a4141a228",
       "externalId": "b213faff-4bef-11f0-a179-5d6a4141a228",
-      "startTime": "2025-11-12T08:30:00",
+      "startTime": "2025-11-12T08:30:00.000Z",
       "round": "9",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -2326,7 +2326,7 @@
     {
       "id": "b215a009-4bef-11f0-858c-d922ae3738da",
       "externalId": "b215a009-4bef-11f0-858c-d922ae3738da",
-      "startTime": "2025-11-09T05:30:00",
+      "startTime": "2025-11-09T05:30:00.000Z",
       "round": "8",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -2345,7 +2345,7 @@
     {
       "id": "b1f90e33-4bef-11f0-b82b-4115284f2e91",
       "externalId": "b1f90e33-4bef-11f0-b82b-4115284f2e91",
-      "startTime": "2025-11-09T03:30:00",
+      "startTime": "2025-11-09T03:30:00.000Z",
       "round": "8",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -2364,7 +2364,7 @@
     {
       "id": "b2169d01-4bef-11f0-89ec-45d92a8f67bd",
       "externalId": "b2169d01-4bef-11f0-89ec-45d92a8f67bd",
-      "startTime": "2025-11-08T09:00:00",
+      "startTime": "2025-11-08T09:00:00.000Z",
       "round": "8",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -2383,7 +2383,7 @@
     {
       "id": "b1f6d41f-4bef-11f0-9c11-3ff857533451",
       "externalId": "b1f6d41f-4bef-11f0-9c11-3ff857533451",
-      "startTime": "2025-11-08T06:30:00",
+      "startTime": "2025-11-08T06:30:00.000Z",
       "round": "8",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -2402,7 +2402,7 @@
     {
       "id": "b1f191c7-4bef-11f0-8065-21274c8aac22",
       "externalId": "b1f191c7-4bef-11f0-8065-21274c8aac22",
-      "startTime": "2025-11-07T08:30:00",
+      "startTime": "2025-11-07T08:30:00.000Z",
       "round": "8",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -2421,7 +2421,7 @@
     {
       "id": "b1ef7159-4bef-11f0-b7aa-d71216bffd5c",
       "externalId": "b1ef7159-4bef-11f0-b7aa-d71216bffd5c",
-      "startTime": "2025-11-06T08:30:00",
+      "startTime": "2025-11-06T08:30:00.000Z",
       "round": "8",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -2440,7 +2440,7 @@
     {
       "id": "b213f0fb-4bef-11f0-9060-4f4cd43b9dce",
       "externalId": "b213f0fb-4bef-11f0-9060-4f4cd43b9dce",
-      "startTime": "2025-11-06T06:30:00",
+      "startTime": "2025-11-06T06:30:00.000Z",
       "round": "8",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -2459,7 +2459,7 @@
     {
       "id": "b1eae7d5-4bef-11f0-88d2-abf05c51dbb7",
       "externalId": "b1eae7d5-4bef-11f0-88d2-abf05c51dbb7",
-      "startTime": "2025-11-05T08:30:00",
+      "startTime": "2025-11-05T08:30:00.000Z",
       "round": "8",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -2478,7 +2478,7 @@
     {
       "id": "b1f2a332-4bef-11f0-b1fa-79c2d724b26f",
       "externalId": "b1f2a332-4bef-11f0-b1fa-79c2d724b26f",
-      "startTime": "2025-11-03T08:30:00",
+      "startTime": "2025-11-03T08:30:00.000Z",
       "round": "7",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -2497,7 +2497,7 @@
     {
       "id": "b1f11a42-4bef-11f0-b3b8-bbc504167c78",
       "externalId": "b1f11a42-4bef-11f0-b3b8-bbc504167c78",
-      "startTime": "2025-11-02T05:30:00",
+      "startTime": "2025-11-02T05:30:00.000Z",
       "round": "7",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -2516,7 +2516,7 @@
     {
       "id": "b20bc78d-4bef-11f0-9d84-e3ab37cba7df",
       "externalId": "b20bc78d-4bef-11f0-9d84-e3ab37cba7df",
-      "startTime": "2025-11-02T03:30:00",
+      "startTime": "2025-11-02T03:30:00.000Z",
       "round": "7",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -2535,7 +2535,7 @@
     {
       "id": "b206bcd1-4bef-11f0-98bc-f7ae306e78a8",
       "externalId": "b206bcd1-4bef-11f0-98bc-f7ae306e78a8",
-      "startTime": "2025-11-01T09:00:00",
+      "startTime": "2025-11-01T09:00:00.000Z",
       "round": "7",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -2554,7 +2554,7 @@
     {
       "id": "b1eac57b-4bef-11f0-a6b3-876c79b96794",
       "externalId": "b1eac57b-4bef-11f0-a6b3-876c79b96794",
-      "startTime": "2025-11-01T06:30:00",
+      "startTime": "2025-11-01T06:30:00.000Z",
       "round": "7",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -2573,7 +2573,7 @@
     {
       "id": "b1ef5d2a-4bef-11f0-b312-6f7b3f296308",
       "externalId": "b1ef5d2a-4bef-11f0-b312-6f7b3f296308",
-      "startTime": "2025-10-31T08:30:00",
+      "startTime": "2025-10-31T08:30:00.000Z",
       "round": "7",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -2592,7 +2592,7 @@
     {
       "id": "b20defee-4bef-11f0-9845-ff733b9275b0",
       "externalId": "b20defee-4bef-11f0-9845-ff733b9275b0",
-      "startTime": "2025-10-30T08:30:00",
+      "startTime": "2025-10-30T08:30:00.000Z",
       "round": "7",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -2611,7 +2611,7 @@
     {
       "id": "b1e616f7-4bef-11f0-831c-438852f8f17e",
       "externalId": "b1e616f7-4bef-11f0-831c-438852f8f17e",
-      "startTime": "2025-10-29T08:30:00",
+      "startTime": "2025-10-29T08:30:00.000Z",
       "round": "7",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -2630,7 +2630,7 @@
     {
       "id": "b1e1f8dc-4bef-11f0-a8eb-931632ab30f1",
       "externalId": "b1e1f8dc-4bef-11f0-a8eb-931632ab30f1",
-      "startTime": "2025-10-26T05:30:00",
+      "startTime": "2025-10-26T05:30:00.000Z",
       "round": "6",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -2649,7 +2649,7 @@
     {
       "id": "b1defcc2-4bef-11f0-ada5-6bbf481c9dbd",
       "externalId": "b1defcc2-4bef-11f0-ada5-6bbf481c9dbd",
-      "startTime": "2025-10-26T03:30:00",
+      "startTime": "2025-10-26T03:30:00.000Z",
       "round": "6",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -2668,7 +2668,7 @@
     {
       "id": "b1d41297-4bef-11f0-8b17-e7c335595f42",
       "externalId": "b1d41297-4bef-11f0-8b17-e7c335595f42",
-      "startTime": "2025-10-25T09:00:00",
+      "startTime": "2025-10-25T09:00:00.000Z",
       "round": "6",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -2687,7 +2687,7 @@
     {
       "id": "b1d40d91-4bef-11f0-aacf-5b42e4531c6f",
       "externalId": "b1d40d91-4bef-11f0-aacf-5b42e4531c6f",
-      "startTime": "2025-10-25T06:30:00",
+      "startTime": "2025-10-25T06:30:00.000Z",
       "round": "6",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -2706,7 +2706,7 @@
     {
       "id": "b1d6415f-4bef-11f0-bc89-933162362355",
       "externalId": "b1d6415f-4bef-11f0-bc89-933162362355",
-      "startTime": "2025-10-24T08:30:00",
+      "startTime": "2025-10-24T08:30:00.000Z",
       "round": "6",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -2725,7 +2725,7 @@
     {
       "id": "b1d15db0-4bef-11f0-bcdf-39e750f03c92",
       "externalId": "b1d15db0-4bef-11f0-bcdf-39e750f03c92",
-      "startTime": "2025-10-23T08:30:00",
+      "startTime": "2025-10-23T08:30:00.000Z",
       "round": "6",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -2744,7 +2744,7 @@
     {
       "id": "b1c9d775-4bef-11f0-a809-49eef7ac4b75",
       "externalId": "b1c9d775-4bef-11f0-a809-49eef7ac4b75",
-      "startTime": "2025-10-23T06:30:00",
+      "startTime": "2025-10-23T06:30:00.000Z",
       "round": "6",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -2763,7 +2763,7 @@
     {
       "id": "b1d2e544-4bef-11f0-9ec3-c198ba85350c",
       "externalId": "b1d2e544-4bef-11f0-9ec3-c198ba85350c",
-      "startTime": "2025-10-22T08:30:00",
+      "startTime": "2025-10-22T08:30:00.000Z",
       "round": "6",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -2782,7 +2782,7 @@
     {
       "id": "b1cf0eb8-4bef-11f0-bde8-b9d013d7809a",
       "externalId": "b1cf0eb8-4bef-11f0-bde8-b9d013d7809a",
-      "startTime": "2025-10-19T05:30:00",
+      "startTime": "2025-10-19T05:30:00.000Z",
       "round": "5",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -2801,7 +2801,7 @@
     {
       "id": "b1d1940a-4bef-11f0-8805-87e6a155244b",
       "externalId": "b1d1940a-4bef-11f0-8805-87e6a155244b",
-      "startTime": "2025-10-19T03:30:00",
+      "startTime": "2025-10-19T03:30:00.000Z",
       "round": "5",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -2820,7 +2820,7 @@
     {
       "id": "b1c87dd7-4bef-11f0-b4f3-cb9793633933",
       "externalId": "b1c87dd7-4bef-11f0-b4f3-cb9793633933",
-      "startTime": "2025-10-18T09:00:00",
+      "startTime": "2025-10-18T09:00:00.000Z",
       "round": "5",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -2839,7 +2839,7 @@
     {
       "id": "b1c85327-4bef-11f0-859e-575706f46ef7",
       "externalId": "b1c85327-4bef-11f0-859e-575706f46ef7",
-      "startTime": "2025-10-18T06:30:00",
+      "startTime": "2025-10-18T06:30:00.000Z",
       "round": "5",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -2858,7 +2858,7 @@
     {
       "id": "b1c2b570-4bef-11f0-b8ed-373c052dc412",
       "externalId": "b1c2b570-4bef-11f0-b8ed-373c052dc412",
-      "startTime": "2025-10-17T08:30:00",
+      "startTime": "2025-10-17T08:30:00.000Z",
       "round": "5",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -2877,7 +2877,7 @@
     {
       "id": "b1e7ffcb-4bef-11f0-82d0-f7367f0af8fe",
       "externalId": "b1e7ffcb-4bef-11f0-82d0-f7367f0af8fe",
-      "startTime": "2025-10-17T06:30:00",
+      "startTime": "2025-10-17T06:30:00.000Z",
       "round": "5",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -2896,7 +2896,7 @@
     {
       "id": "b1c59937-4bef-11f0-9850-69185882ba54",
       "externalId": "b1c59937-4bef-11f0-9850-69185882ba54",
-      "startTime": "2025-10-16T08:30:00",
+      "startTime": "2025-10-16T08:30:00.000Z",
       "round": "5",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -2915,7 +2915,7 @@
     {
       "id": "b1bfcfdb-4bef-11f0-83d2-dfb7e30c44c3",
       "externalId": "b1bfcfdb-4bef-11f0-83d2-dfb7e30c44c3",
-      "startTime": "2025-10-15T10:30:00",
+      "startTime": "2025-10-15T10:30:00.000Z",
       "round": "5",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -2934,7 +2934,7 @@
     {
       "id": "b1bf7f4d-4bef-11f0-acd8-6d11c9352f8d",
       "externalId": "b1bf7f4d-4bef-11f0-acd8-6d11c9352f8d",
-      "startTime": "2025-10-15T08:30:00",
+      "startTime": "2025-10-15T08:30:00.000Z",
       "round": "5",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -2953,7 +2953,7 @@
     {
       "id": "b1c2b46d-4bef-11f0-bc11-f5ae3adda2b9",
       "externalId": "b1c2b46d-4bef-11f0-bc11-f5ae3adda2b9",
-      "startTime": "2025-10-12T05:30:00",
+      "startTime": "2025-10-12T05:30:00.000Z",
       "round": "4",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -2972,7 +2972,7 @@
     {
       "id": "b1bca9e0-4bef-11f0-8079-e7ea492f5de5",
       "externalId": "b1bca9e0-4bef-11f0-8079-e7ea492f5de5",
-      "startTime": "2025-10-12T03:30:00",
+      "startTime": "2025-10-12T03:30:00.000Z",
       "round": "4",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -2991,7 +2991,7 @@
     {
       "id": "b1beada2-4bef-11f0-8999-0f742927f015",
       "externalId": "b1beada2-4bef-11f0-8999-0f742927f015",
-      "startTime": "2025-10-11T09:00:00",
+      "startTime": "2025-10-11T09:00:00.000Z",
       "round": "4",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -3010,7 +3010,7 @@
     {
       "id": "b1b3f8a3-4bef-11f0-a172-876c79b96794",
       "externalId": "b1b3f8a3-4bef-11f0-a172-876c79b96794",
-      "startTime": "2025-10-11T06:30:00",
+      "startTime": "2025-10-11T06:30:00.000Z",
       "round": "4",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -3029,7 +3029,7 @@
     {
       "id": "b1b1def4-4bef-11f0-8dce-5f21da19a0fe",
       "externalId": "b1b1def4-4bef-11f0-8dce-5f21da19a0fe",
-      "startTime": "2025-10-10T08:30:00",
+      "startTime": "2025-10-10T08:30:00.000Z",
       "round": "4",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -3048,7 +3048,7 @@
     {
       "id": "b1b4c347-4bef-11f0-bdff-2b5bbafc199b",
       "externalId": "b1b4c347-4bef-11f0-bdff-2b5bbafc199b",
-      "startTime": "2025-10-09T08:30:00",
+      "startTime": "2025-10-09T08:30:00.000Z",
       "round": "4",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -3067,7 +3067,7 @@
     {
       "id": "b1b36fb0-4bef-11f0-8f26-79c2d724b26f",
       "externalId": "b1b36fb0-4bef-11f0-8f26-79c2d724b26f",
-      "startTime": "2025-10-08T08:30:00",
+      "startTime": "2025-10-08T08:30:00.000Z",
       "round": "4",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -3086,7 +3086,7 @@
     {
       "id": "b1d446e3-4bef-11f0-a4d3-3fd9cdc8f1b9",
       "externalId": "b1d446e3-4bef-11f0-a4d3-3fd9cdc8f1b9",
-      "startTime": "2025-10-08T06:30:00",
+      "startTime": "2025-10-08T06:30:00.000Z",
       "round": "4",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -3105,7 +3105,7 @@
     {
       "id": "b1b14a84-4bef-11f0-9584-ff733b9275b0",
       "externalId": "b1b14a84-4bef-11f0-9584-ff733b9275b0",
-      "startTime": "2025-10-04T10:00:00",
+      "startTime": "2025-10-04T10:00:00.000Z",
       "round": "3",
       "status": "complete",
       "homeTeam": "Brisbane Bullets",
@@ -3124,7 +3124,7 @@
     {
       "id": "b1d511f1-4bef-11f0-806a-cb2dd7ebaa67",
       "externalId": "b1d511f1-4bef-11f0-806a-cb2dd7ebaa67",
-      "startTime": "2025-10-04T07:30:00",
+      "startTime": "2025-10-04T07:30:00.000Z",
       "round": "3",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -3143,7 +3143,7 @@
     {
       "id": "b1ac11ff-4bef-11f0-942d-21274c8aac22",
       "externalId": "b1ac11ff-4bef-11f0-942d-21274c8aac22",
-      "startTime": "2025-10-02T11:30:00",
+      "startTime": "2025-10-02T11:30:00.000Z",
       "round": "3",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -3162,7 +3162,7 @@
     {
       "id": "b1b320b0-4bef-11f0-9a1f-d922ae3738da",
       "externalId": "b1b320b0-4bef-11f0-9a1f-d922ae3738da",
-      "startTime": "2025-10-02T09:30:00",
+      "startTime": "2025-10-02T09:30:00.000Z",
       "round": "3",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -3181,7 +3181,7 @@
     {
       "id": "b1acbd78-4bef-11f0-89fe-438852f8f17e",
       "externalId": "b1acbd78-4bef-11f0-89fe-438852f8f17e",
-      "startTime": "2025-09-28T06:30:00",
+      "startTime": "2025-09-28T06:30:00.000Z",
       "round": "2",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",
@@ -3200,7 +3200,7 @@
     {
       "id": "b1af0e52-4bef-11f0-9a8c-bbc504167c78",
       "externalId": "b1af0e52-4bef-11f0-9a8c-bbc504167c78",
-      "startTime": "2025-09-28T04:30:00",
+      "startTime": "2025-09-28T04:30:00.000Z",
       "round": "2",
       "status": "complete",
       "homeTeam": "Sydney Kings",
@@ -3219,7 +3219,7 @@
     {
       "id": "b1aaf369-4bef-11f0-9f51-931632ab30f1",
       "externalId": "b1aaf369-4bef-11f0-9f51-931632ab30f1",
-      "startTime": "2025-09-27T10:00:00",
+      "startTime": "2025-09-27T10:00:00.000Z",
       "round": "2",
       "status": "complete",
       "homeTeam": "Illawarra Hawks",
@@ -3238,7 +3238,7 @@
     {
       "id": "b1af85d1-4bef-11f0-8087-abf05c51dbb7",
       "externalId": "b1af85d1-4bef-11f0-8087-abf05c51dbb7",
-      "startTime": "2025-09-27T07:30:00",
+      "startTime": "2025-09-27T07:30:00.000Z",
       "round": "2",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -3257,7 +3257,7 @@
     {
       "id": "b1a89b88-4bef-11f0-aa25-4f4cd43b9dce",
       "externalId": "b1a89b88-4bef-11f0-aa25-4f4cd43b9dce",
-      "startTime": "2025-09-26T09:30:00",
+      "startTime": "2025-09-26T09:30:00.000Z",
       "round": "2",
       "status": "complete",
       "homeTeam": "Cairns Taipans",
@@ -3276,7 +3276,7 @@
     {
       "id": "b1a6f3e4-4bef-11f0-b1e8-d71216bffd5c",
       "externalId": "b1a6f3e4-4bef-11f0-b1e8-d71216bffd5c",
-      "startTime": "2025-09-25T09:30:00",
+      "startTime": "2025-09-25T09:30:00.000Z",
       "round": "2",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -3295,7 +3295,7 @@
     {
       "id": "b1a5b936-4bef-11f0-85b6-3bb81d630de9",
       "externalId": "b1a5b936-4bef-11f0-85b6-3bb81d630de9",
-      "startTime": "2025-09-21T04:30:00",
+      "startTime": "2025-09-21T04:30:00.000Z",
       "round": "1",
       "status": "complete",
       "homeTeam": "Melbourne United",
@@ -3314,7 +3314,7 @@
     {
       "id": "b1a4094f-4bef-11f0-b111-5d6a4141a228",
       "externalId": "b1a4094f-4bef-11f0-b111-5d6a4141a228",
-      "startTime": "2025-09-20T10:00:00",
+      "startTime": "2025-09-20T10:00:00.000Z",
       "round": "1",
       "status": "complete",
       "homeTeam": "Perth Wildcats",
@@ -3333,7 +3333,7 @@
     {
       "id": "b1c05748-4bef-11f0-8d3c-d57e2e06c908",
       "externalId": "b1c05748-4bef-11f0-8d3c-d57e2e06c908",
-      "startTime": "2025-09-20T07:30:00",
+      "startTime": "2025-09-20T07:30:00.000Z",
       "round": "1",
       "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
@@ -3352,7 +3352,7 @@
     {
       "id": "b1c52730-4bef-11f0-926a-2d91e5671953",
       "externalId": "b1c52730-4bef-11f0-926a-2d91e5671953",
-      "startTime": "2025-09-19T07:30:00",
+      "startTime": "2025-09-19T07:30:00.000Z",
       "round": "1",
       "status": "complete",
       "homeTeam": "NZ Breakers",
@@ -3371,7 +3371,7 @@
     {
       "id": "b19d49b0-4bef-11f0-9ee4-e7c335595f42",
       "externalId": "b19d49b0-4bef-11f0-9ee4-e7c335595f42",
-      "startTime": "2025-09-18T09:30:00",
+      "startTime": "2025-09-18T09:30:00.000Z",
       "round": "1",
       "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
@@ -3390,7 +3390,7 @@
     {
       "id": "49b83d9c-fb1d-11f0-b8d3-959f1ef770e3",
       "externalId": "49b83d9c-fb1d-11f0-b8d3-959f1ef770e3",
-      "startTime": "2026-02-22T05:30:00",
+      "startTime": "2026-02-22T05:30:00.000Z",
       "round": "IGNITE CUP FINAL",
       "status": "complete",
       "homeTeam": "Adelaide 36ers",

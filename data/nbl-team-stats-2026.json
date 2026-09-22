@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-21T18:39:13.425Z",
+  "generatedAt": "2026-09-22T17:40:25.975Z",
   "source": "rosetta.nbl.com.au",
   "teams": [
     {
@@ -19,6 +19,23 @@
       "threePct": 0.444444,
       "ftPct": 1,
       "offensiveRebounds": 4,
+      "results": null
+    },
+    {
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "games": 1,
+      "points": 28,
+      "rebounds": 18,
+      "assists": 4,
+      "steals": 1,
+      "blocks": 2,
+      "turnovers": 3,
+      "fgPct": 0.444444,
+      "threePct": 0.5,
+      "ftPct": 0.583333,
+      "offensiveRebounds": 8,
       "results": null
     },
     {
@@ -76,17 +93,17 @@
       "team": "NZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-      "games": 1,
-      "points": 26,
-      "rebounds": 13,
-      "assists": 4,
-      "steals": 0,
-      "blocks": 1,
-      "turnovers": 0,
-      "fgPct": 0.380952,
-      "threePct": 0.285714,
-      "ftPct": 0.888889,
-      "offensiveRebounds": 4,
+      "games": 2,
+      "points": 22,
+      "rebounds": 10.5,
+      "assists": 4.5,
+      "steals": 0.5,
+      "blocks": 0.5,
+      "turnovers": 1.5,
+      "fgPct": 0.368421,
+      "threePct": 0.3125,
+      "ftPct": 0.733333,
+      "offensiveRebounds": 4.5,
       "results": null
     },
     {

@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-21T18:39:12.471Z",
+  "generatedAt": "2026-09-22T17:40:25.123Z",
   "source": "rosetta.nbl.com.au",
   "teams": [
     {
@@ -26,26 +26,6 @@
     },
     {
       "pos": 2,
-      "team": "NZ Breakers",
-      "teamCode": "NZL",
-      "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-      "teamLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-      "played": 1,
-      "win": 1,
-      "loss": 0,
-      "points_for": 95,
-      "points_against": 81,
-      "points_percentage": 1.1728,
-      "win_percentage": 1,
-      "last_5": "W",
-      "streak": 1,
-      "home_wins": 1,
-      "home_losses": 0,
-      "away_wins": 0,
-      "away_losses": 0
-    },
-    {
-      "pos": 3,
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
@@ -56,6 +36,26 @@
       "points_for": 96,
       "points_against": 91,
       "points_percentage": 1.0549,
+      "win_percentage": 1,
+      "last_5": "W",
+      "streak": 1,
+      "home_wins": 1,
+      "home_losses": 0,
+      "away_wins": 0,
+      "away_losses": 0
+    },
+    {
+      "pos": 3,
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "teamLogo": "https://cdn.nbl.com.au/app_assets/BNE.png",
+      "played": 1,
+      "win": 1,
+      "loss": 0,
+      "points_for": 88,
+      "points_against": 85,
+      "points_percentage": 1.0353,
       "win_percentage": 1,
       "last_5": "W",
       "streak": 1,
@@ -106,6 +106,26 @@
     },
     {
       "pos": 6,
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "teamLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
+      "played": 2,
+      "win": 1,
+      "loss": 1,
+      "points_for": 180,
+      "points_against": 169,
+      "points_percentage": 1.0651,
+      "win_percentage": 0.5,
+      "last_5": "WL",
+      "streak": 0,
+      "home_wins": 1,
+      "home_losses": 0,
+      "away_wins": 0,
+      "away_losses": 1
+    },
+    {
+      "pos": 7,
       "team": "Melbourne United",
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
@@ -125,7 +145,7 @@
       "away_losses": 0
     },
     {
-      "pos": 7,
+      "pos": 8,
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
@@ -145,7 +165,7 @@
       "away_losses": 1
     },
     {
-      "pos": 8,
+      "pos": 9,
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
@@ -165,7 +185,7 @@
       "away_losses": 1
     },
     {
-      "pos": 9,
+      "pos": 10,
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
@@ -181,26 +201,6 @@
       "streak": 0,
       "home_wins": 0,
       "home_losses": 1,
-      "away_wins": 0,
-      "away_losses": 0
-    },
-    {
-      "pos": 10,
-      "team": "Brisbane Bullets",
-      "teamCode": "BRI",
-      "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-      "teamLogo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-      "played": 0,
-      "win": 0,
-      "loss": 0,
-      "points_for": 0,
-      "points_against": 0,
-      "points_percentage": 0,
-      "win_percentage": 0,
-      "last_5": "0",
-      "streak": 0,
-      "home_wins": 0,
-      "home_losses": 0,
       "away_wins": 0,
       "away_losses": 0
     }
