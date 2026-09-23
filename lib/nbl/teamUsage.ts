@@ -78,6 +78,34 @@ export const TEAM_PIE_STAT_KEYS = [
   'efficiency',
 ] as const;
 
+export function nblGameParticipationKeys(game: {
+  matchId?: unknown;
+  id?: unknown;
+  date?: unknown;
+  game_date?: unknown;
+  opponent?: unknown;
+}): string[] {
+  const keys: string[] = [];
+  const matchId = String(game.matchId ?? game.id ?? '').trim();
+  if (matchId) keys.push(`id:${matchId}`);
+  const date = String(game.date ?? game.game_date ?? '').trim().slice(0, 10);
+  const opp = String(game.opponent ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+  if (date && opp) keys.push(`d:${date}|${opp}`);
+  return keys;
+}
+
+export function nblGameParticipationKey(game: {
+  matchId?: unknown;
+  id?: unknown;
+  date?: unknown;
+  game_date?: unknown;
+  opponent?: unknown;
+}): string {
+  return nblGameParticipationKeys(game)[0] || '';
+}
+
 function readJson<T>(filePath: string): T | null {
   try {
     if (!fs.existsSync(filePath)) return null;
@@ -217,14 +245,72 @@ function aggregatePlayerStats(games: NblGameLogRow[]): {
   return { minutes: round1(minuteSum / n), games: n, stats };
 }
 
+function resolveRosterPlayerId(roster: RosterRow[], name: string | null | undefined): string | null {
+  const want = String(name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+  if (!want) return null;
+  const hit =
+    roster.find((p) => String(p.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '') === want) ||
+    roster.find((p) => {
+      const n = String(p.name || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '');
+      return n.includes(want) || want.includes(n);
+    });
+  return hit?.playerId ? String(hit.playerId) : null;
+}
+
+function playedGameKeys(games: NblGameLogRow[]): Set<string> {
+  const keys = new Set<string>();
+  for (const game of games) {
+    if ((Number(game.minutes) || 0) <= 0) continue;
+    for (const key of nblGameParticipationKeys(game)) keys.add(key);
+  }
+  return keys;
+}
+
+function gameMatchesKeys(game: NblGameLogRow, keys: Set<string>): boolean {
+  return nblGameParticipationKeys(game).some((key) => keys.has(key));
+}
+
+function emptyUsagePlayer(player: Pick<NblTeamUsagePlayer, 'playerId' | 'name'>): NblTeamUsagePlayer {
+  return {
+    playerId: player.playerId,
+    name: player.name,
+    usgPct: 0,
+    minutes: 0,
+    games: 0,
+    stats: {},
+  };
+}
+
+function toUsagePlayer(
+  playerId: string,
+  name: string,
+  agg: { minutes: number; games: number; stats: Record<string, number> }
+): NblTeamUsagePlayer {
+  return {
+    playerId,
+    name,
+    usgPct: agg.stats.usgPct ?? 0,
+    minutes: agg.minutes,
+    games: agg.games,
+    stats: agg.stats,
+  };
+}
+
 export function loadNblTeamUsage(opts: {
   team: string;
   year: number;
   lastN?: number | null;
   includePlayerId?: string | null;
-}): NblTeamUsagePlayer[] {
+  teammatePlayerId?: string | null;
+  teammateName?: string | null;
+  teammateMode?: 'with' | 'without' | null;
+}): { players: NblTeamUsagePlayer[]; sampleGames: number | null } {
   const teamOfficial = resolveNblClubName(opts.team) || opts.team.trim();
-  if (!teamOfficial) return [];
+  if (!teamOfficial) return { players: [], sampleGames: null };
 
   const seen = new Set<string>();
   const roster = loadRoster(opts.year).filter((p) => {
@@ -238,25 +324,60 @@ export function loadNblTeamUsage(opts: {
     return true;
   });
 
-  const out: NblTeamUsagePlayer[] = [];
+  const includePlayerId = String(opts.includePlayerId || '').trim();
+  const teammateId =
+    String(opts.teammatePlayerId || '').trim() ||
+    resolveRosterPlayerId(roster, opts.teammateName);
+  const teammateMode = opts.teammateMode === 'without' ? 'without' : opts.teammateMode === 'with' ? 'with' : null;
+  const useTeammateFilter = Boolean(teammateId && teammateMode && teammateId !== includePlayerId);
+
+  const baseline: NblTeamUsagePlayer[] = [];
   for (const p of roster) {
     const playerId = String(p.playerId);
     const games = applyLastN(loadPlayerGames(playerId, opts.year), opts.lastN ?? null);
     const agg = aggregatePlayerStats(games);
     if (!agg) continue;
     const keep =
-      String(opts.includePlayerId || '') === playerId ||
-      (agg.games >= 1 && agg.minutes >= MIN_AVG_MINUTES);
+      includePlayerId === playerId || (agg.games >= 1 && agg.minutes >= MIN_AVG_MINUTES);
     if (!keep) continue;
-    out.push({
-      playerId,
-      name: String(p.name),
-      usgPct: agg.stats.usgPct ?? 0,
-      minutes: agg.minutes,
-      games: agg.games,
-      stats: agg.stats,
-    });
+    baseline.push(toUsagePlayer(playerId, String(p.name), agg));
+  }
+  baseline.sort((a, b) => (b.stats.usgPct ?? 0) - (a.stats.usgPct ?? 0));
+
+  if (!useTeammateFilter || !teammateId || !teammateMode) {
+    return { players: baseline, sampleGames: null };
   }
 
-  return out.sort((a, b) => (b.stats.usgPct ?? 0) - (a.stats.usgPct ?? 0));
+  const teammateKeys = playedGameKeys(loadPlayerGames(teammateId, opts.year));
+  const focusGames = includePlayerId
+    ? applyLastN(loadPlayerGames(includePlayerId, opts.year), opts.lastN ?? null)
+    : [];
+  const matchedGames = includePlayerId
+    ? focusGames.filter((game) => {
+        const playedWith = gameMatchesKeys(game, teammateKeys);
+        return teammateMode === 'with' ? playedWith : !playedWith;
+      })
+    : [];
+  const sampleGames = includePlayerId ? matchedGames.length : teammateKeys.size;
+  const focusKeys = includePlayerId
+    ? new Set(matchedGames.flatMap((game) => nblGameParticipationKeys(game)))
+    : teammateKeys;
+
+  if (sampleGames <= 0) {
+    return { players: baseline.map((p) => emptyUsagePlayer(p)), sampleGames: 0 };
+  }
+
+  const filtered = baseline.map((p) => {
+    const games = loadPlayerGames(p.playerId, opts.year).filter((game) => {
+      const playedWith = gameMatchesKeys(game, focusKeys);
+      return includePlayerId ? playedWith : teammateMode === 'with' ? playedWith : !playedWith;
+    });
+    const agg = aggregatePlayerStats(games);
+    return agg ? toUsagePlayer(p.playerId, p.name, agg) : emptyUsagePlayer(p);
+  });
+
+  return {
+    players: filtered.sort((a, b) => (b.stats.usgPct ?? 0) - (a.stats.usgPct ?? 0)),
+    sampleGames,
+  };
 }

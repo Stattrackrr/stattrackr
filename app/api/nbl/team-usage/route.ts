@@ -20,18 +20,26 @@ export async function GET(request: NextRequest) {
   const tf = String(request.nextUrl.searchParams.get('tf') || '').trim();
   const { year, lastN } = parseTimeframe(tf, fallbackYear);
   const playerId = String(request.nextUrl.searchParams.get('playerId') || '').trim() || null;
+  const teammateId = String(request.nextUrl.searchParams.get('teammateId') || '').trim() || null;
+  const teammateName = String(request.nextUrl.searchParams.get('teammateName') || '').trim() || null;
+  const ww = String(request.nextUrl.searchParams.get('ww') || '').trim().toLowerCase();
+  const teammateMode = ww === 'without' ? 'without' : ww === 'with' ? 'with' : null;
 
-  const players = loadNblTeamUsage({
+  const { players, sampleGames } = loadNblTeamUsage({
     team,
     year,
     lastN,
     includePlayerId: playerId,
+    teammatePlayerId: teammateId,
+    teammateName,
+    teammateMode,
   });
 
   return NextResponse.json({
     team,
     year,
     lastN,
+    sampleGames,
     players,
   });
 }

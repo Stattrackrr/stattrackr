@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { NblChartTimeframe } from '@/app/nbl/components/NblStatsChart';
-import { NBL_CURRENT_SEASON_YEAR } from '@/lib/nblTeamCanonical';
+import { NBL_CURRENT_SEASON_YEAR, normalizeTeamKey, resolveNblClubName } from '@/lib/nblTeamCanonical';
 
 type TeamUsagePlayer = {
   playerId: string;
@@ -50,6 +50,8 @@ const R_OUT = 118;
 const R_IN = 74;
 const OVERLAP = 0;
 const SELECTED_FILL = '#8b5cf6';
+const EMPTY_SLICE_FILL_DARK = '#4b5563';
+const EMPTY_SLICE_FILL_LIGHT = '#9ca3af';
 const TEAMMATE_FILLS = [
   '#38bdf8',
   '#f59e0b',
@@ -140,6 +142,16 @@ function easeInOutCubic(t: number): number {
 
 const SWITCH_MS = 900;
 
+function slicesLookSame(a: BuiltSlice[], b: BuiltSlice[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i].playerId !== b[i].playerId) return false;
+    if (Math.abs(a[i].value - b[i].value) > 0.05) return false;
+    if (Math.abs(a[i].span - b[i].span) > 0.01) return false;
+  }
+  return true;
+}
+
 function interpolateSlices(from: BuiltSlice[], to: BuiltSlice[], t: number): BuiltSlice[] {
   const fromMap = new Map(from.map((s) => [s.playerId, s]));
   const toMap = new Map(to.map((s) => [s.playerId, s]));
@@ -179,6 +191,12 @@ function interpolateSlices(from: BuiltSlice[], to: BuiltSlice[], t: number): Bui
   return out;
 }
 
+type PieRosterPlayer = {
+  playerId: string | null;
+  name: string;
+  team?: string | null;
+};
+
 export function NblScoringMixPie({
   team,
   playerId,
@@ -186,6 +204,12 @@ export function NblScoringMixPie({
   timeframe,
   season = NBL_CURRENT_SEASON_YEAR,
   isDark,
+  rosterPlayers = [],
+  teammateFilterName = null,
+  setTeammateFilterName,
+  withWithoutMode = 'with',
+  setWithWithoutMode,
+  clearTeammateFilter,
 }: {
   team?: string | null;
   playerId?: string | null;
@@ -193,28 +217,81 @@ export function NblScoringMixPie({
   timeframe: NblChartTimeframe;
   season?: number;
   isDark: boolean;
+  rosterPlayers?: PieRosterPlayer[];
+  teammateFilterName?: string | null;
+  setTeammateFilterName?: (name: string | null) => void;
+  withWithoutMode?: 'with' | 'without';
+  setWithWithoutMode?: (mode: 'with' | 'without') => void;
+  clearTeammateFilter?: () => void;
 }) {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [statKey, setStatKey] = useState('usgPct');
   const [players, setPlayers] = useState<TeamUsagePlayer[] | null>(null);
+  const [splitSampleGames, setSplitSampleGames] = useState<number | null>(null);
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'empty' | 'ready'>('idle');
   const [animSlices, setAnimSlices] = useState<BuiltSlice[]>([]);
   const [labelVisible, setLabelVisible] = useState(true);
   const [shownLabel, setShownLabel] = useState(PIE_STATS[0].full);
+  const [teammateMenuOpen, setTeammateMenuOpen] = useState(false);
+  const teammateMenuRef = useRef<HTMLDivElement>(null);
   const animFromRef = useRef<BuiltSlice[]>([]);
   const teammateFillRef = useRef(new Map<string, string>());
 
   const activeStat = PIE_STATS.find((s) => s.key === statKey) ?? PIE_STATS[0];
 
+  const teammateOptions = useMemo(() => {
+    const selfName = String(playerName || '').trim().toLowerCase();
+    const selfId = String(playerId || '').trim();
+    const teamKey = normalizeTeamKey(resolveNblClubName(team) || team || '');
+    return rosterPlayers
+      .filter((p) => {
+        const id = String(p.playerId || '').trim();
+        const name = String(p.name || '').trim();
+        if (!id || !name) return false;
+        if (selfId && id === selfId) return false;
+        if (selfName && name.toLowerCase() === selfName) return false;
+        if (!teamKey) return true;
+        const playerTeam = normalizeTeamKey(resolveNblClubName(p.team) || p.team || '');
+        return !playerTeam || playerTeam === teamKey;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [rosterPlayers, team, playerId, playerName]);
+
+  useEffect(() => {
+    if (!teammateMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (teammateMenuRef.current && !teammateMenuRef.current.contains(e.target as Node)) {
+        setTeammateMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [teammateMenuOpen]);
+
+  const canEditTeammate = Boolean(setTeammateFilterName && setWithWithoutMode);
+  const activeTeammate = teammateFilterName?.trim() || null;
+  const playersRef = useRef(players);
+  playersRef.current = players;
+  const teammateId = useMemo(() => {
+    if (!activeTeammate) return null;
+    const want = activeTeammate.toLowerCase();
+    return (
+      rosterPlayers.find((p) => String(p.name || '').trim().toLowerCase() === want)?.playerId ||
+      null
+    );
+  }, [activeTeammate, rosterPlayers]);
+
   useEffect(() => {
     const teamName = team?.trim();
     if (!teamName) {
       setPlayers(null);
+      setSplitSampleGames(null);
       setLoadState('empty');
       return;
     }
     const ac = new AbortController();
-    setLoadState('loading');
+    const hadPlayers = (playersRef.current?.length ?? 0) > 0;
+    if (!hadPlayers) setLoadState('loading');
     const year = yearFromTimeframe(timeframe, season);
     const params = new URLSearchParams({
       team: teamName,
@@ -222,46 +299,72 @@ export function NblScoringMixPie({
       tf: String(timeframe),
     });
     if (playerId) params.set('playerId', playerId);
+    if (activeTeammate) {
+      params.set('teammateName', activeTeammate);
+      params.set('ww', withWithoutMode);
+      if (teammateId) params.set('teammateId', teammateId);
+    }
     fetch(`/api/nbl/team-usage?${params}`, { signal: ac.signal })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('usage'))))
-      .then((data: { players?: TeamUsagePlayer[] }) => {
+      .then((data: { players?: TeamUsagePlayer[]; sampleGames?: number | null }) => {
         const rows = Array.isArray(data.players) ? data.players : [];
         setPlayers(rows);
+        setSplitSampleGames(typeof data.sampleGames === 'number' ? data.sampleGames : null);
         setLoadState(rows.length ? 'ready' : 'empty');
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setPlayers(null);
-        setLoadState('empty');
+        if (!hadPlayers) {
+          setPlayers(null);
+          setSplitSampleGames(null);
+          setLoadState('empty');
+        }
       });
     return () => ac.abort();
-  }, [team, playerId, timeframe, season]);
+  }, [team, playerId, timeframe, season, activeTeammate, withWithoutMode, teammateId]);
+
+  const emptySplit = Boolean(activeTeammate && splitSampleGames === 0);
 
   const slices = useMemo(() => {
     if (!players?.length) return [] as BuiltSlice[];
     const selectedKey = (playerId || playerName || '').toLowerCase();
+    const grey = isDark ? EMPTY_SLICE_FILL_DARK : EMPTY_SLICE_FILL_LIGHT;
     const rows = players
       .map((p) => ({ ...p, value: Math.max(0, playerValue(p, activeStat.key)) }))
-      .filter((p) => p.value > 0 || (playerId && p.playerId === playerId));
+      .filter((p) => emptySplit || p.value > 0 || (playerId && p.playerId === playerId));
     const total = rows.reduce((s, p) => s + p.value, 0);
-    if (total <= 0) return [] as BuiltSlice[];
+    if (!rows.length) return [] as BuiltSlice[];
+    if (!emptySplit && total <= 0) return [] as BuiltSlice[];
 
-    const ranked = rows.slice().sort((a, b) => b.value - a.value);
+    const ranked = rows.slice().sort((a, b) => {
+      const aSel =
+        (playerId && a.playerId === playerId) ||
+        (!!playerName && a.name.toLowerCase() === playerName.toLowerCase());
+      const bSel =
+        (playerId && b.playerId === playerId) ||
+        (!!playerName && b.name.toLowerCase() === playerName.toLowerCase());
+      if (aSel !== bSel) return aSel ? -1 : 1;
+      return b.value - a.value;
+    });
+    const equalSpan = (Math.PI * 2) / ranked.length;
     const defs = ranked.map((p) => {
       const isSelected =
         (playerId && p.playerId === playerId) ||
         (!!playerName && p.name.toLowerCase() === playerName.toLowerCase()) ||
         (!!selectedKey && p.playerId.toLowerCase() === selectedKey);
-      const fill = isSelected
-        ? SELECTED_FILL
-        : (() => {
-            const map = teammateFillRef.current;
-            if (!map.has(p.playerId)) {
-              map.set(p.playerId, TEAMMATE_FILLS[map.size % TEAMMATE_FILLS.length]);
-            }
-            return map.get(p.playerId) as string;
-          })();
-      return { ...p, fill, isSelected, span: (p.value / total) * Math.PI * 2 };
+      const fill = emptySplit
+        ? grey
+        : isSelected
+          ? SELECTED_FILL
+          : (() => {
+              const map = teammateFillRef.current;
+              if (!map.has(p.playerId)) {
+                map.set(p.playerId, TEAMMATE_FILLS[map.size % TEAMMATE_FILLS.length]);
+              }
+              return map.get(p.playerId) as string;
+            })();
+      const span = emptySplit ? equalSpan : (p.value / total) * Math.PI * 2;
+      return { ...p, fill, isSelected, span };
     });
 
     let a0 = -Math.PI / 2;
@@ -274,7 +377,7 @@ export function NblScoringMixPie({
         name: item.name,
         value: item.value,
         fill: item.fill,
-        share: total > 0 ? item.value / total : 0,
+        share: emptySplit ? 1 / defs.length : total > 0 ? item.value / total : 0,
         span: item.span,
         a0,
         a1,
@@ -284,7 +387,7 @@ export function NblScoringMixPie({
       a0 = a1;
     }
     return placed;
-  }, [players, playerId, playerName, activeStat.key]);
+  }, [players, playerId, playerName, activeStat.key, emptySplit, isDark]);
 
   useEffect(() => {
     const to = slices;
@@ -294,7 +397,7 @@ export function NblScoringMixPie({
       setAnimSlices([]);
       return;
     }
-    if (!from.length) {
+    if (!from.length || slicesLookSame(from, to)) {
       animFromRef.current = to;
       setAnimSlices(to);
       return;
@@ -329,6 +432,17 @@ export function NblScoringMixPie({
     return () => window.clearTimeout(t);
   }, [activeStat.full, shownLabel]);
 
+  const sampleGames = useMemo(() => {
+    if (activeTeammate && splitSampleGames != null) return splitSampleGames;
+    if (!players?.length) return null;
+    const self =
+      (playerId && players.find((p) => p.playerId === playerId)) ||
+      (playerName &&
+        players.find((p) => p.name.toLowerCase() === playerName.toLowerCase())) ||
+      null;
+    return typeof self?.games === 'number' ? self.games : null;
+  }, [players, playerId, playerName, activeTeammate, splitSampleGames]);
+
   const muted = isDark ? 'text-gray-400' : 'text-gray-500';
   const heading = isDark ? 'text-gray-100' : 'text-gray-800';
   const ring = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.08)';
@@ -339,6 +453,9 @@ export function NblScoringMixPie({
   const activeIdx = Math.max(0, PIE_STATS.findIndex((s) => s.key === activeStat.key));
 
   const tabPct = 100 / PIE_STATS.length;
+  const controlShell = `h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white`;
+  const controlActive =
+    'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 text-purple-800 dark:text-purple-200';
   const header = (
     <div className="flex flex-col gap-2.5 px-3 sm:px-4">
       <h3 className={`text-sm font-semibold ${heading}`}>Advanced averages</h3>
@@ -387,6 +504,128 @@ export function NblScoringMixPie({
           );
         })}
       </div>
+      {canEditTeammate ? (
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+          {activeTeammate && !emptySplit ? (
+            <p className={`text-[11px] ${muted}`}>
+              {sampleGames != null
+                ? `${sampleGames} ${sampleGames === 1 ? 'game' : 'games'} ${
+                    withWithoutMode === 'without' ? 'without' : 'with'
+                  } ${activeTeammate}`
+                : `${withWithoutMode === 'without' ? 'Without' : 'With'} ${activeTeammate}`}
+            </p>
+          ) : (
+            <span className="hidden sm:block" />
+          )}
+          <div className="flex items-center gap-2 min-w-0 sm:justify-end">
+            <div className={`inline-flex p-0.5 ${controlShell}`}>
+              {(['with', 'without'] as const).map((mode) => {
+                const on = withWithoutMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setWithWithoutMode?.(mode)}
+                    className={`px-2.5 h-[26px] rounded-[10px] text-xs font-medium transition-colors ${
+                      on
+                        ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200'
+                        : isDark
+                          ? 'text-gray-400 hover:text-gray-200'
+                          : 'text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
+                    {mode === 'with' ? 'With' : 'Without'}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="relative min-w-0 flex-1 sm:flex-none sm:w-[190px]" ref={teammateMenuRef}>
+              <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setTeammateMenuOpen((open) => !open)}
+                className={`min-w-0 flex-1 ${controlShell} px-2.5 flex items-center justify-between gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                  activeTeammate ? controlActive : ''
+                }`}
+              >
+                <span className={`truncate ${activeTeammate ? '' : muted}`}>
+                  {activeTeammate || 'Teammate'}
+                </span>
+                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {activeTeammate ? (
+                <button
+                  type="button"
+                  aria-label="Clear teammate"
+                  onClick={() => {
+                    clearTeammateFilter?.();
+                    setTeammateFilterName?.(null);
+                    setTeammateMenuOpen(false);
+                  }}
+                  className={`${controlShell} w-[32px] px-0 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600`}
+                >
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M1 1L7 7M7 1L1 7" />
+                  </svg>
+                </button>
+              ) : null}
+              </div>
+              {teammateMenuOpen ? (
+                <>
+                  <div
+                    className={`absolute top-full right-0 mt-1 w-full min-w-[190px] max-h-64 overflow-y-auto rounded-lg border shadow-lg z-50 ${
+                      isDark ? 'border-gray-600 bg-[#0a1929]' : 'border-gray-300 bg-white'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearTeammateFilter?.();
+                        setTeammateFilterName?.(null);
+                        setTeammateMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 text-xs font-medium first:rounded-t-lg ${
+                        !activeTeammate
+                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                          : isDark
+                            ? 'text-white hover:bg-gray-800'
+                            : 'text-gray-900 hover:bg-gray-100'
+                      }`}
+                    >
+                      Any teammate
+                    </button>
+                    {teammateOptions.map((mate) => {
+                      const selected = activeTeammate === mate.name;
+                      return (
+                        <button
+                          key={mate.playerId || mate.name}
+                          type="button"
+                          onClick={() => {
+                            setTeammateFilterName?.(mate.name);
+                            setTeammateMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 text-xs font-medium last:rounded-b-lg ${
+                            selected
+                              ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                              : isDark
+                                ? 'text-white hover:bg-gray-800'
+                                : 'text-gray-900 hover:bg-gray-100'
+                          }`}
+                        >
+                          {mate.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="fixed inset-0 z-40" onClick={() => setTeammateMenuOpen(false)} aria-hidden />
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 
@@ -403,7 +642,11 @@ export function NblScoringMixPie({
     return (
       <div className="flex flex-col gap-3 min-w-0">
         {header}
-        <div className={`min-h-[280px] flex items-center justify-center text-sm ${muted}`}>No team data for this stat</div>
+        <div className={`min-h-[280px] flex items-center justify-center text-sm ${muted}`}>
+          {activeTeammate
+            ? `No ${activeStat.short} sample ${withWithoutMode === 'without' ? 'without' : 'with'} ${activeTeammate}`
+            : 'No team data for this stat'}
+        </div>
       </div>
     );
   }
@@ -419,16 +662,16 @@ export function NblScoringMixPie({
               .slice()
               .sort((a, b) => Number(a.isSelected) - Number(b.isSelected))
               .map((slice) => {
-                const dimmed = hoverId != null && hoverId !== slice.playerId;
+                const dimmed = !emptySplit && hoverId != null && hoverId !== slice.playerId;
                 return (
                   <path
                     key={slice.playerId}
                     d={slice.path}
                     fill={dimmed ? mixHex(slice.fill, hole, 0.62) : slice.fill}
                     stroke="none"
-                    className="cursor-pointer"
+                    className={emptySplit ? undefined : 'cursor-pointer'}
                     style={{ transition: 'fill 220ms ease' }}
-                    onMouseEnter={() => setHoverId(slice.playerId)}
+                    onMouseEnter={() => !emptySplit && setHoverId(slice.playerId)}
                     onMouseLeave={() => setHoverId(null)}
                   />
                 );
@@ -436,17 +679,26 @@ export function NblScoringMixPie({
             <circle cx={CX} cy={CY} r={R_IN - 1.5} fill={hole} className="pointer-events-none" />
             <foreignObject x={CX - 62} y={CY - 62} width={124} height={124} className="pointer-events-none">
               <div className="flex h-full w-full items-center justify-center px-2 text-center">
-                <span
-                  className="text-[12px] sm:text-[13px] font-bold leading-[1.2]"
-                  style={{
-                    color: isDark ? '#9ca3af' : '#6b7280',
-                    opacity: labelVisible ? 1 : 0,
-                    transform: labelVisible ? 'translateY(0)' : 'translateY(5px)',
-                    transition: 'opacity 280ms ease, transform 280ms ease',
-                  }}
-                >
-                  {shownLabel}
-                </span>
+                {emptySplit ? (
+                  <span
+                    className="text-[13px] sm:text-[14px] font-bold leading-tight"
+                    style={{ color: isDark ? '#d1d5db' : '#4b5563' }}
+                  >
+                    0 games
+                  </span>
+                ) : (
+                  <span
+                    className="text-[12px] sm:text-[13px] font-bold leading-[1.2]"
+                    style={{
+                      color: isDark ? '#9ca3af' : '#6b7280',
+                      opacity: labelVisible ? 1 : 0,
+                      transform: labelVisible ? 'translateY(0)' : 'translateY(5px)',
+                      transition: 'opacity 280ms ease, transform 280ms ease',
+                    }}
+                  >
+                    {shownLabel}
+                  </span>
+                )}
               </div>
             </foreignObject>
           </svg>
@@ -455,15 +707,20 @@ export function NblScoringMixPie({
         <div className="flex flex-col gap-1.5 min-w-[200px] flex-1 max-h-[320px] overflow-y-auto pr-1">
           {slices
             .slice()
-            .sort((a, b) => b.value - a.value)
+            .sort((a, b) => (emptySplit ? 0 : b.value - a.value))
             .map((slice) => {
               const live = paintedById.get(slice.playerId) ?? slice;
-              const isHover = hoverId === slice.playerId;
+              const isHover = !emptySplit && hoverId === slice.playerId;
+              const barFill = emptySplit
+                ? isDark
+                  ? EMPTY_SLICE_FILL_DARK
+                  : EMPTY_SLICE_FILL_LIGHT
+                : slice.fill;
               return (
                 <button
                   key={slice.playerId}
                   type="button"
-                  onMouseEnter={() => setHoverId(slice.playerId)}
+                  onMouseEnter={() => !emptySplit && setHoverId(slice.playerId)}
                   onMouseLeave={() => setHoverId(null)}
                   className={`w-full text-left rounded-md px-2 py-1.5 transition-all duration-500 ${
                     isHover
@@ -480,33 +737,35 @@ export function NblScoringMixPie({
                     <span className="flex items-center gap-2 min-w-0">
                       <span
                         className={`rounded-full flex-shrink-0 transition-all duration-300 ${isHover ? 'h-2.5 w-2.5' : 'h-2 w-2'}`}
-                        style={{ background: slice.fill }}
+                        style={{ background: barFill }}
                       />
                       <span
                         className={`text-[13px] leading-tight break-words transition-colors duration-300 ${
-                          isHover ? 'font-bold' : heading
+                          emptySplit ? muted : isHover ? 'font-bold' : heading
                         }`}
-                        style={isHover ? { color: slice.fill } : undefined}
+                        style={!emptySplit && isHover ? { color: slice.fill } : undefined}
                       >
                         {slice.name}
                       </span>
                     </span>
                     <span
                       className={`text-[13px] tabular-nums transition-colors duration-300 ${
-                        isHover ? 'font-bold' : 'font-semibold'
-                      } ${heading}`}
-                      style={isHover ? { color: slice.fill } : undefined}
+                        emptySplit
+                          ? muted
+                          : `${isHover ? 'font-bold' : 'font-semibold'} ${heading}`
+                      }`}
+                      style={!emptySplit && isHover ? { color: slice.fill } : undefined}
                     >
-                      {formatStatValue(live.value, activeStat.pct, activeStat.digits ?? 1)}
+                      {emptySplit ? '—' : formatStatValue(live.value, activeStat.pct, activeStat.digits ?? 1)}
                     </span>
                   </div>
                   <div className={`mt-1 h-[3px] rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-black/10'}`}>
                     <div
                       className="h-full rounded-full"
                       style={{
-                        width: `${(live.value / maxVal) * 100}%`,
-                        background: slice.fill,
-                        opacity: hoverId != null && !isHover ? 0.35 : 1,
+                        width: emptySplit ? '100%' : `${(live.value / maxVal) * 100}%`,
+                        background: barFill,
+                        opacity: emptySplit ? 0.55 : hoverId != null && !isHover ? 0.35 : 1,
                         transition: 'opacity 220ms ease',
                       }}
                     />

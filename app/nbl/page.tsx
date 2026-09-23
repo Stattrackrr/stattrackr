@@ -59,6 +59,7 @@ import {
   type NblBookRow,
 } from '@/lib/nbl/oddsTypes';
 import { normalizeNblStat } from '@/lib/propsDashboardLinks';
+import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import {
   NBL_PLAY_TYPE_FULL_LABELS,
   type NblPlayTypeId,
@@ -664,7 +665,9 @@ export default function NblDashboardPage() {
       /* ignore */
     }
     setNavigatingToProps(true);
-    router.push('/props');
+    const returnPath = consumePropsReturnPath('nbl');
+    router.prefetch(returnPath);
+    router.push(returnPath);
   }, [router]);
 
   const showBackToPlayerProps = Boolean(
@@ -1979,6 +1982,12 @@ export default function NblDashboardPage() {
                           timeframe={chartTimeframe}
                           season={NBL_CURRENT_SEASON_YEAR}
                           isDark={!!mounted && isDark}
+                          rosterPlayers={rosterPlayers}
+                          teammateFilterName={teammateFilterName}
+                          setTeammateFilterName={setTeammateFilterName}
+                          withWithoutMode={withWithoutMode}
+                          setWithWithoutMode={setWithWithoutMode}
+                          clearTeammateFilter={clearTeammateFilter}
                         />
                       </>
                     )}
