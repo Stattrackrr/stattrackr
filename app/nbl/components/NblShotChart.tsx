@@ -410,7 +410,7 @@ export function NblShotChart({
   const [defenseData, setDefenseData] = useState<DefensePayload | null>(null);
   const [defenseLoading, setDefenseLoading] = useState(false);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
-  const [playerAnalysisOpen, setPlayerAnalysisOpen] = useState(true);
+  const [playerAnalysisOpen, setPlayerAnalysisOpen] = useState(false);
   const clipId = `nblRoundedCourt-${useId().replace(/:/g, '')}`;
 
   useEffect(() => {
@@ -1025,7 +1025,6 @@ export function NblShotChart({
                   onClick={() => {
                     setShowOppDef(true);
                     setShowMakes(false);
-                    setBreakdownOpen(true);
                   }}
                   className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
                     showOppDef

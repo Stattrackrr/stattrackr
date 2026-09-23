@@ -2,16 +2,24 @@
 
 import Script from 'next/script';
 
-const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '25990212100620241';
+const META_PIXEL_IDS = Array.from(
+  new Set(
+    [process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '25990212100620241', '1812371203107877'].filter(
+      (id): id is string => Boolean(id && id.trim())
+    )
+  )
+);
 
 export default function MetaPixel() {
-  if (!META_PIXEL_ID) return null;
+  if (!META_PIXEL_IDS.length) return null;
+
+  const initCalls = META_PIXEL_IDS.map((id) => `fbq('init', '${id}');`).join('\n            ');
 
   return (
     <>
       <Script
         id="meta-pixel"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             !function(f,b,e,v,n,t,s)
@@ -22,19 +30,22 @@ export default function MetaPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${META_PIXEL_ID}');
+            ${initCalls}
             fbq('track', 'PageView');
           `,
         }}
       />
       <noscript>
-        <img
-          height="1"
-          width="1"
-          style={{ display: 'none' }}
-          alt=""
-          src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
-        />
+        {META_PIXEL_IDS.map((id) => (
+          <img
+            key={id}
+            height="1"
+            width="1"
+            style={{ display: 'none' }}
+            alt=""
+            src={`https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1`}
+          />
+        ))}
       </noscript>
     </>
   );
