@@ -17,7 +17,7 @@ import {
   type NblPropLine,
 } from '@/lib/nbl/oddsTypes';
 import {
-  listNblPlayerPropSnapshotsFromDisk,
+  listNblPlayerPropSnapshots,
   type NblPlayerPropSnapshot,
 } from '@/lib/nbl/playerPropSnapshots';
 import { buildNblPropDvpIndex, lookupNblPropDvp, type NblPropDvpIndex } from '@/lib/nbl/playerPropsDvp';
@@ -525,7 +525,7 @@ function payloadFromCache(cached: NonNullable<Awaited<ReturnType<typeof readNblP
 async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
   const roster = loadRoster();
   const pulseGames = await getNblPulseScoreBoard();
-  const snapshots = listNblPlayerPropSnapshotsFromDisk();
+  const snapshots = await listNblPlayerPropSnapshots();
   const snapshotByKey = new Map<string, NblPlayerPropSnapshot>();
   for (const snap of snapshots) {
     const key = matchupKey(snap.homeTeam, snap.awayTeam);

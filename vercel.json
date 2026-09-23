@@ -26,6 +26,10 @@
       "schedule": "*/30 * * * *"
     },
     {
+      "path": "/api/cron/refresh-nbl-odds",
+      "schedule": "50 */2 * * *"
+    },
+    {
       "path": "/api/cron/refresh-combined-props",
       "schedule": "*/20 * * * *"
     },
@@ -82,7 +86,10 @@
       "maxDuration": 360
     },
     "app/api/nbl/odds/refresh/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
+    },
+    "app/api/cron/refresh-nbl-odds/route.ts": {
+      "maxDuration": 300
     },
     "app/api/afl/player-props/refresh/route.ts": {
       "maxDuration": 120

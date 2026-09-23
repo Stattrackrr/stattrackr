@@ -1,5 +1,6 @@
 # Snapshot PulseScore NBL player O/U + milestone lines (Sportsbet / TAB)
-# before books take markets down. Closing snapshot is frozen after tip.
+# before books take markets down, then ingest live odds into production
+# Redis so /props and combined stay current without a Vercel data deploy.
 name: NBL Player Prop Snapshots
 
 on:
@@ -28,35 +29,44 @@ jobs:
           fetch-depth: 0
           lfs: false
 
-      - name: Check PulseScore key
+      - name: Check ingest secrets
         id: check
         run: |
-          if [ -z "${{ secrets.PULSESCORE_API_KEY }}" ]; then
-            echo "configured=false" >> $GITHUB_OUTPUT
-            echo "PULSESCORE_API_KEY not set; skipping NBL player-prop snapshots"
-          else
-            echo "configured=true" >> $GITHUB_OUTPUT
+          PULSE=false
+          PROD=false
+          if [ -n "${{ secrets.PULSESCORE_API_KEY }}" ]; then
+            PULSE=true
+          fi
+          if [ -n "${{ secrets.PROD_URL }}" ] && [ -n "${{ secrets.CRON_SECRET }}" ]; then
+            PROD=true
+          fi
+          echo "pulse=${PULSE}" >> $GITHUB_OUTPUT
+          echo "prod=${PROD}" >> $GITHUB_OUTPUT
+          if [ "$PULSE" != "true" ] && [ "$PROD" != "true" ]; then
+            echo "Need PULSESCORE_API_KEY or PROD_URL+CRON_SECRET"
+            exit 1
           fi
 
       - name: Setup Node.js
-        if: steps.check.outputs.configured == 'true'
+        if: steps.check.outputs.pulse == 'true'
         uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
-        if: steps.check.outputs.configured == 'true'
+        if: steps.check.outputs.pulse == 'true'
         run: npm ci
 
       - name: Snapshot PulseScore NBL player lines
-        if: steps.check.outputs.configured == 'true'
+        if: steps.check.outputs.pulse == 'true'
         env:
           PULSESCORE_API_KEY: ${{ secrets.PULSESCORE_API_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: npm run snapshot:nbl:player-props
 
       - name: Commit player-prop snapshots
-        if: steps.check.outputs.configured == 'true'
+        if: steps.check.outputs.pulse == 'true'
         run: |
           bash scripts/ci-commit-data-files.sh "chore(data): NBL PulseScore player-prop snapshots [skip ci]" \
             "data/nbl-model/cache/player-prop-lines" \
@@ -64,3 +74,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Ingest NBL odds into production props
+        if: steps.check.outputs.prod == 'true'
+        env:
+          PROD_URL: ${{ secrets.PROD_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: bash scripts/ci-curl-prod-cron.sh /api/nbl/odds/refresh 280

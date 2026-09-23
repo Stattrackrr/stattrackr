@@ -20,9 +20,30 @@ const NBL_LINEUP_TRACE = [
 ] as const;
 const NBL_PLAYER_LOG_TRACE = [
   ...NBL_SCHEDULE_TRACE,
+  './data/nbl-league-player-stats-*.json',
+  './data/nbl-player-game-logs-index-*.json',
   './data/nbl-model/cache/player-logs/**/*',
   './data/nbl-model/cache/pbp/**/*',
   './data/nbl-model/cache/pbp-chem/**/*',
+] as const;
+const NBL_SHOT_TRACE = [
+  ...NBL_PLAYER_LOG_TRACE,
+  './data/nbl-model/cache/shot-charts/**/*',
+  './data/nbl-model/cache/shot-chart-players/**/*',
+  './data/nbl-model/cache/shot-chart-defense/**/*',
+  './data/nbl-model/cache/shot-chart-manifest-*.json',
+] as const;
+const NBL_PERIOD_TRACE = [
+  ...NBL_SCHEDULE_TRACE,
+  './data/nbl-model/cache/period-scores/**/*',
+] as const;
+const NBL_STATS_TRACE = [
+  ...NBL_SCHEDULE_TRACE,
+  './data/nbl-ladder-*.json',
+  './data/nbl-team-stats-*.json',
+  './data/nbl-league-player-stats-*.json',
+  './data/nbl-next-matches*.json',
+  './data/nbl-player-game-logs-index-*.json',
 ] as const;
 
 const nextConfig: NextConfig = {
@@ -55,6 +76,44 @@ const nextConfig: NextConfig = {
     '/api/nbl/predicted-starters/route': [...NBL_LINEUP_TRACE],
     '/api/nbl/player-game-logs': [...NBL_PLAYER_LOG_TRACE],
     '/api/nbl/player-game-logs/route': [...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/shot-chart': [...NBL_SHOT_TRACE],
+    '/api/nbl/shot-chart/route': [...NBL_SHOT_TRACE],
+    '/api/nbl/team-game-logs': [...NBL_PERIOD_TRACE],
+    '/api/nbl/team-game-logs/route': [...NBL_PERIOD_TRACE],
+    '/api/nbl/play-types': [...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/play-types/route': [...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/player-ratings': [...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/player-ratings/route': [...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/chemistry': [...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/chemistry/route': [...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/team-usage': [...NBL_STATS_TRACE, ...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/team-usage/route': [...NBL_STATS_TRACE, ...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/team-ste-stats': [...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/team-ste-stats/route': [...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/team-ratings': [...NBL_STATS_TRACE, ...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/team-ratings/route': [...NBL_STATS_TRACE, ...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/similar-players': [...NBL_STATS_TRACE, ...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/similar-players/route': [...NBL_STATS_TRACE, ...NBL_PLAYER_LOG_TRACE],
+    '/api/nbl/ladder': [...NBL_STATS_TRACE],
+    '/api/nbl/ladder/route': [...NBL_STATS_TRACE],
+    '/api/nbl/schedule': [...NBL_STATS_TRACE],
+    '/api/nbl/schedule/route': [...NBL_STATS_TRACE],
+    '/api/nbl/league-player-stats': [...NBL_STATS_TRACE],
+    '/api/nbl/league-player-stats/route': [...NBL_STATS_TRACE],
+    '/api/nbl/next-game': [...NBL_STATS_TRACE],
+    '/api/nbl/next-game/route': [...NBL_STATS_TRACE],
+    '/api/nbl/players': [...NBL_STATS_TRACE],
+    '/api/nbl/players/route': [...NBL_STATS_TRACE],
+    '/api/nbl/player-props/list': [
+      ...NBL_PLAYER_LOG_TRACE,
+      './data/nbl-model/cache/player-prop-lines/**/*',
+      './data/nbl-model/cache/player-props-list.json',
+    ],
+    '/api/nbl/player-props/list/route': [
+      ...NBL_PLAYER_LOG_TRACE,
+      './data/nbl-model/cache/player-prop-lines/**/*',
+      './data/nbl-model/cache/player-props-list.json',
+    ],
     '/api/tennis/matches': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/matches/route': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/player-matchup': [...TENNIS_RUNTIME_DATA],

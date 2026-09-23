@@ -18,6 +18,7 @@ export const NBL_PLAYER_PROP_SNAPSHOT_DIR = path.join(
 );
 
 const REDIS_PREFIX = 'nbl_ps_lines_v1:';
+const REDIS_INDEX_KEY = 'nbl_ps_lines_index_v1';
 const REDIS_TTL_SECONDS = 400 * 24 * 60 * 60;
 const CLOSE_GRACE_MS = 5 * 60 * 1000;
 
@@ -253,6 +254,33 @@ async function readRedisSnapshot(gameKey: string): Promise<NblPlayerPropSnapshot
 
 async function writeRedisSnapshot(snap: NblPlayerPropSnapshot): Promise<void> {
   await sharedCache.setJSON(`${REDIS_PREFIX}${snap.gameKey}`, snap, REDIS_TTL_SECONDS);
+  const index = (await sharedCache.getJSON<string[]>(REDIS_INDEX_KEY)) ?? [];
+  if (!index.includes(snap.gameKey)) {
+    index.push(snap.gameKey);
+    await sharedCache.setJSON(REDIS_INDEX_KEY, index, REDIS_TTL_SECONDS);
+  }
+}
+
+export async function listNblPlayerPropSnapshotsFromRedis(): Promise<NblPlayerPropSnapshot[]> {
+  try {
+    const keys = (await sharedCache.getJSON<string[]>(REDIS_INDEX_KEY)) ?? [];
+    if (!keys.length) return [];
+    const rows = await sharedCache.getJSONMany<NblPlayerPropSnapshot>(
+      keys.map((key) => `${REDIS_PREFIX}${key}`)
+    );
+    return rows.filter((row): row is NblPlayerPropSnapshot => Boolean(row && Array.isArray(row.lines)));
+  } catch {
+    return [];
+  }
+}
+
+export async function listNblPlayerPropSnapshots(): Promise<NblPlayerPropSnapshot[]> {
+  const byKey = new Map<string, NblPlayerPropSnapshot>();
+  for (const snap of [...listNblPlayerPropSnapshotsFromDisk(), ...(await listNblPlayerPropSnapshotsFromRedis())]) {
+    const prev = byKey.get(snap.gameKey);
+    byKey.set(snap.gameKey, prev ? betterSnapshot(prev, snap) : snap);
+  }
+  return [...byKey.values()];
 }
 
 export async function persistNblPlayerPropSnapshots(

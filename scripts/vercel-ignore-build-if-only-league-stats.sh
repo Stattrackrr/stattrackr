@@ -19,6 +19,8 @@ if echo "$CHANGED" | grep -qE '^app/|^lib/'; then
 fi
 
 # Skip only when every changed path is a known generated-data prefix.
+# data/nbl-refresh-stamp.json is intentionally NOT listed — nightly NBL
+# process-stats writes it so dashboard caches (lineups/pbp/logs) deploy.
 while IFS= read -r path; do
   [ -z "$path" ] && continue
   case "$path" in

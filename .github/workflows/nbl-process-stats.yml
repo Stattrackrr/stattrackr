@@ -1,6 +1,7 @@
-# Single NBL data workflow: Rosetta season stats (2023–2025 history + live NBL27),
-# SportRadar shot-chart warm for live NBL27, then commit.
-# Dashboard APIs are cache-only — never hit SportRadar / Rosetta / Odds / Pulse live.
+# Nightly NBL dashboard data: Rosetta season stats (2023–2025 history + live NBL27),
+# SportRadar warms (shot charts / PBP / lineups), PulseScore snapshot, then
+# ping production so game odds + player props land in Redis for /props.
+# Dashboard APIs stay cache-only after this commit + Vercel deploy.
 name: NBL Process Stats
 
 on:
@@ -53,6 +54,7 @@ jobs:
             npm run fetch:nbl:team-stats -- --year=${YEAR}
             npm run fetch:nbl:league-player-stats -- --year=${YEAR}
             npm run fetch:nbl:player-game-logs -- --year=${YEAR}
+            npm run fetch:nbl:team-game-logs -- --year=${YEAR}
           done
 
       - name: Refresh NBL27 live season stats
@@ -84,16 +86,34 @@ jobs:
       - name: Snapshot PulseScore NBL player lines
         env:
           PULSESCORE_API_KEY: ${{ secrets.PULSESCORE_API_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
           if [ -z "$PULSESCORE_API_KEY" ]; then
-            echo "PULSESCORE_API_KEY not set; skipping player-prop snapshots"
+            echo "PULSESCORE_API_KEY not set; skipping local player-prop snapshots"
           else
             npm run snapshot:nbl:player-props
           fi
 
+      - name: Write NBL refresh stamp
+        run: |
+          mkdir -p data
+          node -e '
+            const fs = require("fs");
+            fs.writeFileSync(
+              "data/nbl-refresh-stamp.json",
+              JSON.stringify({
+                updatedAt: new Date().toISOString(),
+                workflow: "nbl-process-stats",
+                runId: process.env.GITHUB_RUN_ID || null,
+                sha: process.env.GITHUB_SHA || null,
+              }, null, 2) + "\n"
+            );
+          '
+
       - name: Commit NBL data + shot-chart caches
         run: |
           bash scripts/ci-commit-data-files.sh "chore(data): NBL process stats + shot chart cache [skip ci]" \
+            "data/nbl-refresh-stamp.json" \
             "data/nbl-ladder-*.json" \
             "data/nbl-schedule-*.json" \
             "data/nbl-team-stats-*.json" \
@@ -109,6 +129,7 @@ jobs:
             "data/nbl-model/cache/pbp-chem" \
             "data/nbl-model/cache/lineups" \
             "data/nbl-model/cache/player-prop-lines" \
+            "data/nbl-model/cache/player-props-list.json" \
             "data/nbl-model/cache/shot-charts" \
             "data/nbl-model/cache/shot-chart-players" \
             "data/nbl-model/cache/shot-chart-defense" \
@@ -116,3 +137,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Ingest NBL odds into production props
+        env:
+          PROD_URL: ${{ secrets.PROD_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: bash scripts/ci-curl-prod-cron.sh /api/nbl/odds/refresh 280
