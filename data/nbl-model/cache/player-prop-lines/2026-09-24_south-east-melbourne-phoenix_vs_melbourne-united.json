@@ -4,14 +4,14 @@
   "homeTeam": "South East Melbourne Phoenix",
   "awayTeam": "Melbourne United",
   "commenceTime": "2026-09-24T09:30:00.000Z",
-  "capturedAt": "2026-09-23T17:53:51.997Z",
+  "capturedAt": "2026-09-23T21:36:56.426Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
     "TAB",
     "Unibet"
   ],
-  "lineCount": 169,
+  "lineCount": 249,
   "lines": [
     {
       "player": "Angus Glover",
@@ -29,6 +29,19 @@
     {
       "player": "Angus Glover",
       "playerKey": "angus glover",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-435",
+      "under": "N/A",
+      "overDecimal": 1.23,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -37,6 +50,19 @@
       "over": "+250",
       "under": "N/A",
       "overDecimal": 3.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+215",
+      "under": "N/A",
+      "overDecimal": 3.15,
       "underDecimal": null
     },
     {
@@ -81,6 +107,19 @@
     {
       "player": "Angus Glover",
       "playerKey": "angus glover",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-625",
+      "under": "N/A",
+      "overDecimal": 1.16,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
@@ -89,6 +128,19 @@
       "over": "+115",
       "under": "N/A",
       "overDecimal": 2.15,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "-119",
+      "under": "N/A",
+      "overDecimal": 1.84,
       "underDecimal": null
     },
     {
@@ -133,6 +185,19 @@
     {
       "player": "Angus Glover",
       "playerKey": "angus glover",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-500",
+      "under": "N/A",
+      "overDecimal": 1.2,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
       "book": "TAB",
       "stat": "threeMade",
       "kind": "milestone",
@@ -141,6 +206,45 @@
       "over": "+100",
       "under": "N/A",
       "overDecimal": 2,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "-139",
+      "under": "N/A",
+      "overDecimal": 1.72,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+180",
+      "under": "N/A",
+      "overDecimal": 2.8,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+350",
+      "under": "N/A",
+      "overDecimal": 4.5,
       "underDecimal": null
     },
     {
@@ -198,6 +302,19 @@
     {
       "player": "Chris Goulding",
       "playerKey": "chris goulding",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-385",
+      "under": "N/A",
+      "overDecimal": 1.26,
+      "underDecimal": null
+    },
+    {
+      "player": "Chris Goulding",
+      "playerKey": "chris goulding",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
@@ -206,6 +323,19 @@
       "over": "+150",
       "under": "N/A",
       "overDecimal": 2.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Chris Goulding",
+      "playerKey": "chris goulding",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "+112",
+      "under": "N/A",
+      "overDecimal": 2.12,
       "underDecimal": null
     },
     {
@@ -250,6 +380,19 @@
     {
       "player": "Chris Goulding",
       "playerKey": "chris goulding",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-625",
+      "under": "N/A",
+      "overDecimal": 1.16,
+      "underDecimal": null
+    },
+    {
+      "player": "Chris Goulding",
+      "playerKey": "chris goulding",
       "book": "TAB",
       "stat": "threeMade",
       "kind": "milestone",
@@ -258,6 +401,45 @@
       "over": "-125",
       "under": "N/A",
       "overDecimal": 1.8,
+      "underDecimal": null
+    },
+    {
+      "player": "Chris Goulding",
+      "playerKey": "chris goulding",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "-159",
+      "under": "N/A",
+      "overDecimal": 1.63,
+      "underDecimal": null
+    },
+    {
+      "player": "Chris Goulding",
+      "playerKey": "chris goulding",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+155",
+      "under": "N/A",
+      "overDecimal": 2.55,
+      "underDecimal": null
+    },
+    {
+      "player": "Chris Goulding",
+      "playerKey": "chris goulding",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+300",
+      "under": "N/A",
+      "overDecimal": 4,
       "underDecimal": null
     },
     {
@@ -289,6 +471,19 @@
     {
       "player": "Cole Anthony",
       "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-357",
+      "under": "N/A",
+      "overDecimal": 1.28,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -297,6 +492,19 @@
       "over": "+225",
       "under": "N/A",
       "overDecimal": 3.25,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+145",
+      "under": "N/A",
+      "overDecimal": 2.45,
       "underDecimal": null
     },
     {
@@ -341,6 +549,19 @@
     {
       "player": "Cole Anthony",
       "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "-476",
+      "under": "N/A",
+      "overDecimal": 1.21,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
@@ -349,6 +570,19 @@
       "over": "-111",
       "under": "N/A",
       "overDecimal": 1.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 24.5,
+      "label": "25+",
+      "over": "-141",
+      "under": "N/A",
+      "overDecimal": 1.71,
       "underDecimal": null
     },
     {
@@ -367,6 +601,32 @@
     {
       "player": "Cole Anthony",
       "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 29.5,
+      "label": "30+",
+      "over": "+170",
+      "under": "N/A",
+      "overDecimal": 2.7,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-2000",
+      "under": "N/A",
+      "overDecimal": 1.05,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -380,6 +640,19 @@
     {
       "player": "Cole Anthony",
       "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-125",
+      "under": "N/A",
+      "overDecimal": 1.8,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -388,6 +661,19 @@
       "over": "+600",
       "under": "N/A",
       "overDecimal": 7,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+300",
+      "under": "N/A",
+      "overDecimal": 4,
       "underDecimal": null
     },
     {
@@ -419,6 +705,19 @@
     {
       "player": "Cole Anthony",
       "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-1111",
+      "under": "N/A",
+      "overDecimal": 1.09,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
       "book": "TAB",
       "stat": "threeMade",
       "kind": "milestone",
@@ -427,6 +726,45 @@
       "over": "-167",
       "under": "N/A",
       "overDecimal": 1.6,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "-222",
+      "under": "N/A",
+      "overDecimal": 1.45,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+114",
+      "under": "N/A",
+      "overDecimal": 2.14,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+235",
+      "under": "N/A",
+      "overDecimal": 3.35,
       "underDecimal": null
     },
     {
@@ -586,6 +924,97 @@
       "underDecimal": null
     },
     {
+      "player": "D'Shawn Schwartz",
+      "playerKey": "d shawn schwartz",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-400",
+      "under": "N/A",
+      "overDecimal": 1.25,
+      "underDecimal": null
+    },
+    {
+      "player": "D'Shawn Schwartz",
+      "playerKey": "d shawn schwartz",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "+114",
+      "under": "N/A",
+      "overDecimal": 2.14,
+      "underDecimal": null
+    },
+    {
+      "player": "D'Shawn Schwartz",
+      "playerKey": "d shawn schwartz",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-303",
+      "under": "N/A",
+      "overDecimal": 1.33,
+      "underDecimal": null
+    },
+    {
+      "player": "D'Shawn Schwartz",
+      "playerKey": "d shawn schwartz",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+138",
+      "under": "N/A",
+      "overDecimal": 2.38,
+      "underDecimal": null
+    },
+    {
+      "player": "D'Shawn Schwartz",
+      "playerKey": "d shawn schwartz",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-217",
+      "under": "N/A",
+      "overDecimal": 1.46,
+      "underDecimal": null
+    },
+    {
+      "player": "D'Shawn Schwartz",
+      "playerKey": "d shawn schwartz",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "+145",
+      "under": "N/A",
+      "overDecimal": 2.45,
+      "underDecimal": null
+    },
+    {
+      "player": "D'Shawn Schwartz",
+      "playerKey": "d shawn schwartz",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+325",
+      "under": "N/A",
+      "overDecimal": 4.25,
+      "underDecimal": null
+    },
+    {
       "player": "Dash Daniels",
       "playerKey": "dash daniels",
       "book": "TAB",
@@ -614,6 +1043,19 @@
     {
       "player": "Dash Daniels",
       "playerKey": "dash daniels",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-556",
+      "under": "N/A",
+      "overDecimal": 1.18,
+      "underDecimal": null
+    },
+    {
+      "player": "Dash Daniels",
+      "playerKey": "dash daniels",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
@@ -622,6 +1064,19 @@
       "over": "+100",
       "under": "N/A",
       "overDecimal": 2,
+      "underDecimal": null
+    },
+    {
+      "player": "Dash Daniels",
+      "playerKey": "dash daniels",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "+110",
+      "under": "N/A",
+      "overDecimal": 2.1,
       "underDecimal": null
     },
     {
@@ -653,6 +1108,19 @@
     {
       "player": "Dash Daniels",
       "playerKey": "dash daniels",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-833",
+      "under": "N/A",
+      "overDecimal": 1.12,
+      "underDecimal": null
+    },
+    {
+      "player": "Dash Daniels",
+      "playerKey": "dash daniels",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -666,6 +1134,19 @@
     {
       "player": "Dash Daniels",
       "playerKey": "dash daniels",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "-149",
+      "under": "N/A",
+      "overDecimal": 1.67,
+      "underDecimal": null
+    },
+    {
+      "player": "Dash Daniels",
+      "playerKey": "dash daniels",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -674,6 +1155,19 @@
       "over": "+200",
       "under": "N/A",
       "overDecimal": 3,
+      "underDecimal": null
+    },
+    {
+      "player": "Dash Daniels",
+      "playerKey": "dash daniels",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 7.5,
+      "label": "8+",
+      "over": "+195",
+      "under": "N/A",
+      "overDecimal": 2.95,
       "underDecimal": null
     },
     {
@@ -757,6 +1251,19 @@
     {
       "player": "Joe Ingles",
       "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-417",
+      "under": "N/A",
+      "overDecimal": 1.24,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -770,6 +1277,19 @@
     {
       "player": "Joe Ingles",
       "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+118",
+      "under": "N/A",
+      "overDecimal": 2.18,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -778,6 +1298,19 @@
       "over": "+320",
       "under": "N/A",
       "overDecimal": 4.2,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 7.5,
+      "label": "8+",
+      "over": "+340",
+      "under": "N/A",
+      "overDecimal": 4.4,
       "underDecimal": null
     },
     {
@@ -809,6 +1342,19 @@
     {
       "player": "Joe Ingles",
       "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-278",
+      "under": "N/A",
+      "overDecimal": 1.36,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
@@ -817,6 +1363,19 @@
       "over": "+225",
       "under": "N/A",
       "overDecimal": 3.25,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "+145",
+      "under": "N/A",
+      "overDecimal": 2.45,
       "underDecimal": null
     },
     {
@@ -835,6 +1394,19 @@
     {
       "player": "Joe Ingles",
       "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-2500",
+      "under": "N/A",
+      "overDecimal": 1.04,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -848,6 +1420,19 @@
     {
       "player": "Joe Ingles",
       "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-149",
+      "under": "N/A",
+      "overDecimal": 1.67,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -856,6 +1441,19 @@
       "over": "+350",
       "under": "N/A",
       "overDecimal": 4.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+245",
+      "under": "N/A",
+      "overDecimal": 3.45,
       "underDecimal": null
     },
     {
@@ -900,6 +1498,19 @@
     {
       "player": "Joe Ingles",
       "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-278",
+      "under": "N/A",
+      "overDecimal": 1.36,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
       "book": "TAB",
       "stat": "threeMade",
       "kind": "milestone",
@@ -908,6 +1519,32 @@
       "over": "+125",
       "under": "N/A",
       "overDecimal": 2.25,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "+116",
+      "under": "N/A",
+      "overDecimal": 2.16,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+260",
+      "under": "N/A",
+      "overDecimal": 3.6,
       "underDecimal": null
     },
     {
@@ -939,6 +1576,19 @@
     {
       "player": "Jordan Hunter",
       "playerKey": "jordan hunter",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-120",
+      "under": "N/A",
+      "overDecimal": 1.83,
+      "underDecimal": null
+    },
+    {
+      "player": "Jordan Hunter",
+      "playerKey": "jordan hunter",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
@@ -965,6 +1615,19 @@
     {
       "player": "Jordan Hunter",
       "playerKey": "jordan hunter",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-476",
+      "under": "N/A",
+      "overDecimal": 1.21,
+      "underDecimal": null
+    },
+    {
+      "player": "Jordan Hunter",
+      "playerKey": "jordan hunter",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -978,6 +1641,19 @@
     {
       "player": "Jordan Hunter",
       "playerKey": "jordan hunter",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "-105",
+      "under": "N/A",
+      "overDecimal": 1.95,
+      "underDecimal": null
+    },
+    {
+      "player": "Jordan Hunter",
+      "playerKey": "jordan hunter",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -986,6 +1662,19 @@
       "over": "+300",
       "under": "N/A",
       "overDecimal": 4,
+      "underDecimal": null
+    },
+    {
+      "player": "Jordan Hunter",
+      "playerKey": "jordan hunter",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 7.5,
+      "label": "8+",
+      "over": "+255",
+      "under": "N/A",
+      "overDecimal": 3.55,
       "underDecimal": null
     },
     {
@@ -1056,6 +1745,19 @@
     {
       "player": "Josh Oduro",
       "playerKey": "josh oduro",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-714",
+      "under": "N/A",
+      "overDecimal": 1.14,
+      "underDecimal": null
+    },
+    {
+      "player": "Josh Oduro",
+      "playerKey": "josh oduro",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
@@ -1064,6 +1766,19 @@
       "over": "+115",
       "under": "N/A",
       "overDecimal": 2.15,
+      "underDecimal": null
+    },
+    {
+      "player": "Josh Oduro",
+      "playerKey": "josh oduro",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "-114",
+      "under": "N/A",
+      "overDecimal": 1.88,
       "underDecimal": null
     },
     {
@@ -1108,6 +1823,19 @@
     {
       "player": "Josh Oduro",
       "playerKey": "josh oduro",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "-400",
+      "under": "N/A",
+      "overDecimal": 1.25,
+      "underDecimal": null
+    },
+    {
+      "player": "Josh Oduro",
+      "playerKey": "josh oduro",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -1121,6 +1849,19 @@
     {
       "player": "Josh Oduro",
       "playerKey": "josh oduro",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 7.5,
+      "label": "8+",
+      "over": "-122",
+      "under": "N/A",
+      "overDecimal": 1.82,
+      "underDecimal": null
+    },
+    {
+      "player": "Josh Oduro",
+      "playerKey": "josh oduro",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -1129,6 +1870,19 @@
       "over": "+225",
       "under": "N/A",
       "overDecimal": 3.25,
+      "underDecimal": null
+    },
+    {
+      "player": "Josh Oduro",
+      "playerKey": "josh oduro",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "+195",
+      "under": "N/A",
+      "overDecimal": 2.95,
       "underDecimal": null
     },
     {
@@ -1147,6 +1901,19 @@
     {
       "player": "Luke Travers",
       "playerKey": "luke travers",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-3333",
+      "under": "N/A",
+      "overDecimal": 1.03,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -1160,6 +1927,19 @@
     {
       "player": "Luke Travers",
       "playerKey": "luke travers",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-137",
+      "under": "N/A",
+      "overDecimal": 1.73,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -1168,6 +1948,19 @@
       "over": "+400",
       "under": "N/A",
       "overDecimal": 5,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+310",
+      "under": "N/A",
+      "overDecimal": 4.1,
       "underDecimal": null
     },
     {
@@ -1194,6 +1987,19 @@
       "over": "+100",
       "under": "N/A",
       "overDecimal": 2,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "-132",
+      "under": "N/A",
+      "overDecimal": 1.76,
       "underDecimal": null
     },
     {
@@ -1238,6 +2044,19 @@
     {
       "player": "Luke Travers",
       "playerKey": "luke travers",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "-667",
+      "under": "N/A",
+      "overDecimal": 1.15,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -1251,6 +2070,19 @@
     {
       "player": "Luke Travers",
       "playerKey": "luke travers",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 7.5,
+      "label": "8+",
+      "over": "-172",
+      "under": "N/A",
+      "overDecimal": 1.58,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -1259,6 +2091,32 @@
       "over": "+175",
       "under": "N/A",
       "overDecimal": 2.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "+145",
+      "under": "N/A",
+      "overDecimal": 2.45,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "+290",
+      "under": "N/A",
+      "overDecimal": 3.9,
       "underDecimal": null
     },
     {
@@ -1290,6 +2148,19 @@
     {
       "player": "Luke Travers",
       "playerKey": "luke travers",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "+128",
+      "under": "N/A",
+      "overDecimal": 2.28,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
       "book": "TAB",
       "stat": "threeMade",
       "kind": "milestone",
@@ -1298,6 +2169,19 @@
       "over": "+400",
       "under": "N/A",
       "overDecimal": 5,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "+350",
+      "under": "N/A",
+      "overDecimal": 4.5,
       "underDecimal": null
     },
     {
@@ -1329,6 +2213,19 @@
     {
       "player": "Nathan Sobey",
       "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-526",
+      "under": "N/A",
+      "overDecimal": 1.19,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -1342,6 +2239,19 @@
     {
       "player": "Nathan Sobey",
       "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+108",
+      "under": "N/A",
+      "overDecimal": 2.08,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -1350,6 +2260,19 @@
       "over": "+400",
       "under": "N/A",
       "overDecimal": 5,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 7.5,
+      "label": "8+",
+      "over": "+335",
+      "under": "N/A",
+      "overDecimal": 4.35,
       "underDecimal": null
     },
     {
@@ -1381,6 +2304,19 @@
     {
       "player": "Nathan Sobey",
       "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "-400",
+      "under": "N/A",
+      "overDecimal": 1.25,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
@@ -1389,6 +2325,19 @@
       "over": "+115",
       "under": "N/A",
       "overDecimal": 2.15,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "-111",
+      "under": "N/A",
+      "overDecimal": 1.9,
       "underDecimal": null
     },
     {
@@ -1420,6 +2369,19 @@
     {
       "player": "Nathan Sobey",
       "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-179",
+      "under": "N/A",
+      "overDecimal": 1.56,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -1428,6 +2390,19 @@
       "over": "+300",
       "under": "N/A",
       "overDecimal": 4,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+225",
+      "under": "N/A",
+      "overDecimal": 3.25,
       "underDecimal": null
     },
     {
@@ -1472,6 +2447,19 @@
     {
       "player": "Nathan Sobey",
       "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-833",
+      "under": "N/A",
+      "overDecimal": 1.12,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
       "book": "TAB",
       "stat": "threeMade",
       "kind": "milestone",
@@ -1480,6 +2468,45 @@
       "over": "-133",
       "under": "N/A",
       "overDecimal": 1.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "-189",
+      "under": "N/A",
+      "overDecimal": 1.53,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+135",
+      "under": "N/A",
+      "overDecimal": 2.35,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+280",
+      "under": "N/A",
+      "overDecimal": 3.8,
       "underDecimal": null
     },
     {
@@ -1550,6 +2577,19 @@
     {
       "player": "Sam Waardenburg",
       "playerKey": "sam waardenburg",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-179",
+      "under": "N/A",
+      "overDecimal": 1.56,
+      "underDecimal": null
+    },
+    {
+      "player": "Sam Waardenburg",
+      "playerKey": "sam waardenburg",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
@@ -1576,6 +2616,19 @@
     {
       "player": "Sam Waardenburg",
       "playerKey": "sam waardenburg",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-238",
+      "under": "N/A",
+      "overDecimal": 1.42,
+      "underDecimal": null
+    },
+    {
+      "player": "Sam Waardenburg",
+      "playerKey": "sam waardenburg",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -1584,6 +2637,19 @@
       "over": "+250",
       "under": "N/A",
       "overDecimal": 3.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Sam Waardenburg",
+      "playerKey": "sam waardenburg",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+170",
+      "under": "N/A",
+      "overDecimal": 2.7,
       "underDecimal": null
     },
     {
@@ -1628,6 +2694,19 @@
     {
       "player": "Sam Waardenburg",
       "playerKey": "sam waardenburg",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "+110",
+      "under": "N/A",
+      "overDecimal": 2.1,
+      "underDecimal": null
+    },
+    {
+      "player": "Sam Waardenburg",
+      "playerKey": "sam waardenburg",
       "book": "TAB",
       "stat": "threeMade",
       "kind": "milestone",
@@ -1636,6 +2715,19 @@
       "over": "+500",
       "under": "N/A",
       "overDecimal": 6,
+      "underDecimal": null
+    },
+    {
+      "player": "Sam Waardenburg",
+      "playerKey": "sam waardenburg",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "+310",
+      "under": "N/A",
+      "overDecimal": 4.1,
       "underDecimal": null
     },
     {
@@ -1667,6 +2759,19 @@
     {
       "player": "Skylar Mays",
       "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-1250",
+      "under": "N/A",
+      "overDecimal": 1.08,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -1680,6 +2785,19 @@
     {
       "player": "Skylar Mays",
       "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "-152",
+      "under": "N/A",
+      "overDecimal": 1.66,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -1688,6 +2806,19 @@
       "over": "+260",
       "under": "N/A",
       "overDecimal": 3.6,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 7.5,
+      "label": "8+",
+      "over": "+230",
+      "under": "N/A",
+      "overDecimal": 3.3,
       "underDecimal": null
     },
     {
@@ -1719,6 +2850,19 @@
     {
       "player": "Skylar Mays",
       "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "-278",
+      "under": "N/A",
+      "overDecimal": 1.36,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
@@ -1727,6 +2871,19 @@
       "over": "+150",
       "under": "N/A",
       "overDecimal": 2.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "+125",
+      "under": "N/A",
+      "overDecimal": 2.25,
       "underDecimal": null
     },
     {
@@ -1745,6 +2902,19 @@
     {
       "player": "Skylar Mays",
       "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -1758,6 +2928,19 @@
     {
       "player": "Skylar Mays",
       "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "-159",
+      "under": "N/A",
+      "overDecimal": 1.63,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
       "book": "TAB",
       "stat": "rebounds",
       "kind": "milestone",
@@ -1766,6 +2949,19 @@
       "over": "+300",
       "under": "N/A",
       "overDecimal": 4,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+245",
+      "under": "N/A",
+      "overDecimal": 3.45,
       "underDecimal": null
     },
     {
@@ -1810,6 +3006,19 @@
     {
       "player": "Skylar Mays",
       "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-244",
+      "under": "N/A",
+      "overDecimal": 1.41,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
       "book": "TAB",
       "stat": "threeMade",
       "kind": "milestone",
@@ -1818,6 +3027,32 @@
       "over": "+175",
       "under": "N/A",
       "overDecimal": 2.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "+135",
+      "under": "N/A",
+      "overDecimal": 2.35,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+310",
+      "under": "N/A",
+      "overDecimal": 4.1,
       "underDecimal": null
     },
     {
@@ -1870,6 +3105,19 @@
       "over": "-111",
       "under": "N/A",
       "overDecimal": 1.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Tanner Krebs",
+      "playerKey": "tanner krebs",
+      "book": "Unibet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-128",
+      "under": "N/A",
+      "overDecimal": 1.78,
       "underDecimal": null
     },
     {
@@ -1940,6 +3188,19 @@
     {
       "player": "Tanner Krebs",
       "playerKey": "tanner krebs",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-192",
+      "under": "N/A",
+      "overDecimal": 1.52,
+      "underDecimal": null
+    },
+    {
+      "player": "Tanner Krebs",
+      "playerKey": "tanner krebs",
       "book": "TAB",
       "stat": "threeMade",
       "kind": "milestone",
@@ -1948,6 +3209,32 @@
       "over": "+175",
       "under": "N/A",
       "overDecimal": 2.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Tanner Krebs",
+      "playerKey": "tanner krebs",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "+163",
+      "under": "N/A",
+      "overDecimal": 2.63,
+      "underDecimal": null
+    },
+    {
+      "player": "Tanner Krebs",
+      "playerKey": "tanner krebs",
+      "book": "Unibet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+350",
+      "under": "N/A",
+      "overDecimal": 4.5,
       "underDecimal": null
     },
     {
@@ -1962,253 +3249,6 @@
       "under": "-111",
       "overDecimal": null,
       "underDecimal": 1.9
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "assists",
-      "kind": "milestone",
-      "line": 1.5,
-      "label": "2+",
-      "over": "-435",
-      "under": "N/A",
-      "overDecimal": 1.23,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "assists",
-      "kind": "milestone",
-      "line": 3.5,
-      "label": "4+",
-      "over": "-137",
-      "under": "N/A",
-      "overDecimal": 1.73,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "assists",
-      "kind": "milestone",
-      "line": 5.5,
-      "label": "6+",
-      "over": "+145",
-      "under": "N/A",
-      "overDecimal": 2.45,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "assists",
-      "kind": "milestone",
-      "line": 7.5,
-      "label": "8+",
-      "over": "+340",
-      "under": "N/A",
-      "overDecimal": 4.4,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "points",
-      "kind": "milestone",
-      "line": 9.5,
-      "label": "10+",
-      "over": "-556",
-      "under": "N/A",
-      "overDecimal": 1.18,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "points",
-      "kind": "milestone",
-      "line": 14.5,
-      "label": "15+",
-      "over": "+110",
-      "under": "N/A",
-      "overDecimal": 2.1,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "points",
-      "kind": "milestone",
-      "line": 19.5,
-      "label": "20+",
-      "over": "-111",
-      "under": "N/A",
-      "overDecimal": 1.9,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "points",
-      "kind": "milestone",
-      "line": 24.5,
-      "label": "25+",
-      "over": "-141",
-      "under": "N/A",
-      "overDecimal": 1.71,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "points",
-      "kind": "milestone",
-      "line": 29.5,
-      "label": "30+",
-      "over": "+170",
-      "under": "N/A",
-      "overDecimal": 2.7,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "rebounds",
-      "kind": "milestone",
-      "line": 1.5,
-      "label": "2+",
-      "over": "-10000",
-      "under": "N/A",
-      "overDecimal": 1.01,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "rebounds",
-      "kind": "milestone",
-      "line": 3.5,
-      "label": "4+",
-      "over": "-159",
-      "under": "N/A",
-      "overDecimal": 1.63,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "rebounds",
-      "kind": "milestone",
-      "line": 5.5,
-      "label": "6+",
-      "over": "-105",
-      "under": "N/A",
-      "overDecimal": 1.95,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "rebounds",
-      "kind": "milestone",
-      "line": 7.5,
-      "label": "8+",
-      "over": "+255",
-      "under": "N/A",
-      "overDecimal": 3.55,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "rebounds",
-      "kind": "milestone",
-      "line": 9.5,
-      "label": "10+",
-      "over": "+195",
-      "under": "N/A",
-      "overDecimal": 2.95,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "rebounds",
-      "kind": "milestone",
-      "line": 11.5,
-      "label": "12+",
-      "over": "+290",
-      "under": "N/A",
-      "overDecimal": 3.9,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "threeMade",
-      "kind": "ou",
-      "line": 2,
-      "label": "2",
-      "over": "+128",
-      "under": "N/A",
-      "overDecimal": 2.28,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "threeMade",
-      "kind": "ou",
-      "line": 3,
-      "label": "3",
-      "over": "+163",
-      "under": "N/A",
-      "overDecimal": 2.63,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "threeMade",
-      "kind": "ou",
-      "line": 4,
-      "label": "4",
-      "over": "+180",
-      "under": "N/A",
-      "overDecimal": 2.8,
-      "underDecimal": null
-    },
-    {
-      "player": "Yes",
-      "playerKey": "yes",
-      "book": "Unibet",
-      "stat": "threeMade",
-      "kind": "ou",
-      "line": 5,
-      "label": "5",
-      "over": "+350",
-      "under": "N/A",
-      "overDecimal": 4.5,
-      "underDecimal": null
     }
   ]
 }
