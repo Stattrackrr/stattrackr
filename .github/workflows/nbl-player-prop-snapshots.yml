@@ -31,13 +31,19 @@ jobs:
 
       - name: Check ingest secrets
         id: check
+        env:
+          PULSESCORE_API_KEY: ${{ secrets.PULSESCORE_API_KEY }}
+          PROD_URL: ${{ secrets.PROD_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           PULSE=false
           PROD=false
-          if [ -n "${{ secrets.PULSESCORE_API_KEY }}" ]; then
+          if [ -n "$PULSESCORE_API_KEY" ]; then
             PULSE=true
+          else
+            echo "PULSESCORE_API_KEY not set; local snapshot will be skipped"
           fi
-          if [ -n "${{ secrets.PROD_URL }}" ] && [ -n "${{ secrets.CRON_SECRET }}" ]; then
+          if [ -n "$PROD_URL" ] && [ -n "$CRON_SECRET" ]; then
             PROD=true
           fi
           echo "pulse=${PULSE}" >> $GITHUB_OUTPUT
