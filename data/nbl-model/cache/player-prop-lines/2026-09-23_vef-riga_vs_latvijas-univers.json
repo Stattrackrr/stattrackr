@@ -1,11 +1,11 @@
 {
-  "gameId": "3403829",
-  "gameKey": "2026-09-24_barcelona_vs_anadolu-efes",
-  "homeTeam": "Barcelona",
-  "awayTeam": "Anadolu Efes",
-  "commenceTime": "2026-09-24T18:30:00.000Z",
-  "capturedAt": "2026-09-23T17:17:10.631Z",
-  "closing": false,
+  "gameId": "3441120",
+  "gameKey": "2026-09-23_vef-riga_vs_latvijas-univers",
+  "homeTeam": "VEF Riga",
+  "awayTeam": "Latvijas Univers",
+  "commenceTime": "2026-09-23T16:30:00.000Z",
+  "capturedAt": "2026-09-23T17:17:10.617Z",
+  "closing": true,
   "source": "pulsescore",
   "books": [
     "TAB"
@@ -20,9 +20,9 @@
       "kind": "ou",
       "line": 170.5,
       "label": "170.5",
-      "over": "-115",
+      "over": "-120",
       "under": "N/A",
-      "overDecimal": 1.87,
+      "overDecimal": 1.83,
       "underDecimal": null
     },
     {
@@ -34,9 +34,9 @@
       "line": 170.5,
       "label": "170.5",
       "over": "N/A",
-      "under": "-115",
+      "under": "-120",
       "overDecimal": null,
-      "underDecimal": 1.87
+      "underDecimal": 1.83
     }
   ]
 }

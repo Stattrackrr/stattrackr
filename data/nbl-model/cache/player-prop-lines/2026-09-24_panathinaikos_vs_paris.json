@@ -4,7 +4,7 @@
   "homeTeam": "Panathinaikos",
   "awayTeam": "Paris",
   "commenceTime": "2026-09-24T18:15:00.000Z",
-  "capturedAt": "2026-09-23T13:11:35.102Z",
+  "capturedAt": "2026-09-23T17:17:10.617Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
@@ -20,9 +20,9 @@
       "kind": "ou",
       "line": 171.5,
       "label": "171.5",
-      "over": "-118",
+      "over": "-111",
       "under": "N/A",
-      "overDecimal": 1.85,
+      "overDecimal": 1.9,
       "underDecimal": null
     },
     {
@@ -34,9 +34,9 @@
       "line": 171.5,
       "label": "171.5",
       "over": "N/A",
-      "under": "-111",
+      "under": "-118",
       "overDecimal": null,
-      "underDecimal": 1.9
+      "underDecimal": 1.85
     }
   ]
 }

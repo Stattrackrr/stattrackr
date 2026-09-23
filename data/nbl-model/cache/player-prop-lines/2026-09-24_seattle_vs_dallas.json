@@ -4,13 +4,13 @@
   "homeTeam": "Seattle",
   "awayTeam": "Dallas",
   "commenceTime": "2026-09-24T02:00:00.000Z",
-  "capturedAt": "2026-09-23T13:11:35.102Z",
+  "capturedAt": "2026-09-23T17:17:10.617Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
     "TAB"
   ],
-  "lineCount": 65,
+  "lineCount": 69,
   "lines": [
     {
       "player": "Arike Ogunbowale",
@@ -663,6 +663,32 @@
       "underDecimal": null
     },
     {
+      "player": "Over 173.5",
+      "playerKey": "over 173 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 173.5,
+      "label": "173.5",
+      "over": "-111",
+      "under": "N/A",
+      "overDecimal": 1.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Over 85.5",
+      "playerKey": "over 85 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 85.5,
+      "label": "85.5",
+      "over": "-125",
+      "under": "N/A",
+      "overDecimal": 1.8,
+      "underDecimal": null
+    },
+    {
       "player": "Paige Bueckers",
       "playerKey": "paige bueckers",
       "book": "TAB",
@@ -850,12 +876,38 @@
       "book": "TAB",
       "stat": "points",
       "kind": "ou",
-      "line": 82.5,
-      "label": "82.5",
-      "over": "-105",
-      "under": "-133",
-      "overDecimal": 1.95,
-      "underDecimal": 1.75
+      "line": 81.5,
+      "label": "81.5",
+      "over": "-125",
+      "under": "-111",
+      "overDecimal": 1.8,
+      "underDecimal": 1.9
+    },
+    {
+      "player": "Under 173.5",
+      "playerKey": "under 173 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 173.5,
+      "label": "173.5",
+      "over": "N/A",
+      "under": "-111",
+      "overDecimal": null,
+      "underDecimal": 1.9
+    },
+    {
+      "player": "Under 85.5",
+      "playerKey": "under 85 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 85.5,
+      "label": "85.5",
+      "over": "N/A",
+      "under": "-116",
+      "overDecimal": null,
+      "underDecimal": 1.86
     }
   ]
 }

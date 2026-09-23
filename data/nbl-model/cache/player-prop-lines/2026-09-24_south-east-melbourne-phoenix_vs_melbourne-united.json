@@ -4,7 +4,7 @@
   "homeTeam": "South East Melbourne Phoenix",
   "awayTeam": "Melbourne United",
   "commenceTime": "2026-09-24T09:30:00.000Z",
-  "capturedAt": "2026-09-23T13:11:35.102Z",
+  "capturedAt": "2026-09-23T17:17:10.631Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
@@ -1483,16 +1483,16 @@
       "underDecimal": null
     },
     {
-      "player": "Over 190.5",
-      "playerKey": "over 190 5",
+      "player": "Over 191.5",
+      "playerKey": "over 191 5",
       "book": "TAB",
       "stat": "points",
       "kind": "ou",
-      "line": 190.5,
-      "label": "190.5",
-      "over": "-118",
+      "line": 191.5,
+      "label": "191.5",
+      "over": "-111",
       "under": "N/A",
-      "overDecimal": 1.85,
+      "overDecimal": 1.9,
       "underDecimal": null
     },
     {
@@ -1951,17 +1951,17 @@
       "underDecimal": null
     },
     {
-      "player": "Under 190.5",
-      "playerKey": "under 190 5",
+      "player": "Under 191.5",
+      "playerKey": "under 191 5",
       "book": "TAB",
       "stat": "points",
       "kind": "ou",
-      "line": 190.5,
-      "label": "190.5",
+      "line": 191.5,
+      "label": "191.5",
       "over": "N/A",
-      "under": "-105",
+      "under": "-111",
       "overDecimal": null,
-      "underDecimal": 1.95
+      "underDecimal": 1.9
     },
     {
       "player": "Yes",

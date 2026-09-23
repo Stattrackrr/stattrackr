@@ -4,13 +4,13 @@
   "homeTeam": "New York",
   "awayTeam": "Atlanta",
   "commenceTime": "2026-09-24T00:00:00.000Z",
-  "capturedAt": "2026-09-23T13:11:35.087Z",
+  "capturedAt": "2026-09-23T17:17:10.631Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
     "TAB"
   ],
-  "lineCount": 104,
+  "lineCount": 106,
   "lines": [
     {
       "player": "Allisha Gray",
@@ -293,10 +293,10 @@
       "kind": "ou",
       "line": 87.5,
       "label": "87.5",
-      "over": "-118",
-      "under": "-118",
-      "overDecimal": 1.85,
-      "underDecimal": 1.85
+      "over": "-111",
+      "under": "-125",
+      "overDecimal": 1.9,
+      "underDecimal": 1.8
     },
     {
       "player": "Breanna Stewart",
@@ -748,9 +748,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "+160",
+      "over": "+140",
       "under": "N/A",
-      "overDecimal": 2.6,
+      "overDecimal": 2.4,
       "underDecimal": null
     },
     {
@@ -889,24 +889,37 @@
       "book": "TAB",
       "stat": "points",
       "kind": "ou",
-      "line": 89.5,
-      "label": "89.5",
-      "over": "-111",
-      "under": "-125",
-      "overDecimal": 1.9,
-      "underDecimal": 1.8
+      "line": 88.5,
+      "label": "88.5",
+      "over": "-125",
+      "under": "-111",
+      "overDecimal": 1.8,
+      "underDecimal": 1.9
     },
     {
-      "player": "Over 176.5",
-      "playerKey": "over 176 5",
+      "player": "Over 175.5",
+      "playerKey": "over 175 5",
       "book": "TAB",
       "stat": "points",
       "kind": "ou",
-      "line": 176.5,
-      "label": "176.5",
-      "over": "-111",
+      "line": 175.5,
+      "label": "175.5",
+      "over": "-118",
       "under": "N/A",
-      "overDecimal": 1.9,
+      "overDecimal": 1.85,
+      "underDecimal": null
+    },
+    {
+      "player": "Over 86.5",
+      "playerKey": "over 86 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 86.5,
+      "label": "86.5",
+      "over": "-120",
+      "under": "N/A",
+      "overDecimal": 1.83,
       "underDecimal": null
     },
     {
@@ -1352,17 +1365,30 @@
       "underDecimal": null
     },
     {
-      "player": "Under 176.5",
-      "playerKey": "under 176 5",
+      "player": "Under 175.5",
+      "playerKey": "under 175 5",
       "book": "TAB",
       "stat": "points",
       "kind": "ou",
-      "line": 176.5,
-      "label": "176.5",
+      "line": 175.5,
+      "label": "175.5",
       "over": "N/A",
-      "under": "-111",
+      "under": "-105",
       "overDecimal": null,
-      "underDecimal": 1.9
+      "underDecimal": 1.95
+    },
+    {
+      "player": "Under 86.5",
+      "playerKey": "under 86 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 86.5,
+      "label": "86.5",
+      "over": "N/A",
+      "under": "-120",
+      "overDecimal": null,
+      "underDecimal": 1.83
     }
   ]
 }

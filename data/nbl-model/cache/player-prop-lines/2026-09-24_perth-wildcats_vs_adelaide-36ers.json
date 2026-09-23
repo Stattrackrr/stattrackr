@@ -4,7 +4,7 @@
   "homeTeam": "Perth Wildcats",
   "awayTeam": "Adelaide 36ers",
   "commenceTime": "2026-09-24T11:30:00.000Z",
-  "capturedAt": "2026-09-23T13:11:35.102Z",
+  "capturedAt": "2026-09-23T17:17:10.631Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
@@ -1327,30 +1327,30 @@
       "underDecimal": null
     },
     {
-      "player": "Over 183.5",
-      "playerKey": "over 183 5",
+      "player": "Over 185.5",
+      "playerKey": "over 185 5",
       "book": "TAB",
       "stat": "points",
       "kind": "ou",
-      "line": 183.5,
-      "label": "183.5",
-      "over": "-111",
+      "line": 185.5,
+      "label": "185.5",
+      "over": "-105",
       "under": "N/A",
-      "overDecimal": 1.9,
+      "overDecimal": 1.95,
       "underDecimal": null
     },
     {
-      "player": "Under 183.5",
-      "playerKey": "under 183 5",
+      "player": "Under 185.5",
+      "playerKey": "under 185 5",
       "book": "TAB",
       "stat": "points",
       "kind": "ou",
-      "line": 183.5,
-      "label": "183.5",
+      "line": 185.5,
+      "label": "185.5",
       "over": "N/A",
-      "under": "-111",
+      "under": "-118",
       "overDecimal": null,
-      "underDecimal": 1.9
+      "underDecimal": 1.85
     },
     {
       "player": "Yes",
