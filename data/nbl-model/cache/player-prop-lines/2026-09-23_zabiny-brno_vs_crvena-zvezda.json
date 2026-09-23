@@ -1,0 +1,42 @@
+{
+  "gameId": "3439752",
+  "gameKey": "2026-09-23_zabiny-brno_vs_crvena-zvezda",
+  "homeTeam": "Zabiny Brno",
+  "awayTeam": "Crvena Zvezda",
+  "commenceTime": "2026-09-23T16:00:00.000Z",
+  "capturedAt": "2026-09-23T13:11:35.102Z",
+  "closing": false,
+  "source": "pulsescore",
+  "books": [
+    "TAB"
+  ],
+  "lineCount": 2,
+  "lines": [
+    {
+      "player": "Over 149.5",
+      "playerKey": "over 149 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 149.5,
+      "label": "149.5",
+      "over": "-120",
+      "under": "N/A",
+      "overDecimal": 1.83,
+      "underDecimal": null
+    },
+    {
+      "player": "Under 149.5",
+      "playerKey": "under 149 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 149.5,
+      "label": "149.5",
+      "over": "N/A",
+      "under": "-120",
+      "overDecimal": null,
+      "underDecimal": 1.83
+    }
+  ]
+}

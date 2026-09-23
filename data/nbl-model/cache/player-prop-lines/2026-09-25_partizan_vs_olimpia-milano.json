@@ -1,0 +1,42 @@
+{
+  "gameId": "3403832",
+  "gameKey": "2026-09-25_partizan_vs_olimpia-milano",
+  "homeTeam": "Partizan",
+  "awayTeam": "Olimpia Milano",
+  "commenceTime": "2026-09-25T18:45:00.000Z",
+  "capturedAt": "2026-09-23T13:11:35.102Z",
+  "closing": false,
+  "source": "pulsescore",
+  "books": [
+    "TAB"
+  ],
+  "lineCount": 2,
+  "lines": [
+    {
+      "player": "Over 168.5",
+      "playerKey": "over 168 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 168.5,
+      "label": "168.5",
+      "over": "-115",
+      "under": "N/A",
+      "overDecimal": 1.87,
+      "underDecimal": null
+    },
+    {
+      "player": "Under 168.5",
+      "playerKey": "under 168 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 168.5,
+      "label": "168.5",
+      "over": "N/A",
+      "under": "-115",
+      "overDecimal": null,
+      "underDecimal": 1.87
+    }
+  ]
+}

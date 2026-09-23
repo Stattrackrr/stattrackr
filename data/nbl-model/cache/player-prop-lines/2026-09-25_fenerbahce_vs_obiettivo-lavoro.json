@@ -1,0 +1,42 @@
+{
+  "gameId": "3403831",
+  "gameKey": "2026-09-25_fenerbahce_vs_obiettivo-lavoro",
+  "homeTeam": "Fenerbahce",
+  "awayTeam": "Obiettivo Lavoro",
+  "commenceTime": "2026-09-25T17:45:00.000Z",
+  "capturedAt": "2026-09-23T13:11:35.087Z",
+  "closing": false,
+  "source": "pulsescore",
+  "books": [
+    "TAB"
+  ],
+  "lineCount": 2,
+  "lines": [
+    {
+      "player": "Over 165.5",
+      "playerKey": "over 165 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 165.5,
+      "label": "165.5",
+      "over": "-118",
+      "under": "N/A",
+      "overDecimal": 1.85,
+      "underDecimal": null
+    },
+    {
+      "player": "Under 165.5",
+      "playerKey": "under 165 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 165.5,
+      "label": "165.5",
+      "over": "N/A",
+      "under": "-111",
+      "overDecimal": null,
+      "underDecimal": 1.9
+    }
+  ]
+}

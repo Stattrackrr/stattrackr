@@ -1,0 +1,42 @@
+{
+  "gameId": "3439734",
+  "gameKey": "2026-09-23_kk-samobor_vs_bc-prievidza",
+  "homeTeam": "Kk Samobor",
+  "awayTeam": "BC Prievidza",
+  "commenceTime": "2026-09-23T18:00:00.000Z",
+  "capturedAt": "2026-09-23T13:11:35.102Z",
+  "closing": false,
+  "source": "pulsescore",
+  "books": [
+    "TAB"
+  ],
+  "lineCount": 2,
+  "lines": [
+    {
+      "player": "Over 166.5",
+      "playerKey": "over 166 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 166.5,
+      "label": "166.5",
+      "over": "-120",
+      "under": "N/A",
+      "overDecimal": 1.83,
+      "underDecimal": null
+    },
+    {
+      "player": "Under 166.5",
+      "playerKey": "under 166 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 166.5,
+      "label": "166.5",
+      "over": "N/A",
+      "under": "-120",
+      "overDecimal": null,
+      "underDecimal": 1.83
+    }
+  ]
+}

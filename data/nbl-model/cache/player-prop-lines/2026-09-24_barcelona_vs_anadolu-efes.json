@@ -1,0 +1,42 @@
+{
+  "gameId": "3403829",
+  "gameKey": "2026-09-24_barcelona_vs_anadolu-efes",
+  "homeTeam": "Barcelona",
+  "awayTeam": "Anadolu Efes",
+  "commenceTime": "2026-09-24T18:30:00.000Z",
+  "capturedAt": "2026-09-23T13:11:35.087Z",
+  "closing": false,
+  "source": "pulsescore",
+  "books": [
+    "TAB"
+  ],
+  "lineCount": 2,
+  "lines": [
+    {
+      "player": "Over 170.5",
+      "playerKey": "over 170 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 170.5,
+      "label": "170.5",
+      "over": "-111",
+      "under": "N/A",
+      "overDecimal": 1.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Under 170.5",
+      "playerKey": "under 170 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 170.5,
+      "label": "170.5",
+      "over": "N/A",
+      "under": "-118",
+      "overDecimal": null,
+      "underDecimal": 1.85
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "gameId": "3403835",
+  "gameKey": "2026-09-24_saski-baskonia_vs_olympiacos",
+  "homeTeam": "Saski Baskonia",
+  "awayTeam": "Olympiacos",
+  "commenceTime": "2026-09-24T18:30:00.000Z",
+  "capturedAt": "2026-09-23T13:11:35.102Z",
+  "closing": false,
+  "source": "pulsescore",
+  "books": [
+    "TAB"
+  ],
+  "lineCount": 2,
+  "lines": [
+    {
+      "player": "Over 173.5",
+      "playerKey": "over 173 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 173.5,
+      "label": "173.5",
+      "over": "-111",
+      "under": "N/A",
+      "overDecimal": 1.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Under 173.5",
+      "playerKey": "under 173 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 173.5,
+      "label": "173.5",
+      "over": "N/A",
+      "under": "-118",
+      "overDecimal": null,
+      "underDecimal": 1.85
+    }
+  ]
+}

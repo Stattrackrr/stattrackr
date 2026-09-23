@@ -1,0 +1,42 @@
+{
+  "gameId": "3403833",
+  "gameKey": "2026-09-24_panathinaikos_vs_paris",
+  "homeTeam": "Panathinaikos",
+  "awayTeam": "Paris",
+  "commenceTime": "2026-09-24T18:15:00.000Z",
+  "capturedAt": "2026-09-23T13:11:35.102Z",
+  "closing": false,
+  "source": "pulsescore",
+  "books": [
+    "TAB"
+  ],
+  "lineCount": 2,
+  "lines": [
+    {
+      "player": "Over 171.5",
+      "playerKey": "over 171 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 171.5,
+      "label": "171.5",
+      "over": "-118",
+      "under": "N/A",
+      "overDecimal": 1.85,
+      "underDecimal": null
+    },
+    {
+      "player": "Under 171.5",
+      "playerKey": "under 171 5",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 171.5,
+      "label": "171.5",
+      "over": "N/A",
+      "under": "-111",
+      "overDecimal": null,
+      "underDecimal": 1.9
+    }
+  ]
+}
