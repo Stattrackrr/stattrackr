@@ -115,6 +115,13 @@ export function resolveNblClubName(input: string | null | undefined): string | n
   return String(input).trim() || null;
 }
 
+/** Official current-league club only. `resolveNblClubName` still returns unmatched raw labels. */
+export function officialNblClubName(input: string | null | undefined): string | null {
+  const resolved = resolveNblClubName(input);
+  if (!resolved) return null;
+  return NBL_CLUBS.some((club) => club.name === resolved) ? resolved : null;
+}
+
 export function isCurrentNblClubId(teamId: string | null | undefined): boolean {
   return Boolean(teamId && ID_TO_CLUB.has(teamId));
 }

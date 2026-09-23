@@ -143,6 +143,7 @@ export function normalizeNblStat(stat: string): string {
 
 export function nblDashboardHref(opts: {
   playerName: string;
+  playerId?: string | null;
   team?: string | null;
   opponent?: string | null;
   statType?: string | null;
@@ -154,6 +155,8 @@ export function nblDashboardHref(opts: {
   q.set('name', opts.playerName);
   if (opts.team) q.set('team', opts.team);
   if (opts.opponent) q.set('opponent', opts.opponent);
+  const pid = String(opts.playerId || '').trim();
+  if (pid) q.set('pid', pid);
   const stat = normalizeNblStat(String(opts.statType || 'points'));
   q.set('stat', stat);
   if (opts.line != null && Number.isFinite(opts.line)) q.set('line', String(opts.line));

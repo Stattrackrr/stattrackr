@@ -125,6 +125,24 @@ function formatStatValue(value: number, pct: boolean, digits = 1): string {
   return value.toFixed(digits);
 }
 
+function wrapPieLabel(label: string, maxChars = 11): string[] {
+  const words = String(label || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (current && next.length > maxChars) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.slice(0, 3);
+}
+
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
@@ -234,6 +252,10 @@ export function NblScoringMixPie({
   const [shownLabel, setShownLabel] = useState(PIE_STATS[0].full);
   const [teammateMenuOpen, setTeammateMenuOpen] = useState(false);
   const teammateMenuRef = useRef<HTMLDivElement>(null);
+  const selectedRowRef = useRef<HTMLButtonElement | null>(null);
+  const namesListRef = useRef<HTMLDivElement | null>(null);
+  const pieBoxRef = useRef<HTMLDivElement | null>(null);
+  const [pieBoxSize, setPieBoxSize] = useState(0);
   const animFromRef = useRef<BuiltSlice[]>([]);
   const teammateFillRef = useRef(new Map<string, string>());
 
@@ -420,6 +442,39 @@ export function NblScoringMixPie({
   }, [slices]);
 
   useEffect(() => {
+    if (emptySplit) return;
+    const t = window.setTimeout(() => {
+      const list = namesListRef.current;
+      const row = selectedRowRef.current;
+      if (!list || !row) return;
+      const listBox = list.getBoundingClientRect();
+      const rowBox = row.getBoundingClientRect();
+      if (rowBox.top < listBox.top || rowBox.bottom > listBox.bottom) {
+        list.scrollTop += rowBox.top - listBox.top - Math.max(0, (listBox.height - rowBox.height) / 2);
+      }
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [emptySplit, playerId, playerName, slices]);
+
+  useEffect(() => {
+    const el = pieBoxRef.current;
+    if (!el) return;
+    const measure = () => {
+      const box = el.getBoundingClientRect().width;
+      const svg = el.querySelector('svg');
+      const svgH = svg?.getBoundingClientRect().height ?? 0;
+      const size = Math.round(Math.max(box, svgH));
+      const desktop = window.matchMedia('(min-width: 1024px)').matches;
+      const next = desktop ? Math.min(size, 320) : size;
+      if (next > 0) setPieBoxSize(next);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loadState]);
+
+  useEffect(() => {
     if (shownLabel === activeStat.full) {
       setLabelVisible(true);
       return;
@@ -450,6 +505,11 @@ export function NblScoringMixPie({
   const painted = animSlices.length ? animSlices : slices;
   const paintedById = new Map(painted.map((s) => [s.playerId, s]));
   const maxVal = slices.reduce((m, s) => Math.max(m, s.value), 0) || 1;
+  const pieLabelLines = emptySplit ? ['0 games'] : wrapPieLabel(shownLabel);
+  const pieLabelCount = Math.max(1, pieLabelLines.length);
+  const pieLabelSize = pieLabelCount >= 3 ? 16 : pieLabelCount === 2 ? 19 : 24;
+  const pieLabelLineHeight = pieLabelSize * 1.18;
+  const pieLabelStartY = CY - ((pieLabelCount - 1) * pieLabelLineHeight) / 2;
   const activeIdx = Math.max(0, PIE_STATS.findIndex((s) => s.key === activeStat.key));
 
   const tabPct = 100 / PIE_STATS.length;
@@ -458,7 +518,10 @@ export function NblScoringMixPie({
     'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 text-purple-800 dark:text-purple-200';
   const header = (
     <div className="flex flex-col gap-2.5 px-3 sm:px-4">
-      <h3 className={`text-sm font-semibold ${heading}`}>Advanced averages</h3>
+      <div className="flex items-end justify-between gap-3">
+        <h3 className={`text-sm font-semibold ${heading}`}>Advanced averages</h3>
+        <span className={`text-[11px] font-medium truncate sm:hidden ${muted}`}>{activeStat.full}</span>
+      </div>
       <div
         role="tablist"
         aria-label="Advanced stat"
@@ -652,127 +715,190 @@ export function NblScoringMixPie({
   }
 
   return (
-    <div className="flex flex-col gap-3 min-w-0">
+    <div className="flex flex-col gap-3 min-w-0 w-full">
       {header}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-8 px-3 sm:px-4 min-w-0">
-        <div className="relative w-full max-w-[320px] mx-auto sm:mx-0 flex-shrink-0">
-          <svg viewBox="0 0 320 320" className="w-full h-auto" role="img" aria-label={activeStat.full}>
-            <circle cx={CX} cy={CY} r={R_OUT + 3} fill="none" stroke={ring} strokeWidth="1" />
-            {painted
-              .slice()
-              .sort((a, b) => Number(a.isSelected) - Number(b.isSelected))
-              .map((slice) => {
-                const dimmed = !emptySplit && hoverId != null && hoverId !== slice.playerId;
-                return (
-                  <path
-                    key={slice.playerId}
-                    d={slice.path}
-                    fill={dimmed ? mixHex(slice.fill, hole, 0.62) : slice.fill}
-                    stroke="none"
-                    className={emptySplit ? undefined : 'cursor-pointer'}
-                    style={{ transition: 'fill 220ms ease' }}
-                    onMouseEnter={() => !emptySplit && setHoverId(slice.playerId)}
-                    onMouseLeave={() => setHoverId(null)}
-                  />
-                );
-              })}
-            <circle cx={CX} cy={CY} r={R_IN - 1.5} fill={hole} className="pointer-events-none" />
-            <foreignObject x={CX - 62} y={CY - 62} width={124} height={124} className="pointer-events-none">
-              <div className="flex h-full w-full items-center justify-center px-2 text-center">
-                {emptySplit ? (
-                  <span
-                    className="text-[13px] sm:text-[14px] font-bold leading-tight"
-                    style={{ color: isDark ? '#d1d5db' : '#4b5563' }}
-                  >
-                    0 games
-                  </span>
-                ) : (
-                  <span
-                    className="text-[12px] sm:text-[13px] font-bold leading-[1.2]"
-                    style={{
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      opacity: labelVisible ? 1 : 0,
-                      transform: labelVisible ? 'translateY(0)' : 'translateY(5px)',
-                      transition: 'opacity 280ms ease, transform 280ms ease',
-                    }}
-                  >
-                    {shownLabel}
-                  </span>
-                )}
-              </div>
-            </foreignObject>
-          </svg>
-        </div>
-
-        <div className="flex flex-col gap-1.5 min-w-[200px] flex-1 max-h-[320px] overflow-y-auto pr-1">
-          {slices
-            .slice()
-            .sort((a, b) => (emptySplit ? 0 : b.value - a.value))
-            .map((slice) => {
-              const live = paintedById.get(slice.playerId) ?? slice;
-              const isHover = !emptySplit && hoverId === slice.playerId;
-              const barFill = emptySplit
-                ? isDark
-                  ? EMPTY_SLICE_FILL_DARK
-                  : EMPTY_SLICE_FILL_LIGHT
-                : slice.fill;
-              return (
-                <button
-                  key={slice.playerId}
-                  type="button"
-                  onMouseEnter={() => !emptySplit && setHoverId(slice.playerId)}
-                  onMouseLeave={() => setHoverId(null)}
-                  className={`w-full text-left rounded-md px-2 py-1.5 transition-all duration-500 ${
-                    isHover
-                      ? isDark
-                        ? 'bg-white/12'
-                        : 'bg-black/[0.08]'
-                      : 'bg-transparent'
-                  }`}
-                  style={{
-                    boxShadow: isHover ? `inset 3px 0 0 ${slice.fill}` : undefined,
-                  }}
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="flex items-center gap-2 min-w-0">
-                      <span
-                        className={`rounded-full flex-shrink-0 transition-all duration-300 ${isHover ? 'h-2.5 w-2.5' : 'h-2 w-2'}`}
-                        style={{ background: barFill }}
-                      />
-                      <span
-                        className={`text-[13px] leading-tight break-words transition-colors duration-300 ${
-                          emptySplit ? muted : isHover ? 'font-bold' : heading
-                        }`}
-                        style={!emptySplit && isHover ? { color: slice.fill } : undefined}
-                      >
-                        {slice.name}
-                      </span>
-                    </span>
-                    <span
-                      className={`text-[13px] tabular-nums transition-colors duration-300 ${
-                        emptySplit
-                          ? muted
-                          : `${isHover ? 'font-bold' : 'font-semibold'} ${heading}`
-                      }`}
-                      style={!emptySplit && isHover ? { color: slice.fill } : undefined}
-                    >
-                      {emptySplit ? '—' : formatStatValue(live.value, activeStat.pct, activeStat.digits ?? 1)}
-                    </span>
-                  </div>
-                  <div className={`mt-1 h-[3px] rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-black/10'}`}>
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: emptySplit ? '100%' : `${(live.value / maxVal) * 100}%`,
-                        background: barFill,
-                        opacity: emptySplit ? 0.55 : hoverId != null && !isHover ? 0.35 : 1,
-                        transition: 'opacity 220ms ease',
+      <div
+        className={`w-full px-3 sm:px-4 lg:px-3 rounded-xl pt-3 pb-2 min-w-0 overflow-visible box-border ${
+          isDark
+            ? 'bg-white/[0.035] ring-1 ring-white/10'
+            : 'bg-slate-50 ring-1 ring-black/[0.06]'
+        }`}
+      >
+        <div className="flex flex-row items-start gap-3.5 sm:gap-8 min-w-0 w-full overflow-visible">
+          <div
+            ref={pieBoxRef}
+            className="relative w-[46%] max-w-[196px] sm:w-[44%] sm:max-w-none lg:w-[320px] lg:max-w-[320px] flex-shrink-0 aspect-square overflow-visible"
+          >
+            <svg
+              viewBox="0 0 320 320"
+              className="w-[128%] max-w-none -ml-[16%] h-auto sm:w-full sm:h-full sm:ml-0 lg:w-full lg:h-full lg:ml-0"
+              role="img"
+              aria-label={activeStat.full}
+            >
+              <defs>
+                <filter id="nbl-selected-slice" x="-25%" y="-25%" width="150%" height="150%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#8b5cf6" floodOpacity="0.7" />
+                </filter>
+              </defs>
+              <circle cx={CX} cy={CY} r={R_OUT + 3} fill="none" stroke={ring} strokeWidth="1" />
+              {painted
+                .slice()
+                .sort((a, b) => Number(a.isSelected) - Number(b.isSelected))
+                .map((slice) => {
+                  const selected = !emptySplit && slice.isSelected;
+                  const hovered = !emptySplit && hoverId === slice.playerId;
+                  const fill =
+                    emptySplit || selected || hovered
+                      ? slice.fill
+                      : mixHex(slice.fill, hole, hoverId != null ? 0.62 : 0.28);
+                  return (
+                    <path
+                      key={slice.playerId}
+                      d={
+                        selected
+                          ? donutPath(R_OUT + 8, R_IN - 1, slice.a0, slice.a1)
+                          : slice.path
+                      }
+                      fill={fill}
+                      stroke={selected ? (isDark ? '#ddd6fe' : '#ede9fe') : 'none'}
+                      strokeWidth={selected ? 2.25 : 0}
+                      filter={selected ? 'url(#nbl-selected-slice)' : undefined}
+                      className={emptySplit ? undefined : 'cursor-pointer'}
+                      style={{ transition: 'fill 220ms ease' }}
+                      onMouseEnter={() => !emptySplit && setHoverId(slice.playerId)}
+                      onMouseLeave={() => setHoverId(null)}
+                      onClick={() => {
+                        if (emptySplit) return;
+                        setHoverId((id) => (id === slice.playerId ? null : slice.playerId));
                       }}
                     />
-                  </div>
-                </button>
-              );
-            })}
+                  );
+                })}
+              <circle cx={CX} cy={CY} r={R_IN - 1.5} fill={hole} className="pointer-events-none" />
+              <g
+                className="pointer-events-none"
+                style={{
+                  opacity: emptySplit || labelVisible ? 1 : 0,
+                  transition: 'opacity 280ms ease',
+                }}
+              >
+                {pieLabelLines.map((line, i) => (
+                  <text
+                    key={`${line}-${i}`}
+                    x={CX}
+                    y={pieLabelStartY + i * pieLabelLineHeight}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill={isDark ? '#d1d5db' : '#4b5563'}
+                    fontSize={pieLabelSize}
+                    fontWeight={700}
+                    fontFamily="inherit"
+                  >
+                    {line}
+                  </text>
+                ))}
+              </g>
+            </svg>
+          </div>
+
+          <div
+            ref={namesListRef}
+            className="nbl-pie-names-scroll flex flex-col gap-1 sm:gap-1.5 min-w-0 flex-1 min-h-0 overflow-y-scroll overscroll-contain touch-pan-y ml-1.5 sm:ml-0 pr-1 custom-scrollbar"
+            style={
+              pieBoxSize > 0
+                ? {
+                    height: pieBoxSize,
+                    maxHeight: pieBoxSize,
+                    scrollbarGutter: 'stable',
+                  }
+                : { scrollbarGutter: 'stable' }
+            }
+            onWheel={(e) => e.stopPropagation()}
+          >
+            {slices
+              .slice()
+              .sort((a, b) => (emptySplit ? 0 : b.value - a.value))
+              .map((slice) => {
+                const live = paintedById.get(slice.playerId) ?? slice;
+                const selected = !emptySplit && slice.isSelected;
+                const isHover = !emptySplit && hoverId === slice.playerId;
+                const emphasized = selected || isHover;
+                const barFill = emptySplit
+                  ? isDark
+                    ? EMPTY_SLICE_FILL_DARK
+                    : EMPTY_SLICE_FILL_LIGHT
+                  : slice.fill;
+                return (
+                  <button
+                    key={slice.playerId}
+                    type="button"
+                    ref={selected ? selectedRowRef : undefined}
+                    onMouseEnter={() => !emptySplit && setHoverId(slice.playerId)}
+                    onMouseLeave={() => setHoverId(null)}
+                    onClick={() => {
+                      if (emptySplit) return;
+                      setHoverId((id) => (id === slice.playerId ? null : slice.playerId));
+                    }}
+                    className={`w-full text-left rounded-lg px-1.5 sm:px-2 py-1 sm:py-1.5 transition-all duration-500 ${
+                      selected
+                        ? isDark
+                          ? 'bg-violet-500/25'
+                          : 'bg-violet-50'
+                        : isHover
+                          ? isDark
+                            ? 'bg-white/12'
+                            : 'bg-black/[0.08]'
+                          : 'bg-transparent'
+                    }`}
+                    style={{
+                      boxShadow: selected
+                        ? `inset 3px 0 0 ${slice.fill}, 0 0 0 1px ${isDark ? 'rgba(196,181,253,0.55)' : 'rgba(167,139,250,0.7)'}`
+                        : isHover
+                          ? `inset 3px 0 0 ${slice.fill}`
+                          : undefined,
+                    }}
+                  >
+                    <div className="flex items-baseline justify-between gap-2 sm:gap-3">
+                      <span className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                        <span
+                          className={`rounded-full flex-shrink-0 transition-all duration-300 ${emphasized ? 'h-2.5 w-2.5' : 'h-2 w-2'}`}
+                          style={{ background: barFill }}
+                        />
+                        <span
+                          className={`text-[12px] sm:text-[13px] leading-tight truncate transition-colors duration-300 ${
+                            emptySplit ? muted : emphasized ? 'font-bold' : heading
+                          }`}
+                          style={!emptySplit && emphasized ? { color: slice.fill } : undefined}
+                        >
+                          {slice.name}
+                        </span>
+                      </span>
+                      <span
+                        className={`text-[12px] sm:text-[13px] tabular-nums flex-shrink-0 transition-colors duration-300 ${
+                          emptySplit
+                            ? muted
+                            : `${emphasized ? 'font-bold' : 'font-semibold'} ${heading}`
+                        }`}
+                        style={!emptySplit && emphasized ? { color: slice.fill } : undefined}
+                      >
+                        {emptySplit ? '—' : formatStatValue(live.value, activeStat.pct, activeStat.digits ?? 1)}
+                      </span>
+                    </div>
+                    <div className={`mt-1 h-1 sm:h-[3px] rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-black/10'}`}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: emptySplit ? '100%' : `${(live.value / maxVal) * 100}%`,
+                          background: barFill,
+                          opacity: emptySplit ? 0.55 : hoverId != null && !isHover && !selected ? 0.35 : 1,
+                          transition: 'opacity 220ms ease',
+                        }}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+          </div>
         </div>
       </div>
     </div>

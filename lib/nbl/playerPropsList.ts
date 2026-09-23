@@ -31,6 +31,7 @@ import {
   getNblPulseScoreBoard,
   namesMatch,
   pulseBooksByStat,
+  pulseMarketPlayerName,
   type PulseNblGame,
 } from '@/lib/nbl/pulseScore';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
@@ -61,8 +62,32 @@ function writeListDiskCache(payload: NblListCachePayload): void {
   }
 }
 
+function listRowHasUnibet(row: CombinedPlayerProp): boolean {
+  return (
+    /unibet/i.test(String(row.bookmaker || '')) ||
+    (row.bookmakerLines || []).some((line) => /unibet/i.test(String(line.bookmaker || '')))
+  );
+}
+
+function listUnibetPlayerCount(payload: NblListCachePayload | null): number {
+  if (!payload?.data?.length) return 0;
+  const names = new Set<string>();
+  for (const row of payload.data) {
+    const name = String(row.playerName || '').trim();
+    if (!name || /^(yes|no|over|under)$/i.test(name)) continue;
+    if (listRowHasUnibet(row)) names.add(name.toLowerCase());
+  }
+  return names.size;
+}
+
 async function readUsableNblListCache(): Promise<NblListCachePayload | null> {
-  return (await readNblPlayerPropsListCache()) || readListDiskCache();
+  const redis = await readNblPlayerPropsListCache();
+  const disk = readListDiskCache();
+  const redisUnibet = listUnibetPlayerCount(redis);
+  const diskUnibet = listUnibetPlayerCount(disk);
+  if (diskUnibet > redisUnibet) return disk;
+  if (redisUnibet > 0) return redis;
+  return redis || disk;
 }
 
 async function persistNblListCache(payload: NblPlayerPropsListPayload): Promise<void> {
@@ -363,10 +388,7 @@ function pulsePlayers(game: PulseNblGame): string[] {
   for (const book of game.bookmakers) {
     for (const market of book.markets || []) {
       for (const sel of market.selections || []) {
-        const name = String(sel.rawName || sel.name || '')
-          .replace(/\s*\([^)]*\)\s*$/g, '')
-          .replace(/\s+(over|under)\b.*$/i, '')
-          .trim();
+        const name = pulseMarketPlayerName(market, sel);
         if (!name) continue;
         const key = name.toLowerCase();
         if (seen.has(key)) continue;
@@ -463,15 +485,21 @@ function toCombinedRow(opts: {
       playerId: opts.player.playerId,
       playerName: opts.player.name,
     }),
-    bookmakerLines: filteredBooks.map((book) => {
-      const chosen = pickMainLine(nblBookLines(book), opts.stat)!;
-      return {
-        bookmaker: book.name,
-        line: parseNblOddsLine(chosen.line) ?? line,
-        overOdds: chosen.over,
-        underOdds: chosen.under,
-      };
-    }),
+    bookmakerLines: opts.books
+      .map((book) => {
+        const match = nblBookLines(book).find((row) => {
+          const value = parseNblOddsLine(row.line);
+          return value != null && Math.abs(value - line) < 0.01;
+        });
+        if (!match) return null;
+        return {
+          bookmaker: book.name,
+          line,
+          overOdds: match.over,
+          underOdds: match.under,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row != null),
     gameId: opts.game.gameId,
     homeTeam: opts.game.homeTeam,
     awayTeam: opts.game.awayTeam,

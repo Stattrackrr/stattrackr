@@ -131,6 +131,14 @@ html.dark body {
   background-color: rgba(156, 163, 175, 0.7);
 }
 
+.nbl-pie-names-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.55) transparent;
+}
+.nbl-pie-names-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.45);
+}
+
 /* Chat + picks record: slim rounded scrollbar */
 .chat-scrollbar {
   scrollbar-width: thin;

@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useChatUnread } from '@/lib/chatUnread';
+import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { ProfileAvatar } from './ProfileAvatar';
 
 interface HeaderNavigationProps {
@@ -62,8 +63,9 @@ export function HeaderNavigation({
         onFocus={prefetchProps}
         onTouchStart={prefetchProps}
         onClick={() => {
+          if (pathname?.startsWith('/props')) return;
           prefetchProps();
-          router.push('/props');
+          router.push(consumePropsReturnPath('combined'));
         }}
         className={navButtonClass(!!isPropsActive)}
       >

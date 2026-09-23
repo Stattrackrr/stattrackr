@@ -107,11 +107,43 @@ const aboveBreakZonePath = [
   'Z',
 ].join(' ');
 
+const EMPTY_ZONE_FILL = '#6b7280';
+const EMPTY_LABEL_FILL = '#9ca3af';
+
 function getColorForDistribution(pct: number): string {
   if (pct >= 30) return '#10b981';
   if (pct >= 25) return '#22c55e';
   if (pct >= 10) return '#f97316';
   return '#ef4444';
+}
+
+function CourtLabel({
+  x,
+  y,
+  fontSize,
+  value,
+  empty,
+}: {
+  x: number;
+  y: number;
+  fontSize: number;
+  value: string;
+  empty: boolean;
+}) {
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      fill={empty ? EMPTY_LABEL_FILL : '#fff'}
+      fontSize={fontSize}
+      fontWeight="bold"
+      stroke={empty ? 'none' : '#000'}
+      strokeWidth={empty ? 0 : 0.5}
+    >
+      {empty ? '-' : value}
+    </text>
+  );
 }
 
 function getColorForRank(rank: number, fgPct?: number): string {
@@ -253,7 +285,11 @@ function RateChips({ label, isDark }: { label: string; isDark: boolean }) {
           >
             <span
               className={`text-[11px] font-bold leading-none ${
-                isDark ? 'text-white' : 'text-gray-900'
+                value === '—' || value === '-'
+                  ? 'text-gray-400 dark:text-gray-500'
+                  : isDark
+                    ? 'text-white'
+                    : 'text-gray-900'
               }`}
             >
               {value}
@@ -349,7 +385,11 @@ function AnalysisAccordion({
                         <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                           {row.label}
                         </div>
-                        {isEmpty ? null : (
+                        {isEmpty ? (
+                          <div className="mt-0.5 text-lg font-bold leading-none text-gray-400 dark:text-gray-500">
+                            -
+                          </div>
+                        ) : (
                           <div className="mt-0.5 flex items-baseline gap-1">
                             <span className="text-lg font-bold tabular-nums leading-none text-gray-900 dark:text-white">
                               {row.ptsPerGame}
@@ -361,14 +401,20 @@ function AnalysisAccordion({
                         )}
                       </div>
                       <div className="flex shrink-0 flex-wrap justify-end gap-1">
-                        {row.rankPills.map((pill) => (
-                          <span
-                            key={pill.label}
-                            className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${pillClass(pill.rank)}`}
-                          >
-                            {pill.label}
+                        {isEmpty ? (
+                          <span className="text-sm font-bold leading-none text-gray-400 dark:text-gray-500">
+                            -
                           </span>
-                        ))}
+                        ) : (
+                          row.rankPills.map((pill) => (
+                            <span
+                              key={pill.label}
+                              className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${pillClass(pill.rank)}`}
+                            >
+                              {pill.label}
+                            </span>
+                          ))
+                        )}
                       </div>
                     </div>
                     {isEmpty ? null : (
@@ -557,28 +603,32 @@ export function NblShotChart({
           };
         })
         .filter((p): p is { rank: number; label: string } => Boolean(p));
+      const empty = fga <= 0 && ranks.length === 0;
       return {
         id: group.id,
         label: group.label,
         rankPills,
         rank: ranks.length ? Math.min(...ranks) : 0,
         compared: NBL_RANK_SCALE,
-        ptsPerGame: formatPerGame(pts, defenseGames),
-        rateLabel: `${formatPct(fgm, fga)} FG · ${formatPerGame(fga, defenseGames)} FGA/g`,
+        ptsPerGame: empty ? '—' : formatPerGame(pts, defenseGames),
+        rateLabel: empty ? '—' : `${formatPct(fgm, fga)} FG · ${formatPerGame(fga, defenseGames)} FGA/g`,
       };
     });
     const ftGames = Math.max(0, Number(ftDefense?.games || defenseGames));
     const ftRank = Number(ftDefense?.rank || 0);
     const ftm = Number(ftDefense?.ftm || 0);
     const fta = Number(ftDefense?.fta || 0);
+    const ftEmpty = fta <= 0 && ftRank <= 0;
     rows.push({
       id: 'freeThrows',
       label: 'Free Throws',
       rankPills: ftRank > 0 ? [{ rank: ftRank, label: `#${ftRank}` }] : [],
       rank: ftRank > 0 ? ftRank : 0,
       compared: NBL_RANK_SCALE,
-      ptsPerGame: formatPerGame(ftm, ftGames || defenseGames),
-      rateLabel: `${fta > 0 ? `${ftDefense?.ftPct.toFixed(0)}%` : '—'} FT · ${formatPerGame(fta, ftGames || defenseGames)} FTA/g`,
+      ptsPerGame: ftEmpty ? '—' : formatPerGame(ftm, ftGames || defenseGames),
+      rateLabel: ftEmpty
+        ? '—'
+        : `${fta > 0 ? `${ftDefense?.ftPct.toFixed(0)}%` : '—'} FT · ${formatPerGame(fta, ftGames || defenseGames)} FTA/g`,
     });
     return rows;
   }, [defenseZones, rankings, defenseGames, ftDefense]);
@@ -644,26 +694,31 @@ export function NblShotChart({
   const showSkeleton = Boolean(playerName) && loading;
   const showEmpty = Boolean(playerName) && !loading && !error && playerData && playerData.shotCount <= 0;
 
+  const zoneHasVolume = (zone: NblShotZoneId) =>
+    showMakes ? z[zone].fgm > 0 : z[zone].fga > 0;
+
   const distLabel = (zone: NblShotZoneId) => {
+    if (!zoneHasVolume(zone)) return '-';
     const val = distByZone[zone];
     return `${(Number.isFinite(val) ? val : 0).toFixed(0)}%`;
   };
-
-  // Explicit corner values — avoid any chance of left/right label mix-ups.
-  const leftCornerPct = Number.isFinite(distByZone.leftCorner3) ? distByZone.leftCorner3 : 0;
-  const rightCornerPct = Number.isFinite(distByZone.rightCorner3) ? distByZone.rightCorner3 : 0;
-  const leftCornerFga = z.leftCorner3.fga;
-  const rightCornerFga = z.rightCorner3.fga;
 
   const rankLabel = (zone: NblShotZoneId) => {
     const r = rankings[zone]?.rank;
     return r != null && r > 0 ? `#${r}` : '-';
   };
 
-  const fillDist = (zone: NblShotZoneId) => getColorForDistribution(distByZone[zone] || 0);
+  const rankEmpty = (zone: NblShotZoneId) => {
+    const r = rankings[zone]?.rank;
+    return r == null || r <= 0;
+  };
+
+  const fillDist = (zone: NblShotZoneId) =>
+    zoneHasVolume(zone) ? getColorForDistribution(distByZone[zone] || 0) : EMPTY_ZONE_FILL;
   const fillRank = (zone: NblShotZoneId) => {
     const r = rankings[zone];
-    return getColorForRank(r?.rank ?? 0, r?.fgPct);
+    if (r?.rank == null || r.rank <= 0) return EMPTY_ZONE_FILL;
+    return getColorForRank(r.rank, r.fgPct);
   };
 
   const renderSkeleton = () => (
@@ -986,7 +1041,7 @@ export function NblShotChart({
                   make distribution
                   <br />
                   <span className="text-purple-600 dark:text-purple-400">Opp Def Rank</span> - Team
-                  defense rankings by zone (lower % = better rank). Thin-sample zones stay blank.
+                  defense rankings by zone (lower % = better rank). Zones with no stats show a grey dash.
                 </div>
               )}
             </div>
@@ -1155,155 +1210,33 @@ export function NblShotChart({
 
               {showOppDef && hasOppRanks ? (
                 <>
-                  <text
-                    x={centerX}
-                    y="60"
-                    textAnchor="middle"
-                    fill="#ffffff"
-                    fontSize="32"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {rankLabel('aboveBreak3')}
-                  </text>
-                  <text
-                    x={centerX}
-                    y={freeThrowLine - 30}
-                    textAnchor="middle"
-                    fill="#ffffff"
-                    fontSize="28"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {rankLabel('midRange')}
-                  </text>
-                  <text
-                    x={centerX}
-                    y={baseline - 25}
-                    textAnchor="middle"
-                    fill="#ffffff"
-                    fontSize="28"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {rankLabel('restricted')}
-                  </text>
-                  <text
+                  <CourtLabel x={centerX} y={60} fontSize={32} value={rankLabel('aboveBreak3')} empty={rankEmpty('aboveBreak3')} />
+                  <CourtLabel x={centerX} y={freeThrowLine - 30} fontSize={28} value={rankLabel('midRange')} empty={rankEmpty('midRange')} />
+                  <CourtLabel x={centerX} y={baseline - 25} fontSize={28} value={rankLabel('restricted')} empty={rankEmpty('restricted')} />
+                  <CourtLabel
                     x={centerX}
                     y={freeThrowLine + (baseline - freeThrowLine) / 2}
-                    textAnchor="middle"
-                    fill="#ffffff"
-                    fontSize="28"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {rankLabel('paint')}
-                  </text>
-                  <text
-                    x="45"
-                    y="330"
-                    textAnchor="middle"
-                    fill="#ffffff"
-                    fontSize="24"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {rankLabel('leftCorner3')}
-                  </text>
-                  <text
-                    x="455"
-                    y="330"
-                    textAnchor="middle"
-                    fill="#ffffff"
-                    fontSize="24"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {rankLabel('rightCorner3')}
-                  </text>
+                    fontSize={28}
+                    value={rankLabel('paint')}
+                    empty={rankEmpty('paint')}
+                  />
+                  <CourtLabel x={45} y={330} fontSize={24} value={rankLabel('leftCorner3')} empty={rankEmpty('leftCorner3')} />
+                  <CourtLabel x={455} y={330} fontSize={24} value={rankLabel('rightCorner3')} empty={rankEmpty('rightCorner3')} />
                 </>
               ) : (
                 <>
-                  <text
-                    x={centerX}
-                    y="60"
-                    textAnchor="middle"
-                    fill="#fff"
-                    fontSize="32"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {distLabel('aboveBreak3')}
-                  </text>
-                  <text
-                    x={centerX}
-                    y={freeThrowLine - 30}
-                    textAnchor="middle"
-                    fill="#fff"
-                    fontSize="28"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {distLabel('midRange')}
-                  </text>
-                  <text
-                    x={centerX}
-                    y={baseline - 25}
-                    textAnchor="middle"
-                    fill="#fff"
-                    fontSize="28"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {distLabel('restricted')}
-                  </text>
-                  <text
+                  <CourtLabel x={centerX} y={60} fontSize={32} value={distLabel('aboveBreak3')} empty={!zoneHasVolume('aboveBreak3')} />
+                  <CourtLabel x={centerX} y={freeThrowLine - 30} fontSize={28} value={distLabel('midRange')} empty={!zoneHasVolume('midRange')} />
+                  <CourtLabel x={centerX} y={baseline - 25} fontSize={28} value={distLabel('restricted')} empty={!zoneHasVolume('restricted')} />
+                  <CourtLabel
                     x={centerX}
                     y={freeThrowLine + (baseline - freeThrowLine) / 2}
-                    textAnchor="middle"
-                    fill="#fff"
-                    fontSize="28"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {distLabel('paint')}
-                  </text>
-                  <text
-                    key={`left-corner-${leftCornerFga}-${leftCornerPct.toFixed(2)}`}
-                    x="45"
-                    y="330"
-                    textAnchor="middle"
-                    fill="#fff"
-                    fontSize="24"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {`${leftCornerPct.toFixed(0)}%`}
-                  </text>
-                  <text
-                    key={`right-corner-${rightCornerFga}-${rightCornerPct.toFixed(2)}`}
-                    x="455"
-                    y="330"
-                    textAnchor="middle"
-                    fill="#fff"
-                    fontSize="24"
-                    fontWeight="bold"
-                    stroke="#000"
-                    strokeWidth="0.5"
-                  >
-                    {`${rightCornerPct.toFixed(0)}%`}
-                  </text>
+                    fontSize={28}
+                    value={distLabel('paint')}
+                    empty={!zoneHasVolume('paint')}
+                  />
+                  <CourtLabel x={45} y={330} fontSize={24} value={distLabel('leftCorner3')} empty={!zoneHasVolume('leftCorner3')} />
+                  <CourtLabel x={455} y={330} fontSize={24} value={distLabel('rightCorner3')} empty={!zoneHasVolume('rightCorner3')} />
                 </>
               )}
             </g>

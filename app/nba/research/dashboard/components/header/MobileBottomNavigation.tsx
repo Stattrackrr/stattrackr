@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useChatUnread } from '@/lib/chatUnread';
 import { usePathname, useRouter } from 'next/navigation';
+import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { getLocalStorage, setSessionStorage } from '../../utils/storageUtils';
 import { ProfileAvatar } from './ProfileAvatar';
 import { ProfileDropdown } from './ProfileDropdown';
@@ -134,8 +135,9 @@ export function MobileBottomNavigation({
         <button
           onTouchStart={prefetchProps}
           onClick={() => {
+            if (pathname?.startsWith('/props')) return;
             prefetchProps();
-            router.push('/props');
+            router.push(consumePropsReturnPath('combined'));
           }}
           className={navButtonClass(!!isPropsActive)}
         >

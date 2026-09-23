@@ -164,44 +164,49 @@ function ButterflyRow({
   const offFill = highlight
     ? 'bg-gradient-to-r from-emerald-300 to-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.55)]'
     : 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.42)]';
+  const nameClass = `text-[12px] font-semibold leading-tight truncate ${
+    highlight ? 'text-purple-400' : isDark ? 'text-gray-100' : 'text-gray-900'
+  }`;
   return (
-    <div className="flex items-center min-w-0">
-      <span
-        className={`w-[2.6rem] shrink-0 text-[12px] tabular-nums font-semibold ${
-          isDark ? 'text-red-400' : 'text-red-800'
-        }`}
-      >
-        {fmtRtg(defRtg)}
-      </span>
-      <div
-        className={`mx-1.5 flex h-3.5 min-w-[1.5rem] flex-1 items-center justify-end overflow-hidden rounded-[3px] ${track}`}
-      >
-        <div
-          className={`h-full rounded-[2px] ${defFill}`}
-          style={{ width: `${barWidthPct(defRtg, minRtg, maxRtg)}%`, transition: 'width 400ms ease' }}
-        />
-      </div>
-      <span
-        className={`w-[9.25rem] shrink-0 px-2 text-center text-[12px] font-semibold leading-tight truncate ${
-          highlight ? 'text-purple-400' : isDark ? 'text-gray-100' : 'text-gray-900'
-        }`}
-        title={player.name}
-      >
+    <div className="min-w-0">
+      <div className={`sm:hidden mb-1 text-center ${nameClass}`} title={player.name}>
         {player.name}
-      </span>
-      <div className={`mx-1.5 h-3.5 min-w-[1.5rem] flex-1 overflow-hidden rounded-[3px] ${track}`}>
-        <div
-          className={`h-full rounded-[2px] ${offFill}`}
-          style={{ width: `${barWidthPct(offRtg, minRtg, maxRtg)}%`, transition: 'width 400ms ease' }}
-        />
       </div>
-      <span
-        className={`w-[2.6rem] shrink-0 text-right text-[12px] tabular-nums font-semibold ${
-          isDark ? 'text-emerald-300' : 'text-emerald-700'
-        }`}
-      >
-        {fmtRtg(offRtg)}
-      </span>
+      <div className="flex items-center min-w-0">
+        <span
+          className={`w-[2.25rem] sm:w-[2.6rem] shrink-0 text-[11px] sm:text-[12px] tabular-nums font-semibold ${
+            isDark ? 'text-red-400' : 'text-red-800'
+          }`}
+        >
+          {fmtRtg(defRtg)}
+        </span>
+        <div
+          className={`mx-1 sm:mx-1.5 flex h-4 sm:h-3.5 min-w-[3.75rem] sm:min-w-[1.5rem] flex-1 items-center justify-end overflow-hidden rounded-[3px] ${track}`}
+        >
+          <div
+            className={`h-full rounded-[2px] ${defFill}`}
+            style={{ width: `${barWidthPct(defRtg, minRtg, maxRtg)}%`, transition: 'width 400ms ease' }}
+          />
+        </div>
+        <span className={`hidden sm:block w-[9.25rem] shrink-0 px-2 text-center ${nameClass}`} title={player.name}>
+          {player.name}
+        </span>
+        <div
+          className={`mx-1 sm:mx-1.5 h-4 sm:h-3.5 min-w-[3.75rem] sm:min-w-[1.5rem] flex-1 overflow-hidden rounded-[3px] ${track}`}
+        >
+          <div
+            className={`h-full rounded-[2px] ${offFill}`}
+            style={{ width: `${barWidthPct(offRtg, minRtg, maxRtg)}%`, transition: 'width 400ms ease' }}
+          />
+        </div>
+        <span
+          className={`w-[2.25rem] sm:w-[2.6rem] shrink-0 text-right text-[11px] sm:text-[12px] tabular-nums font-semibold ${
+            isDark ? 'text-emerald-300' : 'text-emerald-700'
+          }`}
+        >
+          {fmtRtg(offRtg)}
+        </span>
+      </div>
     </div>
   );
 }
@@ -349,7 +354,7 @@ export function NblTeamSelectionsCard({
   const heading = isDark ? 'text-gray-200' : 'text-gray-800';
 
   return (
-    <div className="w-full px-3">
+    <div className="w-full min-w-0 px-0">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-3">
         <h3 className={`text-sm font-semibold justify-self-start ${heading}`}>Roster breakdown</h3>
 

@@ -418,14 +418,20 @@ export default function NblDvpCard({
   }
 
   return (
-    <div className={loading ? 'opacity-70' : ''}>
+    <div className={`min-w-0 ${loading ? 'opacity-70' : ''}`}>
     <p className={`text-[11px] font-semibold tracking-wide mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
       Showing {payload.statLabel ?? 'PTS'}
+      <span className="lg:hidden font-normal tracking-normal opacity-80"> · swipe for all teams</span>
     </p>
-    <table className="w-full table-fixed border-collapse">
+    <div className="min-w-0 overflow-x-auto overscroll-x-contain [scrollbar-width:thin] -mx-0.5 px-0.5">
+    <table className="w-max min-w-full border-collapse lg:w-full lg:table-fixed">
       <thead>
         <tr>
-          <th className="w-[72px] p-0" />
+          <th
+            className={`sticky left-0 z-20 w-[68px] min-w-[68px] p-0 text-left ${
+              isDark ? 'bg-[#0a1929]' : 'bg-white'
+            }`}
+          />
           {teams.map((team) => {
             const logo = resolveTeamLogo?.(team.name);
             const isOpp = team.code === opponentCode;
@@ -433,14 +439,14 @@ export default function NblDvpCard({
               <th
                 key={team.code}
                 title={team.name}
-                className={`p-1 align-bottom ${
+                className={`p-0.5 sm:p-1 align-bottom min-w-[52px] w-[52px] lg:min-w-0 lg:w-auto ${
                   isOpp ? 'border-x-2 border-t-2 border-violet-400 bg-violet-500/10' : ''
                 }`}
               >
                 <div className="flex flex-col items-center gap-0.5">
-                  <div className="flex h-6 w-6 items-center justify-center">
+                  <div className="flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center">
                     {logo ? (
-                      <img src={logo} alt={team.shortName} className="h-6 w-6 object-contain" />
+                      <img src={logo} alt={team.shortName} className="h-5 w-5 sm:h-6 sm:w-6 object-contain" />
                     ) : (
                       <span className={`text-[9px] font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                         {team.code}
@@ -448,7 +454,7 @@ export default function NblDvpCard({
                     )}
                   </div>
                   <span
-                    className={`text-[10px] leading-none font-semibold ${
+                    className={`text-[9px] sm:text-[10px] leading-none font-semibold whitespace-nowrap ${
                       isOpp
                         ? isDark
                           ? 'text-violet-200'
@@ -472,9 +478,13 @@ export default function NblDvpCard({
           const isLast = rowIdx === rows.length - 1;
           return (
             <tr key={row.type}>
-              <td className="pr-3 py-0.5 align-middle text-right">
+              <td
+                className={`sticky left-0 z-20 pr-2 py-0.5 align-middle text-right w-[68px] min-w-[68px] ${
+                  isDark ? 'bg-[#0a1929]' : 'bg-white'
+                }`}
+              >
                 <span
-                  className={`text-[11px] leading-tight font-semibold ${
+                  className={`block text-[10px] sm:text-[11px] leading-tight font-semibold whitespace-nowrap ${
                     isPlayerType
                       ? isDark
                         ? 'text-violet-200'
@@ -494,7 +504,7 @@ export default function NblDvpCard({
                 return (
                   <td
                     key={team.code}
-                    className={`p-0.5 ${
+                    className={`p-0.5 min-w-[52px] w-[52px] lg:min-w-0 lg:w-auto ${
                       isOpp
                         ? `border-x-2 border-violet-400 bg-violet-500/10 ${isLast ? 'border-b-2' : ''}`
                         : ''
@@ -502,7 +512,7 @@ export default function NblDvpCard({
                   >
                     <div
                       title={cellTitle(row.label, team.shortName, cell)}
-                      className={`h-9 w-full rounded-md flex items-center justify-center text-xs font-semibold tabular-nums ${cellTextClass(
+                      className={`h-8 sm:h-9 w-full rounded-md flex items-center justify-center text-[11px] sm:text-xs font-semibold tabular-nums leading-none whitespace-nowrap ${cellTextClass(
                         cell,
                         isDark,
                         emphasize
@@ -519,8 +529,9 @@ export default function NblDvpCard({
         })}
       </tbody>
     </table>
+    </div>
 
-      <div className={`mt-3 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+      <div className={`mt-3 pt-3 pb-1 border-t min-w-0 shrink-0 overflow-visible ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
         <button
           type="button"
           aria-expanded={weekOpen}
@@ -550,7 +561,7 @@ export default function NblDvpCard({
               No upcoming-game edges for this stat yet.
             </div>
           ) : (
-            <div className="mt-2 space-y-1.5">
+            <div className="mt-2 space-y-1.5 min-w-0">
               {weekPicks.map((pick) => {
                 const pctText = fmtPct(pick.pct);
                 const opp = pick.opponentCode || opponentShort(pick, teams) || '—';

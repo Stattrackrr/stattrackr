@@ -71,19 +71,21 @@ function rememberPropsReturnSport(mode: PropsSportMode): void {
   }
 }
 
+/** Consume the sport tab saved when leaving /props for a dashboard. */
+export function consumePropsReturnSport(): PropsSportMode | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = parseStoredPropsSport(sessionStorage.getItem(PROPS_RETURN_SPORT_KEY));
+    sessionStorage.removeItem(PROPS_RETURN_SPORT_KEY);
+    return stored;
+  } catch {
+    return null;
+  }
+}
+
 /** Dashboard "Back to Player Props" — restores All vs the sport tab you left from. */
 export function consumePropsReturnPath(fallback: PropsSportMode): string {
-  let mode = fallback;
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = parseStoredPropsSport(sessionStorage.getItem(PROPS_RETURN_SPORT_KEY));
-      if (stored) mode = stored;
-      sessionStorage.removeItem(PROPS_RETURN_SPORT_KEY);
-    } catch {
-      // ignore
-    }
-  }
-  return propsPathForSport(mode);
+  return propsPathForSport(consumePropsReturnSport() ?? fallback);
 }
 
 /** Drop an unused return-sport token (browser back already landed on /props). */
@@ -115,7 +117,8 @@ export function snapshotPropsPageBeforeLeave(): void {
   if (
     snap.playerProps.length === 0 &&
     snap.aflProps.length === 0 &&
-    snap.tennisCombinedProps.length === 0
+    snap.tennisCombinedProps.length === 0 &&
+    (snap.nblCombinedProps?.length ?? 0) === 0
   ) {
     return;
   }

@@ -4,7 +4,7 @@
  */
 
 import { decimalToAmerican } from '@/lib/currencyUtils';
-import { resolveNblClubName } from '@/lib/nblTeamCanonical';
+import { officialNblClubName, resolveNblClubName } from '@/lib/nblTeamCanonical';
 import sharedCache from '@/lib/sharedCache';
 import {
   NBL_PLAYER_PROP_STAT_TO_MARKET,
@@ -30,6 +30,11 @@ const PREFERRED_THRESHOLD: Record<string, number> = {
   threeMade: 1,
 };
 
+interface PulseMoreInfo {
+  player?: string;
+  participant?: string;
+}
+
 interface PulseSelection {
   canonicalOutcome?: string;
   rawName?: string;
@@ -37,6 +42,7 @@ interface PulseSelection {
   odds?: number;
   line?: number;
   isActive?: boolean;
+  moreInfo?: PulseMoreInfo;
 }
 
 interface PulseMarket {
@@ -44,8 +50,11 @@ interface PulseMarket {
   rawName?: string;
   name?: string;
   period?: string;
+  line?: number;
   isActive?: boolean;
   selections?: PulseSelection[];
+  marketId?: string;
+  moreInfo?: PulseMoreInfo;
 }
 
 interface PulseEvent {
@@ -156,7 +165,7 @@ function eventsFromPage(payload: unknown): { events: PulseEvent[]; hasNextPage: 
 }
 
 function isOfficialNblEvent(ev: PulseEvent): boolean {
-  return Boolean(resolveNblClubName(ev.home) && resolveNblClubName(ev.away));
+  return Boolean(officialNblClubName(ev.home) && officialNblClubName(ev.away));
 }
 
 function eventFromPayload(page: unknown): PulseEvent | null {
@@ -221,8 +230,8 @@ function mergeBoard(byBook: Array<{ name: string; events: PulseEvent[] }>): Puls
   const map = new Map<string, PulseNblGame>();
   for (const { name, events } of byBook) {
     for (const ev of events) {
-      const home = resolveNblClubName(ev.home);
-      const away = resolveNblClubName(ev.away);
+      const home = officialNblClubName(ev.home);
+      const away = officialNblClubName(ev.away);
       if (!home || !away) continue;
       const key = gameBucket(home, away, ev.startTime || '');
       const existing = map.get(key);
@@ -318,6 +327,28 @@ function stripPlayerLabel(raw: string): string {
     .trim();
 }
 
+function isOutcomeOnlyName(raw: string): boolean {
+  return /^(yes|no|over|under|ou|u)$/i.test(String(raw || '').trim());
+}
+
+export function pulseMarketPlayerName(
+  market: PulseMarket,
+  sel?: PulseSelection
+): string {
+  const fromInfo = String(
+    sel?.moreInfo?.participant || sel?.moreInfo?.player || market.moreInfo?.player || ''
+  ).trim();
+  if (fromInfo && !isOutcomeOnlyName(fromInfo)) return fromInfo;
+  const fromSel = stripPlayerLabel(sel?.rawName || sel?.name || '');
+  if (fromSel && !isOutcomeOnlyName(fromSel)) return fromSel;
+  const tail = String(market.marketId || '')
+    .split(':')
+    .slice(2)
+    .join(':')
+    .trim();
+  return tail && !isOutcomeOnlyName(tail) ? tail : '';
+}
+
 export function normalizePlayerName(s: string): string {
   return stripPlayerLabel(s)
     .toLowerCase()
@@ -348,9 +379,19 @@ export function namesMatch(playerQuery: string, outcomeName: string): boolean {
   return b.includes(a) || a.includes(b);
 }
 
+function canonicalPlayerStat(canonical: string | undefined): string | null {
+  const c = String(canonical || '').toUpperCase();
+  if (c === 'PLAYER_POINTS') return 'points';
+  if (c === 'PLAYER_REBOUNDS') return 'rebounds';
+  if (c === 'PLAYER_ASSISTS') return 'assists';
+  if (c === 'PLAYER_THREES_MADE' || c === 'PLAYER_THREES') return 'threeMade';
+  return null;
+}
+
 function marketStat(
   canonical: string | undefined,
-  rawName: string
+  rawName: string,
+  line?: number | null
 ): { stat: string; kind: 'ou' | 'milestone'; threshold?: number } | null {
   const n = String(rawName || '').trim();
   const blob = `${canonical || ''} ${n}`.toLowerCase();
@@ -359,12 +400,28 @@ function marketStat(
   }
   let m = n.match(/(?:to score\s+)?(\d+)\+\s*points\b/i);
   if (m) return { stat: 'points', kind: 'milestone', threshold: Number(m[1]) };
+  m = n.match(/(\d+)\+\s*points?\s+scored/i);
+  if (m) return { stat: 'points', kind: 'milestone', threshold: Number(m[1]) };
   m = n.match(/(?:to record\s+)?(\d+)\+\s*rebounds\b/i);
+  if (m) return { stat: 'rebounds', kind: 'milestone', threshold: Number(m[1]) };
+  m = n.match(/(\d+)\+\s*rebounds?\s+by/i);
   if (m) return { stat: 'rebounds', kind: 'milestone', threshold: Number(m[1]) };
   m = n.match(/(?:to record\s+)?(\d+)\+\s*assists\b/i);
   if (m) return { stat: 'assists', kind: 'milestone', threshold: Number(m[1]) };
+  m = n.match(/(\d+)\+\s*assists?\s+by/i);
+  if (m) return { stat: 'assists', kind: 'milestone', threshold: Number(m[1]) };
   m = n.match(/(?:to (?:make|record)\s+)?(\d+)\+\s*(?:made\s+)?threes\b/i);
   if (m) return { stat: 'threeMade', kind: 'milestone', threshold: Number(m[1]) };
+  m = n.match(/(\d+)\+\s*(?:three-point|three point)/i);
+  if (m) return { stat: 'threeMade', kind: 'milestone', threshold: Number(m[1]) };
+
+  const fromCanon = canonicalPlayerStat(canonical);
+  if (fromCanon && line != null && Number.isFinite(line)) {
+    if (Math.abs(line - Math.round(line)) < 1e-6) {
+      return { stat: fromCanon, kind: 'milestone', threshold: Math.round(line) };
+    }
+    return { stat: fromCanon, kind: 'ou' };
+  }
 
   if (/\bplayer[_\s-]*points\b|\bpoints (o\/u|over\/under)\b/.test(blob)) {
     return { stat: 'points', kind: 'ou' };
@@ -432,11 +489,12 @@ export function pulseBooksForPlayer(game: PulseNblGame, player: string, stat: st
     const byLine = new Map<string, NblPropLine>();
     for (const market of book.markets || []) {
       if (market.isActive === false) continue;
-      const parsed = marketStat(market.canonicalMarket, market.rawName || market.name || '');
+      const parsed = marketStat(market.canonicalMarket, market.rawName || market.name || '', market.line);
       if (!parsed || parsed.stat !== stat) continue;
       for (const sel of market.selections || []) {
         if (sel.isActive === false) continue;
-        const selName = stripPlayerLabel(sel.rawName || sel.name || '');
+        if (/\bno\b/i.test(`${sel.canonicalOutcome || ''} ${sel.rawName || ''} ${sel.name || ''}`)) continue;
+        const selName = pulseMarketPlayerName(market, sel);
         if (!namesMatch(player, selName)) continue;
         const price = americanFromDecimal(sel.odds);
         if (price === 'N/A') continue;

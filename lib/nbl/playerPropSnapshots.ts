@@ -6,7 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import { decimalToAmerican } from '@/lib/currencyUtils';
-import type { PulseNblGame } from '@/lib/nbl/pulseScore';
+import { pulseMarketPlayerName, type PulseNblGame } from '@/lib/nbl/pulseScore';
 import sharedCache from '@/lib/sharedCache';
 
 export const NBL_PLAYER_PROP_SNAPSHOT_DIR = path.join(
@@ -92,7 +92,8 @@ function americanFromDecimal(odds: number | undefined): string {
 
 function classifyMarket(
   canonical: string | undefined,
-  raw: string | undefined
+  raw: string | undefined,
+  line?: number
 ): { stat: NblSnapStat; kind: 'ou' | 'milestone'; threshold?: number } | null {
   const rawName = String(raw || '').trim();
   const blob = `${canonical || ''} ${rawName}`.toLowerCase();
@@ -103,12 +104,38 @@ function classifyMarket(
 
   let m = rawName.match(/(?:to score\s+)?(\d+)\+\s*points\b/i);
   if (m) return { stat: 'points', kind: 'milestone', threshold: Number(m[1]) };
+  m = rawName.match(/(\d+)\+\s*points?\s+scored/i);
+  if (m) return { stat: 'points', kind: 'milestone', threshold: Number(m[1]) };
   m = rawName.match(/(?:to record\s+)?(\d+)\+\s*rebounds\b/i);
+  if (m) return { stat: 'rebounds', kind: 'milestone', threshold: Number(m[1]) };
+  m = rawName.match(/(\d+)\+\s*rebounds?\s+by/i);
   if (m) return { stat: 'rebounds', kind: 'milestone', threshold: Number(m[1]) };
   m = rawName.match(/(?:to record\s+)?(\d+)\+\s*assists\b/i);
   if (m) return { stat: 'assists', kind: 'milestone', threshold: Number(m[1]) };
+  m = rawName.match(/(\d+)\+\s*assists?\s+by/i);
+  if (m) return { stat: 'assists', kind: 'milestone', threshold: Number(m[1]) };
   m = rawName.match(/(?:to (?:make|record)\s+)?(\d+)\+\s*(?:made\s+)?threes\b/i);
   if (m) return { stat: 'threeMade', kind: 'milestone', threshold: Number(m[1]) };
+  m = rawName.match(/(\d+)\+\s*(?:three-point|three point)/i);
+  if (m) return { stat: 'threeMade', kind: 'milestone', threshold: Number(m[1]) };
+
+  const canon = String(canonical || '').toUpperCase();
+  const fromCanon =
+    canon === 'PLAYER_POINTS'
+      ? 'points'
+      : canon === 'PLAYER_REBOUNDS'
+        ? 'rebounds'
+        : canon === 'PLAYER_ASSISTS'
+          ? 'assists'
+          : canon === 'PLAYER_THREES_MADE' || canon === 'PLAYER_THREES'
+            ? 'threeMade'
+            : null;
+  if (fromCanon && line != null && Number.isFinite(line)) {
+    if (Math.abs(line - Math.round(line)) < 1e-6) {
+      return { stat: fromCanon, kind: 'milestone', threshold: Math.round(line) };
+    }
+    return { stat: fromCanon, kind: 'ou' };
+  }
 
   if (/\bplayer[_\s-]*points\b|\bpoints (o\/u|over\/under)\b/.test(blob)) {
     return { stat: 'points', kind: 'ou' };
@@ -137,11 +164,16 @@ export function flattenPulseNblGame(game: PulseNblGame): NblSnapLine[] {
   for (const book of game.bookmakers || []) {
     for (const market of book.markets || []) {
       if (market.isActive === false) continue;
-      const parsed = classifyMarket(market.canonicalMarket, market.rawName || market.name);
+      const parsed = classifyMarket(
+        market.canonicalMarket,
+        market.rawName || market.name,
+        typeof market.line === 'number' ? market.line : undefined
+      );
       if (!parsed) continue;
       for (const sel of market.selections || []) {
         if (sel.isActive === false) continue;
-        const player = stripPlayerLabel(sel.rawName || sel.name || '');
+        if (/\bno\b/i.test(`${sel.canonicalOutcome || ''} ${sel.rawName || ''} ${sel.name || ''}`)) continue;
+        const player = pulseMarketPlayerName(market, sel) || stripPlayerLabel(sel.rawName || sel.name || '');
         if (!player) continue;
         const odds = typeof sel.odds === 'number' && Number.isFinite(sel.odds) ? sel.odds : null;
         if (odds == null || odds <= 1) continue;

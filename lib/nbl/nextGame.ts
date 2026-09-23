@@ -76,10 +76,17 @@ function teamsMatch(a: string | null | undefined, b: string | null | undefined):
   return aKeys.some((k) => bKeys.includes(k));
 }
 
+const JSON_CACHE_TTL_MS = 60_000;
+const jsonCache = new Map<string, { at: number; value: unknown }>();
+
 function readJsonFile<T>(filePath: string): T | null {
+  const hit = jsonCache.get(filePath);
+  if (hit && Date.now() - hit.at < JSON_CACHE_TTL_MS) return hit.value as T;
   if (!fs.existsSync(filePath)) return null;
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
+    const value = JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
+    jsonCache.set(filePath, { at: Date.now(), value });
+    return value;
   } catch {
     return null;
   }
