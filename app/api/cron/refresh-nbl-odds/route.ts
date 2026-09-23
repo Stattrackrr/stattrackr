@@ -15,10 +15,7 @@ export async function GET(request: NextRequest) {
   if (!auth.authorized) return auth.response;
   try {
     const result = await refreshNblOddsAndPropsIngest({ disk: false });
-    return NextResponse.json(
-      { success: result.success, ...result },
-      { status: result.success ? 200 : 502 }
-    );
+    return NextResponse.json(result, { status: result.success ? 200 : 502 });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ success: false, error: message }, { status: 500 });
