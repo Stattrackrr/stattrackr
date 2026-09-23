@@ -1256,6 +1256,40 @@ export default function NblDashboardPage() {
     (displayOpponent ? resolveNblTeamLogo(displayOpponent, logoByTeam) : null);
   const matchupLeftAbbrev = matchupLeft ? getNblTeamAbbrev(matchupLeft) : '';
   const displayOpponentAbbrev = displayOpponent ? getNblTeamAbbrev(displayOpponent) : '—';
+  const matchupLogoFilter = {
+    filter: isDark
+      ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))'
+      : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))',
+  } as const;
+  const matchupCenterStatus =
+    displayOpponent && countdown && !isGameInProgress ? (
+      <div className="flex flex-col items-center flex-shrink-0 min-w-[72px] xl:min-w-[80px]">
+        <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">
+          Tipoff in
+        </div>
+        <div className="text-xs xl:text-sm font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap tabular-nums">
+          {String(countdown.hours).padStart(2, '0')}:
+          {String(countdown.minutes).padStart(2, '0')}:
+          {String(countdown.seconds).padStart(2, '0')}
+        </div>
+      </div>
+    ) : displayOpponent && isGameInProgress ? (
+      <div className="flex flex-col items-center flex-shrink-0 min-w-[72px]">
+        <div className="text-xs xl:text-sm font-semibold text-green-600 dark:text-green-400 whitespace-nowrap animate-live-pulse-green">
+          LIVE
+        </div>
+      </div>
+    ) : displayOpponent && nextGameTipoff ? (
+      <div className="flex flex-col items-center flex-shrink-0">
+        <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+          Game time passed
+        </div>
+      </div>
+    ) : (
+      <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] xl:text-xs flex-shrink-0">
+        VS
+      </span>
+    );
 
   const hasTeamModeSelection = !!String(selectedTeam ?? '').trim();
   const nblBookIndex = nblDisplayOddsBooks.length
@@ -1382,12 +1416,12 @@ export default function NblDashboardPage() {
 
                 {/* 2. Header */}
                 <div
-                  className={`order-2 lg:order-none relative z-[60] rounded-lg ${NBL_DASH_CARD_GLOW} p-2.5 sm:p-4 md:p-6 w-full min-w-0 flex-shrink-0 mr-0 overflow-visible`}
+                  className={`order-2 lg:order-none relative z-[60] rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-6 w-full min-w-0 flex-shrink-0 mr-0 overflow-visible`}
                 >
                   <div className="flex flex-col gap-1.5 lg:gap-3">
-                    {/* Desktop: player info | matchup | spacer */}
-                    <div className="hidden lg:flex items-center flex-1">
-                      <div className="flex-1 min-w-0">
+                    {/* Desktop: player info | centered matchup */}
+                    <div className="hidden lg:grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-3 w-full min-w-0">
+                      <div className="min-w-0">
                         {showBackToPlayerProps ? (
                           <button
                             type="button"
@@ -1410,7 +1444,7 @@ export default function NblDashboardPage() {
                           ) : null}
                           <div className="min-w-0">
                             <div className="flex items-baseline gap-3 mb-1">
-                              <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                              <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight break-words">
                                 {headerTitle}
                               </h1>
                               {nblPropsMode === 'player' &&
@@ -1421,7 +1455,7 @@ export default function NblDashboardPage() {
                                 </span>
                               ) : null}
                             </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                            <div className="text-xs text-gray-600 dark:text-gray-400 leading-snug break-words">
                               {headerSubtitle}
                             </div>
                             {nblPropsMode === 'player' && selectedPlayer?.position ? (
@@ -1437,80 +1471,44 @@ export default function NblDashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="hidden lg:flex min-w-0 flex-shrink items-end mx-2 xl:mx-4">
+                      <div className="flex justify-center">
                         {matchupLeft ? (
-                          <div className="flex items-center gap-2 xl:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1.5 xl:px-3 xl:py-2 min-w-0 flex-nowrap">
-                            <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
-                              <div className="flex items-center gap-1 xl:gap-1.5 min-w-0">
-                                {matchupLeftLogo ? (
-                                  <img
-                                    src={matchupLeftLogo}
-                                    alt={matchupLeft}
-                                    className="w-6 h-6 xl:w-8 xl:h-8 object-contain flex-shrink-0"
-                                    style={{
-                                      filter: isDark
-                                        ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))'
-                                        : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))',
-                                    }}
-                                  />
-                                ) : null}
-                                <span className="font-bold text-gray-900 dark:text-white text-xs xl:text-sm truncate">
-                                  {matchupLeftAbbrev || matchupLeft}
-                                </span>
-                              </div>
-                              <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] xl:text-xs flex-shrink-0">
-                                VS
+                          <div className="flex items-center gap-2 xl:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1.5 xl:px-3 xl:py-2 flex-nowrap">
+                            <div className="flex items-center gap-1 xl:gap-1.5 min-w-0">
+                              {matchupLeftLogo ? (
+                                <img
+                                  src={matchupLeftLogo}
+                                  alt={matchupLeft}
+                                  className="w-6 h-6 xl:w-8 xl:h-8 object-contain flex-shrink-0"
+                                  style={matchupLogoFilter}
+                                />
+                              ) : null}
+                              <span className="font-bold text-gray-900 dark:text-white text-xs xl:text-sm whitespace-nowrap">
+                                {matchupLeftAbbrev || matchupLeft}
                               </span>
-                              <div className="flex items-center gap-1 xl:gap-1.5 min-w-0">
-                                {displayOpponent ? (
-                                  <>
-                                    {matchupOpponentLogo ? (
-                                      <img
-                                        src={matchupOpponentLogo}
-                                        alt={displayOpponent}
-                                        className="w-6 h-6 xl:w-8 xl:h-8 object-contain flex-shrink-0"
-                                        style={{
-                                          filter: isDark
-                                            ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))'
-                                            : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))',
-                                        }}
-                                      />
-                                    ) : null}
-                                    <span className="font-bold text-gray-900 dark:text-white text-xs xl:text-sm truncate">
-                                      {displayOpponentAbbrev}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="text-gray-400 dark:text-gray-500 text-xs xl:text-sm font-medium flex-shrink-0">
-                                    —
-                                  </span>
-                                )}
-                              </div>
                             </div>
-                            {displayOpponent && countdown && !isGameInProgress ? (
-                              <div className="ml-1 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">
-                                  Tipoff in
-                                </div>
-                                <div className="text-xs xl:text-sm font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap tabular-nums">
-                                  {String(countdown.hours).padStart(2, '0')}:
-                                  {String(countdown.minutes).padStart(2, '0')}:
-                                  {String(countdown.seconds).padStart(2, '0')}
-                                </div>
-                              </div>
-                            ) : displayOpponent && isGameInProgress ? (
-                              <div className="ml-1 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                <div className="text-xs xl:text-sm font-semibold text-green-600 dark:text-green-400 whitespace-nowrap animate-live-pulse-green">
-                                  LIVE
-                                </div>
-                              </div>
-                            ) : displayOpponent && nextGameTipoff ? (
-                              <div className="ml-1 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                  Game time passed
-                                </div>
-                              </div>
-                            ) : null}
+                            {matchupCenterStatus}
+                            <div className="flex items-center gap-1 xl:gap-1.5 min-w-0">
+                              {displayOpponent ? (
+                                <>
+                                  {matchupOpponentLogo ? (
+                                    <img
+                                      src={matchupOpponentLogo}
+                                      alt={displayOpponent}
+                                      className="w-6 h-6 xl:w-8 xl:h-8 object-contain flex-shrink-0"
+                                      style={matchupLogoFilter}
+                                    />
+                                  ) : null}
+                                  <span className="font-bold text-gray-900 dark:text-white text-xs xl:text-sm whitespace-nowrap">
+                                    {displayOpponentAbbrev}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-gray-400 dark:text-gray-500 text-xs xl:text-sm font-medium flex-shrink-0">
+                                  —
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-4 py-2">
@@ -1520,10 +1518,10 @@ export default function NblDashboardPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0 flex justify-end" />
+                      <div />
                     </div>
 
-                    {/* Mobile: Row 1 = Back + name | Row 2 = team/position | Team vs Opponent */}
+                    {/* Mobile: name, then full team/position, then matchup on its own row */}
                     <div className="lg:hidden flex flex-col gap-0.5 relative">
                       <div className="w-full min-w-0">
                         <div className="flex-shrink-0 min-w-0">
@@ -1576,18 +1574,18 @@ export default function NblDashboardPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-start justify-between gap-1.5 w-full min-w-0">
-                        <div className="flex-shrink-0 min-w-0 pr-1">
+                      <div className="flex flex-col gap-1.5 w-full min-w-0">
+                        <div className="w-full min-w-0">
                           {selectedPlayer || (nblPropsMode === 'team' && selectedTeam) ? (
                             <div>
                               {nblPropsMode === 'player' ? (
-                                <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                <div className="text-xs text-gray-600 dark:text-gray-400 leading-snug break-words">
                                   {headerSubtitle || '—'}
                                 </div>
                               ) : null}
                               {nblPropsMode === 'player' &&
                               (selectedPlayer?.position || playerPlayTypeLabel) ? (
-                                <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                <div className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
                                   {[selectedPlayer?.position, playerPlayTypeLabel]
                                     .filter(Boolean)
                                     .join(' - ')}
@@ -1596,7 +1594,7 @@ export default function NblDashboardPage() {
                             </div>
                           ) : loadingPlayerFromUrl ? (
                             <div className="space-y-1">
-                              <div className="h-3 w-20 rounded animate-pulse bg-gray-200 dark:bg-gray-700" />
+                              <div className="h-3 w-40 rounded animate-pulse bg-gray-200 dark:bg-gray-700" />
                               <div className="h-3 w-16 rounded animate-pulse bg-gray-200 dark:bg-gray-700" />
                             </div>
                           ) : (
@@ -1605,81 +1603,45 @@ export default function NblDashboardPage() {
                             </div>
                           )}
                         </div>
-                        <div className="flex-shrink-0 min-w-0">
+                        <div className="flex justify-center w-full min-w-0">
                           {matchupLeft ? (
-                            <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 min-w-0 flex-nowrap">
-                              <div className="flex items-center gap-1.5 min-w-0 flex-nowrap">
-                                <div className="flex items-center gap-1 min-w-0">
-                                  {matchupLeftLogo ? (
-                                    <img
-                                      src={matchupLeftLogo}
-                                      alt={matchupLeft}
-                                      className="w-6 h-6 object-contain flex-shrink-0"
-                                      style={{
-                                        filter: isDark
-                                          ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))'
-                                          : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))',
-                                      }}
-                                    />
-                                  ) : null}
-                                  <span className="font-bold text-gray-900 dark:text-white text-xs truncate">
-                                    {matchupLeftAbbrev || matchupLeft}
-                                  </span>
-                                </div>
-                                <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] flex-shrink-0">
-                                  VS
+                            <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2.5 py-1.5 w-fit max-w-full">
+                              <div className="flex items-center gap-1 min-w-0">
+                                {matchupLeftLogo ? (
+                                  <img
+                                    src={matchupLeftLogo}
+                                    alt={matchupLeft}
+                                    className="w-6 h-6 object-contain flex-shrink-0"
+                                    style={matchupLogoFilter}
+                                  />
+                                ) : null}
+                                <span className="font-bold text-gray-900 dark:text-white text-xs whitespace-nowrap">
+                                  {matchupLeftAbbrev || matchupLeft}
                                 </span>
-                                <div className="flex items-center gap-1 min-w-0">
-                                  {displayOpponent ? (
-                                    <>
-                                      {matchupOpponentLogo ? (
-                                        <img
-                                          src={matchupOpponentLogo}
-                                          alt={displayOpponent}
-                                          className="w-6 h-6 object-contain flex-shrink-0"
-                                          style={{
-                                            filter: isDark
-                                              ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))'
-                                              : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))',
-                                          }}
-                                        />
-                                      ) : null}
-                                      <span className="font-bold text-gray-900 dark:text-white text-xs truncate">
-                                        {displayOpponentAbbrev}
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <span className="text-gray-400 dark:text-gray-500 text-xs truncate">—</span>
-                                  )}
-                                </div>
                               </div>
-                              {displayOpponent && countdown && !isGameInProgress ? (
-                                <div className="ml-1 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                  <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">
-                                    Tipoff in
-                                  </div>
-                                  <div className="text-xs font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap tabular-nums">
-                                    {String(countdown.hours).padStart(2, '0')}:
-                                    {String(countdown.minutes).padStart(2, '0')}:
-                                    {String(countdown.seconds).padStart(2, '0')}
-                                  </div>
-                                </div>
-                              ) : displayOpponent && isGameInProgress ? (
-                                <div className="ml-1 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                  <div className="text-xs font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">
-                                    LIVE
-                                  </div>
-                                </div>
-                              ) : displayOpponent && nextGameTipoff ? (
-                                <div className="ml-1 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                  <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                    Game time passed
-                                  </div>
-                                </div>
-                              ) : null}
+                              {matchupCenterStatus}
+                              <div className="flex items-center gap-1 min-w-0">
+                                {displayOpponent ? (
+                                  <>
+                                    {matchupOpponentLogo ? (
+                                      <img
+                                        src={matchupOpponentLogo}
+                                        alt={displayOpponent}
+                                        className="w-6 h-6 object-contain flex-shrink-0"
+                                        style={matchupLogoFilter}
+                                      />
+                                    ) : null}
+                                    <span className="font-bold text-gray-900 dark:text-white text-xs whitespace-nowrap">
+                                      {displayOpponentAbbrev}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>
+                                )}
+                              </div>
                             </div>
                           ) : loadingPlayerFromUrl ? (
-                            <div className="h-9 w-32 rounded-lg animate-pulse bg-gray-200 dark:bg-gray-700" />
+                            <div className="h-9 w-48 rounded-lg animate-pulse bg-gray-200 dark:bg-gray-700" />
                           ) : (
                             <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
                               <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">

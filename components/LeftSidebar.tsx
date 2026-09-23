@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
-import { NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
+import { CHAT_UNDER_MAINTENANCE, JOURNAL_ENABLED, JOURNAL_UNDER_MAINTENANCE, NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
@@ -448,8 +448,18 @@ export default function LeftSidebar({
               )}
             </div>
 
-            {/* Journal section - right under Sports */}
             <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
+              {JOURNAL_UNDER_MAINTENANCE ? (
+                <div
+                  className="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                  title="Journal is under maintenance"
+                >
+                  <span>Journal</span>
+                  <span className="rounded-md bg-amber-600 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white">
+                    MAINT
+                  </span>
+                </div>
+              ) : (
               <Link
                 href={hasPremium ? "/journal" : "/subscription"}
                 className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -473,6 +483,18 @@ export default function LeftSidebar({
                   </svg>
                 )}
               </Link>
+              )}
+              {CHAT_UNDER_MAINTENANCE ? (
+                <div
+                  className="mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                  title="Chat is under maintenance"
+                >
+                  <span>Chat</span>
+                  <span className="rounded-md bg-amber-600 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white">
+                    MAINT
+                  </span>
+                </div>
+              ) : (
               <Link
                 href={hasPremium ? "/chat" : "/subscription"}
                 className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -498,6 +520,7 @@ export default function LeftSidebar({
                   ) : null}
                 </span>
               </Link>
+              )}
             </div>
           </div>
         ) : null}
@@ -947,11 +970,12 @@ export default function LeftSidebar({
             </div>
             
             <div className="p-6 border-t border-gray-200 dark:border-gray-700 space-y-6">
-              {/* Journal Settings Section */}
               <div>
-                <h3 className="text-base font-semibold text-black dark:text-white mb-4">Journal Settings</h3>
+                <h3 className="text-base font-semibold text-black dark:text-white mb-4">
+                  {JOURNAL_ENABLED ? 'Journal Settings' : 'Preferences'}
+                </h3>
                 
-                {/* Preferred Input Method */}
+                {JOURNAL_ENABLED ? (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-black dark:text-gray-300 mb-3">Preferred Input</label>
                   <select 
@@ -964,6 +988,7 @@ export default function LeftSidebar({
                   </select>
                   <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Choose how to input stakes when adding bets from dashboard</p>
                 </div>
+                ) : null}
                 
                 {/* Preferred Currency */}
                 <div className="mb-4">

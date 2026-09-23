@@ -110,6 +110,12 @@ export type PropsRowSport = 'nba' | 'afl' | 'nbl' | 'atp' | 'wta';
 export const NBL_PUBLIC_ENABLED = true;
 export const NBL_LOGO_PATH = '/images/nbl-logo.png';
 
+/** Visible in nav; set true to show a maintenance badge and block entry. */
+export const JOURNAL_UNDER_MAINTENANCE = true;
+export const CHAT_UNDER_MAINTENANCE = true;
+export const JOURNAL_ENABLED = !JOURNAL_UNDER_MAINTENANCE;
+export const CHAT_ENABLED = !CHAT_UNDER_MAINTENANCE;
+
 export function isNblPropsSport(mode: string | null | undefined): mode is 'nbl' {
   return mode === 'nbl';
 }

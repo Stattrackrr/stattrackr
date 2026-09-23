@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { JOURNAL_ENABLED } from "@/lib/nbaConstants";
 
 export default function SiteHeader() {
   const pathname = usePathname();
@@ -11,12 +12,14 @@ export default function SiteHeader() {
   return (
     <header className="w-full py-4 -mb-px bg-[var(--brand-bg)]">
       <nav className="flex items-center justify-center gap-4">
+        {JOURNAL_ENABLED ? (
         <Link
           href="/journal"
           className={`${linkBase} ${pathname === "/journal" ? "bg-white/15 text-white" : "text-white/70"}`}
         >
           Journal
         </Link>
+        ) : null}
         <Link
           href="/research"
           className={`${linkBase} ${pathname?.startsWith("/research") ? "bg-white/15 text-white" : "text-white/70"}`}

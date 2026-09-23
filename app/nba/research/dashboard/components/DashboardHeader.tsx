@@ -9,6 +9,7 @@ import { getOpponentTeam } from '../utils/teamAnalysisUtils';
 import { HeaderInfo } from '../utils/headerInfoUtils';
 import { BallDontLieGame } from '../types';
 import { NBAPlayer } from '../types';
+import { JOURNAL_ENABLED } from '@/lib/nbaConstants';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { ImpliedOddsWheel } from './odds/ImpliedOddsWheel';
 
@@ -608,7 +609,7 @@ export function DashboardHeader({
         </div>
         
         {/* Journal Button - Show for both Player Props and Game Props modes */}
-        {((propsMode === 'player' && selectedPlayer && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== 'N/A') ||
+        {JOURNAL_ENABLED && ((propsMode === 'player' && selectedPlayer && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== 'N/A') ||
           (propsMode === 'team' && gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam && opponentTeam !== '')) && (
           <div className="flex gap-2 px-0">
             <button

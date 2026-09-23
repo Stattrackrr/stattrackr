@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useChatUnread } from '@/lib/chatUnread';
+import { CHAT_UNDER_MAINTENANCE, JOURNAL_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { ProfileAvatar } from './ProfileAvatar';
 
@@ -77,23 +78,30 @@ export function HeaderNavigation({
         <span className="text-xs font-medium">Props</span>
       </button>
       
-      {/* Journal */}
       <button
         data-journal-button
+        type="button"
+        disabled={JOURNAL_UNDER_MAINTENANCE}
+        title={JOURNAL_UNDER_MAINTENANCE ? 'Journal is under maintenance' : undefined}
         onClick={() => {
+          if (JOURNAL_UNDER_MAINTENANCE) return;
           if (!hasPremium) {
             router.push('/subscription');
             return;
           }
-          // Set flag to show loading bar on journal page
           if (typeof window !== 'undefined') {
             sessionStorage.setItem('navigating-to-journal', 'true');
           }
           router.push('/journal');
         }}
-        className={navButtonClass(!!isJournalActive, !hasPremium)}
+        className={`relative ${navButtonClass(!!isJournalActive, JOURNAL_UNDER_MAINTENANCE || !hasPremium)}`}
       >
-        {!hasPremium ? (
+        {JOURNAL_UNDER_MAINTENANCE ? (
+          <span className="absolute -top-1.5 right-0.5 rounded-md bg-amber-600 px-1 py-0.5 text-[7px] font-bold leading-none tracking-wide text-white">
+            MAINT
+          </span>
+        ) : null}
+        {!hasPremium && !JOURNAL_UNDER_MAINTENANCE ? (
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
           </svg>
@@ -105,25 +113,33 @@ export function HeaderNavigation({
         <span className="text-xs font-medium">Journal</span>
       </button>
 
-      {/* Chat */}
       <button
+        type="button"
+        disabled={CHAT_UNDER_MAINTENANCE}
+        title={CHAT_UNDER_MAINTENANCE ? 'Chat is under maintenance' : undefined}
         onClick={() => {
+          if (CHAT_UNDER_MAINTENANCE) return;
           if (!hasPremium) {
             router.push('/subscription');
             return;
           }
           router.push('/chat');
         }}
-        className={navButtonClass(!!isChatActive, !hasPremium)}
+        className={`relative ${navButtonClass(!!isChatActive, CHAT_UNDER_MAINTENANCE || !hasPremium)}`}
       >
-        <span className="relative inline-flex items-center justify-center">
-          <span className="text-xs font-medium">Chat</span>
-          {unreadChatCount > 0 ? (
-            <span className="absolute -right-7 -top-2 inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white ring-2 ring-white dark:ring-[#0f172a]">
-              {unreadChatLabel}
-            </span>
-          ) : null}
-        </span>
+        {CHAT_UNDER_MAINTENANCE ? (
+          <span className="absolute -top-1.5 right-0.5 rounded-md bg-amber-600 px-1 py-0.5 text-[7px] font-bold leading-none tracking-wide text-white">
+            MAINT
+          </span>
+        ) : unreadChatCount > 0 ? (
+          <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+            {unreadChatLabel}
+          </span>
+        ) : null}
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8M8 14h5m-9 6l2.2-3.3A2 2 0 013 15V6a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2H7.8a2 2 0 00-1.664.89L4 20z" />
+        </svg>
+        <span className="text-xs font-medium">Chat</span>
       </button>
       
       {/* Profile */}

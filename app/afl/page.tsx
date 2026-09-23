@@ -19,6 +19,7 @@ import { AflRoleStatsCard } from '@/app/afl/components/AflRoleStatsCard';
 import { type AflBookRow, type AflPropLine, type AflPropOverOnly, type AflPropYesNo, getGoalsMarketLineOver, getGoalsMarketLines } from '@/app/afl/components/AflBestOddsTable';
 import { AflLineSelector } from '@/app/afl/components/AflLineSelector';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
+import { JOURNAL_ENABLED } from '@/lib/nbaConstants';
 import {
   abortAflDashboardFetches,
   aflDashboardFetch,
@@ -4814,7 +4815,7 @@ export default function AFLPage() {
                         </div>
                       </>
                     )}
-                    {aflPropsMode === 'player' &&
+                    {JOURNAL_ENABLED && aflPropsMode === 'player' &&
                       selectedPlayer &&
                       nextGameOpponent &&
                       nextGameOpponent !== '' &&
