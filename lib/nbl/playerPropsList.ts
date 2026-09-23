@@ -34,7 +34,7 @@ import {
   type PulseNblGame,
 } from '@/lib/nbl/pulseScore';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
-import { NBL_CURRENT_SEASON_YEAR, resolveNblClubName } from '@/lib/nblTeamCanonical';
+import { NBL_CHART_HISTORY_YEARS, NBL_CURRENT_SEASON_YEAR, resolveNblClubName } from '@/lib/nblTeamCanonical';
 
 export const NBL_USER_NO_ODDS = 'No odds available. Come back later.';
 
@@ -114,8 +114,6 @@ function loadRoster(): RosterPlayer[] {
   return Array.isArray(snap?.players) ? snap.players : [];
 }
 
-const NBL_PREVIOUS_SEASON_YEAR = NBL_CURRENT_SEASON_YEAR - 1;
-
 function loadPlayerGames(playerId: string, year: number): NblGameLogRow[] {
   const file = path.join(
     process.cwd(),
@@ -146,10 +144,12 @@ function mergeGameLogs(seasons: NblGameLogRow[][]): NblGameLogRow[] {
 function loadPlayerFormAndSeason(playerId: string): {
   season: NblGameLogRow[];
   form: NblGameLogRow[];
+  career: NblGameLogRow[];
 } {
   const season = loadPlayerGames(playerId, NBL_CURRENT_SEASON_YEAR);
-  const previous = loadPlayerGames(playerId, NBL_PREVIOUS_SEASON_YEAR);
-  return { season, form: mergeGameLogs([previous, season]) };
+  const previous = loadPlayerGames(playerId, NBL_CURRENT_SEASON_YEAR - 1);
+  const career = mergeGameLogs(NBL_CHART_HISTORY_YEARS.map((year) => loadPlayerGames(playerId, year)));
+  return { season, form: mergeGameLogs([previous, season]), career };
 }
 
 function officialTeam(raw: string | null | undefined): string {
@@ -258,7 +258,7 @@ function windowHits(
 ) {
   let pool = [...games].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
   if (opponent) {
-    pool = pool.filter((g) => teamsMatch(g.opponent, opponent));
+    pool = pool.filter((g) => teamsMatch(g.opponent, opponent) || teamsMatch(g.opponentCode, opponent));
   } else if (count != null) {
     pool = pool.slice(-count);
   }
@@ -387,6 +387,7 @@ function toCombinedRow(opts: {
   books: NblBookRow[];
   games: NblGameLogRow[];
   seasonGames: NblGameLogRow[];
+  careerGames?: NblGameLogRow[];
   dvpIndex: NblPropDvpIndex;
 }): CombinedPlayerProp | null {
   const filteredBooks = opts.books
@@ -422,7 +423,7 @@ function toCombinedRow(opts: {
       ? officialTeam(opts.game.awayTeam)
       : officialTeam(opts.game.homeTeam)
     : opts.opponent;
-  const h2h = windowHits(opts.games, opts.stat, line, null, h2hOpponent);
+  const h2h = windowHits(opts.careerGames?.length ? opts.careerGames : opts.games, opts.stat, line, null, h2hOpponent);
 
   return {
     playerName: opts.player.name,
@@ -569,7 +570,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
       const opponent = teamsMatch(team, home) ? away : home;
       const logs = rosterHit?.playerId
         ? loadPlayerFormAndSeason(String(rosterHit.playerId))
-        : { season: [], form: [] };
+        : { season: [], form: [], career: [] };
 
       for (const stat of LIST_STATS) {
         const books = booksFor(rosterHit?.name || playerName, stat);
@@ -582,6 +583,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
           books,
           games: logs.form,
           seasonGames: logs.season,
+          careerGames: logs.career,
           dvpIndex,
         });
         if (row) props.push(row);

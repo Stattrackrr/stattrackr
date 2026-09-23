@@ -1,5 +1,5 @@
 /**
- * NBL player props from PulseScore (Sportsbet / TAB).
+ * NBL player props from PulseScore (Sportsbet / TAB / Unibet).
  */
 
 import { nblPlayerPropMarketForStat, type NblBookRow } from '@/lib/nbl/oddsTypes';

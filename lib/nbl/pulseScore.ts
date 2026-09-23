@@ -1,5 +1,5 @@
 /**
- * NBL player markets from PulseScore (Sportsbet AU + TAB).
+ * NBL player markets from PulseScore (Sportsbet AU, TAB, Unibet AU).
  * Game moneyline/spread/total stay on The Odds API.
  */
 
@@ -20,6 +20,7 @@ const CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
 const BOOKS: ReadonlyArray<{ slug: string; name: string }> = [
   { slug: 'sportsbet-com-au', name: 'Sportsbet' },
   { slug: 'tab', name: 'TAB' },
+  { slug: 'unibetau', name: 'Unibet' },
 ];
 
 const PREFERRED_THRESHOLD: Record<string, number> = {
@@ -86,6 +87,7 @@ function isNblLeagueName(name: string | undefined): boolean {
   const n = String(name || '').trim().toLowerCase();
   if (!n) return false;
   if (/\bnba\b/.test(n) && !/\bnbl\b/.test(n)) return false;
+  if (/czech|singapore/.test(n)) return false;
   return n === 'nbl' || /\bnbl\b/.test(n) || n.includes('australian nbl');
 }
 
@@ -144,6 +146,19 @@ function eventsFromLeague(league: PulseLeague): PulseEvent[] {
   }));
 }
 
+function eventsFromPage(payload: unknown): { events: PulseEvent[]; hasNextPage: boolean } {
+  if (!payload || typeof payload !== 'object') return { events: [], hasNextPage: false };
+  const p = payload as { events?: PulseEvent[]; hasNextPage?: boolean };
+  return {
+    events: Array.isArray(p.events) ? p.events : [],
+    hasNextPage: p.hasNextPage === true,
+  };
+}
+
+function isOfficialNblEvent(ev: PulseEvent): boolean {
+  return Boolean(resolveNblClubName(ev.home) && resolveNblClubName(ev.away));
+}
+
 function eventFromPayload(page: unknown): PulseEvent | null {
   if (!page || typeof page !== 'object') return null;
   const p = page as { data?: PulseEvent } & PulseEvent;
@@ -168,10 +183,32 @@ async function hydrateEventMarkets(slug: string, ev: PulseEvent): Promise<PulseE
   return ev;
 }
 
+async function fetchBookNblEventScan(slug: string): Promise<PulseEvent[]> {
+  const out: PulseEvent[] = [];
+  for (let page = 1; page <= 3; page += 1) {
+    await sleep(1100);
+    const payload = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/events?limit=30&page=${page}`);
+    const { events, hasNextPage } = eventsFromPage(payload);
+    for (const ev of events) {
+      if (isOfficialNblEvent(ev)) out.push(ev);
+    }
+    if (!hasNextPage) break;
+  }
+  return out;
+}
+
 async function fetchBookNblEvents(slug: string): Promise<PulseEvent[]> {
   const payload = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/leagues?limit=30`);
   const leagues = leaguesFrom(payload).filter((l) => isNblLeagueName(l.name || l.league));
-  const out = leagues.flatMap(eventsFromLeague);
+  const seen = new Set<string>();
+  const out: PulseEvent[] = [];
+  for (const ev of [...leagues.flatMap(eventsFromLeague), ...(await fetchBookNblEventScan(slug))]) {
+    if (!isOfficialNblEvent(ev)) continue;
+    const id = String(ev.eventId || `${ev.home}|${ev.away}|${ev.startTime || ''}`);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(ev);
+  }
   const hydrated: PulseEvent[] = [];
   for (const ev of out) {
     await sleep(1100);
@@ -184,8 +221,8 @@ function mergeBoard(byBook: Array<{ name: string; events: PulseEvent[] }>): Puls
   const map = new Map<string, PulseNblGame>();
   for (const { name, events } of byBook) {
     for (const ev of events) {
-      const home = officialTeam(ev.home);
-      const away = officialTeam(ev.away);
+      const home = resolveNblClubName(ev.home);
+      const away = resolveNblClubName(ev.away);
       if (!home || !away) continue;
       const key = gameBucket(home, away, ev.startTime || '');
       const existing = map.get(key);
@@ -312,11 +349,12 @@ export function namesMatch(playerQuery: string, outcomeName: string): boolean {
 }
 
 function marketStat(
+  canonical: string | undefined,
   rawName: string
 ): { stat: string; kind: 'ou' | 'milestone'; threshold?: number } | null {
   const n = String(rawName || '').trim();
-  const blob = n.toLowerCase();
-  if (/score and win|first basket|double.?double|triple.?double|most points|to win/i.test(n)) {
+  const blob = `${canonical || ''} ${n}`.toLowerCase();
+  if (/score and win|first basket|double.?double|triple.?double|most points|to win/i.test(blob)) {
     return null;
   }
   let m = n.match(/(?:to score\s+)?(\d+)\+\s*points\b/i);
@@ -337,7 +375,7 @@ function marketStat(
   if (/\bplayer[_\s-]*assists\b|\bassists (o\/u|over\/under)\b/.test(blob)) {
     return { stat: 'assists', kind: 'ou' };
   }
-  if (/\bplayer[_\s-]*threes\b|\bthrees (o\/u|over\/under)\b/.test(blob)) {
+  if (/player[_\s-]*threes(?:[_\s-]*made)?|\bthrees (o\/u|over\/under)\b/.test(blob)) {
     return { stat: 'threeMade', kind: 'ou' };
   }
   return null;
@@ -394,7 +432,7 @@ export function pulseBooksForPlayer(game: PulseNblGame, player: string, stat: st
     const byLine = new Map<string, NblPropLine>();
     for (const market of book.markets || []) {
       if (market.isActive === false) continue;
-      const parsed = marketStat(market.rawName || market.name || '');
+      const parsed = marketStat(market.canonicalMarket, market.rawName || market.name || '');
       if (!parsed || parsed.stat !== stat) continue;
       for (const sel of market.selections || []) {
         if (sel.isActive === false) continue;

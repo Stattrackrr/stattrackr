@@ -1,5 +1,5 @@
 /**
- * Snapshot PulseScore NBL player lines (Sportsbet / TAB) to
+ * Snapshot PulseScore NBL player lines (Sportsbet / TAB / Unibet) to
  * data/nbl-model/cache/player-prop-lines/ and bake the props list.
  *
  * Usage: npx tsx scripts/snapshot-nbl-player-props.ts

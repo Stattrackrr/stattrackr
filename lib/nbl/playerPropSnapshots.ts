@@ -1,5 +1,5 @@
 /**
- * Durable PulseScore (Sportsbet / TAB) NBL player-line snapshots.
+ * Durable PulseScore (Sportsbet / TAB / Unibet) NBL player-line snapshots.
  * Live board vanishes after tip — these files keep closing O/Us / milestones.
  */
 
@@ -119,7 +119,7 @@ function classifyMarket(
   if (/\bplayer[_\s-]*assists\b|\bassists (o\/u|over\/under)\b/.test(blob)) {
     return { stat: 'assists', kind: 'ou' };
   }
-  if (/\bplayer[_\s-]*threes\b|\bthrees (o\/u|over\/under)\b/.test(blob)) {
+  if (/player[_\s-]*threes(?:[_\s-]*made)?|\bthrees (o\/u|over\/under)\b/.test(blob)) {
     return { stat: 'threeMade', kind: 'ou' };
   }
   return null;
