@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-22T17:40:08.091Z",
+  "generatedAt": "2026-09-23T12:26:07.179Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -3012,7 +3012,7 @@
       "externalId": "36e0818b-58ad-11f1-89d2-fb9d3a8baf78",
       "startTime": "2026-09-23T09:30:00.000Z",
       "round": "2",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Cairns Taipans",
       "homeTeamCode": "CNS",
       "homeTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
@@ -3021,8 +3021,8 @@
       "awayTeamCode": "TAS",
       "awayTeamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 93,
+      "awayScore": 87,
       "venue": "Cairns Convention Centre",
       "matchSlug": "cairns-taipans-v-tasmania-jackjumpers-men-23-09-2026"
     },

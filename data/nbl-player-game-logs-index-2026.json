@@ -1,10 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-22T17:40:36.710Z",
+  "generatedAt": "2026-09-23T12:26:33.513Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 154,
-  "gameRows": 123,
+  "gameRows": 142,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -131,7 +131,7 @@
       "name": "Ben Gold",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/b1a9c2de-ca6f-4332-b0e0-2a4fdbcedd06-2026.json"
     },
     {
@@ -267,7 +267,7 @@
       "name": "Dakota Mathias",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/83f36c6e-d1f1-44cb-8576-78717cc826f2-2026.json"
     },
     {
@@ -307,7 +307,7 @@
       "name": "David Johnson",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/5dc2188c-e53b-4273-9573-aae63a31bd39-2026.json"
     },
     {
@@ -443,7 +443,7 @@
       "name": "Jack McVeigh",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/b50568ab-1745-4c99-9360-a270000b3366-2026.json"
     },
     {
@@ -515,7 +515,7 @@
       "name": "Jaylon Brown",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/17bfb8e3-400e-428d-96a3-64eecea3b6a2-2026.json"
     },
     {
@@ -523,7 +523,7 @@
       "name": "Jed Richardson",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/44c17e2b-7e6a-43b7-9421-c50c0f001071-2026.json"
     },
     {
@@ -587,7 +587,7 @@
       "name": "Jonah Bolden",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/fc16e0a8-a6b8-4000-b37f-d3a58d98244b-2026.json"
     },
     {
@@ -651,7 +651,7 @@
       "name": "Keanu Pinder",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/59a777fb-049b-4f99-8bb1-f53516f76953-2026.json"
     },
     {
@@ -731,7 +731,7 @@
       "name": "Kyrin Galloway",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/872bdcab-a933-4436-874d-4d94f4e184e8-2026.json"
     },
     {
@@ -763,7 +763,7 @@
       "name": "Lloyd McVeigh",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/69a0f400-cf3f-4a5a-9c5d-cfa80cd00ec3-2026.json"
     },
     {
@@ -811,7 +811,7 @@
       "name": "Malique Lewis",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/c6b7202f-6619-422a-8d2b-8e52a8d48935-2026.json"
     },
     {
@@ -907,7 +907,7 @@
       "name": "Nicholas Stoddart",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/20791487-46a5-4d75-a6a1-17d8013c251f-2026.json"
     },
     {
@@ -915,7 +915,7 @@
       "name": "Nick Marshall",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/c9019743-60ae-4700-852e-6ae15c1cbef6-2026.json"
     },
     {
@@ -979,7 +979,7 @@
       "name": "Reyne Smith",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/b21f6432-c1e5-446a-b516-d1c981b77c48-2026.json"
     },
     {
@@ -995,7 +995,7 @@
       "name": "Ryley Haywood",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/96a3897c-483c-4089-b824-2bb65d265828-2026.json"
     },
     {
@@ -1051,7 +1051,7 @@
       "name": "Shaun Bruce",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/f4c4d041-69b8-4757-9142-f5c028a070f2-2026.json"
     },
     {
@@ -1075,7 +1075,7 @@
       "name": "Sunday Dech",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/bc5d17e5-219c-41b7-994b-1226cc144877-2026.json"
     },
     {
@@ -1107,7 +1107,7 @@
       "name": "Taran Armstrong",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/23283d39-8a83-44ab-84ac-0bcf1c675c92-2026.json"
     },
     {
@@ -1203,7 +1203,7 @@
       "name": "Will Magnay",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/cd541bbb-db3f-4821-82e1-c3c104d99fd8-2026.json"
     },
     {

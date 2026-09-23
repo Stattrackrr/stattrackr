@@ -1,10 +1,10 @@
 {
   "year": 2023,
   "seasonLabel": "NBL24",
-  "generatedAt": "2026-09-22T17:40:06.976Z",
+  "generatedAt": "2026-09-23T12:25:35.367Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 141,
-  "gameRows": 2831,
+  "gameRows": 2834,
   "players": [
     {
       "playerId": "3af8bb38-1c97-4b43-99f0-378a95dfdd79",
@@ -939,7 +939,7 @@
       "name": "Sam Timmins",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 0,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/c5fc48e9-3c61-4890-934c-31a894dcf1f6-2023.json"
     },
     {

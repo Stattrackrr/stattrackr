@@ -1,0 +1,3056 @@
+{
+  "fixtureId": "36e0818b-58ad-11f1-89d2-fb9d3a8baf78",
+  "homeTeam": "Cairns Taipans",
+  "awayTeam": "Tasmania JackJumpers",
+  "homeTeamCode": "CNS",
+  "awayTeamCode": "TAS",
+  "lineupValid": true,
+  "players": [
+    {
+      "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+      "name": "Ben Gold",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+      "name": "Dakota Mathias",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 4,
+      "assistedMakes": 4,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+      "name": "David Johnson",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 6,
+      "assistedMakes": 4,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+      "name": "Jack McVeigh",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "madeFg": 6,
+      "assistedMakes": 1,
+      "assists": 3,
+      "ptsCreated": 4,
+      "finds": [
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+      "name": "Jaylon Brown",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "madeFg": 8,
+      "assistedMakes": 2,
+      "assists": 4,
+      "ptsCreated": 12,
+      "finds": [
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+      "name": "Jed Richardson",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+      "name": "Jonah Bolden",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+      "name": "Keanu Pinder",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "madeFg": 5,
+      "assistedMakes": 3,
+      "assists": 3,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+      "name": "Kyrin Galloway",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "madeFg": 6,
+      "assistedMakes": 6,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+      "name": "Lloyd McVeigh",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+      "name": "Malique Lewis",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 4,
+      "ptsCreated": 10,
+      "finds": [
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+      "name": "Nicholas Stoddart",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+      "name": "Nick Marshall",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 6,
+      "assistedMakes": 2,
+      "assists": 3,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 2,
+          "pts": 4
+        }
+      ]
+    },
+    {
+      "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+      "name": "Reyne Smith",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+      "name": "Ryley Haywood",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+      "name": "Shaun Bruce",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 4,
+      "ptsCreated": 9,
+      "finds": [
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "2b794dfb-410d-11f0-9261-975350631782",
+      "name": "Sunday Dech",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "count": 2,
+          "pts": 5
+        }
+      ]
+    },
+    {
+      "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+      "name": "Taran Armstrong",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 9,
+      "assistedMakes": 2,
+      "assists": 7,
+      "ptsCreated": 16,
+      "finds": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+      "name": "Will Magnay",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 5,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 2,
+          "pts": 4
+        }
+      ]
+    }
+  ],
+  "onOff": [
+    {
+      "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+      "name": "Ben Gold",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 15,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 0,
+          "offMin": 15,
+          "onPoss": 0,
+          "offPoss": 47,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 14.2,
+          "offMin": 0.8,
+          "onPoss": 44,
+          "offPoss": 3,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 9.2,
+          "offMin": 5.8,
+          "onPoss": 30,
+          "offPoss": 17,
+          "onPts": 1,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 10.7,
+          "offMin": 4.3,
+          "onPoss": 34,
+          "offPoss": 13,
+          "onPts": 1,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 12.4,
+          "offMin": 2.6,
+          "onPoss": 38,
+          "offPoss": 9,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 8.8,
+          "offMin": 6.2,
+          "onPoss": 27,
+          "offPoss": 20,
+          "onPts": 2,
+          "offPts": 1,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+          "name": "Ryley Haywood",
+          "onMin": 3.9,
+          "offMin": 11.1,
+          "onPoss": 12,
+          "offPoss": 35,
+          "onPts": 2,
+          "offPts": 1,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+          "name": "Jed Richardson",
+          "onMin": 0.8,
+          "offMin": 14.2,
+          "onPoss": 3,
+          "offPoss": 44,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+      "name": "Dakota Mathias",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 38.9,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 24.7,
+          "offMin": 14.2,
+          "onPoss": 89,
+          "offPoss": 44,
+          "onPts": 10,
+          "offPts": 5,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 33.9,
+          "offMin": 5,
+          "onPoss": 119,
+          "offPoss": 14,
+          "onPts": 15,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 34.6,
+          "offMin": 4.3,
+          "onPoss": 120,
+          "offPoss": 13,
+          "onPts": 15,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 31.1,
+          "offMin": 7.8,
+          "onPoss": 105,
+          "offPoss": 28,
+          "onPts": 11,
+          "offPts": 4,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 14.2,
+          "offMin": 24.7,
+          "onPoss": 44,
+          "offPoss": 89,
+          "onPts": 5,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 13.2,
+          "offMin": 25.6,
+          "onPoss": 43,
+          "offPoss": 90,
+          "onPts": 4,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+          "name": "Ryley Haywood",
+          "onMin": 3.1,
+          "offMin": 35.8,
+          "onPoss": 9,
+          "offPoss": 124,
+          "onPts": 0,
+          "offPts": 15,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+          "name": "Jed Richardson",
+          "onMin": 0.7,
+          "offMin": 38.1,
+          "onPoss": 3,
+          "offPoss": 130,
+          "onPts": 0,
+          "offPts": 15,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+      "name": "David Johnson",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 36.2,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 25.5,
+          "offMin": 10.7,
+          "onPoss": 93,
+          "offPoss": 34,
+          "onPts": 11,
+          "offPts": 7,
+          "onReb": 5,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 34.6,
+          "offMin": 1.7,
+          "onPoss": 120,
+          "offPoss": 7,
+          "onPts": 18,
+          "offPts": 0,
+          "onReb": 7,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 32.9,
+          "offMin": 3.3,
+          "onPoss": 115,
+          "offPoss": 12,
+          "onPts": 16,
+          "offPts": 2,
+          "onReb": 7,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 26.8,
+          "offMin": 9.4,
+          "onPoss": 92,
+          "offPoss": 35,
+          "onPts": 16,
+          "offPts": 2,
+          "onReb": 5,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 10.7,
+          "offMin": 25.5,
+          "onPoss": 34,
+          "offPoss": 93,
+          "onPts": 7,
+          "offPts": 11,
+          "onReb": 2,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 10.4,
+          "offMin": 25.8,
+          "onPoss": 37,
+          "offPoss": 90,
+          "onPts": 4,
+          "offPts": 14,
+          "onReb": 2,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+          "name": "Ryley Haywood",
+          "onMin": 1.7,
+          "offMin": 34.6,
+          "onPoss": 7,
+          "offPoss": 120,
+          "onPts": 0,
+          "offPts": 18,
+          "onReb": 0,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+          "name": "Jed Richardson",
+          "onMin": 2.4,
+          "offMin": 33.8,
+          "onPoss": 10,
+          "offPoss": 117,
+          "onPts": 0,
+          "offPts": 18,
+          "onReb": 0,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+      "name": "Jack McVeigh",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "minutes": 29.7,
+      "teammates": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "onMin": 22.5,
+          "offMin": 7.2,
+          "onPoss": 82,
+          "offPoss": 22,
+          "onPts": 13,
+          "offPts": 4,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "onMin": 18.3,
+          "offMin": 11.4,
+          "onPoss": 70,
+          "offPoss": 34,
+          "onPts": 10,
+          "offPts": 7,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "onMin": 22.7,
+          "offMin": 7,
+          "onPoss": 81,
+          "offPoss": 23,
+          "onPts": 13,
+          "offPts": 4,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "onMin": 19,
+          "offMin": 10.6,
+          "onPoss": 73,
+          "offPoss": 31,
+          "onPts": 12,
+          "offPts": 5,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "onMin": 8.5,
+          "offMin": 21.1,
+          "onPoss": 24,
+          "offPoss": 80,
+          "onPts": 5,
+          "offPts": 12,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "onMin": 11.3,
+          "offMin": 18.4,
+          "onPoss": 34,
+          "offPoss": 70,
+          "onPts": 7,
+          "offPts": 10,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "onMin": 1.8,
+          "offMin": 27.9,
+          "onPoss": 5,
+          "offPoss": 99,
+          "onPts": 2,
+          "offPts": 15,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "onMin": 7.2,
+          "offMin": 22.5,
+          "onPoss": 22,
+          "offPoss": 82,
+          "onPts": 4,
+          "offPts": 13,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "onMin": 7.3,
+          "offMin": 22.3,
+          "onPoss": 25,
+          "offPoss": 79,
+          "onPts": 2,
+          "offPts": 15,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+      "name": "Jaylon Brown",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "minutes": 27.2,
+      "teammates": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "onMin": 22.1,
+          "offMin": 5.1,
+          "onPoss": 80,
+          "offPoss": 18,
+          "onPts": 13,
+          "offPts": 7,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "onMin": 26.8,
+          "offMin": 0.4,
+          "onPoss": 94,
+          "offPoss": 4,
+          "onPts": 20,
+          "offPts": 0,
+          "onReb": 5,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 0
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "onMin": 18.3,
+          "offMin": 8.9,
+          "onPoss": 70,
+          "offPoss": 28,
+          "onPts": 11,
+          "offPts": 9,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "onMin": 18.3,
+          "offMin": 8.9,
+          "onPoss": 70,
+          "offPoss": 28,
+          "onPts": 13,
+          "offPts": 7,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "onMin": 6.8,
+          "offMin": 20.4,
+          "onPoss": 21,
+          "offPoss": 77,
+          "onPts": 7,
+          "offPts": 13,
+          "onReb": 1,
+          "offReb": 4,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "onMin": 0,
+          "offMin": 27.2,
+          "onPoss": 0,
+          "offPoss": 98,
+          "onPts": 0,
+          "offPts": 20,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "onMin": 0,
+          "offMin": 27.2,
+          "onPoss": 0,
+          "offPoss": 98,
+          "onPts": 0,
+          "offPts": 20,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "onMin": 5.1,
+          "offMin": 22.1,
+          "onPoss": 18,
+          "offPoss": 80,
+          "onPts": 7,
+          "offPts": 13,
+          "onReb": 1,
+          "offReb": 4,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "onMin": 11.4,
+          "offMin": 15.8,
+          "onPoss": 39,
+          "offPoss": 59,
+          "onPts": 9,
+          "offPts": 11,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 3,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+      "name": "Jed Richardson",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 2.4,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 1.6,
+          "offMin": 0.8,
+          "onPoss": 7,
+          "offPoss": 3,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 0.7,
+          "offMin": 1.7,
+          "onPoss": 3,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 1,
+          "offMin": 1.4,
+          "onPoss": 3,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 2.4,
+          "offMin": 0,
+          "onPoss": 10,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 0,
+          "offMin": 2.4,
+          "onPoss": 0,
+          "offPoss": 10,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 0.8,
+          "offMin": 1.6,
+          "onPoss": 3,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 1.4,
+          "offMin": 1,
+          "onPoss": 7,
+          "offPoss": 3,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+          "name": "Ryley Haywood",
+          "onMin": 1.7,
+          "offMin": 0.7,
+          "onPoss": 7,
+          "offPoss": 3,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+      "name": "Jonah Bolden",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "minutes": 12.5,
+      "teammates": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "onMin": 0,
+          "offMin": 12.5,
+          "onPoss": 0,
+          "offPoss": 41,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "onMin": 5.1,
+          "offMin": 7.4,
+          "onPoss": 18,
+          "offPoss": 23,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "onMin": 7.5,
+          "offMin": 5.1,
+          "onPoss": 23,
+          "offPoss": 18,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "onMin": 2.4,
+          "offMin": 10.1,
+          "onPoss": 10,
+          "offPoss": 31,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "onMin": 7.2,
+          "offMin": 5.4,
+          "onPoss": 22,
+          "offPoss": 19,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "onMin": 10.1,
+          "offMin": 2.4,
+          "onPoss": 31,
+          "offPoss": 10,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "onMin": 7.4,
+          "offMin": 5.1,
+          "onPoss": 23,
+          "offPoss": 18,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "onMin": 0.6,
+          "offMin": 12,
+          "onPoss": 1,
+          "offPoss": 40,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "onMin": 9.8,
+          "offMin": 2.7,
+          "onPoss": 36,
+          "offPoss": 5,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+      "name": "Keanu Pinder",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "minutes": 28,
+      "teammates": [
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "onMin": 22.1,
+          "offMin": 5.9,
+          "onPoss": 80,
+          "offPoss": 19,
+          "onPts": 9,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "onMin": 26.1,
+          "offMin": 1.9,
+          "onPoss": 94,
+          "offPoss": 5,
+          "onPts": 9,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "onMin": 18.7,
+          "offMin": 9.2,
+          "onPoss": 70,
+          "offPoss": 29,
+          "onPts": 6,
+          "offPts": 5,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "onMin": 22.5,
+          "offMin": 5.5,
+          "onPoss": 82,
+          "offPoss": 17,
+          "onPts": 8,
+          "offPts": 3,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "onMin": 7.1,
+          "offMin": 20.8,
+          "onPoss": 22,
+          "offPoss": 77,
+          "onPts": 5,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "onMin": 5.8,
+          "offMin": 22.2,
+          "onPoss": 19,
+          "offPoss": 80,
+          "onPts": 2,
+          "offPts": 9,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "onMin": 1.2,
+          "offMin": 26.8,
+          "onPoss": 4,
+          "offPoss": 95,
+          "onPts": 2,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "onMin": 0,
+          "offMin": 28,
+          "onPoss": 0,
+          "offPoss": 99,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "onMin": 8.4,
+          "offMin": 19.6,
+          "onPoss": 25,
+          "offPoss": 74,
+          "onPts": 3,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+      "name": "Kyrin Galloway",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "minutes": 18.2,
+      "teammates": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "onMin": 8.4,
+          "offMin": 9.8,
+          "onPoss": 25,
+          "offPoss": 36,
+          "onPts": 6,
+          "offPts": 13,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "onMin": 11.4,
+          "offMin": 6.8,
+          "onPoss": 39,
+          "offPoss": 22,
+          "onPts": 14,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "onMin": 13,
+          "offMin": 5.2,
+          "onPoss": 43,
+          "offPoss": 18,
+          "onPts": 17,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "onMin": 2.5,
+          "offMin": 15.7,
+          "onPoss": 11,
+          "offPoss": 50,
+          "onPts": 3,
+          "offPts": 16,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "onMin": 7.3,
+          "offMin": 10.8,
+          "onPoss": 25,
+          "offPoss": 36,
+          "onPts": 2,
+          "offPts": 17,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "onMin": 13.6,
+          "offMin": 4.6,
+          "onPoss": 43,
+          "offPoss": 18,
+          "onPts": 16,
+          "offPts": 3,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "onMin": 6.8,
+          "offMin": 11.4,
+          "onPoss": 22,
+          "offPoss": 39,
+          "onPts": 5,
+          "offPts": 14,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "onMin": 0,
+          "offMin": 18.2,
+          "onPoss": 0,
+          "offPoss": 61,
+          "onPts": 0,
+          "offPts": 19,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "onMin": 9.8,
+          "offMin": 8.4,
+          "onPoss": 36,
+          "offPoss": 25,
+          "onPts": 13,
+          "offPts": 6,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+      "name": "Lloyd McVeigh",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "minutes": 1.8,
+      "teammates": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "onMin": 1.2,
+          "offMin": 0.6,
+          "onPoss": 4,
+          "offPoss": 1,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "onMin": 0,
+          "offMin": 1.8,
+          "onPoss": 0,
+          "offPoss": 5,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "onMin": 0,
+          "offMin": 1.8,
+          "onPoss": 0,
+          "offPoss": 5,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "onMin": 0,
+          "offMin": 1.8,
+          "onPoss": 0,
+          "offPoss": 5,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "onMin": 1.8,
+          "offMin": 0,
+          "onPoss": 5,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "onMin": 1.8,
+          "offMin": 0,
+          "onPoss": 5,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "onMin": 1.8,
+          "offMin": 0,
+          "onPoss": 5,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "onMin": 0.6,
+          "offMin": 1.2,
+          "onPoss": 1,
+          "offPoss": 4,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "onMin": 0,
+          "offMin": 1.8,
+          "onPoss": 0,
+          "offPoss": 5,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+      "name": "Malique Lewis",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "minutes": 33.5,
+      "teammates": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "onMin": 26.1,
+          "offMin": 7.5,
+          "onPoss": 94,
+          "offPoss": 23,
+          "onPts": 10,
+          "offPts": 0,
+          "onReb": 10,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 0
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "onMin": 26.8,
+          "offMin": 6.7,
+          "onPoss": 94,
+          "offPoss": 23,
+          "onPts": 10,
+          "offPts": 0,
+          "onReb": 10,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 0
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "onMin": 20.7,
+          "offMin": 12.8,
+          "onPoss": 76,
+          "offPoss": 41,
+          "onPts": 7,
+          "offPts": 3,
+          "onReb": 7,
+          "offReb": 3,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "onMin": 22.7,
+          "offMin": 10.8,
+          "onPoss": 81,
+          "offPoss": 36,
+          "onPts": 7,
+          "offPts": 3,
+          "onReb": 7,
+          "offReb": 3,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "onMin": 10.7,
+          "offMin": 22.8,
+          "onPoss": 34,
+          "offPoss": 83,
+          "onPts": 3,
+          "offPts": 7,
+          "onReb": 2,
+          "offReb": 8,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "onMin": 6.7,
+          "offMin": 26.8,
+          "onPoss": 23,
+          "offPoss": 94,
+          "onPts": 0,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 10,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "onMin": 0,
+          "offMin": 33.5,
+          "onPoss": 0,
+          "offPoss": 117,
+          "onPts": 0,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 10,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "onMin": 7.5,
+          "offMin": 26.1,
+          "onPoss": 23,
+          "offPoss": 94,
+          "onPts": 0,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 10,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "onMin": 13,
+          "offMin": 20.6,
+          "onPoss": 43,
+          "offPoss": 74,
+          "onPts": 3,
+          "offPts": 7,
+          "onReb": 4,
+          "offReb": 6,
+          "onAst": 1,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+      "name": "Nicholas Stoddart",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 14.7,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 5.9,
+          "offMin": 8.8,
+          "onPoss": 23,
+          "offPoss": 27,
+          "onPts": 0,
+          "offPts": 1,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 13.2,
+          "offMin": 1.4,
+          "onPoss": 43,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 1,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 8.2,
+          "offMin": 6.4,
+          "onPoss": 29,
+          "offPoss": 21,
+          "onPts": 0,
+          "offPts": 1,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 10.4,
+          "offMin": 4.3,
+          "onPoss": 37,
+          "offPoss": 13,
+          "onPts": 1,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 6.2,
+          "offMin": 8.5,
+          "onPoss": 18,
+          "offPoss": 32,
+          "onPts": 1,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 8.8,
+          "offMin": 5.9,
+          "onPoss": 27,
+          "offPoss": 23,
+          "onPts": 1,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+          "name": "Ryley Haywood",
+          "onMin": 4.5,
+          "offMin": 10.1,
+          "onPoss": 16,
+          "offPoss": 34,
+          "onPts": 1,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+          "name": "Jed Richardson",
+          "onMin": 1.4,
+          "offMin": 13.2,
+          "onPoss": 7,
+          "offPoss": 43,
+          "onPts": 0,
+          "offPts": 1,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+      "name": "Nick Marshall",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 31.1,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 18.7,
+          "offMin": 12.4,
+          "onPoss": 67,
+          "offPoss": 38,
+          "onPts": 5,
+          "offPts": 8,
+          "onReb": 3,
+          "offReb": 6,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 31.1,
+          "offMin": 0,
+          "onPoss": 105,
+          "offPoss": 0,
+          "onPts": 13,
+          "offPts": 0,
+          "onReb": 9,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 26.1,
+          "offMin": 5,
+          "onPoss": 91,
+          "offPoss": 14,
+          "onPts": 9,
+          "offPts": 4,
+          "onReb": 7,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 26.8,
+          "offMin": 4.3,
+          "onPoss": 92,
+          "offPoss": 13,
+          "onPts": 11,
+          "offPts": 2,
+          "onReb": 7,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 12.4,
+          "offMin": 18.7,
+          "onPoss": 38,
+          "offPoss": 67,
+          "onPts": 8,
+          "offPts": 5,
+          "onReb": 6,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 6.2,
+          "offMin": 24.9,
+          "onPoss": 18,
+          "offPoss": 87,
+          "onPts": 4,
+          "offPts": 9,
+          "onReb": 3,
+          "offReb": 6,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+          "name": "Ryley Haywood",
+          "onMin": 3.1,
+          "offMin": 28,
+          "onPoss": 9,
+          "offPoss": 96,
+          "onPts": 2,
+          "offPts": 11,
+          "onReb": 1,
+          "offReb": 8,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+          "name": "Jed Richardson",
+          "onMin": 0,
+          "offMin": 31.1,
+          "onPoss": 0,
+          "offPoss": 105,
+          "onPts": 0,
+          "offPts": 13,
+          "onReb": 0,
+          "offReb": 9,
+          "onAst": 0,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+      "name": "Reyne Smith",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "minutes": 21.2,
+      "teammates": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "onMin": 18.7,
+          "offMin": 2.4,
+          "onPoss": 70,
+          "offPoss": 10,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "onMin": 18.3,
+          "offMin": 2.8,
+          "onPoss": 70,
+          "offPoss": 10,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "onMin": 20.7,
+          "offMin": 0.4,
+          "onPoss": 76,
+          "offPoss": 4,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "onMin": 19,
+          "offMin": 2.1,
+          "onPoss": 73,
+          "offPoss": 7,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "onMin": 0,
+          "offMin": 21.2,
+          "onPoss": 0,
+          "offPoss": 80,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "onMin": 2.8,
+          "offMin": 18.3,
+          "onPoss": 10,
+          "offPoss": 70,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "onMin": 0,
+          "offMin": 21.2,
+          "onPoss": 0,
+          "offPoss": 80,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "onMin": 2.4,
+          "offMin": 18.8,
+          "onPoss": 10,
+          "offPoss": 70,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "onMin": 2.5,
+          "offMin": 18.7,
+          "onPoss": 11,
+          "offPoss": 69,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+      "name": "Ryley Haywood",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 4.7,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 0.9,
+          "offMin": 3.9,
+          "onPoss": 4,
+          "offPoss": 12,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 3.1,
+          "offMin": 1.7,
+          "onPoss": 9,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 0.2,
+          "offMin": 4.5,
+          "onPoss": 0,
+          "offPoss": 16,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 1.7,
+          "offMin": 3.1,
+          "onPoss": 7,
+          "offPoss": 9,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 3.1,
+          "offMin": 1.7,
+          "onPoss": 9,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 3.9,
+          "offMin": 0.9,
+          "onPoss": 12,
+          "offPoss": 4,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 4.5,
+          "offMin": 0.2,
+          "onPoss": 16,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+          "name": "Jed Richardson",
+          "onMin": 1.7,
+          "offMin": 3.1,
+          "onPoss": 7,
+          "offPoss": 9,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+      "name": "Shaun Bruce",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "minutes": 13.3,
+      "teammates": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "onMin": 5.8,
+          "offMin": 7.5,
+          "onPoss": 19,
+          "offPoss": 23,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "onMin": 0,
+          "offMin": 13.2,
+          "onPoss": 0,
+          "offPoss": 42,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "onMin": 6.7,
+          "offMin": 6.6,
+          "onPoss": 23,
+          "offPoss": 19,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "onMin": 2.8,
+          "offMin": 10.4,
+          "onPoss": 10,
+          "offPoss": 32,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "onMin": 11.3,
+          "offMin": 2,
+          "onPoss": 34,
+          "offPoss": 8,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "onMin": 10.4,
+          "offMin": 2.8,
+          "onPoss": 32,
+          "offPoss": 10,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 4,
+          "offAst": 0
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "onMin": 1.8,
+          "offMin": 11.5,
+          "onPoss": 5,
+          "offPoss": 37,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "onMin": 7.4,
+          "offMin": 5.8,
+          "onPoss": 23,
+          "offPoss": 19,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 4,
+          "offAst": 0
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "onMin": 6.8,
+          "offMin": 6.5,
+          "onPoss": 22,
+          "offPoss": 20,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "2b794dfb-410d-11f0-9261-975350631782",
+      "name": "Sunday Dech",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "minutes": 17.3,
+      "teammates": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "onMin": 7.1,
+          "offMin": 10.1,
+          "onPoss": 22,
+          "offPoss": 31,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "onMin": 6.8,
+          "offMin": 10.5,
+          "onPoss": 21,
+          "offPoss": 32,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "onMin": 10.7,
+          "offMin": 6.6,
+          "onPoss": 34,
+          "offPoss": 19,
+          "onPts": 5,
+          "offPts": 1,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "onMin": 0,
+          "offMin": 17.3,
+          "onPoss": 0,
+          "offPoss": 53,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "onMin": 8.5,
+          "offMin": 8.7,
+          "onPoss": 24,
+          "offPoss": 29,
+          "onPts": 3,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "onMin": 10.4,
+          "offMin": 6.8,
+          "onPoss": 32,
+          "offPoss": 21,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "onMin": 1.8,
+          "offMin": 15.5,
+          "onPoss": 5,
+          "offPoss": 48,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "onMin": 10.1,
+          "offMin": 7.1,
+          "onPoss": 31,
+          "offPoss": 22,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "onMin": 13.6,
+          "offMin": 3.7,
+          "onPoss": 43,
+          "offPoss": 10,
+          "onPts": 4,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+      "name": "Taran Armstrong",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 34.1,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 24.9,
+          "offMin": 9.2,
+          "onPoss": 89,
+          "offPoss": 30,
+          "onPts": 11,
+          "offPts": 9,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 4,
+          "offAst": 3
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 33.9,
+          "offMin": 0.2,
+          "onPoss": 119,
+          "offPoss": 0,
+          "onPts": 20,
+          "offPts": 0,
+          "onReb": 6,
+          "offReb": 0,
+          "onAst": 7,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 32.9,
+          "offMin": 1.2,
+          "onPoss": 115,
+          "offPoss": 4,
+          "onPts": 16,
+          "offPts": 4,
+          "onReb": 6,
+          "offReb": 0,
+          "onAst": 7,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 26.1,
+          "offMin": 8,
+          "onPoss": 91,
+          "offPoss": 28,
+          "onPts": 15,
+          "offPts": 5,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 6,
+          "offAst": 1
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 9.2,
+          "offMin": 24.9,
+          "onPoss": 30,
+          "offPoss": 89,
+          "onPts": 9,
+          "offPts": 11,
+          "onReb": 2,
+          "offReb": 4,
+          "onAst": 3,
+          "offAst": 4
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 8.2,
+          "offMin": 25.8,
+          "onPoss": 29,
+          "offPoss": 90,
+          "onPts": 9,
+          "offPts": 11,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 6
+        },
+        {
+          "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+          "name": "Ryley Haywood",
+          "onMin": 0.2,
+          "offMin": 33.9,
+          "onPoss": 0,
+          "offPoss": 119,
+          "onPts": 0,
+          "offPts": 20,
+          "onReb": 0,
+          "offReb": 6,
+          "onAst": 0,
+          "offAst": 7
+        },
+        {
+          "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+          "name": "Jed Richardson",
+          "onMin": 1,
+          "offMin": 33.1,
+          "onPoss": 3,
+          "offPoss": 116,
+          "onPts": 0,
+          "offPts": 20,
+          "onReb": 0,
+          "offReb": 6,
+          "onAst": 0,
+          "offAst": 7
+        }
+      ]
+    },
+    {
+      "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+      "name": "Will Magnay",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 25.5,
+      "teammates": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 24.7,
+          "offMin": 0.9,
+          "onPoss": 89,
+          "offPoss": 4,
+          "onPts": 15,
+          "offPts": 2,
+          "onReb": 7,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 24.9,
+          "offMin": 0.6,
+          "onPoss": 89,
+          "offPoss": 4,
+          "onPts": 17,
+          "offPts": 0,
+          "onReb": 7,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 25.5,
+          "offMin": 0,
+          "onPoss": 93,
+          "offPoss": 0,
+          "onPts": 17,
+          "offPts": 0,
+          "onReb": 7,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 18.7,
+          "offMin": 6.8,
+          "onPoss": 67,
+          "offPoss": 26,
+          "onPts": 11,
+          "offPts": 6,
+          "onReb": 5,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 0,
+          "offMin": 25.5,
+          "onPoss": 0,
+          "offPoss": 93,
+          "onPts": 0,
+          "offPts": 17,
+          "onReb": 0,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 5.9,
+          "offMin": 19.7,
+          "onPoss": 23,
+          "offPoss": 70,
+          "onPts": 4,
+          "offPts": 13,
+          "onReb": 1,
+          "offReb": 6,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+          "name": "Ryley Haywood",
+          "onMin": 0.9,
+          "offMin": 24.7,
+          "onPoss": 4,
+          "offPoss": 89,
+          "onPts": 2,
+          "offPts": 15,
+          "onReb": 0,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+          "name": "Jed Richardson",
+          "onMin": 1.6,
+          "offMin": 24,
+          "onPoss": 7,
+          "offPoss": 86,
+          "onPts": 2,
+          "offPts": 15,
+          "onReb": 1,
+          "offReb": 6,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    }
+  ],
+  "fetchedAt": "2026-09-23T12:26:41.096Z"
+}

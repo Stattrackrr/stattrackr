@@ -1,8 +1,8 @@
 {
   "year": 2023,
-  "generatedAt": "2026-08-24T04:24:49.147Z",
+  "generatedAt": "2026-09-23T12:26:05.931Z",
   "source": "embed-api.eui.connect.sportradar.com",
-  "gameCount": 100,
+  "gameCount": 154,
   "games": {
     "3dfe67c7-4114-11f0-9d41-13101ae268c9": {
       "home_q1": 23,
@@ -1003,6 +1003,546 @@
       "visitor_q2": 17,
       "visitor_q3": 17,
       "visitor_q4": 16
+    },
+    "2ff11047-4114-11f0-886a-d1c5963b9e43": {
+      "home_q1": 17,
+      "home_q2": 27,
+      "home_q3": 23,
+      "home_q4": 10,
+      "visitor_q1": 24,
+      "visitor_q2": 18,
+      "visitor_q3": 19,
+      "visitor_q4": 16
+    },
+    "3018f1fa-4114-11f0-a84c-d1c5963b9e43": {
+      "home_q1": 16,
+      "home_q2": 17,
+      "home_q3": 20,
+      "home_q4": 23,
+      "visitor_q1": 14,
+      "visitor_q2": 18,
+      "visitor_q3": 18,
+      "visitor_q4": 29
+    },
+    "2fcec4bb-4114-11f0-a928-d1c5963b9e43": {
+      "home_q1": 18,
+      "home_q2": 17,
+      "home_q3": 31,
+      "home_q4": 30,
+      "visitor_q1": 35,
+      "visitor_q2": 18,
+      "visitor_q3": 14,
+      "visitor_q4": 26
+    },
+    "2fadc83d-4114-11f0-aed5-d1c5963b9e43": {
+      "home_q1": 25,
+      "home_q2": 22,
+      "home_q3": 19,
+      "home_q4": 22,
+      "visitor_q1": 20,
+      "visitor_q2": 23,
+      "visitor_q3": 13,
+      "visitor_q4": 24
+    },
+    "2f85bdf9-4114-11f0-b4ef-d1c5963b9e43": {
+      "home_q1": 20,
+      "home_q2": 25,
+      "home_q3": 31,
+      "home_q4": 28,
+      "visitor_q1": 26,
+      "visitor_q2": 25,
+      "visitor_q3": 20,
+      "visitor_q4": 24
+    },
+    "2f5fb1e7-4114-11f0-9353-d1c5963b9e43": {
+      "home_q1": 30,
+      "home_q2": 17,
+      "home_q3": 19,
+      "home_q4": 26,
+      "visitor_q1": 31,
+      "visitor_q2": 25,
+      "visitor_q3": 23,
+      "visitor_q4": 18
+    },
+    "2f29be69-4114-11f0-9a08-d1c5963b9e43": {
+      "home_q1": 15,
+      "home_q2": 16,
+      "home_q3": 16,
+      "home_q4": 25,
+      "visitor_q1": 17,
+      "visitor_q2": 22,
+      "visitor_q3": 24,
+      "visitor_q4": 19
+    },
+    "2f3b0d42-4114-11f0-b872-d1c5963b9e43": {
+      "home_q1": 24,
+      "home_q2": 18,
+      "home_q3": 25,
+      "home_q4": 16,
+      "visitor_q1": 23,
+      "visitor_q2": 21,
+      "visitor_q3": 24,
+      "visitor_q4": 24
+    },
+    "2ecde0ea-4114-11f0-846f-d1c5963b9e43": {
+      "home_q1": 14,
+      "home_q2": 19,
+      "home_q3": 23,
+      "home_q4": 25,
+      "visitor_q1": 18,
+      "visitor_q2": 20,
+      "visitor_q3": 17,
+      "visitor_q4": 16
+    },
+    "2e8b9101-4114-11f0-80b1-d1c5963b9e43": {
+      "home_q1": 34,
+      "home_q2": 18,
+      "home_q3": 21,
+      "home_q4": 21,
+      "visitor_q1": 17,
+      "visitor_q2": 19,
+      "visitor_q3": 22,
+      "visitor_q4": 18
+    },
+    "2e64b384-4114-11f0-b315-d1c5963b9e43": {
+      "home_q1": 26,
+      "home_q2": 23,
+      "home_q3": 20,
+      "home_q4": 20,
+      "visitor_q1": 24,
+      "visitor_q2": 22,
+      "visitor_q3": 21,
+      "visitor_q4": 22
+    },
+    "908a5caa-412f-11f0-a2bf-c18ca6e1b4e0": {
+      "home_q1": 27,
+      "home_q2": 28,
+      "home_q3": 17,
+      "home_q4": 15,
+      "visitor_q1": 21,
+      "visitor_q2": 23,
+      "visitor_q3": 23,
+      "visitor_q4": 18
+    },
+    "9039aabd-412f-11f0-b469-c18ca6e1b4e0": {
+      "home_q1": 23,
+      "home_q2": 24,
+      "home_q3": 22,
+      "home_q4": 22,
+      "visitor_q1": 23,
+      "visitor_q2": 20,
+      "visitor_q3": 18,
+      "visitor_q4": 17
+    },
+    "900fee72-412f-11f0-a6fb-c18ca6e1b4e0": {
+      "home_q1": 19,
+      "home_q2": 31,
+      "home_q3": 23,
+      "home_q4": 26,
+      "visitor_q1": 22,
+      "visitor_q2": 22,
+      "visitor_q3": 24,
+      "visitor_q4": 20
+    },
+    "8fd211e0-412f-11f0-be30-c18ca6e1b4e0": {
+      "home_q1": 21,
+      "home_q2": 20,
+      "home_q3": 34,
+      "home_q4": 12,
+      "visitor_q1": 19,
+      "visitor_q2": 26,
+      "visitor_q3": 21,
+      "visitor_q4": 19
+    },
+    "8f88491c-412f-11f0-a10a-c18ca6e1b4e0": {
+      "home_q1": 17,
+      "home_q2": 25,
+      "home_q3": 18,
+      "home_q4": 23,
+      "visitor_q1": 20,
+      "visitor_q2": 32,
+      "visitor_q3": 32,
+      "visitor_q4": 19
+    },
+    "8f5e652c-412f-11f0-ae83-c18ca6e1b4e0": {
+      "home_q1": 21,
+      "home_q2": 16,
+      "home_q3": 30,
+      "home_q4": 24,
+      "visitor_q1": 23,
+      "visitor_q2": 15,
+      "visitor_q3": 17,
+      "visitor_q4": 26
+    },
+    "2f156628-4114-11f0-9f08-d1c5963b9e43": {
+      "home_q1": 26,
+      "home_q2": 33,
+      "home_q3": 24,
+      "home_q4": 25,
+      "visitor_q1": 23,
+      "visitor_q2": 19,
+      "visitor_q3": 29,
+      "visitor_q4": 21
+    },
+    "2ee786d7-4114-11f0-81ef-d1c5963b9e43": {
+      "home_q1": 24,
+      "home_q2": 21,
+      "home_q3": 24,
+      "home_q4": 21,
+      "visitor_q1": 21,
+      "visitor_q2": 18,
+      "visitor_q3": 23,
+      "visitor_q4": 25
+    },
+    "2e9f57c4-4114-11f0-b784-d1c5963b9e43": {
+      "home_q1": 24,
+      "home_q2": 28,
+      "home_q3": 19,
+      "home_q4": 25,
+      "visitor_q1": 29,
+      "visitor_q2": 22,
+      "visitor_q3": 18,
+      "visitor_q4": 15
+    },
+    "2e4e3099-4114-11f0-b8e1-d1c5963b9e43": {
+      "home_q1": 26,
+      "home_q2": 25,
+      "home_q3": 18,
+      "home_q4": 18,
+      "visitor_q1": 20,
+      "visitor_q2": 22,
+      "visitor_q3": 19,
+      "visitor_q4": 19
+    },
+    "90775b08-412f-11f0-b206-c18ca6e1b4e0": {
+      "home_q1": 31,
+      "home_q2": 29,
+      "home_q3": 24,
+      "home_q4": 19,
+      "visitor_q1": 21,
+      "visitor_q2": 27,
+      "visitor_q3": 20,
+      "visitor_q4": 32
+    },
+    "90274351-412f-11f0-875e-c18ca6e1b4e0": {
+      "home_q1": 9,
+      "home_q2": 27,
+      "home_q3": 16,
+      "home_q4": 27,
+      "visitor_q1": 20,
+      "visitor_q2": 22,
+      "visitor_q3": 26,
+      "visitor_q4": 16
+    },
+    "8ff8e15f-412f-11f0-9f13-c18ca6e1b4e0": {
+      "home_q1": 21,
+      "home_q2": 21,
+      "home_q3": 15,
+      "home_q4": 25,
+      "visitor_q1": 21,
+      "visitor_q2": 22,
+      "visitor_q3": 30,
+      "visitor_q4": 17
+    },
+    "8fbd7f6c-412f-11f0-a234-c18ca6e1b4e0": {
+      "home_q1": 24,
+      "home_q2": 20,
+      "home_q3": 17,
+      "home_q4": 23,
+      "visitor_q1": 15,
+      "visitor_q2": 23,
+      "visitor_q3": 22,
+      "visitor_q4": 23
+    },
+    "8f99ce8c-412f-11f0-9964-c18ca6e1b4e0": {
+      "home_q1": 26,
+      "home_q2": 22,
+      "home_q3": 23,
+      "home_q4": 14,
+      "visitor_q1": 24,
+      "visitor_q2": 20,
+      "visitor_q3": 26,
+      "visitor_q4": 27
+    },
+    "8f4c5f5e-412f-11f0-8117-c18ca6e1b4e0": {
+      "home_q1": 25,
+      "home_q2": 20,
+      "home_q3": 23,
+      "home_q4": 27,
+      "visitor_q1": 36,
+      "visitor_q2": 21,
+      "visitor_q3": 18,
+      "visitor_q4": 30
+    },
+    "2efb6d48-4114-11f0-a35a-d1c5963b9e43": {
+      "home_q1": 23,
+      "home_q2": 19,
+      "home_q3": 22,
+      "home_q4": 33,
+      "visitor_q1": 13,
+      "visitor_q2": 30,
+      "visitor_q3": 20,
+      "visitor_q4": 25
+    },
+    "2eb98920-4114-11f0-816a-d1c5963b9e43": {
+      "home_q1": 23,
+      "home_q2": 16,
+      "home_q3": 28,
+      "home_q4": 22,
+      "visitor_q1": 20,
+      "visitor_q2": 20,
+      "visitor_q3": 25,
+      "visitor_q4": 13
+    },
+    "2e786d53-4114-11f0-b6e0-d1c5963b9e43": {
+      "home_q1": 17,
+      "home_q2": 28,
+      "home_q3": 22,
+      "home_q4": 29,
+      "visitor_q1": 15,
+      "visitor_q2": 18,
+      "visitor_q3": 16,
+      "visitor_q4": 24
+    },
+    "909e54a1-412f-11f0-b666-c18ca6e1b4e0": {
+      "home_q1": 22,
+      "home_q2": 29,
+      "home_q3": 12,
+      "home_q4": 28,
+      "visitor_q1": 29,
+      "visitor_q2": 30,
+      "visitor_q3": 18,
+      "visitor_q4": 24
+    },
+    "9064cd95-412f-11f0-87c0-c18ca6e1b4e0": {
+      "home_q1": 28,
+      "home_q2": 14,
+      "home_q3": 23,
+      "home_q4": 20,
+      "visitor_q1": 28,
+      "visitor_q2": 26,
+      "visitor_q3": 23,
+      "visitor_q4": 25
+    },
+    "905001d1-412f-11f0-8134-c18ca6e1b4e0": {
+      "home_q1": 28,
+      "home_q2": 22,
+      "home_q3": 20,
+      "home_q4": 29,
+      "visitor_q1": 26,
+      "visitor_q2": 16,
+      "visitor_q3": 20,
+      "visitor_q4": 24
+    },
+    "8fe53688-412f-11f0-8880-c18ca6e1b4e0": {
+      "home_q1": 14,
+      "home_q2": 29,
+      "home_q3": 23,
+      "home_q4": 23,
+      "visitor_q1": 14,
+      "visitor_q2": 14,
+      "visitor_q3": 17,
+      "visitor_q4": 33
+    },
+    "8fab541f-412f-11f0-8ac2-c18ca6e1b4e0": {
+      "home_q1": 18,
+      "home_q2": 25,
+      "home_q3": 25,
+      "home_q4": 18,
+      "visitor_q1": 23,
+      "visitor_q2": 20,
+      "visitor_q3": 21,
+      "visitor_q4": 21
+    },
+    "8f766b51-412f-11f0-a3eb-c18ca6e1b4e0": {
+      "home_q1": 23,
+      "home_q2": 16,
+      "home_q3": 15,
+      "home_q4": 35,
+      "visitor_q1": 25,
+      "visitor_q2": 15,
+      "visitor_q3": 20,
+      "visitor_q4": 20
+    },
+    "8f3a978a-412f-11f0-9eee-c18ca6e1b4e0": {
+      "home_q1": 17,
+      "home_q2": 18,
+      "home_q3": 17,
+      "home_q4": 29,
+      "visitor_q1": 22,
+      "visitor_q2": 17,
+      "visitor_q3": 21,
+      "visitor_q4": 28
+    },
+    "8efc1790-412f-11f0-b53d-c18ca6e1b4e0": {
+      "home_q1": 24,
+      "home_q2": 31,
+      "home_q3": 26,
+      "home_q4": 22,
+      "visitor_q1": 19,
+      "visitor_q2": 10,
+      "visitor_q3": 25,
+      "visitor_q4": 19
+    },
+    "8f26aed3-412f-11f0-b4c4-c18ca6e1b4e0": {
+      "home_q1": 25,
+      "home_q2": 17,
+      "home_q3": 25,
+      "home_q4": 35,
+      "visitor_q1": 29,
+      "visitor_q2": 27,
+      "visitor_q3": 29,
+      "visitor_q4": 28
+    },
+    "8ece2683-412f-11f0-93e9-c18ca6e1b4e0": {
+      "home_q1": 32,
+      "home_q2": 25,
+      "home_q3": 18,
+      "home_q4": 34,
+      "visitor_q1": 22,
+      "visitor_q2": 26,
+      "visitor_q3": 24,
+      "visitor_q4": 28
+    },
+    "8ea826e8-412f-11f0-a166-c18ca6e1b4e0": {
+      "home_q1": 18,
+      "home_q2": 18,
+      "home_q3": 25,
+      "home_q4": 14,
+      "visitor_q1": 16,
+      "visitor_q2": 19,
+      "visitor_q3": 18,
+      "visitor_q4": 27
+    },
+    "8e7d1a80-412f-11f0-af24-c18ca6e1b4e0": {
+      "home_q1": 18,
+      "home_q2": 20,
+      "home_q3": 18,
+      "home_q4": 30,
+      "visitor_q1": 26,
+      "visitor_q2": 17,
+      "visitor_q3": 27,
+      "visitor_q4": 19
+    },
+    "8e53ded2-412f-11f0-bfec-c18ca6e1b4e0": {
+      "home_q1": 26,
+      "home_q2": 34,
+      "home_q3": 22,
+      "home_q4": 31,
+      "visitor_q1": 26,
+      "visitor_q2": 29,
+      "visitor_q3": 27,
+      "visitor_q4": 24
+    },
+    "8e2d96df-412f-11f0-bafb-c18ca6e1b4e0": {
+      "home_q1": 28,
+      "home_q2": 16,
+      "home_q3": 20,
+      "home_q4": 18,
+      "visitor_q1": 17,
+      "visitor_q2": 14,
+      "visitor_q3": 29,
+      "visitor_q4": 15
+    },
+    "8e08af35-412f-11f0-84bb-c18ca6e1b4e0": {
+      "home_q1": 18,
+      "home_q2": 30,
+      "home_q3": 16,
+      "home_q4": 16,
+      "visitor_q1": 19,
+      "visitor_q2": 21,
+      "visitor_q3": 17,
+      "visitor_q4": 15
+    },
+    "8de283f0-412f-11f0-938b-c18ca6e1b4e0": {
+      "home_q1": 22,
+      "home_q2": 21,
+      "home_q3": 23,
+      "home_q4": 21,
+      "visitor_q1": 20,
+      "visitor_q2": 18,
+      "visitor_q3": 19,
+      "visitor_q4": 23
+    },
+    "8df457cc-412f-11f0-bf47-c18ca6e1b4e0": {
+      "home_q1": 22,
+      "home_q2": 22,
+      "home_q3": 23,
+      "home_q4": 17,
+      "visitor_q1": 26,
+      "visitor_q2": 22,
+      "visitor_q3": 23,
+      "visitor_q4": 18
+    },
+    "8f139303-412f-11f0-9fea-c18ca6e1b4e0": {
+      "home_q1": 24,
+      "home_q2": 22,
+      "home_q3": 38,
+      "home_q4": 26,
+      "visitor_q1": 28,
+      "visitor_q2": 21,
+      "visitor_q3": 12,
+      "visitor_q4": 38
+    },
+    "8ee68459-412f-11f0-b493-c18ca6e1b4e0": {
+      "home_q1": 19,
+      "home_q2": 24,
+      "home_q3": 14,
+      "home_q4": 17,
+      "visitor_q1": 25,
+      "visitor_q2": 16,
+      "visitor_q3": 16,
+      "visitor_q4": 25
+    },
+    "8e911fbc-412f-11f0-ba6d-c18ca6e1b4e0": {
+      "home_q1": 22,
+      "home_q2": 24,
+      "home_q3": 31,
+      "home_q4": 21,
+      "visitor_q1": 25,
+      "visitor_q2": 18,
+      "visitor_q3": 18,
+      "visitor_q4": 26
+    },
+    "8ebb3e22-412f-11f0-b42c-c18ca6e1b4e0": {
+      "home_q1": 24,
+      "home_q2": 15,
+      "home_q3": 25,
+      "home_q4": 17,
+      "visitor_q1": 26,
+      "visitor_q2": 25,
+      "visitor_q3": 23,
+      "visitor_q4": 22
+    },
+    "8e68a1c4-412f-11f0-a04e-c18ca6e1b4e0": {
+      "home_q1": 25,
+      "home_q2": 25,
+      "home_q3": 27,
+      "home_q4": 24,
+      "visitor_q1": 26,
+      "visitor_q2": 19,
+      "visitor_q3": 21,
+      "visitor_q4": 29
+    },
+    "8e401623-412f-11f0-9f79-c18ca6e1b4e0": {
+      "home_q1": 18,
+      "home_q2": 23,
+      "home_q3": 24,
+      "home_q4": 21,
+      "visitor_q1": 28,
+      "visitor_q2": 12,
+      "visitor_q3": 13,
+      "visitor_q4": 18
+    },
+    "8e1ae3ae-412f-11f0-b26b-c18ca6e1b4e0": {
+      "home_q1": 29,
+      "home_q2": 16,
+      "home_q3": 19,
+      "home_q4": 18,
+      "visitor_q1": 24,
+      "visitor_q2": 9,
+      "visitor_q3": 17,
+      "visitor_q4": 17
     }
   }
 }

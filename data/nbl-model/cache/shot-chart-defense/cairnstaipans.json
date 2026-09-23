@@ -4,130 +4,130 @@
   "years": [
     2026
   ],
-  "gamesUsed": 1,
+  "gamesUsed": 2,
   "fixturesFetched": 0,
-  "fixturesCached": 1,
-  "shotCount": 71,
+  "fixturesCached": 2,
+  "shotCount": 136,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 16,
-      "fgm": 12,
-      "fgPct": 75,
-      "share": 22.535211267605636
+      "fga": 31,
+      "fgm": 22,
+      "fgPct": 70.96774193548387,
+      "share": 22.794117647058822
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 18,
-      "fgm": 9,
-      "fgPct": 50,
-      "share": 25.352112676056336
+      "fga": 32,
+      "fgm": 18,
+      "fgPct": 56.25,
+      "share": 23.52941176470588
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 10,
-      "fgm": 6,
-      "fgPct": 60,
-      "share": 14.084507042253522
+      "fga": 16,
+      "fgm": 9,
+      "fgPct": 56.25,
+      "share": 11.76470588235294
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 8,
-      "fgm": 5,
-      "fgPct": 62.5,
-      "share": 11.267605633802818
+      "fga": 11,
+      "fgm": 7,
+      "fgPct": 63.63636363636363,
+      "share": 8.088235294117647
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 9,
-      "fgm": 6,
-      "fgPct": 66.66666666666666,
-      "share": 12.676056338028168
+      "fga": 27,
+      "fgm": 13,
+      "fgPct": 48.148148148148145,
+      "share": 19.852941176470587
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 10,
+      "fga": 19,
       "fgm": 1,
-      "fgPct": 10,
-      "share": 14.084507042253522
+      "fgPct": 5.263157894736842,
+      "share": 13.970588235294118
     }
   ],
   "ranks": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 16,
-      "fgm": 12,
-      "fgPct": 75,
-      "share": 22.535211267605636,
-      "rank": 8,
+      "fga": 31,
+      "fgm": 22,
+      "fgPct": 70.96774193548387,
+      "share": 22.794117647058822,
+      "rank": 6,
       "teamsCompared": 10
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 18,
-      "fgm": 9,
-      "fgPct": 50,
-      "share": 25.352112676056336,
-      "rank": 6,
+      "fga": 32,
+      "fgm": 18,
+      "fgPct": 56.25,
+      "share": 23.52941176470588,
+      "rank": 9,
       "teamsCompared": 10
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 10,
-      "fgm": 6,
-      "fgPct": 60,
-      "share": 14.084507042253522,
-      "rank": 6,
-      "teamsCompared": 8
+      "fga": 16,
+      "fgm": 9,
+      "fgPct": 56.25,
+      "share": 11.76470588235294,
+      "rank": 7,
+      "teamsCompared": 9
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 8,
-      "fgm": 5,
-      "fgPct": 62.5,
-      "share": 11.267605633802818,
+      "fga": 11,
+      "fgm": 7,
+      "fgPct": 63.63636363636363,
+      "share": 8.088235294117647,
       "rank": 10,
       "teamsCompared": 10
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 9,
-      "fgm": 6,
-      "fgPct": 66.66666666666666,
-      "share": 12.676056338028168,
-      "rank": 10,
+      "fga": 27,
+      "fgm": 13,
+      "fgPct": 48.148148148148145,
+      "share": 19.852941176470587,
+      "rank": 8,
       "teamsCompared": 10
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 10,
+      "fga": 19,
       "fgm": 1,
-      "fgPct": 10,
-      "share": 14.084507042253522,
-      "rank": 2,
+      "fgPct": 5.263157894736842,
+      "share": 13.970588235294118,
+      "rank": 1,
       "teamsCompared": 10
     }
   ],
-  "pointsAllowed": 111,
+  "pointsAllowed": 198,
   "ftDefense": {
-    "ftm": 21,
-    "fta": 31,
-    "ftPct": 67.74193548387096,
-    "games": 1,
-    "rank": 3,
+    "ftm": 37,
+    "fta": 57,
+    "ftPct": 64.91228070175438,
+    "games": 2,
+    "rank": 2,
     "teamsCompared": 10
   },
-  "generatedAt": "2026-09-22T17:40:41.870Z"
+  "generatedAt": "2026-09-23T12:26:38.936Z"
 }

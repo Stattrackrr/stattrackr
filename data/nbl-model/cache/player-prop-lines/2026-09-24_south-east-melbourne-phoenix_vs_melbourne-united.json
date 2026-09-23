@@ -4,7 +4,7 @@
   "homeTeam": "South East Melbourne Phoenix",
   "awayTeam": "Melbourne United",
   "commenceTime": "2026-09-24T09:30:00.000Z",
-  "capturedAt": "2026-09-23T12:16:59.264Z",
+  "capturedAt": "2026-09-23T12:26:54.564Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
@@ -1489,9 +1489,9 @@
       "kind": "ou",
       "line": 190.5,
       "label": "190.5",
-      "over": "-118",
+      "over": "-111",
       "under": "N/A",
-      "overDecimal": 1.85,
+      "overDecimal": 1.9,
       "underDecimal": null
     },
     {
@@ -1958,9 +1958,9 @@
       "line": 190.5,
       "label": "190.5",
       "over": "N/A",
-      "under": "-105",
+      "under": "-111",
       "overDecimal": null,
-      "underDecimal": 1.95
+      "underDecimal": 1.9
     }
   ]
 }

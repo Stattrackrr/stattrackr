@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-22T17:40:25.123Z",
+  "generatedAt": "2026-09-23T12:26:22.004Z",
   "source": "rosetta.nbl.com.au",
   "teams": [
     {
@@ -26,26 +26,6 @@
     },
     {
       "pos": 2,
-      "team": "Tasmania JackJumpers",
-      "teamCode": "TAS",
-      "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-      "teamLogo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-      "played": 1,
-      "win": 1,
-      "loss": 0,
-      "points_for": 96,
-      "points_against": 91,
-      "points_percentage": 1.0549,
-      "win_percentage": 1,
-      "last_5": "W",
-      "streak": 1,
-      "home_wins": 1,
-      "home_losses": 0,
-      "away_wins": 0,
-      "away_losses": 0
-    },
-    {
-      "pos": 3,
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
@@ -65,7 +45,7 @@
       "away_losses": 0
     },
     {
-      "pos": 4,
+      "pos": 3,
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
@@ -85,7 +65,7 @@
       "away_losses": 0
     },
     {
-      "pos": 5,
+      "pos": 4,
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
@@ -105,7 +85,7 @@
       "away_losses": 1
     },
     {
-      "pos": 6,
+      "pos": 5,
       "team": "NZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
@@ -125,7 +105,47 @@
       "away_losses": 1
     },
     {
+      "pos": 6,
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+      "teamLogo": "https://cdn.nbl.com.au/app_assets/TAS.png",
+      "played": 2,
+      "win": 1,
+      "loss": 1,
+      "points_for": 183,
+      "points_against": 184,
+      "points_percentage": 0.9946,
+      "win_percentage": 0.5,
+      "last_5": "WL",
+      "streak": 0,
+      "home_wins": 1,
+      "home_losses": 0,
+      "away_wins": 0,
+      "away_losses": 1
+    },
+    {
       "pos": 7,
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "teamLogo": "https://cdn.nbl.com.au/app_assets/CNS.png",
+      "played": 2,
+      "win": 1,
+      "loss": 1,
+      "points_for": 183,
+      "points_against": 198,
+      "points_percentage": 0.9242,
+      "win_percentage": 0.5,
+      "last_5": "LW",
+      "streak": 1,
+      "home_wins": 1,
+      "home_losses": 0,
+      "away_wins": 0,
+      "away_losses": 1
+    },
+    {
+      "pos": 8,
       "team": "Melbourne United",
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
@@ -145,7 +165,7 @@
       "away_losses": 0
     },
     {
-      "pos": 8,
+      "pos": 9,
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
@@ -156,26 +176,6 @@
       "points_for": 81,
       "points_against": 95,
       "points_percentage": 0.8526,
-      "win_percentage": 0,
-      "last_5": "L",
-      "streak": 0,
-      "home_wins": 0,
-      "home_losses": 0,
-      "away_wins": 0,
-      "away_losses": 1
-    },
-    {
-      "pos": 9,
-      "team": "Cairns Taipans",
-      "teamCode": "CNS",
-      "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
-      "teamLogo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-      "played": 1,
-      "win": 0,
-      "loss": 1,
-      "points_for": 90,
-      "points_against": 111,
-      "points_percentage": 0.8108,
       "win_percentage": 0,
       "last_5": "L",
       "streak": 0,

@@ -1,16 +1,10 @@
 {
-  "generatedAt": "2026-09-22T17:40:39.541Z",
+  "generatedAt": "2026-09-23T12:26:36.497Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/2025-26-nbl-team-lists-and-roster-tracker",
   "sourcePage": "/news/2025-26-nbl-team-lists-and-roster-tracker",
-  "injuryCount": 24,
+  "injuryCount": 16,
   "injuries": [
-    {
-      "team": "Adelaide 36ers",
-      "player": "Ben Griscti",
-      "injury": "neck",
-      "returning": "No timetable for return."
-    },
     {
       "team": "Brisbane Bullets",
       "player": "Dakota Mathias",
@@ -31,12 +25,6 @@
     },
     {
       "team": "Brisbane Bullets",
-      "player": "Tyrell Harrison",
-      "injury": "Concussion",
-      "returning": "No timetable"
-    },
-    {
-      "team": "Brisbane Bullets",
       "player": "Javon Freeman Liberty",
       "injury": "Hamstring",
       "returning": "Not timetable"
@@ -46,12 +34,6 @@
       "player": "Alex Higgins-Titsha",
       "injury": "Wrist",
       "returning": "Season"
-    },
-    {
-      "team": "Cairns Taipans",
-      "player": "Reyne Smith",
-      "injury": "Foot",
-      "returning": "Round 15"
     },
     {
       "team": "Cairns Taipans",
@@ -73,18 +55,6 @@
     },
     {
       "team": "New Zealand Breakers",
-      "player": "Izayah Le'Afa",
-      "injury": "Broken Foot",
-      "returning": "Season"
-    },
-    {
-      "team": "New Zealand Breakers",
-      "player": "Sam Mennenga",
-      "injury": "Suspected broken wrist per ESPN",
-      "returning": "Saturday, January 24, 2026"
-    },
-    {
-      "team": "New Zealand Breakers",
       "player": "Karim Lopez",
       "injury": "Leg",
       "returning": "No Timetable"
@@ -102,22 +72,10 @@
       "returning": "No Timetable"
     },
     {
-      "team": "Perth Wildcats",
-      "player": "Dylan Windler",
-      "injury": "Heel",
-      "returning": "No Timetable"
-    },
-    {
       "team": "Sydney Kings",
       "player": "Keli Leaupepe",
       "injury": "Knee",
       "returning": "Season"
-    },
-    {
-      "team": "Sydney Kings",
-      "player": "Jason Spurgin",
-      "injury": "Foot",
-      "returning": "Late season"
     },
     {
       "team": "Sydney Kings",
@@ -130,12 +88,6 @@
       "player": "Ben Ayre",
       "injury": "Groin",
       "returning": "Likely Season"
-    },
-    {
-      "team": "Tasmania JackJumpers",
-      "player": "Will Magnay",
-      "injury": "Toe",
-      "returning": "Season"
     },
     {
       "team": "Tasmania JackJumpers",
