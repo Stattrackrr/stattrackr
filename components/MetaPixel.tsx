@@ -4,7 +4,11 @@ import Script from 'next/script';
 
 const META_PIXEL_IDS = Array.from(
   new Set(
-    [process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '25990212100620241', '1812371203107877'].filter(
+    [
+      process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '25990212100620241',
+      '1812371203107877',
+      '1111307961276449',
+    ].filter(
       (id): id is string => Boolean(id && id.trim())
     )
   )
