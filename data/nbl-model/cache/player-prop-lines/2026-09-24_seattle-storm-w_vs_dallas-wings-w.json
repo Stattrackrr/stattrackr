@@ -4,7 +4,7 @@
   "homeTeam": "Seattle Storm (W)",
   "awayTeam": "Dallas Wings (W)",
   "commenceTime": "2026-09-24T02:00:00.000Z",
-  "capturedAt": "2026-09-23T17:17:10.617Z",
+  "capturedAt": "2026-09-23T17:53:51.997Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
@@ -20,9 +20,9 @@
       "kind": "ou",
       "line": 1.5,
       "label": "1.5",
-      "over": "-147",
+      "over": "-143",
       "under": "N/A",
-      "overDecimal": 1.68,
+      "overDecimal": 1.7,
       "underDecimal": null
     },
     {
@@ -59,9 +59,9 @@
       "kind": "ou",
       "line": 11.5,
       "label": "11.5",
-      "over": "-125",
+      "over": "-147",
       "under": "N/A",
-      "overDecimal": 1.8,
+      "overDecimal": 1.68,
       "underDecimal": null
     },
     {
@@ -72,9 +72,9 @@
       "kind": "ou",
       "line": 12.5,
       "label": "12.5",
-      "over": "+104",
+      "over": "-114",
       "under": "N/A",
-      "overDecimal": 2.04,
+      "overDecimal": 1.88,
       "underDecimal": null
     },
     {
@@ -111,9 +111,9 @@
       "kind": "ou",
       "line": 15.5,
       "label": "15.5",
-      "over": "-104",
+      "over": "-118",
       "under": "N/A",
-      "overDecimal": 1.96,
+      "overDecimal": 1.85,
       "underDecimal": null
     },
     {
@@ -189,9 +189,9 @@
       "kind": "ou",
       "line": 2.5,
       "label": "2.5",
-      "over": "+128",
+      "over": "+115",
       "under": "N/A",
-      "overDecimal": 2.28,
+      "overDecimal": 2.15,
       "underDecimal": null
     },
     {
@@ -281,9 +281,9 @@
       "line": 1.5,
       "label": "1.5",
       "over": "N/A",
-      "under": "+104",
+      "under": "+100",
       "overDecimal": null,
-      "underDecimal": 2.04
+      "underDecimal": 2
     },
     {
       "player": "Under",
@@ -320,9 +320,9 @@
       "line": 11.5,
       "label": "11.5",
       "over": "N/A",
-      "under": "-114",
+      "under": "+104",
       "overDecimal": null,
-      "underDecimal": 1.88
+      "underDecimal": 2.04
     },
     {
       "player": "Under",
@@ -333,9 +333,9 @@
       "line": 12.5,
       "label": "12.5",
       "over": "N/A",
-      "under": "-147",
+      "under": "-125",
       "overDecimal": null,
-      "underDecimal": 1.68
+      "underDecimal": 1.8
     },
     {
       "player": "Under",
@@ -372,9 +372,9 @@
       "line": 15.5,
       "label": "15.5",
       "over": "N/A",
-      "under": "-137",
+      "under": "-120",
       "overDecimal": null,
-      "underDecimal": 1.73
+      "underDecimal": 1.83
     },
     {
       "player": "Under",
@@ -450,9 +450,9 @@
       "line": 2.5,
       "label": "2.5",
       "over": "N/A",
-      "under": "-185",
+      "under": "-164",
       "overDecimal": null,
-      "underDecimal": 1.54
+      "underDecimal": 1.61
     },
     {
       "player": "Under",
@@ -540,9 +540,9 @@
       "kind": "milestone",
       "line": 1.5,
       "label": "2+",
-      "over": "-147",
+      "over": "-143",
       "under": "N/A",
-      "overDecimal": 1.68,
+      "overDecimal": 1.7,
       "underDecimal": null
     },
     {
@@ -553,9 +553,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "-164",
+      "over": "-185",
       "under": "N/A",
-      "overDecimal": 1.61,
+      "overDecimal": 1.54,
       "underDecimal": null
     },
     {
@@ -592,9 +592,9 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "-222",
+      "over": "-263",
       "under": "N/A",
-      "overDecimal": 1.45,
+      "overDecimal": 1.38,
       "underDecimal": null
     },
     {
@@ -605,9 +605,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "+170",
+      "over": "+145",
       "under": "N/A",
-      "overDecimal": 2.7,
+      "overDecimal": 2.45,
       "underDecimal": null
     },
     {
@@ -644,9 +644,9 @@
       "kind": "milestone",
       "line": 29.5,
       "label": "30+",
-      "over": "+190",
+      "over": "+170",
       "under": "N/A",
-      "overDecimal": 2.9,
+      "overDecimal": 2.7,
       "underDecimal": null
     },
     {
@@ -683,9 +683,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "+295",
+      "over": "+265",
       "under": "N/A",
-      "overDecimal": 3.95,
+      "overDecimal": 3.65,
       "underDecimal": null
     },
     {
@@ -722,9 +722,9 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "+430",
+      "over": "+370",
       "under": "N/A",
-      "overDecimal": 5.3,
+      "overDecimal": 4.7,
       "underDecimal": null
     },
     {

@@ -4,7 +4,7 @@
   "homeTeam": "Hapoel Haemek",
   "awayTeam": "Ironi Kiryat Ata",
   "commenceTime": "2026-09-23T17:55:00.000Z",
-  "capturedAt": "2026-09-23T17:17:10.617Z",
+  "capturedAt": "2026-09-23T17:53:51.997Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
@@ -20,9 +20,9 @@
       "kind": "ou",
       "line": 168.5,
       "label": "168.5",
-      "over": "-125",
+      "over": "-120",
       "under": "N/A",
-      "overDecimal": 1.8,
+      "overDecimal": 1.83,
       "underDecimal": null
     },
     {
@@ -34,9 +34,9 @@
       "line": 168.5,
       "label": "168.5",
       "over": "N/A",
-      "under": "-116",
+      "under": "-120",
       "overDecimal": null,
-      "underDecimal": 1.86
+      "underDecimal": 1.83
     }
   ]
 }

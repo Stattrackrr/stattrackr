@@ -4,7 +4,7 @@
   "homeTeam": "New York",
   "awayTeam": "Atlanta",
   "commenceTime": "2026-09-24T00:00:00.000Z",
-  "capturedAt": "2026-09-23T17:17:10.631Z",
+  "capturedAt": "2026-09-23T17:53:51.982Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
@@ -293,10 +293,10 @@
       "kind": "ou",
       "line": 87.5,
       "label": "87.5",
-      "over": "-111",
-      "under": "-125",
-      "overDecimal": 1.9,
-      "underDecimal": 1.8
+      "over": "-118",
+      "under": "-118",
+      "overDecimal": 1.85,
+      "underDecimal": 1.85
     },
     {
       "player": "Breanna Stewart",
@@ -891,10 +891,10 @@
       "kind": "ou",
       "line": 88.5,
       "label": "88.5",
-      "over": "-125",
-      "under": "-111",
-      "overDecimal": 1.8,
-      "underDecimal": 1.9
+      "over": "-111",
+      "under": "-125",
+      "overDecimal": 1.9,
+      "underDecimal": 1.8
     },
     {
       "player": "Over 175.5",
