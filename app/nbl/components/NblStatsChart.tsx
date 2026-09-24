@@ -124,6 +124,105 @@ function quarterPickerOptions(parent: NblQuarterParentStat) {
   return ([1, 2, 3, 4] as const).map((n) => ({ n, key: nblPlayerQuarterStatKey(parent, n) }));
 }
 
+type NblTooltipStats = {
+  pts: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+  min: number;
+  oreb: number;
+  dreb: number;
+  fgm: number;
+  fga: number;
+  fg3m: number;
+  fg3a: number;
+  ftm: number;
+  fta: number;
+  turnover: number;
+  pf: number;
+};
+
+const NBL_TOOLTIP_SHOOTING_STATS = new Set([
+  'points',
+  'threeMade',
+  'threeAttempted',
+  'threePct',
+  'fgMade',
+  'fgAttempted',
+  'fgPct',
+  'ftMade',
+  'ftAttempted',
+  'ftPct',
+  'twoMade',
+  'twoAttempted',
+  'twoPct',
+  'tsPct',
+  'q1_pts',
+  'q2_pts',
+  'q3_pts',
+  'q4_pts',
+]);
+
+const NBL_TOOLTIP_REBOUND_STATS = new Set([
+  'rebounds',
+  'offensiveRebounds',
+  'defensiveRebounds',
+  'trebPct',
+  'orebPct',
+  'drebPct',
+  'q1_reb',
+  'q2_reb',
+  'q3_reb',
+  'q4_reb',
+]);
+
+const NBL_TOOLTIP_ASSIST_STATS = new Set([
+  'assists',
+  'q1_ast',
+  'q2_ast',
+  'q3_ast',
+  'q4_ast',
+]);
+
+function formatMinutesApostrophe(minutes: number | null | undefined): string {
+  if (minutes == null || !Number.isFinite(minutes)) return "0'";
+  return `${Math.round(minutes)}'`;
+}
+
+function madeAttempted(made: number, attempted: number): string {
+  const pct = attempted > 0 ? ` (${Math.round((made / attempted) * 100)}%)` : '';
+  return `${made}/${attempted}${pct}`;
+}
+
+/** Same hover rows as NBA CustomChartTooltip, mapped to NBL stat keys. */
+function nblTooltipStatRows(
+  selectedStat: string | undefined,
+  stats: NblTooltipStats
+): Array<{ label: string; value: string }> {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Minutes', value: formatMinutesApostrophe(stats.min) },
+  ];
+  const stat = selectedStat || '';
+  if (NBL_TOOLTIP_SHOOTING_STATS.has(stat)) {
+    rows.push({ label: 'Points', value: String(Number(stats.pts || 0)) });
+    rows.push({ label: 'FT Made', value: madeAttempted(stats.ftm, stats.fta) });
+    rows.push({ label: '3PT Made', value: madeAttempted(stats.fg3m, stats.fg3a) });
+    rows.push({ label: 'FG Made', value: madeAttempted(stats.fgm, stats.fga) });
+  } else if (NBL_TOOLTIP_ASSIST_STATS.has(stat)) {
+    rows.push({ label: 'Assists', value: String(Number(stats.ast || 0)) });
+  } else if (NBL_TOOLTIP_REBOUND_STATS.has(stat)) {
+    rows.push({ label: 'OREB', value: String(Number(stats.oreb || 0)) });
+    rows.push({ label: 'DREB', value: String(Number(stats.dreb || 0)) });
+  } else {
+    rows.push({ label: 'Points', value: String(Number(stats.pts || 0)) });
+    rows.push({ label: 'Rebounds', value: String(Number(stats.reb || 0)) });
+    rows.push({ label: 'Assists', value: String(Number(stats.ast || 0)) });
+  }
+  rows.push({ label: 'Fouls', value: String(Number(stats.pf || 0)) });
+  return rows;
+}
+
 interface NblChartTooltipProps {
   active?: boolean;
   payload?: any[];
@@ -131,11 +230,12 @@ interface NblChartTooltipProps {
   isDark: boolean;
   selectedStatLabel: string;
   selectedStat?: string;
-  dvpPosition?: string | null;
+  mode?: 'player' | 'team';
+  gamePropsTeam?: string | null;
   perGameFilterData?: NblGameFilterDataItem[] | null;
 }
 
-function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel, selectedStat, dvpPosition, perGameFilterData }: NblChartTooltipProps) {
+function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel, selectedStat, mode = 'player', gamePropsTeam, perGameFilterData }: NblChartTooltipProps) {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -177,7 +277,17 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
 
   if (!active || !payload?.length) return null;
   const point = payload[0]?.payload as
-    | { round?: string; opponent?: string; result?: string; value?: number; gameDate?: string; sourceGameIndex?: number | null; venue?: string; minutes?: number | null }
+    | {
+        round?: string;
+        opponent?: string;
+        result?: string;
+        value?: number;
+        gameDate?: string;
+        sourceGameIndex?: number | null;
+        venue?: string;
+        minutes?: number | null;
+        stats?: NblTooltipStats;
+      }
     | undefined;
   if (!point) return null;
 
@@ -188,17 +298,10 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
   const winColor = isDark ? '#10b981' : '#059669';
   const lossColor = isDark ? '#ef4444' : '#dc2626';
 
-  // Lookup per-game DvP rank and Minutes for this game (by original game index).
-  let dvpRank: number | null = null;
-  let dvpRankSource: 'tipoff' | 'live' | null = null;
   let minutesVal: number | null = null;
   if (Array.isArray(perGameFilterData) && typeof point.sourceGameIndex === 'number') {
     const match = perGameFilterData.find((row) => row.gameIndex === point.sourceGameIndex);
-    if (match) {
-      dvpRank = match.dvpRank ?? null;
-      dvpRankSource = match.dvpRankSource ?? null;
-      minutesVal = match.minutes ?? null;
-    }
+    if (match) minutesVal = match.minutes ?? null;
   }
   // Fallback: minutes attached on chart row
   if (minutesVal == null && typeof (point as { minutes?: unknown }).minutes === 'number') {
@@ -225,7 +328,7 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
       const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
       const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
       const tooltipWidth = 280;
-      const tooltipHeight = 120;
+      const tooltipHeight = 220;
       const left = Math.max(10, (viewportWidth - tooltipWidth) / 2);
       const top = Math.max(10, Math.min(viewportHeight * 0.4, viewportHeight - tooltipHeight - 20));
       return { left: `${left}px`, top: `${top}px` };
@@ -300,24 +403,32 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
 
   const isMoneylineStat =
     selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat || '');
-  const formattedValue =
-    typeof point.value === 'number'
-      ? isMoneylineStat
-        ? point.value >= 1
-          ? 'W'
-          : 'L'
-        : Number.isInteger(point.value)
-          ? String(point.value)
-          : point.value.toFixed(1)
-      : '-';
-
-  const metaRows: Array<{ label: string; value: string }> = [];
-  if (point.venue) metaRows.push({ label: 'Venue', value: point.venue });
-  if (minutesVal != null) metaRows.push({ label: 'Minutes', value: String(Math.round(minutesVal)) });
-  if (dvpRank != null) {
-    const posLabel = dvpPosition && String(dvpPosition).trim() ? dvpPosition : 'position';
-    metaRows.push({ label: `DvP vs ${posLabel}`, value: `#${dvpRank}` });
+  const stats = point.stats;
+  let formattedValue = '-';
+  if (selectedStat === 'threeMade' && stats) {
+    formattedValue = `${stats.fg3m}/${stats.fg3a}`;
+  } else if (typeof point.value === 'number') {
+    if (isMoneylineStat) {
+      formattedValue = point.value >= 1 ? 'W' : 'L';
+    } else if (PCT_STATS.has(selectedStat || '')) {
+      formattedValue = `${point.value.toFixed(1)}%`;
+    } else {
+      formattedValue = Number.isInteger(point.value) ? String(point.value) : point.value.toFixed(1);
+    }
   }
+
+  const statRows =
+    mode === 'player' && stats
+      ? nblTooltipStatRows(selectedStat, {
+          ...stats,
+          min: minutesVal ?? stats.min,
+        })
+      : [];
+  const teamScoreMatch = String(point.result || '').match(/(\d+)\s*[-–]\s*(\d+)/);
+  const teamScoreLine =
+    mode === 'team' && teamScoreMatch
+      ? `${gamePropsTeam || 'Team'} ${teamScoreMatch[1]} - ${teamScoreMatch[2]} ${point.opponent || ''}`.trim()
+      : null;
 
   const tooltipContent = (
     <div style={tooltipStyle}>
@@ -373,7 +484,7 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
           alignItems: 'baseline',
           justifyContent: 'space-between',
           gap: 12,
-          marginBottom: metaRows.length ? 10 : 0,
+          marginBottom: statRows.length || teamScoreLine ? 10 : 0,
           padding: '10px 12px',
           backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6',
           borderRadius: 8,
@@ -403,51 +514,24 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
         </span>
       </div>
 
-      {metaRows.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 7,
-            fontSize: 12,
-            color: labelColor,
-          }}
-        >
-          {metaRows.map((row) => (
+      {teamScoreLine && (
+        <div style={{ fontSize: 13, color: tooltipText, marginBottom: statRows.length ? 8 : 0 }}>
+          {/^q[1-4]_/.test(selectedStat || '') ? `Q${selectedStat?.charAt(1)}: ` : ''}
+          {teamScoreLine}
+        </div>
+      )}
+
+      {statRows.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13 }}>
+          {statRows.map((row) => (
             <div
               key={row.label}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: 12,
-              }}
+              style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}
             >
-              <span style={{ flexShrink: 0 }}>{row.label}</span>
-              <span
-                style={{
-                  color: tooltipText,
-                  fontWeight: 600,
-                  textAlign: 'right',
-                  lineHeight: 1.3,
-                }}
-              >
-                {row.value}
-              </span>
+              <span style={{ color: labelColor }}>{row.label}:</span>
+              <span style={{ color: tooltipText, fontWeight: 500 }}>{row.value}</span>
             </div>
           ))}
-          {dvpRank != null && (
-            <div
-              style={{
-                fontSize: 10,
-                color: isDark ? '#c084fc' : '#7e22ce',
-                fontWeight: 600,
-                letterSpacing: '0.04em',
-              }}
-            >
-              {dvpRankSource === 'tipoff' ? 'RANK AT TIPOFF' : 'RANK FROM CURRENT'}
-            </div>
-          )}
         </div>
       )}
     </div>
@@ -924,7 +1008,6 @@ export function NblStatsChart({
 
   const [internalSelectedStat, setInternalSelectedStat] = useState<string>('');
   const [lineValue, setLineValue] = useState(0);
-  const [lineSyncedStat, setLineSyncedStat] = useState(selectedStatProp || 'points');
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const [isQuarterDropdownOpen, setIsQuarterDropdownOpen] = useState(false);
   const [showSplitsFilters, setShowSplitsFilters] = useState(false);
@@ -1379,13 +1462,24 @@ export function NblStatsChart({
 
     const incomingLine =
       externalLineValue != null && Number.isFinite(externalLineValue) ? externalLineValue : null;
-    const maxValue = Math.max(...values);
+    const maxAttempts =
+      selectedStat === 'threeMade'
+        ? Math.max(
+            ...chartData.map((d) => {
+              const attempts = Number((d as { stats?: { fg3a?: number } }).stats?.fg3a);
+              return Number.isFinite(attempts) ? attempts : 0;
+            })
+          )
+        : 0;
+    const maxValue = selectedStat === 'threeMade' ? maxAttempts : Math.max(...values);
     const lineHigh = incomingLine != null ? incomingLine : 0;
     const peak = Math.max(maxValue, lineHigh, 0);
     const pctCap = PCT_STATS.has(selectedStat) ? Math.max(Math.ceil(peak / 10) * 10, 10) : null;
     const max = pctCap != null
       ? Math.min(100, Math.max(pctCap, 10))
-      : Math.max(Math.ceil(peak) + 1, 1);
+      : selectedStat === 'threeMade'
+        ? Math.max(Math.ceil(peak), 1)
+        : Math.max(Math.ceil(peak) + 1, 1);
     const step = max / 3;
     const useDecimals = values.some((v) => Math.abs(v - Math.round(v)) > 0.001);
     const ticks: number[] = [
@@ -1402,19 +1496,6 @@ export function NblStatsChart({
   }, [chartData, selectedStat, externalLineValue]);
 
   const selectedStatLabel = useMemo(() => formatStatLabel(selectedStat || 'stat'), [selectedStat]);
-
-  if (lineSyncedStat !== selectedStat) {
-    setLineSyncedStat(selectedStat);
-    if (externalLineValue != null && Number.isFinite(externalLineValue)) {
-      const [min, max] = yAxisConfig.domain;
-      const clamped = Math.max(min, Math.min(max, externalLineValue));
-      setLineValue(hasDecimalValues ? Math.round(clamped * 10) / 10 : Math.round(clamped * 2) / 2);
-    } else if (Number.isFinite(statAverage)) {
-      setLineValue(
-        hasDecimalValues ? Math.round(statAverage * 10) / 10 : Math.round(statAverage * 2) / 2
-      );
-    }
-  }
 
   const emitTransientLine = useCallback((value: number) => {
     if (!Number.isFinite(value)) return;
@@ -1468,10 +1549,9 @@ export function NblStatsChart({
     const clamped = Math.max(min, Math.min(max, externalLineValue));
     const next = hasDecimalValues ? Math.round(clamped * 10) / 10 : Math.round(clamped * 2) / 2;
     setLineValue(next);
-    emitTransientLine(next);
     const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
     if (input) input.value = String(next);
-  }, [externalLineValue, hasDecimalValues, emitTransientLine]);
+  }, [externalLineValue, hasDecimalValues, yAxisConfig.domain]);
 
   const timeframeLabels: Record<(typeof TIMEFRAME_OPTIONS)[number], string> = {
     last5: 'L5',
@@ -1514,11 +1594,12 @@ export function NblStatsChart({
         isDark={isDark}
         selectedStatLabel={selectedStatLabel}
         selectedStat={selectedStat}
-        dvpPosition={playerPositionForFilters ?? null}
+        mode={mode}
+        gamePropsTeam={gamePropsTeam}
         perGameFilterData={perGameFilterData ?? undefined}
       />
     );
-  }, [isDark, selectedStatLabel, selectedStat, playerPositionForFilters, perGameFilterData]);
+  }, [isDark, selectedStatLabel, selectedStat, mode, gamePropsTeam, perGameFilterData]);
 
   const nblXAxisTick = useMemo(() => (
     <NblXAxisTick
@@ -2013,7 +2094,7 @@ export function NblStatsChart({
             yAxisConfig={yAxisConfig}
             isDark={isDark}
             bettingLine={lineValue}
-            selectedStat={selectedStat}
+            selectedStat={selectedStat === 'threeMade' ? 'fg3m' : selectedStat}
             selectedTimeframe={selectedTimeframe}
             secondAxisData={showAdvancedFilters ? secondAxisData : null}
             selectedFilterForAxis={showAdvancedFilters ? selectedAdvancedFilter : null}

@@ -167,6 +167,15 @@ function normalizeNblBookName(value: unknown): string {
     .replace(/\s+/g, '');
 }
 
+function nblTeamSpreadIsAway(
+  homeTeam: string | null | undefined,
+  selectedTeam: string | null | undefined
+): boolean {
+  const home = resolveNblClubName(homeTeam || '');
+  const sel = resolveNblClubName(selectedTeam || '');
+  return Boolean(home && sel && home !== sel);
+}
+
 function nblBookHasLineValue(book: NblBookRow | undefined, value: number | null): boolean {
   if (!book || value == null || !Number.isFinite(value)) return false;
   if (
@@ -1174,13 +1183,19 @@ export default function NblDashboardPage() {
     const onTransientLine = (e: Event) => {
       const value = (e as CustomEvent<{ value: number }>).detail?.value;
       if (value == null || !Number.isFinite(value)) return;
+      const stored =
+        nblPropsMode === 'team' &&
+        nblOddsMarket === 'spread' &&
+        nblTeamSpreadIsAway(nblOddsHomeTeam, selectedTeam)
+          ? -value
+          : value;
       setNblGameLineValue((prev) =>
-        prev != null && Number.isFinite(prev) && Math.abs(prev - value) < 0.01 ? prev : value
+        prev != null && Number.isFinite(prev) && Math.abs(prev - stored) < 0.01 ? prev : stored
       );
     };
     window.addEventListener('transient-line', onTransientLine);
     return () => window.removeEventListener('transient-line', onTransientLine);
-  }, []);
+  }, [nblPropsMode, nblOddsMarket, nblOddsHomeTeam, selectedTeam]);
 
   // Mark tipoff LIVE for ~2.5h after start.
   useEffect(() => {
@@ -1307,10 +1322,8 @@ export default function NblDashboardPage() {
       }
     }
     if (value == null || !Number.isFinite(value)) return null;
-    if (nblPropsMode === 'team' && nblOddsMarket === 'spread') {
-      const home = resolveNblClubName(nblOddsHomeTeam);
-      const sel = resolveNblClubName(selectedTeam || '');
-      if (home && sel && home !== sel) return -value;
+    if (nblPropsMode === 'team' && nblOddsMarket === 'spread' && nblTeamSpreadIsAway(nblOddsHomeTeam, selectedTeam)) {
+      return -value;
     }
     return value;
   })();
