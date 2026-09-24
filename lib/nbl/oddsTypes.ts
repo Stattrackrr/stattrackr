@@ -113,6 +113,17 @@ export function nblFilterMilestoneLinesForPropsPage(lines: NblPropLine[]): NblPr
   return preferred.filter((l) => nblMilestoneOddsInPropsBand(l.over));
 }
 
+export function nblExactLineOnBook(
+  book: NblBookRow | undefined,
+  value: number | null | undefined
+): NblPropLine | undefined {
+  if (!book || value == null || !Number.isFinite(value)) return undefined;
+  return nblBookLines(book).find((l) => {
+    const n = parseNblOddsLine(l.line);
+    return n != null && Math.abs(n - value) < 0.01;
+  });
+}
+
 export function nblLineMatchingValue(
   book: NblBookRow | undefined,
   value: number | null | undefined
@@ -122,12 +133,5 @@ export function nblLineMatchingValue(
   if (value == null || !Number.isFinite(value)) {
     return lines.find((l) => l.kind === 'ou') ?? lines[0];
   }
-  return (
-    lines.find((l) => {
-      const n = parseNblOddsLine(l.line);
-      return n != null && Math.abs(n - value) < 0.01;
-    }) ??
-    lines.find((l) => l.kind === 'ou') ??
-    lines[0]
-  );
+  return nblExactLineOnBook(book, value) ?? lines.find((l) => l.kind === 'ou') ?? lines[0];
 }

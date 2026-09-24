@@ -6,6 +6,7 @@ import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { getBookmakerInfo, getBookmakerRegion, type BookmakerRegion } from '@/lib/bookmakers';
 import {
   nblBookLines,
+  nblExactLineOnBook,
   nblH2hMeetsMinOdds,
   nblLineMatchingValue,
   nblOuHasOdds,
@@ -121,7 +122,9 @@ export function NblLineSelector({
       ? nblOuHasOdds(selectedBook?.Spread)
         ? { ...selectedBook.Spread, kind: 'ou', label: selectedBook.Spread.line }
         : undefined
-      : nblLineMatchingValue(selectedBook, currentLineValue)
+      : currentLineValue != null && Number.isFinite(currentLineValue)
+        ? nblExactLineOnBook(selectedBook, currentLineValue)
+        : nblLineMatchingValue(selectedBook, currentLineValue)
     : undefined;
   const ouRow = selectedLine;
   const bookmakerInfo = selectedBook ? getBookmakerInfo(selectedBook.name) : null;
@@ -131,7 +134,23 @@ export function NblLineSelector({
     ? Boolean(books.length && nblH2hMeetsMinOdds(selectedBook?.H2H))
     : Boolean(ouRow && nblOuHasOdds(ouRow));
 
-  const showSkeleton = !disabled && market != null && (books.length === 0 || !hasDisplayableOdds);
+  const selectedBookLine =
+    isOu && ouRow
+      ? parseNblOddsLine(ouRow.line)
+      : market === 'spread'
+        ? parseNblOddsLine(selectedBook?.Spread?.line)
+        : null;
+  const selectedBookLineMismatch =
+    currentLineValue != null &&
+    Number.isFinite(currentLineValue) &&
+    !isMoneyline &&
+    selectedBookLine != null &&
+    Math.abs(selectedBookLine - currentLineValue) >= 0.01;
+
+  const showSkeleton =
+    !disabled &&
+    market != null &&
+    (books.length === 0 || !hasDisplayableOdds || selectedBookLineMismatch);
 
   const ouDropdownItems = isOu && market === 'spread'
     ? books

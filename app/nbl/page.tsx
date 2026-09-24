@@ -53,6 +53,7 @@ import { defaultNblTeamStat, isNblTeamGameStat } from '@/lib/nbl/teamGameLogsSha
 import { nblQuarterParentStat } from '@/lib/nbl/pbpShared';
 import {
   nblBookLines,
+  nblExactLineOnBook,
   nblOddsMarketForStat,
   parseNblOddsLine,
   type NblBookRow,
@@ -447,6 +448,7 @@ export default function NblDashboardPage() {
   const nblOddsBoardKeyRef = useRef('');
   const preferredNblBookmakerRef = useRef<string | null>(null);
   const hasIncomingNblBookOrLineRef = useRef(false);
+  const ignoreNextTransientLineRef = useRef(false);
   const incomingAppliedForKeyRef = useRef<string | null>(null);
   const nextGameTeamKeyRef = useRef('');
 
@@ -1142,9 +1144,14 @@ export default function NblDashboardPage() {
     setNblGameLineValue((current) => {
       if (current != null && Number.isFinite(current)) return current;
       const parsed = preferredLine(book);
-      if (parsed != null) return parsed;
+      if (parsed != null) {
+        ignoreNextTransientLineRef.current = true;
+        return parsed;
+      }
       const withData = nblDisplayOddsBooks.find((b) => preferredLine(b) != null);
-      return withData ? preferredLine(withData) : null;
+      const fallback = withData ? preferredLine(withData) : null;
+      if (fallback != null) ignoreNextTransientLineRef.current = true;
+      return fallback;
     });
     if (preferredLine(book) == null) {
       const withData = nblDisplayOddsBooks.findIndex((b) => preferredLine(b) != null);
@@ -1179,8 +1186,15 @@ export default function NblDashboardPage() {
     if (idx >= 0 && idx !== selectedNblBookIndex) setSelectedNblBookIndex(idx);
   }, [nblDisplayOddsBooks, selectedNblBookIndex, nblGameLineValue]);
 
+  // When the user moves the betting line, keep the stored value and switch to a
+  // book that offers that line (AFL). If no book has it, the selector shows a skeleton.
   useEffect(() => {
+    const tol = 0.01;
     const onTransientLine = (e: Event) => {
+      if (ignoreNextTransientLineRef.current) {
+        ignoreNextTransientLineRef.current = false;
+        return;
+      }
       const value = (e as CustomEvent<{ value: number }>).detail?.value;
       if (value == null || !Number.isFinite(value)) return;
       const stored =
@@ -1190,12 +1204,29 @@ export default function NblDashboardPage() {
           ? -value
           : value;
       setNblGameLineValue((prev) =>
-        prev != null && Number.isFinite(prev) && Math.abs(prev - stored) < 0.01 ? prev : stored
+        prev != null && Number.isFinite(prev) && Math.abs(prev - stored) < tol ? prev : stored
       );
+      if (nblOddsMarket !== 'spread' && nblOddsMarket !== 'total') return;
+      if (!nblDisplayOddsBooks.length) return;
+      const idx = nblDisplayOddsBooks.findIndex((book) => {
+        if (nblOddsMarket === 'spread') {
+          const line = parseNblOddsLine(book.Spread?.line);
+          return line != null && Math.abs(line - stored) < tol;
+        }
+        return nblExactLineOnBook(book, stored) != null;
+      });
+      if (idx >= 0 && idx !== selectedNblBookIndex) setSelectedNblBookIndex(idx);
     };
     window.addEventListener('transient-line', onTransientLine);
     return () => window.removeEventListener('transient-line', onTransientLine);
-  }, [nblPropsMode, nblOddsMarket, nblOddsHomeTeam, selectedTeam]);
+  }, [
+    nblPropsMode,
+    nblOddsMarket,
+    nblOddsHomeTeam,
+    selectedTeam,
+    nblDisplayOddsBooks,
+    selectedNblBookIndex,
+  ]);
 
   // Mark tipoff LIVE for ~2.5h after start.
   useEffect(() => {
@@ -1766,10 +1797,13 @@ export default function NblDashboardPage() {
                             disabled={nblPropsMode === 'team' ? !hasTeamModeSelection : !selectedPlayer}
                             currentLineValue={
                               nblOddsMarket === 'spread' || nblOddsMarket === 'total'
-                                ? nblExternalLineValue
+                                ? nblGameLineValue
                                 : undefined
                             }
-                            onSelectLineValue={(lineValue) => setNblGameLineValue(lineValue)}
+                            onSelectLineValue={(lineValue) => {
+                              ignoreNextTransientLineRef.current = true;
+                              setNblGameLineValue(lineValue);
+                            }}
                           />
                         )
                       ) : null
