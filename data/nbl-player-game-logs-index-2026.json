@@ -1,17 +1,17 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-23T17:52:51.146Z",
+  "generatedAt": "2026-09-24T17:53:40.275Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 154,
-  "gameRows": 142,
+  "gameRows": 183,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
       "name": "Akech Aliir",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/92012cd9-65dd-47f1-a51e-a6b5169bf359-2026.json"
     },
     {
@@ -43,7 +43,7 @@
       "name": "Angus Brandt",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/145dc428-1473-408f-b295-0004e66f4456-2026.json"
     },
     {
@@ -51,7 +51,7 @@
       "name": "Angus Glover",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/79fe0730-aca0-4167-97cc-1ef09514cc66-2026.json"
     },
     {
@@ -59,7 +59,7 @@
       "name": "Anthony Dell'Orso",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/a9125673-5d09-4a1b-aac1-b403f5bf372a-2026.json"
     },
     {
@@ -107,7 +107,7 @@
       "name": "Austin Shelley",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/b42c71df-100c-4500-b591-dfb079fe4a7e-2026.json"
     },
     {
@@ -139,7 +139,7 @@
       "name": "Ben Griscti",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/24a2f29d-6bfd-427a-9cb4-4ac0f4088083-2026.json"
     },
     {
@@ -187,7 +187,7 @@
       "name": "Bryce Cotton",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/41a2b121-3fe0-4e82-b3d3-d6079ed33b8b-2026.json"
     },
     {
@@ -211,7 +211,7 @@
       "name": "Cameron Huefner",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/322328f8-6ddd-422d-8a17-24a66897100d-2026.json"
     },
     {
@@ -235,7 +235,7 @@
       "name": "Chris Goulding",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/f243749f-0174-4255-b6ff-d0a9896899e8-2026.json"
     },
     {
@@ -251,7 +251,7 @@
       "name": "Cole Anthony",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/0edcc8b5-60a8-4ebe-b75d-5fb3f64d40e6-2026.json"
     },
     {
@@ -259,7 +259,7 @@
       "name": "D'Shawn Schwartz",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/6c3024b9-ffb8-4a9d-bb23-1e99191f98b9-2026.json"
     },
     {
@@ -275,7 +275,7 @@
       "name": "Daniel Foster",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/b151cb86-4bf1-4b47-8b0c-14c0b9f51604-2026.json"
     },
     {
@@ -299,7 +299,7 @@
       "name": "Dash Daniels",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/d92ec6d5-b731-476a-b4a4-10cc36211bf5-2026.json"
     },
     {
@@ -331,7 +331,7 @@
       "name": "Dylan Windler",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/19611d1d-9349-4e39-a3ef-0733577b56e5-2026.json"
     },
     {
@@ -339,7 +339,7 @@
       "name": "Elijah Pepper",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/318cc011-ca3e-4a82-b1cf-fd805b05d6d4-2026.json"
     },
     {
@@ -355,7 +355,7 @@
       "name": "Fabijan Krslovic",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/02fa3a79-2bc1-4ad7-97be-44aafcb09d91-2026.json"
     },
     {
@@ -411,7 +411,7 @@
       "name": "Hunter Goodrick",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/0a5486ee-953a-4fae-920d-4a77de1bdf03-2026.json"
     },
     {
@@ -427,7 +427,7 @@
       "name": "Isaac White",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/0994d5da-21ea-4720-8dad-71020a214700-2026.json"
     },
     {
@@ -459,7 +459,7 @@
       "name": "Jacob Rigoni",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/6411557a-9dae-42a7-a8c6-3953529eeaaa-2026.json"
     },
     {
@@ -547,7 +547,7 @@
       "name": "Jimmy Whitt",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/2e2b1ed6-2547-47c2-bb52-f401924a4557-2026.json"
     },
     {
@@ -555,7 +555,7 @@
       "name": "Jo Lual-Acuil Jr",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/5adef25b-648e-442b-983e-020043e7872d-2026.json"
     },
     {
@@ -563,7 +563,7 @@
       "name": "Joe Ingles",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/55d2550e-3e91-4863-81b8-d2958bd2dd76-2026.json"
     },
     {
@@ -571,7 +571,7 @@
       "name": "John Jenkins",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/71771a51-6f51-4a37-a27e-2a123e775a5c-2026.json"
     },
     {
@@ -595,7 +595,7 @@
       "name": "Jordan Hunter",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9-2026.json"
     },
     {
@@ -611,7 +611,7 @@
       "name": "Josh Oduro",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/81099730-32f6-4aea-a76e-a48cc806d8e0-2026.json"
     },
     {
@@ -659,7 +659,7 @@
       "name": "Keanu Rasmussen",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/387c51fb-7f66-47b6-bb40-0876ae41bb29-2026.json"
     },
     {
@@ -707,7 +707,7 @@
       "name": "Kristian Doolittle",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/37613082-354f-48d0-b16d-0d9ff613f64c-2026.json"
     },
     {
@@ -723,7 +723,7 @@
       "name": "Kyle Bowen",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/3eed080d-4398-49ef-a990-ff5bf86c98ed-2026.json"
     },
     {
@@ -787,7 +787,7 @@
       "name": "Luke Travers",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/46d53277-6741-4431-80c1-aefd8aff6cc9-2026.json"
     },
     {
@@ -819,7 +819,7 @@
       "name": "Malith Machar",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/135b961b-2a30-4044-9d4e-52128c10a33c-2026.json"
     },
     {
@@ -843,7 +843,7 @@
       "name": "Matt Kenyon",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/0c6e8860-99ba-44d2-9f1a-8b6e58936bb8-2026.json"
     },
     {
@@ -899,7 +899,7 @@
       "name": "Nathan Sobey",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/7f6e18b2-6494-41c7-9791-d72c632317d5-2026.json"
     },
     {
@@ -923,7 +923,7 @@
       "name": "Nick Rakocevic",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/eb26560d-c56e-4409-b482-8b141421ce79-2026.json"
     },
     {
@@ -939,7 +939,7 @@
       "name": "Patrick Ryan",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/9b71131b-787a-475d-aa1b-00dc4394f5e2-2026.json"
     },
     {
@@ -1003,7 +1003,7 @@
       "name": "Sam Davidson",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/6a6983d4-e83e-403a-9b3e-04a8535ab545-2026.json"
     },
     {
@@ -1035,7 +1035,7 @@
       "name": "Sam Waardenburg",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/6f9d3d60-119f-408f-b8f9-a44978929b2e-2026.json"
     },
     {
@@ -1067,7 +1067,7 @@
       "name": "Skylar Mays",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/05e12749-7b66-44f8-84f7-f437fc90dfb6-2026.json"
     },
     {
@@ -1099,7 +1099,7 @@
       "name": "Tanner Krebs",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/a793b9cb-fb83-4554-8672-f35ccd77d6b1-2026.json"
     },
     {
@@ -1123,7 +1123,7 @@
       "name": "Tom Wilson",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/fd0678c3-5b7e-4550-bb6b-5849534e3769-2026.json"
     },
     {
@@ -1227,7 +1227,7 @@
       "name": "Yannis Morin",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/5f85917c-1552-4800-b64a-48cf1023c60c-2026.json"
     },
     {
@@ -1235,7 +1235,7 @@
       "name": "Zylan Cheatham",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/46e6eb3e-6631-4361-bc61-6798faab22f8-2026.json"
     }
   ]

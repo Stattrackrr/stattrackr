@@ -1,0 +1,590 @@
+{
+  "fixtureId": "36e93c3b-58ad-11f1-8215-c5dc2cf09b1f",
+  "homeTeam": "Perth Wildcats",
+  "awayTeam": "Adelaide 36ers",
+  "homeTeamCode": "PER",
+  "awayTeamCode": "ADL",
+  "lineupValid": false,
+  "players": [
+    {
+      "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+      "name": "Angus Brandt",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+      "name": "Anthony Dell'Orso",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 9,
+      "assistedMakes": 4,
+      "assists": 6,
+      "ptsCreated": 13,
+      "finds": [
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 3,
+          "pts": 7
+        },
+        {
+          "personId": "51510092-410d-11f0-80a3-9dbbf7342624",
+          "name": "Jo Lual-Acuil Jr",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+      "name": "Ben Griscti",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+      "name": "Bryce Cotton",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 10,
+      "assistedMakes": 3,
+      "assists": 9,
+      "ptsCreated": 17,
+      "finds": [
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 5,
+          "pts": 10
+        },
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 3,
+          "pts": 7
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+          "name": "Matt Kenyon",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+      "name": "Cameron Huefner",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+      "name": "Dylan Windler",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 6,
+      "assistedMakes": 4,
+      "assists": 3,
+      "ptsCreated": 6,
+      "finds": [
+        {
+          "personId": "51510092-410d-11f0-80a3-9dbbf7342624",
+          "name": "Jo Lual-Acuil Jr",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "51510092-410d-11f0-80a3-9dbbf7342624",
+          "name": "Jo Lual-Acuil Jr",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+      "name": "Elijah Pepper",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 10,
+      "assistedMakes": 6,
+      "assists": 3,
+      "ptsCreated": 7,
+      "finds": [
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "count": 3,
+          "pts": 7
+        },
+        {
+          "personId": "27885508-95e4-11f1-abbe-93e32340823d",
+          "name": "Jimmy Whitt",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "51510092-410d-11f0-80a3-9dbbf7342624",
+          "name": "Jo Lual-Acuil Jr",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+      "name": "Isaac White",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+      "name": "Jacob Rigoni",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+      "name": "Jesse Wagstaff",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 4,
+      "ptsCreated": 9,
+      "finds": [
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "27885508-95e4-11f1-abbe-93e32340823d",
+          "name": "Jimmy Whitt",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "27885508-95e4-11f1-abbe-93e32340823d",
+      "name": "Jimmy Whitt",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "51510092-410d-11f0-80a3-9dbbf7342624",
+      "name": "Jo Lual-Acuil Jr",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 8,
+      "assistedMakes": 6,
+      "assists": 2,
+      "ptsCreated": 4,
+      "finds": [
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 2,
+          "pts": 4
+        }
+      ]
+    },
+    {
+      "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
+      "name": "John Jenkins",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 3,
+      "assistedMakes": 3,
+      "assists": 1,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+      "name": "Keanu Rasmussen",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 1,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+      "name": "Kristian Doolittle",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 4,
+      "assistedMakes": 1,
+      "assists": 5,
+      "ptsCreated": 10,
+      "finds": [
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "51510092-410d-11f0-80a3-9dbbf7342624",
+          "name": "Jo Lual-Acuil Jr",
+          "count": 2,
+          "pts": 4
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+      "name": "Matt Kenyon",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+      "name": "Nick Rakocevic",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 10,
+      "assistedMakes": 8,
+      "assists": 3,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
+          "name": "John Jenkins",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 5,
+          "pts": 10
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+      "name": "Zylan Cheatham",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 6,
+      "assistedMakes": 4,
+      "assists": 5,
+      "ptsCreated": 7,
+      "finds": [
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
+          "name": "John Jenkins",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 3,
+          "pts": 7
+        },
+        {
+          "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+          "name": "Isaac White",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    }
+  ],
+  "onOff": [],
+  "fetchedAt": "2026-09-24T17:53:47.100Z"
+}

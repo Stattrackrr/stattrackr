@@ -5,7 +5,7 @@
   "teamCode": "CNS",
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-23T17:52:42.634Z",
+  "generatedAt": "2026-09-24T17:53:33.034Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 2,
   "games": [
@@ -62,7 +62,7 @@
       "teamCode": "CNS",
       "result": null,
       "venue": null,
-      "minutes": 12.766667,
+      "minutes": 12.75,
       "points": 3,
       "rebounds": 1,
       "offensiveRebounds": 0,
