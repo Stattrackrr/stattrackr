@@ -1,11 +1,12 @@
 /**
- * NBL player markets from PulseScore (Sportsbet AU, TAB, Unibet AU).
+ * NBL player markets from odds-api.net (Sportsbet / TAB / Bet365 / Unibet).
  * Game moneyline/spread/total stay on The Odds API.
  */
 
 import { decimalToAmerican } from '@/lib/currencyUtils';
 import { officialNblClubName, resolveNblClubName } from '@/lib/nblTeamCanonical';
 import sharedCache from '@/lib/sharedCache';
+import { fetchOddsApiNetNblGames } from '@/lib/nbl/oddsApiNet';
 import {
   NBL_PLAYER_PROP_STAT_TO_MARKET,
   nblPreferOuLines,
@@ -13,15 +14,8 @@ import {
   type NblPropLine,
 } from '@/lib/nbl/oddsTypes';
 
-const PULSESCORE_BASE = 'https://api.pulsescore.net/api';
-const CACHE_KEY = 'nbl_ps_board_v2';
+const CACHE_KEY = 'nbl_oan_board_v1';
 const CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
-
-const BOOKS: ReadonlyArray<{ slug: string; name: string }> = [
-  { slug: 'sportsbet-com-au', name: 'Sportsbet' },
-  { slug: 'tab', name: 'TAB' },
-  { slug: 'unibetau', name: 'Unibet' },
-];
 
 const PREFERRED_THRESHOLD: Record<string, number> = {
   points: 20,
@@ -57,21 +51,6 @@ interface PulseMarket {
   moreInfo?: PulseMoreInfo;
 }
 
-interface PulseEvent {
-  eventId?: string | number;
-  home?: string;
-  away?: string;
-  startTime?: string;
-  league?: string;
-  markets?: PulseMarket[];
-}
-
-interface PulseLeague {
-  name?: string;
-  league?: string;
-  events?: PulseEvent[];
-}
-
 export interface PulseNblGame {
   gameId: string;
   homeTeam: string;
@@ -88,16 +67,8 @@ interface PulseNblBoard {
 let inflight: Promise<PulseNblBoard> | null = null;
 let memoryBoard: PulseNblGame[] | null = null;
 
-function pulseKey(): string {
-  return String(process.env.PULSESCORE_API_KEY || process.env.PULSE_SCORE_KEY || '').trim();
-}
-
-function isNblLeagueName(name: string | undefined): boolean {
-  const n = String(name || '').trim().toLowerCase();
-  if (!n) return false;
-  if (/\bnba\b/.test(n) && !/\bnbl\b/.test(n)) return false;
-  if (/czech|singapore/.test(n)) return false;
-  return n === 'nbl' || /\bnbl\b/.test(n) || n.includes('australian nbl');
+function oddsApiNetKey(): string {
+  return String(process.env.ODDS_API_NET_KEY || process.env.ODDS_API_NET || '').trim();
 }
 
 function officialTeam(raw: string | undefined): string {
@@ -119,179 +90,8 @@ function teamsMatch(a: string | undefined, b: string | undefined): boolean {
   return ka.includes(kb) || kb.includes(ka);
 }
 
-function gameBucket(home: string, away: string, start: string): string {
-  const teams = [teamKey(home), teamKey(away)].filter(Boolean).sort().join('|');
-  return `${teams}|${String(start || '').slice(0, 10)}`;
-}
-
-async function fetchJson(url: string): Promise<unknown> {
-  const key = pulseKey();
-  if (!key) return null;
-  const res = await fetch(url, {
-    headers: { 'X-Secret': key, Accept: 'application/json', 'Accept-Encoding': 'gzip' },
-    cache: 'no-store',
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    console.warn(`[PulseScore NBL] ${res.status} ${url.replace(key, '…')}: ${body.slice(0, 180)}`);
-    return null;
-  }
-  return res.json();
-}
-
-function leaguesFrom(payload: unknown): PulseLeague[] {
-  if (!payload || typeof payload !== 'object') return [];
-  const p = payload as { leagues?: PulseLeague[]; data?: PulseLeague[] };
-  if (Array.isArray(payload)) return payload as PulseLeague[];
-  if (Array.isArray(p.leagues)) return p.leagues;
-  if (Array.isArray(p.data)) return p.data;
-  return [];
-}
-
-function eventsFromLeague(league: PulseLeague): PulseEvent[] {
-  return (league.events || []).map((ev) => ({
-    ...ev,
-    league: ev.league || league.name || league.league,
-  }));
-}
-
-function eventsFromPage(payload: unknown): { events: PulseEvent[]; hasNextPage: boolean } {
-  if (!payload || typeof payload !== 'object') return { events: [], hasNextPage: false };
-  const p = payload as { events?: PulseEvent[]; hasNextPage?: boolean };
-  return {
-    events: Array.isArray(p.events) ? p.events : [],
-    hasNextPage: p.hasNextPage === true,
-  };
-}
-
-function isOfficialNblEvent(ev: PulseEvent): boolean {
-  return Boolean(officialNblClubName(ev.home) && officialNblClubName(ev.away));
-}
-
-function eventFromPayload(page: unknown): PulseEvent | null {
-  if (!page || typeof page !== 'object') return null;
-  const p = page as { data?: PulseEvent } & PulseEvent;
-  if (p.data && typeof p.data === 'object' && (p.data.markets || p.data.eventId)) return p.data;
-  if (p.markets || p.eventId) return p;
-  return null;
-}
-
-async function sleep(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function hydrateEventMarkets(slug: string, ev: PulseEvent): Promise<PulseEvent> {
-  const id = String(ev.eventId || '').trim();
-  if (!id) return ev;
-  const page = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/events/${encodeURIComponent(id)}`);
-  const detail = eventFromPayload(page);
-  const nextMarkets = detail?.markets;
-  if (!Array.isArray(nextMarkets) || nextMarkets.length === 0) return ev;
-  return {
-    ...ev,
-    ...detail,
-    markets: mergePulseMarkets(ev.markets, nextMarkets),
-    league: ev.league || detail?.league,
-  };
-}
-
-function mergePulseMarkets(
-  current: PulseMarket[] | undefined,
-  incoming: PulseMarket[] | undefined
-): PulseMarket[] {
-  const map = new Map<string, PulseMarket>();
-  const keyOf = (market: PulseMarket) =>
-    String(market.marketId || `${market.canonicalMarket || ''}|${market.rawName || market.name || ''}|${market.line ?? ''}`);
-  for (const market of [...(current || []), ...(incoming || [])]) {
-    const key = keyOf(market);
-    const prev = map.get(key);
-    if (!prev || (market.selections?.length || 0) > (prev.selections?.length || 0)) {
-      map.set(key, market);
-    }
-  }
-  return [...map.values()];
-}
-
-async function fetchBookNblEventScan(slug: string): Promise<PulseEvent[]> {
-  const out: PulseEvent[] = [];
-  for (let page = 1; page <= 3; page += 1) {
-    await sleep(1100);
-    const payload = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/events?limit=30&page=${page}`);
-    const { events, hasNextPage } = eventsFromPage(payload);
-    for (const ev of events) {
-      if (isOfficialNblEvent(ev)) out.push(ev);
-    }
-    if (!hasNextPage) break;
-  }
-  return out;
-}
-
-async function fetchBookNblLeagues(slug: string): Promise<PulseLeague[]> {
-  const out: PulseLeague[] = [];
-  for (let page = 1; page <= 8; page += 1) {
-    if (page > 1) await sleep(1100);
-    const payload = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/leagues?limit=30&page=${page}`);
-    const leagues = leaguesFrom(payload).filter((l) => isNblLeagueName(l.name || l.league));
-    out.push(...leagues);
-    const p = payload && typeof payload === 'object' ? (payload as { hasNextPage?: boolean }) : null;
-    const rawCount = leaguesFrom(payload).length;
-    if (p?.hasNextPage !== true && rawCount < 30) break;
-    if (out.length) break;
-  }
-  return out;
-}
-
-async function fetchBookNblEvents(slug: string): Promise<PulseEvent[]> {
-  const leagues = await fetchBookNblLeagues(slug);
-  const seen = new Set<string>();
-  const out: PulseEvent[] = [];
-  for (const ev of [...leagues.flatMap(eventsFromLeague), ...(await fetchBookNblEventScan(slug))]) {
-    if (!isOfficialNblEvent(ev)) continue;
-    const id = String(ev.eventId || `${ev.home}|${ev.away}|${ev.startTime || ''}`);
-    if (seen.has(id)) continue;
-    seen.add(id);
-    out.push(ev);
-  }
-  const hydrated: PulseEvent[] = [];
-  for (const ev of out) {
-    await sleep(1100);
-    hydrated.push(await hydrateEventMarkets(slug, ev));
-  }
-  return hydrated;
-}
-
-function mergeBoard(byBook: Array<{ name: string; events: PulseEvent[] }>): PulseNblGame[] {
-  const map = new Map<string, PulseNblGame>();
-  for (const { name, events } of byBook) {
-    for (const ev of events) {
-      const home = officialNblClubName(ev.home);
-      const away = officialNblClubName(ev.away);
-      if (!home || !away) continue;
-      const key = gameBucket(home, away, ev.startTime || '');
-      const existing = map.get(key);
-      const book = { name, markets: ev.markets || [] };
-      if (existing) {
-        existing.bookmakers.push(book);
-        continue;
-      }
-      map.set(key, {
-        gameId: String(ev.eventId ?? key),
-        homeTeam: home,
-        awayTeam: away,
-        commenceTime: ev.startTime || '',
-        bookmakers: [book],
-      });
-    }
-  }
-  return [...map.values()];
-}
-
 async function refreshBoard(): Promise<PulseNblBoard> {
-  const byBook = await Promise.all(
-    BOOKS.map(async (b) => ({ name: b.name, events: await fetchBookNblEvents(b.slug) }))
-  );
-  const games = mergeBoard(byBook);
+  const games = (await fetchOddsApiNetNblGames()) as PulseNblGame[];
   const board: PulseNblBoard = { lastUpdated: new Date().toISOString(), games };
   if (games.length) {
     memoryBoard = games;
@@ -299,7 +99,7 @@ async function refreshBoard(): Promise<PulseNblBoard> {
     const { persistNblPlayerPropSnapshots } = await import('@/lib/nbl/playerPropSnapshots');
     void persistNblPlayerPropSnapshots(games).catch((err) => {
       console.warn(
-        '[PulseScore NBL] snapshot persist failed',
+        '[odds-api.net NBL] snapshot persist failed',
         err instanceof Error ? err.message : err
       );
     });
@@ -316,7 +116,7 @@ export async function getNblPulseScoreBoard(options?: { force?: boolean }): Prom
     return memoryBoard ?? [];
   }
 
-  if (!pulseKey()) return cached?.games?.length ? cached.games : memoryBoard ?? [];
+  if (!oddsApiNetKey()) return cached?.games?.length ? cached.games : memoryBoard ?? [];
   if (!inflight) {
     inflight = refreshBoard().finally(() => {
       inflight = null;
@@ -326,7 +126,7 @@ export async function getNblPulseScoreBoard(options?: { force?: boolean }): Prom
     const fresh = await inflight;
     if (fresh.games.length) return fresh.games;
   } catch (err) {
-    console.warn('[PulseScore NBL] refresh failed', err instanceof Error ? err.message : err);
+    console.warn('[odds-api.net NBL] refresh failed', err instanceof Error ? err.message : err);
   }
   return cached?.games?.length ? cached.games : memoryBoard ?? [];
 }

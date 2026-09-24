@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 
 /**
  * GET /api/nbl/player-props/list
- * Cache-only Pulse/snapshot board. Live pull is cron-only.
+ * Cache-only odds-api.net / snapshot board. Live pull is cron-only.
  */
 export async function GET() {
   try {

@@ -1,4 +1,4 @@
-# Snapshot PulseScore NBL player O/U + milestone lines (Sportsbet / TAB)
+# Snapshot odds-api.net NBL player O/U + milestone lines (Sportsbet / TAB)
 # before books take markets down, then ingest live odds into production
 # Redis so /props and combined stay current without a Vercel data deploy.
 name: NBL Player Prop Snapshots
@@ -32,49 +32,49 @@ jobs:
       - name: Check ingest secrets
         id: check
         env:
-          PULSESCORE_API_KEY: ${{ secrets.PULSESCORE_API_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
           PROD_URL: ${{ secrets.PROD_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          PULSE=false
+          OAN=false
           PROD=false
-          if [ -n "$PULSESCORE_API_KEY" ]; then
-            PULSE=true
+          if [ -n "$ODDS_API_NET_KEY" ]; then
+            OAN=true
           else
-            echo "PULSESCORE_API_KEY not set; local snapshot will be skipped"
+            echo "ODDS_API_NET_KEY not set; local snapshot will be skipped"
           fi
           if [ -n "$PROD_URL" ] && [ -n "$CRON_SECRET" ]; then
             PROD=true
           fi
-          echo "pulse=${PULSE}" >> $GITHUB_OUTPUT
+          echo "oan=${OAN}" >> $GITHUB_OUTPUT
           echo "prod=${PROD}" >> $GITHUB_OUTPUT
-          if [ "$PULSE" != "true" ] && [ "$PROD" != "true" ]; then
-            echo "Need PULSESCORE_API_KEY or PROD_URL+CRON_SECRET"
+          if [ "$OAN" != "true" ] && [ "$PROD" != "true" ]; then
+            echo "Need ODDS_API_NET_KEY or PROD_URL+CRON_SECRET"
             exit 1
           fi
 
       - name: Setup Node.js
-        if: steps.check.outputs.pulse == 'true'
+        if: steps.check.outputs.oan == 'true'
         uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
-        if: steps.check.outputs.pulse == 'true'
+        if: steps.check.outputs.oan == 'true'
         run: npm ci
 
-      - name: Snapshot PulseScore NBL player lines
-        if: steps.check.outputs.pulse == 'true'
+      - name: Snapshot odds-api.net NBL player lines
+        if: steps.check.outputs.oan == 'true'
         env:
-          PULSESCORE_API_KEY: ${{ secrets.PULSESCORE_API_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: npm run snapshot:nbl:player-props
 
       - name: Commit player-prop snapshots
-        if: steps.check.outputs.pulse == 'true'
+        if: steps.check.outputs.oan == 'true'
         run: |
-          bash scripts/ci-commit-data-files.sh "chore(data): NBL PulseScore player-prop snapshots [skip ci]" \
+          bash scripts/ci-commit-data-files.sh "chore(data): NBL odds-api.net player-prop snapshots [skip ci]" \
             "data/nbl-model/cache/player-prop-lines" \
             "data/nbl-model/cache/player-props-list.json"
         env:

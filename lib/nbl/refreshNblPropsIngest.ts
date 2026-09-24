@@ -1,5 +1,5 @@
 /**
- * Cron-only NBL ingest: PulseScore player lines + The Odds API game lines,
+ * Cron-only NBL ingest: odds-api.net player lines + The Odds API game lines,
  * then bake the props-page list and combined NBL slice into Redis.
  */
 
@@ -11,7 +11,7 @@ import { refreshNblOddsData } from '@/lib/nbl/refreshNblOdds';
 
 export type NblOddsAndPropsIngestResult = {
   success: boolean;
-  pulseGames: number;
+  pulseGames: number; // games from odds-api.net board (legacy field name)
   snapshots: { saved: number; frozen: number; skipped: number };
   gameOdds: {
     success: boolean;

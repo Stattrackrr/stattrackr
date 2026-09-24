@@ -1,5 +1,5 @@
 /**
- * Durable PulseScore (Sportsbet / TAB / Unibet) NBL player-line snapshots.
+ * Durable odds-api.net (Sportsbet / TAB / Bet365 / Unibet) NBL player-line snapshots.
  * Live board vanishes after tip — these files keep closing O/Us / milestones.
  */
 
@@ -51,7 +51,7 @@ export type NblPlayerPropSnapshot = {
   commenceTime: string;
   capturedAt: string;
   closing: boolean;
-  source: 'pulsescore';
+  source: 'odds-api-net' | 'pulsescore';
   books: string[];
   lineCount: number;
   lines: NblSnapLine[];
@@ -191,7 +191,7 @@ function buildSnapshot(game: PulseNblGame, nowIso: string, closing: boolean): Nb
     commenceTime: game.commenceTime,
     capturedAt: nowIso,
     closing,
-    source: 'pulsescore',
+    source: 'odds-api-net',
     books: [...new Set(lines.map((l) => l.book))],
     lineCount: lines.length,
     lines,

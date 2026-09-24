@@ -19,7 +19,7 @@ const REQUIRED_ENV_VARS = {
 const OPTIONAL_ENV_VARS = {
   // Odds API (optional, app works without it)
   ODDS_API_KEY: 'The Odds API key for betting lines',
-  PULSESCORE_API_KEY: 'PulseScore key for NBL player props (Sportsbet/TAB/Unibet)',
+  ODDS_API_NET_KEY: 'odds-api.net key for NBL player props (Sportsbet/TAB/Bet365/Unibet)',
   
   // Base URL (optional, auto-detected in most cases)
   NEXT_PUBLIC_BASE_URL: 'Base URL for API calls',

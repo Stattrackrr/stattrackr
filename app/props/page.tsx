@@ -1354,7 +1354,7 @@ function normalizeNbaTeam(team: string): string {
 }
 
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v6';
-const NBL_PROPS_CACHE_KEY = 'nbl_props_list_cache_v7';
+const NBL_PROPS_CACHE_KEY = 'nbl_props_list_cache_v12';
 
 const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v18';
 const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v23';
@@ -1584,13 +1584,6 @@ function isNblListProp(row: PlayerProp): boolean {
   return isNblListPropStatType(row.statType) && isNblPropsPlayerName(row.playerName);
 }
 
-function nblBookmakerLineCount(prop: PlayerProp | null | undefined): number {
-  if (Array.isArray(prop?.bookmakerLines) && prop.bookmakerLines.length > 0) {
-    return prop.bookmakerLines.length;
-  }
-  return String(prop?.bookmaker || '').trim() ? 1 : 0;
-}
-
 function nblLineHasUnibet(prop: PlayerProp): boolean {
   if (/unibet/i.test(String(prop.bookmaker || ''))) return true;
   return (prop.bookmakerLines || []).some((line) => /unibet/i.test(String(line.bookmaker || '')));
@@ -1613,31 +1606,30 @@ function nblPropMergeKey(prop: PlayerProp): string {
   return `${String(prop.playerName || '').trim().toLowerCase()}|${String(prop.statType || '').toLowerCase()}|${matchup}`;
 }
 
+function nblSamePaintLine(a: number | null | undefined, b: number | null | undefined): boolean {
+  if (a == null || b == null || !Number.isFinite(a) || !Number.isFinite(b)) return false;
+  return Math.abs(a - b) < 0.01;
+}
+
 function mergeNblPropForPaint(previous: PlayerProp | undefined, next: PlayerProp): PlayerProp {
   if (!previous) return next;
-  const lines = [...(previous.bookmakerLines || [])];
-  for (const line of next.bookmakerLines || []) {
-    if (!lines.some((existing) => existing.bookmaker === line.bookmaker && existing.line === line.line)) {
-      lines.push(line);
-    }
+  const keepLine = Number(next.line);
+  const lines = (next.bookmakerLines || []).filter((line) => nblSamePaintLine(line.line, keepLine));
+  for (const line of previous.bookmakerLines || []) {
+    if (!nblSamePaintLine(line.line, keepLine)) continue;
+    if (!lines.some((existing) => existing.bookmaker === line.bookmaker)) lines.push(line);
   }
-  const nextOu = Boolean(next.underOdds && next.underOdds !== 'N/A');
-  const prevOu = Boolean(previous.underOdds && previous.underOdds !== 'N/A');
-  const keep =
-    nextOu && !prevOu
-      ? next
-      : prevOu && !nextOu
-        ? previous
-        : nblBookmakerLineCount(next) >= nblBookmakerLineCount(previous)
-          ? next
-          : previous;
-  const other = keep === next ? previous : next;
   return {
-    ...keep,
-    bookmakerLines: lines.length ? lines : keep.bookmakerLines,
-    bookmaker: keep.bookmaker || other.bookmaker,
-    overOdds: keep.overOdds || other.overOdds,
-    underOdds: keep.underOdds || other.underOdds,
+    ...next,
+    bookmakerLines: lines.length ? lines : next.bookmakerLines,
+    bookmaker: next.bookmaker || previous.bookmaker,
+    overOdds: next.overOdds || previous.overOdds,
+    underOdds:
+      next.underOdds && next.underOdds !== 'N/A'
+        ? next.underOdds
+        : nblSamePaintLine(previous.line, keepLine)
+          ? previous.underOdds
+          : next.underOdds,
   };
 }
 
@@ -1976,6 +1968,63 @@ function propsRowShowsUnderOdds(
   }
   return true;
 }
+
+const NBL_OU_ONLY_STORAGE_KEY = 'nbl_props_ou_only_v1';
+
+function nblOddsPairIsTwoWay(over?: string | null, under?: string | null): boolean {
+  const o = String(over || '').trim();
+  const u = String(under || '').trim();
+  return o !== '' && o !== 'N/A' && u !== '' && u !== 'N/A';
+}
+
+function nblTwoWayBookmakerLines(prop: PlayerProp): Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }> {
+  return (prop.bookmakerLines || []).filter((line) => nblOddsPairIsTwoWay(line.overOdds, line.underOdds));
+}
+
+function nblPropForOuOnly(prop: PlayerProp): PlayerProp | null {
+  const twoWayLines = nblTwoWayBookmakerLines(prop);
+  const primaryTwoWay = nblOddsPairIsTwoWay(prop.overOdds, prop.underOdds);
+  if (!twoWayLines.length && !primaryTwoWay) return null;
+  const main = twoWayLines[0];
+  if (!main) {
+    return {
+      ...prop,
+      bookmakerLines: [
+        {
+          bookmaker: prop.bookmaker,
+          line: prop.line,
+          overOdds: prop.overOdds,
+          underOdds: prop.underOdds || 'N/A',
+        },
+      ],
+    };
+  }
+  return {
+    ...prop,
+    line: main.line,
+    overOdds: main.overOdds,
+    underOdds: main.underOdds,
+    bookmaker: main.bookmaker,
+    bookmakerLines: twoWayLines,
+  };
+}
+
+function readNblOuOnlyFilter(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(NBL_OU_ONLY_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeNblOuOnlyFilter(on: boolean) {
+  try {
+    window.localStorage.setItem(NBL_OU_ONLY_STORAGE_KEY, on ? '1' : '0');
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
 const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v18';
 const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v16';
 const COMBINED_PROPS_LS_TS_KEY = 'combined_props_snapshot_ls_ts_v14';
@@ -2290,6 +2339,7 @@ export default function NBALandingPage() {
   const [propTypeDropdownOpen, setPropTypeDropdownOpen] = useState(false);
   const [gamesDropdownOpen, setGamesDropdownOpen] = useState(false);
   const [tennisMaxRank, setTennisMaxRank] = useState<number | null>(readTennisMaxRankFilter);
+  const [nblOuOnly, setNblOuOnly] = useState(readNblOuOnlyFilter);
   const [propLineDropdownOpen, setPropLineDropdownOpen] = useState(false);
   const [propLineSort, setPropLineSort] = useState<'none' | 'high' | 'low'>('none');
   const [currentPage, setCurrentPage] = useState(1);
@@ -6006,33 +6056,36 @@ export default function NBALandingPage() {
   );
 
   const filteredAflProps = useMemo(() => {
-    const filtered = activeSecondaryProps.filter((prop) => {
-      if (!isAflCommenceTimePropsEligible(prop.gameDate)) return false;
+    const filtered: PlayerProp[] = [];
+    for (const raw of activeSecondaryProps) {
+      if (!isAflCommenceTimePropsEligible(raw.gameDate)) continue;
       
-      if (isTennisPropsSport(propsSport) && !isTennisPropStatType(prop.statType)) return false;
+      if (isTennisPropsSport(propsSport) && !isTennisPropStatType(raw.statType)) continue;
       if (
         isTennisPropsSport(propsSport) &&
-        propsSportFromTennisTour(prop.team || prop.homeTeamCode) !== propsSport
+        propsSportFromTennisTour(raw.team || raw.homeTeamCode) !== propsSport
       ) {
-        return false;
+        continue;
       }
       
       if (debouncedSearchQuery.trim()) {
         const q = debouncedSearchQuery.toLowerCase();
-        if (!prop.playerName.toLowerCase().includes(q) && !getStatLabel(prop.statType).toLowerCase().includes(q)) return false;
+        if (!raw.playerName.toLowerCase().includes(q) && !getStatLabel(raw.statType).toLowerCase().includes(q)) continue;
       }
-      if (selectedPropTypes.size > 0 && !selectedPropTypes.has(prop.statType)) return false;
+      const prop = propsSport === 'nbl' && nblOuOnly ? nblPropForOuOnly(raw) : raw;
+      if (!prop) continue;
+      if (selectedPropTypes.size > 0 && !selectedPropTypes.has(prop.statType)) continue;
       if (selectedBookmakers.size > 0) {
         const bms = new Set<string>();
         prop.bookmakerLines?.forEach((l) => l.bookmaker && bms.add(l.bookmaker));
         if (prop.bookmaker) bms.add(prop.bookmaker);
-        if (!Array.from(bms).some((bm) => selectedBookmakers.has(bm))) return false;
+        if (!Array.from(bms).some((bm) => selectedBookmakers.has(bm))) continue;
       }
       if (
         isTennisPropsSport(propsSport) &&
         !tennisPlayerPassesRankFilter(prop.playerRank, tennisMaxRank)
       ) {
-        return false;
+        continue;
       }
       if (
         !isTennisPropsSport(propsSport) &&
@@ -6040,14 +6093,14 @@ export default function NBALandingPage() {
         prop.gameId &&
         !selectedAflGames.has(prop.gameId)
       ) {
-        return false;
+        continue;
       }
-      return true;
-    });
+      filtered.push(prop);
+    }
     return isTennisPropsSport(propsSport)
       ? collapseTennisRowsToPrimaryMarketLine(filtered)
       : filtered;
-  }, [activeSecondaryProps, propsSport, debouncedSearchQuery, selectedPropTypes, selectedBookmakers, selectedAflGames, secondaryGameFilterApplies, tennisMaxRank, getStatLabel]);
+  }, [activeSecondaryProps, propsSport, nblOuOnly, debouncedSearchQuery, selectedPropTypes, selectedBookmakers, selectedAflGames, secondaryGameFilterApplies, tennisMaxRank, getStatLabel]);
 
   // Combined mode: minimal filters only (search + sort + pagination).
   const filteredCombinedProps = useMemo(() => {
@@ -8663,6 +8716,33 @@ export default function NBALandingPage() {
                   )}
                 </div>
                 </div>
+                {propsSport === 'nbl' && (
+                  <div className="flex">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNblOuOnly((on) => {
+                          const next = !on;
+                          writeNblOuOnlyFilter(next);
+                          return next;
+                        });
+                        setCurrentPage(1);
+                      }}
+                      aria-pressed={nblOuOnly}
+                      className={`px-2.5 py-1 rounded-lg border text-xs font-semibold whitespace-nowrap transition-colors ${
+                        nblOuOnly
+                          ? shellDark
+                            ? 'bg-amber-500/20 border-amber-400/60 text-amber-200'
+                            : 'bg-amber-50 border-amber-400 text-amber-800'
+                          : shellDark
+                            ? 'bg-[#0d1728] border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200'
+                            : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      O/U only
+                    </button>
+                  </div>
+                )}
               </div>
               )}
             </div>

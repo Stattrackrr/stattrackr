@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
-/** GET /api/nbl/odds/refresh — PulseScore + The Odds API, then bake props. */
+/** GET /api/nbl/odds/refresh — odds-api.net + The Odds API, then bake props. */
 export async function GET(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
     const auth = authorizeCronRequest(request);

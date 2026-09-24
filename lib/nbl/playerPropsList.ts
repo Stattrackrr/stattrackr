@@ -1,5 +1,5 @@
 /**
- * NBL props-page list. Cache only (Pulse board + disk snapshots + player logs).
+ * NBL props-page list. Cache only (odds-api.net board + disk snapshots + player logs).
  * O/U replaces milestones when both exist. Milestone prices on this list must
  * sit between $1.55 and $2.60; the dashboard stays unfiltered.
  */
@@ -68,45 +68,34 @@ function writeListDiskCache(payload: NblListCachePayload): void {
   }
 }
 
-function listRowHasUnibet(row: CombinedPlayerProp): boolean {
-  return (
-    /unibet/i.test(String(row.bookmaker || '')) ||
-    (row.bookmakerLines || []).some((line) => /unibet/i.test(String(line.bookmaker || '')))
-  );
-}
-
-function listUnibetPlayerCount(payload: NblListCachePayload | null): number {
+function listBookmakerCount(payload: NblListCachePayload | null): number {
   if (!payload?.data?.length) return 0;
-  const names = new Set<string>();
+  const books = new Set<string>();
   for (const row of payload.data) {
-    const name = String(row.playerName || '').trim();
-    if (!name || /^(yes|no|over|under)$/i.test(name)) continue;
-    if (listRowHasUnibet(row)) names.add(name.toLowerCase());
+    if (row.bookmaker) books.add(row.bookmaker);
+    for (const line of row.bookmakerLines || []) {
+      if (line.bookmaker) books.add(line.bookmaker);
+    }
   }
-  return names.size;
+  return books.size;
 }
 
-function listTwoWayOuCount(payload: NblListCachePayload | null): number {
-  if (!payload?.data?.length) return 0;
-  return payload.data.filter((row) => {
-    if (!isPulsePlayerName(row.playerName)) return false;
-    const under = String(row.underOdds || '').trim();
-    const over = String(row.overOdds || '').trim();
-    return under !== '' && under !== 'N/A' && over !== '' && over !== 'N/A';
-  }).length;
+function listUpdatedAt(payload: NblListCachePayload | null): number {
+  const t = Date.parse(String(payload?.lastUpdated || ''));
+  return Number.isFinite(t) ? t : 0;
 }
 
 async function readUsableNblListCache(): Promise<NblListCachePayload | null> {
   const redis = await readNblPlayerPropsListCache();
   const disk = readListDiskCache();
-  const redisOu = listTwoWayOuCount(redis);
-  const diskOu = listTwoWayOuCount(disk);
-  if (diskOu > redisOu) return disk;
-  if (redisOu > diskOu) return redis;
-  const redisUnibet = listUnibetPlayerCount(redis);
-  const diskUnibet = listUnibetPlayerCount(disk);
-  if (diskUnibet > redisUnibet) return disk;
-  if (redisUnibet > 0) return redis;
+  if (disk && redis) {
+    const diskBooks = listBookmakerCount(disk);
+    const redisBooks = listBookmakerCount(redis);
+    if (diskBooks !== redisBooks) return diskBooks > redisBooks ? disk : redis;
+    const diskAt = listUpdatedAt(disk);
+    const redisAt = listUpdatedAt(redis);
+    if (diskAt !== redisAt) return diskAt > redisAt ? disk : redis;
+  }
   return redis || disk;
 }
 
@@ -209,7 +198,7 @@ function teamsMatch(a: string | null | undefined, b: string | null | undefined):
   return ca.toLowerCase() === cb.toLowerCase();
 }
 
-/** Same derby even when home/away or date stamps differ across Pulse vs snapshots. */
+/** Same derby even when home/away or date stamps differ across live board vs snapshots. */
 function matchupKey(home: string | null | undefined, away: string | null | undefined): string {
   return [officialTeam(home), officialTeam(away)].filter(Boolean).sort().join('|');
 }
@@ -385,6 +374,50 @@ function pickMainLine(lines: NblPropLine[], stat: string): NblPropLine | null {
   return preferred[0];
 }
 
+function nblLineValue(line: NblPropLine): number | null {
+  return parseNblOddsLine(line.line);
+}
+
+function bookLineAt(book: NblBookRow, value: number): NblPropLine | null {
+  return (
+    nblBookLines(book).find((line) => {
+      const next = nblLineValue(line);
+      return next != null && Math.abs(next - value) < 0.01;
+    }) ?? null
+  );
+}
+
+function consensusLineValue(books: NblBookRow[], stat: string): number | null {
+  const counts = new Map<number, { books: number; twoWay: number }>();
+  for (const book of books) {
+    const seen = new Set<number>();
+    for (const line of nblBookLines(book)) {
+      const value = nblLineValue(line);
+      if (value == null) continue;
+      const key = Math.round(value * 2) / 2;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const row = counts.get(key) ?? { books: 0, twoWay: 0 };
+      row.books += 1;
+      if (line.kind === 'ou' && line.under !== 'N/A' && line.over !== 'N/A') row.twoWay += 1;
+      counts.set(key, row);
+    }
+  }
+  if (!counts.size) return null;
+  const want = PREFERRED_THRESHOLDS[stat];
+  const wantChart = want != null ? want - 0.5 : null;
+  return [...counts.entries()].sort((a, b) => {
+    if (b[1].books !== a[1].books) return b[1].books - a[1].books;
+    if (b[1].twoWay !== a[1].twoWay) return b[1].twoWay - a[1].twoWay;
+    if (wantChart != null) {
+      const da = Math.abs(a[0] - wantChart);
+      const db = Math.abs(b[0] - wantChart);
+      if (da !== db) return da - db;
+    }
+    return a[0] - b[0];
+  })[0][0];
+}
+
 function booksFromSnapshot(
   snap: NblPlayerPropSnapshot,
   player: string,
@@ -475,19 +508,27 @@ function toCombinedRow(opts: {
     .filter((b): b is NonNullable<typeof b> => b != null);
   if (!filteredBooks.length) return null;
 
-  const hasTwoWayOu = (book: NblBookRow) =>
-    nblBookLines(book).some((line) => line.kind === 'ou' && line.under !== 'N/A' && line.over !== 'N/A');
-  const preferred =
-    filteredBooks.find((b) => hasTwoWayOu(b) && /sportsbet/i.test(b.name)) ||
-    filteredBooks.find((b) => hasTwoWayOu(b) && /tab/i.test(b.name)) ||
-    filteredBooks.find((b) => hasTwoWayOu(b)) ||
-    filteredBooks.find((b) => /sportsbet/i.test(b.name)) ||
-    filteredBooks.find((b) => /tab/i.test(b.name)) ||
-    filteredBooks[0];
-  const main = pickMainLine(nblBookLines(preferred), opts.stat);
-  if (!main) return null;
-  const line = parseNblOddsLine(main.line);
+  const line = consensusLineValue(filteredBooks, opts.stat);
   if (line == null) return null;
+  const booksAtLine = filteredBooks
+    .map((book) => {
+      const match = bookLineAt(book, line);
+      if (!match) return null;
+      return { book, match };
+    })
+    .filter((row): row is NonNullable<typeof row> => row != null);
+  if (!booksAtLine.length) return null;
+
+  const hasTwoWayOu = (row: { match: NblPropLine }) =>
+    row.match.kind === 'ou' && row.match.under !== 'N/A' && row.match.over !== 'N/A';
+  const preferred =
+    booksAtLine.find((row) => hasTwoWayOu(row) && /sportsbet/i.test(row.book.name)) ||
+    booksAtLine.find((row) => hasTwoWayOu(row) && /tab/i.test(row.book.name)) ||
+    booksAtLine.find((row) => hasTwoWayOu(row)) ||
+    booksAtLine.find((row) => /sportsbet/i.test(row.book.name)) ||
+    booksAtLine.find((row) => /tab/i.test(row.book.name)) ||
+    booksAtLine[0];
+  const main = preferred.match;
 
   const implied = calculateImpliedProbabilities(main.over, main.under);
   const last5 = windowHits(opts.games, opts.stat, line, 5);
@@ -514,7 +555,7 @@ function toCombinedRow(opts: {
     impliedOverProb: implied?.overImpliedProb ?? 0,
     impliedUnderProb: implied?.underImpliedProb ?? 0,
     bestLine: line,
-    bookmaker: preferred.name,
+    bookmaker: preferred.book.name,
     confidence: 'Medium',
     gameDate: opts.game.commenceTime,
     last5Avg: last5.avg,
@@ -538,21 +579,13 @@ function toCombinedRow(opts: {
       playerId: opts.player.playerId,
       playerName: opts.player.name,
     }),
-    bookmakerLines: opts.books
-      .map((book) => {
-        const match = nblBookLines(book).find((row) => {
-          const value = parseNblOddsLine(row.line);
-          return value != null && Math.abs(value - line) < 0.01;
-        });
-        if (!match) return null;
-        return {
-          bookmaker: book.name,
-          line,
-          overOdds: match.over,
-          underOdds: match.under,
-        };
-      })
-      .filter((row): row is NonNullable<typeof row> => row != null)
+    bookmakerLines: booksAtLine
+      .map(({ book, match }) => ({
+        bookmaker: book.name,
+        line,
+        overOdds: match.over,
+        underOdds: match.under,
+      }))
       .sort((a, b) => {
         const aOu = a.underOdds !== 'N/A' && a.overOdds !== 'N/A' ? 1 : 0;
         const bOu = b.underOdds !== 'N/A' && b.overOdds !== 'N/A' ? 1 : 0;
@@ -680,6 +713,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
   };
 
   for (const game of pulseGames) {
+    if (!officialNblClubName(game.homeTeam) || !officialNblClubName(game.awayTeam)) continue;
     const home = officialTeam(game.homeTeam);
     const away = officialTeam(game.awayTeam);
     const snap = snapshotByKey.get(matchupKey(home, away));
@@ -733,7 +767,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
 let listBuildInflight: Promise<NblPlayerPropsListPayload> | null = null;
 
 /**
- * User/combined path: cache only. Pass refresh to rebuild from Pulse/disk cache.
+ * User/combined path: cache only. Pass refresh to rebuild from odds-api.net/disk cache.
  */
 export async function getNblPlayerPropsList(opts?: {
   refresh?: boolean;

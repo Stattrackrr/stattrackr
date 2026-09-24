@@ -1,5 +1,5 @@
 # Nightly NBL dashboard data: Rosetta season stats (2023–2025 history + live NBL27),
-# SportRadar warms (shot charts / PBP / lineups), PulseScore snapshot, then
+# SportRadar warms (shot charts / PBP / lineups), odds-api.net snapshot, then
 # ping production so game odds + player props land in Redis for /props.
 # Dashboard APIs stay cache-only after this commit + Vercel deploy.
 name: NBL Process Stats
@@ -83,13 +83,13 @@ jobs:
       - name: Warm SportRadar lineups (NBL27)
         run: npm run warm:nbl:lineups -- --years=2026 --concurrency=2
 
-      - name: Snapshot PulseScore NBL player lines
+      - name: Snapshot odds-api.net NBL player lines
         env:
-          PULSESCORE_API_KEY: ${{ secrets.PULSESCORE_API_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
-          if [ -z "$PULSESCORE_API_KEY" ]; then
-            echo "PULSESCORE_API_KEY not set; skipping local player-prop snapshots"
+          if [ -z "$ODDS_API_NET_KEY" ]; then
+            echo "ODDS_API_NET_KEY not set; skipping local player-prop snapshots"
           else
             npm run snapshot:nbl:player-props
           fi
