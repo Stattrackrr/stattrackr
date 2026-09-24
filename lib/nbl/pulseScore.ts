@@ -130,6 +130,7 @@ async function fetchJson(url: string): Promise<unknown> {
   const res = await fetch(url, {
     headers: { 'X-Secret': key, Accept: 'application/json', 'Accept-Encoding': 'gzip' },
     cache: 'no-store',
+    signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -186,10 +187,30 @@ async function hydrateEventMarkets(slug: string, ev: PulseEvent): Promise<PulseE
   const page = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/events/${encodeURIComponent(id)}`);
   const detail = eventFromPayload(page);
   const nextMarkets = detail?.markets;
-  if (Array.isArray(nextMarkets) && nextMarkets.length > (ev.markets?.length || 0)) {
-    return { ...ev, ...detail, markets: nextMarkets, league: ev.league || detail?.league };
+  if (!Array.isArray(nextMarkets) || nextMarkets.length === 0) return ev;
+  return {
+    ...ev,
+    ...detail,
+    markets: mergePulseMarkets(ev.markets, nextMarkets),
+    league: ev.league || detail?.league,
+  };
+}
+
+function mergePulseMarkets(
+  current: PulseMarket[] | undefined,
+  incoming: PulseMarket[] | undefined
+): PulseMarket[] {
+  const map = new Map<string, PulseMarket>();
+  const keyOf = (market: PulseMarket) =>
+    String(market.marketId || `${market.canonicalMarket || ''}|${market.rawName || market.name || ''}|${market.line ?? ''}`);
+  for (const market of [...(current || []), ...(incoming || [])]) {
+    const key = keyOf(market);
+    const prev = map.get(key);
+    if (!prev || (market.selections?.length || 0) > (prev.selections?.length || 0)) {
+      map.set(key, market);
+    }
   }
-  return ev;
+  return [...map.values()];
 }
 
 async function fetchBookNblEventScan(slug: string): Promise<PulseEvent[]> {
@@ -206,9 +227,23 @@ async function fetchBookNblEventScan(slug: string): Promise<PulseEvent[]> {
   return out;
 }
 
+async function fetchBookNblLeagues(slug: string): Promise<PulseLeague[]> {
+  const out: PulseLeague[] = [];
+  for (let page = 1; page <= 8; page += 1) {
+    if (page > 1) await sleep(1100);
+    const payload = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/leagues?limit=30&page=${page}`);
+    const leagues = leaguesFrom(payload).filter((l) => isNblLeagueName(l.name || l.league));
+    out.push(...leagues);
+    const p = payload && typeof payload === 'object' ? (payload as { hasNextPage?: boolean }) : null;
+    const rawCount = leaguesFrom(payload).length;
+    if (p?.hasNextPage !== true && rawCount < 30) break;
+    if (out.length) break;
+  }
+  return out;
+}
+
 async function fetchBookNblEvents(slug: string): Promise<PulseEvent[]> {
-  const payload = await fetchJson(`${PULSESCORE_BASE}/${slug}/basketball/leagues?limit=30`);
-  const leagues = leaguesFrom(payload).filter((l) => isNblLeagueName(l.name || l.league));
+  const leagues = await fetchBookNblLeagues(slug);
   const seen = new Set<string>();
   const out: PulseEvent[] = [];
   for (const ev of [...leagues.flatMap(eventsFromLeague), ...(await fetchBookNblEventScan(slug))]) {
@@ -331,6 +366,38 @@ function isOutcomeOnlyName(raw: string): boolean {
   return /^(yes|no|over|under|ou|u)$/i.test(String(raw || '').trim());
 }
 
+export function isPulsePlayerName(raw: string | null | undefined): boolean {
+  const s = String(raw || '').trim();
+  if (!s || isOutcomeOnlyName(s)) return false;
+  if (/^(over|under)\s+\d/i.test(s)) return false;
+  if (/\b(over|under)\s+\d/i.test(s)) return false;
+  if (/\s\/\s*(over|under)\b/i.test(s)) return false;
+  if (/[\/|]/.test(s)) return false;
+  if (/\d/.test(s)) return false;
+  if (
+    /\b(win|double[-\s]?double|triple[-\s]?double|first basket|most points|player points|player rebounds|player assists|player threes)\b/i.test(
+      s
+    )
+  ) {
+    return false;
+  }
+  if (/\b(pts|reb|ast|points|rebounds|assists|threes?)\b/i.test(s)) return false;
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(s)) return false;
+  if (officialNblClubName(s)) return false;
+  return true;
+}
+
+function playerFromMarketTitle(raw: string): string {
+  let s = String(raw || '').trim();
+  if (!s) return '';
+  s = s.replace(/\s*[-–:|]\s*(?:\d+\+\s*)?(?:points|rebounds|assists|threes?|3-?pointers?).*$/i, '');
+  s = s.replace(/\s+\d+\+\s*(?:points|rebounds|assists|threes?|3-?pointers?).*$/i, '');
+  s = s.replace(/\s+(?:over\/under|o\/u|total)\b.*$/i, '');
+  s = s.replace(/^(?:player\s+)?(?:points|rebounds|assists|threes?|3-?pointers?)\b.*$/i, '');
+  s = s.replace(/\s+(?:points|rebounds|assists|threes?|3-?pointers?)\s*$/i, '');
+  return stripPlayerLabel(s);
+}
+
 export function pulseMarketPlayerName(
   market: PulseMarket,
   sel?: PulseSelection
@@ -338,15 +405,17 @@ export function pulseMarketPlayerName(
   const fromInfo = String(
     sel?.moreInfo?.participant || sel?.moreInfo?.player || market.moreInfo?.player || ''
   ).trim();
-  if (fromInfo && !isOutcomeOnlyName(fromInfo)) return fromInfo;
+  if (isPulsePlayerName(fromInfo)) return fromInfo;
   const fromSel = stripPlayerLabel(sel?.rawName || sel?.name || '');
-  if (fromSel && !isOutcomeOnlyName(fromSel)) return fromSel;
+  if (isPulsePlayerName(fromSel)) return fromSel;
+  const fromMarket = playerFromMarketTitle(market.rawName || market.name || '');
+  if (isPulsePlayerName(fromMarket)) return fromMarket;
   const tail = String(market.marketId || '')
     .split(':')
     .slice(2)
     .join(':')
     .trim();
-  return tail && !isOutcomeOnlyName(tail) ? tail : '';
+  return isPulsePlayerName(tail) ? tail : '';
 }
 
 export function normalizePlayerName(s: string): string {
@@ -363,6 +432,8 @@ export function namesMatch(playerQuery: string, outcomeName: string): boolean {
   const a = normalizePlayerName(playerQuery);
   const b = normalizePlayerName(outcomeName);
   if (!a || !b) return false;
+  if (/\d/.test(a) || /\d/.test(b)) return false;
+  if (/\b(win|pts|reb|ast|double[-\s]?double|triple[-\s]?double)\b/.test(a) || /\b(win|pts|reb|ast|double[-\s]?double|triple[-\s]?double)\b/.test(b)) return false;
   if (a === b) return true;
   const aParts = a.split(/\s+/).filter(Boolean);
   const bParts = b.split(/\s+/).filter(Boolean);
@@ -388,52 +459,129 @@ function canonicalPlayerStat(canonical: string | undefined): string | null {
   return null;
 }
 
+export function classifyPulseNblMarket(market: PulseMarket): {
+  stat: string;
+  kind: 'ou' | 'milestone';
+  threshold?: number;
+} | null {
+  return marketStat(
+    market.canonicalMarket,
+    market.rawName || market.name || '',
+    market.line,
+    marketHasTwoWayOu(market),
+    market.marketId
+  );
+}
+
+function marketHasTwoWayOu(market: { selections?: PulseSelection[] } | undefined): boolean {
+  let hasOver = false;
+  let hasUnder = false;
+  for (const sel of market?.selections || []) {
+    const blob = `${sel.canonicalOutcome || ''} ${sel.rawName || ''} ${sel.name || ''}`.toLowerCase();
+    if (/\bunder\b/.test(blob)) hasUnder = true;
+    else if (/\bover\b/.test(blob)) hasOver = true;
+  }
+  return hasOver && hasUnder;
+}
+
+function statFromBlob(blob: string): string | null {
+  const s = String(blob || '').toLowerCase();
+  if (/\bthree|3-?point|3pm|threes\b/.test(s)) return 'threeMade';
+  if (/\brebound|\breb\b/.test(s)) return 'rebounds';
+  if (/\bassist|\bast\b/.test(s)) return 'assists';
+  if (/\bpoints?\b|\bpts\b/.test(s)) return 'points';
+  return null;
+}
+
 function marketStat(
   canonical: string | undefined,
   rawName: string,
-  line?: number | null
+  line?: number | null,
+  twoWay = false,
+  marketId?: string
 ): { stat: string; kind: 'ou' | 'milestone'; threshold?: number } | null {
   const n = String(rawName || '').trim();
-  const blob = `${canonical || ''} ${n}`.toLowerCase();
-  if (/score and win|first basket|double.?double|triple.?double|most points|to win/i.test(blob)) {
+  const blob = `${canonical || ''} ${n} ${marketId || ''}`.toLowerCase();
+  if (/score and win|first basket|double[-\s]?double|triple[-\s]?double|most points|to win/i.test(blob)) {
     return null;
   }
+  if (/\b(match|game|team)\s+total\b|\btotal points\b|\btotals?\b/i.test(blob) && !/player/i.test(blob)) {
+    return null;
+  }
+
   let m = n.match(/(?:to score\s+)?(\d+)\+\s*points\b/i);
-  if (m) return { stat: 'points', kind: 'milestone', threshold: Number(m[1]) };
+  if (m) {
+    return twoWay
+      ? { stat: 'points', kind: 'ou' }
+      : { stat: 'points', kind: 'milestone', threshold: Number(m[1]) };
+  }
   m = n.match(/(\d+)\+\s*points?\s+scored/i);
-  if (m) return { stat: 'points', kind: 'milestone', threshold: Number(m[1]) };
+  if (m) {
+    return twoWay
+      ? { stat: 'points', kind: 'ou' }
+      : { stat: 'points', kind: 'milestone', threshold: Number(m[1]) };
+  }
   m = n.match(/(?:to record\s+)?(\d+)\+\s*rebounds\b/i);
-  if (m) return { stat: 'rebounds', kind: 'milestone', threshold: Number(m[1]) };
+  if (m) {
+    return twoWay
+      ? { stat: 'rebounds', kind: 'ou' }
+      : { stat: 'rebounds', kind: 'milestone', threshold: Number(m[1]) };
+  }
   m = n.match(/(\d+)\+\s*rebounds?\s+by/i);
-  if (m) return { stat: 'rebounds', kind: 'milestone', threshold: Number(m[1]) };
+  if (m) {
+    return twoWay
+      ? { stat: 'rebounds', kind: 'ou' }
+      : { stat: 'rebounds', kind: 'milestone', threshold: Number(m[1]) };
+  }
   m = n.match(/(?:to record\s+)?(\d+)\+\s*assists\b/i);
-  if (m) return { stat: 'assists', kind: 'milestone', threshold: Number(m[1]) };
+  if (m) {
+    return twoWay
+      ? { stat: 'assists', kind: 'ou' }
+      : { stat: 'assists', kind: 'milestone', threshold: Number(m[1]) };
+  }
   m = n.match(/(\d+)\+\s*assists?\s+by/i);
-  if (m) return { stat: 'assists', kind: 'milestone', threshold: Number(m[1]) };
+  if (m) {
+    return twoWay
+      ? { stat: 'assists', kind: 'ou' }
+      : { stat: 'assists', kind: 'milestone', threshold: Number(m[1]) };
+  }
   m = n.match(/(?:to (?:make|record)\s+)?(\d+)\+\s*(?:made\s+)?threes\b/i);
-  if (m) return { stat: 'threeMade', kind: 'milestone', threshold: Number(m[1]) };
+  if (m) {
+    return twoWay
+      ? { stat: 'threeMade', kind: 'ou' }
+      : { stat: 'threeMade', kind: 'milestone', threshold: Number(m[1]) };
+  }
   m = n.match(/(\d+)\+\s*(?:three-point|three point)/i);
-  if (m) return { stat: 'threeMade', kind: 'milestone', threshold: Number(m[1]) };
+  if (m) {
+    return twoWay
+      ? { stat: 'threeMade', kind: 'ou' }
+      : { stat: 'threeMade', kind: 'milestone', threshold: Number(m[1]) };
+  }
 
   const fromCanon = canonicalPlayerStat(canonical);
-  if (fromCanon && line != null && Number.isFinite(line)) {
-    if (Math.abs(line - Math.round(line)) < 1e-6) {
+  if (fromCanon) {
+    if (twoWay) return { stat: fromCanon, kind: 'ou' };
+    if (line != null && Number.isFinite(line) && Math.abs(line - Math.round(line)) < 1e-6) {
       return { stat: fromCanon, kind: 'milestone', threshold: Math.round(line) };
     }
-    return { stat: fromCanon, kind: 'ou' };
+    if (line != null && Number.isFinite(line)) return { stat: fromCanon, kind: 'ou' };
   }
 
-  if (/\bplayer[_\s-]*points\b|\bpoints (o\/u|over\/under)\b/.test(blob)) {
+  if (/\bplayer[_\s-]*points\b|\bpoints\b.*\b(o\/u|over\/under|total)\b|\b(o\/u|over\/under)\b.*\bpoints\b/.test(blob)) {
     return { stat: 'points', kind: 'ou' };
   }
-  if (/\bplayer[_\s-]*rebounds\b|\brebounds (o\/u|over\/under)\b/.test(blob)) {
+  if (/\bplayer[_\s-]*rebounds\b|\brebounds\b.*\b(o\/u|over\/under)\b|\b(o\/u|over\/under)\b.*\brebounds\b/.test(blob)) {
     return { stat: 'rebounds', kind: 'ou' };
   }
-  if (/\bplayer[_\s-]*assists\b|\bassists (o\/u|over\/under)\b/.test(blob)) {
+  if (/\bplayer[_\s-]*assists\b|\bassists\b.*\b(o\/u|over\/under)\b|\b(o\/u|over\/under)\b.*\bassists\b/.test(blob)) {
     return { stat: 'assists', kind: 'ou' };
   }
-  if (/player[_\s-]*threes(?:[_\s-]*made)?|\bthrees (o\/u|over\/under)\b/.test(blob)) {
+  if (/player[_\s-]*threes(?:[_\s-]*made)?|\bthrees\b.*\b(o\/u|over\/under)\b|\b(o\/u|over\/under)\b.*\bthrees\b/.test(blob)) {
     return { stat: 'threeMade', kind: 'ou' };
+  }
+  if (twoWay) {
+    const inferred = fromCanon || statFromBlob(blob);
+    if (inferred) return { stat: inferred, kind: 'ou' };
   }
   return null;
 }
@@ -489,13 +637,26 @@ export function pulseBooksForPlayer(game: PulseNblGame, player: string, stat: st
     const byLine = new Map<string, NblPropLine>();
     for (const market of book.markets || []) {
       if (market.isActive === false) continue;
-      const parsed = marketStat(market.canonicalMarket, market.rawName || market.name || '', market.line);
+      const twoWay = marketHasTwoWayOu(market);
+      const parsed = marketStat(
+        market.canonicalMarket,
+        market.rawName || market.name || '',
+        market.line,
+        twoWay,
+        market.marketId
+      );
       if (!parsed || parsed.stat !== stat) continue;
+      if (parsed.stat === 'points' && typeof market.line === 'number' && market.line > 80) continue;
       for (const sel of market.selections || []) {
         if (sel.isActive === false) continue;
-        if (/\bno\b/i.test(`${sel.canonicalOutcome || ''} ${sel.rawName || ''} ${sel.name || ''}`)) continue;
+        if (
+          !twoWay &&
+          /\bno\b/i.test(`${sel.canonicalOutcome || ''} ${sel.rawName || ''} ${sel.name || ''}`)
+        ) {
+          continue;
+        }
         const selName = pulseMarketPlayerName(market, sel);
-        if (!namesMatch(player, selName)) continue;
+        if (!isPulsePlayerName(selName) || !namesMatch(player, selName)) continue;
         const price = americanFromDecimal(sel.odds);
         if (price === 'N/A') continue;
 
@@ -513,8 +674,13 @@ export function pulseBooksForPlayer(game: PulseNblGame, player: string, stat: st
         }
 
         const rawLine =
-          typeof sel.line === 'number' && Number.isFinite(sel.line) ? sel.line : null;
+          typeof sel.line === 'number' && Number.isFinite(sel.line)
+            ? sel.line
+            : typeof market.line === 'number' && Number.isFinite(market.line)
+              ? market.line
+              : null;
         if (rawLine == null) continue;
+        if (parsed.stat === 'points' && rawLine > 80) continue;
         const key = `ou:${rawLine}`;
         const existing = byLine.get(key) ?? {
           line: String(rawLine),

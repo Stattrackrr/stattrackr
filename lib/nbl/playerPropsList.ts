@@ -29,13 +29,19 @@ import {
 } from '@/lib/nbl/playerPropsListCache';
 import {
   getNblPulseScoreBoard,
+  isPulsePlayerName,
   namesMatch,
   pulseBooksByStat,
   pulseMarketPlayerName,
   type PulseNblGame,
 } from '@/lib/nbl/pulseScore';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
-import { NBL_CHART_HISTORY_YEARS, NBL_CURRENT_SEASON_YEAR, resolveNblClubName } from '@/lib/nblTeamCanonical';
+import {
+  NBL_CHART_HISTORY_YEARS,
+  NBL_CURRENT_SEASON_YEAR,
+  officialNblClubName,
+  resolveNblClubName,
+} from '@/lib/nblTeamCanonical';
 
 export const NBL_USER_NO_ODDS = 'No odds available. Come back later.';
 
@@ -80,9 +86,23 @@ function listUnibetPlayerCount(payload: NblListCachePayload | null): number {
   return names.size;
 }
 
+function listTwoWayOuCount(payload: NblListCachePayload | null): number {
+  if (!payload?.data?.length) return 0;
+  return payload.data.filter((row) => {
+    if (!isPulsePlayerName(row.playerName)) return false;
+    const under = String(row.underOdds || '').trim();
+    const over = String(row.overOdds || '').trim();
+    return under !== '' && under !== 'N/A' && over !== '' && over !== 'N/A';
+  }).length;
+}
+
 async function readUsableNblListCache(): Promise<NblListCachePayload | null> {
   const redis = await readNblPlayerPropsListCache();
   const disk = readListDiskCache();
+  const redisOu = listTwoWayOuCount(redis);
+  const diskOu = listTwoWayOuCount(disk);
+  if (diskOu > redisOu) return disk;
+  if (redisOu > diskOu) return redis;
   const redisUnibet = listUnibetPlayerCount(redis);
   const diskUnibet = listUnibetPlayerCount(disk);
   if (diskUnibet > redisUnibet) return disk;
@@ -226,11 +246,39 @@ function mergeSnapshots(a: NblPlayerPropSnapshot, b: NblPlayerPropSnapshot): Nbl
 }
 
 function mergeBooks(a: NblBookRow[], b: NblBookRow[]): NblBookRow[] {
-  const out = [...a];
-  for (const book of b) {
-    if (!out.some((row) => row.name === book.name)) out.push(book);
+  const byName = new Map<string, NblBookRow>();
+  for (const book of [...a, ...b]) {
+    const prev = byName.get(book.name);
+    if (!prev) {
+      byName.set(book.name, book);
+      continue;
+    }
+    const seen = new Set<string>();
+    const lines: NblPropLine[] = [];
+    for (const line of [...nblBookLines(prev), ...nblBookLines(book)]) {
+      const key = `${line.kind}|${line.line}|${line.label}`;
+      const existing = lines.find((row) => `${row.kind}|${row.line}|${row.label}` === key);
+      if (!existing) {
+        if (seen.has(key)) continue;
+        seen.add(key);
+        lines.push({ ...line });
+        continue;
+      }
+      if (existing.over === 'N/A' && line.over !== 'N/A') existing.over = line.over;
+      if (existing.under === 'N/A' && line.under !== 'N/A') existing.under = line.under;
+    }
+    const preferred = nblPreferOuLines(lines);
+    const main = pickMainLine(preferred, 'points') ?? preferred[0];
+    byName.set(book.name, {
+      ...prev,
+      ...book,
+      Total: main
+        ? { line: main.line, over: main.over, under: main.under }
+        : book.Total || prev.Total,
+      lines: preferred,
+    });
   }
-  return out;
+  return [...byName.values()];
 }
 
 function mergeDuplicatePropRows(props: CombinedPlayerProp[]): CombinedPlayerProp[] {
@@ -427,7 +475,12 @@ function toCombinedRow(opts: {
     .filter((b): b is NonNullable<typeof b> => b != null);
   if (!filteredBooks.length) return null;
 
+  const hasTwoWayOu = (book: NblBookRow) =>
+    nblBookLines(book).some((line) => line.kind === 'ou' && line.under !== 'N/A' && line.over !== 'N/A');
   const preferred =
+    filteredBooks.find((b) => hasTwoWayOu(b) && /sportsbet/i.test(b.name)) ||
+    filteredBooks.find((b) => hasTwoWayOu(b) && /tab/i.test(b.name)) ||
+    filteredBooks.find((b) => hasTwoWayOu(b)) ||
     filteredBooks.find((b) => /sportsbet/i.test(b.name)) ||
     filteredBooks.find((b) => /tab/i.test(b.name)) ||
     filteredBooks[0];
@@ -499,7 +552,12 @@ function toCombinedRow(opts: {
           underOdds: match.under,
         };
       })
-      .filter((row): row is NonNullable<typeof row> => row != null),
+      .filter((row): row is NonNullable<typeof row> => row != null)
+      .sort((a, b) => {
+        const aOu = a.underOdds !== 'N/A' && a.overOdds !== 'N/A' ? 1 : 0;
+        const bOu = b.underOdds !== 'N/A' && b.overOdds !== 'N/A' ? 1 : 0;
+        return bOu - aOu;
+      }),
     gameId: opts.game.gameId,
     homeTeam: opts.game.homeTeam,
     awayTeam: opts.game.awayTeam,
@@ -510,7 +568,7 @@ function toCombinedRow(opts: {
 
 function matchRoster(roster: RosterPlayer[], name: string, team?: string | null): RosterPlayer | null {
   const named = roster.filter((p) => namesMatch(p.name, name));
-  if (!named.length) return { name, playerId: null, team: team || null, imageUrl: null };
+  if (!named.length) return null;
   if (team) {
     const onTeam = named.find((p) => teamsMatch(p.team, team));
     if (onTeam) return onTeam;
@@ -586,6 +644,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
     }
 
     for (const playerName of players) {
+      if (!isPulsePlayerName(playerName)) continue;
       const homeHit = matchRoster(roster, playerName, home);
       const awayHit = matchRoster(roster, playerName, away);
       const rosterHit =
@@ -593,7 +652,8 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
         (awayHit?.team && teamsMatch(awayHit.team, away) ? awayHit : null) ||
         homeHit ||
         awayHit;
-      const team = officialTeam(rosterHit?.team) || '';
+      if (!rosterHit) continue;
+      const team = officialTeam(rosterHit.team) || '';
       if (!team || (!teamsMatch(team, home) && !teamsMatch(team, away))) continue;
       const opponent = teamsMatch(team, home) ? away : home;
       const logs = rosterHit?.playerId
@@ -623,7 +683,9 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
     const home = officialTeam(game.homeTeam);
     const away = officialTeam(game.awayTeam);
     const snap = snapshotByKey.get(matchupKey(home, away));
-    const players = [...new Set([...pulsePlayers(game), ...(snap ? snapshotPlayers(snap) : [])])];
+    const players = [
+      ...new Set([...pulsePlayers(game), ...(snap ? snapshotPlayers(snap) : [])]),
+    ].filter(isPulsePlayerName);
     considerGame(game, players, (player, stat) =>
       mergeBooks(pulseBooksByStat(game, player)[stat] || [], snap ? booksFromSnapshot(snap, player, stat) : [])
     );
@@ -631,6 +693,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
   }
 
   for (const snap of snapshotByKey.values()) {
+    if (!officialNblClubName(snap.homeTeam) || !officialNblClubName(snap.awayTeam)) continue;
     considerGame(
       {
         gameId: snap.gameId,
