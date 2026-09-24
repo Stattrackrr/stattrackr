@@ -4,15 +4,28 @@
   "homeTeam": "South East Melbourne Phoenix",
   "awayTeam": "Melbourne United",
   "commenceTime": "2026-09-24T09:30:00.000Z",
-  "capturedAt": "2026-09-24T00:36:37.292Z",
+  "capturedAt": "2026-09-24T07:41:27.842Z",
   "closing": false,
   "source": "pulsescore",
   "books": [
     "TAB",
     "Unibet"
   ],
-  "lineCount": 249,
+  "lineCount": 261,
   "lines": [
+    {
+      "player": "A Glover",
+      "playerKey": "a glover",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 11.5,
+      "label": "11.5",
+      "over": "-125",
+      "under": "-105",
+      "overDecimal": 1.8,
+      "underDecimal": 1.95
+    },
     {
       "player": "Angus Glover",
       "playerKey": "angus glover",
@@ -34,9 +47,9 @@
       "kind": "milestone",
       "line": 1.5,
       "label": "2+",
-      "over": "-435",
+      "over": "-455",
       "under": "N/A",
-      "overDecimal": 1.23,
+      "overDecimal": 1.22,
       "underDecimal": null
     },
     {
@@ -60,9 +73,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "+215",
+      "over": "+210",
       "under": "N/A",
-      "overDecimal": 3.15,
+      "overDecimal": 3.1,
       "underDecimal": null
     },
     {
@@ -112,9 +125,9 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "-625",
+      "over": "-667",
       "under": "N/A",
-      "overDecimal": 1.16,
+      "overDecimal": 1.15,
       "underDecimal": null
     },
     {
@@ -138,9 +151,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "-119",
+      "over": "-123",
       "under": "N/A",
-      "overDecimal": 1.84,
+      "overDecimal": 1.81,
       "underDecimal": null
     },
     {
@@ -190,9 +203,9 @@
       "kind": "milestone",
       "line": 1.5,
       "label": "2+",
-      "over": "-500",
+      "over": "-556",
       "under": "N/A",
-      "overDecimal": 1.2,
+      "overDecimal": 1.18,
       "underDecimal": null
     },
     {
@@ -216,9 +229,9 @@
       "kind": "milestone",
       "line": 2.5,
       "label": "3+",
-      "over": "-139",
+      "over": "-143",
       "under": "N/A",
-      "overDecimal": 1.72,
+      "overDecimal": 1.7,
       "underDecimal": null
     },
     {
@@ -229,9 +242,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "+180",
+      "over": "+175",
       "under": "N/A",
-      "overDecimal": 2.8,
+      "overDecimal": 2.75,
       "underDecimal": null
     },
     {
@@ -242,10 +255,23 @@
       "kind": "milestone",
       "line": 4.5,
       "label": "5+",
-      "over": "+350",
+      "over": "+340",
       "under": "N/A",
-      "overDecimal": 4.5,
+      "overDecimal": 4.4,
       "underDecimal": null
+    },
+    {
+      "player": "C Goulding",
+      "playerKey": "c goulding",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 12.5,
+      "label": "12.5",
+      "over": "+100",
+      "under": "-133",
+      "overDecimal": 2,
+      "underDecimal": 1.75
     },
     {
       "player": "Chris Goulding",
@@ -307,9 +333,9 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "-385",
+      "over": "-435",
       "under": "N/A",
-      "overDecimal": 1.26,
+      "overDecimal": 1.23,
       "underDecimal": null
     },
     {
@@ -333,9 +359,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "+112",
+      "over": "+102",
       "under": "N/A",
-      "overDecimal": 2.12,
+      "overDecimal": 2.02,
       "underDecimal": null
     },
     {
@@ -385,9 +411,9 @@
       "kind": "milestone",
       "line": 1.5,
       "label": "2+",
-      "over": "-625",
+      "over": "-714",
       "under": "N/A",
-      "overDecimal": 1.16,
+      "overDecimal": 1.14,
       "underDecimal": null
     },
     {
@@ -411,9 +437,9 @@
       "kind": "milestone",
       "line": 2.5,
       "label": "3+",
-      "over": "-159",
+      "over": "-175",
       "under": "N/A",
-      "overDecimal": 1.63,
+      "overDecimal": 1.57,
       "underDecimal": null
     },
     {
@@ -424,9 +450,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "+155",
+      "over": "+145",
       "under": "N/A",
-      "overDecimal": 2.55,
+      "overDecimal": 2.45,
       "underDecimal": null
     },
     {
@@ -437,10 +463,49 @@
       "kind": "milestone",
       "line": 4.5,
       "label": "5+",
-      "over": "+300",
+      "over": "+280",
       "under": "N/A",
-      "overDecimal": 4,
+      "overDecimal": 3.8,
       "underDecimal": null
+    },
+    {
+      "player": "Col Anthony",
+      "playerKey": "col anthony",
+      "book": "TAB",
+      "stat": "assists",
+      "kind": "ou",
+      "line": 4.5,
+      "label": "4.5",
+      "over": "+115",
+      "under": "-154",
+      "overDecimal": 2.15,
+      "underDecimal": 1.65
+    },
+    {
+      "player": "Col Anthony",
+      "playerKey": "col anthony",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 25.5,
+      "label": "25.5",
+      "over": "-111",
+      "under": "-118",
+      "overDecimal": 1.9,
+      "underDecimal": 1.85
+    },
+    {
+      "player": "Col Anthony",
+      "playerKey": "col anthony",
+      "book": "TAB",
+      "stat": "rebounds",
+      "kind": "ou",
+      "line": 3.5,
+      "label": "3.5",
+      "over": "-111",
+      "under": "-118",
+      "overDecimal": 1.9,
+      "underDecimal": 1.85
     },
     {
       "player": "Cole Anthony",
@@ -471,19 +536,6 @@
     {
       "player": "Cole Anthony",
       "playerKey": "cole anthony",
-      "book": "Unibet",
-      "stat": "assists",
-      "kind": "milestone",
-      "line": 3.5,
-      "label": "4+",
-      "over": "-357",
-      "under": "N/A",
-      "overDecimal": 1.28,
-      "underDecimal": null
-    },
-    {
-      "player": "Cole Anthony",
-      "playerKey": "cole anthony",
       "book": "TAB",
       "stat": "assists",
       "kind": "milestone",
@@ -492,19 +544,6 @@
       "over": "+225",
       "under": "N/A",
       "overDecimal": 3.25,
-      "underDecimal": null
-    },
-    {
-      "player": "Cole Anthony",
-      "playerKey": "cole anthony",
-      "book": "Unibet",
-      "stat": "assists",
-      "kind": "milestone",
-      "line": 5.5,
-      "label": "6+",
-      "over": "+145",
-      "under": "N/A",
-      "overDecimal": 2.45,
       "underDecimal": null
     },
     {
@@ -549,40 +588,14 @@
     {
       "player": "Cole Anthony",
       "playerKey": "cole anthony",
-      "book": "Unibet",
-      "stat": "points",
-      "kind": "milestone",
-      "line": 19.5,
-      "label": "20+",
-      "over": "-476",
-      "under": "N/A",
-      "overDecimal": 1.21,
-      "underDecimal": null
-    },
-    {
-      "player": "Cole Anthony",
-      "playerKey": "cole anthony",
       "book": "TAB",
       "stat": "points",
       "kind": "milestone",
       "line": 24.5,
       "label": "25+",
-      "over": "-133",
+      "over": "-154",
       "under": "N/A",
-      "overDecimal": 1.75,
-      "underDecimal": null
-    },
-    {
-      "player": "Cole Anthony",
-      "playerKey": "cole anthony",
-      "book": "Unibet",
-      "stat": "points",
-      "kind": "milestone",
-      "line": 24.5,
-      "label": "25+",
-      "over": "-141",
-      "under": "N/A",
-      "overDecimal": 1.71,
+      "overDecimal": 1.65,
       "underDecimal": null
     },
     {
@@ -593,22 +606,9 @@
       "kind": "milestone",
       "line": 29.5,
       "label": "30+",
-      "over": "+350",
+      "over": "+175",
       "under": "N/A",
-      "overDecimal": 4.5,
-      "underDecimal": null
-    },
-    {
-      "player": "Cole Anthony",
-      "playerKey": "cole anthony",
-      "book": "Unibet",
-      "stat": "points",
-      "kind": "milestone",
-      "line": 29.5,
-      "label": "30+",
-      "over": "+170",
-      "under": "N/A",
-      "overDecimal": 2.7,
+      "overDecimal": 2.75,
       "underDecimal": null
     },
     {
@@ -705,19 +705,6 @@
     {
       "player": "Cole Anthony",
       "playerKey": "cole anthony",
-      "book": "Unibet",
-      "stat": "threeMade",
-      "kind": "milestone",
-      "line": 1.5,
-      "label": "2+",
-      "over": "-1111",
-      "under": "N/A",
-      "overDecimal": 1.09,
-      "underDecimal": null
-    },
-    {
-      "player": "Cole Anthony",
-      "playerKey": "cole anthony",
       "book": "TAB",
       "stat": "threeMade",
       "kind": "milestone",
@@ -729,43 +716,17 @@
       "underDecimal": null
     },
     {
-      "player": "Cole Anthony",
-      "playerKey": "cole anthony",
-      "book": "Unibet",
-      "stat": "threeMade",
-      "kind": "milestone",
-      "line": 2.5,
-      "label": "3+",
-      "over": "-222",
-      "under": "N/A",
-      "overDecimal": 1.45,
-      "underDecimal": null
-    },
-    {
-      "player": "Cole Anthony",
-      "playerKey": "cole anthony",
-      "book": "Unibet",
-      "stat": "threeMade",
-      "kind": "milestone",
-      "line": 3.5,
-      "label": "4+",
-      "over": "+114",
-      "under": "N/A",
-      "overDecimal": 2.14,
-      "underDecimal": null
-    },
-    {
-      "player": "Cole Anthony",
-      "playerKey": "cole anthony",
-      "book": "Unibet",
-      "stat": "threeMade",
-      "kind": "milestone",
-      "line": 4.5,
-      "label": "5+",
-      "over": "+235",
-      "under": "N/A",
-      "overDecimal": 3.35,
-      "underDecimal": null
+      "player": "D Schwartz",
+      "playerKey": "d schwartz",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 11.5,
+      "label": "11.5",
+      "over": "-125",
+      "under": "-105",
+      "overDecimal": 1.8,
+      "underDecimal": 1.95
     },
     {
       "player": "D Shawn Schwartz",
@@ -931,9 +892,9 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "-400",
+      "over": "-417",
       "under": "N/A",
-      "overDecimal": 1.25,
+      "overDecimal": 1.24,
       "underDecimal": null
     },
     {
@@ -944,9 +905,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "+114",
+      "over": "+112",
       "under": "N/A",
-      "overDecimal": 2.14,
+      "overDecimal": 2.12,
       "underDecimal": null
     },
     {
@@ -996,9 +957,9 @@
       "kind": "milestone",
       "line": 2.5,
       "label": "3+",
-      "over": "+145",
+      "over": "+143",
       "under": "N/A",
-      "overDecimal": 2.45,
+      "overDecimal": 2.43,
       "underDecimal": null
     },
     {
@@ -1009,9 +970,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "+325",
+      "over": "+310",
       "under": "N/A",
-      "overDecimal": 4.25,
+      "overDecimal": 4.1,
       "underDecimal": null
     },
     {
@@ -1048,9 +1009,9 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "-556",
+      "over": "-526",
       "under": "N/A",
-      "overDecimal": 1.18,
+      "overDecimal": 1.19,
       "underDecimal": null
     },
     {
@@ -1074,9 +1035,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "+110",
+      "over": "+106",
       "under": "N/A",
-      "overDecimal": 2.1,
+      "overDecimal": 2.06,
       "underDecimal": null
     },
     {
@@ -1113,9 +1074,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "-833",
+      "over": "-909",
       "under": "N/A",
-      "overDecimal": 1.12,
+      "overDecimal": 1.11,
       "underDecimal": null
     },
     {
@@ -1139,9 +1100,9 @@
       "kind": "milestone",
       "line": 5.5,
       "label": "6+",
-      "over": "-149",
+      "over": "-143",
       "under": "N/A",
-      "overDecimal": 1.67,
+      "overDecimal": 1.7,
       "underDecimal": null
     },
     {
@@ -1165,9 +1126,9 @@
       "kind": "milestone",
       "line": 7.5,
       "label": "8+",
-      "over": "+195",
+      "over": "+200",
       "under": "N/A",
-      "overDecimal": 2.95,
+      "overDecimal": 3,
       "underDecimal": null
     },
     {
@@ -1223,6 +1184,45 @@
       "underDecimal": null
     },
     {
+      "player": "J Hunter",
+      "playerKey": "j hunter",
+      "book": "TAB",
+      "stat": "rebounds",
+      "kind": "ou",
+      "line": 5.5,
+      "label": "5.5",
+      "over": "-105",
+      "under": "-125",
+      "overDecimal": 1.95,
+      "underDecimal": 1.8
+    },
+    {
+      "player": "J Oduro",
+      "playerKey": "j oduro",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 13.5,
+      "label": "13.5",
+      "over": "-125",
+      "under": "-105",
+      "overDecimal": 1.8,
+      "underDecimal": 1.95
+    },
+    {
+      "player": "J Oduro",
+      "playerKey": "j oduro",
+      "book": "TAB",
+      "stat": "rebounds",
+      "kind": "ou",
+      "line": 7.5,
+      "label": "7.5",
+      "over": "+105",
+      "under": "-139",
+      "overDecimal": 2.05,
+      "underDecimal": 1.72
+    },
+    {
       "player": "Joe Ingles",
       "playerKey": "joe ingles",
       "book": "TAB",
@@ -1256,9 +1256,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "-417",
+      "over": "-476",
       "under": "N/A",
-      "overDecimal": 1.24,
+      "overDecimal": 1.21,
       "underDecimal": null
     },
     {
@@ -1277,14 +1277,27 @@
     {
       "player": "Joe Ingles",
       "playerKey": "joe ingles",
+      "book": "TAB",
+      "stat": "assists",
+      "kind": "ou",
+      "line": 5.5,
+      "label": "5.5",
+      "over": "+120",
+      "under": "-161",
+      "overDecimal": 2.2,
+      "underDecimal": 1.62
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
       "book": "Unibet",
       "stat": "assists",
       "kind": "milestone",
       "line": 5.5,
       "label": "6+",
-      "over": "+118",
+      "over": "+107",
       "under": "N/A",
-      "overDecimal": 2.18,
+      "overDecimal": 2.07,
       "underDecimal": null
     },
     {
@@ -1308,9 +1321,9 @@
       "kind": "milestone",
       "line": 7.5,
       "label": "8+",
-      "over": "+340",
+      "over": "+310",
       "under": "N/A",
-      "overDecimal": 4.4,
+      "overDecimal": 4.1,
       "underDecimal": null
     },
     {
@@ -1347,10 +1360,23 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "-278",
+      "over": "-303",
       "under": "N/A",
-      "overDecimal": 1.36,
+      "overDecimal": 1.33,
       "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 12.5,
+      "label": "12.5",
+      "over": "+100",
+      "under": "-133",
+      "overDecimal": 2,
+      "underDecimal": 1.75
     },
     {
       "player": "Joe Ingles",
@@ -1360,9 +1386,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "+225",
+      "over": "+200",
       "under": "N/A",
-      "overDecimal": 3.25,
+      "overDecimal": 3,
       "underDecimal": null
     },
     {
@@ -1373,9 +1399,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "+145",
+      "over": "+135",
       "under": "N/A",
-      "overDecimal": 2.45,
+      "overDecimal": 2.35,
       "underDecimal": null
     },
     {
@@ -1429,6 +1455,19 @@
       "under": "N/A",
       "overDecimal": 1.67,
       "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
+      "book": "TAB",
+      "stat": "rebounds",
+      "kind": "ou",
+      "line": 4.5,
+      "label": "4.5",
+      "over": "+125",
+      "under": "-167",
+      "overDecimal": 2.25,
+      "underDecimal": 1.6
     },
     {
       "player": "Joe Ingles",
@@ -1503,9 +1542,9 @@
       "kind": "milestone",
       "line": 1.5,
       "label": "2+",
-      "over": "-278",
+      "over": "-294",
       "under": "N/A",
-      "overDecimal": 1.36,
+      "overDecimal": 1.34,
       "underDecimal": null
     },
     {
@@ -1529,9 +1568,9 @@
       "kind": "milestone",
       "line": 2.5,
       "label": "3+",
-      "over": "+116",
+      "over": "+108",
       "under": "N/A",
-      "overDecimal": 2.16,
+      "overDecimal": 2.08,
       "underDecimal": null
     },
     {
@@ -1542,9 +1581,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "+260",
+      "over": "+250",
       "under": "N/A",
-      "overDecimal": 3.6,
+      "overDecimal": 3.5,
       "underDecimal": null
     },
     {
@@ -1581,9 +1620,9 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "-120",
+      "over": "-127",
       "under": "N/A",
-      "overDecimal": 1.83,
+      "overDecimal": 1.79,
       "underDecimal": null
     },
     {
@@ -1594,9 +1633,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "+340",
+      "over": "+300",
       "under": "N/A",
-      "overDecimal": 4.4,
+      "overDecimal": 4,
       "underDecimal": null
     },
     {
@@ -1646,9 +1685,9 @@
       "kind": "milestone",
       "line": 5.5,
       "label": "6+",
-      "over": "-105",
+      "over": "-106",
       "under": "N/A",
-      "overDecimal": 1.95,
+      "overDecimal": 1.94,
       "underDecimal": null
     },
     {
@@ -1776,9 +1815,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "-114",
+      "over": "-116",
       "under": "N/A",
-      "overDecimal": 1.88,
+      "overDecimal": 1.86,
       "underDecimal": null
     },
     {
@@ -1854,9 +1893,9 @@
       "kind": "milestone",
       "line": 7.5,
       "label": "8+",
-      "over": "-122",
+      "over": "-119",
       "under": "N/A",
-      "overDecimal": 1.82,
+      "overDecimal": 1.84,
       "underDecimal": null
     },
     {
@@ -1880,10 +1919,49 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "+195",
+      "over": "+205",
       "under": "N/A",
-      "overDecimal": 2.95,
+      "overDecimal": 3.05,
       "underDecimal": null
+    },
+    {
+      "player": "L Travers",
+      "playerKey": "l travers",
+      "book": "TAB",
+      "stat": "assists",
+      "kind": "ou",
+      "line": 3.5,
+      "label": "3.5",
+      "over": "-115",
+      "under": "-115",
+      "overDecimal": 1.87,
+      "underDecimal": 1.87
+    },
+    {
+      "player": "L Travers",
+      "playerKey": "l travers",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 13.5,
+      "label": "13.5",
+      "over": "-125",
+      "under": "-105",
+      "overDecimal": 1.8,
+      "underDecimal": 1.95
+    },
+    {
+      "player": "L Travers",
+      "playerKey": "l travers",
+      "book": "TAB",
+      "stat": "rebounds",
+      "kind": "ou",
+      "line": 7.5,
+      "label": "7.5",
+      "over": "-105",
+      "under": "-125",
+      "overDecimal": 1.95,
+      "underDecimal": 1.8
     },
     {
       "player": "Luke Travers",
@@ -1906,9 +1984,9 @@
       "kind": "milestone",
       "line": 1.5,
       "label": "2+",
-      "over": "-3333",
+      "over": "-5000",
       "under": "N/A",
-      "overDecimal": 1.03,
+      "overDecimal": 1.02,
       "underDecimal": null
     },
     {
@@ -1919,9 +1997,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "+100",
+      "over": "-115",
       "under": "N/A",
-      "overDecimal": 2,
+      "overDecimal": 1.87,
       "underDecimal": null
     },
     {
@@ -1932,9 +2010,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "-137",
+      "over": "-147",
       "under": "N/A",
-      "overDecimal": 1.73,
+      "overDecimal": 1.68,
       "underDecimal": null
     },
     {
@@ -1958,9 +2036,9 @@
       "kind": "milestone",
       "line": 5.5,
       "label": "6+",
-      "over": "+310",
+      "over": "+285",
       "under": "N/A",
-      "overDecimal": 4.1,
+      "overDecimal": 3.85,
       "underDecimal": null
     },
     {
@@ -1997,9 +2075,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "-132",
+      "over": "-147",
       "under": "N/A",
-      "overDecimal": 1.76,
+      "overDecimal": 1.68,
       "underDecimal": null
     },
     {
@@ -2075,9 +2153,9 @@
       "kind": "milestone",
       "line": 7.5,
       "label": "8+",
-      "over": "-172",
+      "over": "-164",
       "under": "N/A",
-      "overDecimal": 1.58,
+      "overDecimal": 1.61,
       "underDecimal": null
     },
     {
@@ -2101,9 +2179,9 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "+145",
+      "over": "+150",
       "under": "N/A",
-      "overDecimal": 2.45,
+      "overDecimal": 2.5,
       "underDecimal": null
     },
     {
@@ -2114,9 +2192,9 @@
       "kind": "milestone",
       "line": 11.5,
       "label": "12+",
-      "over": "+290",
+      "over": "+295",
       "under": "N/A",
-      "overDecimal": 3.9,
+      "overDecimal": 3.95,
       "underDecimal": null
     },
     {
@@ -2153,9 +2231,9 @@
       "kind": "milestone",
       "line": 1.5,
       "label": "2+",
-      "over": "+128",
+      "over": "+125",
       "under": "N/A",
-      "overDecimal": 2.28,
+      "overDecimal": 2.25,
       "underDecimal": null
     },
     {
@@ -2183,6 +2261,45 @@
       "under": "N/A",
       "overDecimal": 4.5,
       "underDecimal": null
+    },
+    {
+      "player": "N Sobey",
+      "playerKey": "n sobey",
+      "book": "TAB",
+      "stat": "assists",
+      "kind": "ou",
+      "line": 4.5,
+      "label": "4.5",
+      "over": "-118",
+      "under": "-111",
+      "overDecimal": 1.85,
+      "underDecimal": 1.9
+    },
+    {
+      "player": "N Sobey",
+      "playerKey": "n sobey",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 19.5,
+      "label": "19.5",
+      "over": "+100",
+      "under": "-133",
+      "overDecimal": 2,
+      "underDecimal": 1.75
+    },
+    {
+      "player": "N Sobey",
+      "playerKey": "n sobey",
+      "book": "TAB",
+      "stat": "rebounds",
+      "kind": "ou",
+      "line": 4.5,
+      "label": "4.5",
+      "over": "+135",
+      "under": "-182",
+      "overDecimal": 2.35,
+      "underDecimal": 1.55
     },
     {
       "player": "Nathan Sobey",
@@ -2218,9 +2335,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "-526",
+      "over": "-556",
       "under": "N/A",
-      "overDecimal": 1.19,
+      "overDecimal": 1.18,
       "underDecimal": null
     },
     {
@@ -2244,9 +2361,9 @@
       "kind": "milestone",
       "line": 5.5,
       "label": "6+",
-      "over": "+108",
+      "over": "+106",
       "under": "N/A",
-      "overDecimal": 2.08,
+      "overDecimal": 2.06,
       "underDecimal": null
     },
     {
@@ -2270,9 +2387,9 @@
       "kind": "milestone",
       "line": 7.5,
       "label": "8+",
-      "over": "+335",
+      "over": "+325",
       "under": "N/A",
-      "overDecimal": 4.35,
+      "overDecimal": 4.25,
       "underDecimal": null
     },
     {
@@ -2309,9 +2426,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "-400",
+      "over": "-435",
       "under": "N/A",
-      "overDecimal": 1.25,
+      "overDecimal": 1.23,
       "underDecimal": null
     },
     {
@@ -2335,9 +2452,9 @@
       "kind": "milestone",
       "line": 19.5,
       "label": "20+",
-      "over": "-111",
+      "over": "-118",
       "under": "N/A",
-      "overDecimal": 1.9,
+      "overDecimal": 1.85,
       "underDecimal": null
     },
     {
@@ -2478,9 +2595,9 @@
       "kind": "milestone",
       "line": 2.5,
       "label": "3+",
-      "over": "-189",
+      "over": "-192",
       "under": "N/A",
-      "overDecimal": 1.53,
+      "overDecimal": 1.52,
       "underDecimal": null
     },
     {
@@ -2491,9 +2608,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "+135",
+      "over": "+130",
       "under": "N/A",
-      "overDecimal": 2.35,
+      "overDecimal": 2.3,
       "underDecimal": null
     },
     {
@@ -2504,22 +2621,22 @@
       "kind": "milestone",
       "line": 4.5,
       "label": "5+",
-      "over": "+280",
+      "over": "+265",
       "under": "N/A",
-      "overDecimal": 3.8,
+      "overDecimal": 3.65,
       "underDecimal": null
     },
     {
-      "player": "Over 189.5",
-      "playerKey": "over 189 5",
+      "player": "Over 194.5",
+      "playerKey": "over 194 5",
       "book": "TAB",
       "stat": "points",
       "kind": "ou",
-      "line": 189.5,
-      "label": "189.5",
-      "over": "-118",
+      "line": 194.5,
+      "label": "194.5",
+      "over": "-111",
       "under": "N/A",
-      "overDecimal": 1.85,
+      "overDecimal": 1.9,
       "underDecimal": null
     },
     {
@@ -2582,9 +2699,9 @@
       "kind": "milestone",
       "line": 9.5,
       "label": "10+",
-      "over": "-179",
+      "over": "-182",
       "under": "N/A",
-      "overDecimal": 1.56,
+      "overDecimal": 1.55,
       "underDecimal": null
     },
     {
@@ -2595,9 +2712,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "+300",
+      "over": "+250",
       "under": "N/A",
-      "overDecimal": 4,
+      "overDecimal": 3.5,
       "underDecimal": null
     },
     {
@@ -2621,9 +2738,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "-238",
+      "over": "-222",
       "under": "N/A",
-      "overDecimal": 1.42,
+      "overDecimal": 1.45,
       "underDecimal": null
     },
     {
@@ -2647,9 +2764,9 @@
       "kind": "milestone",
       "line": 5.5,
       "label": "6+",
-      "over": "+170",
+      "over": "+175",
       "under": "N/A",
-      "overDecimal": 2.7,
+      "overDecimal": 2.75,
       "underDecimal": null
     },
     {
@@ -2699,9 +2816,9 @@
       "kind": "milestone",
       "line": 1.5,
       "label": "2+",
-      "over": "+110",
+      "over": "+107",
       "under": "N/A",
-      "overDecimal": 2.1,
+      "overDecimal": 2.07,
       "underDecimal": null
     },
     {
@@ -2729,6 +2846,45 @@
       "under": "N/A",
       "overDecimal": 4.1,
       "underDecimal": null
+    },
+    {
+      "player": "Sky Mays",
+      "playerKey": "sky mays",
+      "book": "TAB",
+      "stat": "assists",
+      "kind": "ou",
+      "line": 5.5,
+      "label": "5.5",
+      "over": "+120",
+      "under": "-161",
+      "overDecimal": 2.2,
+      "underDecimal": 1.62
+    },
+    {
+      "player": "Sky Mays",
+      "playerKey": "sky mays",
+      "book": "TAB",
+      "stat": "points",
+      "kind": "ou",
+      "line": 17.5,
+      "label": "17.5",
+      "over": "+100",
+      "under": "-133",
+      "overDecimal": 2,
+      "underDecimal": 1.75
+    },
+    {
+      "player": "Sky Mays",
+      "playerKey": "sky mays",
+      "book": "TAB",
+      "stat": "rebounds",
+      "kind": "ou",
+      "line": 3.5,
+      "label": "3.5",
+      "over": "+100",
+      "under": "-133",
+      "overDecimal": 2,
+      "underDecimal": 1.75
     },
     {
       "player": "Skylar Mays",
@@ -2790,9 +2946,9 @@
       "kind": "milestone",
       "line": 5.5,
       "label": "6+",
-      "over": "-152",
+      "over": "-159",
       "under": "N/A",
-      "overDecimal": 1.66,
+      "overDecimal": 1.63,
       "underDecimal": null
     },
     {
@@ -2816,9 +2972,9 @@
       "kind": "milestone",
       "line": 7.5,
       "label": "8+",
-      "over": "+230",
+      "over": "+220",
       "under": "N/A",
-      "overDecimal": 3.3,
+      "overDecimal": 3.2,
       "underDecimal": null
     },
     {
@@ -2855,9 +3011,9 @@
       "kind": "milestone",
       "line": 14.5,
       "label": "15+",
-      "over": "-278",
+      "over": "-286",
       "under": "N/A",
-      "overDecimal": 1.36,
+      "overDecimal": 1.35,
       "underDecimal": null
     },
     {
@@ -2881,9 +3037,9 @@
       "kind": "milestone",
       "line": 19.5,
       "label": "20+",
-      "over": "+125",
+      "over": "+118",
       "under": "N/A",
-      "overDecimal": 2.25,
+      "overDecimal": 2.18,
       "underDecimal": null
     },
     {
@@ -3011,9 +3167,9 @@
       "kind": "milestone",
       "line": 1.5,
       "label": "2+",
-      "over": "-244",
+      "over": "-250",
       "under": "N/A",
-      "overDecimal": 1.41,
+      "overDecimal": 1.4,
       "underDecimal": null
     },
     {
@@ -3050,9 +3206,9 @@
       "kind": "milestone",
       "line": 3.5,
       "label": "4+",
-      "over": "+310",
+      "over": "+295",
       "under": "N/A",
-      "overDecimal": 4.1,
+      "overDecimal": 3.95,
       "underDecimal": null
     },
     {
@@ -3193,9 +3349,9 @@
       "kind": "milestone",
       "line": 1.5,
       "label": "2+",
-      "over": "-192",
+      "over": "-204",
       "under": "N/A",
-      "overDecimal": 1.52,
+      "overDecimal": 1.49,
       "underDecimal": null
     },
     {
@@ -3219,9 +3375,9 @@
       "kind": "milestone",
       "line": 2.5,
       "label": "3+",
-      "over": "+163",
+      "over": "+160",
       "under": "N/A",
-      "overDecimal": 2.63,
+      "overDecimal": 2.6,
       "underDecimal": null
     },
     {
@@ -3238,17 +3394,17 @@
       "underDecimal": null
     },
     {
-      "player": "Under 189.5",
-      "playerKey": "under 189 5",
+      "player": "Under 194.5",
+      "playerKey": "under 194 5",
       "book": "TAB",
       "stat": "points",
       "kind": "ou",
-      "line": 189.5,
-      "label": "189.5",
+      "line": 194.5,
+      "label": "194.5",
       "over": "N/A",
-      "under": "-105",
+      "under": "-111",
       "overDecimal": null,
-      "underDecimal": 1.95
+      "underDecimal": 1.9
     }
   ]
 }
