@@ -4,13 +4,14 @@
   "homeTeam": "Perth Wildcats",
   "awayTeam": "New Zealand Breakers",
   "commenceTime": "2026-09-26T11:30:00.000Z",
-  "capturedAt": "2026-09-25T02:03:28.430Z",
+  "capturedAt": "2026-09-25T05:07:29.129Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
-    "Sportsbet"
+    "Sportsbet",
+    "Palmerbet"
   ],
-  "lineCount": 137,
+  "lineCount": 141,
   "lines": [
     {
       "player": "Anthony Dell'Orso",
@@ -1791,6 +1792,58 @@
       "over": "+270",
       "under": "N/A",
       "overDecimal": 3.7,
+      "underDecimal": null
+    },
+    {
+      "player": "Anthony Dell'Orso",
+      "playerKey": "anthony dell orso",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "Charles Bediako",
+      "playerKey": "charles bediako",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-333",
+      "under": "N/A",
+      "overDecimal": 1.3,
+      "underDecimal": null
+    },
+    {
+      "player": "Mojave King",
+      "playerKey": "mojave king",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-1000",
+      "under": "N/A",
+      "overDecimal": 1.1,
+      "underDecimal": null
+    },
+    {
+      "player": "Reuben Te Rangi",
+      "playerKey": "reuben te rangi",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-455",
+      "under": "N/A",
+      "overDecimal": 1.22,
       "underDecimal": null
     }
   ]
