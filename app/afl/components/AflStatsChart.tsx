@@ -572,6 +572,8 @@ interface AflStatsChartProps {
   selectedStat?: string;
   /** Called when the selected stat changes (e.g. to show TOG/Kicks/Handballs toggle when Disposals). Required when selectedStat is controlled. */
   onSelectedStatChange?: (stat: string) => void;
+  /** Free accounts opened from props: only the current stat pill stays clickable. */
+  lockOtherStats?: boolean;
   /** Advanced filter toggle (inline with chart, like NBA). */
   showAdvancedFilters?: boolean;
   setShowAdvancedFilters?: (show: boolean) => void;
@@ -611,6 +613,7 @@ export function AflStatsChart({
   selectedTimeframe: controlledTimeframe,
   onTimeframeChange,
   onSelectedStatChange,
+  lockOtherStats = false,
   showAdvancedFilters = false,
   setShowAdvancedFilters,
   aflGameFilters,
@@ -1345,7 +1348,9 @@ export function AflStatsChart({
                 label={formatStatLabel(k)}
                 value={k}
                 isSelected={selectedStat === k}
+                disabled={lockOtherStats && k !== selectedStat}
                 onSelect={(v) => {
+                  if (lockOtherStats && v !== selectedStat) return;
                   if (onSelectedStatChange) {
                     onSelectedStatChange(v);
                   } else {

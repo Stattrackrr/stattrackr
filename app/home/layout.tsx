@@ -5,7 +5,7 @@ export const metadata: Metadata = {
     absolute: "StatTrackr - Advanced Sports Statistic Dashboard",
   },
   description:
-    "Advanced multi-sport statistics dashboard covering NBA, AFL, soccer and more. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
+    "Advanced multi-sport statistics dashboard covering NBA, AFL, NBL, ATP, and WTA. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
   // Consolidate /home onto the root URL in search results
   alternates: {
     canonical: "/",

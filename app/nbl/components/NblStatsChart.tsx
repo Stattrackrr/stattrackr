@@ -756,6 +756,8 @@ interface NblStatsChartProps {
   gamePropsTeam?: string | null;
   /** Increment/change to force-close chart UI controls (splits/advanced) on context changes. */
   uiResetToken?: string | number;
+  /** Free accounts opened from a prop can only keep that stat selected. */
+  lockOtherStats?: boolean;
 }
 
 export function NblStatsChart({
@@ -789,6 +791,7 @@ export function NblStatsChart({
   nextOpponent = null,
   gamePropsTeam = null,
   uiResetToken,
+  lockOtherStats = false,
 }: NblStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
@@ -1028,13 +1031,14 @@ export function NblStatsChart({
   const showQuarterPicker = hasPlayerQuarterSplits(quarterParent);
 
   const applySelectedStat = useCallback((v: string) => {
+    if (lockOtherStats && v !== selectedStat) return;
     setIsQuarterDropdownOpen(false);
     if (onSelectedStatChange) {
       onSelectedStatChange(v);
     } else {
       setInternalSelectedStat(v);
     }
-  }, [onSelectedStatChange]);
+  }, [lockOtherStats, onSelectedStatChange, selectedStat]);
 
   useEffect(() => {
     if (!isNblQuarterParentStat(selectedStat) && !isNblPlayerQuarterStat(selectedStat)) {
@@ -1088,6 +1092,7 @@ export function NblStatsChart({
   // Ensure we always have a valid selected stat. When the parent controls the stat,
   // ask it to adopt the preferred default; otherwise, fall back to internal state.
   useEffect(() => {
+    if (lockOtherStats && selectedStat) return;
     if (!availableStats.length) {
       if (selectedStatProp == null) {
         setInternalSelectedStat('');
@@ -1103,11 +1108,12 @@ export function NblStatsChart({
         setInternalSelectedStat(next);
       }
     }
-  }, [availableStats, preferredDefaultStat, selectedStat, selectedStatProp, onSelectedStatChange]);
+  }, [availableStats, preferredDefaultStat, selectedStat, selectedStatProp, onSelectedStatChange, lockOtherStats]);
 
   // When game logs change significantly (e.g. new player), ensure we have a sensible default.
   // If the user has already picked a valid stat, don't override their choice.
   useEffect(() => {
+    if (lockOtherStats && selectedStat) return;
     if (!availableStats.length) return;
     if (selectedStat && availableStats.includes(selectedStat)) return;
     const next = preferredDefaultStat;
@@ -1116,7 +1122,7 @@ export function NblStatsChart({
     } else {
       setInternalSelectedStat(next);
     }
-  }, [gameLogs, availableStats, preferredDefaultStat, selectedStat, onSelectedStatChange]);
+  }, [gameLogs, availableStats, preferredDefaultStat, selectedStat, onSelectedStatChange, lockOtherStats]);
 
   const filteredGameLogs = useMemo(() => {
     if (!teammateFilterName?.trim()) return dedupedGameLogs;
@@ -1705,6 +1711,7 @@ export function NblStatsChart({
                   selectedStat === k ||
                   (quarterParent != null && k === quarterParent && selectedQuarter != null)
                 }
+                disabled={lockOtherStats && k !== selectedStat && k !== quarterParent}
                 onSelect={applySelectedStat}
                 isDark={isDark}
                 darker

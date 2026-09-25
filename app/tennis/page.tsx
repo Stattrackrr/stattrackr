@@ -37,6 +37,7 @@ import {
   DEFAULT_NBL_GAME_FILTERS,
   type NblGameFiltersState,
 } from '@/app/tennis/components/TennisGameFilters';
+import { ProFeatureLock, ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
 import { TENNIS_DASH_CARD_GLOW } from '@/app/tennis/components/tennisDashCardGlow';
 import { TennisBannerArt } from '@/app/tennis/components/TennisBannerArt';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -50,6 +51,7 @@ import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUti
 import { TENNIS_AI_UNDER_MAINTENANCE, TENNIS_CURRENT_YEAR, TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
 import {
   defaultTennisGameStat,
+  isTennisChartStat,
   tennisEventPlaceLabel,
   tennisMatchesPlayed,
   tennisRoundLabel,
@@ -511,6 +513,7 @@ function readInitialNblSelection(): {
   nblGameFilters: NblGameFiltersState;
   searchQuery: string;
   fromUrl: boolean;
+  lockedPropsStat: string | null;
 } {
   const empty = {
     selectedPlayer: null as NblRosterPlayer | null,
@@ -523,6 +526,7 @@ function readInitialNblSelection(): {
     nblGameFilters: { ...DEFAULT_NBL_GAME_FILTERS },
     searchQuery: '',
     fromUrl: false,
+    lockedPropsStat: null as string | null,
   };
   if (typeof window === 'undefined') return empty;
 
@@ -572,6 +576,7 @@ function readInitialNblSelection(): {
       nblRightTab: 'dvp',
       searchQuery: player.name,
       mainChartStat: defaultTennisGameStat(stat || empty.mainChartStat),
+      lockedPropsStat: stat && isTennisChartStat(stat) ? defaultTennisGameStat(stat) : null,
       chartTimeframe:
         tf && (NBL_CHART_TIMEFRAMES as readonly string[]).includes(tf)
           ? (tf as NblChartTimeframe)
@@ -643,6 +648,7 @@ function readInitialNblSelection(): {
         : { ...DEFAULT_NBL_GAME_FILTERS },
     searchQuery: player?.name || (mode === 'team' ? String(persistedTeam || '') : ''),
     fromUrl: false,
+    lockedPropsStat: null,
   };
 }
 
@@ -653,7 +659,7 @@ export default function TennisDashboardPage() {
   const [navigatingToProps, setNavigatingToProps] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [oddsFormat, setOddsFormat] = useState(DEFAULT_ODDS_FORMAT);
-  const { userEmail, username, avatarUrl, isPro, setUsername, setAvatarUrl } = useViewerProfile({
+  const { userEmail, username, avatarUrl, isPro, subscriptionChecked, setUsername, setAvatarUrl } = useViewerProfile({
     loginRedirect: '/login',
     requireAuth: false,
   });
@@ -686,6 +692,8 @@ export default function TennisDashboardPage() {
   const [chartDelayElapsed, setChartDelayElapsed] = useState(false);
   const chartUiResetToken = `${nblPropsMode}:${String(selectedPlayer?.name ?? '')}:${String(selectedTeam ?? '')}`;
   const [mainChartStat, setMainChartStat] = useState<string>('moneyline');
+  const [lockedPropsStat, setLockedPropsStat] = useState<string | null>(null);
+  const freeTier = subscriptionChecked && !isPro;
   const [chartTimeframe, setChartTimeframe] = useState<NblChartTimeframe>('last10');
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('totalAces');
   const [nblGameFilters, setNblGameFilters] = useState<NblGameFiltersState>(() => ({
@@ -766,10 +774,33 @@ export default function TennisDashboardPage() {
   propsOpponentFallbackRef.current = propsOpponentFallback;
 
   useEffect(() => {
+    if (freeTier) return;
     if (TENNIS_AI_UNDER_MAINTENANCE && playerVsContainerTab === 'overview') {
       setPlayerVsContainerTab('similar');
     }
-  }, [playerVsContainerTab]);
+  }, [freeTier, playerVsContainerTab]);
+  useEffect(() => {
+    setNblRightTabsVisited((prev) => {
+      if (prev.has(nblRightTab)) return prev;
+      const next = new Set(prev);
+      next.add(nblRightTab);
+      return next;
+    });
+  }, [nblRightTab]);
+
+  useEffect(() => {
+    if (!freeTier) return;
+    if (nblRightTab === 'dvp') {
+      setNblRightTab('team_matchup');
+      setNblRightTabsVisited((prev) => {
+        if (prev.has('team_matchup')) return prev;
+        const next = new Set(prev);
+        next.add('team_matchup');
+        return next;
+      });
+    }
+    if (playerVsContainerTab !== 'overview') setPlayerVsContainerTab('overview');
+  }, [freeTier, nblRightTab, playerVsContainerTab]);
 
   useEffect(() => {
     beginTennisDashboardSession();
@@ -824,6 +855,7 @@ export default function TennisDashboardPage() {
     }
     setChartTimeframe(restored.chartTimeframe);
     setMainChartStat(restored.mainChartStat);
+    setLockedPropsStat(restored.lockedPropsStat);
     setNblGameFilters(restored.nblGameFilters);
     try {
       const url = new URL(window.location.href);
@@ -889,6 +921,10 @@ export default function TennisDashboardPage() {
   }, [nblPropsMode, nblRightTab]);
 
   const visitRightTab = (tab: NblRightTab) => {
+    if (freeTier && tab === 'dvp') {
+      openProUpgrade();
+      return;
+    }
     setNblRightTab(tab);
     setNblRightTabsVisited((prev) => new Set(prev).add(tab));
   };
@@ -1846,6 +1882,7 @@ export default function TennisDashboardPage() {
                     mode={nblPropsMode}
                     selectedStat={mainChartStat}
                     onSelectedStatChange={setMainChartStat}
+                    lockOtherStats={freeTier && !!lockedPropsStat}
                     selectedTimeframe={chartTimeframe}
                     onTimeframeChange={setChartTimeframe}
                     nblGameFilters={nblPropsMode === 'player' ? nblGameFilters : undefined}
@@ -1988,13 +2025,14 @@ export default function TennisDashboardPage() {
                           <button
                             type="button"
                             onClick={() => visitRightTab('dvp')}
-                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                              nblRightTab === 'dvp'
+                            className={`relative inline-flex flex-1 items-center justify-center gap-1.5 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                              !freeTier && nblRightTab === 'dvp'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                            }`}
+                            } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
                           >
                             DVP
+                            {freeTier ? <ProLockMark /> : null}
                           </button>
                         )}
                         <button
@@ -2103,25 +2141,34 @@ export default function TennisDashboardPage() {
                     <div className="flex gap-1.5 mb-2">
                       <button
                         type="button"
-                        disabled={TENNIS_AI_UNDER_MAINTENANCE}
+                        disabled={!freeTier && TENNIS_AI_UNDER_MAINTENANCE}
                         title={
-                          TENNIS_AI_UNDER_MAINTENANCE ? 'AI Overview is under maintenance' : undefined
+                          !freeTier && TENNIS_AI_UNDER_MAINTENANCE
+                            ? 'AI Overview is under maintenance'
+                            : undefined
                         }
                         onClick={() => {
+                          if (freeTier) {
+                            openProUpgrade();
+                            return;
+                          }
                           if (!TENNIS_AI_UNDER_MAINTENANCE) setPlayerVsContainerTab('overview');
                         }}
-                        className={`relative flex-1 px-1 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
-                          !TENNIS_AI_UNDER_MAINTENANCE && playerVsContainerTab === 'overview'
+                        className={`relative inline-flex flex-1 items-center justify-center gap-1.5 px-1 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'overview' && (freeTier || !TENNIS_AI_UNDER_MAINTENANCE)
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
                         } ${
-                          TENNIS_AI_UNDER_MAINTENANCE
-                            ? 'cursor-not-allowed opacity-65'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                          freeTier
+                            ? 'cursor-pointer'
+                            : TENNIS_AI_UNDER_MAINTENANCE
+                              ? 'cursor-not-allowed opacity-65'
+                              : 'hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
                         AI Overview
-                        {TENNIS_AI_UNDER_MAINTENANCE ? (
+                        {freeTier ? <ProLockMark /> : null}
+                        {!freeTier && TENNIS_AI_UNDER_MAINTENANCE ? (
                           <span className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
                             MAINTENANCE
                           </span>
@@ -2129,26 +2176,36 @@ export default function TennisDashboardPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setPlayerVsContainerTab('similar')}
-                        className={`flex-1 px-1 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
-                          playerVsContainerTab === 'similar'
+                        onClick={() => {
+                          if (freeTier) {
+                            openProUpgrade();
+                            return;
+                          }
+                          setPlayerVsContainerTab('similar');
+                        }}
+                        className={`relative inline-flex flex-1 items-center justify-center gap-1.5 px-1 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
+                          !freeTier && playerVsContainerTab === 'similar'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
+                        } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
                       >
                         Similar Players
+                        {freeTier ? <ProLockMark /> : null}
                       </button>
                     </div>
                     <div className={playerVsContainerTab === 'overview' ? '' : 'hidden'}>
-                      <TennisAskPanel
-                        isDark={!!mounted && isDark}
-                        layout="mobile"
-                        playerName={matchupLeft}
-                        opponentName={displayOpponent}
-                        tour={dvpTour}
-                        isGrandSlam={nextGameIsGrandSlam}
-                        tournamentName={nextGameTournament}
-                      />
+                      <ProFeatureLock locked={freeTier}>
+                        <TennisAskPanel
+                          isDark={!!mounted && isDark}
+                          layout="mobile"
+                          playerName={matchupLeft}
+                          opponentName={displayOpponent}
+                          tour={dvpTour}
+                          isGrandSlam={nextGameIsGrandSlam}
+                          tournamentName={nextGameTournament}
+                          previewLocked={freeTier}
+                        />
+                      </ProFeatureLock>
                     </div>
                     {showMobileDashCards && playerVsContainerTab === 'similar' ? (
                       <TennisSimilarPlayersCard
@@ -2245,13 +2302,14 @@ export default function TennisDashboardPage() {
                           <button
                             type="button"
                             onClick={() => visitRightTab('dvp')}
-                            className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                              nblRightTab === 'dvp'
+                            className={`relative inline-flex flex-1 items-center justify-center gap-1.5 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                              !freeTier && nblRightTab === 'dvp'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                            }`}
+                            } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
                           >
                             DVP
+                            {freeTier ? <ProLockMark /> : null}
                           </button>
                         )}
                         <button
@@ -2398,25 +2456,34 @@ export default function TennisDashboardPage() {
                     <div className="flex gap-1 xl:gap-1.5 mb-2">
                       <button
                         type="button"
-                        disabled={TENNIS_AI_UNDER_MAINTENANCE}
+                        disabled={!freeTier && TENNIS_AI_UNDER_MAINTENANCE}
                         title={
-                          TENNIS_AI_UNDER_MAINTENANCE ? 'AI Overview is under maintenance' : undefined
+                          !freeTier && TENNIS_AI_UNDER_MAINTENANCE
+                            ? 'AI Overview is under maintenance'
+                            : undefined
                         }
                         onClick={() => {
+                          if (freeTier) {
+                            openProUpgrade();
+                            return;
+                          }
                           if (!TENNIS_AI_UNDER_MAINTENANCE) setPlayerVsContainerTab('overview');
                         }}
-                        className={`relative flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
-                          !TENNIS_AI_UNDER_MAINTENANCE && playerVsContainerTab === 'overview'
+                        className={`relative inline-flex flex-1 items-center justify-center gap-1.5 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'overview' && (freeTier || !TENNIS_AI_UNDER_MAINTENANCE)
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
                         } ${
-                          TENNIS_AI_UNDER_MAINTENANCE
-                            ? 'cursor-not-allowed opacity-65'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                          freeTier
+                            ? 'cursor-pointer'
+                            : TENNIS_AI_UNDER_MAINTENANCE
+                              ? 'cursor-not-allowed opacity-65'
+                              : 'hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
                         AI Overview
-                        {TENNIS_AI_UNDER_MAINTENANCE ? (
+                        {freeTier ? <ProLockMark /> : null}
+                        {!freeTier && TENNIS_AI_UNDER_MAINTENANCE ? (
                           <span className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
                             MAINTENANCE
                           </span>
@@ -2424,26 +2491,36 @@ export default function TennisDashboardPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setPlayerVsContainerTab('similar')}
-                        className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
-                          playerVsContainerTab === 'similar'
+                        onClick={() => {
+                          if (freeTier) {
+                            openProUpgrade();
+                            return;
+                          }
+                          setPlayerVsContainerTab('similar');
+                        }}
+                        className={`relative inline-flex flex-1 items-center justify-center gap-1.5 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
+                          !freeTier && playerVsContainerTab === 'similar'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
+                        } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
                       >
                         Similar Players
+                        {freeTier ? <ProLockMark /> : null}
                       </button>
                     </div>
                     <div className={playerVsContainerTab === 'overview' ? '' : 'hidden'}>
-                      <TennisAskPanel
-                        isDark={!!mounted && isDark}
-                        layout="desktop"
-                        playerName={matchupLeft}
-                        opponentName={displayOpponent}
-                        tour={dvpTour}
-                        isGrandSlam={nextGameIsGrandSlam}
-                        tournamentName={nextGameTournament}
-                      />
+                      <ProFeatureLock locked={freeTier}>
+                        <TennisAskPanel
+                          isDark={!!mounted && isDark}
+                          layout="desktop"
+                          playerName={matchupLeft}
+                          opponentName={displayOpponent}
+                          tour={dvpTour}
+                          isGrandSlam={nextGameIsGrandSlam}
+                          tournamentName={nextGameTournament}
+                          previewLocked={freeTier}
+                        />
+                      </ProFeatureLock>
                     </div>
                     {showDesktopDashCards && playerVsContainerTab === 'similar' ? (
                       <div className="min-h-0 overflow-hidden">
@@ -2500,6 +2577,7 @@ export default function TennisDashboardPage() {
           }
         }}
       />
+      <ProUpgradeHost />
     </div>
   );
 }

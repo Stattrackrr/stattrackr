@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, TrendingUp, BarChart3, PieChart, Database, User, Phone } from "lucide-react";
 import { StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
 import { trackMetaEvent } from "@/lib/metaPixel";
+import { authErrorMessage, emailAccountExists, signInWithEmailPassword } from "@/lib/auth/emailAccount";
 
 const HOME_ROUTE = "/home";
 
@@ -64,7 +65,18 @@ export default function LoginPage() {
       if (redirect === "/auth/update-password") setIsResetRedirect(true);
     }
     // Open in sign-up mode when ?signup=1
-    if (searchParams.get('signup') === '1') setIsSignUp(true);
+    const prefilledEmail = searchParams.get('email');
+    if (prefilledEmail) setEmail(prefilledEmail);
+    if (searchParams.get('signup') === '1') {
+      setIsSignUp(true);
+      if (prefilledEmail) {
+        void emailAccountExists(prefilledEmail)
+          .then((exists) => {
+            if (exists) setIsSignUp(false);
+          })
+          .catch(() => undefined);
+      }
+    }
     // Show success message after password reset
     if (searchParams.get('reset') === 'success') {
       setSuccess('Your password has been updated. You can sign in now.');
@@ -92,6 +104,12 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
+        const exists = await emailAccountExists(email);
+        if (exists) {
+          setIsSignUp(false);
+          setError('This email already has an account. Enter your password to sign in.');
+          return;
+        }
         if (!acceptTerms) {
           throw new Error("Please accept the Terms of Service and Privacy Policy to create an account.");
         }
@@ -120,36 +138,13 @@ export default function LoginPage() {
         setSuccess("");
       } else {
         // Always use persistent session for reliable login
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        
-        // Store remember me preference for future use
-        if (rememberMe) {
-          localStorage.setItem('stattrackr_remember_me', 'true');
-        } else {
-          localStorage.removeItem('stattrackr_remember_me');
-        }
-        
-        // Always send newly authenticated users to home
+        await signInWithEmailPassword(email, password, rememberMe);
         router.replace(HOME_ROUTE);
       }
     } catch (error: any) {
       // Better error handling  
-      console.log('Auth error:', error); // For debugging
-      if (error.message.includes('captcha')) {
-        setError("Captcha is enabled in Supabase. Please disable it in Authentication → Settings → Security.");
-      } else if (error.message.includes('Invalid login credentials')) {
-        setError("Invalid email or password. Please check and try again.");
-      } else if (error.message.includes('Email not confirmed')) {
-        setError("Please verify your email before signing in. Check your inbox for the verification code.");
-      } else if (error.message.includes('User already registered')) {
-        setError("Email already in use. Please try a different email or sign in instead.");
-      } else {
-        setError(`Error: ${error.message}`);
-      }
+      console.log('Auth error:', error);
+      setError(authErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -340,8 +335,8 @@ export default function LoginPage() {
             
             <div className="bg-[#0a1929] rounded-xl p-6 border border-gray-800">
               <Database className="w-8 h-8 text-purple-400 mb-3" />
-              <h3 className="font-semibold mb-2 text-gray-100">Insights & Journal</h3>
-              <p className="text-sm text-gray-500">Track P&L, calendar, and automated insights</p>
+              <h3 className="font-semibold mb-2 text-gray-100">Props & Matchups</h3>
+              <p className="text-sm text-gray-500">Compare lines, form, and matchup stats in one place</p>
             </div>
           </div>
         </div>
@@ -570,94 +565,19 @@ export default function LoginPage() {
             ) : (
             <>
             {/* Auth Form */}
-            <form onSubmit={handleAuth} className="space-y-4">
-              {/* Sign Up Additional Fields */}
-              {isSignUp && (
-                <>
-                  {/* Username Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Username
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                      <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                        placeholder="Enter your username"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {/* First Name Input */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">
-                        First Name
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                        <input
-                          type="text"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                          placeholder="First name"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* Last Name Input */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">
-                        Last Name
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                        <input
-                          type="text"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                          placeholder="Last name"
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Phone Input (Optional) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Phone Number <span className="text-gray-500">(Optional)</span>
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                        placeholder="Enter your phone number"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Email Input */}
+            <form onSubmit={handleAuth} className="space-y-4" autoComplete="on">
+              {/* Email and password come first so the browser does not drop the email into Username. */}
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input
+                    id="email"
+                    name="email"
                     type="email"
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
@@ -667,15 +587,17 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Password Input */}
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-400 mb-2">
                   Password
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input
+                    id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full h-11 pl-12 pr-12 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
@@ -694,6 +616,87 @@ export default function LoginPage() {
               </div>
 
               {isSignUp && (
+                <>
+                  <div>
+                    <label htmlFor="signup-username" className="block text-sm font-medium text-gray-400 mb-2">
+                      Username
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                      <input
+                        id="signup-username"
+                        name="nickname"
+                        type="text"
+                        autoComplete="nickname"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                        placeholder="Enter your username"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="given-name" className="block text-sm font-medium text-gray-400 mb-2">
+                        First Name
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                        <input
+                          id="given-name"
+                          name="given-name"
+                          type="text"
+                          autoComplete="given-name"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                          placeholder="First name"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="family-name" className="block text-sm font-medium text-gray-400 mb-2">
+                        Last Name
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                        <input
+                          id="family-name"
+                          name="family-name"
+                          type="text"
+                          autoComplete="family-name"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                          placeholder="Last name"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="tel" className="block text-sm font-medium text-gray-400 mb-2">
+                      Phone Number <span className="text-gray-500">(Optional)</span>
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                      <input
+                        id="tel"
+                        name="tel"
+                        type="tel"
+                        autoComplete="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                        placeholder="Enter your phone number"
+                      />
+                    </div>
+                  </div>
+
                 <div className="flex items-start gap-3 rounded-xl border border-gray-800 bg-[#050d1a] p-3.5">
                   <input
                     type="checkbox"
@@ -715,6 +718,7 @@ export default function LoginPage() {
                     .
                   </label>
                 </div>
+                </>
               )}
 
               {/* Remember Me & Forgot password - Only for Sign In */}

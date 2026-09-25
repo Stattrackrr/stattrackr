@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useChatUnread } from '@/lib/chatUnread';
 import { usePathname, useRouter } from 'next/navigation';
-import { CHAT_UNDER_MAINTENANCE, JOURNAL_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
+import { CHAT_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
+import { openProUpgrade } from '@/components/ProFeatureLock';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { getLocalStorage, setSessionStorage } from '../../utils/storageUtils';
 import { ProfileAvatar } from './ProfileAvatar';
@@ -77,7 +78,6 @@ export function MobileBottomNavigation({
   };
 
   const isPropsActive = pathname?.startsWith('/props');
-  const isJournalActive = pathname?.startsWith('/journal');
   const isChatActive = pathname?.startsWith('/chat');
   const isProfileActive = showProfileDropdown;
   const isSettingsActive = showSettingsDropdown;
@@ -154,56 +154,21 @@ export function MobileBottomNavigation({
         </button>
         
         <button
-          data-journal-button
           type="button"
-          disabled={JOURNAL_UNDER_MAINTENANCE}
-          title={JOURNAL_UNDER_MAINTENANCE ? 'Journal is under maintenance' : undefined}
+          disabled={hasPremium && CHAT_UNDER_MAINTENANCE}
+          title={hasPremium && CHAT_UNDER_MAINTENANCE ? 'Chat is under maintenance' : undefined}
           onClick={() => {
-            if (JOURNAL_UNDER_MAINTENANCE) return;
             if (!hasPremium) {
-              router.push('/subscription');
+              openProUpgrade();
               return;
             }
-            setSessionStorage('navigating-to-journal', 'true');
-            router.push('/journal');
-          }}
-          className={`relative ${navButtonClass(!!isJournalActive, JOURNAL_UNDER_MAINTENANCE || !hasPremium)}`}
-        >
-          {JOURNAL_UNDER_MAINTENANCE ? (
-            <span className="absolute top-0.5 right-1 z-10 rounded-md bg-amber-600 px-1 py-0.5 text-[6px] font-bold leading-none tracking-wide text-white">
-              MAINT
-            </span>
-          ) : null}
-          <span className={iconChipClass(!!isJournalActive, JOURNAL_UNDER_MAINTENANCE || !hasPremium)}>
-            {!hasPremium && !JOURNAL_UNDER_MAINTENANCE ? (
-              <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4.5h8a2 2 0 012 2V19l-6-3-6 3V6.5a2 2 0 012-2z" />
-              </svg>
-            )}
-          </span>
-          <span className="text-[10px] font-semibold tracking-[0.01em]">Journal</span>
-        </button>
-
-        <button
-          type="button"
-          disabled={CHAT_UNDER_MAINTENANCE}
-          title={CHAT_UNDER_MAINTENANCE ? 'Chat is under maintenance' : undefined}
-          onClick={() => {
             if (CHAT_UNDER_MAINTENANCE) return;
-            if (!hasPremium) {
-              router.push('/subscription');
-              return;
-            }
             router.push('/chat');
           }}
-          className={`relative ${navButtonClass(!!isChatActive, CHAT_UNDER_MAINTENANCE || !hasPremium)}`}
+          className={`relative ${navButtonClass(!!isChatActive, (hasPremium && CHAT_UNDER_MAINTENANCE) || !hasPremium)}`}
         >
-          <span className={`${iconChipClass(!!isChatActive, CHAT_UNDER_MAINTENANCE || !hasPremium)} relative`}>
-            {CHAT_UNDER_MAINTENANCE ? (
+          <span className={`${iconChipClass(!!isChatActive, (hasPremium && CHAT_UNDER_MAINTENANCE) || !hasPremium)} relative`}>
+            {hasPremium && CHAT_UNDER_MAINTENANCE ? (
               <span className="absolute -right-3 -top-1 z-10 rounded-md bg-amber-600 px-1 py-0.5 text-[6px] font-bold leading-none tracking-wide text-white">
                 MAINT
               </span>
@@ -212,7 +177,7 @@ export function MobileBottomNavigation({
                 {unreadChatLabel}
               </span>
             ) : null}
-            {!hasPremium && !CHAT_UNDER_MAINTENANCE ? (
+            {!hasPremium ? (
               <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
               </svg>

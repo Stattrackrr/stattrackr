@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     absolute: "StatTrackr - Advanced Sports Statistic Dashboard",
   },
   description:
-    "Advanced multi-sport statistics dashboard covering NBA, AFL, soccer and more. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
+    "Advanced multi-sport statistics dashboard covering NBA, AFL, NBL, ATP, and WTA. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
   alternates: {
     canonical: "/",
   },
@@ -31,7 +31,7 @@ export default function RootPage() {
     name: "StatTrackr",
     url: "https://stattrackr.co/",
     description:
-      "Advanced multi-sport statistics dashboard covering NBA, AFL, soccer and more.",
+      "Advanced multi-sport statistics dashboard covering NBA, AFL, NBL, ATP, and WTA.",
   };
 
   return (

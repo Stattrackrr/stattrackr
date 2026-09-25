@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
-import { CHAT_UNDER_MAINTENANCE, JOURNAL_ENABLED, JOURNAL_UNDER_MAINTENANCE, NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
+import { CHAT_UNDER_MAINTENANCE, JOURNAL_ENABLED, NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
 import { invalidateViewerProfileCache } from '@/lib/profileSubscriptionGate';
 import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
+import { ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
 
 type OddsFormat = 'american' | 'decimal';
 interface LeftSidebarProps {
@@ -57,7 +58,7 @@ export default function LeftSidebar({
   const unreadChatCount = useChatUnread(hasPremium);
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const [showSettings, setShowSettings] = useState(false);
-  const [showSportsDropdown, setShowSportsDropdown] = useState(false);
+  const [showSportsDropdown, setShowSportsDropdown] = useState(true);
   // Dropdown below profile card (name click toggles this)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   // Profile modal (opened only when "Profile" is clicked in the dropdown)
@@ -364,9 +365,6 @@ export default function LeftSidebar({
                 textGradient
               />
             </Link>
-            {pathname === "/journal" && (
-              <span className="text-2xl font-light opacity-50">Journal</span>
-            )}
           </div>
           {/* Sidebar Toggle Button - inside sidebar */}
           {onToggleSidebar && (
@@ -449,42 +447,18 @@ export default function LeftSidebar({
             </div>
 
             <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
-              {JOURNAL_UNDER_MAINTENANCE ? (
-                <div
-                  className="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                  title="Journal is under maintenance"
+              {!hasPremium ? (
+                <button
+                  type="button"
+                  onClick={() => openProUpgrade()}
+                  className="mt-1 flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-400 opacity-65 dark:text-gray-500"
                 >
-                  <span>Journal</span>
-                  <span className="rounded-md bg-amber-600 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white">
-                    MAINT
+                  <span className="inline-flex items-center">
+                    Chat
+                    <ProLockMark />
                   </span>
-                </div>
-              ) : (
-              <Link
-                href={hasPremium ? "/journal" : "/subscription"}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === "/journal"
-                    ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-                    : !hasPremium
-                      ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                      : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
-                }`}
-                onClick={(e) => {
-                  if (!hasPremium) {
-                    e.preventDefault();
-                    window.location.href = '/subscription';
-                  }
-                }}
-              >
-                <span>Journal</span>
-                {!hasPremium && (
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </Link>
-              )}
-              {CHAT_UNDER_MAINTENANCE ? (
+                </button>
+              ) : CHAT_UNDER_MAINTENANCE ? (
                 <div
                   className="mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed"
                   title="Chat is under maintenance"
@@ -496,20 +470,12 @@ export default function LeftSidebar({
                 </div>
               ) : (
               <Link
-                href={hasPremium ? "/chat" : "/subscription"}
+                href="/chat"
                 className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   pathname === "/chat"
                     ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-                    : !hasPremium
-                      ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                      : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
+                    : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
                 }`}
-                onClick={(e) => {
-                  if (!hasPremium) {
-                    e.preventDefault();
-                    window.location.href = '/subscription';
-                  }
-                }}
               >
                 <span className="flex items-center gap-2">
                   <span>Chat</span>
@@ -1272,6 +1238,7 @@ export default function LeftSidebar({
         document.body
       )}
     </div>
+    <ProUpgradeHost />
     </>
   );
 }

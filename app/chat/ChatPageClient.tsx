@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
+import { openProUpgrade } from '@/components/ProFeatureLock';
 import { useTheme } from '@/contexts/ThemeContext';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
 import { ArrowLeft, BarChart3, CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
@@ -1251,7 +1252,7 @@ export default function ChatPageClient() {
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     type="button"
-                    onClick={() => router.push('/subscription')}
+                    onClick={() => openProUpgrade()}
                     className="rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-700"
                   >
                     View plans

@@ -32,6 +32,7 @@ import { NblSimilarPlayersCard } from '@/app/nbl/components/NblSimilarPlayersCar
 import { NblPlayerVsTeamPanel } from '@/app/nbl/components/NblPlayerVsTeamPanel';
 import { NBL_DASH_CARD_GLOW } from '@/app/nbl/components/nblDashCardGlow';
 import { NblScoringMixPie } from '@/app/nbl/components/NblScoringMixPie';
+import { ProFeatureLock, ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
@@ -220,6 +221,7 @@ function readInitialNblSelection(): {
   incomingLine: number | null;
   incomingBookmaker: string | null;
   incomingOpponent: string | null;
+  lockedPropsStat: string | null;
 } {
   const empty = {
     selectedPlayer: null as NblRosterPlayer | null,
@@ -235,6 +237,7 @@ function readInitialNblSelection(): {
     incomingLine: null as number | null,
     incomingBookmaker: null as string | null,
     incomingOpponent: null as string | null,
+    lockedPropsStat: null as string | null,
   };
   if (typeof window === 'undefined') return empty;
 
@@ -284,6 +287,7 @@ function readInitialNblSelection(): {
       nblRightTab: 'dvp',
       searchQuery: player.name,
       mainChartStat: stat ? normalizeNblStat(stat) : empty.mainChartStat,
+      lockedPropsStat: stat ? normalizeNblStat(stat) : null,
       chartTimeframe:
         tf && (NBL_CHART_TIMEFRAMES as readonly string[]).includes(tf)
           ? (tf as NblChartTimeframe)
@@ -379,6 +383,7 @@ function readInitialNblSelection(): {
     incomingLine: null,
     incomingBookmaker: null,
     incomingOpponent: null,
+    lockedPropsStat: null,
   };
 }
 
@@ -390,6 +395,8 @@ export default function NblDashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [oddsFormat, setOddsFormat] = useState(DEFAULT_ODDS_FORMAT);
   const [isPro, setIsPro] = useState(false);
+  const [profileReady, setProfileReady] = useState(false);
+  const freeTier = profileReady && !isPro;
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -417,6 +424,7 @@ export default function NblDashboardPage() {
   const [chartDelayElapsed, setChartDelayElapsed] = useState(false);
   const chartUiResetToken = `${nblPropsMode}:${String(selectedPlayer?.name ?? '')}:${String(selectedTeam ?? '')}`;
   const [mainChartStat, setMainChartStat] = useState<string>('points');
+  const [lockedPropsStat, setLockedPropsStat] = useState<string | null>(null);
   const [chartTimeframe, setChartTimeframe] = useState<NblChartTimeframe>('last10');
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('minutes');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -493,6 +501,7 @@ export default function NblDashboardPage() {
     setNblTeamFilter(restored.nblTeamFilter);
     setChartTimeframe(restored.chartTimeframe);
     setMainChartStat(restored.mainChartStat);
+    setLockedPropsStat(restored.lockedPropsStat);
     setNblGameFilters(restored.nblGameFilters);
     if (restored.searchQuery) setSearchQuery(restored.searchQuery);
     if (restored.incomingLine != null) {
@@ -528,7 +537,10 @@ export default function NblDashboardPage() {
       try {
         const { data } = await supabase.auth.getUser();
         const user = data?.user;
-        if (!user || cancelled) return;
+        if (!user || cancelled) {
+          if (!cancelled) setProfileReady(true);
+          return;
+        }
         setUserEmail(user.email ?? null);
         const { profile: p, isPro: pro } = await fetchProfileProStatusWithRetries(supabase, user);
         if (cancelled) return;
@@ -543,8 +555,9 @@ export default function NblDashboardPage() {
           p?.avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null
         );
         setIsPro(pro);
+        setProfileReady(true);
       } catch {
-        /* ignore — shell still renders for logged-out */
+        if (!cancelled) setProfileReady(true);
       }
     })();
     return () => {
@@ -772,9 +785,19 @@ export default function NblDashboardPage() {
   ]);
 
   const visitRightTab = (tab: NblRightTab) => {
+    if (freeTier && tab === 'dvp') return;
     setNblRightTab(tab);
     setNblRightTabsVisited((prev) => new Set(prev).add(tab));
   };
+
+  useEffect(() => {
+    if (!freeTier) return;
+    if (nblRightTab === 'dvp') {
+      setNblRightTab('breakdown');
+      setNblRightTabsVisited((prev) => new Set(prev).add('breakdown'));
+    }
+    if (playerVsContainerTab === 'similar') setPlayerVsContainerTab('comparison');
+  }, [freeTier, nblRightTab, playerVsContainerTab]);
 
   const selectPlayer = (player: NblRosterPlayer) => {
     setSelectedPlayer(player);
@@ -1761,6 +1784,7 @@ export default function NblDashboardPage() {
                     mode={nblPropsMode}
                     selectedStat={mainChartStat}
                     onSelectedStatChange={setMainChartStatAndResetLine}
+                    lockOtherStats={freeTier && !!lockedPropsStat}
                     selectedTimeframe={chartTimeframe}
                     onTimeframeChange={setChartTimeframe}
                     showAdvancedFilters={nblPropsMode === 'player' ? showAdvancedFilters : false}
@@ -1965,6 +1989,7 @@ export default function NblDashboardPage() {
                       </div>
                     ) : (
                       <>
+                        <ProFeatureLock locked={freeTier}>
                         <NblScoringMixPie
                           team={selectedPlayer?.team}
                           playerId={selectedPlayer?.playerId}
@@ -1978,7 +2003,9 @@ export default function NblDashboardPage() {
                           withWithoutMode={withWithoutMode}
                           setWithWithoutMode={setWithWithoutMode}
                           clearTeammateFilter={clearTeammateFilter}
+                          valuesLocked={freeTier}
                         />
+                        </ProFeatureLock>
                       </>
                     )}
                   </div>
@@ -2053,14 +2080,21 @@ export default function NblDashboardPage() {
                       <>
                         <button
                           type="button"
-                          onClick={() => visitRightTab('dvp')}
+                          onClick={() => {
+                            if (freeTier) {
+                              openProUpgrade();
+                              return;
+                            }
+                            visitRightTab('dvp');
+                          }}
                           className={`relative flex-1 overflow-visible px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 ${
                             nblRightTab === 'dvp'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                          }`}
+                          } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
                         >
                           Play Types
+                          {freeTier ? <ProLockMark /> : null}
                           {nblRightTab === 'dvp' && (
                             <PlayTypesInfoButton
                               isDark={!!mounted && isDark}
@@ -2199,14 +2233,21 @@ export default function NblDashboardPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setPlayerVsContainerTab('similar')}
-                        className={`flex-1 px-1.5 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
+                        onClick={() => {
+                          if (freeTier) {
+                            openProUpgrade();
+                            return;
+                          }
+                          setPlayerVsContainerTab('similar');
+                        }}
+                        className={`flex-1 px-1.5 py-2 text-[11px] font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1 ${
                           playerVsContainerTab === 'similar'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
+                        } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
                       >
                         Similar Players
+                        {freeTier ? <ProLockMark /> : null}
                       </button>
                     </div>
                     {playerVsContainerTab === 'similar' ? (
@@ -2308,12 +2349,15 @@ export default function NblDashboardPage() {
                 {/* 5. Shot chart — mobile (desktop lives in right panel, same as NBA) */}
                 {nblPropsMode === 'player' ? (
                   <div className="order-7 lg:hidden w-full min-w-0">
+                    <ProFeatureLock locked={freeTier}>
                     <NblShotChart
                       isDark={!!mounted && isDark}
                       playerName={selectedPlayer?.name}
                       playerTeam={selectedPlayer?.team}
                       opponentTeam={displayOpponent}
+                      valuesLocked={freeTier}
                     />
+                    </ProFeatureLock>
                   </div>
                 ) : null}
               </div>
@@ -2431,14 +2475,21 @@ export default function NblDashboardPage() {
                         {nblPropsMode === 'player' && (
                           <button
                             type="button"
-                            onClick={() => visitRightTab('dvp')}
+                            onClick={() => {
+                              if (freeTier) {
+                                openProUpgrade();
+                                return;
+                              }
+                              visitRightTab('dvp');
+                            }}
                             className={`relative flex-1 overflow-visible px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 ${
                               nblRightTab === 'dvp'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                            }`}
+                            } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
                           >
                             Play Types
+                            {freeTier ? <ProLockMark /> : null}
                             {nblRightTab === 'dvp' && (
                               <PlayTypesInfoButton
                                 isDark={!!mounted && isDark}
@@ -2548,12 +2599,15 @@ export default function NblDashboardPage() {
                     ) : showStatsLoadingShell ? (
                       <div className={`h-[380px] rounded-lg animate-pulse ${pulse}`} />
                     ) : (
+                      <ProFeatureLock locked={freeTier}>
                       <NblShotChart
                         isDark={!!mounted && isDark}
                         playerName={selectedPlayer?.name}
                         playerTeam={selectedPlayer?.team}
                         opponentTeam={displayOpponent}
+                        valuesLocked={freeTier}
                       />
+                      </ProFeatureLock>
                     )}
                   </div>
                 ) : null}
@@ -2577,14 +2631,21 @@ export default function NblDashboardPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setPlayerVsContainerTab('similar')}
-                        className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
+                        onClick={() => {
+                          if (freeTier) {
+                            openProUpgrade();
+                            return;
+                          }
+                          setPlayerVsContainerTab('similar');
+                        }}
+                        className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1 ${
                           playerVsContainerTab === 'similar'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
+                        } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
                       >
                         Similar Players
+                        {freeTier ? <ProLockMark /> : null}
                       </button>
                     </div>
                     {playerVsContainerTab === 'similar' ? (
@@ -2696,6 +2757,7 @@ export default function NblDashboardPage() {
           }
         }}
       />
+      <ProUpgradeHost />
     </div>
   );
 }

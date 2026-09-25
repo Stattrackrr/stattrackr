@@ -729,6 +729,8 @@ interface NblStatsChartProps {
   uiResetToken?: string | number;
   /** ATP shows Format (BO3/BO5); WTA hides it. */
   tour?: 'ATP' | 'WTA' | null;
+  /** Free accounts opened from a prop can only keep that stat selected. */
+  lockOtherStats?: boolean;
 }
 
 export function TennisStatsChart({
@@ -763,6 +765,7 @@ export function TennisStatsChart({
   gamePropsTeam = null,
   uiResetToken,
   tour = null,
+  lockOtherStats = false,
 }: NblStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
@@ -997,6 +1000,7 @@ export function TennisStatsChart({
   // Ensure we always have a valid selected stat. When the parent controls the stat,
   // ask it to adopt the preferred default; otherwise, fall back to internal state.
   useEffect(() => {
+    if (lockOtherStats && selectedStat) return;
     if (!availableStats.length) {
       if (selectedStatProp == null) {
         setInternalSelectedStat('');
@@ -1012,11 +1016,12 @@ export function TennisStatsChart({
         setInternalSelectedStat(next);
       }
     }
-  }, [availableStats, preferredDefaultStat, selectedStat, selectedStatProp, onSelectedStatChange]);
+  }, [availableStats, preferredDefaultStat, selectedStat, selectedStatProp, onSelectedStatChange, lockOtherStats]);
 
   // When game logs change significantly (e.g. new player), ensure we have a sensible default.
   // If the user has already picked a valid stat, don't override their choice.
   useEffect(() => {
+    if (lockOtherStats && selectedStat) return;
     if (!availableStats.length) return;
     if (selectedStat && availableStats.includes(selectedStat)) return;
     const next = preferredDefaultStat;
@@ -1025,7 +1030,7 @@ export function TennisStatsChart({
     } else {
       setInternalSelectedStat(next);
     }
-  }, [gameLogs, availableStats, preferredDefaultStat, selectedStat, onSelectedStatChange]);
+  }, [gameLogs, availableStats, preferredDefaultStat, selectedStat, onSelectedStatChange, lockOtherStats]);
 
   const filteredGameLogs = useMemo(() => {
     if (!teammateFilterName?.trim()) return dedupedGameLogs;
@@ -1584,7 +1589,9 @@ export function TennisStatsChart({
                 label={formatStatLabel(k)}
                 value={k}
                 isSelected={selectedStat === k}
+                disabled={lockOtherStats && k !== selectedStat}
                 onSelect={(v) => {
+                  if (lockOtherStats && v !== selectedStat) return;
                   if (onSelectedStatChange) {
                     onSelectedStatChange(v);
                   } else {

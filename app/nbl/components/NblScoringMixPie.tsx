@@ -228,6 +228,7 @@ export function NblScoringMixPie({
   withWithoutMode = 'with',
   setWithWithoutMode,
   clearTeammateFilter,
+  valuesLocked = false,
 }: {
   team?: string | null;
   playerId?: string | null;
@@ -241,6 +242,8 @@ export function NblScoringMixPie({
   withWithoutMode?: 'with' | 'without';
   setWithWithoutMode?: (mode: 'with' | 'without') => void;
   clearTeammateFilter?: () => void;
+  /** Free accounts see the layout with stat figures replaced by TBD. */
+  valuesLocked?: boolean;
 }) {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [statKey, setStatKey] = useState('usgPct');
@@ -385,7 +388,7 @@ export function NblScoringMixPie({
               }
               return map.get(p.playerId) as string;
             })();
-      const span = emptySplit ? equalSpan : (p.value / total) * Math.PI * 2;
+      const span = emptySplit || valuesLocked ? equalSpan : (p.value / total) * Math.PI * 2;
       return { ...p, fill, isSelected, span };
     });
 
@@ -399,7 +402,7 @@ export function NblScoringMixPie({
         name: item.name,
         value: item.value,
         fill: item.fill,
-        share: emptySplit ? 1 / defs.length : total > 0 ? item.value / total : 0,
+        share: emptySplit || valuesLocked ? 1 / defs.length : total > 0 ? item.value / total : 0,
         span: item.span,
         a0,
         a1,
@@ -409,7 +412,7 @@ export function NblScoringMixPie({
       a0 = a1;
     }
     return placed;
-  }, [players, playerId, playerName, activeStat.key, emptySplit, isDark]);
+  }, [players, playerId, playerName, activeStat.key, emptySplit, isDark, valuesLocked]);
 
   useEffect(() => {
     const to = slices;
@@ -571,11 +574,13 @@ export function NblScoringMixPie({
         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
           {activeTeammate && !emptySplit ? (
             <p className={`text-[11px] ${muted}`}>
-              {sampleGames != null
-                ? `${sampleGames} ${sampleGames === 1 ? 'game' : 'games'} ${
-                    withWithoutMode === 'without' ? 'without' : 'with'
-                  } ${activeTeammate}`
-                : `${withWithoutMode === 'without' ? 'Without' : 'With'} ${activeTeammate}`}
+              {valuesLocked
+                ? `TBD games ${withWithoutMode === 'without' ? 'without' : 'with'} ${activeTeammate}`
+                : sampleGames != null
+                  ? `${sampleGames} ${sampleGames === 1 ? 'game' : 'games'} ${
+                      withWithoutMode === 'without' ? 'without' : 'with'
+                    } ${activeTeammate}`
+                  : `${withWithoutMode === 'without' ? 'Without' : 'With'} ${activeTeammate}`}
             </p>
           ) : (
             <span className="hidden sm:block" />
@@ -881,14 +886,14 @@ export function NblScoringMixPie({
                         }`}
                         style={!emptySplit && emphasized ? { color: slice.fill } : undefined}
                       >
-                        {emptySplit ? '—' : formatStatValue(live.value, activeStat.pct, activeStat.digits ?? 1)}
+                        {valuesLocked ? 'TBD' : emptySplit ? '—' : formatStatValue(live.value, activeStat.pct, activeStat.digits ?? 1)}
                       </span>
                     </div>
                     <div className={`mt-1 h-1 sm:h-[3px] rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-black/10'}`}>
                       <div
                         className="h-full rounded-full"
                         style={{
-                          width: emptySplit ? '100%' : `${(live.value / maxVal) * 100}%`,
+                          width: valuesLocked ? '42%' : emptySplit ? '100%' : `${(live.value / maxVal) * 100}%`,
                           background: barFill,
                           opacity: emptySplit ? 0.55 : hoverId != null && !isHover && !selected ? 0.35 : 1,
                           transition: 'opacity 220ms ease',

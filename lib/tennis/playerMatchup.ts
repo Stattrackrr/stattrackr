@@ -349,7 +349,7 @@ export function tennisMatchupComputedKey(opts: {
   stage?: string | null;
   boards?: boolean;
 }): string {
-  return tennisComputedCacheKey(opts.boards ? 'matchup_boards' : 'matchup', [
+  return tennisComputedCacheKey(opts.boards ? 'matchup_boards_v2' : 'matchup_v2', [
     opts.playerId || opts.playerName,
     opts.opponentId || opts.opponentName,
     opts.tour,
@@ -425,6 +425,17 @@ export async function buildTennisPlayerMatchupAsync(
     String(resolvedOpponent.id || '').trim(),
   ].filter(Boolean);
   const logsById = await readTennisPlayerLogsCacheMany(ids);
+  const thinIds = [resolvedPlayer.id, resolvedOpponent.id]
+    .map((id) => String(id || '').trim())
+    .filter((id) => id && (logsById.get(id)?.length || 0) < 12);
+  if (thinIds.length) {
+    const filled = await Promise.all(
+      thinIds.map((id) => loadPlayerMatchesCached({ playerId: id, tour }))
+    );
+    thinIds.forEach((id, index) => {
+      if (filled[index]?.length) logsById.set(id, filled[index]);
+    });
+  }
   const extra = opts.extraGamesById;
   const rawById = new Map<string, TennisMatchRow[]>();
 

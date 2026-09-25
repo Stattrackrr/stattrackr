@@ -59,6 +59,8 @@ type NblShotChartProps = {
   playerName?: string | null;
   playerTeam?: string | null;
   opponentTeam?: string | null;
+  /** Free accounts see the chart layout with figures replaced by TBD. */
+  valuesLocked?: boolean;
 };
 
 const scale = 10;
@@ -135,13 +137,13 @@ function CourtLabel({
       x={x}
       y={y}
       textAnchor="middle"
-      fill={empty ? EMPTY_LABEL_FILL : '#fff'}
+      fill={value === 'TBD' || !empty ? '#fff' : EMPTY_LABEL_FILL}
       fontSize={fontSize}
       fontWeight="bold"
       stroke={empty ? 'none' : '#000'}
       strokeWidth={empty ? 0 : 0.5}
     >
-      {empty ? '-' : value}
+      {value === 'TBD' ? 'TBD' : empty ? '-' : value}
     </text>
   );
 }
@@ -235,6 +237,15 @@ function zonePointValue(zone: NblShotZoneId): 2 | 3 {
   return THREE_ZONES.has(zone) ? 3 : 2;
 }
 
+function redactBreakdownRows(rows: BreakdownRow[]): BreakdownRow[] {
+  return rows.map((row) => ({
+    ...row,
+    ptsPerGame: 'TBD',
+    rateLabel: 'TBD',
+    rankPills: row.rankPills.map((pill) => ({ ...pill, label: 'TBD' })),
+  }));
+}
+
 function formatPerGame(total: number, games: number): string {
   if (!games || !Number.isFinite(total) || total === 0) return '—';
   const per = total / games;
@@ -318,6 +329,7 @@ function AnalysisAccordion({
   loading,
   rows,
   invert,
+  valuesLocked = false,
 }: {
   title: string;
   open: boolean;
@@ -326,6 +338,7 @@ function AnalysisAccordion({
   loading: boolean;
   rows: BreakdownRow[];
   invert: boolean;
+  valuesLocked?: boolean;
 }) {
   return (
     <div className="w-full">
@@ -361,14 +374,16 @@ function AnalysisAccordion({
               {rows.map((row) => {
                 const rank = row.rank > 0 ? row.rank : 0;
                 const compared = row.compared > 0 ? row.compared : invert ? 0 : NBL_RANK_SCALE;
-                const barPct =
-                  rank > 0 && compared > 0
+                const barPct = valuesLocked
+                  ? 42
+                  : rank > 0 && compared > 0
                     ? invert
                       ? ((compared - rank + 1) / compared) * 100
                       : (rank / compared) * 100
                     : 0;
-                const barColor =
-                  rank > 0
+                const barColor = valuesLocked
+                  ? '#6b7280'
+                  : rank > 0
                     ? invert
                       ? getColorForScoringRank(rank)
                       : getColorForRank(rank)
@@ -406,10 +421,14 @@ function AnalysisAccordion({
                             -
                           </span>
                         ) : (
-                          row.rankPills.map((pill) => (
+                          row.rankPills.map((pill, pillIndex) => (
                             <span
-                              key={pill.label}
-                              className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${pillClass(pill.rank)}`}
+                              key={`${row.id}-${pillIndex}`}
+                              className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${
+                                valuesLocked
+                                  ? 'bg-gray-500/15 text-gray-500 dark:text-gray-400'
+                                  : pillClass(pill.rank)
+                              }`}
                             >
                               {pill.label}
                             </span>
@@ -446,6 +465,7 @@ export function NblShotChart({
   playerName,
   playerTeam,
   opponentTeam,
+  valuesLocked = false,
 }: NblShotChartProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMakes, setShowMakes] = useState(false);
@@ -698,12 +718,14 @@ export function NblShotChart({
     showMakes ? z[zone].fgm > 0 : z[zone].fga > 0;
 
   const distLabel = (zone: NblShotZoneId) => {
+    if (valuesLocked) return 'TBD';
     if (!zoneHasVolume(zone)) return '-';
     const val = distByZone[zone];
     return `${(Number.isFinite(val) ? val : 0).toFixed(0)}%`;
   };
 
   const rankLabel = (zone: NblShotZoneId) => {
+    if (valuesLocked) return 'TBD';
     const r = rankings[zone]?.rank;
     return r != null && r > 0 ? `#${r}` : '-';
   };
@@ -713,9 +735,12 @@ export function NblShotChart({
     return r == null || r <= 0;
   };
 
-  const fillDist = (zone: NblShotZoneId) =>
-    zoneHasVolume(zone) ? getColorForDistribution(distByZone[zone] || 0) : EMPTY_ZONE_FILL;
+  const fillDist = (zone: NblShotZoneId) => {
+    if (valuesLocked) return EMPTY_ZONE_FILL;
+    return zoneHasVolume(zone) ? getColorForDistribution(distByZone[zone] || 0) : EMPTY_ZONE_FILL;
+  };
   const fillRank = (zone: NblShotZoneId) => {
+    if (valuesLocked) return EMPTY_ZONE_FILL;
     const r = rankings[zone];
     if (r?.rank == null || r.rank <= 0) return EMPTY_ZONE_FILL;
     return getColorForRank(r.rank, r.fgPct);
@@ -1295,8 +1320,9 @@ export function NblShotChart({
                   onToggle={() => setPlayerAnalysisOpen((open) => !open)}
                   isDark={isDark}
                   loading={loading && !playerData}
-                  rows={playerBreakdownRows}
+                  rows={valuesLocked ? redactBreakdownRows(playerBreakdownRows) : playerBreakdownRows}
                   invert
+                  valuesLocked={valuesLocked}
                 />
               ) : null}
               {showOppDef && canShowBreakdown ? (
@@ -1306,8 +1332,9 @@ export function NblShotChart({
                   onToggle={() => setBreakdownOpen((open) => !open)}
                   isDark={isDark}
                   loading={defenseLoading && !defenseData}
-                  rows={breakdownRows}
+                  rows={valuesLocked ? redactBreakdownRows(breakdownRows) : breakdownRows}
                   invert={false}
+                  valuesLocked={valuesLocked}
                 />
               ) : null}
             </div>

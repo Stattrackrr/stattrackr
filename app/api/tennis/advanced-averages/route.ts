@@ -18,7 +18,7 @@ function averagesBoardsKey(opts: {
   opponentId: string;
   tour: TennisTour | null;
 }): string {
-  return tennisComputedCacheKey('averages_boards', [
+  return tennisComputedCacheKey('averages_boards_v2', [
     opts.playerId || opts.player,
     opts.opponentId || opts.opponent,
     opts.tour,

@@ -239,6 +239,60 @@ export function apiTennisCachePath(): string {
   return path.join(apiTennisDir(), 'cache.json');
 }
 
+/** Pull one player's rows out of the compiled cache without building the full match list. */
+export function readApiTennisPlayerMatches(playerId: string): TennisMatchRow[] {
+  const id = String(playerId || '').trim();
+  if (!id) return [];
+  const file = apiTennisCachePath();
+  if (!fs.existsSync(file)) return [];
+  let raw = '';
+  try {
+    raw = fs.readFileSync(file, 'utf8');
+  } catch {
+    return [];
+  }
+  const needle = `"playerId":"${id}"`;
+  const rows: TennisMatchRow[] = [];
+  let from = 0;
+  while (from < raw.length) {
+    const at = raw.indexOf(needle, from);
+    if (at < 0) break;
+    let start = at;
+    while (start > 0 && raw[start] !== '{') start -= 1;
+    let depth = 0;
+    let inStr = false;
+    let end = start;
+    for (; end < raw.length; end += 1) {
+      const ch = raw[end];
+      if (inStr) {
+        if (ch === '\\') {
+          end += 1;
+          continue;
+        }
+        if (ch === '"') inStr = false;
+        continue;
+      }
+      if (ch === '"') inStr = true;
+      else if (ch === '{') depth += 1;
+      else if (ch === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          end += 1;
+          break;
+        }
+      }
+    }
+    try {
+      const row = JSON.parse(raw.slice(start, end)) as TennisMatchRow;
+      if (String(row?.playerId || '') === id) rows.push(row);
+    } catch {
+      /* skip a malformed object */
+    }
+    from = Math.max(end, at + needle.length);
+  }
+  return rows;
+}
+
 export function apiTennisRosterPath(): string {
   return path.join(apiTennisDir(), 'roster.json');
 }

@@ -53,9 +53,6 @@ export function useSubscriptionCheck({
           setUsername(cached.username);
           setAvatarUrl(cached.avatarUrl);
           setIsPro(cached.isPro);
-          if (!cached.isPro) {
-            router.replace('/home#pricing');
-          }
         }
       }
 
@@ -78,10 +75,6 @@ export function useSubscriptionCheck({
         if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== proStatus || skipCache) {
           if (isMounted) {
             setIsPro(proStatus);
-            if (!proStatus) {
-              router.replace('/home#pricing');
-              return;
-            }
           }
           
           if (proStatus) {

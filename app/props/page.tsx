@@ -8,6 +8,7 @@ import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, typ
 import { createPortal, preload as reactPreload } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useViewerProfile } from '@/hooks/useViewerProfile';
+import { peekViewerProfileCache } from '@/lib/profileSubscriptionGate';
 import {
   bindPropsPageSnapshotGetter,
   clearPropsPageWarmSnapshot,
@@ -1539,6 +1540,47 @@ function tennisListRowsHaveFormStats(props: PlayerProp[]): boolean {
   return withStats >= Math.max(1, Math.ceil(rows.length * 0.15));
 }
 
+function onePropPerSport(rows: PlayerProp[]): PlayerProp[] {
+  const seen = new Set<string>();
+  const kept: PlayerProp[] = [];
+  for (const row of rows) {
+    const source = resolvePropsRowSport(row, 'combined');
+    if (seen.has(source)) continue;
+    seen.add(source);
+    kept.push(row);
+  }
+  return kept;
+}
+
+function propRowHasRank(row: PlayerProp): boolean {
+  return (
+    (row.last10HitRate?.total ?? 0) > 0 ||
+    (row.last5HitRate?.total ?? 0) > 0 ||
+    (row.dvpRating ?? 0) > 0
+  );
+}
+
+/** Keep the current free picks until a ranked row for a different player takes that slot. */
+function stickyFreePicks(next: PlayerProp[], previous: PlayerProp[] | null, perSport: boolean): PlayerProp[] {
+  if (!previous?.length) return next;
+  if (!perSport) {
+    const old = previous[0];
+    const incoming = next[0];
+    if (!old || !incoming) return next;
+    if (old.playerName === incoming.playerName && old.statType === incoming.statType) return next;
+    if (!propRowHasRank(incoming) && propRowHasRank(old)) return previous;
+    return next;
+  }
+  const prevBySport = new Map(previous.map((row) => [resolvePropsRowSport(row, 'combined'), row]));
+  return next.map((row) => {
+    const old = prevBySport.get(resolvePropsRowSport(row, 'combined'));
+    if (!old) return row;
+    if (old.playerName === row.playerName && old.statType === row.statType) return row;
+    if (!propRowHasRank(row) && propRowHasRank(old)) return old;
+    return row;
+  });
+}
+
 function resolvePropsRowSport(
   prop: PlayerProp,
   sport: PropsSportMode
@@ -2287,6 +2329,11 @@ export default function NBALandingPage() {
   // Initialize player props and loading state - always start with loading true to prevent hydration mismatch
   // We'll check sessionStorage in useEffect after mount
   const [playerProps, setPlayerProps] = useState<PlayerProp[]>([]);
+  /** null until the layout effect reads the profile cache. Unknown stays on the free preview so the full board never paints. */
+  const [knownPro, setKnownPro] = useState<boolean | null>(null);
+  const freeCombinedPicksRef = useRef<PlayerProp[] | null>(null);
+  const freeSecondaryPicksRef = useRef<PlayerProp[] | null>(null);
+  const freeNbaPicksRef = useRef<PlayerProp[] | null>(null);
   const [propsLoading, setPropsLoading] = useState(true);
   const [propsProcessing, setPropsProcessing] = useState(false); // Track if cache is empty but processing is happening
   const [showNoPropsMessage, setShowNoPropsMessage] = useState(false); // After 8s with no props, show "come back later"
@@ -3550,9 +3597,16 @@ export default function NBALandingPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!subscriptionChecked) return;
+    setKnownPro(isPro);
+  }, [subscriptionChecked, isPro]);
+
   // Run before paint: restore from sessionStorage so first paint shows cache (no loading flash)
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
+    const peeked = peekViewerProfileCache();
+    setKnownPro(peeked ? peeked.isPro === true : false);
     const url = new URL(window.location.href);
     let sportParam = url.searchParams.get('sport');
     if (sportParam == null) {
@@ -6141,11 +6195,11 @@ export default function NBALandingPage() {
         underOdds: synthesized[0]?.underOdds || prop.underOdds,
       };
     };
-    const mapWithSport = <T extends PlayerProp>(list: T[], sportSource: CombinedSportSource) => {
+    const mapWithSport = <T extends PlayerProp>(list: T[], sportSource: CombinedSportSource, ignoreSearch = false) => {
       return list
         .filter((prop) => {
           if (sportSource === 'nba' && isExcludedCombinedNbaStat(prop.statType)) return false;
-          if (!q) return true;
+          if (ignoreSearch || !q) return true;
           return (
             prop.playerName.toLowerCase().includes(q) ||
             getStatLabel(prop.statType).toLowerCase().includes(q)
@@ -6155,13 +6209,14 @@ export default function NBALandingPage() {
         .filter((prop): prop is PlayerProp => prop !== null)
         .map((prop) => ({ ...prop, sportSource }));
     };
-    const assembled = [
-      ...mapWithSport(playerProps, 'nba'),
+    const assemble = (ignoreSearch: boolean) => [
+      ...mapWithSport(playerProps, 'nba', ignoreSearch),
       ...mapWithSport(
         aflProps.filter(
           (prop) => isAflCommenceTimePropsEligible(prop.gameDate) && isAflCombinedListProp(prop)
         ),
-        'afl'
+        'afl',
+        ignoreSearch
       ),
       ...(TENNIS_PUBLIC_ENABLED
         ? [
@@ -6175,7 +6230,8 @@ export default function NBALandingPage() {
                   )
                 ).filter((prop) => isAflCommenceTimePropsEligible(prop.gameDate))
               ),
-              'atp'
+              'atp',
+              ignoreSearch
             ),
             ...mapWithSport(
               collapseTennisRowsToPrimaryMarketLine(
@@ -6187,22 +6243,29 @@ export default function NBALandingPage() {
                   )
                 ).filter((prop) => isAflCommenceTimePropsEligible(prop.gameDate))
               ),
-              'wta'
+              'wta',
+              ignoreSearch
             ),
           ]
         : []),
       ...mapWithSport(
         nblCombinedProps.filter((prop) => isAflCommenceTimePropsEligible(prop.gameDate)),
-        'nbl'
+        'nbl',
+        ignoreSearch
       ),
     ];
-    return collapseCombinedPropsToOnePerPlayer(assembled);
+    const ready = assemble(true);
+    const visible = q ? assemble(false) : ready;
+    return {
+      rows: collapseCombinedPropsToOnePerPlayer(visible),
+      cacheTotal: ready.length,
+    };
   }, [playerProps, aflProps, tennisCombinedProps, nblCombinedProps, debouncedSearchQuery, getStatLabel, propsSport]);
 
   const displaySortedCombinedProps = useMemo(() => {
     const percent = (hitRate?: { hits: number; total: number } | null) =>
       hitRate && hitRate.total > 0 ? (hitRate.hits / hitRate.total) * 100 : null;
-    const out = [...filteredCombinedProps];
+    const out = [...filteredCombinedProps.rows];
 
     if (propLineSort === 'high') {
       out.sort((a, b) => b.line - a.line);
@@ -6271,6 +6334,17 @@ export default function NBALandingPage() {
     });
     return out;
   }, [filteredCombinedProps, propLineSort, columnSort]);
+
+  const freePropsPreview = knownPro === true ? false : subscriptionChecked ? !isPro : true;
+  const rankedCombinedProps = useMemo(() => {
+    if (!freePropsPreview) {
+      freeCombinedPicksRef.current = null;
+      return displaySortedCombinedProps;
+    }
+    const next = stickyFreePicks(onePropPerSport(displaySortedCombinedProps), freeCombinedPicksRef.current, true);
+    freeCombinedPicksRef.current = next;
+    return next;
+  }, [displaySortedCombinedProps, freePropsPreview]);
 
   // AFL: same "best to worst" default sort as NBA (DvP best first, then L10%, L5%, prob); column sort when active
   const displaySortedAflProps = useMemo(() => {
@@ -6349,17 +6423,29 @@ export default function NBALandingPage() {
     return out;
   }, [filteredAflProps, propLineSort, columnSort]);
 
+  const rankedAflProps = useMemo(() => {
+    if (!freePropsPreview) {
+      freeSecondaryPicksRef.current = null;
+      return displaySortedAflProps;
+    }
+    const next = stickyFreePicks(displaySortedAflProps.slice(0, 1), freeSecondaryPicksRef.current, false);
+    freeSecondaryPicksRef.current = next;
+    return next;
+  }, [displaySortedAflProps, freePropsPreview]);
+
   const ITEMS_PER_PAGE = 20;
-  const aflTotalPages = Math.max(1, Math.ceil(displaySortedAflProps.length / ITEMS_PER_PAGE));
+  const aflTotalPages = Math.max(1, Math.ceil(rankedAflProps.length / ITEMS_PER_PAGE));
+  const aflPage = Math.min(currentPage, aflTotalPages);
   const finalPaginatedAflProps = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return displaySortedAflProps.slice(start, start + ITEMS_PER_PAGE);
-  }, [displaySortedAflProps, currentPage, ITEMS_PER_PAGE]);
-  const combinedTotalPages = Math.max(1, Math.ceil(displaySortedCombinedProps.length / ITEMS_PER_PAGE));
+    const start = (aflPage - 1) * ITEMS_PER_PAGE;
+    return rankedAflProps.slice(start, start + ITEMS_PER_PAGE);
+  }, [rankedAflProps, aflPage, ITEMS_PER_PAGE]);
+  const combinedTotalPages = Math.max(1, Math.ceil(rankedCombinedProps.length / ITEMS_PER_PAGE));
+  const combinedPage = Math.min(currentPage, combinedTotalPages);
   const finalPaginatedCombinedProps = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return displaySortedCombinedProps.slice(start, start + ITEMS_PER_PAGE);
-  }, [displaySortedCombinedProps, currentPage, ITEMS_PER_PAGE]);
+    const start = (combinedPage - 1) * ITEMS_PER_PAGE;
+    return rankedCombinedProps.slice(start, start + ITEMS_PER_PAGE);
+  }, [rankedCombinedProps, combinedPage, ITEMS_PER_PAGE]);
 
   // Track explicitly deselected games (games user clicked to deselect)
   const [deselectedGames, setDeselectedGames] = useState<Set<number>>(() => {
@@ -6689,17 +6775,27 @@ export default function NBALandingPage() {
     });
   }, [uniquePlayerProps, propLineSort, columnSort]);
 
+  const rankedNbaProps = useMemo(() => {
+    if (!freePropsPreview) {
+      freeNbaPicksRef.current = null;
+      return displaySortedProps;
+    }
+    const next = stickyFreePicks(displaySortedProps.slice(0, 1), freeNbaPicksRef.current, false);
+    freeNbaPicksRef.current = next;
+    return next;
+  }, [displaySortedProps, freePropsPreview]);
+
   // Pagination
   const pageSize = 20;
   // Total count should use deduplicated props
-  const totalPropsCount = uniquePlayerProps.length;
+  const totalPropsCount = rankedNbaProps.length;
   // Total pages based on the full count
   const totalPages = Math.max(1, Math.ceil(totalPropsCount / pageSize));
   const currentPageSafe = Math.min(currentPage, totalPages);
   const paginatedPlayerProps = useMemo(() => {
     const start = (currentPageSafe - 1) * pageSize;
-    return displaySortedProps.slice(start, start + pageSize);
-  }, [displaySortedProps, currentPageSafe]);
+    return rankedNbaProps.slice(start, start + pageSize);
+  }, [rankedNbaProps, currentPageSafe]);
 
   // Calculate missing stats for props that don't have seasonAvg or h2hAvg
   // This is a fallback for props that were cached without these stats
@@ -6856,7 +6952,7 @@ export default function NBALandingPage() {
     ? filteredPlayerProps.length
     : isSecondaryListMode
       ? filteredAflProps.length
-      : filteredCombinedProps.length;
+      : filteredCombinedProps.rows.length;
   const activePaginatedProps = propsSport === 'nba'
     ? finalPaginatedProps
     : isSecondaryListMode
@@ -6867,7 +6963,11 @@ export default function NBALandingPage() {
     : isSecondaryListMode
       ? aflTotalPages
       : combinedTotalPages;
-  const activeCurrentPage = propsSport === 'nba' ? currentPageSafe : currentPage;
+  const activeCurrentPage = propsSport === 'nba'
+    ? currentPageSafe
+    : isSecondaryListMode
+      ? aflPage
+      : combinedPage;
 
   const secondaryPaintableProps = useMemo(() => {
     if (!isSecondaryListMode) return [] as PlayerProp[];
@@ -7668,6 +7768,7 @@ export default function NBALandingPage() {
     }
 
     setPropsSport(nextMode);
+    setCurrentPage(1);
     if (nextMode === 'combined') {
       if (combinedWarm) {
         setCombinedPaintUnlocked(true);
@@ -7841,12 +7942,6 @@ export default function NBALandingPage() {
     return mounted && isDark ? 'text-gray-400' : 'text-gray-600';
   };
 
-
-  // Avoid full-screen blocking loader when navigating back from dashboards.
-  // Let page skeletons render immediately; redirect non-pro users once checks finish.
-  if (subscriptionChecked && !isPro) {
-    return <div className="min-h-screen bg-[#050d1a]" />;
-  }
 
   // Use isDark (not mounted&&isDark) for the page shell so first paint is never bg-gray-50.
   const shellDark = !mounted || isDark;
@@ -11738,10 +11833,10 @@ export default function NBALandingPage() {
                       <div className="flex items-center justify-between mt-6 px-2 pb-24 sm:pb-4">
                         <div className={`text-sm ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                           {isSecondaryListMode
-                            ? `Showing ${(currentPage - 1) * ITEMS_PER_PAGE + 1} - ${Math.min(currentPage * ITEMS_PER_PAGE, displaySortedAflProps.length)} of ${displaySortedAflProps.length}`
+                            ? `Showing ${(aflPage - 1) * ITEMS_PER_PAGE + 1} - ${Math.min(aflPage * ITEMS_PER_PAGE, rankedAflProps.length)} of ${displaySortedAflProps.length}`
                             : propsSport === 'combined'
-                              ? `Showing ${(currentPage - 1) * ITEMS_PER_PAGE + 1} - ${Math.min(currentPage * ITEMS_PER_PAGE, displaySortedCombinedProps.length)} of ${displaySortedCombinedProps.length}`
-                              : `Showing ${(currentPageSafe - 1) * pageSize + 1} - ${Math.min(currentPageSafe * pageSize, displaySortedProps.length)} of ${totalPropsCount}`}
+                              ? `Showing ${(combinedPage - 1) * ITEMS_PER_PAGE + 1} - ${Math.min(combinedPage * ITEMS_PER_PAGE, rankedCombinedProps.length)} of ${filteredCombinedProps.cacheTotal}`
+                              : `Showing ${(currentPageSafe - 1) * pageSize + 1} - ${Math.min(currentPageSafe * pageSize, rankedNbaProps.length)} of ${displaySortedProps.length}`}
                         </div>
                         <div className="flex items-center gap-2">
                           <button

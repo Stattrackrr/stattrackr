@@ -17,6 +17,7 @@ import {
   type TennisTour,
 } from '@/lib/tennis/data';
 import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
+import { readApiTennisPlayerMatches } from '@/lib/tennis/apiTennis';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
 type TennisRosterStandings = {
@@ -76,8 +77,31 @@ export async function loadPlayerMatchesCached(opts: {
   }
   if (playerId) {
     const cached = await readTennisPlayerLogsCache(playerId);
-    if (cached?.games?.length) {
-      return opts.tour ? cached.games.filter((row) => row.tour === opts.tour) : cached.games;
+    const cachedGames = cached?.games || [];
+    // A short Redis log is often just the last fixture window. The compiled
+    // cache holds the season, so merge it in when it has more matches.
+    if (cachedGames.length < 12) {
+      const fromDisk = readApiTennisPlayerMatches(playerId);
+      if (fromDisk.length > cachedGames.length) {
+        const byId = new Map<string, TennisMatchRow>();
+        for (const row of [...fromDisk, ...cachedGames]) {
+          if (row?.matchId) byId.set(row.matchId, row);
+        }
+        const games = [...byId.values()].sort((a, b) =>
+          String(a.date || '').localeCompare(String(b.date || ''))
+        );
+        void writeTennisPlayerLogsCache({
+          fetchedAt: new Date().toISOString(),
+          playerId,
+          playerName: games[0]?.playerName || cached?.playerName || String(opts.playerName || playerId),
+          tour: opts.tour || games[0]?.tour || cached?.tour || null,
+          games,
+        });
+        return opts.tour ? games.filter((row) => row.tour === opts.tour) : games;
+      }
+    }
+    if (cachedGames.length) {
+      return opts.tour ? cachedGames.filter((row) => row.tour === opts.tour) : cachedGames;
     }
   }
   if (getHydratedTennisOverlay()?.matches?.length) {

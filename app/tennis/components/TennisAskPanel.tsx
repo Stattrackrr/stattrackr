@@ -60,6 +60,7 @@ export function TennisAskPanel({
   tour = 'ATP',
   isGrandSlam = false,
   tournamentName = null,
+  previewLocked = false,
 }: {
   isDark?: boolean;
   layout?: 'mobile' | 'desktop';
@@ -68,6 +69,8 @@ export function TennisAskPanel({
   tour?: 'ATP' | 'WTA' | null;
   isGrandSlam?: boolean;
   tournamentName?: string | null;
+  /** Free accounts see the layout, but the panel stays locked. */
+  previewLocked?: boolean;
 }) {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -164,7 +167,14 @@ export function TennisAskPanel({
     }
   }
 
-  if (TENNIS_AI_UNDER_MAINTENANCE) {
+  const previewSuggestions = [
+    `Will ${playerLast} cover the ace line?`,
+    `How does ${oppLast} look on return?`,
+    `What's the read on the moneyline?`,
+  ];
+  const shownSuggestions = suggestions.length ? suggestions : previewLocked ? previewSuggestions : [];
+
+  if (TENNIS_AI_UNDER_MAINTENANCE && !previewLocked) {
     return (
       <div className={`w-full flex flex-col ${compact ? 'min-h-[300px]' : 'min-h-[380px]'}`}>
         <div className="flex-1 flex flex-col items-center justify-center px-1 py-8 text-center">
@@ -205,7 +215,7 @@ export function TennisAskPanel({
 
             {player && opponent ? (
               <div className="mt-5 w-full max-w-md space-y-2">
-                {suggestions.map((item) => (
+                {shownSuggestions.map((item) => (
                   <button
                     key={item}
                     type="button"

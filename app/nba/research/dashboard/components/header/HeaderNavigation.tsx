@@ -2,7 +2,8 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useChatUnread } from '@/lib/chatUnread';
-import { CHAT_UNDER_MAINTENANCE, JOURNAL_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
+import { CHAT_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
+import { openProUpgrade } from '@/components/ProFeatureLock';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { ProfileAvatar } from './ProfileAvatar';
 
@@ -44,7 +45,6 @@ export function HeaderNavigation({
     void fetch('/api/afl/player-props/list', { cache: 'force-cache' }).catch(() => {});
   };
   const isPropsActive = pathname?.startsWith('/props');
-  const isJournalActive = pathname?.startsWith('/journal');
   const isChatActive = pathname?.startsWith('/chat');
 
   const navButtonClass = (active: boolean, disabled = false) =>
@@ -79,55 +79,20 @@ export function HeaderNavigation({
       </button>
       
       <button
-        data-journal-button
         type="button"
-        disabled={JOURNAL_UNDER_MAINTENANCE}
-        title={JOURNAL_UNDER_MAINTENANCE ? 'Journal is under maintenance' : undefined}
+        disabled={hasPremium && CHAT_UNDER_MAINTENANCE}
+        title={hasPremium && CHAT_UNDER_MAINTENANCE ? 'Chat is under maintenance' : undefined}
         onClick={() => {
-          if (JOURNAL_UNDER_MAINTENANCE) return;
           if (!hasPremium) {
-            router.push('/subscription');
+            openProUpgrade();
             return;
           }
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem('navigating-to-journal', 'true');
-          }
-          router.push('/journal');
-        }}
-        className={`relative ${navButtonClass(!!isJournalActive, JOURNAL_UNDER_MAINTENANCE || !hasPremium)}`}
-      >
-        {JOURNAL_UNDER_MAINTENANCE ? (
-          <span className="absolute -top-1.5 right-0.5 rounded-md bg-amber-600 px-1 py-0.5 text-[7px] font-bold leading-none tracking-wide text-white">
-            MAINT
-          </span>
-        ) : null}
-        {!hasPremium && !JOURNAL_UNDER_MAINTENANCE ? (
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-          </svg>
-        ) : (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-        )}
-        <span className="text-xs font-medium">Journal</span>
-      </button>
-
-      <button
-        type="button"
-        disabled={CHAT_UNDER_MAINTENANCE}
-        title={CHAT_UNDER_MAINTENANCE ? 'Chat is under maintenance' : undefined}
-        onClick={() => {
           if (CHAT_UNDER_MAINTENANCE) return;
-          if (!hasPremium) {
-            router.push('/subscription');
-            return;
-          }
           router.push('/chat');
         }}
-        className={`relative ${navButtonClass(!!isChatActive, CHAT_UNDER_MAINTENANCE || !hasPremium)}`}
+        className={`relative ${navButtonClass(!!isChatActive, (hasPremium && CHAT_UNDER_MAINTENANCE) || !hasPremium)}`}
       >
-        {CHAT_UNDER_MAINTENANCE ? (
+        {hasPremium && CHAT_UNDER_MAINTENANCE ? (
           <span className="absolute -top-1.5 right-0.5 rounded-md bg-amber-600 px-1 py-0.5 text-[7px] font-bold leading-none tracking-wide text-white">
             MAINT
           </span>

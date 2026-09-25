@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { signOutFully, supabase } from '@/lib/supabaseClient';
+import { authErrorMessage, emailAccountExists, signInWithEmailPassword } from '@/lib/auth/emailAccount';
 import {
   invalidateViewerProfileCache,
   peekViewerProfileCache,
@@ -14,21 +16,20 @@ import type { User } from '@supabase/supabase-js';
 import { StatTrackrSplash } from '@/components/StatTrackrSplash';
 import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { 
-  BarChart3, 
-  TrendingUp, 
-  Database, 
-  Search, 
-  BookOpen, 
-  Zap, 
-  Shield, 
   CheckCircle2,
-  Smartphone,
+  Check,
   ArrowRight,
-  Lightbulb,
   Quote, 
   Star,
   User as UserIcon,
-  DollarSign
+  X,
+  LayoutGrid,
+  LineChart,
+  Trophy,
+  Megaphone,
+  MessageCircle,
+  Medal,
+  DollarSign,
 } from 'lucide-react';
 
 function getInitials(name: string): string {
@@ -69,6 +70,259 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
       },
     );
   });
+}
+
+function TryFreeMenu({
+  align = 'left',
+  buttonClassName,
+  iconClassName = 'w-5 h-5',
+  label = 'Try StatTrackr Free',
+}: {
+  align?: 'left' | 'center';
+  buttonClassName: string;
+  iconClassName?: string;
+  label?: string;
+}) {
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const frame = requestAnimationFrame(() => setVisible(true));
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  const close = () => {
+    if (googleLoading) return;
+    setVisible(false);
+    window.setTimeout(() => setOpen(false), 220);
+  };
+
+  const continueWithGoogle = async () => {
+    setGoogleLoading(true);
+    setGoogleError('');
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${baseUrl}/home` },
+      });
+      if (error) throw error;
+      localStorage.setItem('stattrackr_google_login', 'true');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Google sign up failed';
+      setGoogleError(
+        message.includes('provider is not enabled')
+          ? 'Google sign-up is not available right now. Use email instead.'
+          : message
+      );
+      setGoogleLoading(false);
+    }
+  };
+
+  return (
+    <div className={align === 'center' ? 'w-full sm:w-auto' : ''}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={buttonClassName}
+        aria-haspopup="dialog"
+      >
+        {label}
+        <ArrowRight className={iconClassName} />
+      </button>
+      {mounted && open
+        ? createPortal(
+            <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+              <button
+                type="button"
+                aria-label="Close"
+                className={`absolute inset-0 bg-black/70 transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
+                onClick={close}
+              />
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="try-stattrackr-title"
+                className={`relative w-full max-w-[400px] overflow-hidden rounded-3xl border border-white/10 bg-[#07111f] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.85)] transition-all duration-200 ease-out ${
+                  visible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-3 scale-[0.98] opacity-0'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={close}
+                  className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-white/5 hover:text-gray-200"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <div className="px-6 pb-2 pt-8 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#121c33] ring-1 ring-white/10">
+                    <Image
+                      src="/images/stattrackr-logo-512.webp"
+                      alt=""
+                      width={28}
+                      height={28}
+                      className="h-7 w-7"
+                    />
+                  </div>
+                  <h2 id="try-stattrackr-title" className="mt-4 text-xl font-semibold tracking-tight text-white">
+                    {mode === 'signin' ? 'Sign in to StatTrackr' : 'Sign up for StatTrackr'}
+                  </h2>
+                  <p className="mt-1.5 text-sm text-gray-400">
+                    {mode === 'signin'
+                      ? 'Welcome back. Please sign in to continue.'
+                      : 'Create a free account and start researching.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void continueWithGoogle()}
+                    disabled={googleLoading}
+                    className="relative mt-6 flex h-11 w-full items-center justify-center gap-2.5 rounded-lg bg-[#1c2740] text-sm font-medium text-gray-100 transition-colors hover:bg-[#243250] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" aria-hidden>
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    {googleLoading ? 'Connecting…' : 'Continue with Google'}
+                  </button>
+                  {googleError ? (
+                    <p className="mt-2 text-center text-xs text-red-400">{googleError}</p>
+                  ) : null}
+                  <div className="my-5 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-white/10" />
+                    <span className="text-xs text-gray-500">or</span>
+                    <div className="h-px flex-1 bg-white/10" />
+                  </div>
+                  <form
+                    className="text-left"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      const next = email.trim();
+                      if (!next || !next.includes('@')) {
+                        setGoogleError('Enter a valid email address.');
+                        return;
+                      }
+                      if (!needsPassword) {
+                        setChecking(true);
+                        setGoogleError('');
+                        void emailAccountExists(next)
+                          .then((exists) => {
+                            if (exists) {
+                              setMode('signin');
+                              setNeedsPassword(true);
+                              return;
+                            }
+                            router.push(`/login?signup=1&email=${encodeURIComponent(next)}`);
+                          })
+                          .catch((error: unknown) => {
+                            setGoogleError(error instanceof Error ? error.message : 'Could not check that email.');
+                          })
+                          .finally(() => setChecking(false));
+                        return;
+                      }
+                      if (!password) {
+                        setGoogleError('Enter your password.');
+                        return;
+                      }
+                      setChecking(true);
+                      setGoogleError('');
+                      void signInWithEmailPassword(next, password, true)
+                        .then(() => router.replace('/home'))
+                        .catch((error: unknown) => {
+                          setGoogleError(authErrorMessage(error instanceof Error ? error : { message: String(error) }));
+                        })
+                        .finally(() => setChecking(false));
+                    }}
+                  >
+                    <label htmlFor="try-stattrackr-email" className="text-sm font-medium text-gray-200">
+                      Email address
+                    </label>
+                    <input
+                      id="try-stattrackr-email"
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(event) => {
+                        setEmail(event.target.value);
+                        setNeedsPassword(false);
+                        setPassword('');
+                        if (googleError) setGoogleError('');
+                      }}
+                      placeholder="Enter your email address"
+                      className="mt-2 h-11 w-full rounded-lg border border-transparent bg-[#1c2740] px-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500/70"
+                    />
+                    {needsPassword ? (
+                      <div className="mt-3">
+                        <label htmlFor="try-stattrackr-password" className="text-sm font-medium text-gray-200">
+                          Password
+                        </label>
+                        <input
+                          id="try-stattrackr-password"
+                          type="password"
+                          autoComplete="current-password"
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                          placeholder="Enter your password"
+                          className="mt-2 h-11 w-full rounded-lg border border-transparent bg-[#1c2740] px-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500/70"
+                        />
+                      </div>
+                    ) : null}
+                    <button
+                      type="submit"
+                      disabled={checking || googleLoading}
+                      className="mt-4 flex h-11 w-full items-center justify-center gap-1 rounded-lg bg-purple-600 text-sm font-semibold text-white transition-colors hover:bg-purple-500 disabled:opacity-60"
+                    >
+                      {checking ? 'Continuing…' : needsPassword ? 'Sign in' : 'Continue'}
+                      {checking ? null : <ArrowRight className="h-4 w-4" />}
+                    </button>
+                  </form>
+                </div>
+                <div className="mt-5 border-t border-white/10 bg-black/20 px-6 py-4 text-center text-sm text-gray-400">
+                  {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode((current) => (current === 'signin' ? 'signup' : 'signin'));
+                      setGoogleError('');
+                    }}
+                    className="font-semibold text-purple-400 hover:text-purple-300"
+                  >
+                    {mode === 'signin' ? 'Sign up' : 'Sign in'}
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
+    </div>
+  );
 }
 
 function buildPropsHref(): string {
@@ -157,7 +411,7 @@ export default function HomePage() {
   const reviews = [
     { quote: "I expected something fairly basic at this price point, but the depth of the statistics across every sport genuinely surprised me. It's become a core part of my routine.", name: 'marct_22', tag: 'Pro user' },
     { quote: "The dashboard is comprehensive across every sport, and noticeably deeper than the free tools I was using before. Excellent value for the cost.", name: 'jreed9', tag: 'Pro user' },
-    { quote: "The journal makes it easy to identify exactly where my approach is falling short. I used to rely on guesswork; now I have the data to back my decisions.", name: 'jake_m82', tag: 'Pro user' },
+    { quote: "The matchup stats make it easy to see exactly where the edge is. I used to rely on guesswork; now I have the data to back my decisions.", name: 'jake_m82', tag: 'Pro user' },
     { quote: "This is the first platform of its kind I've stuck with. Most tools I sign up for and abandon within a week. I'm in this one every day.", name: 'alexk9', tag: 'Pro user' },
     { quote: "I previously juggled spreadsheets, a free site, and notes on my phone. Having everything consolidated in one place has saved me a significant amount of time.", name: 'samr91', tag: 'Pro user' },
     { quote: "It strikes the right balance. A lot of these tools overwhelm you with information; this one surfaces what actually matters without the clutter.", name: 'cjlew', tag: 'Pro user' },
@@ -413,10 +667,11 @@ export default function HomePage() {
       features: [
         'All statistics - NBA',
         'All statistics - AFL',
-        'All statistics - 10+ Football Competitions',
+        'All statistics - NBL',
+        'All statistics - ATP',
+        'All statistics - WTA',
         'AFL premium prediction model',
         'Admin picks',
-        'Advanced journaling',
         'All device compatibility',
         'Priority support',
       ],
@@ -503,6 +758,14 @@ export default function HomePage() {
                   ) : (
                     <>
                       <button
+                        onMouseEnter={prefetchPropsResources}
+                        onFocus={prefetchPropsResources}
+                        onClick={goToProps}
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Go to App
+                      </button>
+                      <button
                         onClick={() => scrollToSection('pricing')}
                         className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
                       >
@@ -547,12 +810,11 @@ export default function HomePage() {
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={() => scrollToSection('pricing')}
-                    className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-xs sm:text-sm font-medium transition-colors"
-                  >
-                    Get Started
-                  </button>
+                  <TryFreeMenu
+                    label="Try Free"
+                    iconClassName="w-3 h-3 sm:w-3.5 sm:h-3.5"
+                    buttonClassName="whitespace-nowrap px-2 py-1 sm:px-4 sm:py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-[11px] sm:text-sm font-medium transition-colors inline-flex items-center gap-1"
+                  />
                   <button
                     onClick={() => router.push('/login')}
                     className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-gray-300 hover:text-white text-xs sm:text-sm transition-colors"
@@ -601,18 +863,15 @@ export default function HomePage() {
                 <span className="font-semibold text-white">Not a betting platform.</span> Simply the data and tools for serious, informed analysis.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <TryFreeMenu
+                  align="center"
+                  buttonClassName="w-full sm:w-auto px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-lg font-semibold transition-all hover:scale-[1.02] shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2"
+                />
                 <button
                   onClick={() => scrollToSection('pricing')}
-                  className="px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-lg font-semibold transition-all hover:scale-[1.02] shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2"
-                >
-                  Get Started
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => scrollToSection('faq')}
                   className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-lg font-semibold transition-colors"
                 >
-                  Learn More
+                  View Premium Plan
                 </button>
               </div>
               <div className="mt-8 flex items-center gap-3 justify-center lg:justify-start text-sm text-gray-400">
@@ -644,10 +903,10 @@ export default function HomePage() {
           </div>
 
           {/* Product showcase — 3-device render */}
-          <div className="mt-32 sm:mt-40 lg:mt-52 pt-8 border-t border-white/5">
+          <div className="mt-8 sm:mt-10 lg:mt-14 pt-6 border-t border-white/5">
             <div className="grid lg:grid-cols-[auto_1fr_1fr] gap-10 lg:gap-12 items-center">
               {/* Image — left */}
-              <div className="relative flex justify-center lg:justify-start">
+              <div className="relative order-2 flex justify-center lg:order-1 lg:justify-start">
                 <div aria-hidden className="absolute inset-0 hidden md:block bg-gradient-to-tr from-purple-600/15 via-fuchsia-500/10 to-blue-600/15 blur-3xl rounded-full pointer-events-none" />
                 <Image
                   src="/images/hero-devices.webp"
@@ -657,14 +916,14 @@ export default function HomePage() {
                   sizes="(max-width: 1024px) 320px, 380px"
                   className="relative w-full max-w-[320px] lg:max-w-[380px] h-auto drop-shadow-2xl"
                   style={{
-                    maskImage: 'linear-gradient(to bottom, transparent 0%, black 22%, black 78%, transparent 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 22%, black 78%, transparent 100%)',
+                    maskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)',
+                    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)',
                   }}
                 />
               </div>
 
               {/* Copy — middle */}
-              <div className="text-center lg:text-left">
+              <div className="order-1 text-center lg:order-2 lg:text-left">
                 <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-4">Available on every device</p>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 leading-tight">
                   Compatible on all devices,<br />anytime, anywhere.
@@ -675,7 +934,7 @@ export default function HomePage() {
               </div>
 
               {/* Bookmakers — right */}
-              <div>
+              <div className="order-3">
                 <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-4">Bookmakers covered</p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
@@ -783,35 +1042,89 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Key Features Grid */}
+      {/* Free vs Pro */}
       <section id="features" className="scroll-mt-20 py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Everything you need, nothing you don&apos;t</h2>
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Free vs Pro</h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              StatTrackr delivers the statistics and tools that matter — without the clutter. Here&apos;s what&apos;s included.
+              What each plan includes that the other does not.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="md:hidden space-y-3">
             {[
-              { icon: BarChart3, title: 'Multi-sport coverage', desc: 'Full statistics and research tools across NBA, AFL, soccer and more. One platform, every sport you follow.' },
-              { icon: TrendingUp, title: "Australia's best AFL prediction model", desc: 'Our AFL model crunches player history, matchup trends, and line movement across thousands of data points to surface the highest-confidence plays each round.' },
-              { icon: Zap, title: 'Admin free picks', desc: 'Hand-selected picks published directly by our team. No noise, no filler. Just clear calls with the reasoning behind them.' },
-              { icon: Lightbulb, title: 'Built for everyone', desc: 'Whether you are brand new to sports research or a seasoned analyst, StatTrackr is designed to be intuitive from the moment you sign in.' },
-              { icon: Smartphone, title: 'Cross-device access', desc: 'The same tools and data on phone, tablet, and desktop, so you can research wherever you are.' },
-              { icon: DollarSign, title: 'Locked-in pricing', desc: "Subscribe at today's rate and keep it forever. If we add more sports or adjust pricing for new members, your rate never changes." },
-            ].map((f, i) => (
-              <div
-                key={i}
-                className="group relative bg-white/[0.03] hover:bg-white/[0.05] p-6 rounded-2xl border border-gray-800 hover:border-purple-500/40 transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600/30 to-blue-600/20 border border-purple-500/20 flex items-center justify-center mb-5">
-                  <f.icon className="w-6 h-6 text-purple-300" />
+              { icon: Medal, feature: 'Sports', pro: 'NBA, AFL, NBL, ATP, WTA', free: 'NBA, AFL, NBL, ATP, WTA', freeOk: true },
+              { icon: LayoutGrid, feature: 'Props board', pro: 'Full board', free: '1 prop per sport' },
+              { icon: LineChart, feature: 'Advanced stats for every sport', pro: 'Included', free: 'Locked' },
+              { icon: Trophy, feature: 'AFL prediction model', pro: 'Included', free: 'Locked' },
+              { icon: Megaphone, feature: 'Admin picks', pro: 'Included', free: 'Locked' },
+              { icon: MessageCircle, feature: 'Chat', pro: 'Included', free: 'Locked' },
+              { icon: DollarSign, feature: 'Price', pro: 'From $20/month', free: 'Free', freeOk: true },
+            ].map((row) => (
+              <div key={row.feature} className="overflow-hidden rounded-2xl border border-gray-800 bg-[#071422]">
+                <div className="flex items-center gap-3 border-b border-gray-800 px-4 py-3 text-sm text-gray-200">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-800 bg-white/[0.03] text-gray-400">
+                    <row.icon className="h-4 w-4" />
+                  </span>
+                  {row.feature}
                 </div>
-                <h3 className="text-lg font-bold mb-2">{f.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{f.desc}</p>
+                <div className="grid grid-cols-2 text-sm">
+                  <div className="bg-[#0c1c33] px-3 py-3">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-purple-300">StatTrackr</p>
+                    <p className="flex items-start gap-1.5 font-medium leading-snug text-emerald-400">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0" />
+                      {row.pro}
+                    </p>
+                  </div>
+                  <div className="px-3 py-3">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">Free</p>
+                    <p className={`flex items-start gap-1.5 font-medium leading-snug ${row.freeOk ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {row.freeOk ? <Check className="mt-0.5 h-4 w-4 shrink-0" /> : <X className="mt-0.5 h-4 w-4 shrink-0" />}
+                      {row.free}
+                    </p>
+                  </div>
+                </div>
               </div>
             ))}
+          </div>
+          <div className="hidden md:block">
+            <div className="overflow-hidden rounded-2xl border border-gray-800 bg-[#071422]">
+              <div className="grid grid-cols-[1.15fr_1fr_1fr] text-sm">
+                <div className="px-5 py-5 text-xs font-semibold uppercase tracking-widest text-gray-500">Feature</div>
+                <div className="flex items-center justify-center gap-2 border-x border-purple-500/30 bg-[#0c1c33] px-4 py-4">
+                  <Image src="/images/stattrackr-logo-512.webp" alt="" width={22} height={22} className="h-5 w-5" />
+                  <span className="font-semibold text-white">StatTrackr</span>
+                  <span className="rounded-full bg-purple-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Best</span>
+                </div>
+                <div className="px-5 py-5 text-center text-sm font-medium text-gray-400">Free</div>
+                {[
+                  { icon: Medal, feature: 'Sports', pro: 'NBA, AFL, NBL, ATP, WTA', free: 'NBA, AFL, NBL, ATP, WTA', freeOk: true },
+                  { icon: LayoutGrid, feature: 'Props board', pro: 'Full board', free: '1 prop per sport' },
+                  { icon: LineChart, feature: 'Advanced stats for every sport', pro: 'Included', free: 'Locked' },
+                  { icon: Trophy, feature: 'AFL prediction model', pro: 'Included', free: 'Locked' },
+                  { icon: Megaphone, feature: 'Admin picks', pro: 'Included', free: 'Locked' },
+                  { icon: MessageCircle, feature: 'Chat', pro: 'Included', free: 'Locked' },
+                  { icon: DollarSign, feature: 'Price', pro: 'From $20/month', free: 'Free', freeOk: true },
+                ].map((row) => (
+                  <React.Fragment key={row.feature}>
+                    <div className="flex items-center gap-3 border-t border-gray-800 px-5 py-4 text-gray-200">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-800 bg-white/[0.03] text-gray-400">
+                        <row.icon className="h-4 w-4" />
+                      </span>
+                      {row.feature}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 border-x border-t border-purple-500/30 bg-[#0c1c33] px-4 py-4 font-medium text-emerald-400">
+                      <Check className="h-4 w-4" />
+                      {row.pro}
+                    </div>
+                    <div className={`flex items-center justify-center gap-2 border-t border-gray-800 px-4 py-4 font-medium ${row.freeOk ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {row.freeOk ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                      {row.free}
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -968,11 +1281,7 @@ export default function HomePage() {
                   </ul>
                   <button
                     onClick={() => handleSelectPlan(plan.name, 'annual')}
-                    className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                      billingCycle === 'annual'
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                    }`}
+                    className="w-full py-3 rounded-lg font-semibold transition-all bg-purple-600 hover:bg-purple-700 text-white"
                   >
                     {plan.cta}
                   </button>
@@ -997,8 +1306,7 @@ export default function HomePage() {
               { q: 'Can I cancel anytime?', a: 'Yes. You can cancel your subscription at any time. There are no cancellation fees and no unnecessary hurdles.' },
               { q: 'Is mobile supported?', a: 'Yes. StatTrackr works across phone, tablet, and desktop. The full feature set and data are available on mobile, so you can research on the go.' },
               { q: 'How do I contact support?', a: <>Email us at <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>. We typically respond within 24 hours.</> },
-              { q: 'Does the journal use real money?', a: 'No. The journal is for tracking purposes only. You enter your own data; we don\'t handle real money or connect to any sportsbooks. It is simply a tool for logging your research and reviewing your performance over time.' },
-              { q: 'What sports are available?', a: 'We cover multiple sports — NBA, AFL, and more — with full stats, props, and research tools. We\'re always adding more and will announce new sports when they\'re ready.' },
+              { q: 'What sports are available?', a: 'We cover NBA, AFL, NBL, ATP, and WTA, with full stats, props, and research tools. We\'re always adding more and will announce new sports when they\'re ready.' },
               { q: 'Are the top-ranked props the best picks?', a: 'No. The ranking is based on line value and odds sourced from bookmakers, not our recommendations. We provide the data and tools; how you interpret them is entirely up to you. Use the filters and dashboard to draw your own conclusions.' },
             ].map((faq, i) => (
               <div
@@ -1027,13 +1335,43 @@ export default function HomePage() {
           </div>
           <div className="mt-12 text-center">
             <p className="text-gray-400 font-medium mb-6 text-lg">Sports coverage</p>
-            <div className="grid grid-cols-3 items-center justify-items-center gap-4">
-              <Image src="/images/nba-logo.png" alt="NBA" width={200} height={200} className="object-contain opacity-90 w-20 h-20 sm:w-44 sm:h-44 md:w-52 md:h-52" />
-              <Image src="/images/afl-logo.png" alt="AFL" width={200} height={200} className="object-contain opacity-90 w-20 h-20 sm:w-44 sm:h-44 md:w-52 md:h-52" />
-              <div className="flex flex-col items-center justify-center w-20 h-20 sm:w-44 sm:h-44 md:w-52 md:h-52">
-                <span className="text-2xl sm:text-5xl md:text-6xl font-black text-white">10+</span>
-                <span className="text-gray-300 text-xs sm:text-lg font-semibold mt-1 text-center leading-tight">Football Leagues</span>
-              </div>
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-5 sm:gap-x-8">
+              <Image
+                src="/images/nba-logo.png"
+                alt="NBA"
+                width={80}
+                height={160}
+                className="h-16 w-7 sm:h-24 sm:w-11 object-cover object-center mix-blend-screen"
+              />
+              {[
+                { src: '/images/afl-logo.png', alt: 'AFL', className: 'h-24 sm:h-36 w-auto' },
+                { src: '/images/nbl-logo.png', alt: 'NBL', className: 'h-14 sm:h-20 w-auto mix-blend-screen' },
+              ].map((sport) => (
+                <Image
+                  key={sport.alt}
+                  src={sport.src}
+                  alt={sport.alt}
+                  width={160}
+                  height={160}
+                  className={`object-contain ${sport.className}`}
+                />
+              ))}
+              <span className="inline-flex h-10 w-24 sm:h-14 sm:w-32 items-center justify-center overflow-hidden">
+                <Image
+                  src="/images/atp-logo.webp"
+                  alt="ATP"
+                  width={200}
+                  height={80}
+                  className="h-[220%] w-auto max-w-none object-cover"
+                />
+              </span>
+              <Image
+                src="/images/wta-logo.png"
+                alt="WTA"
+                width={160}
+                height={160}
+                className="object-contain h-16 sm:h-24 w-auto mix-blend-screen"
+              />
             </div>
           </div>
           <p className="text-center text-gray-400 mt-10">
@@ -1098,6 +1436,8 @@ export default function HomePage() {
                   )}
                 </li>
                 <li><button onClick={() => router.push('/afl')} className="hover:text-white transition-colors">AFL Research</button></li>
+                <li><button onClick={() => router.push('/nbl')} className="hover:text-white transition-colors">NBL Research</button></li>
+                <li><button onClick={() => router.push('/tennis')} className="hover:text-white transition-colors">ATP & WTA</button></li>
               </ul>
             </div>
             <div>
