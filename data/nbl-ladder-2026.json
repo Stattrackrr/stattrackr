@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-25T02:03:09.357Z",
+  "generatedAt": "2026-09-25T17:56:03.340Z",
   "source": "rosetta.nbl.com.au",
   "teams": [
     {
@@ -30,16 +30,16 @@
       "teamCode": "BRI",
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "teamLogo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-      "played": 1,
-      "win": 1,
+      "played": 2,
+      "win": 2,
       "loss": 0,
-      "points_for": 88,
-      "points_against": 85,
-      "points_percentage": 1.0353,
+      "points_for": 191,
+      "points_against": 180,
+      "points_percentage": 1.0611,
       "win_percentage": 1,
-      "last_5": "W",
-      "streak": 1,
-      "home_wins": 1,
+      "last_5": "WW",
+      "streak": 2,
+      "home_wins": 2,
       "home_losses": 0,
       "away_wins": 0,
       "away_losses": 0
@@ -190,19 +190,19 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "teamLogo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-      "played": 1,
+      "played": 2,
       "win": 0,
-      "loss": 1,
-      "points_for": 81,
-      "points_against": 95,
-      "points_percentage": 0.8526,
+      "loss": 2,
+      "points_for": 176,
+      "points_against": 198,
+      "points_percentage": 0.8889,
       "win_percentage": 0,
-      "last_5": "L",
+      "last_5": "LL",
       "streak": 0,
       "home_wins": 0,
       "home_losses": 0,
       "away_wins": 0,
-      "away_losses": 1
+      "away_losses": 2
     }
   ]
 }

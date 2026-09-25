@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-25T02:03:20.968Z",
+  "generatedAt": "2026-09-25T17:56:20.317Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/2025-26-nbl-team-lists-and-roster-tracker",
   "sourcePage": "/news/2025-26-nbl-team-lists-and-roster-tracker",
-  "injuryCount": 16,
+  "injuryCount": 15,
   "injuries": [
     {
       "team": "Brisbane Bullets",
@@ -16,12 +16,6 @@
       "player": "Casey Prather",
       "injury": "Knee injury",
       "returning": "Out the rest of the season"
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Lamar Patterson",
-      "injury": "Hamstring",
-      "returning": "Out of the rest of the season"
     },
     {
       "team": "Brisbane Bullets",

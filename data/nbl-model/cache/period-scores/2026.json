@@ -1,8 +1,8 @@
 {
   "year": 2026,
-  "generatedAt": "2026-09-25T02:03:19.993Z",
+  "generatedAt": "2026-09-25T17:56:19.256Z",
   "source": "embed-api.eui.connect.sportradar.com",
-  "gameCount": 9,
+  "gameCount": 10,
   "games": {
     "36e225dc-58ad-11f1-b0d4-e94b8c35b649": {
       "home_q1": 32,
@@ -93,6 +93,16 @@
       "visitor_q2": 29,
       "visitor_q3": 24,
       "visitor_q4": 17
+    },
+    "36f361e7-58ad-11f1-a449-59142d8bd7d5": {
+      "home_q1": 25,
+      "home_q2": 25,
+      "home_q3": 23,
+      "home_q4": 30,
+      "visitor_q1": 18,
+      "visitor_q2": 24,
+      "visitor_q3": 24,
+      "visitor_q4": 29
     }
   }
 }

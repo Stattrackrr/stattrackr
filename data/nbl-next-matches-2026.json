@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-25T02:02:54.068Z",
+  "generatedAt": "2026-09-25T17:55:46.310Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-      "name": "Brisbane Bullets",
-      "team_code": "BRI",
-      "nextMatches": [
-        {
-          "id": "c3c878a2-5d54-48b5-a5b4-507d743ff5cc",
-          "match_slug": "brisbane-bullets-v-illawarra-hawks-men-25-09-2026",
-          "match_title": "Brisbane Bullets v Illawarra Hawks men 25-09-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS27",
-          "external_id": "36f361e7-58ad-11f1-a449-59142d8bd7d5",
-          "start_time_datetime": "2026-09-25T09:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "opponent_name": "Illawarra Hawks",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-          "venue": "Brisbane Entertainment Centre",
-          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
-        }
-      ]
-    },
-    {
-      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-      "name": "Illawarra Hawks",
-      "team_code": "ILL",
-      "nextMatches": [
-        {
-          "id": "c3c878a2-5d54-48b5-a5b4-507d743ff5cc",
-          "match_slug": "brisbane-bullets-v-illawarra-hawks-men-25-09-2026",
-          "match_title": "Brisbane Bullets v Illawarra Hawks men 25-09-2026",
-          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
-          "external_id": "36f361e7-58ad-11f1-a449-59142d8bd7d5",
-          "start_time_datetime": "2026-09-25T09:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-          "opponent_name": "Brisbane Bullets",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-          "venue": "Brisbane Entertainment Centre",
-          "opponent_logo_blurhash": "LAD9iCxu0s5dS+s*s+xU0aIwoI}$"
-        }
-      ]
-    },
     {
       "id": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "name": "Perth Wildcats",
@@ -149,6 +107,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
           "venue": "Afterpay Arena",
           "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
+        }
+      ]
+    },
+    {
+      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "name": "Illawarra Hawks",
+      "team_code": "ILL",
+      "nextMatches": [
+        {
+          "id": "ac1bf126-2d3a-48fa-840f-9d77168a33c1",
+          "match_slug": "sydney-kings-v-illawarra-hawks-men-27-09-2026",
+          "match_title": "Sydney Kings v Illawarra Hawks men 27-09-2026",
+          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
+          "external_id": "3715a95f-58ad-11f1-9621-61e4f965035a",
+          "start_time_datetime": "2026-09-27T08:00:00.000Z",
+          "is_home": false,
+          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "opponent_name": "Sydney Kings",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
+          "venue": "Afterpay Arena",
+          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
+        }
+      ]
+    },
+    {
+      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "name": "Brisbane Bullets",
+      "team_code": "BRI",
+      "nextMatches": [
+        {
+          "id": "0b9db619-d04f-49cf-ab91-5384fb149f16",
+          "match_slug": "sydney-kings-v-brisbane-bullets-men-30-09-2026",
+          "match_title": "Sydney Kings v Brisbane Bullets men 30-09-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS27",
+          "external_id": "3718a994-58ad-11f1-add9-d98e318e0a1e",
+          "start_time_datetime": "2026-09-30T09:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "opponent_name": "Sydney Kings",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
+          "venue": "Afterpay Arena",
+          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
         }
       ]
     },

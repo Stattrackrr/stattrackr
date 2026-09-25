@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-25T02:02:52.653Z",
+  "generatedAt": "2026-09-25T17:55:45.397Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2955,7 +2955,7 @@
       "externalId": "36f361e7-58ad-11f1-a449-59142d8bd7d5",
       "startTime": "2026-09-25T09:30:00.000Z",
       "round": "2",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Brisbane Bullets",
       "homeTeamCode": "BRI",
       "homeTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
@@ -2964,8 +2964,8 @@
       "awayTeamCode": "ILL",
       "awayTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 103,
+      "awayScore": 95,
       "venue": "Brisbane Entertainment Centre",
       "matchSlug": "brisbane-bullets-v-illawarra-hawks-men-25-09-2026"
     },

@@ -1,10 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-25T02:03:19.399Z",
+  "generatedAt": "2026-09-25T17:56:15.114Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 154,
-  "gameRows": 183,
+  "gameRows": 202,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -91,7 +91,7 @@
       "name": "Arnas Velicka",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/7ea89a63-460c-4530-a6b8-e770aced04e3-2026.json"
     },
     {
@@ -387,7 +387,7 @@
       "name": "Harry Rouhliadeff",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/2d1e9f7f-e241-4797-8b2f-70472f07f4c8-2026.json"
     },
     {
@@ -451,7 +451,7 @@
       "name": "Jacob Holt",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/00e61e90-d1f1-4ec8-8a72-e7b04c0e5c0b-2026.json"
     },
     {
@@ -507,7 +507,7 @@
       "name": "Jaylin Williams",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/a13a2ea7-3918-4cd3-93d2-a33703ce234d-2026.json"
     },
     {
@@ -579,7 +579,7 @@
       "name": "Johny Narkle",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/1db6c57b-a7f5-43a3-aaaa-4731f2bc57f5-2026.json"
     },
     {
@@ -667,7 +667,7 @@
       "name": "Kelan Martin",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/76536695-6c04-4c8a-b104-5ebbabb95879-2026.json"
     },
     {
@@ -747,7 +747,7 @@
       "name": "Lamar Patterson",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/72703b55-4db2-4e14-b7a4-a38f31c32388-2026.json"
     },
     {
@@ -755,7 +755,7 @@
       "name": "Lat Mayen",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/2337cf0e-9ee7-439d-8aec-770b3876368c-2026.json"
     },
     {
@@ -835,7 +835,7 @@
       "name": "Mason Peatling",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/db202f21-d605-4ca1-8901-8abbd440f105-2026.json"
     },
     {
@@ -859,7 +859,7 @@
       "name": "Max Mackinnon",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/9b04b8b2-c234-4c8e-8653-d896d66267a9-2026.json"
     },
     {
@@ -867,7 +867,7 @@
       "name": "Milton Doyle",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/ade09c69-e9b3-46d1-8202-2b778e96409a-2026.json"
     },
     {
@@ -875,7 +875,7 @@
       "name": "Mitch Norton",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/2e2291aa-36b6-4928-b348-0f5951fbc3b4-2026.json"
     },
     {
@@ -891,7 +891,7 @@
       "name": "Nate Hinton",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/aeb4d203-4032-44a5-a412-584f007d6dfb-2026.json"
     },
     {
@@ -1011,7 +1011,7 @@
       "name": "Sam Froling",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/5bc7a4df-bd9f-4177-ab25-a1de3e4cb0a1-2026.json"
     },
     {
@@ -1115,7 +1115,7 @@
       "name": "Todd Blanchfield",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/f1f3155a-4ff7-445f-9c59-f0f9a9be8a8c-2026.json"
     },
     {
@@ -1147,7 +1147,7 @@
       "name": "Tyler Harvey",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/7efc81c9-d26e-4950-97e1-1b9b03b1bacd-2026.json"
     },
     {
@@ -1163,7 +1163,7 @@
       "name": "Tyrell Harrison",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/fb85d99d-86ac-46f7-b60d-ea33ae00a9fd-2026.json"
     },
     {
@@ -1179,7 +1179,7 @@
       "name": "Wani Swaka Lo Buluk",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/6c6c60a2-caa9-4b1e-ba1d-6c61dccf2592-2026.json"
     },
     {
@@ -1211,7 +1211,7 @@
       "name": "William Hickey",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/3af27cad-ac89-4122-842c-2772197168c5-2026.json"
     },
     {
