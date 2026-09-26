@@ -10,6 +10,7 @@ type OddsNetMarket = {
   rawName?: string;
   name?: string;
   line?: number;
+  period?: string;
   isActive?: boolean;
   moreInfo?: { player?: string };
   selections?: Array<{
@@ -264,7 +265,7 @@ export async function fetchOddsApiNetNblGames(): Promise<OddsNetGame[]> {
       cursor = payload.next_cursor;
     }
 
-    const byBook = new Map<string, Map<string, { over?: OddsApiItem; under?: OddsApiItem; meta: MetricCanon; player: string; value: number }>>();
+    const byBook = new Map<string, Map<string, { over?: OddsApiItem; under?: OddsApiItem; meta: MetricCanon; player: string; value: number; period: string }>>();
     for (const item of items) {
       if (item.is_available === false) continue;
       const book = displayBook(item.bookmaker);
@@ -273,9 +274,10 @@ export async function fetchOddsApiNetNblGames(): Promise<OddsNetGame[]> {
       const player = displayPlayer(item);
       if (!book || !meta || !parsed || !player) continue;
       if (typeof item.odds !== 'number' || item.odds <= 1) continue;
+      const period = String(item.period || '').trim();
       const bookMap = byBook.get(book) ?? new Map();
-      const key = `${player.toLowerCase()}|${meta.stat}|${parsed.value}`;
-      const row = bookMap.get(key) ?? { meta, player, value: parsed.value };
+      const key = `${player.toLowerCase()}|${meta.stat}|${parsed.value}|${period.toLowerCase()}`;
+      const row = bookMap.get(key) ?? { meta, player, value: parsed.value, period };
       if (parsed.side === 'under') row.under = item;
       else row.over = item;
       bookMap.set(key, row);
@@ -293,6 +295,7 @@ export async function fetchOddsApiNetNblGames(): Promise<OddsNetGame[]> {
             rawName: `Player ${row.meta.noun.replace(/^./, (c) => c.toUpperCase())}`,
             name: `${row.player} ${row.value}`,
             line: row.value,
+            period: row.period,
             isActive: true,
             moreInfo: { player: row.player },
             selections: [
@@ -329,6 +332,7 @@ export async function fetchOddsApiNetNblGames(): Promise<OddsNetGame[]> {
           rawName: `${threshold}+ ${row.meta.noun}`,
           name: `${row.player} ${threshold}+ ${row.meta.noun}`,
           line: threshold,
+          period: row.period,
           isActive: true,
           moreInfo: { player: row.player },
           selections: [

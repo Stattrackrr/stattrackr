@@ -1,3 +1,5 @@
+import { parseNblPlayerQuarterStat } from '@/lib/nbl/pbpShared';
+
 export interface NblBookRow {
   name: string;
   H2H: { home: string; away: string };
@@ -51,6 +53,7 @@ export function nblOddsMarketForStat(
   stat: string | null | undefined
 ): NblOddsMarket | null {
   if (mode === 'player') {
+    if (parseNblPlayerQuarterStat(stat)) return 'total';
     return nblPlayerPropMarketForStat(stat) ? 'total' : null;
   }
   if (stat === 'moneyline') return 'h2h';

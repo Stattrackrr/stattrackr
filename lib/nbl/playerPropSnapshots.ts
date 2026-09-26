@@ -109,6 +109,10 @@ export function flattenPulseNblGame(game: PulseNblGame): NblSnapLine[] {
       if (market.isActive === false) continue;
       const parsed = classifyPulseNblMarket(market);
       if (!parsed) continue;
+      const periodBlob = `${market.period || ''} ${market.rawName || ''} ${market.name || ''}`.toLowerCase();
+      if (/\b(1st|first|2nd|second|3rd|third|4th|fourth)\s*(quarter|qtr|period)\b|\bq[1-4]\b|\bquarter\s*[1-4]\b|\b[1-4]q\b/.test(periodBlob)) {
+        continue;
+      }
       if (parsed.stat !== 'points' && parsed.stat !== 'rebounds' && parsed.stat !== 'assists' && parsed.stat !== 'threeMade') {
         continue;
       }

@@ -42,6 +42,8 @@ export {
 type RawTotals = {
   pts: number;
   reb: number;
+  oreb: number;
+  dreb: number;
   ast: number;
   stl: number;
   blk: number;
@@ -69,6 +71,8 @@ type PlayerLogGame = {
   teamCode?: string | null;
   points?: number | null;
   rebounds?: number | null;
+  offensiveRebounds?: number | null;
+  defensiveRebounds?: number | null;
   assists?: number | null;
   steals?: number | null;
   blocks?: number | null;
@@ -85,6 +89,8 @@ type PlayerLogFile = {
 const emptyTotals = (): RawTotals => ({
   pts: 0,
   reb: 0,
+  oreb: 0,
+  dreb: 0,
   ast: 0,
   stl: 0,
   blk: 0,
@@ -104,6 +110,8 @@ function averagesFromTotals(sum: RawTotals, games: number): NblSteAverages | nul
   return {
     pts: sum.pts / games,
     reb: sum.reb / games,
+    oreb: sum.oreb / games,
+    dreb: sum.dreb / games,
     ast: sum.ast / games,
     stl: sum.stl / games,
     blk: sum.blk / games,
@@ -115,6 +123,8 @@ function averagesFromTotals(sum: RawTotals, games: number): NblSteAverages | nul
 function addTotals(target: RawTotals, src: RawTotals) {
   target.pts += src.pts;
   target.reb += src.reb;
+  target.oreb += src.oreb;
+  target.dreb += src.dreb;
   target.ast += src.ast;
   target.stl += src.stl;
   target.blk += src.blk;
@@ -167,6 +177,8 @@ function loadTeamGamesForYear(year: number): TeamGame[] {
       }
       row.pts += num(g.points);
       row.reb += num(g.rebounds);
+      row.oreb += num(g.offensiveRebounds);
+      row.dreb += num(g.defensiveRebounds);
       row.ast += num(g.assists);
       row.stl += num(g.steals);
       row.blk += num(g.blocks);

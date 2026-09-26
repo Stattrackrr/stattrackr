@@ -13,6 +13,11 @@ import {
   type NblBookRow,
   type NblPropLine,
 } from '@/lib/nbl/oddsTypes';
+import {
+  NBL_QUARTER_PARENT_STATS,
+  nblPlayerQuarterStatKey,
+  parseNblPlayerQuarterStat,
+} from '@/lib/nbl/pbpShared';
 
 const CACHE_KEY = 'nbl_oan_board_v1';
 const CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
@@ -107,13 +112,20 @@ async function refreshBoard(): Promise<PulseNblBoard> {
   return board;
 }
 
+function boardMarksPeriod(games: PulseNblGame[]): boolean {
+  return games.some((game) =>
+    game.bookmakers.some((book) => (book.markets || []).some((market) => typeof market.period === 'string'))
+  );
+}
+
 export async function getNblPulseScoreBoard(options?: { force?: boolean }): Promise<PulseNblGame[]> {
   const cached = await sharedCache.getJSON<PulseNblBoard>(CACHE_KEY);
-  if (cached?.games?.length) {
-    memoryBoard = cached.games;
-    if (!options?.force) return cached.games;
-  } else if (!options?.force) {
-    return memoryBoard ?? [];
+  const cachedGames = cached?.games?.length ? cached.games : null;
+  if (cachedGames && boardMarksPeriod(cachedGames)) {
+    memoryBoard = cachedGames;
+    if (!options?.force) return cachedGames;
+  } else if (!options?.force && memoryBoard?.length && boardMarksPeriod(memoryBoard)) {
+    return memoryBoard;
   }
 
   if (!oddsApiNetKey()) return cached?.games?.length ? cached.games : memoryBoard ?? [];
@@ -248,6 +260,15 @@ export function namesMatch(playerQuery: string, outcomeName: string): boolean {
   const bTail = bParts.slice(-2).join(' ');
   if (aTail && aTail === bTail && aTail.includes(' ')) return true;
   return b.includes(a) || a.includes(b);
+}
+
+function quarterIndexFromMarket(market: PulseMarket): 1 | 2 | 3 | 4 | null {
+  const blob = `${market.period || ''} ${market.rawName || ''} ${market.name || ''} ${market.marketId || ''}`.toLowerCase();
+  if (/\b(1st|first)\s*(quarter|qtr|period)\b|\bq1\b|\bquarter\s*1\b|\b1q\b/.test(blob)) return 1;
+  if (/\b(2nd|second)\s*(quarter|qtr|period)\b|\bq2\b|\bquarter\s*2\b|\b2q\b/.test(blob)) return 2;
+  if (/\b(3rd|third)\s*(quarter|qtr|period)\b|\bq3\b|\bquarter\s*3\b|\b3q\b/.test(blob)) return 3;
+  if (/\b(4th|fourth)\s*(quarter|qtr|period)\b|\bq4\b|\bquarter\s*4\b|\b4q\b/.test(blob)) return 4;
+  return null;
 }
 
 function canonicalPlayerStat(canonical: string | undefined): string | null {
@@ -428,6 +449,13 @@ export function pulseBooksByStat(game: PulseNblGame, player: string): Record<str
     const rows = pulseBooksForPlayer(game, player, stat);
     if (rows.length) out[stat] = rows;
   }
+  for (const parent of NBL_QUARTER_PARENT_STATS) {
+    for (const n of [1, 2, 3, 4] as const) {
+      const key = nblPlayerQuarterStatKey(parent, n);
+      const rows = pulseBooksForPlayer(game, player, key);
+      if (rows.length) out[key] = rows;
+    }
+  }
   return out;
 }
 
@@ -445,7 +473,14 @@ export function pulseBooksForPlayer(game: PulseNblGame, player: string, stat: st
         twoWay,
         market.marketId
       );
-      if (!parsed || parsed.stat !== stat) continue;
+      if (!parsed) continue;
+      const quarter = quarterIndexFromMarket(market);
+      const requestedQuarter = parseNblPlayerQuarterStat(stat);
+      if (requestedQuarter) {
+        if (quarter !== requestedQuarter.n || parsed.stat !== requestedQuarter.parent) continue;
+      } else if (quarter != null || parsed.stat !== stat) {
+        continue;
+      }
       if (parsed.stat === 'points' && typeof market.line === 'number' && market.line > 80) continue;
       for (const sel of market.selections || []) {
         if (sel.isActive === false) continue;

@@ -12,6 +12,8 @@ import {
 export const NBL_STE_STAT_KEYS = [
   'pts',
   'reb',
+  'oreb',
+  'dreb',
   'ast',
   'fg_pct',
   'fg3_pct',
@@ -24,6 +26,8 @@ export type NblSteStatKey = (typeof NBL_STE_STAT_KEYS)[number];
 export const NBL_STE_STAT_LABELS: Record<NblSteStatKey, string> = {
   pts: 'Points',
   reb: 'Rebounds',
+  oreb: 'O-Boards',
+  dreb: 'D-Boards',
   ast: 'Assists',
   fg_pct: 'Field Goal %',
   fg3_pct: '3-Point %',
@@ -71,6 +75,10 @@ export function nblSteMatchupSideLabels(statKey: NblSteStatKey): {
       return { team: 'Scores', opponent: 'Concedes' };
     case 'reb':
       return { team: 'Grabs', opponent: 'Allows' };
+    case 'oreb':
+      return { team: 'O-Boards', opponent: 'Allows' };
+    case 'dreb':
+      return { team: 'D-Boards', opponent: 'Allows' };
     case 'ast':
       return { team: 'Dishes', opponent: 'Allows' };
     case 'fg_pct':

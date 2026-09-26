@@ -51,7 +51,6 @@ import {
   resolveNblClubName,
 } from '@/lib/nblTeamCanonical';
 import { defaultNblTeamStat, isNblTeamGameStat } from '@/lib/nbl/teamGameLogsShared';
-import { nblQuarterParentStat } from '@/lib/nbl/pbpShared';
 import {
   nblBookLines,
   nblExactLineOnBook,
@@ -1053,7 +1052,7 @@ export default function NblDashboardPage() {
   const nblOddsOpponent = nextGameOpponent
     ? resolveNblClubName(nextGameOpponent) || nextGameOpponent
     : null;
-  const nblOddsStat = nblQuarterParentStat(mainChartStat) ?? mainChartStat;
+  const nblOddsStat = mainChartStat;
   const nblOddsMarket = nblOddsMarketForStat(nblPropsMode, nblOddsStat);
   const nblDisplayOddsBooks =
     nblPropsMode === 'player' ? nblPlayerOddsByStat[nblOddsStat] ?? EMPTY_NBL_ODDS_BOOKS : nblOddsBooks;

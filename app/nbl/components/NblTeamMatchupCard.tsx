@@ -88,7 +88,7 @@ export default function NblTeamMatchupCard({
 
   const rows = useMemo(() => {
     if (!payload?.forMetrics || !payload?.metrics) return [];
-    return NBL_STE_STAT_KEYS.map((key) => {
+    return NBL_STE_STAT_KEYS.filter((key) => key !== 'oreb' && key !== 'dreb').map((key) => {
       const forEntry = payload.forMetrics[key];
       const allowedEntry = payload.metrics[key];
       const sideLabels = nblSteMatchupSideLabels(key);
