@@ -4,130 +4,130 @@
   "years": [
     2026
   ],
-  "gamesUsed": 2,
+  "gamesUsed": 3,
   "fixturesFetched": 0,
-  "fixturesCached": 2,
-  "shotCount": 136,
+  "fixturesCached": 3,
+  "shotCount": 201,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 33,
-      "fgm": 22,
-      "fgPct": 66.66666666666666,
-      "share": 24.264705882352942
+      "fga": 57,
+      "fgm": 43,
+      "fgPct": 75.43859649122807,
+      "share": 28.35820895522388
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 31,
-      "fgm": 19,
-      "fgPct": 61.29032258064516,
-      "share": 22.794117647058822
+      "fga": 46,
+      "fgm": 26,
+      "fgPct": 56.52173913043478,
+      "share": 22.885572139303484
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 17,
+      "fga": 19,
       "fgm": 7,
-      "fgPct": 41.17647058823529,
-      "share": 12.5
+      "fgPct": 36.84210526315789,
+      "share": 9.45273631840796
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 15,
-      "fgm": 6,
-      "fgPct": 40,
-      "share": 11.029411764705882
+      "fga": 20,
+      "fgm": 7,
+      "fgPct": 35,
+      "share": 9.950248756218906
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 12,
-      "fgm": 7,
-      "fgPct": 58.333333333333336,
-      "share": 8.823529411764707
+      "fga": 19,
+      "fgm": 11,
+      "fgPct": 57.89473684210527,
+      "share": 9.45273631840796
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 28,
-      "fgm": 7,
+      "fga": 40,
+      "fgm": 10,
       "fgPct": 25,
-      "share": 20.588235294117645
+      "share": 19.900497512437813
     }
   ],
   "ranks": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 33,
-      "fgm": 22,
-      "fgPct": 66.66666666666666,
-      "share": 24.264705882352942,
-      "rank": 5,
+      "fga": 57,
+      "fgm": 43,
+      "fgPct": 75.43859649122807,
+      "share": 28.35820895522388,
+      "rank": 9,
       "teamsCompared": 10
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 31,
-      "fgm": 19,
-      "fgPct": 61.29032258064516,
-      "share": 22.794117647058822,
+      "fga": 46,
+      "fgm": 26,
+      "fgPct": 56.52173913043478,
+      "share": 22.885572139303484,
       "rank": 10,
       "teamsCompared": 10
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 17,
+      "fga": 19,
       "fgm": 7,
-      "fgPct": 41.17647058823529,
-      "share": 12.5,
-      "rank": 5,
+      "fgPct": 36.84210526315789,
+      "share": 9.45273631840796,
+      "rank": 4,
       "teamsCompared": 10
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 15,
-      "fgm": 6,
-      "fgPct": 40,
-      "share": 11.029411764705882,
+      "fga": 20,
+      "fgm": 7,
+      "fgPct": 35,
+      "share": 9.950248756218906,
       "rank": 5,
       "teamsCompared": 10
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 12,
-      "fgm": 7,
-      "fgPct": 58.333333333333336,
-      "share": 8.823529411764707,
+      "fga": 19,
+      "fgm": 11,
+      "fgPct": 57.89473684210527,
+      "share": 9.45273631840796,
       "rank": 10,
       "teamsCompared": 10
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 28,
-      "fgm": 7,
+      "fga": 40,
+      "fgm": 10,
       "fgPct": 25,
-      "share": 20.588235294117645,
+      "share": 19.900497512437813,
       "rank": 3,
       "teamsCompared": 10
     }
   ],
-  "pointsAllowed": 197,
+  "pointsAllowed": 290,
   "ftDefense": {
-    "ftm": 41,
-    "fta": 55,
-    "ftPct": 74.54545454545455,
-    "games": 2,
+    "ftm": 54,
+    "fta": 75,
+    "ftPct": 72,
+    "games": 3,
     "rank": 6,
     "teamsCompared": 10
   },
-  "generatedAt": "2026-09-25T17:56:23.843Z"
+  "generatedAt": "2026-09-26T17:05:10.789Z"
 }

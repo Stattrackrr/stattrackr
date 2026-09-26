@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-25T17:55:45.397Z",
+  "generatedAt": "2026-09-26T17:04:34.266Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2936,7 +2936,7 @@
       "externalId": "36f4ac8b-58ad-11f1-bf00-2942781e7154",
       "startTime": "2026-09-26T11:30:00.000Z",
       "round": "2",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Perth Wildcats",
       "homeTeamCode": "PER",
       "homeTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
@@ -2945,8 +2945,8 @@
       "awayTeamCode": "NZL",
       "awayTeamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "awayLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 97,
+      "awayScore": 93,
       "venue": "RAC Arena",
       "matchSlug": "perth-wildcats-v-nz-breakers-men-26-09-2026"
     },

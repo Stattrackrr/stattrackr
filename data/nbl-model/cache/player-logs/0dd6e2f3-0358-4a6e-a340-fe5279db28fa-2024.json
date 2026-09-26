@@ -5,7 +5,7 @@
   "teamCode": "TAS",
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-09-25T17:55:13.403Z",
+  "generatedAt": "2026-09-26T17:03:59.374Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 26,
   "games": [
@@ -21,7 +21,7 @@
       "teamCode": "TAS",
       "result": null,
       "venue": null,
-      "minutes": 15.583333,
+      "minutes": 15.566667,
       "points": 5,
       "rebounds": 1,
       "offensiveRebounds": 0,
