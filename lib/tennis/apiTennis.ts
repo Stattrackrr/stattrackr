@@ -239,58 +239,29 @@ export function apiTennisCachePath(): string {
   return path.join(apiTennisDir(), 'cache.json');
 }
 
-/** Pull one player's rows out of the compiled cache without building the full match list. */
+function diskPlayerIndex(): Map<string, TennisMatchRow[]> | null {
+  const runtime = apiRuntime();
+  const { cache, mtime } = readApiTennisDiskCache();
+  if (!cache?.matches?.length) return null;
+  if (runtime.playerIndex && runtime.playerIndexMtime === mtime) return runtime.playerIndex;
+  const index = new Map<string, TennisMatchRow[]>();
+  for (const row of cache.matches) {
+    const id = String(row?.playerId || '').trim();
+    if (!id) continue;
+    const bucket = index.get(id);
+    if (bucket) bucket.push(row);
+    else index.set(id, [row]);
+  }
+  runtime.playerIndex = index;
+  runtime.playerIndexMtime = mtime;
+  return index;
+}
+
+/** Pull one player's rows out of the compiled cache. The file is indexed once and reused for every player. */
 export function readApiTennisPlayerMatches(playerId: string): TennisMatchRow[] {
   const id = String(playerId || '').trim();
   if (!id) return [];
-  const file = apiTennisCachePath();
-  if (!fs.existsSync(file)) return [];
-  let raw = '';
-  try {
-    raw = fs.readFileSync(file, 'utf8');
-  } catch {
-    return [];
-  }
-  const needle = `"playerId":"${id}"`;
-  const rows: TennisMatchRow[] = [];
-  let from = 0;
-  while (from < raw.length) {
-    const at = raw.indexOf(needle, from);
-    if (at < 0) break;
-    let start = at;
-    while (start > 0 && raw[start] !== '{') start -= 1;
-    let depth = 0;
-    let inStr = false;
-    let end = start;
-    for (; end < raw.length; end += 1) {
-      const ch = raw[end];
-      if (inStr) {
-        if (ch === '\\') {
-          end += 1;
-          continue;
-        }
-        if (ch === '"') inStr = false;
-        continue;
-      }
-      if (ch === '"') inStr = true;
-      else if (ch === '{') depth += 1;
-      else if (ch === '}') {
-        depth -= 1;
-        if (depth === 0) {
-          end += 1;
-          break;
-        }
-      }
-    }
-    try {
-      const row = JSON.parse(raw.slice(start, end)) as TennisMatchRow;
-      if (String(row?.playerId || '') === id) rows.push(row);
-    } catch {
-      /* skip a malformed object */
-    }
-    from = Math.max(end, at + needle.length);
-  }
-  return rows;
+  return diskPlayerIndex()?.get(id) || [];
 }
 
 export function apiTennisRosterPath(): string {
@@ -811,6 +782,9 @@ type ApiRuntime = {
   surfacesMtime: number;
   overlayAt: string;
   overlayGetter: OverlayGetter;
+  /** Rows from the compiled cache, grouped once per process so every player can be backfilled. */
+  playerIndex: Map<string, TennisMatchRow[]> | null;
+  playerIndexMtime: number;
 };
 
 function apiRuntime(): ApiRuntime {
@@ -827,6 +801,8 @@ function apiRuntime(): ApiRuntime {
       surfacesMtime: 0,
       overlayAt: '',
       overlayGetter: () => null,
+      playerIndex: null,
+      playerIndexMtime: 0,
     };
   }
   return g.__tennisApi;
@@ -850,6 +826,8 @@ function readApiTennisDiskCache(): { cache: ApiTennisCache | null; mtime: number
     if (!parsed?.matches?.length) return { cache: null, mtime };
     runtime.file = parsed;
     runtime.diskMtime = mtime;
+    runtime.playerIndex = null;
+    runtime.playerIndexMtime = 0;
     runtime.merged = null;
     runtime.players = null;
     try {

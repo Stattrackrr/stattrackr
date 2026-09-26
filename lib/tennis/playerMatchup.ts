@@ -5,7 +5,7 @@
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
 import { readTennisPlayerLogsCacheMany, tennisComputedCacheKey } from '@/lib/tennis/dashboardCache';
-import { loadPlayerMatchesCached, loadTennisPlayersCached } from '@/lib/tennis/loadCached';
+import { loadPlayerMatchesCached, loadTennisPlayersCached, tennisLogsNeedHistory } from '@/lib/tennis/loadCached';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import {
   TENNIS_MATCHUP_STATS,
@@ -427,7 +427,7 @@ export async function buildTennisPlayerMatchupAsync(
   const logsById = await readTennisPlayerLogsCacheMany(ids);
   const thinIds = [resolvedPlayer.id, resolvedOpponent.id]
     .map((id) => String(id || '').trim())
-    .filter((id) => id && (logsById.get(id)?.length || 0) < 12);
+    .filter((id) => id && tennisLogsNeedHistory(logsById.get(id)));
   if (thinIds.length) {
     const filled = await Promise.all(
       thinIds.map((id) => loadPlayerMatchesCached({ playerId: id, tour }))

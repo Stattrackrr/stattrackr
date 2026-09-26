@@ -26,7 +26,7 @@ import {
   type TennisPlayer,
   type TennisTour,
 } from '@/lib/tennis/data';
-import { loadTennisPlayersCached } from '@/lib/tennis/loadCached';
+import { loadPlayerMatchesCached, loadTennisPlayersCached, tennisLogsNeedHistory } from '@/lib/tennis/loadCached';
 import { readTennisPlayerLogsCacheMany } from '@/lib/tennis/dashboardCache';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
@@ -434,7 +434,17 @@ export async function buildTennisSimilarPlayersAsync(opts: {
     return overlaySimilarFallback(empty, opts);
   }
 
-  const seedLogs = await readTennisPlayerLogsCacheMany([opponent.playerId, player.playerId]);
+  const seedIds = [opponent.playerId, player.playerId].filter(Boolean);
+  const seedLogs = await readTennisPlayerLogsCacheMany(seedIds);
+  const thinSeedIds = seedIds.filter((id) => tennisLogsNeedHistory(seedLogs.get(id)));
+  if (thinSeedIds.length) {
+    const filled = await Promise.all(
+      thinSeedIds.map((id) => loadPlayerMatchesCached({ playerId: id, tour }))
+    );
+    thinSeedIds.forEach((id, index) => {
+      if (filled[index]?.length) seedLogs.set(id, filled[index]);
+    });
+  }
   const opponentLogs = seedLogs.get(opponent.playerId) || [];
   const candidateIds = new Set<string>();
   for (const row of opponentLogs) {

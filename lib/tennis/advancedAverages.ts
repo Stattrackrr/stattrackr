@@ -25,7 +25,7 @@ import {
   type TennisTour,
 } from '@/lib/tennis/data';
 import { readTennisPlayerLogsCacheMany, readTennisRosterCache } from '@/lib/tennis/dashboardCache';
-import { loadPlayerMatchesCached } from '@/lib/tennis/loadCached';
+import { loadPlayerMatchesCached, tennisLogsNeedHistory } from '@/lib/tennis/loadCached';
 import { tennisHandForName } from '@/lib/tennis/hands';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
@@ -462,7 +462,7 @@ export async function buildTennisAdvancedAveragesCached(
     : null;
   const logIds = [playerRes.id, oppRes?.id].filter((id): id is string => Boolean(id));
   const logs = logIds.length ? await readTennisPlayerLogsCacheMany(logIds) : new Map();
-  const thinIds = logIds.filter((id) => (logs.get(id)?.length || 0) < 12);
+  const thinIds = logIds.filter((id) => tennisLogsNeedHistory(logs.get(id)));
   if (thinIds.length) {
     const filled = await Promise.all(
       thinIds.map((id) => loadPlayerMatchesCached({ playerId: id, tour }))

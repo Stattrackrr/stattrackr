@@ -7,6 +7,8 @@
 import sharedCache from '@/lib/sharedCache';
 import { hydrateTennisMatchOverlay, getHydratedTennisOverlay } from '@/lib/tennis/ingest';
 import { readTennisPlayerLogsCacheMany, readTennisRosterCache } from '@/lib/tennis/dashboardCache';
+import { loadPlayerMatchesCached, tennisLogsNeedHistory } from '@/lib/tennis/loadCached';
+import { upsertCombinedSnapshotTennisFromList } from '@/lib/combinedPropsSnapshotPaint';
 import { tennisMatchesPlayed } from '@/lib/tennis/chartStats';
 import { TENNIS_CURRENT_YEAR, loadPlayerMatches, loadTennisPlayers, tennisDvpProfile } from '@/lib/tennis/data';
 import {
@@ -717,6 +719,13 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
     const retry = await readTennisPlayerLogsCacheMany(listPlayerIds);
     retry.forEach((games, id) => redisLogs.set(id, games));
   }
+  const historyIds = listPlayerIds.filter((id) => tennisLogsNeedHistory(redisLogs.get(id)));
+  if (historyIds.length) {
+    const filled = await Promise.all(historyIds.map((id) => loadPlayerMatchesCached({ playerId: id })));
+    historyIds.forEach((id, index) => {
+      if (filled[index]?.length) redisLogs.set(id, filled[index]);
+    });
+  }
   const overlayReady = Boolean(getHydratedTennisOverlay()?.matches?.length);
 
   const matchesFor = (playerName: string, playerId: string | null): TennisMatchRow[] => {
@@ -1364,6 +1373,11 @@ async function loadTennisPlayerPropsList(refresh?: boolean): Promise<TennisPlaye
       payload = await applyTennisListLiveOverlay(payload);
       if (payload.data.length > 0) {
         await writeTennisPlayerPropsListCache(payload);
+        try {
+          await upsertCombinedSnapshotTennisFromList(payload);
+        } catch {
+          /* the tennis list is already saved */
+        }
         return payload;
       }
     }

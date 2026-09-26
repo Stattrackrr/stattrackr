@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts
 import { CHART_CONFIG } from '@/app/nba/research/dashboard/constants';
 import type { NblChartTimeframe } from '@/app/tennis/components/TennisStatsChart';
 import { TENNIS_STAT_LABELS, tennisDominanceRatio } from '@/lib/tennis/chartStats';
+import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
 function toNumericValue(v: unknown): number | null {
   if (v == null) return null;
@@ -91,23 +92,36 @@ export function defaultSupportingStatForMain(mainChartStat?: string): Supporting
   return supportingOptionsForMain(mainChartStat)[0]?.value ?? 'totalAces';
 }
 
-type BaseRow = { xKey: string; opponent: string; key: string; tickLabel: string; round: string; gameSeason?: number };
+type BaseRow = {
+  xKey: string;
+  opponent: string;
+  opponentId?: string | null;
+  key: string;
+  tickLabel: string;
+  round: string;
+  gameSeason?: number;
+};
 
 function applyTimeframe<T extends BaseRow>(
   baseData: T[],
   timeframe: NblChartTimeframe,
   _season?: number,
-  nextOpponent?: string | null
+  nextOpponent?: string | null,
+  nextOpponentId?: string | null
 ): T[] {
   if (!baseData.length) return [];
   if (timeframe === 'season2026') return baseData.filter((row) => row.gameSeason === 2026) as T[];
   if (timeframe === 'season2025') return baseData.filter((row) => row.gameSeason === 2025) as T[];
   if (timeframe === 'season2024') return baseData.filter((row) => row.gameSeason === 2024) as T[];
   if (timeframe === 'h2h') {
-    const targetOpponent = nextOpponent?.trim() || baseData[baseData.length - 1]?.opponent;
-    if (!targetOpponent) return baseData;
-    const h2h = baseData.filter((row) => row.opponent?.trim() === targetOpponent);
-    return (h2h.length ? h2h : baseData) as T[];
+    const targetOpponent = nextOpponent?.trim() || '';
+    const targetId = String(nextOpponentId || '').trim();
+    if (!targetOpponent && !targetId) return baseData;
+    return baseData.filter((row) => {
+      const rowId = String(row.opponentId || '').trim();
+      if (targetId && rowId && rowId === targetId) return true;
+      return targetOpponent ? tennisIdentityMatch(row.opponent, targetOpponent) : false;
+    }) as T[];
   }
   const lastN = parseInt(timeframe.replace('last', ''), 10);
   if (Number.isFinite(lastN) && lastN > 0) return baseData.slice(-lastN) as T[];
@@ -158,6 +172,7 @@ interface TennisSupportingStatsProps {
   timeframe: NblChartTimeframe;
   season?: number;
   nextOpponent?: string | null;
+  nextOpponentId?: string | null;
   mainChartStat?: string;
   supportingStatKind: SupportingStatKind;
   onSupportingStatKindChange: (kind: SupportingStatKind) => void;
@@ -170,6 +185,7 @@ export function TennisSupportingStats({
   timeframe,
   season = 2026,
   nextOpponent = null,
+  nextOpponentId = null,
   mainChartStat,
   supportingStatKind,
   onSupportingStatKindChange,
@@ -206,6 +222,7 @@ export function TennisSupportingStats({
         tickLabel: opponent,
         round: String(g.round ?? ''),
         opponent,
+        opponentId: String(g.opponentId ?? '').trim() || null,
         value: stats[supportingStatKind],
         isPercent: PCT_KINDS.has(supportingStatKind),
         gameDate: String(g.date ?? ''),
@@ -216,21 +233,21 @@ export function TennisSupportingStats({
   }, [gameLogs, supportingStatKind, season]);
 
   const chartData = useMemo(() => {
-    const data = applyTimeframe(baseData, timeframe, season, nextOpponent);
+    const data = applyTimeframe(baseData, timeframe, season, nextOpponent, nextOpponentId);
     return data.map((row, idx) => ({
       key: `supporting-${idx}`,
       xKey: `supporting-${idx}`,
       value: row.value,
       isPercent: row.isPercent,
     }));
-  }, [baseData, timeframe, season, nextOpponent]);
+  }, [baseData, timeframe, season, nextOpponent, nextOpponentId]);
 
   const averagesByStat = useMemo(() => {
     const empty = Object.fromEntries(ALL_TOGGLE_OPTIONS.map((o) => [o.value, null])) as Record<
       SupportingStatKind,
       number | null
     >;
-    const windowed = applyTimeframe(baseData, timeframe, season, nextOpponent);
+    const windowed = applyTimeframe(baseData, timeframe, season, nextOpponent, nextOpponentId);
     if (!windowed.length) return empty;
     const avg = (key: SupportingStatKind) => {
       const values = windowed
@@ -245,7 +262,7 @@ export function TennisSupportingStats({
     const next = { ...empty };
     for (const opt of supportingOptions) next[opt.value] = avg(opt.value);
     return next;
-  }, [baseData, timeframe, season, nextOpponent, supportingOptions]);
+  }, [baseData, timeframe, season, nextOpponent, nextOpponentId, supportingOptions]);
 
   const isPercent = PCT_KINDS.has(supportingStatKind);
   const yDomain = useMemo(() => {

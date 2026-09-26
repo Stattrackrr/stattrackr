@@ -14,6 +14,7 @@ import {
   type TennisOppRankFilter,
 } from '@/lib/tennis/advancedAveragesShared';
 import { tennisDashboardFetch } from '@/lib/tennisDashboardFetch';
+import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
 type NblAdvancedFilterKey =
   | 'dvp_rank'
@@ -723,6 +724,8 @@ interface NblStatsChartProps {
   externalLineValue?: number | null;
   /** Upcoming opponent (official name). When H2H is selected, chart shows only games vs this opponent. */
   nextOpponent?: string | null;
+  /** Tennis player id for that opponent. H2H matches this before the display name. */
+  nextOpponentId?: string | null;
   /** In team (game props) mode, chart is for this team vs various opponents. Used for Team dropdown + H2H. */
   gamePropsTeam?: string | null;
   /** Increment/change to force-close chart UI controls (splits/advanced) on context changes. */
@@ -762,6 +765,7 @@ export function TennisStatsChart({
   slotRightOfControls = null,
   externalLineValue = null,
   nextOpponent = null,
+  nextOpponentId = null,
   gamePropsTeam = null,
   uiResetToken,
   tour = null,
@@ -1138,6 +1142,7 @@ export function TennisStatsChart({
       tickLabel: tennisOpponentCode(opponent),
       round,
       opponent,
+      opponentId: String(g.opponentId ?? '').trim() || null,
       opponentRank: chartOpponentRank(g.opponentRank),
       opponentIoc: String(g.opponentIoc || '').trim() || null,
       result,
@@ -1193,14 +1198,15 @@ export function TennisStatsChart({
     } else if (selectedTimeframe === 'h2h') {
       // Use upcoming opponent when provided; otherwise fall back to last game's opponent
       const targetOpponent = nextOpponent?.trim() || baseChartData[baseChartData.length - 1]?.opponent;
-      if (!targetOpponent) data = baseChartData;
+      const targetId = String(nextOpponentId || '').trim();
+      if (!targetOpponent && !targetId) data = baseChartData;
       else {
-        const resolveOpp = (opp: string | undefined) => (opp ? opp.trim() : '');
-        const targetOfficial = resolveOpp(targetOpponent);
         const h2hData = baseChartData.filter((row) => {
+          const rowId = String((row as { opponentId?: string | null }).opponentId || '').trim();
+          if (targetId && rowId && rowId === targetId) return true;
           const rowOpp = row.opponent;
-          if (!rowOpp || typeof rowOpp !== 'string') return false;
-          return resolveOpp(rowOpp) === targetOfficial || rowOpp.trim() === targetOpponent;
+          if (!rowOpp || typeof rowOpp !== 'string' || !targetOpponent) return false;
+          return tennisIdentityMatch(rowOpp, targetOpponent);
         });
         // When no H2H games, show empty so we can display "No recent H2H found" instead of falling back to all games
         data = h2hData;
@@ -1237,7 +1243,7 @@ export function TennisStatsChart({
       return 0;
     });
     return ordered;
-  }, [baseChartData, selectedTimeframe, season, nextOpponent, filteredGameLogs, gameToChartRow, effectiveSeason]);
+  }, [baseChartData, selectedTimeframe, season, nextOpponent, nextOpponentId, filteredGameLogs, gameToChartRow, effectiveSeason]);
 
   const secondAxisData = useMemo(() => {
     if (!showAdvancedFilters || !selectedAdvancedFilter) return null;

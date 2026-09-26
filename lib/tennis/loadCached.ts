@@ -18,12 +18,49 @@ import {
 } from '@/lib/tennis/data';
 import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
 import { readApiTennisPlayerMatches } from '@/lib/tennis/apiTennis';
+import { TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
 type TennisRosterStandings = {
   ATP?: TennisRankingRow[];
   WTA?: TennisRankingRow[];
 };
+
+function matchYear(row: TennisMatchRow): number {
+  const season = Number(row.season);
+  if (Number.isFinite(season) && season > 1900) return season;
+  const fromDate = Number(String(row.date || '').slice(0, 4));
+  return Number.isFinite(fromDate) ? fromDate : 0;
+}
+
+/** Redis shards are often seeded from the live ingest window, so they can be a full recent season and still omit 2024–2025. */
+function coversHistoryYears(games: TennisMatchRow[]): boolean {
+  const years = new Set(games.map(matchYear).filter((year) => year > 0));
+  return TENNIS_HISTORY_YEARS.every((year) => years.has(year));
+}
+
+/** A short or current-season-only log still needs the compiled history, for every player. */
+export function tennisLogsNeedHistory(games: readonly TennisMatchRow[] | null | undefined): boolean {
+  if (!games?.length || games.length < 12) return true;
+  return !coversHistoryYears(games as TennisMatchRow[]);
+}
+
+function mergeMatchRows(primary: TennisMatchRow[], overlay: TennisMatchRow[]): TennisMatchRow[] {
+  const byId = new Map<string, TennisMatchRow>();
+  const extras: TennisMatchRow[] = [];
+  const take = (row: TennisMatchRow | null | undefined) => {
+    if (!row) return;
+    const id = String(row.matchId || '').trim();
+    if (!id) {
+      extras.push(row);
+      return;
+    }
+    byId.set(id, row);
+  };
+  for (const row of primary) take(row);
+  for (const row of overlay) take(row);
+  return [...byId.values(), ...extras].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+}
 
 function filterCurrent(players: TennisPlayer[], standings: TennisRosterStandings | undefined): TennisPlayer[] {
   const ranked = new Set<string>();
@@ -77,28 +114,21 @@ export async function loadPlayerMatchesCached(opts: {
   }
   if (playerId) {
     const cached = await readTennisPlayerLogsCache(playerId);
-    const cachedGames = cached?.games || [];
-    // A short Redis log is often just the last fixture window. The compiled
-    // cache holds the season, so merge it in when it has more matches.
-    if (cachedGames.length < 12) {
+    let cachedGames = cached?.games || [];
+    const needsHistory =
+      !cached?.historyBackfilled && (cachedGames.length < 12 || !coversHistoryYears(cachedGames));
+    if (needsHistory) {
       const fromDisk = readApiTennisPlayerMatches(playerId);
-      if (fromDisk.length > cachedGames.length) {
-        const byId = new Map<string, TennisMatchRow>();
-        for (const row of [...fromDisk, ...cachedGames]) {
-          if (row?.matchId) byId.set(row.matchId, row);
-        }
-        const games = [...byId.values()].sort((a, b) =>
-          String(a.date || '').localeCompare(String(b.date || ''))
-        );
-        void writeTennisPlayerLogsCache({
-          fetchedAt: new Date().toISOString(),
-          playerId,
-          playerName: games[0]?.playerName || cached?.playerName || String(opts.playerName || playerId),
-          tour: opts.tour || games[0]?.tour || cached?.tour || null,
-          games,
-        });
-        return opts.tour ? games.filter((row) => row.tour === opts.tour) : games;
-      }
+      const games = fromDisk.length ? mergeMatchRows(fromDisk, cachedGames) : cachedGames;
+      const written = await writeTennisPlayerLogsCache({
+        fetchedAt: new Date().toISOString(),
+        playerId,
+        playerName: games[0]?.playerName || cached?.playerName || String(opts.playerName || playerId),
+        tour: opts.tour || games[0]?.tour || cached?.tour || null,
+        games,
+        historyBackfilled: true,
+      });
+      cachedGames = written?.games?.length ? written.games : games;
     }
     if (cachedGames.length) {
       return opts.tour ? cachedGames.filter((row) => row.tour === opts.tour) : cachedGames;

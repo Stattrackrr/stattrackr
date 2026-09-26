@@ -1357,8 +1357,8 @@ function normalizeNbaTeam(team: string): string {
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v6';
 const NBL_PROPS_CACHE_KEY = 'nbl_props_list_cache_v12';
 
-const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v18';
-const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v23';
+const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v19';
+const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v24';
 
 
 function aflPropHasHistoricalStats(row: {
@@ -2067,9 +2067,9 @@ function writeNblOuOnlyFilter(on: boolean) {
     /* ignore quota / private mode */
   }
 }
-const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v18';
-const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v16';
-const COMBINED_PROPS_LS_TS_KEY = 'combined_props_snapshot_ls_ts_v14';
+const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v19';
+const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v17';
+const COMBINED_PROPS_LS_TS_KEY = 'combined_props_snapshot_ls_ts_v15';
 const COMBINED_PROPS_LS_TTL_MS = 30 * 60 * 1000;
 
 type CombinedSnapshotBrowserCache = CombinedPropsSnapshotResponse & {

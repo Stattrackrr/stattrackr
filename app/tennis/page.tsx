@@ -143,7 +143,7 @@ function TennisAbbrevFlag({
   );
 }
 const NBL_PAGE_STATE_KEY = 'tennisPageState:v4';
-const NBL_PLAYER_LOGS_CACHE_PREFIX = 'tennisPlayerLogsCache:v8';
+const NBL_PLAYER_LOGS_CACHE_PREFIX = 'tennisPlayerLogsCache:v9';
 const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes; network always revalidates
 const TENNIS_NEXT_GAME_CLIENT_TTL_MS = 1000 * 90;
 const TENNIS_NEXT_GAME_POLL_MS = 60_000;
@@ -1519,6 +1519,8 @@ export default function TennisDashboardPage() {
   const displayOpponent = fromUpcoming || tennisUrlOpponentValue(propsOpponentFallback);
   const showUpcomingNA = Boolean(selectedPlayer) && upcomingReady && !displayOpponent;
   const statsOpponent = displayOpponent || lastCompletedOpponent;
+  const statsOpponentId =
+    String((upcomingReady && nextGameOpponentId) || propsOpponentIdFallback || '').trim() || null;
   const upcomingIsGrandSlam = Boolean(displayOpponent && nextGameIsGrandSlam);
   const headerTitle = selectedPlayer?.name || 'Select a Player';
   const headerTourLabel = displayOpponent
@@ -1889,6 +1891,7 @@ export default function TennisDashboardPage() {
                     setNblGameFilters={nblPropsMode === 'player' ? setNblGameFilters : undefined}
                     perGameFilterData={null}
                     nextOpponent={statsOpponent}
+                    nextOpponentId={statsOpponentId}
                     gamePropsTeam={nblPropsMode === 'team' ? selectedTeam : null}
                     uiResetToken={chartUiResetToken}
                     tour={dvpTour}
@@ -1973,6 +1976,7 @@ export default function TennisDashboardPage() {
                           timeframe={chartTimeframe}
                           season={TENNIS_CURRENT_YEAR}
                           nextOpponent={statsOpponent}
+                          nextOpponentId={statsOpponentId}
                           mainChartStat={mainChartStat}
                           supportingStatKind={supportingStatKind}
                           onSupportingStatKindChange={setSupportingStatKind}

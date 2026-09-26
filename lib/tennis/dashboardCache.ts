@@ -17,7 +17,8 @@ const LOGS_TTL_SECONDS = 60 * 60 * 24 * 90;
 const COMPUTED_TTL_SECONDS = 6 * 60 * 60;
 const MARK_TTL_SECONDS = 60 * 60 * 24 * 40;
 const MAX_ROSTER_PLAYERS = 2000;
-const MAX_GAMES_PER_PLAYER = 80;
+/** Three seasons of a full schedule. The byte cap below still shrinks a shard that will not fit. */
+const MAX_GAMES_PER_PLAYER = 400;
 const MAX_VALUE_BYTES = 2 * 1024 * 1024;
 
 export type TennisRosterCache = {
@@ -32,6 +33,8 @@ export type TennisPlayerLogsCache = {
   playerName: string;
   tour: TennisTour | null;
   games: TennisMatchRow[];
+  /** Disk history was already merged, so a later read does not scan the compiled cache again. */
+  historyBackfilled?: boolean;
 };
 
 function playerLogsKey(playerId: string): string {
@@ -146,6 +149,7 @@ export async function readTennisPlayerLogsCacheMany(
       playerName: rows[i]?.playerName || id,
       tour: rows[i]?.tour || null,
       games,
+      historyBackfilled: rows[i]?.historyBackfilled,
     });
     out.set(id, games);
   });
@@ -180,11 +184,14 @@ function fitPlayerLogsPayload(payload: TennisPlayerLogsCache): TennisPlayerLogsC
   return next;
 }
 
-export async function writeTennisPlayerLogsCache(payload: TennisPlayerLogsCache): Promise<void> {
+export async function writeTennisPlayerLogsCache(
+  payload: TennisPlayerLogsCache
+): Promise<TennisPlayerLogsCache | null> {
   const next = fitPlayerLogsPayload(payload);
-  if (!next) return;
+  if (!next) return null;
   rememberPlayerLogs(next);
   await sharedCache.setJSON(playerLogsKey(next.playerId), next, LOGS_TTL_SECONDS);
+  return next;
 }
 
 async function writeTennisPlayerLogsCacheMany(payloads: TennisPlayerLogsCache[]): Promise<number> {
@@ -396,6 +403,7 @@ export async function mergeTennisPlayerLogsIncremental(
         playerName: incoming[0]?.playerName || prevGames[0]?.playerName || playerId,
         tour: incoming[0]?.tour || prevGames[0]?.tour || null,
         games: merged.games,
+        historyBackfilled: memoryPlayerLogs(playerId)?.historyBackfilled,
       });
     }
   }
