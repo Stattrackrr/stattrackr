@@ -4,7 +4,7 @@
   "homeTeam": "Perth Wildcats",
   "awayTeam": "New Zealand Breakers",
   "commenceTime": "2026-09-26T11:30:00.000Z",
-  "capturedAt": "2026-09-25T21:42:00.267Z",
+  "capturedAt": "2026-09-26T00:42:26.778Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -24,7 +24,7 @@
     "BetMGM",
     "Bwin"
   ],
-  "lineCount": 1464,
+  "lineCount": 1471,
   "lines": [
     {
       "player": "Anthony Dell'Orso",
@@ -19056,6 +19056,97 @@
       "over": "+480",
       "under": "N/A",
       "overDecimal": 5.8,
+      "underDecimal": null
+    },
+    {
+      "player": "Dejan Vasiljevic",
+      "playerKey": "dejan vasiljevic",
+      "book": "Bet Right",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+290",
+      "under": "N/A",
+      "overDecimal": 3.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Dejan Vasiljevic",
+      "playerKey": "dejan vasiljevic",
+      "book": "Betr",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+280",
+      "under": "N/A",
+      "overDecimal": 3.8,
+      "underDecimal": null
+    },
+    {
+      "player": "Dejan Vasiljevic",
+      "playerKey": "dejan vasiljevic",
+      "book": "Cloudbet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+275",
+      "under": "N/A",
+      "overDecimal": 3.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Dejan Vasiljevic",
+      "playerKey": "dejan vasiljevic",
+      "book": "Picklebet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+290",
+      "under": "N/A",
+      "overDecimal": 3.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Dejan Vasiljevic",
+      "playerKey": "dejan vasiljevic",
+      "book": "PlayUp",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+290",
+      "under": "N/A",
+      "overDecimal": 3.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Elijah Pepper",
+      "playerKey": "elijah pepper",
+      "book": "Caesars",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-1449",
+      "under": "N/A",
+      "overDecimal": 1.069,
+      "underDecimal": null
+    },
+    {
+      "player": "Parker Jackson-Cartwright",
+      "playerKey": "parker jackson cartwright",
+      "book": "Bet365",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
       "underDecimal": null
     }
   ]
