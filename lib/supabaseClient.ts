@@ -23,8 +23,6 @@ const MAX_TAB_SESSIONS = 10
 const PERSISTENT_STORAGE_KEY = 'sb-auth-token'
 const SESSION_STORAGE_KEY = 'sb-session-token'
 const SIGNED_OUT_FLAG_KEY = 'stattrackr_signed_out'
-const AFL_PAGE_STATE_KEY = 'aflPageState:v1'
-const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:'
 
 type StorageAdapter = {
   getItem: (key: string) => string | null
@@ -38,76 +36,79 @@ function isQuotaExceededError(error: unknown): boolean {
   return maybeDom.name === 'QuotaExceededError' || maybeDom.code === 22 || maybeDom.code === 1014
 }
 
-function bestEffortPruneForAuthWrite(currentNamespace: string, aggressive = false) {
-  if (!isBrowser) return
+const PREFERENCE_KEYS = new Set([
+  'theme',
+  'oddsFormat',
+  SIGNED_OUT_FLAG_KEY,
+  'stattrackr_remember_me',
+  'stattrackr_google_login',
+  'stattrackr_login_redirect',
+  TAB_NAMESPACE_LIST_KEY,
+])
 
-  // First remove auth/session remnants from other tabs.
+function isProtectedLocalKey(key: string, namespace: string, targetKey: string): boolean {
+  if (key === targetKey) return true
+  if (PREFERENCE_KEYS.has(key)) return true
+  if (key.startsWith(`${namespace}:`)) return true
+  return false
+}
+
+function localStorageEntriesBySize(namespace: string, targetKey: string): Array<{ key: string; size: number }> {
+  const entries: Array<{ key: string; size: number }> = []
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i)
+    if (!key || isProtectedLocalKey(key, namespace, targetKey)) continue
+    const size = window.localStorage.getItem(key)?.length ?? 0
+    entries.push({ key, size })
+  }
+  entries.sort((a, b) => b.size - a.size)
+  return entries
+}
+
+function dropOtherTabSessions(currentNamespace: string) {
   const namespaces = getRegisteredNamespaces()
-  const stale = namespaces.filter((ns) => ns && ns !== currentNamespace)
-  for (const ns of stale) {
-    cleanupNamespace(ns)
+  for (const ns of namespaces) {
+    if (ns && ns !== currentNamespace) cleanupNamespace(ns)
   }
   try {
     window.localStorage.setItem(TAB_NAMESPACE_LIST_KEY, JSON.stringify([currentNamespace]))
   } catch {
     // ignore
   }
-
-  // Then remove the largest non-critical local AFL caches.
-  const keysToRemove: string[] = []
-  for (let i = 0; i < window.localStorage.length; i++) {
-    const key = window.localStorage.key(i)
-    if (!key) continue
-    if (key.startsWith(AFL_PLAYER_LOGS_CACHE_PREFIX) || key === AFL_PAGE_STATE_KEY) {
-      keysToRemove.push(key)
-    }
-  }
-  for (const key of keysToRemove) {
-    try {
-      window.localStorage.removeItem(key)
-    } catch {
-      // ignore
-    }
-  }
-
-  // Last-resort fallback: clear session-style UI cache keys if still full.
-  if (aggressive) {
-    const extraPrefixes = ['nba_filters_', 'journal-']
-    const extraKeys: string[] = []
-    for (let i = 0; i < window.localStorage.length; i++) {
-      const key = window.localStorage.key(i)
-      if (!key) continue
-      if (extraPrefixes.some((prefix) => key.startsWith(prefix))) extraKeys.push(key)
-    }
-    for (const key of extraKeys) {
-      try {
-        window.localStorage.removeItem(key)
-      } catch {
-        // ignore
-      }
-    }
-  }
 }
 
 function setLocalStorageWithQuotaRecovery(namespace: string, key: string, value: string) {
   const targetKey = `${namespace}:${key}`
+  const write = () => window.localStorage.setItem(targetKey, value)
   try {
-    window.localStorage.setItem(targetKey, value)
+    write()
     return
   } catch (error) {
     if (!isQuotaExceededError(error)) throw error
   }
 
-  bestEffortPruneForAuthWrite(namespace, false)
+  dropOtherTabSessions(namespace)
   try {
-    window.localStorage.setItem(targetKey, value)
+    write()
     return
   } catch (error) {
     if (!isQuotaExceededError(error)) throw error
   }
 
-  bestEffortPruneForAuthWrite(namespace, true)
-  window.localStorage.setItem(targetKey, value)
+  // Props and player-log caches are disposable. Drop the largest first until the session fits.
+  for (const entry of localStorageEntriesBySize(namespace, targetKey)) {
+    try {
+      window.localStorage.removeItem(entry.key)
+    } catch {
+      // ignore
+    }
+    try {
+      write()
+      return
+    } catch (error) {
+      if (!isQuotaExceededError(error)) throw error
+    }
+  }
 }
 
 const isSignedOutFlagSet = (): boolean => {
