@@ -52,7 +52,7 @@ export {
   parseNblPlayTypeStat,
 } from '@/lib/nbl/playTypesShared';
 
-const TAG_SCHEMA = 'v7';
+const TAG_SCHEMA = 'v8';
 const MIN_GAMES_FOR_TAG = 8;
 const MIN_AVG_MINUTES_FOR_TAG = 15;
 const MIN_GAME_MINUTES = 10;
@@ -354,21 +354,24 @@ function teamCodeForPlayer(p: PlayerFeatures): string {
 
 /**
  * Per team: highest on-court USG among handlers is Primary BH, 2nd is Second BH.
- * Everyone else is tagged from shot profile (3PT / interior / stretch / slasher).
+ * A club that has played fewer games than the league floor still gets those two
+ * roles from the games it has played. Everyone else is tagged from shot profile.
  */
 function assignPlayTypes(features: PlayerFeatures[], minGames: number): TaggedPlayer[] {
   const typeById = new Map<string, NblPlayTypeId>();
   const byTeam = new Map<string, PlayerFeatures[]>();
   for (const p of features) {
-    if (!isQualifiedForMatrix(p, minGames)) continue;
+    if (p.gamesUsed < 1 || p.minutes < MIN_AVG_MINUTES_FOR_TAG) continue;
     const code = teamCodeForPlayer(p);
     const list = byTeam.get(code) || [];
     list.push(p);
     byTeam.set(code, list);
   }
   for (const group of byTeam.values()) {
+    const teamGames = group.reduce((max, p) => Math.max(max, p.gamesUsed), 0);
+    const roleMin = Math.max(1, Math.min(minGames, teamGames));
     const handlers = group
-      .filter(isBallHandlerCandidate)
+      .filter((p) => p.gamesUsed >= roleMin && isBallHandlerCandidate(p))
       .sort((a, b) => {
         const usgA = a.usgPct ?? 0;
         const usgB = b.usgPct ?? 0;
