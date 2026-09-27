@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
-import { CHAT_UNDER_MAINTENANCE, JOURNAL_ENABLED, NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
+import { AFL_PUBLIC_ENABLED, CHAT_UNDER_MAINTENANCE, JOURNAL_ENABLED, NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
@@ -309,7 +309,17 @@ export default function LeftSidebar({
             comingSoonText: NBA_OFFSEASON_SIDEBAR_LABEL,
           },
         ]),
-    { name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" /> },
+    ...(AFL_PUBLIC_ENABLED
+      ? [{ name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" /> }]
+      : [
+          {
+            name: "AFL",
+            href: "/props?sport=all",
+            logo: <SportLogo sport="afl" />,
+            comingSoon: true,
+            comingSoonText: NBA_OFFSEASON_SIDEBAR_LABEL,
+          },
+        ]),
     {
       name: "NBL",
       href: "/props?sport=nbl",

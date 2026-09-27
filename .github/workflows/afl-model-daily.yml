@@ -1,9 +1,10 @@
 name: AFL Model Daily
 
 on:
-  schedule:
-    # 11:00 UTC = 9:00 PM AEST (UTC+10)
-    - cron: "0 11 * * *"
+  # Paused for the AFL off-season. Uncomment the schedule to resume.
+  # schedule:
+  #   # 11:00 UTC = 9:00 PM AEST (UTC+10)
+  #   - cron: "0 11 * * *"
   workflow_dispatch:
 
 concurrency:

@@ -1,9 +1,10 @@
 name: AFL Top Picks Enrich
 
 on:
-  schedule:
-    # Hourly on Thu–Mon (Brisbane) so completed games get actualDisposals without waiting on odds refresh.
-    - cron: "15 * * * 0,1,4,5,6"
+  # Paused for the AFL off-season. Uncomment the schedule to resume.
+  # schedule:
+  #   # Hourly on Thu–Mon (Brisbane) so completed games get actualDisposals without waiting on odds refresh.
+  #   - cron: "15 * * * 0,1,4,5,6"
   workflow_dispatch:
 
 concurrency:

@@ -5,8 +5,9 @@
 name: AFL Process Stats
 
 on:
-  schedule:
-    - cron: '0 */2 * * *'  # Every 2 hours
+  # Paused for the AFL off-season. Uncomment the schedule to resume.
+  # schedule:
+  #   - cron: '0 */2 * * *'  # Every 2 hours
   workflow_dispatch:
     inputs:
       warm_limit:

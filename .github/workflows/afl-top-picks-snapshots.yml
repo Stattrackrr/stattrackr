@@ -1,9 +1,10 @@
 name: AFL Top Picks Snapshots
 
 on:
-  schedule:
-    # Every 30 minutes on Thu/Fri/Sat/Sun/Mon so games are finalized inside the 2h pre-bounce window.
-    - cron: "*/30 * * * 0,1,4,5,6"
+  # Paused for the AFL off-season. Uncomment the schedule to resume.
+  # schedule:
+  #   # Every 30 minutes on Thu/Fri/Sat/Sun/Mon so games are finalized inside the 2h pre-bounce window.
+  #   - cron: "*/30 * * * 0,1,4,5,6"
   workflow_dispatch:
     inputs:
       window_hours:

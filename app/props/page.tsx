@@ -66,6 +66,7 @@ import {
   propsSportFromTennisTour,
   secondaryListSportForMode,
   NBA_PUBLIC_ENABLED,
+  AFL_PUBLIC_ENABLED,
   NBL_PUBLIC_ENABLED,
   TENNIS_PUBLIC_ENABLED,
   propsPathForSport,
@@ -6221,13 +6222,15 @@ export default function NBALandingPage() {
     };
     const assemble = (ignoreSearch: boolean) => [
       ...mapWithSport(playerProps, 'nba', ignoreSearch),
-      ...mapWithSport(
-        aflProps.filter(
-          (prop) => isAflCommenceTimePropsEligible(prop.gameDate) && isAflCombinedListProp(prop)
-        ),
-        'afl',
-        ignoreSearch
-      ),
+      ...(AFL_PUBLIC_ENABLED
+        ? mapWithSport(
+            aflProps.filter(
+              (prop) => isAflCommenceTimePropsEligible(prop.gameDate) && isAflCombinedListProp(prop)
+            ),
+            'afl',
+            ignoreSearch
+          )
+        : []),
       ...(TENNIS_PUBLIC_ENABLED
         ? [
             ...mapWithSport(
@@ -7309,6 +7312,9 @@ export default function NBALandingPage() {
     if (!NBA_PUBLIC_ENABLED && nextMode === 'nba') {
       nextMode = 'combined';
     }
+    if (!AFL_PUBLIC_ENABLED && nextMode === 'afl') {
+      nextMode = 'combined';
+    }
 
     if (!TENNIS_PUBLIC_ENABLED && isTennisPropsSport(nextMode)) {
       nextMode = 'combined';
@@ -7819,7 +7825,9 @@ export default function NBALandingPage() {
     const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const testCode = params?.get('test_event_code');
     const effectiveMode =
-      !NBA_PUBLIC_ENABLED && nextMode === 'nba' ? 'combined' : nextMode;
+      (!NBA_PUBLIC_ENABLED && nextMode === 'nba') || (!AFL_PUBLIC_ENABLED && nextMode === 'afl')
+        ? 'combined'
+        : nextMode;
     const path = propsPathForSport(effectiveMode, testCode);
     router.replace(path, { scroll: false });
   }, [router, mergeNbaPropsWithStoredCalculatedStats, setSecondaryPropsFetchComplete, propsSport, aflProps, aflGames, aflLastUpdated, aflIngestMessage, playerProps, nblCombinedProps, applyCombinedSnapshot, persistCombinedSnapshotCaches, rememberSecondaryGameSelection, seedSecondaryGameSelection, applyRememberedGameSelection]);
@@ -8104,6 +8112,7 @@ export default function NBALandingPage() {
                   />
                 </button>
               )}
+              {AFL_PUBLIC_ENABLED && (
               <button
                 type="button"
                 onClick={() => toggleSportSelection('afl')}
@@ -8121,6 +8130,7 @@ export default function NBALandingPage() {
                   decoding="async"
                 />
               </button>
+              )}
               {NBL_PUBLIC_ENABLED && (
               <button
                 type="button"

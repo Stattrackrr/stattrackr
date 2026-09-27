@@ -85,6 +85,14 @@ export const NBA_PUBLIC_ENABLED =
 
 export const NBA_OFFSEASON_SIDEBAR_LABEL = 'Off-season';
 
+/** AFL season is finished. Set true to put AFL back on the props page and sidebar. */
+const AFL_PUBLIC_ENABLED_DEFAULT = false;
+
+export const AFL_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_AFL_ENABLED === 'true' ||
+  process.env.NEXT_PUBLIC_AFL_ENABLED === '1' ||
+  (process.env.NEXT_PUBLIC_AFL_ENABLED == null && AFL_PUBLIC_ENABLED_DEFAULT);
+
 const TENNIS_PUBLIC_ENABLED_DEFAULT = true;
 
 export const TENNIS_PUBLIC_ENABLED =
@@ -157,7 +165,7 @@ export function defaultPropsSport(): PropsSportMode {
 export function resolvePropsSportParam(sportParam: string | null): PropsSportMode {
   if (sportParam === 'world-cup' || sportParam === 'worldcup') return 'combined';
   if (sportParam === 'combined' || sportParam === 'all' || sportParam == null) return 'combined';
-  if (sportParam === 'afl') return 'afl';
+  if (sportParam === 'afl') return AFL_PUBLIC_ENABLED ? 'afl' : 'combined';
   if (sportParam === 'nbl') return 'nbl';
   if (sportParam === 'wta') return TENNIS_PUBLIC_ENABLED ? 'wta' : 'combined';
   if (sportParam === 'atp' || sportParam === 'tennis') return TENNIS_PUBLIC_ENABLED ? 'atp' : 'combined';

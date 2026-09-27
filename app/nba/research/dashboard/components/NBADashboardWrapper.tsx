@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
+import { AFL_PUBLIC_ENABLED, NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { NBADashboardContent } from '../page';
 
 // Wrapper component to ensure theme context is available
@@ -17,7 +17,7 @@ export default function NBADashboardWrapper() {
 
   useEffect(() => {
     if (!mounted || NBA_PUBLIC_ENABLED) return;
-    router.replace('/props?sport=afl');
+    router.replace(AFL_PUBLIC_ENABLED ? '/props?sport=afl' : '/props?sport=all');
   }, [mounted, router]);
 
   if (!mounted) {

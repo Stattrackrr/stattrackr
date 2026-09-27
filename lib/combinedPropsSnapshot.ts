@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import sharedCache from '@/lib/sharedCache';
 import type { CombinedAflGame, CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
 import { AFL_USER_NO_ODDS } from '@/lib/combinedPropsSnapshotTypes';
-import { NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from '@/lib/nbaConstants';
+import { AFL_PUBLIC_ENABLED, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
@@ -434,9 +434,14 @@ export async function buildCombinedPropsSnapshot(
     : Promise.resolve(null);
   const haveTennis = (previousSnapshot?.tennis?.props?.length || 0) > 0;
   const haveNbl = (previousSnapshot?.nbl?.props?.length || 0) > 0;
+  const aflPromise = AFL_PUBLIC_ENABLED
+    ? getAflPlayerPropsList(new Request(aflUrl, { headers }))
+    : Promise.resolve(
+        NextResponse.json({ success: true, data: [], games: [], cached: false })
+      );
   const [nbaResponse, aflResponse, tennisFresh, nblFresh] = await Promise.all([
     nbaPromise,
-    getAflPlayerPropsList(new Request(aflUrl, { headers })),
+    aflPromise,
     haveTennis && !refresh
       ? Promise.resolve(null)
       : withBudget(tennisWork, TENNIS_COMBINED_BUDGET_MS, null),
