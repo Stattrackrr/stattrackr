@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-26T17:04:34.266Z",
+  "generatedAt": "2026-09-27T17:41:12.427Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2898,7 +2898,7 @@
       "externalId": "3715a95f-58ad-11f1-9621-61e4f965035a",
       "startTime": "2026-09-27T08:00:00.000Z",
       "round": "2",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Sydney Kings",
       "homeTeamCode": "SYD",
       "homeTeamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
@@ -2907,8 +2907,8 @@
       "awayTeamCode": "ILL",
       "awayTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 121,
+      "awayScore": 100,
       "venue": "Afterpay Arena",
       "matchSlug": "sydney-kings-v-illawarra-hawks-men-27-09-2026"
     },
@@ -2917,7 +2917,7 @@
       "externalId": "36f8857c-58ad-11f1-9db7-b15d4ea6aed8",
       "startTime": "2026-09-27T06:00:00.000Z",
       "round": "2",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Adelaide 36ers",
       "homeTeamCode": "ADL",
       "homeTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
@@ -2926,8 +2926,8 @@
       "awayTeamCode": "CNS",
       "awayTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 83,
+      "awayScore": 69,
       "venue": "Adelaide Entertainment Centre",
       "matchSlug": "adelaide-36ers-v-cairns-taipans-men-27-09-2026"
     },

@@ -1,94 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-26T17:04:35.739Z",
+  "generatedAt": "2026-09-27T17:41:13.995Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-      "name": "Adelaide 36ers",
-      "team_code": "ADL",
-      "nextMatches": [
-        {
-          "id": "20724dac-c447-4c54-a8a4-7aa89434753a",
-          "match_slug": "adelaide-36ers-v-cairns-taipans-men-27-09-2026",
-          "match_title": "Adelaide 36ers v Cairns Taipans men 27-09-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
-          "external_id": "36f8857c-58ad-11f1-9db7-b15d4ea6aed8",
-          "start_time_datetime": "2026-09-27T06:00:00.000Z",
-          "is_home": true,
-          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
-          "opponent_name": "Cairns Taipans",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-          "venue": "Adelaide Entertainment Centre",
-          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
-        }
-      ]
-    },
-    {
-      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
-      "name": "Cairns Taipans",
-      "team_code": "CNS",
-      "nextMatches": [
-        {
-          "id": "20724dac-c447-4c54-a8a4-7aa89434753a",
-          "match_slug": "adelaide-36ers-v-cairns-taipans-men-27-09-2026",
-          "match_title": "Adelaide 36ers v Cairns Taipans men 27-09-2026",
-          "match_ticket_url": "https://tickets.taipans.com/",
-          "external_id": "36f8857c-58ad-11f1-9db7-b15d4ea6aed8",
-          "start_time_datetime": "2026-09-27T06:00:00.000Z",
-          "is_home": false,
-          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-          "opponent_name": "Adelaide 36ers",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-          "venue": "Adelaide Entertainment Centre",
-          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
-        }
-      ]
-    },
-    {
-      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
-      "name": "Sydney Kings",
-      "team_code": "SYD",
-      "nextMatches": [
-        {
-          "id": "ac1bf126-2d3a-48fa-840f-9d77168a33c1",
-          "match_slug": "sydney-kings-v-illawarra-hawks-men-27-09-2026",
-          "match_title": "Sydney Kings v Illawarra Hawks men 27-09-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS27",
-          "external_id": "3715a95f-58ad-11f1-9621-61e4f965035a",
-          "start_time_datetime": "2026-09-27T08:00:00.000Z",
-          "is_home": true,
-          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "opponent_name": "Illawarra Hawks",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-          "venue": "Afterpay Arena",
-          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
-        }
-      ]
-    },
-    {
-      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-      "name": "Illawarra Hawks",
-      "team_code": "ILL",
-      "nextMatches": [
-        {
-          "id": "ac1bf126-2d3a-48fa-840f-9d77168a33c1",
-          "match_slug": "sydney-kings-v-illawarra-hawks-men-27-09-2026",
-          "match_title": "Sydney Kings v Illawarra Hawks men 27-09-2026",
-          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
-          "external_id": "3715a95f-58ad-11f1-9621-61e4f965035a",
-          "start_time_datetime": "2026-09-27T08:00:00.000Z",
-          "is_home": false,
-          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
-          "opponent_name": "Sydney Kings",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-          "venue": "Afterpay Arena",
-          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
-        }
-      ]
-    },
     {
       "id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "name": "NZ Breakers",
@@ -107,6 +23,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
           "venue": "Spark Arena",
           "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
+      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "name": "Cairns Taipans",
+      "team_code": "CNS",
+      "nextMatches": [
+        {
+          "id": "78904ff5-1cb3-4d87-86c0-6b206807ac73",
+          "match_slug": "nz-breakers-v-cairns-taipans-men-30-09-2026",
+          "match_title": "NZ Breakers v Cairns Taipans men 30-09-2026",
+          "match_ticket_url": "https://tickets.taipans.com/",
+          "external_id": "36f8c608-58ad-11f1-aa0e-2bbb920071b5",
+          "start_time_datetime": "2026-09-30T07:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "opponent_name": "NZ Breakers",
+          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
+          "venue": "Spark Arena",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
+      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+      "name": "Sydney Kings",
+      "team_code": "SYD",
+      "nextMatches": [
+        {
+          "id": "0b9db619-d04f-49cf-ab91-5384fb149f16",
+          "match_slug": "sydney-kings-v-brisbane-bullets-men-30-09-2026",
+          "match_title": "Sydney Kings v Brisbane Bullets men 30-09-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS27",
+          "external_id": "3718a994-58ad-11f1-add9-d98e318e0a1e",
+          "start_time_datetime": "2026-09-30T09:30:00.000Z",
+          "is_home": true,
+          "opponent_id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+          "opponent_name": "Brisbane Bullets",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/BNE.png",
+          "venue": "Afterpay Arena",
+          "opponent_logo_blurhash": "LAD9iCxu0s5dS+s*s+xU0aIwoI}$"
         }
       ]
     },
@@ -170,6 +128,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/TAS.png",
           "venue": "MyState Bank Arena",
           "opponent_logo_blurhash": "L25$batj01ah1hWW^Moe00V[.kSz"
+        }
+      ]
+    },
+    {
+      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "name": "Illawarra Hawks",
+      "team_code": "ILL",
+      "nextMatches": [
+        {
+          "id": "3b315c33-ad8a-4285-846e-a43094a2cf37",
+          "match_slug": "illawarra-hawks-v-adelaide-36ers-men-02-10-2026",
+          "match_title": "Illawarra Hawks v Adelaide 36ers men 02-10-2026",
+          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
+          "external_id": "36f2e004-58ad-11f1-aa96-6775645a7b9a",
+          "start_time_datetime": "2026-10-02T09:30:00.000Z",
+          "is_home": true,
+          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+          "opponent_name": "Adelaide 36ers",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
+          "venue": "WIN Entertainment Centre",
+          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
+        }
+      ]
+    },
+    {
+      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "name": "Adelaide 36ers",
+      "team_code": "ADL",
+      "nextMatches": [
+        {
+          "id": "3b315c33-ad8a-4285-846e-a43094a2cf37",
+          "match_slug": "illawarra-hawks-v-adelaide-36ers-men-02-10-2026",
+          "match_title": "Illawarra Hawks v Adelaide 36ers men 02-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
+          "external_id": "36f2e004-58ad-11f1-aa96-6775645a7b9a",
+          "start_time_datetime": "2026-10-02T09:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "opponent_name": "Illawarra Hawks",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
+          "venue": "WIN Entertainment Centre",
+          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
         }
       ]
     },
