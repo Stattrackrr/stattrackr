@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { loadPlayerAssistChartForApi, loadTeamAssistDefenseForApi } from '@/lib/nbl/nblAssistChart';
 import {
   emptyPlayerShotChart,
   loadPlayerShotChartForApi,
@@ -31,6 +32,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'team is required for defense mode' }, { status: 400 });
       }
       const data = loadTeamDefenseShotChartForApi(team);
+      const assistDefense = loadTeamAssistDefenseForApi(team);
+      const assistFields = {
+        assistRanks: assistDefense.ranks,
+        assistDefenseGames: assistDefense.gamesUsed,
+        assistAllowed: assistDefense.assistCount,
+      };
       if (!data || data.shotCount <= 0) {
         return NextResponse.json({
           success: true,
@@ -41,6 +48,7 @@ export async function GET(request: NextRequest) {
           gamesUsed: 0,
           zones: emptyZoneStats(),
           ranks: [],
+          ...assistFields,
           seasonYear: NBL_SHOT_CHART_SEASON_YEAR,
           cacheYears: [...NBL_SHOT_CHART_CACHE_YEARS],
           message: USER_DEFENSE_UNAVAILABLE,
@@ -51,6 +59,7 @@ export async function GET(request: NextRequest) {
         seasonYear: NBL_SHOT_CHART_SEASON_YEAR,
         cacheYears: [...NBL_SHOT_CHART_CACHE_YEARS],
         ...data,
+        ...assistFields,
       });
     }
 
@@ -64,11 +73,18 @@ export async function GET(request: NextRequest) {
     }
     const team = String(request.nextUrl.searchParams.get('team') || '').trim() || null;
     const data = loadPlayerShotChartForApi(playerName, team);
+    const assists = loadPlayerAssistChartForApi(playerName);
+    const assistFields = {
+      assistCount: assists.assistCount,
+      assistGamesUsed: assists.gamesUsed,
+      assistZones: assists.zones,
+    };
     if (!data || data.shotCount <= 0) {
       return NextResponse.json({
         success: true,
         empty: true,
         ...(data || emptyPlayerShotChart(playerName, [...NBL_SHOT_CHART_CACHE_YEARS])),
+        ...assistFields,
         playerName,
         shotCount: 0,
         seasonYear: NBL_SHOT_CHART_SEASON_YEAR,
@@ -81,6 +97,7 @@ export async function GET(request: NextRequest) {
       seasonYear: NBL_SHOT_CHART_SEASON_YEAR,
       cacheYears: [...NBL_SHOT_CHART_CACHE_YEARS],
       ...data,
+      ...assistFields,
     });
   } catch (error) {
     console.error('[nbl/shot-chart]', error);

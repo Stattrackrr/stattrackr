@@ -27,6 +27,7 @@ import {
   writeTeamDefenseShotChartCache,
   type NblShotChartManifest,
 } from '../lib/nbl/nblShotChartData';
+import { warmSeasonAssistCharts } from '../lib/nbl/nblAssistChart';
 
 type RosterPlayer = {
   name?: string;
@@ -172,6 +173,17 @@ async function main() {
   };
   writeShotChartManifest(manifest);
   console.log('[warm-nbl-shot-charts] done', manifest);
+
+  if (years.includes(2026)) {
+    const assists = await warmSeasonAssistCharts({
+      year: 2026,
+      rosterNames,
+      force,
+    });
+    console.log(
+      `[warm-nbl-shot-charts] assists players=${assists.playersWritten} located=${assists.located}/${assists.assistCount}`
+    );
+  }
 }
 
 main().catch((err) => {

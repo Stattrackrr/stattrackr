@@ -12,7 +12,7 @@ import {
 
 const SHOT_CHART_SEASON_LABEL = nblSeasonLabel(NBL_SHOT_CHART_SEASON_YEAR);
 
-type ZoneRank = NblZoneStat & { rank: number | null; teamsCompared: number };
+type ZoneRank = NblZoneStat & { rank: number | null; teamsCompared: number; astPerGame?: number };
 type ScoringRank = NblZoneStat & { rank: number | null; playersCompared: number; pts?: number };
 
 type PlayerPayload = {
@@ -31,6 +31,9 @@ type PlayerPayload = {
     rank: number | null;
     playersCompared: number;
   };
+  assistCount?: number;
+  assistGamesUsed?: number;
+  assistZones?: NblZoneStat[];
 };
 
 type DefensePayload = {
@@ -42,6 +45,9 @@ type DefensePayload = {
   zones: NblZoneStat[];
   ranks: ZoneRank[];
   pointsAllowed?: number;
+  assistRanks?: ZoneRank[];
+  assistDefenseGames?: number;
+  assistAllowed?: number;
   ftDefense?: {
     ftm: number;
     fta: number;
@@ -215,6 +221,8 @@ type BreakdownRow = {
   rank: number;
   compared: number;
   ptsPerGame: string;
+  /** Replaces the default "pts/g" suffix. */
+  valueUnit?: string;
   rateLabel: string;
 };
 
@@ -410,7 +418,7 @@ function AnalysisAccordion({
                               {row.ptsPerGame}
                             </span>
                             <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">
-                              pts/g
+                              {row.valueUnit || 'pts/g'}
                             </span>
                           </div>
                         )}
@@ -469,7 +477,9 @@ export function NblShotChart({
 }: NblShotChartProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMakes, setShowMakes] = useState(false);
+  const [showAssists, setShowAssists] = useState(false);
   const [showOppDef, setShowOppDef] = useState(false);
+  const [showAssistDef, setShowAssistDef] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playerData, setPlayerData] = useState<PlayerPayload | null>(null);
@@ -517,6 +527,9 @@ export function NblShotChart({
             zones: Array.isArray(json?.zones) ? json.zones : [],
             ranks: Array.isArray(json?.ranks) ? json.ranks : [],
             ftScoring: json?.ftScoring,
+            assistCount: Number(json?.assistCount || 0),
+            assistGamesUsed: Number(json?.assistGamesUsed || 0),
+            assistZones: Array.isArray(json?.assistZones) ? json.assistZones : [],
           });
           return;
         }
@@ -570,18 +583,22 @@ export function NblShotChart({
   }, [opponentTeam]);
 
   const z = useMemo(() => zoneLookup(playerData?.zones || []), [playerData]);
+  const az = useMemo(() => zoneLookup(playerData?.assistZones || []), [playerData]);
+  const assistCount = Math.max(0, Number(playerData?.assistCount || 0));
+  const assistGames = Math.max(0, Number(playerData?.assistGamesUsed || 0));
 
   /** Distribution % keyed by zone id (avoids index mix-ups). */
   const distByZone = useMemo(() => {
-    const totalFga = NBL_SHOT_ZONE_IDS.reduce((s, id) => s + z[id].fga, 0);
-    const totalFgm = NBL_SHOT_ZONE_IDS.reduce((s, id) => s + z[id].fgm, 0);
+    const source = showAssists ? az : z;
+    const totalFga = NBL_SHOT_ZONE_IDS.reduce((s, id) => s + source[id].fga, 0);
+    const totalFgm = NBL_SHOT_ZONE_IDS.reduce((s, id) => s + source[id].fgm, 0);
     const out = {} as Record<NblShotZoneId, number>;
     for (const id of NBL_SHOT_ZONE_IDS) {
-      if (showMakes) out[id] = totalFgm > 0 ? (z[id].fgm / totalFgm) * 100 : 0;
-      else out[id] = totalFga > 0 ? (z[id].fga / totalFga) * 100 : 0;
+      if (showAssists || !showMakes) out[id] = totalFga > 0 ? (source[id].fga / totalFga) * 100 : 0;
+      else out[id] = totalFgm > 0 ? (source[id].fgm / totalFgm) * 100 : 0;
     }
     return out;
-  }, [z, showMakes]);
+  }, [z, az, showMakes, showAssists]);
 
   const rankings = useMemo(() => {
     const map = {} as Partial<Record<NblShotZoneId, ZoneRank>>;
@@ -589,7 +606,17 @@ export function NblShotChart({
     return map;
   }, [defenseData]);
 
+  const assistRankings = useMemo(() => {
+    const map = {} as Partial<Record<NblShotZoneId, ZoneRank>>;
+    for (const row of defenseData?.assistRanks || []) map[row.zone] = row;
+    return map;
+  }, [defenseData]);
+
   const hasOppRanks = Boolean(defenseData?.ranks?.some((r) => r.rank != null));
+  const hasAssistRanks = Boolean(defenseData?.assistRanks?.some((r) => r.rank != null));
+  const rankMap = showAssistDef ? assistRankings : rankings;
+  const showRankView = showAssistDef ? hasAssistRanks : Boolean(showOppDef && hasOppRanks);
+  const assistDefenseGames = Math.max(0, Number(defenseData?.assistDefenseGames || 0));
   const canShowPlayerBreakdown = Boolean(playerName);
   const canShowBreakdown = Boolean(opponentTeam && opponentTeam !== 'N/A');
   const defenseZones = useMemo(() => zoneLookup(defenseData?.zones || []), [defenseData]);
@@ -653,7 +680,66 @@ export function NblShotChart({
     return rows;
   }, [defenseZones, rankings, defenseGames, ftDefense]);
 
+  const assistDefenseRows = useMemo(() => {
+    return BREAKDOWN_GROUPS.map((group) => {
+      let count = 0;
+      const ranks: number[] = [];
+      const rankPills: { rank: number; label: string }[] = [];
+      for (const zone of group.zones) {
+        const row = assistRankings[zone];
+        count += row?.fga || 0;
+        const rank = row?.rank;
+        if (rank != null && rank > 0) {
+          ranks.push(rank);
+          const side = zone === 'leftCorner3' ? 'L' : zone === 'rightCorner3' ? 'R' : '';
+          rankPills.push({
+            rank,
+            label: group.zones.length > 1 && side ? `${side}#${rank}` : `#${rank}`,
+          });
+        }
+      }
+      const empty = assistDefenseGames <= 0 && ranks.length === 0;
+      return {
+        id: group.id,
+        label: group.label,
+        rankPills,
+        rank: ranks.length ? Math.min(...ranks) : 0,
+        compared: NBL_RANK_SCALE,
+        ptsPerGame: empty ? '—' : formatPerGame(count, assistDefenseGames),
+        valueUnit: 'ast/g',
+        rateLabel: empty ? '—' : `${count} AST allowed`,
+      };
+    });
+  }, [assistRankings, assistDefenseGames]);
+
   const playerBreakdownRows = useMemo(() => {
+    if (showAssists) {
+      const groups = BREAKDOWN_GROUPS.map((group) => {
+        let count = 0;
+        for (const zone of group.zones) count += az[zone].fga;
+        return { group, count };
+      });
+      const selfRanks = selfRanksToTen(groups.map((row) => row.count));
+      return groups.map((row, idx) => {
+        const empty = row.count <= 0;
+        const rank = empty ? 0 : selfRanks[idx] || 0;
+        const share = assistCount > 0 ? (row.count / assistCount) * 100 : 0;
+        return {
+          id: row.group.id,
+          label: row.group.label,
+          rankPills: rank > 0 ? [{ rank, label: `#${rank}` }] : [],
+          rank,
+          compared: NBL_RANK_SCALE,
+          ptsPerGame: empty ? '—' : `${share.toFixed(0)}%`,
+          valueUnit: 'of assists',
+          rateLabel: empty
+            ? '—'
+            : assistGames > 0
+              ? `${row.count} AST · ${formatPerGame(row.count, assistGames)}/g`
+              : `${row.count} AST`,
+        };
+      });
+    }
     const byMakes = showMakes;
     const ftGames = Math.max(0, Number(ftScoring?.games || playerGames));
     const ftm = Number(ftScoring?.ftm || 0);
@@ -710,12 +796,12 @@ export function NblShotChart({
           : `${fta > 0 ? `${ftScoring?.ftPct.toFixed(0)}%` : '—'} FT · ${formatPerGame(fta, ftGames || playerGames)} FTA/g`,
     });
     return rows;
-  }, [z, playerGames, ftScoring, showMakes]);
+  }, [z, az, playerGames, ftScoring, showMakes, showAssists, assistCount, assistGames]);
   const showSkeleton = Boolean(playerName) && loading;
   const showEmpty = Boolean(playerName) && !loading && !error && playerData && playerData.shotCount <= 0;
 
   const zoneHasVolume = (zone: NblShotZoneId) =>
-    showMakes ? z[zone].fgm > 0 : z[zone].fga > 0;
+    showAssists ? az[zone].fga > 0 : showMakes ? z[zone].fgm > 0 : z[zone].fga > 0;
 
   const distLabel = (zone: NblShotZoneId) => {
     if (valuesLocked) return 'TBD';
@@ -726,12 +812,12 @@ export function NblShotChart({
 
   const rankLabel = (zone: NblShotZoneId) => {
     if (valuesLocked) return 'TBD';
-    const r = rankings[zone]?.rank;
+    const r = rankMap[zone]?.rank;
     return r != null && r > 0 ? `#${r}` : '-';
   };
 
   const rankEmpty = (zone: NblShotZoneId) => {
-    const r = rankings[zone]?.rank;
+    const r = rankMap[zone]?.rank;
     return r == null || r <= 0;
   };
 
@@ -741,7 +827,7 @@ export function NblShotChart({
   };
   const fillRank = (zone: NblShotZoneId) => {
     if (valuesLocked) return EMPTY_ZONE_FILL;
-    const r = rankings[zone];
+    const r = rankMap[zone];
     if (r?.rank == null || r.rank <= 0) return EMPTY_ZONE_FILL;
     return getColorForRank(r.rank, r.fgPct);
   };
@@ -1041,7 +1127,7 @@ export function NblShotChart({
         renderMessage('No shot chart available for this player.')
       ) : (
         <>
-          <div className="flex items-center justify-between w-full">
+          <div className="flex items-center justify-between w-full gap-2 flex-wrap">
             <div className="flex items-center gap-2 relative">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
@@ -1067,18 +1153,26 @@ export function NblShotChart({
                   <br />
                   <span className="text-purple-600 dark:text-purple-400">Opp Def Rank</span> - Team
                   defense rankings by zone (lower % = better rank). Zones with no stats show a grey dash.
+                  <br />
+                  <span className="text-teal-600 dark:text-teal-400">Assists</span> - Where his
+                  assists finish this season. Same court locations as the shot chart.
+                  <br />
+                  <span className="text-purple-600 dark:text-purple-400">Opp Ast Rank</span> - Where
+                  this opponent allows the fewest assists. #1 restricts that zone the most.
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => {
                   setShowMakes(false);
+                  setShowAssists(false);
                   setShowOppDef(false);
+                  setShowAssistDef(false);
                 }}
                 className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                  !showMakes && !showOppDef
+                  !showMakes && !showAssists && !showOppDef && !showAssistDef
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
@@ -1089,10 +1183,12 @@ export function NblShotChart({
                 type="button"
                 onClick={() => {
                   setShowMakes(true);
+                  setShowAssists(false);
                   setShowOppDef(false);
+                  setShowAssistDef(false);
                 }}
                 className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                  showMakes && !showOppDef
+                  showMakes && !showAssists && !showOppDef && !showAssistDef
                     ? 'bg-green-600 text-white hover:bg-green-700'
                     : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
@@ -1104,10 +1200,12 @@ export function NblShotChart({
                   type="button"
                   onClick={() => {
                     setShowOppDef(true);
+                    setShowAssistDef(false);
                     setShowMakes(false);
+                    setShowAssists(false);
                   }}
                   className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                    showOppDef
+                    showOppDef && !showAssistDef
                       ? 'bg-purple-600 text-white hover:bg-purple-700'
                       : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
@@ -1115,8 +1213,47 @@ export function NblShotChart({
                   {defenseLoading ? 'Opp Def…' : 'Opp Def Rank'}
                 </button>
               ) : null}
+              <span className="mx-1 w-3 shrink-0" aria-hidden="true" />
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAssists(true);
+                  setShowMakes(false);
+                  setShowOppDef(false);
+                  setShowAssistDef(false);
+                }}
+                className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                  showAssists && !showOppDef && !showAssistDef
+                    ? 'bg-teal-600 text-white hover:bg-teal-700'
+                    : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                Assists
+              </button>
+              {opponentTeam && opponentTeam !== 'N/A' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAssistDef(true);
+                    setShowOppDef(false);
+                    setShowMakes(false);
+                    setShowAssists(false);
+                  }}
+                  className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                    showAssistDef
+                      ? 'bg-purple-600 text-white hover:bg-purple-700'
+                      : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {defenseLoading ? 'Ast Def…' : 'Opp Ast Rank'}
+                </button>
+              ) : null}
             </div>
           </div>
+
+          {showAssists && assistCount <= 0 ? (
+            <p className="text-xs text-gray-500 dark:text-gray-400">No assist locations this season.</p>
+          ) : null}
 
           <svg
             viewBox="0 0 500 380"
@@ -1146,21 +1283,21 @@ export function NblShotChart({
                 <path
                   d={aboveBreakZonePath}
                   fill={
-                    showOppDef && hasOppRanks ? fillRank('aboveBreak3') : fillDist('aboveBreak3')
+                    showRankView ? fillRank('aboveBreak3') : fillDist('aboveBreak3')
                   }
                 />
                 {/* Corners first — clipped to outside the 3pt line only */}
                 <path
                   d={leftCornerZonePath}
                   fill={
-                    showOppDef && hasOppRanks ? fillRank('leftCorner3') : fillDist('leftCorner3')
+                    showRankView ? fillRank('leftCorner3') : fillDist('leftCorner3')
                   }
                   stroke="none"
                 />
                 <path
                   d={rightCornerZonePath}
                   fill={
-                    showOppDef && hasOppRanks ? fillRank('rightCorner3') : fillDist('rightCorner3')
+                    showRankView ? fillRank('rightCorner3') : fillDist('rightCorner3')
                   }
                   stroke="none"
                 />
@@ -1168,7 +1305,7 @@ export function NblShotChart({
                 <path
                   d={midRangeZonePath}
                   fill={
-                    showOppDef && hasOppRanks ? fillRank('midRange') : fillDist('midRange')
+                    showRankView ? fillRank('midRange') : fillDist('midRange')
                   }
                   stroke="none"
                 />
@@ -1177,13 +1314,13 @@ export function NblShotChart({
                   y={freeThrowLine}
                   width={paintWidth}
                   height={baseline - freeThrowLine}
-                  fill={showOppDef && hasOppRanks ? fillRank('paint') : fillDist('paint')}
+                  fill={showRankView ? fillRank('paint') : fillDist('paint')}
                   stroke="none"
                 />
                 <path
                   d={`M ${centerX - 60} ${baseline} L ${centerX - 60} ${baseline - 60} Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} L ${centerX + 60} ${baseline} Z`}
                   fill={
-                    showOppDef && hasOppRanks ? fillRank('restricted') : fillDist('restricted')
+                    showRankView ? fillRank('restricted') : fillDist('restricted')
                   }
                   stroke="none"
                 />
@@ -1233,7 +1370,7 @@ export function NblShotChart({
                 strokeWidth="3"
               />
 
-              {showOppDef && hasOppRanks ? (
+              {showRankView ? (
                 <>
                   <CourtLabel x={centerX} y={60} fontSize={32} value={rankLabel('aboveBreak3')} empty={rankEmpty('aboveBreak3')} />
                   <CourtLabel x={centerX} y={freeThrowLine - 30} fontSize={28} value={rankLabel('midRange')} empty={rankEmpty('midRange')} />
@@ -1267,9 +1404,11 @@ export function NblShotChart({
             </g>
           </svg>
 
-          {showOppDef && hasOppRanks ? (
+          {showRankView ? (
             <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
-              <span className="text-gray-700 dark:text-gray-300">Defense Ranking:</span>
+              <span className="text-gray-700 dark:text-gray-300">
+                {showAssistDef ? 'Assist Defense:' : 'Defense Ranking:'}
+              </span>
               <div className="flex items-center gap-1">
                 <div className="w-5 h-5 rounded" style={{ backgroundColor: '#ef4444' }} />
                 <span className="text-gray-600 dark:text-gray-400">#1-2 (Elite)</span>
@@ -1290,7 +1429,7 @@ export function NblShotChart({
           ) : (
             <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
               <span className="text-gray-700 dark:text-gray-300">
-                {showMakes ? 'Make Distribution:' : 'Shot Distribution:'}
+                {showAssists ? 'Assist Distribution:' : showMakes ? 'Make Distribution:' : 'Shot Distribution:'}
               </span>
               <div className="flex items-center gap-1">
                 <div className="w-5 h-5 rounded" style={{ backgroundColor: '#10b981' }} />
@@ -1311,11 +1450,12 @@ export function NblShotChart({
             </div>
           )}
 
-          {(!showOppDef && canShowPlayerBreakdown) || (showOppDef && canShowBreakdown) ? (
+          {(!showOppDef && !showAssistDef && canShowPlayerBreakdown) ||
+          ((showOppDef || showAssistDef) && canShowBreakdown) ? (
             <div className="w-full space-y-2 border-t border-gray-200 dark:border-[#463e6b]/70 pt-2">
-              {!showOppDef && canShowPlayerBreakdown ? (
+              {!showOppDef && !showAssistDef && canShowPlayerBreakdown ? (
                 <AnalysisAccordion
-                  title={showMakes ? 'Make Analysis' : 'Attempt Analysis'}
+                  title={showAssists ? 'Assist Analysis' : showMakes ? 'Make Analysis' : 'Attempt Analysis'}
                   open={playerAnalysisOpen}
                   onToggle={() => setPlayerAnalysisOpen((open) => !open)}
                   isDark={isDark}
@@ -1325,14 +1465,20 @@ export function NblShotChart({
                   valuesLocked={valuesLocked}
                 />
               ) : null}
-              {showOppDef && canShowBreakdown ? (
+              {(showOppDef || showAssistDef) && canShowBreakdown ? (
                 <AnalysisAccordion
-                  title="Defensive Analysis"
+                  title={showAssistDef ? 'Assist Defense' : 'Defensive Analysis'}
                   open={breakdownOpen}
                   onToggle={() => setBreakdownOpen((open) => !open)}
                   isDark={isDark}
                   loading={defenseLoading && !defenseData}
-                  rows={valuesLocked ? redactBreakdownRows(breakdownRows) : breakdownRows}
+                  rows={
+                    valuesLocked
+                      ? redactBreakdownRows(showAssistDef ? assistDefenseRows : breakdownRows)
+                      : showAssistDef
+                        ? assistDefenseRows
+                        : breakdownRows
+                  }
                   invert={false}
                   valuesLocked={valuesLocked}
                 />

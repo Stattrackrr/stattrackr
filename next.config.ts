@@ -32,6 +32,9 @@ const NBL_SHOT_TRACE = [
   './data/nbl-model/cache/shot-chart-players/**/*',
   './data/nbl-model/cache/shot-chart-defense/**/*',
   './data/nbl-model/cache/shot-chart-manifest-*.json',
+  './data/nbl-model/cache/assist-shots/**/*',
+  './data/nbl-model/cache/assist-chart-players/**/*',
+  './data/nbl-model/cache/assist-defense/**/*',
 ] as const;
 const NBL_PERIOD_TRACE = [
   ...NBL_SCHEDULE_TRACE,

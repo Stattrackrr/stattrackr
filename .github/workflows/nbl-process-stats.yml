@@ -69,7 +69,7 @@ jobs:
           npm run fetch:nbl:team-game-logs -- --year=2026
           npm run fetch:nbl:injuries
 
-      - name: Warm shot charts + player/defense aggregates (NBL27)
+      - name: Warm shot charts, assist locations, and defense ranks (NBL27)
         run: |
           FORCE_FLAG=""
           if [ "${{ github.event.inputs.force_shot_charts }}" = "true" ]; then
@@ -133,7 +133,10 @@ jobs:
             "data/nbl-model/cache/shot-charts" \
             "data/nbl-model/cache/shot-chart-players" \
             "data/nbl-model/cache/shot-chart-defense" \
-            "data/nbl-model/cache/shot-chart-manifest-*.json"
+            "data/nbl-model/cache/shot-chart-manifest-*.json" \
+            "data/nbl-model/cache/assist-shots" \
+            "data/nbl-model/cache/assist-chart-players" \
+            "data/nbl-model/cache/assist-defense"
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
