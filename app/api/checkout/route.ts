@@ -5,9 +5,6 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { getStripe, PRICE_IDS } from '@/lib/stripe';
 import {
-  hasTrialHistory,
-  listCustomersForUser,
-  listSubscriptionsForCustomers,
   reconcileUserSubscription,
   resolveOrCreateStripeCustomer,
 } from '@/lib/stripeCustomer';
@@ -58,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
-      .select('stripe_customer_id, has_used_trial')
+      .select('stripe_customer_id')
       .eq('id', user.id)
       .single();
 
@@ -104,47 +101,6 @@ export async function POST(request: NextRequest) {
       knownCustomerId: reconciled.customerId || identity.knownCustomerId,
     });
 
-    let hasUsedTrial = profile?.has_used_trial === true;
-    if (!hasUsedTrial) {
-      const customers = await listCustomersForUser(stripe, {
-        userId: user.id,
-        email: user.email,
-        knownCustomerId: customerId,
-      });
-      const entries = await listSubscriptionsForCustomers(
-        stripe,
-        customers.map((customer) => customer.id)
-      );
-      hasUsedTrial = hasTrialHistory(entries);
-
-      if (hasUsedTrial) {
-        await serviceSupabase
-          .from('profiles')
-          .update({
-            has_used_trial: true,
-            trial_used_at: new Date().toISOString(),
-          })
-          .eq('id', user.id);
-        console.log(
-          `[Checkout] User ${user.id} (${user.email}) has trial in Stripe history - blocking trial and updating database`
-        );
-      }
-    } else {
-      console.log(
-        `[Checkout] User ${user.id} (${user.email}) has already used trial per database - blocking another trial`
-      );
-    }
-
-    const subscriptionData: Record<string, unknown> = {};
-    if (!hasUsedTrial) {
-      subscriptionData.trial_period_days = 7;
-      subscriptionData.trial_settings = {
-        end_behavior: {
-          missing_payment_method: 'cancel',
-        },
-      };
-    }
-
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -155,13 +111,12 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      subscription_data: subscriptionData,
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin')}/props?success=true&billing=${billingCycle}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin')}/props`,
       metadata: {
         user_id: user.id,
         billing_cycle: billingCycle,
-        has_trial: (!hasUsedTrial).toString(),
+        has_trial: 'false',
       },
       allow_promotion_codes: true,
     });

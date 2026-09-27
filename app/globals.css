@@ -348,6 +348,21 @@ html.dark body {
   animation: livePulseRed 1.4s ease-in-out infinite;
 }
 
+@keyframes proPlanGlow {
+  0%, 100% {
+    color: #a855f7;
+    filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.35));
+  }
+  50% {
+    color: #f3e8ff;
+    filter: drop-shadow(0 0 18px rgba(192, 132, 252, 0.95));
+  }
+}
+
+.pro-plan-glow {
+  animation: proPlanGlow 1.8s ease-in-out infinite;
+}
+
 @keyframes liveBadgePulseGreen {
   0%, 100% {
     transform: scale(1);

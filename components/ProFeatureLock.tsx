@@ -8,9 +8,9 @@ import { supabase } from '@/lib/supabaseClient';
 import { PRICE_IDS, type BillingCycle } from '@/lib/stripe';
 
 const PLANS: { cycle: BillingCycle; label: string; price: string; cadence: string; note: string }[] = [
-  { cycle: 'monthly', label: 'Monthly', price: '$20', cadence: '/month', note: '7-day free trial' },
-  { cycle: 'semiannual', label: '6 Months', price: '$100', cadence: '/6 months', note: 'Save 17% · 7-day free trial' },
-  { cycle: 'annual', label: 'Annual', price: '$180', cadence: '/year', note: 'Save 25% · 7-day free trial' },
+  { cycle: 'monthly', label: 'Monthly', price: '$20', cadence: '/month', note: 'Billed monthly' },
+  { cycle: 'semiannual', label: '6 Months', price: '$100', cadence: '/6 months', note: 'Save 17%' },
+  { cycle: 'annual', label: 'Annual', price: '$180', cadence: '/year', note: 'Save 25%' },
 ];
 
 const INCLUDED = [
@@ -161,7 +161,7 @@ function UpgradePrompt({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <p className="mt-2 text-sm leading-relaxed text-gray-300">
-          Upgrade to Pro completely free with a 7-day free trial. You won&apos;t be charged until the trial ends.
+          Upgrade to Pro to unlock this.
         </p>
         <ul className="mt-4 space-y-2">
           {INCLUDED.map((item) => (
@@ -201,9 +201,8 @@ function UpgradePrompt({ onClose }: { onClose: () => void }) {
           disabled={loading}
           className="mt-4 w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 disabled:cursor-wait disabled:opacity-70"
         >
-          {loading ? 'Starting checkout…' : 'Start Free Trial'}
+          {loading ? 'Starting checkout…' : 'Upgrade to Pro'}
         </button>
-        <p className="mt-3 text-center text-xs text-gray-500">Only 1 free trial per account.</p>
       </div>
     </div>,
     document.body,

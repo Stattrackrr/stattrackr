@@ -169,7 +169,7 @@ export default function TermsOfService() {
               <li>Harass, abuse, or harm other users</li>
               <li>Use the Service for any fraudulent or illegal purpose</li>
               <li>Manipulate or interfere with the proper functioning of the Service</li>
-              <li>Create multiple accounts to abuse free trials or promotions</li>
+              <li>Create multiple accounts to abuse promotions</li>
             </ul>
           </section>
 

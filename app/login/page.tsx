@@ -37,6 +37,8 @@ export default function LoginPage() {
   const [forgotPasswordCode, setForgotPasswordCode] = useState("");
   const [forgotPasswordVerifyLoading, setForgotPasswordVerifyLoading] = useState(false);
   const [isResetRedirect, setIsResetRedirect] = useState(false);
+  const [formReady, setFormReady] = useState(false);
+  const [lockEmail, setLockEmail] = useState(false);
 
   // If password reset link landed here (Supabase may redirect to Site URL), read hash and send to update-password
   useEffect(() => {
@@ -64,19 +66,28 @@ export default function LoginPage() {
       localStorage.setItem('stattrackr_login_redirect', redirect);
       if (redirect === "/auth/update-password") setIsResetRedirect(true);
     }
-    // Open in sign-up mode when ?signup=1
+    // Open in sign-up mode when ?signup=1. Hold the form until this runs so the
+    // browser cannot autofill a saved account over the email they just typed.
     const prefilledEmail = searchParams.get('email');
-    if (prefilledEmail) setEmail(prefilledEmail);
+    if (prefilledEmail) {
+      setEmail(prefilledEmail);
+      setLockEmail(true);
+    }
     if (searchParams.get('signup') === '1') {
       setIsSignUp(true);
       if (prefilledEmail) {
         void emailAccountExists(prefilledEmail)
           .then((exists) => {
-            if (exists) setIsSignUp(false);
+            if (!exists) return;
+            setEmail(prefilledEmail);
+            setLockEmail(true);
+            setIsSignUp(false);
+            setError('This email already has an account. Enter its password to sign in.');
           })
           .catch(() => undefined);
       }
     }
+    setFormReady(true);
     // Show success message after password reset
     if (searchParams.get('reset') === 'success') {
       setSuccess('Your password has been updated. You can sign in now.');
@@ -360,10 +371,22 @@ export default function LoginPage() {
             {/* Form Header */}
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-white mb-2">
-                {showForgotPassword ? "Reset password" : isSignUp ? "Create Account" : "Welcome Back"}
+                {!formReady
+                  ? "One moment"
+                  : showForgotPassword
+                    ? "Reset password"
+                    : isSignUp
+                      ? "Create Account"
+                      : "Welcome Back"}
               </h2>
               <p className="text-gray-500">
-                {showForgotPassword ? "Enter your email and we'll send you a 6-digit code" : isSignUp ? "Start tracking your performance" : "Sign in to continue"}
+                {!formReady
+                  ? "Loading your account"
+                  : showForgotPassword
+                    ? "Enter your email and we'll send you a 6-digit code"
+                    : isSignUp
+                      ? "Start tracking your performance"
+                      : "Sign in to continue"}
               </p>
             </div>
 
@@ -562,10 +585,12 @@ export default function LoginPage() {
                   </div>
                 </div>
               </div>
+            ) : !formReady ? (
+              <div className="py-12 text-center text-sm text-gray-500">Loading…</div>
             ) : (
             <>
             {/* Auth Form */}
-            <form onSubmit={handleAuth} className="space-y-4" autoComplete="on">
+            <form onSubmit={handleAuth} className="space-y-4" autoComplete={lockEmail ? "off" : "on"}>
               {/* Email and password come first so the browser does not drop the email into Username. */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-2">
@@ -575,16 +600,29 @@ export default function LoginPage() {
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input
                     id="email"
-                    name="email"
+                    name={lockEmail ? "stattrackr-signup-email" : "email"}
                     type="email"
-                    autoComplete="email"
+                    autoComplete={lockEmail ? "off" : "email"}
+                    readOnly={lockEmail}
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                    onChange={(e) => {
+                      if (lockEmail) return;
+                      setEmail(e.target.value);
+                    }}
+                    className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors read-only:text-gray-200"
                     placeholder="Enter your email"
                     required
                   />
                 </div>
+                {lockEmail ? (
+                  <button
+                    type="button"
+                    onClick={() => setLockEmail(false)}
+                    className="mt-2 text-xs font-medium text-purple-400 hover:text-purple-300"
+                  >
+                    Use a different email
+                  </button>
+                ) : null}
               </div>
 
               <div>
@@ -597,7 +635,7 @@ export default function LoginPage() {
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    autoComplete={lockEmail || isSignUp ? "new-password" : "current-password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full h-11 pl-12 pr-12 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
@@ -808,6 +846,7 @@ export default function LoginPage() {
                     setShowCheckEmail(false);
                     setPendingEmail("");
                     setVerificationCode("");
+                    setLockEmail(false);
                     setEmail("");
                     setPassword("");
                     setUsername("");

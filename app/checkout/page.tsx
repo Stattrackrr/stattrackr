@@ -146,7 +146,7 @@ function CheckoutContent() {
             {/* Header */}
             <div>
               <h1 className="text-3xl font-bold text-white mb-2">Complete Your Purchase</h1>
-              <p className="text-gray-300">Start your 7-day free trial today</p>
+              <p className="text-gray-300">Choose a plan and subscribe</p>
             </div>
 
             {/* Plan Selection */}
@@ -266,17 +266,13 @@ function CheckoutContent() {
                   <span>{currentPlan.name} Plan</span>
                   <span>${currentPlan.billingAmount}</span>
                 </div>
-                <div className="flex justify-between text-emerald-400 font-medium">
-                  <span>7-Day Free Trial</span>
-                  <span>-${currentPlan.billingAmount}</span>
-                </div>
                 <div className="border-t border-white/10 pt-3 mt-3">
                   <div className="flex justify-between text-white font-bold text-lg">
                     <span>Due Today</span>
-                    <span>$0.00</span>
+                    <span>${currentPlan.billingAmount}</span>
                   </div>
                   <p className="text-gray-400 text-sm mt-2">
-                    You'll be charged ${currentPlan.billingAmount} after your 7-day free trial ends
+                    Cancel anytime from your account.
                   </p>
                 </div>
               </div>
@@ -455,7 +451,7 @@ function CheckoutContent() {
                   Processing...
                 </span>
               ) : (
-                `Start 7-Day Free Trial`
+                `Subscribe`
               )}
             </button>
 
@@ -467,7 +463,7 @@ function CheckoutContent() {
                 By continuing, you agree to our Terms of Service and Privacy Policy
               </p>
               <p className="text-gray-400 text-xs">
-                Cancel anytime during your trial • No charges until trial ends
+                Cancel anytime
               </p>
             </div>
           </div>

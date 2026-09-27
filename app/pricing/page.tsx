@@ -145,7 +145,7 @@ export default function PricingPage() {
         'Priority support',
       ],
       limitations: [],
-      cta: 'Start Free Trial',
+      cta: 'Subscribe',
       highlighted: true,
     },
   ];
@@ -512,7 +512,7 @@ export default function PricingPage() {
               }}
               className="inline-flex items-center px-8 py-3 rounded-full bg-emerald-600/20 border-2 border-emerald-500/50 text-emerald-400 font-bold text-base hover:bg-emerald-600/30 hover:border-emerald-400 transition-all hover:scale-105 cursor-pointer"
             >
-              🎉 Start with a 7-day free trial
+              See pricing
             </button>
           </div>
         </div>
@@ -860,13 +860,13 @@ export default function PricingPage() {
                 <span className="text-gray-300">/month</span>
               </div>
               <div className="text-sm text-gray-400 mt-1 opacity-0">Placeholder</div>
-              <span className="inline-block mt-2 text-xs font-semibold text-gray-400">7-day free trial</span>
+              <span className="inline-block mt-2 text-xs font-semibold text-gray-400">Billed monthly</span>
             </div>
             <button
               onClick={() => handleSelectPlan('Pro', 'monthly')}
               className="w-full py-3 px-4 rounded-lg font-medium transition-colors mb-6 bg-white/10 text-white hover:bg-white/20"
             >
-              Start Free Trial
+              Subscribe
             </button>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
@@ -918,13 +918,13 @@ export default function PricingPage() {
                 <span className="text-3xl font-bold text-white">$100.00 AUD</span>
               </div>
               <div className="text-sm text-gray-400 mt-1">$8.33/month</div>
-              <span className="inline-block mt-2 text-xs font-semibold text-emerald-400">Save 17% • 7-day free trial</span>
+              <span className="inline-block mt-2 text-xs font-semibold text-emerald-400">Save 17%</span>
             </div>
             <button
               onClick={() => handleSelectPlan('Pro', 'semiannual')}
               className="w-full py-3 px-4 rounded-lg font-medium transition-colors mb-6 bg-white/10 text-white hover:bg-white/20"
             >
-              Start Free Trial
+              Subscribe
             </button>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
@@ -981,13 +981,13 @@ export default function PricingPage() {
                 <span className="text-3xl font-bold text-white">$180.00 AUD</span>
               </div>
               <div className="text-sm text-gray-400 mt-1">$7.50/month</div>
-              <span className="inline-block mt-2 text-xs font-semibold text-emerald-400">Save 25% • 7-day free trial</span>
+              <span className="inline-block mt-2 text-xs font-semibold text-emerald-400">Save 25%</span>
             </div>
             <button
               onClick={() => handleSelectPlan('Pro', 'annual')}
               className="w-full py-3 px-4 rounded-lg font-medium transition-colors mb-6 bg-emerald-600 text-white hover:bg-emerald-700"
             >
-              Start Free Trial
+              Subscribe
             </button>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
@@ -1272,15 +1272,15 @@ export default function PricingPage() {
               Ready to Start Winning?
             </h2>
             <p className="text-lg text-purple-50 mb-6">
-              Join thousands of smart bettors. Start your 7-day free trial today.
+              Subscribe to Pro. Cancel anytime.
             </p>
             <button
               onClick={() => handleSelectPlan('Pro', 'monthly')}
               className="bg-white text-purple-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors shadow-lg"
             >
-              Start Free Trial Now
+              Subscribe
             </button>
-            <p className="text-purple-100 text-sm mt-4">7-day free trial • Cancel anytime</p>
+            <p className="text-purple-100 text-sm mt-4">Cancel anytime</p>
           </div>
         </div>
 
@@ -1295,29 +1295,6 @@ export default function PricingPage() {
             Frequently Asked Questions
           </h2>
           <div className="space-y-3">
-            <div 
-              onClick={() => setOpenFAQ(openFAQ === 0 ? null : 0)}
-              className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-purple-500 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 dark:text-white">
-                  Is there a free trial?
-                </h3>
-                <svg 
-                  className={`w-5 h-5 text-gray-500 transition-transform ${openFAQ === 0 ? 'rotate-180' : ''}`}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-              {openFAQ === 0 && (
-                <p className="text-gray-600 dark:text-gray-400 mt-3">
-                  Yes! All premium plans come with a 7-day free trial. A credit card is required, but you won't be charged until the trial ends. Cancel anytime during the trial period to avoid charges.
-                </p>
-              )}
-            </div>
             <div 
               onClick={() => setOpenFAQ(openFAQ === 1 ? null : 1)}
               className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-purple-500 transition-colors"
@@ -1518,11 +1495,6 @@ export default function PricingPage() {
                   <li>
                     <button onClick={() => router.push('/props')} className="text-gray-400 hover:text-white text-sm transition-colors">
                       Dashboard
-                    </button>
-                  </li>
-                  <li>
-                    <button onClick={() => router.push('/free-trial')} className="text-gray-400 hover:text-white text-sm transition-colors">
-                      Free Trial
                     </button>
                   </li>
                 </ul>

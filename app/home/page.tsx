@@ -14,6 +14,7 @@ import {
 } from '@/lib/profileSubscriptionGate';
 import type { User } from '@supabase/supabase-js';
 import { StatTrackrSplash } from '@/components/StatTrackrSplash';
+import HomeQuizLanding from '@/components/HomeQuizLanding';
 import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { 
   CheckCircle2,
@@ -89,7 +90,7 @@ function TryFreeMenu({
   const [visible, setVisible] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState('');
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [needsPassword, setNeedsPassword] = useState(false);
@@ -221,6 +222,7 @@ function TryFreeMenu({
                   </div>
                   <form
                     className="text-left"
+                    autoComplete="off"
                     onSubmit={(event) => {
                       event.preventDefault();
                       const next = email.trim();
@@ -234,8 +236,10 @@ function TryFreeMenu({
                         void emailAccountExists(next)
                           .then((exists) => {
                             if (exists) {
+                              setEmail(next);
                               setMode('signin');
                               setNeedsPassword(true);
+                              setGoogleError('That email already has an account. Enter its password to sign in.');
                               return;
                             }
                             router.push(`/login?signup=1&email=${encodeURIComponent(next)}`);
@@ -265,17 +269,19 @@ function TryFreeMenu({
                     </label>
                     <input
                       id="try-stattrackr-email"
+                      name="stattrackr-email"
                       type="email"
-                      autoComplete="email"
+                      autoComplete="off"
+                      readOnly={needsPassword}
                       value={email}
                       onChange={(event) => {
+                        if (needsPassword) return;
                         setEmail(event.target.value);
-                        setNeedsPassword(false);
                         setPassword('');
                         if (googleError) setGoogleError('');
                       }}
                       placeholder="Enter your email address"
-                      className="mt-2 h-11 w-full rounded-lg border border-transparent bg-[#1c2740] px-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500/70"
+                      className="mt-2 h-11 w-full rounded-lg border border-transparent bg-[#1c2740] px-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500/70 read-only:text-gray-200"
                     />
                     {needsPassword ? (
                       <div className="mt-3">
@@ -284,13 +290,26 @@ function TryFreeMenu({
                         </label>
                         <input
                           id="try-stattrackr-password"
+                          name="stattrackr-password"
                           type="password"
-                          autoComplete="current-password"
+                          autoComplete="new-password"
                           value={password}
                           onChange={(event) => setPassword(event.target.value)}
                           placeholder="Enter your password"
                           className="mt-2 h-11 w-full rounded-lg border border-transparent bg-[#1c2740] px-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500/70"
                         />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNeedsPassword(false);
+                            setPassword('');
+                            setMode('signup');
+                            setGoogleError('');
+                          }}
+                          className="mt-2 text-xs font-medium text-purple-300 hover:text-purple-200"
+                        >
+                          Use a different email
+                        </button>
                       </div>
                     ) : null}
                     <button
@@ -373,6 +392,8 @@ export default function HomePage() {
   const authCheckIdRef = useRef(0);
   const redirectingRef = useRef(false);
   const bootReadyRef = useRef(false);
+  const entryIntentHandled = useRef(false);
+  const [entryPhase, setEntryPhase] = useState<'intro' | 'survey' | 'email' | 'plan' | 'offer'>('intro');
 
   const finishBootToMarketing = () => {
     if (redirectingRef.current) return;
@@ -659,6 +680,22 @@ export default function HomePage() {
     }
   };
 
+  useEffect(() => {
+    if (!bootReady || !user || entryIntentHandled.current) return;
+    const intent = sessionStorage.getItem('stattrackr_entry_intent');
+    if (!intent) return;
+    entryIntentHandled.current = true;
+    sessionStorage.removeItem('stattrackr_entry_intent');
+    if (intent === 'pro' && !hasPremium) {
+      const cycle = sessionStorage.getItem('stattrackr_entry_cycle');
+      sessionStorage.removeItem('stattrackr_entry_cycle');
+      const billing = cycle === 'semiannual' || cycle === 'annual' ? cycle : 'monthly';
+      void handleSelectPlan('Pro', billing);
+      return;
+    }
+    if (intent === 'free') goToProps();
+  }, [bootReady, user, hasPremium]);
+
   const plans = [
     {
       name: 'Pro',
@@ -676,7 +713,7 @@ export default function HomePage() {
         'Priority support',
       ],
       limitations: [],
-      cta: 'Start Free Trial',
+      cta: 'Subscribe',
       highlighted: true,
     },
   ];
@@ -687,7 +724,28 @@ export default function HomePage() {
     return <StatTrackrSplash />;
   }
 
+  const introScroll = !user && entryPhase === 'intro';
+
   return (
+    <div className={introScroll ? 'h-dvh overflow-y-auto bg-[#050d1a] text-white' : undefined}>
+      {!user && (
+        <HomeQuizLanding
+          onPhaseChange={setEntryPhase}
+          onSignIn={() => router.push('/login')}
+          onStartPro={(cycle, email) => {
+            sessionStorage.setItem('stattrackr_entry_intent', 'pro');
+            sessionStorage.setItem('stattrackr_entry_cycle', cycle ?? 'monthly');
+            const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
+            router.push(`/login?signup=1${emailQuery}`);
+          }}
+          onContinueFree={(email) => {
+            sessionStorage.setItem('stattrackr_entry_intent', 'free');
+            const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
+            router.push(`/login?signup=1${emailQuery}`);
+          }}
+        />
+      )}
+      {user && (
     <div className="min-h-screen bg-[#050d1a] text-white">
       {/* Navigation Bar */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 pt-[max(1rem,env(safe-area-inset-top))] ${
@@ -835,7 +893,7 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section ref={heroRef} className="relative pt-28 sm:pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section ref={heroRef} className="relative overflow-hidden px-4 pb-20 pt-28 sm:px-6 sm:pt-32 lg:px-8">
         {/* Decorative background glow — lighter on mobile to avoid GPU jank */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -left-32 w-[40rem] h-[40rem] rounded-full bg-purple-600/15 md:bg-purple-600/20 blur-3xl md:blur-[120px]" />
@@ -1171,7 +1229,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-4">Competitive pricing</h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">Pick the billing cycle that suits you. Every plan includes a 7-day free trial.</p>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">Pick the billing cycle that suits you.</p>
           </div>
 
           {/* Mobile toggle */}
@@ -1207,7 +1265,7 @@ export default function HomePage() {
                       <span className="text-sm font-medium text-gray-400">AUD</span>
                       <span className="text-gray-400">/month</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">7-day free trial</p>
+                    <p className="text-xs text-gray-500 mt-2">Billed monthly</p>
                   </div>
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, idx) => (
@@ -1238,7 +1296,7 @@ export default function HomePage() {
                       <span className="text-sm font-medium text-gray-400">AUD</span>
                       <span className="text-gray-400">/6 months</span>
                     </div>
-                    <p className="text-xs text-emerald-400 mt-2">Save 17% • 7-day free trial</p>
+                    <p className="text-xs text-emerald-400 mt-2">Save 17%</p>
                   </div>
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, idx) => (
@@ -1269,7 +1327,7 @@ export default function HomePage() {
                       <span className="text-sm font-medium text-gray-400">AUD</span>
                       <span className="text-gray-400">/year</span>
                     </div>
-                    <p className="text-xs text-emerald-400 mt-2">Save 25% • 7-day free trial</p>
+                    <p className="text-xs text-emerald-400 mt-2">Save 25%</p>
                   </div>
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, idx) => (
@@ -1302,7 +1360,6 @@ export default function HomePage() {
             {[
               { q: 'How has the AFL prediction model performed?', a: 'Profitable every week of the AFL season. The model has consistently identified value across rounds, giving subscribers an edge week after week.' },
               { q: 'How have the admin picks performed?', a: '40+ units made across the season. Our team\'s hand-selected picks have delivered strong, consistent returns for subscribers.' },
-              { q: 'Is there a free trial?', a: 'Yes. All plans include a 7-day free trial. A payment method is required to begin, but you won\'t be charged until the trial ends. If you cancel before it concludes, you won\'t be charged at all.' },
               { q: 'Can I cancel anytime?', a: 'Yes. You can cancel your subscription at any time. There are no cancellation fees and no unnecessary hurdles.' },
               { q: 'Is mobile supported?', a: 'Yes. StatTrackr works across phone, tablet, and desktop. The full feature set and data are available on mobile, so you can research on the go.' },
               { q: 'How do I contact support?', a: <>Email us at <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>. We typically respond within 24 hours.</> },
@@ -1387,7 +1444,7 @@ export default function HomePage() {
         <div className="relative max-w-5xl mx-auto">
           <h2 className="text-3xl sm:text-5xl font-bold mb-4">Ready to get started?</h2>
           <p className="text-lg text-white/80 max-w-xl mx-auto mb-8">
-            Start your 7-day free trial. Cancel anytime, you won&apos;t be charged until the trial ends.
+            Subscribe to Pro. Cancel anytime.
           </p>
           <button
             onClick={() => {
@@ -1397,7 +1454,7 @@ export default function HomePage() {
             }}
             className="px-8 py-4 bg-white text-purple-600 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all hover:scale-[1.02] shadow-lg"
           >
-            Start Free Trial
+            Subscribe
           </button>
         </div>
       </section>
@@ -1460,6 +1517,8 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+    </div>
+      )}
     </div>
   );
 }
