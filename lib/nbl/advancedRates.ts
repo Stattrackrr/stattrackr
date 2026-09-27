@@ -87,6 +87,21 @@ export function nblReboundPct(input: {
   return (100 * playerReb * (teamMp / 5)) / (mp * available);
 }
 
+/** Boards available while this player is on the court: MP / (Tm MP / 5) × (team + opponent boards). */
+export function nblOnCourtRebounds(input: {
+  mp: number;
+  teamMp: number;
+  teamReb: number;
+  oppReb: number;
+}): number | null {
+  const { mp, teamMp, teamReb, oppReb } = input;
+  if (![mp, teamMp, teamReb, oppReb].every(finite)) return null;
+  if (mp <= 0 || teamMp <= 0) return null;
+  const available = teamReb + oppReb;
+  if (available <= 0) return null;
+  return (mp * available * 5) / teamMp;
+}
+
 /** Pace = [regulationTmMP / Team Minutes] × (Team Poss + Opp Poss) / 2 */
 export function nblGamePace(input: {
   teamMp: number;

@@ -2501,6 +2501,16 @@ export default function NBALandingPage() {
 
   // Track which popup is open: key is "playerName|statType|lineValue"
   const [openPopup, setOpenPopup] = useState<string | null>(null);
+  const bookmakerPopupClosingRef = useRef(false);
+  const closeBookmakerPopup = (e: { preventDefault: () => void; stopPropagation: () => void }) => {
+    e.preventDefault();
+    e.stopPropagation();
+    bookmakerPopupClosingRef.current = true;
+    setOpenPopup(null);
+    window.setTimeout(() => {
+      bookmakerPopupClosingRef.current = false;
+    }, 450);
+  };
   // Column sorting state: column name -> 'none' | 'asc' | 'desc'
   const [columnSort, setColumnSort] = useState<Record<string, 'none' | 'asc' | 'desc'>>({
     dvp: 'none',
@@ -11120,6 +11130,7 @@ export default function NBALandingPage() {
                               onClick={(e) => {
                                 if (!isUnmodifiedLeftClick(e)) return;
                                 if (eventTargetIsInteractive(e)) return;
+                                if (bookmakerPopupClosingRef.current || openPopup) return;
                                 if (navigatingRef.current) return;
                                 navigatingRef.current = true;
                                 setNavigatingToPlayer(true);
@@ -11707,6 +11718,7 @@ export default function NBALandingPage() {
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
+                                              if (bookmakerPopupClosingRef.current) return;
                                               setOpenPopup(openPopup === expandKey ? null : expandKey);
                                             }}
                                             className={`flex items-center justify-center px-2 py-1.5 rounded-lg border flex-shrink-0 relative ${
@@ -11720,19 +11732,14 @@ export default function NBALandingPage() {
                                           </button>
                                           
                                           {/* Popup modal for all bookmakers - Mobile */}
-                                          {isPopupOpen && (
+                                          {isPopupOpen && typeof document !== 'undefined' && createPortal(
                                             <>
-                                              {/* Backdrop - click to close */}
                                               <div
-                                                className="fixed inset-0 z-[100]"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setOpenPopup(null);
-                                                }}
+                                                className="fixed inset-0 z-[200] bg-black/40"
+                                                onPointerDown={closeBookmakerPopup}
                                               />
-                                              {/* Popup content - centered on mobile */}
                                               <div
-                                                className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] rounded-2xl border shadow-2xl p-4 w-[90vw] max-w-md ${
+                                                className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] rounded-2xl border shadow-2xl p-4 w-[90vw] max-w-md ${
                                                   mounted && isDark
                                                     ? 'bg-[#0b1a2b] border-[#22324d]'
                                                     : 'bg-white border-gray-300'
@@ -11741,18 +11748,16 @@ export default function NBALandingPage() {
                                                   maxHeight: '70vh',
                                                   overflowY: 'auto'
                                                 }}
+                                                onPointerDown={(e) => e.stopPropagation()}
                                                 onClick={(e) => e.stopPropagation()}
                                               >
-                                                {/* Close button */}
                                                 <div className="flex justify-between items-center mb-3">
                                                   <span className={`text-sm font-medium ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                                     {allBookmakers.length} bookmakers
                                                   </span>
                                                   <button
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      setOpenPopup(null);
-                                                    }}
+                                                    type="button"
+                                                    onPointerDown={closeBookmakerPopup}
                                                     className={`${mounted && isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'} transition-colors p-1`}
                                                     aria-label="Close"
                                                   >
@@ -11803,7 +11808,8 @@ export default function NBALandingPage() {
                                                   })}
                                                 </div>
                                               </div>
-                                            </>
+                                            </>,
+                                            document.body
                                           )}
                                         </div>
                                       )}

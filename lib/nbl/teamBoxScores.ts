@@ -10,7 +10,7 @@ import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
 import {
   nblGamePace,
   nblPossessions,
-  nblReboundPct,
+  nblOnCourtRebounds,
   nblRegulationTeamMinutes,
   nblTrueShootingPct,
   nblUsagePct,
@@ -172,35 +172,29 @@ function attachRates(
         })
       : null;
 
-  const trebPct =
+  const trebOnCourt =
     team && opp && mp > 0
-      ? nblReboundPct({
-          mp,
-          playerReb: num(game.rebounds),
-          teamMp: team.minutes,
-          teamReb: team.trb,
-          oppReb: opp.trb,
-        })
+      ? nblOnCourtRebounds({ mp, teamMp: team.minutes, teamReb: team.trb, oppReb: opp.trb })
+      : null;
+  const orebOnCourt =
+    team && opp && mp > 0
+      ? nblOnCourtRebounds({ mp, teamMp: team.minutes, teamReb: team.orb, oppReb: opp.drb })
+      : null;
+  const drebOnCourt =
+    team && opp && mp > 0
+      ? nblOnCourtRebounds({ mp, teamMp: team.minutes, teamReb: team.drb, oppReb: opp.orb })
+      : null;
+  const trebPct =
+    trebOnCourt != null && trebOnCourt > 0
+      ? (100 * num(game.rebounds)) / trebOnCourt
       : null;
   const orebPct =
-    team && opp && mp > 0
-      ? nblReboundPct({
-          mp,
-          playerReb: num(game.offensiveRebounds),
-          teamMp: team.minutes,
-          teamReb: team.orb,
-          oppReb: opp.drb,
-        })
+    orebOnCourt != null && orebOnCourt > 0
+      ? (100 * num(game.offensiveRebounds)) / orebOnCourt
       : null;
   const drebPct =
-    team && opp && mp > 0
-      ? nblReboundPct({
-          mp,
-          playerReb: num(game.defensiveRebounds),
-          teamMp: team.minutes,
-          teamReb: team.drb,
-          oppReb: opp.orb,
-        })
+    drebOnCourt != null && drebOnCourt > 0
+      ? (100 * num(game.defensiveRebounds)) / drebOnCourt
       : null;
 
   const teamPoss = team ? nblPossessions(team.fga, team.fta, team.tov, team.orb) : null;
@@ -222,6 +216,9 @@ function attachRates(
     trebPct: trebPct != null ? round1(trebPct) : null,
     orebPct: orebPct != null ? round1(orebPct) : null,
     drebPct: drebPct != null ? round1(drebPct) : null,
+    trebOnCourt,
+    orebOnCourt,
+    drebOnCourt,
     pace: pace != null ? round1(pace) : null,
   };
 }

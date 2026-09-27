@@ -195,6 +195,12 @@ function readStat(game: NblGameLogRow, key: string): number | null {
   return raw;
 }
 
+const REB_TOTALS: { pct: string; got: string; onCourt: 'trebOnCourt' | 'orebOnCourt' | 'drebOnCourt'; boards: 'rebounds' | 'offensiveRebounds' | 'defensiveRebounds' }[] = [
+  { pct: 'trebPct', got: 'trebGot', onCourt: 'trebOnCourt', boards: 'rebounds' },
+  { pct: 'orebPct', got: 'orebGot', onCourt: 'orebOnCourt', boards: 'offensiveRebounds' },
+  { pct: 'drebPct', got: 'drebGot', onCourt: 'drebOnCourt', boards: 'defensiveRebounds' },
+];
+
 function aggregatePlayerStats(games: NblGameLogRow[]): {
   minutes: number;
   games: number;
@@ -203,6 +209,9 @@ function aggregatePlayerStats(games: NblGameLogRow[]): {
   const sum: Record<string, number> = {};
   const weight: Record<string, number> = {};
   const count: Record<string, number> = {};
+  const rebGot: Record<string, number> = {};
+  const rebOn: Record<string, number> = {};
+  const rebCovered: Record<string, number> = {};
   let minuteSum = 0;
   let n = 0;
 
@@ -211,6 +220,13 @@ function aggregatePlayerStats(games: NblGameLogRow[]): {
     if (mp < MIN_GAME_MINUTES) continue;
     minuteSum += mp;
     n += 1;
+    for (const reb of REB_TOTALS) {
+      const onCourt = g[reb.onCourt];
+      if (typeof onCourt !== 'number' || !Number.isFinite(onCourt) || onCourt <= 0) continue;
+      rebGot[reb.pct] = (rebGot[reb.pct] || 0) + num(g[reb.boards]);
+      rebOn[reb.pct] = (rebOn[reb.pct] || 0) + onCourt;
+      rebCovered[reb.pct] = (rebCovered[reb.pct] || 0) + 1;
+    }
     for (const key of TEAM_PIE_STAT_KEYS) {
       if (RATIO_FROM_TOTALS.has(key)) continue;
       const val = readStat(g, key);
@@ -242,6 +258,15 @@ function aggregatePlayerStats(games: NblGameLogRow[]): {
   const app = nblAssistsPerPossession(sum.assists || 0, possSum);
   if (ppp != null) stats.ptsPerPoss = round2(ppp);
   if (app != null) stats.astPerPoss = round2(app);
+  for (const reb of REB_TOTALS) {
+    const covered = rebCovered[reb.pct] || 0;
+    const onCourt = rebOn[reb.pct] || 0;
+    if (covered !== n || onCourt <= 0) continue;
+    const got = rebGot[reb.pct] || 0;
+    stats[reb.pct] = round1((100 * got) / onCourt);
+    stats[reb.got] = got;
+    stats[reb.onCourt] = round1(onCourt);
+  }
   return { minutes: round1(minuteSum / n), games: n, stats };
 }
 

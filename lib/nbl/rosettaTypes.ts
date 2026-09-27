@@ -223,6 +223,10 @@ export type NblGameLogRow = {
   trebPct?: number | null;
   orebPct?: number | null;
   drebPct?: number | null;
+  /** Estimated boards available while this player was on the court. */
+  trebOnCourt?: number | null;
+  orebOnCourt?: number | null;
+  drebOnCourt?: number | null;
   pace?: number | null;
 };
 

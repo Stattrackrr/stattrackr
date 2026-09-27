@@ -116,7 +116,15 @@ const STAT_PRIORITY = [
 ];
 const META_SKIP = new Set(['season', 'game_number', 'matchId', 'date', 'game_date', 'opponent', 'opponentCode', 'isHome', 'team', 'teamCode', 'result', 'venue', 'round', '__nblGameIndex']);
 /** All numeric game-log stats are shown on the main chart pills. */
-const STATS_HIDDEN = new Set<string>(['usgPct', 'trebPct', 'orebPct', 'drebPct']);
+const STATS_HIDDEN = new Set<string>([
+  'usgPct',
+  'trebPct',
+  'orebPct',
+  'drebPct',
+  'trebOnCourt',
+  'orebOnCourt',
+  'drebOnCourt',
+]);
 const PCT_STATS = new Set(['fgPct', 'twoPct', 'threePct', 'ftPct', 'usgPct', 'tsPct', 'trebPct', 'orebPct', 'drebPct']);
 const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024', 'season2023'] as const;
 

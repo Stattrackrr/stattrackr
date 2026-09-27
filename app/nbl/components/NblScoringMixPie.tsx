@@ -24,6 +24,7 @@ type BuiltSlice = {
   a1: number;
   path: string;
   isSelected: boolean;
+  countLabel: string | null;
 };
 
 type PieStat = {
@@ -32,6 +33,15 @@ type PieStat = {
   full: string;
   pct: boolean;
   digits?: number;
+};
+
+const REB_INFO: Record<string, string> = {
+  trebPct:
+    'TREB is the total rebounds available while that player is on the court, not the team total for the game. Minutes differ, so the total is different for each player. The percentage is his share of that on-court total.',
+  orebPct:
+    'OREB is the offensive rebounds available while that player is on the court, not the team total for the game. Minutes differ, so the total is different for each player. The percentage is his share of that on-court total.',
+  drebPct:
+    'DREB is the defensive rebounds available while that player is on the court, not the team total for the game. Minutes differ, so the total is different for each player. The percentage is his share of that on-court total.',
 };
 
 const PIE_STATS: PieStat[] = [
@@ -125,6 +135,26 @@ function formatStatValue(value: number, pct: boolean, digits = 1): string {
   return value.toFixed(digits);
 }
 
+const REB_COUNT_KEYS: Record<string, { got: string; onCourt: string }> = {
+  trebPct: { got: 'trebGot', onCourt: 'trebOnCourt' },
+  orebPct: { got: 'orebGot', onCourt: 'orebOnCourt' },
+  drebPct: { got: 'drebGot', onCourt: 'drebOnCourt' },
+};
+
+function formatBoardCount(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function reboundCountLabel(stats: Record<string, number> | undefined, statKey: string): string | null {
+  const meta = REB_COUNT_KEYS[statKey];
+  if (!meta || !stats) return null;
+  const got = stats[meta.got];
+  const onCourt = stats[meta.onCourt];
+  if (typeof got !== 'number' || typeof onCourt !== 'number' || onCourt <= 0) return null;
+  return `${formatBoardCount(got)} of ${formatBoardCount(onCourt)}`;
+}
+
 function wrapPieLabel(label: string, maxChars = 11): string[] {
   const words = String(label || '').trim().split(/\s+/).filter(Boolean);
   if (!words.length) return [];
@@ -191,6 +221,7 @@ function interpolateSlices(from: BuiltSlice[], to: BuiltSlice[], t: number): Bui
         a0,
         a1,
         path: donutPath(R_OUT, R_IN, a0, a1),
+        countLabel: null,
       });
       continue;
     }
@@ -254,7 +285,9 @@ export function NblScoringMixPie({
   const [labelVisible, setLabelVisible] = useState(true);
   const [shownLabel, setShownLabel] = useState(PIE_STATS[0].full);
   const [teammateMenuOpen, setTeammateMenuOpen] = useState(false);
+  const [rebInfoKey, setRebInfoKey] = useState<string | null>(null);
   const teammateMenuRef = useRef<HTMLDivElement>(null);
+  const rebInfoRef = useRef<HTMLDivElement>(null);
   const selectedRowRef = useRef<HTMLButtonElement | null>(null);
   const namesListRef = useRef<HTMLDivElement | null>(null);
   const pieBoxRef = useRef<HTMLDivElement | null>(null);
@@ -292,6 +325,17 @@ export function NblScoringMixPie({
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
   }, [teammateMenuOpen]);
+
+  useEffect(() => {
+    if (!rebInfoKey) return;
+    const onDoc = (e: MouseEvent) => {
+      if (rebInfoRef.current && !rebInfoRef.current.contains(e.target as Node)) {
+        setRebInfoKey(null);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [rebInfoKey]);
 
   const canEditTeammate = Boolean(setTeammateFilterName && setWithWithoutMode);
   const activeTeammate = teammateFilterName?.trim() || null;
@@ -408,6 +452,7 @@ export function NblScoringMixPie({
         a1,
         path: donutPath(R_OUT, R_IN, a0 - overlap, a1 + overlap),
         isSelected: item.isSelected,
+        countLabel: reboundCountLabel(item.stats, activeStat.key),
       });
       a0 = a1;
     }
@@ -526,9 +571,10 @@ export function NblScoringMixPie({
         <span className={`text-[11px] font-medium truncate sm:hidden ${muted}`}>{activeStat.full}</span>
       </div>
       <div
+        ref={rebInfoRef}
         role="tablist"
         aria-label="Advanced stat"
-        className={`relative grid p-0.5 rounded-md ${
+        className={`relative z-20 grid p-0.5 rounded-md ${
           isDark ? 'bg-white/[0.06]' : 'bg-black/[0.06]'
         }`}
         style={{ gridTemplateColumns: `repeat(${PIE_STATS.length}, minmax(0, 1fr))` }}
@@ -545,30 +591,68 @@ export function NblScoringMixPie({
         />
         {PIE_STATS.map((stat) => {
           const on = stat.key === activeStat.key;
+          const info = REB_INFO[stat.key];
+          const infoOn = rebInfoKey === stat.key;
           return (
-            <button
-              key={stat.key}
-              type="button"
-              role="tab"
-              aria-selected={on}
-              onClick={() => {
-                setStatKey(stat.key);
-                setHoverId(null);
-              }}
-              className={`relative z-[1] px-1 py-1 text-[10px] sm:text-[11px] font-medium tracking-[0.02em] rounded-[5px] transition-colors duration-500 ${
-                on
-                  ? isDark
-                    ? 'text-gray-100'
-                    : 'text-gray-900'
-                  : isDark
-                    ? 'text-gray-500 hover:text-gray-300'
-                    : 'text-gray-500 hover:text-gray-800'
-              }`}
-            >
-              {stat.short}
-            </button>
+            <div key={stat.key} className="relative z-[1] flex min-w-0 items-center justify-center gap-px">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => {
+                  setStatKey(stat.key);
+                  setHoverId(null);
+                  setRebInfoKey(null);
+                }}
+                className={`py-1 text-[10px] sm:text-[11px] font-medium tracking-[0.02em] rounded-[5px] transition-colors duration-500 ${
+                  on
+                    ? isDark
+                      ? 'text-gray-100'
+                      : 'text-gray-900'
+                    : isDark
+                      ? 'text-gray-500 hover:text-gray-300'
+                      : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                {stat.short}
+              </button>
+              {info ? (
+                <button
+                  type="button"
+                  aria-label={`How ${stat.short} is counted`}
+                  aria-expanded={infoOn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRebInfoKey((cur) => (cur === stat.key ? null : stat.key));
+                  }}
+                  className={`relative z-[2] flex h-3 w-3 shrink-0 items-center justify-center rounded-full border text-[8px] font-semibold leading-none ${
+                    infoOn
+                      ? isDark
+                        ? 'border-purple-400 bg-purple-500/30 text-purple-100'
+                        : 'border-purple-400 bg-purple-100 text-purple-800'
+                      : isDark
+                        ? 'border-gray-500 text-gray-300 hover:border-gray-300 hover:text-white'
+                        : 'border-gray-300 text-gray-500 hover:border-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  i
+                </button>
+              ) : null}
+            </div>
           );
         })}
+        {rebInfoKey && REB_INFO[rebInfoKey] ? (
+          <div
+            role="note"
+            className={`absolute left-0 right-0 top-full z-30 mt-1.5 rounded-lg border px-2.5 py-2 text-left text-[11px] font-medium leading-snug shadow-lg sm:left-1/2 sm:right-auto sm:w-72 sm:-translate-x-1/2 ${
+              isDark
+                ? 'border-gray-600 bg-[#0a1929] text-gray-200'
+                : 'border-gray-200 bg-white text-gray-700'
+            }`}
+          >
+            {REB_INFO[rebInfoKey]}
+          </div>
+        ) : null}
       </div>
       {canEditTeammate ? (
         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
@@ -879,14 +963,27 @@ export function NblScoringMixPie({
                         </span>
                       </span>
                       <span
-                        className={`text-[12px] sm:text-[13px] tabular-nums flex-shrink-0 transition-colors duration-300 ${
+                        className={`tabular-nums flex-shrink-0 text-right transition-colors duration-300 ${
                           emptySplit
                             ? muted
                             : `${emphasized ? 'font-bold' : 'font-semibold'} ${heading}`
                         }`}
                         style={!emptySplit && emphasized ? { color: slice.fill } : undefined}
                       >
-                        {valuesLocked ? 'TBD' : emptySplit ? '—' : formatStatValue(live.value, activeStat.pct, activeStat.digits ?? 1)}
+                        {valuesLocked ? (
+                          <span className="text-[12px] sm:text-[13px]">TBD</span>
+                        ) : emptySplit ? (
+                          <span className="text-[12px] sm:text-[13px]">—</span>
+                        ) : (
+                          <span className="flex flex-col items-end leading-tight">
+                            <span className="text-[12px] sm:text-[13px]">
+                              {formatStatValue(live.value, activeStat.pct, activeStat.digits ?? 1)}
+                            </span>
+                            {slice.countLabel ? (
+                              <span className={`text-[10px] sm:text-[11px] font-medium ${muted}`}>{slice.countLabel}</span>
+                            ) : null}
+                          </span>
+                        )}
                       </span>
                     </div>
                     <div className={`mt-1 h-1 sm:h-[3px] rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-black/10'}`}>
