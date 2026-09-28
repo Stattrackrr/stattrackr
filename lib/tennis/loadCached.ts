@@ -4,8 +4,10 @@
 
 import {
   readTennisPlayerLogsCache,
+  readTennisPlayerLogsCacheMany,
   readTennisRosterCache,
   writeTennisPlayerLogsCache,
+  writeTennisPlayerLogsCacheMany,
 } from '@/lib/tennis/dashboardCache';
 import {
   loadPlayerMatches,
@@ -17,7 +19,7 @@ import {
   type TennisTour,
 } from '@/lib/tennis/data';
 import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
-import { readApiTennisPlayerMatches } from '@/lib/tennis/apiTennis';
+import { readApiTennisPlayerMatches, listApiTennisPlayerIds } from '@/lib/tennis/apiTennis';
 import { TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
@@ -43,6 +45,12 @@ function coversHistoryYears(games: TennisMatchRow[]): boolean {
 export function tennisLogsNeedHistory(games: readonly TennisMatchRow[] | null | undefined): boolean {
   if (!games?.length || games.length < 12) return true;
   return !coversHistoryYears(games as TennisMatchRow[]);
+}
+
+function redisMissingDiskHistory(redisGames: TennisMatchRow[], diskGames: TennisMatchRow[]): boolean {
+  if (!diskGames.length) return false;
+  if (redisGames.length < diskGames.length) return true;
+  return !coversHistoryYears(redisGames) && coversHistoryYears(diskGames);
 }
 
 function mergeMatchRows(primary: TennisMatchRow[], overlay: TennisMatchRow[]): TennisMatchRow[] {
@@ -115,20 +123,20 @@ export async function loadPlayerMatchesCached(opts: {
   if (playerId) {
     const cached = await readTennisPlayerLogsCache(playerId);
     let cachedGames = cached?.games || [];
-    const needsHistory =
-      !cached?.historyBackfilled && (cachedGames.length < 12 || !coversHistoryYears(cachedGames));
-    if (needsHistory) {
+    if (tennisLogsNeedHistory(cachedGames) || !cached?.historyBackfilled) {
       const fromDisk = readApiTennisPlayerMatches(playerId);
-      const games = fromDisk.length ? mergeMatchRows(fromDisk, cachedGames) : cachedGames;
-      const written = await writeTennisPlayerLogsCache({
-        fetchedAt: new Date().toISOString(),
-        playerId,
-        playerName: games[0]?.playerName || cached?.playerName || String(opts.playerName || playerId),
-        tour: opts.tour || games[0]?.tour || cached?.tour || null,
-        games,
-        historyBackfilled: true,
-      });
-      cachedGames = written?.games?.length ? written.games : games;
+      if (fromDisk.length && redisMissingDiskHistory(cachedGames, fromDisk)) {
+        const games = mergeMatchRows(fromDisk, cachedGames);
+        const written = await writeTennisPlayerLogsCache({
+          fetchedAt: new Date().toISOString(),
+          playerId,
+          playerName: games[0]?.playerName || cached?.playerName || String(opts.playerName || playerId),
+          tour: opts.tour || games[0]?.tour || cached?.tour || null,
+          games,
+          historyBackfilled: true,
+        });
+        cachedGames = written?.games?.length ? written.games : games;
+      }
     }
     if (cachedGames.length) {
       return opts.tour ? cachedGames.filter((row) => row.tour === opts.tour) : cachedGames;
@@ -148,4 +156,44 @@ export async function loadPlayerMatchesCached(opts: {
     return live;
   }
   return [];
+}
+
+/** Rewrite every Redis player log that is missing compiled 2024–2026 history. */
+export async function backfillAllTennisPlayerLogs(): Promise<{
+  players: number;
+  repaired: number;
+  unchanged: number;
+}> {
+  const ids = listApiTennisPlayerIds();
+  let repaired = 0;
+  let unchanged = 0;
+  const batchSize = 40;
+  for (let i = 0; i < ids.length; i += batchSize) {
+    const slice = ids.slice(i, i + batchSize);
+    const existing = await readTennisPlayerLogsCacheMany(slice);
+    const payloads = [];
+    for (const id of slice) {
+      const disk = readApiTennisPlayerMatches(id);
+      const redisGames = existing.get(id) || [];
+      if (!redisMissingDiskHistory(redisGames, disk)) {
+        unchanged += 1;
+        continue;
+      }
+      const games = mergeMatchRows(disk, redisGames);
+      payloads.push({
+        fetchedAt: new Date().toISOString(),
+        playerId: id,
+        playerName: games.find((row) => row.playerName)?.playerName || redisGames[0]?.playerName || id,
+        tour: games.find((row) => row.tour)?.tour || redisGames[0]?.tour || null,
+        games,
+        historyBackfilled: true,
+      });
+    }
+    if (payloads.length) repaired += await writeTennisPlayerLogsCacheMany(payloads);
+    const done = Math.min(i + batchSize, ids.length);
+    if (done === ids.length || done % 400 === 0) {
+      console.log(`[tennis history] ${done}/${ids.length} repaired=${repaired} unchanged=${unchanged}`);
+    }
+  }
+  return { players: ids.length, repaired, unchanged };
 }

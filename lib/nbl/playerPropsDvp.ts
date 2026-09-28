@@ -121,6 +121,7 @@ function sourceFor(
   stat: string
 ): 'matrix' | 'three' | 'interior' | 'none' {
   const key = String(stat || '').toLowerCase();
+  if (key === 'pra' || key === 'pr' || key === 'pa' || key === 'ra') return 'none';
   if (key === 'threemade' || key === 'threes' || key === '3pm') return 'three';
 
   if (type === 'primary_bh' || type === 'secondary_bh') {

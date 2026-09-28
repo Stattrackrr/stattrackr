@@ -393,6 +393,7 @@ export default function HomePage() {
   const redirectingRef = useRef(false);
   const bootReadyRef = useRef(false);
   const entryIntentHandled = useRef(false);
+  const keepSurveyRef = useRef(false);
   const [entryPhase, setEntryPhase] = useState<'intro' | 'survey' | 'email' | 'plan' | 'offer'>('intro');
 
   const finishBootToMarketing = () => {
@@ -449,7 +450,7 @@ export default function HomePage() {
     const run = async () => {
       // Fast path: known Pro from cache — stay on splash and hard-redirect.
       const cachedPro = peekViewerProfileCache();
-      if (cachedPro?.isPro) {
+      if (cachedPro?.isPro && !keepSurveyRef.current) {
         goProToProps();
         return;
       }
@@ -480,6 +481,10 @@ export default function HomePage() {
       try {
         const { data: { session } } = await withTimeout(supabase.auth.getSession(), 2500);
         if (cancelled || checkId !== authCheckIdRef.current) return;
+        if (keepSurveyRef.current) {
+          finishBootToMarketing();
+          return;
+        }
         setUser(session?.user ?? null);
         if (session?.user) {
           await checkPremiumStatus(session.user.id, checkId);
@@ -498,6 +503,8 @@ export default function HomePage() {
 
     // Listen for auth changes after boot (initial session is handled by run() above)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // A login or logout on another screen broadcasts here. Don't tear down a survey already in progress.
+      if (keepSurveyRef.current) return;
       if (event === 'SIGNED_OUT') {
         authCheckIdRef.current += 1;
         redirectingRef.current = false;
@@ -556,6 +563,7 @@ export default function HomePage() {
   }, [bootReady, isRedirectingPro]);
 
   const checkPremiumStatus = async (userId: string, checkId: number) => {
+    if (keepSurveyRef.current) return;
     const cached = readViewerProfileCache(userId);
     if (cached?.isPro && checkId === authCheckIdRef.current) {
       goProToProps();
@@ -581,6 +589,7 @@ export default function HomePage() {
       );
       if (checkId !== authCheckIdRef.current) return;
       if (profile.isPro) {
+        if (keepSurveyRef.current) return;
         goProToProps();
         return;
       }
@@ -684,6 +693,7 @@ export default function HomePage() {
     if (!bootReady || !user || entryIntentHandled.current) return;
     const intent = sessionStorage.getItem('stattrackr_entry_intent');
     if (!intent) return;
+    if (window.location.pathname !== '/home') return;
     entryIntentHandled.current = true;
     sessionStorage.removeItem('stattrackr_entry_intent');
     if (intent === 'pro' && !hasPremium) {
@@ -730,7 +740,10 @@ export default function HomePage() {
     <div className={introScroll ? 'h-dvh overflow-y-auto bg-[#050d1a] text-white' : undefined}>
       {!user && (
         <HomeQuizLanding
-          onPhaseChange={setEntryPhase}
+          onPhaseChange={(phase) => {
+            if (phase !== 'intro') keepSurveyRef.current = true;
+            setEntryPhase(phase);
+          }}
           onSignIn={() => router.push('/login')}
           onStartPro={(cycle, email) => {
             sessionStorage.setItem('stattrackr_entry_intent', 'pro');

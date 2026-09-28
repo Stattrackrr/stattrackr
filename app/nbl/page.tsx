@@ -1101,6 +1101,15 @@ export default function NblDashboardPage() {
       return;
     }
     if (nblOddsBoardKeyRef.current === boardKey) return;
+    nblOddsBoardKeyRef.current = '';
+    setNblOddsBooks([]);
+    setNblPlayerOddsByStat({});
+    setNblOddsHomeTeam('');
+    setNblOddsAwayTeam('');
+    if (!hasIncomingNblBookOrLineRef.current) {
+      setSelectedNblBookIndex(0);
+      setNblGameLineValue(null);
+    }
     let cancelled = false;
     setNblOddsLoading(true);
     (async () => {
@@ -1116,6 +1125,22 @@ export default function NblDashboardPage() {
           data?.byStat && typeof data.byStat === 'object'
             ? (data.byStat as Record<string, NblBookRow[]>)
             : {};
+        const home = typeof data?.homeTeam === 'string' ? data.homeTeam : '';
+        const away = typeof data?.awayTeam === 'string' ? data.awayTeam : '';
+        const homeKey = normalizeTeamKey(resolveNblClubName(home) || home);
+        const awayKey = normalizeTeamKey(resolveNblClubName(away) || away);
+        const teamKey = normalizeTeamKey(team || '');
+        const oppKey = normalizeTeamKey(opponent || '');
+        const sideHit = (key: string) => key && (key === homeKey || key === awayKey);
+        if (!homeKey || !awayKey || !sideHit(teamKey) || !sideHit(oppKey)) {
+          nblOddsBoardKeyRef.current = boardKey;
+          setNblOddsBooks([]);
+          setNblPlayerOddsByStat({});
+          setNblOddsHomeTeam('');
+          setNblOddsAwayTeam('');
+          if (!hasIncomingNblBookOrLineRef.current) setNblGameLineValue(null);
+          return;
+        }
         nblOddsBoardKeyRef.current = boardKey;
         if (wantsPlayerProps) {
           setNblPlayerOddsByStat(byStat);
@@ -1124,8 +1149,8 @@ export default function NblDashboardPage() {
           setNblOddsBooks(books);
           setNblPlayerOddsByStat({});
         }
-        setNblOddsHomeTeam(typeof data?.homeTeam === 'string' ? data.homeTeam : team!);
-        setNblOddsAwayTeam(typeof data?.awayTeam === 'string' ? data.awayTeam : opponent!);
+        setNblOddsHomeTeam(home);
+        setNblOddsAwayTeam(away);
         if (!hasIncomingNblBookOrLineRef.current) {
           setSelectedNblBookIndex(0);
           setNblGameLineValue(null);

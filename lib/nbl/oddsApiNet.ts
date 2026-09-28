@@ -90,6 +90,10 @@ const METRIC_TO_CANON: Record<string, MetricCanon> = {
   'player threes made': { stat: 'threeMade', canon: 'PLAYER_THREES_MADE', noun: 'threes' },
   threes: { stat: 'threeMade', canon: 'PLAYER_THREES_MADE', noun: 'threes' },
   'three pointers': { stat: 'threeMade', canon: 'PLAYER_THREES_MADE', noun: 'threes' },
+  'player pra': { stat: 'pra', canon: 'PLAYER_PRA', noun: 'PRA' },
+  'player pr': { stat: 'pr', canon: 'PLAYER_PR', noun: 'PR' },
+  'player pa': { stat: 'pa', canon: 'PLAYER_PA', noun: 'PA' },
+  'player ra': { stat: 'ra', canon: 'PLAYER_RA', noun: 'RA' },
 };
 
 type OddsApiEvent = {

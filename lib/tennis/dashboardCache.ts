@@ -194,7 +194,7 @@ export async function writeTennisPlayerLogsCache(
   return next;
 }
 
-async function writeTennisPlayerLogsCacheMany(payloads: TennisPlayerLogsCache[]): Promise<number> {
+export async function writeTennisPlayerLogsCacheMany(payloads: TennisPlayerLogsCache[]): Promise<number> {
   const entries = payloads
     .map((payload) => fitPlayerLogsPayload(payload))
     .filter((payload): payload is TennisPlayerLogsCache => Boolean(payload))

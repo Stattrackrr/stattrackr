@@ -129,12 +129,16 @@ async function persistNblListCache(payload: NblPlayerPropsListPayload): Promise<
   writeListDiskCache(payload);
 }
 
-const LIST_STATS = ['points', 'rebounds', 'assists', 'threeMade'] as const;
+const LIST_STATS = ['points', 'rebounds', 'assists', 'threeMade', 'pra', 'pr', 'pa', 'ra'] as const;
 const PREFERRED_THRESHOLDS: Record<string, number> = {
   points: 20,
   rebounds: 6,
   assists: 4,
   threeMade: 1,
+  pra: 25,
+  pr: 20,
+  pa: 25,
+  ra: 10,
 };
 
 type RosterPlayer = {
@@ -321,19 +325,25 @@ function mergeDuplicatePropRows(props: CombinedPlayerProp[]): CombinedPlayerProp
   return [...byKey.values()];
 }
 
-function statValue(game: NblGameLogRow, stat: string): number | null {
-  const raw =
-    stat === 'points'
-      ? game.points
-      : stat === 'rebounds'
-        ? game.rebounds
-        : stat === 'assists'
-          ? game.assists
-          : stat === 'threeMade'
-            ? game.threeMade
-            : null;
+function finiteStat(raw: unknown): number | null {
+  if (raw == null || raw === '') return null;
   const n = Number(raw);
   return Number.isFinite(n) ? n : null;
+}
+
+function statValue(game: NblGameLogRow, stat: string): number | null {
+  if (stat === 'points') return finiteStat(game.points);
+  if (stat === 'rebounds') return finiteStat(game.rebounds);
+  if (stat === 'assists') return finiteStat(game.assists);
+  if (stat === 'threeMade') return finiteStat(game.threeMade);
+  const points = finiteStat(game.points);
+  const rebounds = finiteStat(game.rebounds);
+  const assists = finiteStat(game.assists);
+  if (stat === 'pra') return finiteStat(game.pra) ?? (points != null && rebounds != null && assists != null ? points + rebounds + assists : null);
+  if (stat === 'pr') return finiteStat(game.pr) ?? (points != null && rebounds != null ? points + rebounds : null);
+  if (stat === 'pa') return finiteStat(game.pa) ?? (points != null && assists != null ? points + assists : null);
+  if (stat === 'ra') return finiteStat(game.ra) ?? (rebounds != null && assists != null ? rebounds + assists : null);
+  return null;
 }
 
 function windowHits(

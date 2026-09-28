@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase, supabaseSessionOnly } from "@/lib/supabaseClient";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, TrendingUp, BarChart3, PieChart, Database, User, Phone } from "lucide-react";
 import { StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
@@ -9,6 +9,23 @@ import { trackMetaEvent } from "@/lib/metaPixel";
 import { authErrorMessage, emailAccountExists, signInWithEmailPassword } from "@/lib/auth/emailAccount";
 
 const HOME_ROUTE = "/home";
+
+function safeInternalPath(value: string | null): string | null {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return null;
+  return value;
+}
+
+function pathAfterLogin(): string {
+  try {
+    const fromUrl = safeInternalPath(new URLSearchParams(window.location.search).get('redirect'));
+    if (fromUrl) return fromUrl;
+    const stored = safeInternalPath(localStorage.getItem('stattrackr_login_redirect'));
+    if (stored) return stored;
+  } catch {
+    // Ignore storage failures and use the default route.
+  }
+  return HOME_ROUTE;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,6 +56,7 @@ export default function LoginPage() {
   const [isResetRedirect, setIsResetRedirect] = useState(false);
   const [formReady, setFormReady] = useState(false);
   const [lockEmail, setLockEmail] = useState(false);
+  const sessionRedirectStarted = useRef(false);
 
   // If password reset link landed here (Supabase may redirect to Site URL), read hash and send to update-password
   useEffect(() => {
@@ -94,15 +112,15 @@ export default function LoginPage() {
       setError('');
     }
 
+    if (sessionRedirectStarted.current) return;
+    sessionRedirectStarted.current = true;
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check for stored redirect from OAuth flow
-        if (localStorage.getItem('stattrackr_login_redirect')) {
-          localStorage.removeItem('stattrackr_login_redirect');
-        }
-        router.replace(HOME_ROUTE);
+      if (!session) {
+        sessionRedirectStarted.current = false;
+        return;
       }
+      router.replace(pathAfterLogin());
     };
     checkUser();
   }, [router]);
@@ -150,7 +168,7 @@ export default function LoginPage() {
       } else {
         // Always use persistent session for reliable login
         await signInWithEmailPassword(email, password, rememberMe);
-        router.replace(HOME_ROUTE);
+        router.replace(pathAfterLogin());
       }
     } catch (error: any) {
       // Better error handling  

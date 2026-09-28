@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import Image from 'next/image';
 import {
   Check,
@@ -40,6 +40,28 @@ const SPORT_LABEL: Record<string, string> = {
   atp: 'ATP',
   wta: 'WTA',
 };
+
+const VISITOR_KEY = 'stattrackr_survey_visitor';
+type ProgressStep = 'started' | 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'email_prompt' | 'email' | 'offer';
+const PROGRESS_RANK: Record<ProgressStep, number> = {
+  started: 0,
+  q1: 1,
+  q2: 2,
+  q3: 3,
+  q4: 4,
+  q5: 5,
+  email_prompt: 6,
+  email: 7,
+  offer: 8,
+};
+
+function surveyVisitorId(): string {
+  const existing = sessionStorage.getItem(VISITOR_KEY);
+  if (existing) return existing;
+  const id = crypto.randomUUID();
+  sessionStorage.setItem(VISITOR_KEY, id);
+  return id;
+}
 
 function sportPhrase(sports?: string[]) {
   const ordered = SPORT_IDS.filter((id) => sports?.includes(id));
@@ -570,6 +592,47 @@ export default function HomeQuizLanding({
   const [answers, setAnswers] = useState<Answers>({});
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
+  const responseIdRef = useRef<string | null>(null);
+  const pendingChoiceRef = useRef<{ choice: 'pro' | 'free'; cycle?: BillingCycle } | null>(null);
+  const furthestStepRef = useRef<ProgressStep>('started');
+  const answersRef = useRef(answers);
+  const emailRef = useRef(email);
+  answersRef.current = answers;
+  emailRef.current = email;
+
+  const saveProgressRef = useRef<
+    (step: ProgressStep, nextAnswers: Answers, exited: boolean, emailValue?: string | null) => void
+  >(() => undefined);
+  saveProgressRef.current = (step, nextAnswers, exited, emailValue) => {
+    if (PROGRESS_RANK[step] >= PROGRESS_RANK[furthestStepRef.current]) furthestStepRef.current = step;
+    const emailToSend = (emailValue ?? '').trim();
+    void fetch('/api/home-survey', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visitorId: surveyVisitorId(),
+        step: furthestStepRef.current,
+        sports: nextAnswers.sports ?? [],
+        betting: nextAnswers.betting ?? null,
+        stats: nextAnswers.stats ?? [],
+        research: nextAnswers.research ?? null,
+        goal: nextAnswers.goal ?? null,
+        email: emailToSend || null,
+        exited,
+      }),
+      keepalive: true,
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { id?: string } | null) => {
+        if (!body?.id) return;
+        responseIdRef.current = body.id;
+        const pending = pendingChoiceRef.current;
+        if (!pending) return;
+        pendingChoiceRef.current = null;
+        sendSurveyChoice(body.id, pending.choice, pending.cycle);
+      })
+      .catch(() => undefined);
+  };
 
   useEffect(() => {
     onPhaseChange?.(phase);
@@ -581,6 +644,26 @@ export default function HomeQuizLanding({
     return () => window.clearTimeout(timer);
   }, [phase]);
 
+  useEffect(() => {
+    if (phase !== 'offer') return;
+    saveProgressRef.current('offer', answersRef.current, false, emailRef.current);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase === 'intro') return;
+    const markLeft = (exited: boolean) => {
+      saveProgressRef.current(furthestStepRef.current, answersRef.current, exited, emailRef.current);
+    };
+    const onVisibility = () => markLeft(document.visibilityState === 'hidden');
+    const onPageHide = () => markLeft(true);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', onPageHide);
+    };
+  }, [phase]);
+
   const choose = (id: string) => {
     const current = STEPS[step];
     const nextAnswers: Answers =
@@ -590,10 +673,14 @@ export default function HomeQuizLanding({
           ? { ...answers, stats: id === 'all' ? [...STAT_IDS] : [id] }
           : { ...answers, [current.key]: id };
     setAnswers(nextAnswers);
+    answersRef.current = nextAnswers;
+    const questionStep = (['q1', 'q2', 'q3', 'q4', 'q5'] as const)[step] ?? 'q5';
     if (step < STEPS.length - 1) {
+      saveProgressRef.current(questionStep, nextAnswers, false, emailRef.current);
       setStep(step + 1);
       return;
     }
+    saveProgressRef.current('email_prompt', nextAnswers, false, emailRef.current);
     setPhase('email');
   };
 
@@ -616,8 +703,32 @@ export default function HomeQuizLanding({
       return;
     }
     setEmail(next);
+    emailRef.current = next;
     setEmailError('');
+    saveProgressRef.current('email', answers, false, next);
     setPhase('plan');
+  };
+
+  const sendSurveyChoice = (id: string, choice: 'pro' | 'free', cycle?: BillingCycle) => {
+    void fetch('/api/home-survey', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        planChoice: choice,
+        billingCycle: cycle ?? null,
+      }),
+      keepalive: true,
+    }).catch(() => undefined);
+  };
+
+  const recordChoice = (choice: 'pro' | 'free', cycle?: BillingCycle) => {
+    const id = responseIdRef.current;
+    if (!id) {
+      pendingChoiceRef.current = { choice, cycle };
+      return;
+    }
+    sendSurveyChoice(id, choice, cycle);
   };
 
   if (phase === 'intro') {
@@ -660,7 +771,10 @@ export default function HomeQuizLanding({
             </p>
             <button
               type="button"
-              onClick={() => setPhase('survey')}
+              onClick={() => {
+                setPhase('survey');
+                saveProgressRef.current('started', answersRef.current, false, null);
+              }}
               className="mt-8 h-12 w-full max-w-sm rounded-full bg-purple-600 text-base font-medium text-white shadow-[0_10px_30px_-12px_rgba(147,51,234,0.9)] transition-colors hover:bg-purple-700"
             >
               Continue
@@ -796,7 +910,10 @@ export default function HomeQuizLanding({
                 <p className="mt-1 text-sm text-gray-500">Cancel anytime.</p>
                 <button
                   type="button"
-                  onClick={() => onStartPro(undefined, email)}
+                  onClick={() => {
+                    recordChoice('pro', 'monthly');
+                    onStartPro(undefined, email);
+                  }}
                   className="mt-5 h-12 w-full rounded-full bg-purple-600 text-[15px] font-semibold text-white shadow-[0_12px_32px_-14px_rgba(147,51,234,0.95)] transition-colors hover:bg-purple-500"
                 >
                   Start Pro
@@ -804,7 +921,10 @@ export default function HomeQuizLanding({
               </div>
               <button
                 type="button"
-                onClick={() => onContinueFree(email)}
+                onClick={() => {
+                  recordChoice('free');
+                  onContinueFree(email);
+                }}
                 className="mt-4 w-full text-center text-sm font-medium text-gray-300 underline-offset-4 hover:text-white hover:underline"
               >
                 Continue free

@@ -485,8 +485,7 @@ export function NblShotChart({
   const [playerData, setPlayerData] = useState<PlayerPayload | null>(null);
   const [defenseData, setDefenseData] = useState<DefensePayload | null>(null);
   const [defenseLoading, setDefenseLoading] = useState(false);
-  const [breakdownOpen, setBreakdownOpen] = useState(false);
-  const [playerAnalysisOpen, setPlayerAnalysisOpen] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
   const clipId = `nblRoundedCourt-${useId().replace(/:/g, '')}`;
 
   useEffect(() => {
@@ -836,7 +835,7 @@ export function NblShotChart({
     <>
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2 relative">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Court Breakdown</h2>
           <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
           <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
         </div>
@@ -1086,7 +1085,7 @@ export function NblShotChart({
   const renderMessage = (message: string, isError = false) => (
     <>
       <div className="flex items-center gap-2">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Court Breakdown</h2>
         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
       </div>
       <div className="w-full flex items-center justify-center p-6" style={{ minHeight: '280px' }}>
@@ -1109,7 +1108,7 @@ export function NblShotChart({
     return (
       <div className="w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-3 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Court Breakdown</h2>
           <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">Select a player to load shot locations.</p>
@@ -1129,7 +1128,7 @@ export function NblShotChart({
         <>
           <div className="flex items-center justify-between w-full gap-2 flex-wrap">
             <div className="flex items-center gap-2 relative">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Court Breakdown</h2>
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
               <button
                 type="button"
@@ -1141,7 +1140,7 @@ export function NblShotChart({
               </button>
               {showTooltip && (
                 <div className="absolute z-50 left-0 top-8 w-64 px-3 py-2 text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-[#0a1929] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
-                  <strong>Shot Chart Views</strong>
+                  <strong>Court Breakdown Views</strong>
                   <br />
                   Current season ({SHOT_CHART_SEASON_LABEL}).
                   <br />
@@ -1453,36 +1452,42 @@ export function NblShotChart({
           {(!showOppDef && !showAssistDef && canShowPlayerBreakdown) ||
           ((showOppDef || showAssistDef) && canShowBreakdown) ? (
             <div className="w-full space-y-2 border-t border-gray-200 dark:border-[#463e6b]/70 pt-2">
-              {!showOppDef && !showAssistDef && canShowPlayerBreakdown ? (
-                <AnalysisAccordion
-                  title={showAssists ? 'Assist Analysis' : showMakes ? 'Make Analysis' : 'Attempt Analysis'}
-                  open={playerAnalysisOpen}
-                  onToggle={() => setPlayerAnalysisOpen((open) => !open)}
-                  isDark={isDark}
-                  loading={loading && !playerData}
-                  rows={valuesLocked ? redactBreakdownRows(playerBreakdownRows) : playerBreakdownRows}
-                  invert
-                  valuesLocked={valuesLocked}
-                />
-              ) : null}
-              {(showOppDef || showAssistDef) && canShowBreakdown ? (
-                <AnalysisAccordion
-                  title={showAssistDef ? 'Assist Defense' : 'Defensive Analysis'}
-                  open={breakdownOpen}
-                  onToggle={() => setBreakdownOpen((open) => !open)}
-                  isDark={isDark}
-                  loading={defenseLoading && !defenseData}
-                  rows={
-                    valuesLocked
-                      ? redactBreakdownRows(showAssistDef ? assistDefenseRows : breakdownRows)
-                      : showAssistDef
-                        ? assistDefenseRows
-                        : breakdownRows
-                  }
-                  invert={false}
-                  valuesLocked={valuesLocked}
-                />
-              ) : null}
+              <AnalysisAccordion
+                title={
+                  showAssistDef
+                    ? 'Assist Defense'
+                    : showOppDef
+                      ? 'Defensive Analysis'
+                      : showAssists
+                        ? 'Assist Analysis'
+                        : showMakes
+                          ? 'Make Analysis'
+                          : 'Attempt Analysis'
+                }
+                open={analysisOpen}
+                onToggle={() => setAnalysisOpen((open) => !open)}
+                isDark={isDark}
+                loading={
+                  showOppDef || showAssistDef ? defenseLoading && !defenseData : loading && !playerData
+                }
+                rows={
+                  valuesLocked
+                    ? redactBreakdownRows(
+                        showAssistDef
+                          ? assistDefenseRows
+                          : showOppDef
+                            ? breakdownRows
+                            : playerBreakdownRows
+                      )
+                    : showAssistDef
+                      ? assistDefenseRows
+                      : showOppDef
+                        ? breakdownRows
+                        : playerBreakdownRows
+                }
+                invert={!showOppDef && !showAssistDef}
+                valuesLocked={valuesLocked}
+              />
             </div>
           ) : null}
         </>

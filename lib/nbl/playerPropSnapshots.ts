@@ -27,7 +27,12 @@ const REDIS_INDEX_KEY = 'nbl_ps_lines_index_v1';
 const REDIS_TTL_SECONDS = 400 * 24 * 60 * 60;
 const CLOSE_GRACE_MS = 5 * 60 * 1000;
 
-export type NblSnapStat = 'points' | 'rebounds' | 'assists' | 'threeMade';
+export const NBL_SNAP_STATS = ['points', 'rebounds', 'assists', 'threeMade', 'pra', 'pr', 'pa', 'ra'] as const;
+export type NblSnapStat = (typeof NBL_SNAP_STATS)[number];
+
+export function isNblSnapStat(stat: string): stat is NblSnapStat {
+  return (NBL_SNAP_STATS as readonly string[]).includes(stat);
+}
 
 export type NblSnapLine = {
   player: string;
@@ -113,9 +118,7 @@ export function flattenPulseNblGame(game: PulseNblGame): NblSnapLine[] {
       if (/\b(1st|first|2nd|second|3rd|third|4th|fourth)\s*(quarter|qtr|period)\b|\bq[1-4]\b|\bquarter\s*[1-4]\b|\b[1-4]q\b/.test(periodBlob)) {
         continue;
       }
-      if (parsed.stat !== 'points' && parsed.stat !== 'rebounds' && parsed.stat !== 'assists' && parsed.stat !== 'threeMade') {
-        continue;
-      }
+      if (!isNblSnapStat(parsed.stat)) continue;
       const twoWay = parsed.kind === 'ou';
       for (const sel of market.selections || []) {
         if (sel.isActive === false) continue;

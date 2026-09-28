@@ -114,7 +114,7 @@ function setLocalStorageWithQuotaRecovery(namespace: string, key: string, value:
 const isSignedOutFlagSet = (): boolean => {
   if (!isBrowser) return false
   try {
-    return window.localStorage.getItem(SIGNED_OUT_FLAG_KEY) === '1'
+    return window.sessionStorage.getItem(SIGNED_OUT_FLAG_KEY) === '1'
   } catch {
     return false
   }
@@ -123,7 +123,8 @@ const isSignedOutFlagSet = (): boolean => {
 const markSignedOutFlag = () => {
   if (!isBrowser) return
   try {
-    window.localStorage.setItem(SIGNED_OUT_FLAG_KEY, '1')
+    window.sessionStorage.setItem(SIGNED_OUT_FLAG_KEY, '1')
+    window.localStorage.removeItem(SIGNED_OUT_FLAG_KEY)
   } catch {
     // ignore
   }
@@ -132,6 +133,7 @@ const markSignedOutFlag = () => {
 const clearSignedOutFlag = () => {
   if (!isBrowser) return
   try {
+    window.sessionStorage.removeItem(SIGNED_OUT_FLAG_KEY)
     window.localStorage.removeItem(SIGNED_OUT_FLAG_KEY)
   } catch {
     // ignore
@@ -221,17 +223,11 @@ const ensureTabNamespace = (): string => {
 const tabNamespace = ensureTabNamespace()
 const registeredNamespaces = registerNamespace(tabNamespace)
 
-/** Wipe auth tokens from every tab namespace so logout can't be undone by cross-tab copy. */
-const clearAllTabAuthTokens = () => {
+/** Drop this window's auth tokens. Another window keeps its own session. */
+const clearCurrentTabAuthTokens = () => {
   if (!isBrowser) return
-  const namespaces = new Set(getRegisteredNamespaces())
-  namespaces.add(tabNamespace)
-  for (const ns of namespaces) {
-    cleanupNamespace(ns)
-  }
+  cleanupNamespace(tabNamespace)
   try {
-    window.localStorage.removeItem('stattrackr_remember_me')
-    window.localStorage.removeItem('stattrackr_google_login')
     window.sessionStorage.removeItem('st_viewer_profile_v1')
   } catch {
     // ignore
@@ -263,6 +259,13 @@ const copySessionFromNamespace = (source: string, target: string) => {
 if (isBrowser) {
   const existingPersistent = window.localStorage.getItem(`${tabNamespace}:${PERSISTENT_STORAGE_KEY}`)
   const existingSession = window.localStorage.getItem(`${tabNamespace}:${SESSION_STORAGE_KEY}`)
+  if (existingPersistent || existingSession) {
+    try {
+      window.localStorage.removeItem(SIGNED_OUT_FLAG_KEY)
+    } catch {
+      // ignore
+    }
+  }
   if (!existingPersistent && !existingSession && !isSignedOutFlagSet()) {
     const candidateNamespaces = registeredNamespaces.filter(ns => ns !== tabNamespace)
     const sourceNamespace = candidateNamespaces[candidateNamespaces.length - 1]
@@ -478,7 +481,7 @@ try {
       supabase.auth.signOut = async (options) => {
         const result = await originalSignOut(options);
         markSignedOutFlag();
-        clearAllTabAuthTokens();
+        clearCurrentTabAuthTokens();
         void import('@/lib/profileSubscriptionGate')
           .then((m) => m.invalidateViewerProfileCache())
           .catch(() => {});
@@ -535,7 +538,7 @@ async function signOutFully(
   const result = await supabase.auth.signOut(options);
   // Patched signOut already clears namespaces; keep this as a safe second pass.
   markSignedOutFlag();
-  clearAllTabAuthTokens();
+  clearCurrentTabAuthTokens();
   return result;
 }
 

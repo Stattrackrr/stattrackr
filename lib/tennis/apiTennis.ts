@@ -264,6 +264,10 @@ export function readApiTennisPlayerMatches(playerId: string): TennisMatchRow[] {
   return diskPlayerIndex()?.get(id) || [];
 }
 
+export function listApiTennisPlayerIds(): string[] {
+  return [...(diskPlayerIndex()?.keys() || [])];
+}
+
 export function apiTennisRosterPath(): string {
   return path.join(apiTennisDir(), 'roster.json');
 }

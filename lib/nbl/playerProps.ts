@@ -5,9 +5,9 @@
 import { nblBookLines, nblPlayerPropMarketForStat, nblPreferOuLines, type NblBookRow, type NblPropLine } from '@/lib/nbl/oddsTypes';
 import {
   listNblPlayerPropSnapshots,
+  NBL_SNAP_STATS,
   readNblPlayerPropSnapshot,
   type NblPlayerPropSnapshot,
-  type NblSnapStat,
 } from '@/lib/nbl/playerPropSnapshots';
 import {
   findPulseNblGame,
@@ -17,7 +17,6 @@ import {
 } from '@/lib/nbl/pulseScore';
 import { officialNblClubName, resolveNblClubName } from '@/lib/nblTeamCanonical';
 
-const SNAP_STATS: NblSnapStat[] = ['points', 'rebounds', 'assists', 'threeMade'];
 
 function emptyBook(name: string, lines: NblPropLine[]): NblBookRow {
   const preferred = nblPreferOuLines(lines);
@@ -87,6 +86,20 @@ function teamsMatch(a: string | null | undefined, b: string | null | undefined):
   return ka === kb || ka.includes(kb) || kb.includes(ka);
 }
 
+/** Lines from a finished or different matchup stay off the next opponent. */
+function snapshotIsThisMatchup(
+  row: { homeTeam: string; awayTeam: string; commenceTime: string },
+  team: string | null,
+  opponent: string | null
+): boolean {
+  if (!team || !opponent) return false;
+  const teamHit = teamsMatch(row.homeTeam, team) || teamsMatch(row.awayTeam, team);
+  const oppHit = teamsMatch(row.homeTeam, opponent) || teamsMatch(row.awayTeam, opponent);
+  if (!teamHit || !oppHit) return false;
+  const tip = Date.parse(row.commenceTime);
+  return Number.isFinite(tip) && tip >= Date.now() - 3 * 60 * 60 * 1000;
+}
+
 export async function resolveNblPlayerPropBooks(options: {
   player: string;
   stat: string;
@@ -119,20 +132,16 @@ export async function resolveNblPlayerPropBooks(options: {
     (game
       ? await readNblPlayerPropSnapshot(game.homeTeam, game.awayTeam, game.commenceTime)
       : null) ??
-    (await listNblPlayerPropSnapshots()).find(
-      (row) =>
-        (team &&
-          (teamsMatch(row.homeTeam, team) || teamsMatch(row.awayTeam, team)) &&
-          (!opponent || teamsMatch(row.homeTeam, opponent) || teamsMatch(row.awayTeam, opponent))) ||
-        (opponent && (teamsMatch(row.homeTeam, opponent) || teamsMatch(row.awayTeam, opponent)))
-    ) ??
+    (await listNblPlayerPropSnapshots())
+      .filter((row) => snapshotIsThisMatchup(row, team, opponent))
+      .sort((a, b) => Date.parse(a.commenceTime) - Date.parse(b.commenceTime))[0] ??
     null;
 
   if (!game && !snap) return empty;
 
   const byStat: Record<string, NblBookRow[]> = game ? pulseBooksByStat(game, options.player) : {};
   if (snap) {
-    for (const stat of SNAP_STATS) {
+    for (const stat of NBL_SNAP_STATS) {
       byStat[stat] = mergeBooks(byStat[stat] || [], booksFromSnapshot(snap, options.player, stat));
     }
   }

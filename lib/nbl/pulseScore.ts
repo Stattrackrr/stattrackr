@@ -154,18 +154,16 @@ export function findPulseNblGame(
     (g) => teamsMatch(g.homeTeam, team) || teamsMatch(g.awayTeam, team)
   );
   if (opponent) {
-    const withOpp = candidates.filter(
+    candidates = candidates.filter(
       (g) => teamsMatch(g.homeTeam, opponent) || teamsMatch(g.awayTeam, opponent)
     );
-    if (withOpp.length) candidates = withOpp;
   }
   if (!candidates.length) return null;
   const now = Date.now();
   candidates.sort((a, b) => Date.parse(a.commenceTime) - Date.parse(b.commenceTime));
-  return (
-    candidates.find((g) => Date.parse(g.commenceTime) >= now - 3 * 60 * 60 * 1000) ??
-    candidates[candidates.length - 1]
-  );
+  const current = candidates.find((g) => Date.parse(g.commenceTime) >= now - 3 * 60 * 60 * 1000);
+  if (opponent) return current ?? null;
+  return current ?? candidates[candidates.length - 1];
 }
 
 function stripPlayerLabel(raw: string): string {
@@ -278,6 +276,20 @@ function canonicalPlayerStat(canonical: string | undefined): string | null {
   if (c === 'PLAYER_REBOUNDS') return 'rebounds';
   if (c === 'PLAYER_ASSISTS') return 'assists';
   if (c === 'PLAYER_THREES_MADE' || c === 'PLAYER_THREES') return 'threeMade';
+  if (c === 'PLAYER_PRA' || c === 'PLAYER_POINTS_REBOUNDS_ASSISTS') return 'pra';
+  if (c === 'PLAYER_PR' || c === 'PLAYER_POINTS_REBOUNDS') return 'pr';
+  if (c === 'PLAYER_PA' || c === 'PLAYER_POINTS_ASSISTS') return 'pa';
+  if (c === 'PLAYER_RA' || c === 'PLAYER_REBOUNDS_ASSISTS') return 'ra';
+  return null;
+}
+
+/** Combo tokens only. Checked after the canonical id so "player points" stays points. */
+function comboStatFromText(blob: string): string | null {
+  const s = String(blob || '').toLowerCase();
+  if (/\bplayer[_\s-]*pra\b|\bpra\b/.test(s)) return 'pra';
+  if (/\bplayer[_\s-]*pa\b|\bpa\b/.test(s)) return 'pa';
+  if (/\bplayer[_\s-]*ra\b|\bra\b/.test(s)) return 'ra';
+  if (/\bplayer[_\s-]*pr\b|\bpr\b/.test(s)) return 'pr';
   return null;
 }
 
@@ -380,7 +392,7 @@ function marketStat(
       : { stat: 'threeMade', kind: 'milestone', threshold: Number(m[1]) };
   }
 
-  const fromCanon = canonicalPlayerStat(canonical);
+  const fromCanon = canonicalPlayerStat(canonical) || comboStatFromText(`${canonical || ''} ${n}`);
   if (fromCanon) {
     if (twoWay) return { stat: fromCanon, kind: 'ou' };
     if (line != null && Number.isFinite(line) && Math.abs(line - Math.round(line)) < 1e-6) {

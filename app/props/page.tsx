@@ -531,7 +531,11 @@ function combinedMarketPriority(prop: CombinedPlayerPropRow): number {
     if (stat === 'rebounds') return 1;
     if (stat === 'assists') return 2;
     if (stat === 'threeMade') return 3;
-    return 4;
+    if (stat === 'pra') return 4;
+    if (stat === 'pr') return 5;
+    if (stat === 'pa') return 6;
+    if (stat === 'ra') return 7;
+    return 8;
   }
   if (sport === 'afl') {
     if (stat === 'disposals' || stat === 'disposals_over') return 0;
@@ -1610,7 +1614,16 @@ function resolvePropsRowSport(
 
 function isNblListPropStatType(statType: string): boolean {
   const n = normalizeSecondaryPropStatType(statType);
-  return n === 'points' || n === 'rebounds' || n === 'assists' || n === 'threemade';
+  return (
+    n === 'points' ||
+    n === 'rebounds' ||
+    n === 'assists' ||
+    n === 'threemade' ||
+    n === 'pra' ||
+    n === 'pr' ||
+    n === 'pa' ||
+    n === 'ra'
+  );
 }
 
 function isNblPropsPlayerName(name: string | null | undefined): boolean {
@@ -3471,7 +3484,6 @@ export default function NBALandingPage() {
   const [findPlayerResults, setFindPlayerResults] = useState<Array<{ name: string; team?: string; playerId?: string }>>([]);
   const [findPlayerLoading, setFindPlayerLoading] = useState(false);
   const findPlayerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Find-player modal: roster search for players who may not have odds on this page.
   useEffect(() => {
     if (!findPlayerOpen) return;
@@ -4837,6 +4849,10 @@ export default function NBALandingPage() {
       rebounds: 'Rebounds',
       assists: 'Assists',
       threeMade: '3-Pointers',
+      pra: 'Points + Rebounds + Assists',
+      pr: 'Points + Rebounds',
+      pa: 'Points + Assists',
+      ra: 'Rebounds + Assists',
       // AFL
       'disposals': 'Disposals',
       'disposals_over': 'Disposals Over',
@@ -9167,7 +9183,11 @@ export default function NBALandingPage() {
                       ) : (
                         <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           <p className="text-lg font-medium">No props match your search or filters</p>
-                          <p className="text-sm mt-1">Try a different search term or adjust the Games / Prop Types / Bookmakers filters.</p>
+                          <p className="text-sm mt-1">
+                            {propsSport === 'nbl' && nblOuOnly
+                              ? 'O/U only is on, and these books only posted overs. Turn that chip off to see the board.'
+                              : 'Try a different search term or adjust the Games / Prop Types / Bookmakers filters.'}
+                          </p>
                         </div>
                       )
                     ) : propsSport === 'combined' ? (
