@@ -92,15 +92,36 @@ function listUpdatedAt(payload: NblListCachePayload | null): number {
 async function readUsableNblListCache(): Promise<NblListCachePayload | null> {
   const redis = await readNblPlayerPropsListCache();
   const disk = readListDiskCache();
-  if (disk && redis) {
-    const diskBooks = listBookmakerCount(disk);
-    const redisBooks = listBookmakerCount(redis);
-    if (diskBooks !== redisBooks) return diskBooks > redisBooks ? disk : redis;
-    const diskAt = listUpdatedAt(disk);
-    const redisAt = listUpdatedAt(redis);
-    if (diskAt !== redisAt) return diskAt > redisAt ? disk : redis;
+  const candidates = [redis, disk].filter((row): row is NblListCachePayload => Boolean(row?.data?.length));
+  if (!candidates.length) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  // Prefer the cache that still has tipoff-eligible props (finished tips are useless
+  // on the props page and would otherwise paint an empty board after cutoff).
+  let best = candidates[0];
+  let bestLive = -1;
+  let bestBooks = -1;
+  let bestAt = -1;
+  for (const candidate of candidates) {
+    const live = applyLiveAflPropsCutoff(
+      Array.isArray(candidate.data) ? candidate.data : [],
+      Array.isArray(candidate.games) ? candidate.games : []
+    );
+    const liveCount = live.props.length;
+    const books = listBookmakerCount(candidate);
+    const updatedAt = listUpdatedAt(candidate);
+    if (
+      liveCount > bestLive ||
+      (liveCount === bestLive && books > bestBooks) ||
+      (liveCount === bestLive && books === bestBooks && updatedAt > bestAt)
+    ) {
+      best = candidate;
+      bestLive = liveCount;
+      bestBooks = books;
+      bestAt = updatedAt;
+    }
   }
-  return redis || disk;
+  return best;
 }
 
 async function persistNblListCache(payload: NblPlayerPropsListPayload): Promise<void> {
@@ -622,7 +643,7 @@ function emptyNblListPayload(): NblPlayerPropsListPayload {
     gamesCount: 0,
     lastUpdated: null,
     nextUpdate: null,
-    noAflOdds: true,
+    noAflOdds: false,
     noNblOdds: true,
     ingestMessage: NBL_USER_NO_ODDS,
   };
@@ -642,7 +663,7 @@ function payloadFromCache(cached: NonNullable<Awaited<ReturnType<typeof readNblP
     gamesCount: live.games.length,
     lastUpdated: cached.lastUpdated ?? null,
     nextUpdate: cached.nextUpdate ?? null,
-    noAflOdds: empty,
+    noAflOdds: false,
     noNblOdds: empty,
     ingestMessage: empty ? NBL_USER_NO_ODDS : cached.ingestMessage ?? null,
   };
@@ -769,7 +790,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
     gamesCount: live.games.length,
     lastUpdated: new Date().toISOString(),
     nextUpdate: null,
-    noAflOdds: empty,
+    noAflOdds: false,
     noNblOdds: empty,
     ingestMessage: empty ? NBL_USER_NO_ODDS : null,
   };

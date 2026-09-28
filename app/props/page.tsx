@@ -2950,7 +2950,8 @@ export default function NBALandingPage() {
     let finalAggregated = aggregated;
     let noOdds =
       listData?.noAflOdds === true ||
-      listData?.noTennisOdds === true;
+      listData?.noTennisOdds === true ||
+      listData?.noNblOdds === true;
     let ingestMessage =
       typeof listData?.ingestMessage === 'string' ? listData.ingestMessage : undefined;
 
@@ -2965,6 +2966,16 @@ export default function NBALandingPage() {
         ingestMessage = AFL_USER_NO_ODDS;
       } else if (typeof listData?.ingestMessage === 'string') {
         ingestMessage = listData.ingestMessage;
+      }
+    }
+
+    if (sport === 'nbl') {
+      const live = applyLiveAflPropsCutoff(aggregated, games);
+      finalGames = live.games;
+      finalAggregated = live.props;
+      if (live.noAflOdds || live.props.length === 0) {
+        noOdds = true;
+        ingestMessage = listData?.ingestMessage || AFL_USER_NO_ODDS;
       }
     }
 
