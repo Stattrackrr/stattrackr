@@ -64,6 +64,12 @@ jobs:
         if: steps.check.outputs.oan == 'true'
         run: npm ci
 
+      - name: Debug odds-api.net NBL line shapes
+        if: steps.check.outputs.oan == 'true'
+        env:
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: npm run debug:nbl:odds-api-net
+
       - name: Snapshot odds-api.net NBL player lines
         if: steps.check.outputs.oan == 'true'
         env:

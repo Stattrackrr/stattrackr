@@ -86,9 +86,15 @@ const BOOK_NAMES: Record<string, string> = {
 type MetricCanon = { stat: string; canon: string; noun: string };
 const METRIC_TO_CANON: Record<string, MetricCanon> = {
   'player points': { stat: 'points', canon: 'PLAYER_POINTS', noun: 'points' },
+  points: { stat: 'points', canon: 'PLAYER_POINTS', noun: 'points' },
   'player rebounds': { stat: 'rebounds', canon: 'PLAYER_REBOUNDS', noun: 'rebounds' },
+  rebounds: { stat: 'rebounds', canon: 'PLAYER_REBOUNDS', noun: 'rebounds' },
   'player assists': { stat: 'assists', canon: 'PLAYER_ASSISTS', noun: 'assists' },
+  assists: { stat: 'assists', canon: 'PLAYER_ASSISTS', noun: 'assists' },
   'player threes': { stat: 'threeMade', canon: 'PLAYER_THREES_MADE', noun: 'threes' },
+  'player threes made': { stat: 'threeMade', canon: 'PLAYER_THREES_MADE', noun: 'threes' },
+  threes: { stat: 'threeMade', canon: 'PLAYER_THREES_MADE', noun: 'threes' },
+  'three pointers': { stat: 'threeMade', canon: 'PLAYER_THREES_MADE', noun: 'threes' },
 };
 
 type OddsApiEvent = {
@@ -108,10 +114,14 @@ type OddsApiItem = {
   player_name?: string;
   selection_name?: string;
   metric?: string;
-  line?: string;
+  market_key?: string;
+  /** Threshold only (e.g. "24.5" / "20+") — side is usually a separate field. */
+  line?: string | number;
+  side?: string;
   odds?: number;
   is_available?: boolean;
   period?: string;
+  period_str?: string;
 };
 
 function eventsFrom(payload: unknown): OddsApiEvent[] {
@@ -225,12 +235,80 @@ function displayPlayer(item: OddsApiItem): string {
   return fromField;
 }
 
-function parseSideLine(raw: string | undefined): { side: 'over' | 'under'; value: number } | null {
-  const m = String(raw || '')
+function parseSideToken(raw: string | undefined): 'over' | 'under' | null {
+  const s = String(raw || '')
     .trim()
-    .match(/^(over|under)\s+(\d+(?:\.\d+)?)$/i);
-  if (!m) return null;
-  return { side: m[1].toLowerCase() as 'over' | 'under', value: Number(m[2]) };
+    .toLowerCase();
+  if (s === 'over' || s === 'o' || s === 'yes') return 'over';
+  if (s === 'under' || s === 'u' || s === 'no') return 'under';
+  return null;
+}
+
+/**
+ * odds-api.net player props use `line` = threshold ("24.5" / "20+") and `side` = over|under.
+ * Older payloads (and some books) still stuff "Over 24.5" into `line` or only into selection_name.
+ * Milestones like 20+ arrive as over-only rows (often line "19.5" or "20" / "20+").
+ */
+export function parseNblOddsApiNetSideLine(
+  item: Pick<OddsApiItem, 'line' | 'side' | 'selection_name'>
+): { side: 'over' | 'under'; value: number } | null {
+  const sideFromField = parseSideToken(item.side);
+  const lineRaw = item.line;
+  const lineStr = lineRaw == null ? '' : String(lineRaw).trim();
+
+  if (lineStr) {
+    const ouInline = lineStr.match(/^(over|under)\s+(\d+(?:\.\d+)?)\+?$/i);
+    if (ouInline) {
+      return {
+        side: ouInline[1].toLowerCase() as 'over' | 'under',
+        value: Number(ouInline[2]),
+      };
+    }
+    const milestone = lineStr.match(/^(\d+(?:\.\d+)?)\+$/);
+    if (milestone) {
+      return { side: sideFromField || 'over', value: Number(milestone[1]) };
+    }
+    if (/^\d+(?:\.\d+)?$/.test(lineStr) && sideFromField) {
+      return { side: sideFromField, value: Number(lineStr) };
+    }
+  }
+
+  const selection = String(item.selection_name || '').trim();
+  if (selection) {
+    const ouSel = selection.match(/\b(over|under)\s+(\d+(?:\.\d+)?)\+?\b/i);
+    if (ouSel) {
+      return {
+        side: ouSel[1].toLowerCase() as 'over' | 'under',
+        value: Number(ouSel[2]),
+      };
+    }
+    const msSel = selection.match(/\b(\d+(?:\.\d+)?)\+/);
+    if (msSel) {
+      return { side: sideFromField || parseSideToken(selection) || 'over', value: Number(msSel[1]) };
+    }
+  }
+
+  if (lineStr && /^\d+(?:\.\d+)?$/.test(lineStr)) {
+    // Last resort: numeric line with no side → treat as over (milestone-style).
+    return { side: 'over', value: Number(lineStr) };
+  }
+  return null;
+}
+
+function parseSideLine(
+  item: Pick<OddsApiItem, 'line' | 'side' | 'selection_name'>
+): { side: 'over' | 'under'; value: number } | null {
+  return parseNblOddsApiNetSideLine(item);
+}
+
+function itemMetricKey(item: OddsApiItem): string {
+  return String(item.metric || item.market_key || '')
+    .trim()
+    .toLowerCase();
+}
+
+function itemPeriod(item: OddsApiItem): string {
+  return String(item.period || item.period_str || '').trim();
 }
 
 function milestoneThreshold(value: number): number {
@@ -266,15 +344,30 @@ export async function fetchOddsApiNetNblGames(): Promise<OddsNetGame[]> {
     }
 
     const byBook = new Map<string, Map<string, { over?: OddsApiItem; under?: OddsApiItem; meta: MetricCanon; player: string; value: number; period: string }>>();
+    let skippedNoMeta = 0;
+    let skippedNoLine = 0;
+    let skippedNoPlayer = 0;
     for (const item of items) {
       if (item.is_available === false) continue;
       const book = displayBook(item.bookmaker);
-      const meta = METRIC_TO_CANON[String(item.metric || '').toLowerCase()];
-      const parsed = parseSideLine(item.line);
+      const meta = METRIC_TO_CANON[itemMetricKey(item)];
+      const parsed = parseSideLine(item);
       const player = displayPlayer(item);
-      if (!book || !meta || !parsed || !player) continue;
+      if (!book) continue;
+      if (!meta) {
+        skippedNoMeta += 1;
+        continue;
+      }
+      if (!parsed) {
+        skippedNoLine += 1;
+        continue;
+      }
+      if (!player || !isLikelyPlayerName(player)) {
+        skippedNoPlayer += 1;
+        continue;
+      }
       if (typeof item.odds !== 'number' || item.odds <= 1) continue;
-      const period = String(item.period || '').trim();
+      const period = itemPeriod(item);
       const bookMap = byBook.get(book) ?? new Map();
       const key = `${player.toLowerCase()}|${meta.stat}|${parsed.value}|${period.toLowerCase()}`;
       const row = bookMap.get(key) ?? { meta, player, value: parsed.value, period };
@@ -282,6 +375,12 @@ export async function fetchOddsApiNetNblGames(): Promise<OddsNetGame[]> {
       else row.over = item;
       bookMap.set(key, row);
       byBook.set(book, bookMap);
+    }
+    if (items.length && !byBook.size) {
+      console.warn(
+        `[odds-api.net NBL] event ${eventId} ${home} vs ${away}: ${items.length} items → 0 markets ` +
+          `(noMeta=${skippedNoMeta} noLine=${skippedNoLine} noPlayer=${skippedNoPlayer})`
+      );
     }
 
     const bookmakers: OddsNetGame['bookmakers'] = [];
