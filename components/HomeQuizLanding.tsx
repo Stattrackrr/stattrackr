@@ -880,7 +880,7 @@ export default function HomeQuizLanding({
   if (phase === 'offer') {
     return (
       <Shell cover>
-        <div className="relative mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-10 sm:px-6">
+        <div className="relative mx-auto flex w-full max-w-xl flex-1 items-center px-4 py-10 sm:px-6">
           <div aria-hidden className="pointer-events-none absolute left-1/2 top-[42%] h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-600/25 blur-3xl" />
           <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-[#0a1929] shadow-[0_30px_80px_-36px_rgba(0,0,0,0.9)]">
             <div className="flex items-center justify-between px-6 pt-6 sm:px-8">
@@ -898,7 +898,38 @@ export default function HomeQuizLanding({
                 Pro
               </h2>
               <p className="mt-5 max-w-md text-[15px] leading-7 text-gray-300">{planReason(answers)}</p>
-              <p className="mt-2 text-[15px] font-medium text-white">Pro is the full board.</p>
+              <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-[#071422]">
+                <div className="grid grid-cols-2 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                  <div className="bg-purple-500/10 px-3 py-2.5 text-purple-200">Pro</div>
+                  <div className="px-3 py-2.5 text-gray-500">Free</div>
+                </div>
+                {COMPARE_ROWS.map((row) => (
+                  <div key={row.feature} className="border-t border-white/10">
+                    <div className="flex items-center gap-2 px-3 pt-2.5 text-[13px] text-gray-200">
+                      <row.icon className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden />
+                      {row.feature}
+                    </div>
+                    <div className="mt-1 grid grid-cols-2 pb-2.5 text-[13px] font-medium leading-snug">
+                      <div className="flex items-start gap-1.5 bg-purple-500/10 px-3 py-1.5 text-emerald-400">
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                        <span>{row.pro}</span>
+                      </div>
+                      <div
+                        className={`flex items-start gap-1.5 px-3 py-1.5 ${
+                          row.freeOk ? 'text-emerald-400' : 'text-rose-300'
+                        }`}
+                      >
+                        {row.freeOk ? (
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                        ) : (
+                          <X className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                        )}
+                        <span>{row.free}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
               <div className="mt-8 border-t border-white/10 pt-6">
                 <div className="flex items-end justify-between gap-4">
                   <p className="text-3xl font-semibold tracking-tight">
