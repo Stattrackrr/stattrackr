@@ -170,7 +170,6 @@ async function fetchEventPlayerPropItems(eventId: string | number, bookmakerPara
       const qs = new URLSearchParams({
         types: 'player prop',
         limit: '500',
-        market_keys: 'player points,player rebounds,player assists,player threes',
       });
       if (withBooks && bookmakerParam) qs.set('bookmakers', bookmakerParam);
       if (cursor) qs.set('cursor', cursor);
