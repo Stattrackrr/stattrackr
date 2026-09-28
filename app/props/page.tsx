@@ -37,7 +37,7 @@ import {
   filterAflPropsEligibleGames,
 } from '@/lib/combinedPropsSnapshotTypes';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
-import { officialNblClubName, resolveNblClubName } from '@/lib/nblTeamCanonical';
+import { officialNblClubName, resolveNblClubName, NBL_CURRENT_SEASON_YEAR } from '@/lib/nblTeamCanonical';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
@@ -3471,6 +3471,106 @@ export default function NBALandingPage() {
   const [findPlayerResults, setFindPlayerResults] = useState<Array<{ name: string; team?: string; playerId?: string }>>([]);
   const [findPlayerLoading, setFindPlayerLoading] = useState(false);
   const findPlayerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Find-player modal: roster search for players who may not have odds on this page.
+  useEffect(() => {
+    if (!findPlayerOpen) return;
+    const q = findPlayerQuery.trim();
+    if (!q || q.length < 2) {
+      setFindPlayerResults([]);
+      return;
+    }
+    if (findPlayerDebounceRef.current) clearTimeout(findPlayerDebounceRef.current);
+    findPlayerDebounceRef.current = setTimeout(async () => {
+      findPlayerDebounceRef.current = null;
+      setFindPlayerLoading(true);
+      try {
+        const qLower = q.toLowerCase();
+        if (propsSport === 'afl') {
+          const params = new URLSearchParams({ query: q, limit: '100' });
+          const res = await fetch(`/api/afl/players?${params.toString()}`, { cache: 'no-store' });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error || 'Failed to load players');
+          const list = Array.isArray(data?.players) ? data.players : [];
+          setFindPlayerResults(
+            list
+              .map((p: Record<string, unknown>) => ({
+                name: String(p?.name ?? '-'),
+                team: typeof p?.team === 'string' ? p.team : undefined,
+              }))
+              .filter((p: { name: string }) => (p.name ?? '').toLowerCase().includes(qLower))
+          );
+        } else if (propsSport === 'nbl') {
+          const params = new URLSearchParams({
+            year: String(NBL_CURRENT_SEASON_YEAR),
+            currentOnly: '1',
+          });
+          const res = await fetch(`/api/nbl/players?${params.toString()}`, { cache: 'no-store' });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error || 'Failed to load NBL players');
+          const list = Array.isArray(data?.players) ? data.players : [];
+          setFindPlayerResults(
+            list
+              .map((p: Record<string, unknown>) => ({
+                name: String(p?.name ?? ''),
+                team: typeof p?.team === 'string' ? p.team : undefined,
+                playerId:
+                  typeof p?.playerId === 'string'
+                    ? p.playerId
+                    : p?.playerId != null
+                      ? String(p.playerId)
+                      : undefined,
+              }))
+              .filter((p: { name: string }) => p.name.toLowerCase().includes(qLower))
+              .slice(0, 40)
+          );
+        } else if (isTennisPropsSport(propsSport)) {
+          const tour = tennisTourFromPropsSport(propsSport);
+          const params = new URLSearchParams({ q, currentOnly: '1' });
+          if (tour) params.set('tour', tour);
+          const res = await fetch(`/api/tennis/players?${params.toString()}`, { cache: 'no-store' });
+          const data = await res.json();
+          const list = Array.isArray(data?.players) ? data.players : [];
+          setFindPlayerResults(
+            list
+              .map((p: Record<string, unknown>) => ({
+                name: String(p?.name ?? ''),
+                team: typeof p?.tour === 'string' ? p.tour : typeof p?.team === 'string' ? p.team : undefined,
+                playerId: typeof p?.playerId === 'string' ? p.playerId : undefined,
+              }))
+              .filter((p: { name: string }) => p.name.toLowerCase().includes(qLower))
+              .slice(0, 25)
+          );
+        } else {
+          const [bdlRes, tennisRes] = await Promise.all([
+            fetch(`/api/bdl/players?q=${encodeURIComponent(q)}&per_page=25`, { cache: 'no-store' }),
+            fetch(`/api/tennis/players?q=${encodeURIComponent(q)}&currentOnly=1`, { cache: 'no-store' }),
+          ]);
+          const [bdlData, tennisData] = await Promise.all([bdlRes.json(), tennisRes.json()]);
+          const tennisList = (Array.isArray(tennisData?.players) ? tennisData.players : [])
+            .map((p: Record<string, unknown>) => ({
+              name: String(p?.name ?? ''),
+              team: typeof p?.tour === 'string' ? p.tour : typeof p?.team === 'string' ? p.team : undefined,
+              playerId: typeof p?.playerId === 'string' ? p.playerId : undefined,
+            }))
+            .filter((p: { name: string }) => p.name.toLowerCase().includes(qLower));
+          let nbaList = Array.isArray(bdlData?.results) ? bdlData.results : [];
+          nbaList = nbaList
+            .map((p: { full?: string; team?: string }) => ({ name: String(p?.full ?? ''), team: p?.team }))
+            .filter((p: { name: string }) => (p.name || '').toLowerCase().includes(qLower));
+          setFindPlayerResults([...tennisList, ...nbaList].slice(0, 25));
+        }
+      } catch {
+        setFindPlayerResults([]);
+      } finally {
+        setFindPlayerLoading(false);
+      }
+    }, 250);
+    return () => {
+      if (findPlayerDebounceRef.current) clearTimeout(findPlayerDebounceRef.current);
+    };
+  }, [findPlayerOpen, findPlayerQuery, propsSport]);
+
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
   const journalDropdownRef = useRef<HTMLDivElement | null>(null);
   const settingsDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -12314,6 +12414,11 @@ export default function NBALandingPage() {
                             snapshotPropsPageBeforeLeave();
                             router.push(findHref);
                           } else if (propsSport === 'nbl') {
+                            prefetchNblDashboardFromProps({
+                              playerName: player.name,
+                              playerId: player.playerId,
+                              team: player.team,
+                            });
                             snapshotPropsPageBeforeLeave();
                             router.push(findHref);
                           } else if (propsSport === 'afl') {
