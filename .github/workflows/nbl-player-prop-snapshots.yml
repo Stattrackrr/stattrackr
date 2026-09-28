@@ -8,6 +8,16 @@ on:
     # Every 2 hours — NBL props usually post 4–8h before tip.
     - cron: '20 */2 * * *'
   workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'lib/nbl/oddsApiNet.ts'
+      - 'lib/nbl/pulseScore.ts'
+      - 'lib/nbl/playerPropsList.ts'
+      - 'lib/nbl/refreshNblPropsIngest.ts'
+      - 'scripts/debug-nbl-odds-api-net.ts'
+      - 'scripts/snapshot-nbl-player-props.ts'
+      - '.github/workflows/nbl-player-prop-snapshots.yml'
 
 concurrency:
   group: nbl-player-prop-snapshots

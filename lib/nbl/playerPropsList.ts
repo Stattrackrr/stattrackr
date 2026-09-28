@@ -7,6 +7,10 @@
 import fs from 'fs';
 import path from 'path';
 import type { CombinedAflGame, CombinedPlayerProp } from '@/lib/combinedPropsSnapshotTypes';
+import {
+  applyLiveAflPropsCutoff,
+  isAflCommenceTimePropsEligible,
+} from '@/lib/combinedPropsSnapshotTypes';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import {
   nblBookLines,
@@ -625,15 +629,17 @@ function emptyNblListPayload(): NblPlayerPropsListPayload {
 }
 
 function payloadFromCache(cached: NonNullable<Awaited<ReturnType<typeof readNblPlayerPropsListCache>>>): NblPlayerPropsListPayload {
-  const data = Array.isArray(cached.data) ? cached.data : [];
-  const games = Array.isArray(cached.games) ? cached.games : [];
-  const empty = data.length === 0;
+  const live = applyLiveAflPropsCutoff(
+    Array.isArray(cached.data) ? cached.data : [],
+    Array.isArray(cached.games) ? cached.games : []
+  );
+  const empty = live.props.length === 0;
   return {
     success: true,
-    data,
-    games,
-    propsCount: data.length,
-    gamesCount: games.length,
+    data: live.props,
+    games: live.games,
+    propsCount: live.props.length,
+    gamesCount: live.games.length,
     lastUpdated: cached.lastUpdated ?? null,
     nextUpdate: cached.nextUpdate ?? null,
     noAflOdds: empty,
@@ -714,6 +720,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
 
   for (const game of pulseGames) {
     if (!officialNblClubName(game.homeTeam) || !officialNblClubName(game.awayTeam)) continue;
+    if (!isAflCommenceTimePropsEligible(game.commenceTime)) continue;
     const home = officialTeam(game.homeTeam);
     const away = officialTeam(game.awayTeam);
     const snap = snapshotByKey.get(matchupKey(home, away));
@@ -728,6 +735,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
 
   for (const snap of snapshotByKey.values()) {
     if (!officialNblClubName(snap.homeTeam) || !officialNblClubName(snap.awayTeam)) continue;
+    if (!isAflCommenceTimePropsEligible(snap.commenceTime)) continue;
     considerGame(
       {
         gameId: snap.gameId,
@@ -749,13 +757,16 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
     return a.statType.localeCompare(b.statType);
   });
 
-  const empty = deduped.length === 0;
+  // Props page only — drop finished tips so we don't paint a full board of
+  // ineligible rows that the UI then filters to empty.
+  const live = applyLiveAflPropsCutoff(deduped, games);
+  const empty = live.props.length === 0;
   return {
     success: true,
-    data: deduped,
-    games,
-    propsCount: deduped.length,
-    gamesCount: games.length,
+    data: live.props,
+    games: live.games,
+    propsCount: live.props.length,
+    gamesCount: live.games.length,
     lastUpdated: new Date().toISOString(),
     nextUpdate: null,
     noAflOdds: empty,

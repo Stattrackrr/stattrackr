@@ -98,9 +98,10 @@ function teamsMatch(a: string | undefined, b: string | undefined): boolean {
 async function refreshBoard(): Promise<PulseNblBoard> {
   const games = (await fetchOddsApiNetNblGames()) as PulseNblGame[];
   const board: PulseNblBoard = { lastUpdated: new Date().toISOString(), games };
+  // Always write — including empty — so force refresh cannot stick on last week's board.
+  memoryBoard = games;
+  await sharedCache.setJSON(CACHE_KEY, board, CACHE_TTL_SECONDS);
   if (games.length) {
-    memoryBoard = games;
-    await sharedCache.setJSON(CACHE_KEY, board, CACHE_TTL_SECONDS);
     const { persistNblPlayerPropSnapshots } = await import('@/lib/nbl/playerPropSnapshots');
     void persistNblPlayerPropSnapshots(games).catch((err) => {
       console.warn(

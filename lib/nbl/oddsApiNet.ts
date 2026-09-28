@@ -34,8 +34,8 @@ type OddsNetGame = {
 
 const BASE = 'https://api.odds-api.net/v1';
 
-/** Always request these; coverage can add more so new books still land. */
-const FALLBACK_BOOKS = [
+/** Priority AU books for player props — keep the query short; coverage can still add. */
+const PRIORITY_BOOKS = [
   'sportsbet',
   'tab',
   'unibet',
@@ -47,15 +47,10 @@ const FALLBACK_BOOKS = [
   'pointsbet',
   'tabtouch',
   'palmerbet',
-  'betgoodwin',
   'neds',
   'ladbrokes',
   'dabble',
-  'betmgm',
-  'caesars',
-  'bwin',
-  'cloudbet',
-  'virginbet',
+  'betgoodwin',
 ] as const;
 
 const BOOK_NAMES: Record<string, string> = {
@@ -153,7 +148,7 @@ function apiKey(): string {
 }
 
 async function playerPropBookmakers(): Promise<string> {
-  const books = new Set<string>(FALLBACK_BOOKS);
+  const books = new Set<string>(PRIORITY_BOOKS);
   const coverage = await fetchJson(`${BASE}/coverage?sport=basketball&league=NBL&lookback_days=14`);
   const markets = Array.isArray((coverage as { markets?: Array<{ bet_type?: string; bookmaker?: string }> } | null)?.markets)
     ? (coverage as { markets: Array<{ bet_type?: string; bookmaker?: string }> }).markets
@@ -162,7 +157,38 @@ async function playerPropBookmakers(): Promise<string> {
     const book = String(row.bookmaker || '').trim().toLowerCase();
     if (book && row.bet_type === 'player prop') books.add(book);
   }
-  return [...books].join(',');
+  // Cap query size — oversized bookmakers lists have returned empty snapshots.
+  const ordered = [...PRIORITY_BOOKS.filter((b) => books.has(b)), ...[...books].filter((b) => !(PRIORITY_BOOKS as readonly string[]).includes(b))];
+  return ordered.slice(0, 24).join(',');
+}
+
+async function fetchEventPlayerPropItems(eventId: string | number, bookmakerParam: string): Promise<OddsApiItem[]> {
+  const items: OddsApiItem[] = [];
+  const tryFetch = async (withBooks: boolean) => {
+    let cursor = '';
+    for (let page = 0; page < 8; page += 1) {
+      const qs = new URLSearchParams({
+        types: 'player prop',
+        limit: '500',
+        market_keys: 'player points,player rebounds,player assists,player threes',
+      });
+      if (withBooks && bookmakerParam) qs.set('bookmakers', bookmakerParam);
+      if (cursor) qs.set('cursor', cursor);
+      const snap = await fetchJson(`${BASE}/events/${encodeURIComponent(String(eventId))}/odds/snapshot?${qs}`);
+      const payload = snap as { items?: OddsApiItem[]; next_cursor?: string; complete?: boolean } | null;
+      if (!payload) return;
+      items.push(...(payload.items || []));
+      if (!payload.next_cursor || payload.complete === true) break;
+      cursor = payload.next_cursor;
+    }
+  };
+
+  await tryFetch(true);
+  if (!items.length) {
+    // Fallback: no bookmakers filter (API pages by whole book).
+    await tryFetch(false);
+  }
+  return items;
 }
 
 async function fetchJson(url: string): Promise<unknown> {
@@ -320,28 +346,24 @@ export async function fetchOddsApiNetNblGames(): Promise<OddsNetGame[]> {
   const bookmakerParam = await playerPropBookmakers();
   const eventsPage = await fetchJson(`${BASE}/events?sport=basketball&league=NBL&limit=50`);
   const events = eventsFrom(eventsPage);
+  console.warn(`[odds-api.net NBL] events=${events.length} books=${bookmakerParam.split(',').filter(Boolean).length}`);
   const games: OddsNetGame[] = [];
 
   for (const ev of events) {
     const eventId = ev.event_id ?? ev.id;
-    const home = officialNblClubName(ev.home_team || ev.home);
-    const away = officialNblClubName(ev.away_team || ev.away);
-    if (!home || !away || eventId == null) continue;
-    const items: OddsApiItem[] = [];
-    let cursor = '';
-    for (let page = 0; page < 6; page += 1) {
-      const qs = new URLSearchParams({
-        types: 'player prop',
-        bookmakers: bookmakerParam,
-        limit: '500',
-      });
-      if (cursor) qs.set('cursor', cursor);
-      const snap = await fetchJson(`${BASE}/events/${encodeURIComponent(String(eventId))}/odds/snapshot?${qs}`);
-      const payload = snap as { items?: OddsApiItem[]; next_cursor?: string; complete?: boolean } | null;
-      items.push(...(payload?.items || []));
-      if (!payload?.next_cursor || payload.complete === true) break;
-      cursor = payload.next_cursor;
+    const homeRaw = ev.home_team || ev.home;
+    const awayRaw = ev.away_team || ev.away;
+    const home = officialNblClubName(homeRaw);
+    const away = officialNblClubName(awayRaw);
+    if (!home || !away || eventId == null) {
+      if (eventId != null) {
+        console.warn(
+          `[odds-api.net NBL] skip event ${eventId}: teams "${homeRaw}" / "${awayRaw}" → ${home || 'NULL'} / ${away || 'NULL'}`
+        );
+      }
+      continue;
     }
+    const items = await fetchEventPlayerPropItems(eventId, bookmakerParam);
 
     const byBook = new Map<string, Map<string, { over?: OddsApiItem; under?: OddsApiItem; meta: MetricCanon; player: string; value: number; period: string }>>();
     let skippedNoMeta = 0;

@@ -4680,6 +4680,12 @@ export default function NBALandingPage() {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
+    // NBL / tennis / combined: search filters the list in place (onChange already
+    // updates searchQuery). Do not navigate away to NBA/AFL dashboards.
+    if (propsSport === 'nbl' || propsSport === 'combined' || isTennisPropsSport(propsSport)) {
+      return;
+    }
+
     if (!NBA_PUBLIC_ENABLED || propsSport === 'afl') {
       const q = new URLSearchParams();
       q.set('mode', 'player');
@@ -9015,12 +9021,19 @@ export default function NBALandingPage() {
                       ) : liveEligibleAflPropsCount === 0 ? (
                         <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           <p className="text-lg font-medium max-w-lg">
-                            {isTennisPropsSport(propsSport)
-                              ? 'No props found'
-                              : aflIngestMessage && /^Fetched \d+ stats/i.test(aflIngestMessage)
-                                ? AFL_USER_NO_ODDS
-                                : (aflIngestMessage ?? AFL_USER_NO_ODDS)}
+                            {debouncedSearchQuery.trim()
+                              ? 'No props match your search'
+                              : isTennisPropsSport(propsSport)
+                                ? 'No props found'
+                                : propsSport === 'nbl'
+                                  ? (aflIngestMessage ?? AFL_USER_NO_ODDS)
+                                  : aflIngestMessage && /^Fetched \d+ stats/i.test(aflIngestMessage)
+                                    ? AFL_USER_NO_ODDS
+                                    : (aflIngestMessage ?? AFL_USER_NO_ODDS)}
                           </p>
+                          {debouncedSearchQuery.trim() ? (
+                            <p className="text-sm mt-1">Try a different player name, or clear search.</p>
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => {
