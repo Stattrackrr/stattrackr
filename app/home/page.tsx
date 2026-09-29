@@ -737,38 +737,38 @@ export default function HomePage() {
       }`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
               <Image 
                 src="/images/stattrackr-logo-512.webp" 
                 alt="StatTrackr" 
                 width={32} 
                 height={32}
-                className="w-7 h-7 sm:w-8 sm:h-8"
+                className="w-7 h-7 shrink-0 sm:w-8 sm:h-8"
                 priority
               />
-              <span className="text-lg sm:text-xl font-bold">StatTrackr</span>
+              <span className="truncate text-base font-bold sm:text-xl">StatTrackr</span>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-4">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-4">
               {user ? (
                 <>
                   {hasPremium ? (
                     <>
-                      <span className="text-sm text-gray-400">Pro Member</span>
+                      <span className="hidden text-sm text-gray-400 sm:inline">Pro Member</span>
                       <button
                         onMouseEnter={prefetchPropsResources}
                         onFocus={prefetchPropsResources}
                         onClick={goToProps}
-                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+                        className="whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-[11px] font-medium transition-colors hover:bg-gray-700 sm:rounded-lg sm:px-4 sm:py-2 sm:text-sm"
                       >
                         Go to App
                       </button>
                       <div className="relative" ref={profileMenuRef}>
                         <button
                           onClick={() => setShowProfileMenu((v) => !v)}
-                          className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                          className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white sm:p-2"
                           aria-label="Profile"
                         >
-                          <UserIcon className="w-5 h-5" />
+                          <UserIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                         </button>
                         {showProfileMenu && (
                           <div className="absolute right-0 top-full mt-1 py-1 bg-[#0a1929] border border-gray-700 rounded-lg shadow-xl min-w-[200px] z-50">
@@ -803,23 +803,23 @@ export default function HomePage() {
                         onMouseEnter={prefetchPropsResources}
                         onFocus={prefetchPropsResources}
                         onClick={goToProps}
-                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+                        className="whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-[11px] font-medium transition-colors hover:bg-gray-700 sm:rounded-lg sm:px-4 sm:py-2 sm:text-sm"
                       >
                         Go to App
                       </button>
                       <button
                         onClick={() => scrollToSection('pricing')}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
+                        className="whitespace-nowrap rounded-md bg-purple-600 px-2 py-1 text-[11px] font-medium transition-colors hover:bg-purple-700 sm:rounded-lg sm:px-4 sm:py-2 sm:text-sm"
                       >
                         Upgrade to Pro
                       </button>
                       <div className="relative" ref={profileMenuRef}>
                         <button
                           onClick={() => setShowProfileMenu((v) => !v)}
-                          className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                          className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white sm:p-2"
                           aria-label="Profile"
                         >
-                          <UserIcon className="w-5 h-5" />
+                          <UserIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                         </button>
                         {showProfileMenu && (
                           <div className="absolute right-0 top-full mt-1 py-1 bg-[#0a1929] border border-gray-700 rounded-lg shadow-xl min-w-[200px] z-50">
