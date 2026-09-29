@@ -4,7 +4,7 @@
   "homeTeam": "Perth Wildcats",
   "awayTeam": "South East Melbourne Phoenix",
   "commenceTime": "2026-10-02T11:30:00.000Z",
-  "capturedAt": "2026-09-29T18:37:37.711Z",
+  "capturedAt": "2026-09-29T22:25:39.992Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -19,7 +19,7 @@
     "PlayUp",
     "Dabble"
   ],
-  "lineCount": 2006,
+  "lineCount": 2015,
   "lines": [
     {
       "player": "Angus Brandt",
@@ -26097,6 +26097,123 @@
       "over": "+163",
       "under": "N/A",
       "overDecimal": 2.63,
+      "underDecimal": null
+    },
+    {
+      "player": "Dylan Windler",
+      "playerKey": "dylan windler",
+      "book": "Bet Right",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+375",
+      "under": "N/A",
+      "overDecimal": 4.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Dylan Windler",
+      "playerKey": "dylan windler",
+      "book": "Betr",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+380",
+      "under": "N/A",
+      "overDecimal": 4.8,
+      "underDecimal": null
+    },
+    {
+      "player": "Dylan Windler",
+      "playerKey": "dylan windler",
+      "book": "Cloudbet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+375",
+      "under": "N/A",
+      "overDecimal": 4.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Dylan Windler",
+      "playerKey": "dylan windler",
+      "book": "Picklebet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+375",
+      "under": "N/A",
+      "overDecimal": 4.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Dylan Windler",
+      "playerKey": "dylan windler",
+      "book": "PlayUp",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+375",
+      "under": "N/A",
+      "overDecimal": 4.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Eli Pepper",
+      "playerKey": "eli pepper",
+      "book": "Bet Right",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 34.5,
+      "label": "35+",
+      "over": "+700",
+      "under": "N/A",
+      "overDecimal": 8,
+      "underDecimal": null
+    },
+    {
+      "player": "Eli Pepper",
+      "playerKey": "eli pepper",
+      "book": "Picklebet",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 34.5,
+      "label": "35+",
+      "over": "+700",
+      "under": "N/A",
+      "overDecimal": 8,
+      "underDecimal": null
+    },
+    {
+      "player": "Eli Pepper",
+      "playerKey": "eli pepper",
+      "book": "PlayUp",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 34.5,
+      "label": "35+",
+      "over": "+700",
+      "under": "N/A",
+      "overDecimal": 8,
+      "underDecimal": null
+    },
+    {
+      "player": "Elijah Pepper",
+      "playerKey": "elijah pepper",
+      "book": "Cloudbet",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 34.5,
+      "label": "35+",
+      "over": "+700",
+      "under": "N/A",
+      "overDecimal": 8,
       "underDecimal": null
     }
   ]
