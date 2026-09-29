@@ -297,6 +297,15 @@ function toNextGame(
   };
 }
 
+/** A "live" final with no result must not hide the player's real next match. */
+const STALE_LIVE_MS = 6 * 60 * 60 * 1000;
+
+function upcomingRank(next: TennisNextGame, tip: number): number {
+  if (!Number.isFinite(tip)) return Number.MAX_SAFE_INTEGER;
+  if (next.live && Date.now() - tip > STALE_LIVE_MS) return Number.MAX_SAFE_INTEGER - 1;
+  return tip;
+}
+
 function rememberUpcoming(
   ranked: Map<string, { next: TennisNextGame; tip: number }>,
   key: string,
@@ -305,7 +314,8 @@ function rememberUpcoming(
 ) {
   if (!key) return;
   const prev = ranked.get(key);
-  if (!prev || tip < prev.tip) ranked.set(key, { next, tip });
+  const rank = upcomingRank(next, tip);
+  if (!prev || rank < prev.tip) ranked.set(key, { next, tip: rank });
 }
 
 function indexUpcoming(fixtures: ApiTennisFixture[]): Map<string, TennisNextGame> {
@@ -486,13 +496,15 @@ async function loadUpcomingByPlayer(_opts?: {
   waitForFresh?: boolean;
 }): Promise<Map<string, TennisNextGame>> {
   const runtime = upcomingRuntime();
-  if (runtime.window?.byPlayerId.size) return runtime.window.byPlayerId;
+  const memory = runtime.window;
+  if (memory?.byPlayerId.size && isFresh(memory.fetchedAt)) return memory.byPlayerId;
 
   const cached = await readUpcomingFromRedis();
-  if (cached?.byPlayerId.size) {
+  if (cached?.byPlayerId.size && (!memory?.byPlayerId.size || cached.fetchedAt >= memory.fetchedAt)) {
     rememberWindow(cached.byPlayerId, cached.fetchedAt, cached.events || []);
     return cached.byPlayerId;
   }
+  if (memory?.byPlayerId.size) return memory.byPlayerId;
 
   rememberWindow(new Map());
   return new Map();
