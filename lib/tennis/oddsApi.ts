@@ -104,10 +104,12 @@ function tennisFirstInitial(value: string): string {
 
 const NAME_PARTICLES = new Set(['de', 'da', 'do', 'dos', 'das', 'van', 'von', 'del', 'della', 'di', 'le', 'la', 'el']);
 
+function nameParts(value: string): string[] {
+  return value.trim().split(/[\s-]+/).filter(Boolean);
+}
+
 function significantNameTokens(value: string): string[] {
-  return value
-    .trim()
-    .split(/\s+/)
+  return nameParts(value)
     .map((part) => normalizeName(part))
     .filter((token) => token.length >= 2 && !NAME_PARTICLES.has(token));
 }
@@ -178,7 +180,7 @@ function normalizeName(value: string): string {
 }
 
 function lastNameToken(value: string): string {
-  const parts = value.trim().split(/\s+/).filter(Boolean);
+  const parts = nameParts(value);
   return normalizeName(parts[parts.length - 1] || '');
 }
 

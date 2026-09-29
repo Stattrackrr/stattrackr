@@ -167,12 +167,7 @@ export function TennisAskPanel({
     }
   }
 
-  const previewSuggestions = [
-    `Will ${playerLast} cover the ace line?`,
-    `How does ${oppLast} look on return?`,
-    `What's the read on the moneyline?`,
-  ];
-  const shownSuggestions = suggestions.length ? suggestions : previewLocked ? previewSuggestions : [];
+  const shownSuggestions = previewLocked ? [] : suggestions;
 
   if (TENNIS_AI_UNDER_MAINTENANCE && !previewLocked) {
     return (
@@ -285,7 +280,7 @@ export function TennisAskPanel({
           maxLength={500}
           placeholder={
             opponent
-              ? 'Ask about aces, the game total, or the moneyline'
+              ? 'Ask about a market that is priced for this match'
               : player
                 ? 'No upcoming match'
                 : 'Select a player first'

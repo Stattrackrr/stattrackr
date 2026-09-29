@@ -450,6 +450,7 @@ function presentSnapshot(snapshot: TennisOddsSnapshot, next: TennisNextGame): Te
     homeTeam: playerIsHome ? next.homeName : next.awayName,
     awayTeam: playerIsHome ? next.awayName : next.homeName,
     bookmakers: orientBooksForPlayer(snapshot.bookmakers, playerIsHome),
+    fetchedAt: snapshot.fetchedAt,
   };
 }
 
@@ -712,18 +713,32 @@ export async function refreshTennisOddsSnapshots(opts?: {
 export async function getTennisMatchOddsForPlayer(opts: {
   playerId?: string | null;
   playerName?: string | null;
+  opponentName?: string | null;
 }): Promise<TennisMatchOdds | null> {
   const playerId = String(opts.playerId || '').trim();
   const playerName = String(opts.playerName || '').trim();
+  const opponentName = String(opts.opponentName || '').trim();
   if (!playerId && !playerName) return null;
-  const next =
-    (await getTennisNextGame({ playerId, playerName })) ||
-    (await findTennisNextGameFromOdds({ playerName }));
-  const matchId = String(next?.matchId || '').trim();
-  if (!next || !matchId) return null;
-  const snapshot = await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(matchId));
-  if (!snapshot?.bookmakers?.length) return null;
-  return presentSnapshot(snapshot, next);
+  const fixture = await getTennisNextGame({
+    playerId,
+    playerName,
+    opponentName: opponentName || null,
+  });
+  const fixtureId = String(fixture?.matchId || '').trim();
+  if (fixture && fixtureId) {
+    const snapshot = await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(fixtureId));
+    if (snapshot?.bookmakers?.length) return presentSnapshot(snapshot, fixture);
+  }
+  const fromOdds = await findTennisNextGameFromOdds({
+    playerName: playerName || fixture?.homeName || fixture?.awayName,
+    opponentName: opponentName || fixture?.opponent,
+    tour: fixture?.tour,
+  });
+  const oddsId = String(fromOdds?.matchId || '').trim();
+  if (!fromOdds || !oddsId) return null;
+  const priced = await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(oddsId));
+  if (!priced?.bookmakers?.length) return null;
+  return presentSnapshot(priced, fromOdds);
 }
 
 export async function findTennisNextGameFromOdds(opts: {

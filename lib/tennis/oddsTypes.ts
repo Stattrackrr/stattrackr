@@ -31,6 +31,8 @@ export interface TennisMatchOdds {
   homeTeam: string;
   awayTeam: string;
   bookmakers: TennisBookRow[];
+  /** When the book snapshot was stored. The tennis AI refuses EV once this is stale. */
+  fetchedAt?: string | null;
 }
 
 export const TENNIS_OU_STATS = ['spread', 'totalGames', 'gamesWon', 'gamesLost', 'totalSets'] as const;

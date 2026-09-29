@@ -40,6 +40,10 @@
     {
       "path": "/api/cron/refresh-tennis-dvp",
       "schedule": "*/20 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh-tennis-ai",
+      "schedule": "0 16 * * *"
     }
   ],
   "functions": {
