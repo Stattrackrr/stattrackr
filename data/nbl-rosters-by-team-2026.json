@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-28T20:10:08.622Z",
+  "generatedAt": "2026-09-29T18:37:00.665Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -736,7 +736,7 @@
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "F",
-          "jersey": null,
+          "jersey": "24",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9e6572b0c5c14889875ded55f68ed646?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Brisbane Bullets",

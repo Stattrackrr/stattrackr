@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-28T20:10:14.582Z",
+  "generatedAt": "2026-09-29T18:37:09.594Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 154,
   "withSeasonStats": 115,
@@ -2500,7 +2500,7 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "F",
-      "jersey": "13",
+      "jersey": "24",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9e6572b0c5c14889875ded55f68ed646?size=800&format=webp",
       "games": 2,
       "gamesStarted": 0,
@@ -2831,7 +2831,7 @@
       "minutes": 18.083332,
       "points": 3.33333,
       "rebounds": 3.66667,
-      "assists": 1,
+      "assists": 0.66667,
       "steals": 1.33333,
       "blocks": 0,
       "turnovers": 0,
@@ -2840,7 +2840,7 @@
       "threePct": 0.4,
       "ftPct": 1,
       "threeMade": 0.66667,
-      "pra": 8
+      "pra": 7.67
     },
     {
       "playerId": "83582125-9e71-4e7c-ae15-07f11333b2da",
@@ -3101,7 +3101,7 @@
       "minutes": 31.283333,
       "points": 18.33333,
       "rebounds": 9.66667,
-      "assists": 1.33333,
+      "assists": 1.66667,
       "steals": 0.33333,
       "blocks": 1,
       "turnovers": 1.33333,
@@ -3110,7 +3110,7 @@
       "threePct": 0,
       "ftPct": 0.357143,
       "threeMade": 0,
-      "pra": 29.33
+      "pra": 29.67
     },
     {
       "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
@@ -3228,8 +3228,8 @@
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-      "position": null,
-      "jersey": null,
+      "position": "G",
+      "jersey": "44",
       "imageUrl": null,
       "games": 0,
       "gamesStarted": 0,

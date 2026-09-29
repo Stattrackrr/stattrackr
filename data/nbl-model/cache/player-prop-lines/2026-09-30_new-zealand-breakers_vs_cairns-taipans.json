@@ -4,7 +4,7 @@
   "homeTeam": "New Zealand Breakers",
   "awayTeam": "Cairns Taipans",
   "commenceTime": "2026-09-30T07:30:00.000Z",
-  "capturedAt": "2026-09-29T16:34:36.427Z",
+  "capturedAt": "2026-09-29T18:37:37.711Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -23,7 +23,7 @@
     "BetMGM",
     "Bwin"
   ],
-  "lineCount": 2451,
+  "lineCount": 2456,
   "lines": [
     {
       "player": "Carlin Davison",
@@ -31887,6 +31887,71 @@
       "under": "N/A",
       "overDecimal": 7,
       "underDecimal": null
+    },
+    {
+      "player": "Jack Mcveigh",
+      "playerKey": "jack mcveigh",
+      "book": "Caesars",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 1.5,
+      "label": "2+",
+      "over": "-230",
+      "under": "N/A",
+      "overDecimal": 1.435,
+      "underDecimal": null
+    },
+    {
+      "player": "Jack Mcveigh",
+      "playerKey": "jack mcveigh",
+      "book": "Caesars",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 2.5,
+      "label": "3+",
+      "over": "+140",
+      "under": "N/A",
+      "overDecimal": 2.4,
+      "underDecimal": null
+    },
+    {
+      "player": "Jack Mcveigh",
+      "playerKey": "jack mcveigh",
+      "book": "Caesars",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 3.5,
+      "label": "4+",
+      "over": "+390",
+      "under": "N/A",
+      "overDecimal": 4.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Jack Mcveigh",
+      "playerKey": "jack mcveigh",
+      "book": "Caesars",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+1000",
+      "under": "N/A",
+      "overDecimal": 11,
+      "underDecimal": null
+    },
+    {
+      "player": "Mojave King",
+      "playerKey": "mojave king",
+      "book": "Caesars",
+      "stat": "points",
+      "kind": "ou",
+      "line": 14.5,
+      "label": "14.5",
+      "over": "+136",
+      "under": "-197",
+      "overDecimal": 2.36,
+      "underDecimal": 1.508
     }
   ]
 }
