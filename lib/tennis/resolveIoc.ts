@@ -1,6 +1,6 @@
 import { loadTennisPlayers, loadTennisRankings } from '@/lib/tennis/data';
 import { tennisIocToIso2 } from '@/lib/tennis/flags';
-import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 
 type IocIndex = {
   byId: Map<string, string>;
@@ -49,22 +49,7 @@ export function resolveTennisIoc(
 ): string | null {
   const index = iocIndex();
   const id = String(playerId || '').trim();
-  if (id && index.byId.has(id)) return index.byId.get(id) || null;
-  if (id) {
-    for (const player of loadTennisPlayers()) {
-      if (player.playerId !== id) continue;
-      const code = validIoc(player.ioc);
-      if (code) return code;
-    }
-  }
   const key = String(name || '').trim().toLowerCase();
-  if (key && index.byName.has(key)) return index.byName.get(key) || null;
-  if (!key) return null;
-  const hits: string[] = [];
-  for (const [playerName, ioc] of index.byName) {
-    if (!tennisIdentityMatch(playerName, key)) continue;
-    if (!hits.includes(ioc)) hits.push(ioc);
-    if (hits.length > 1) break;
-  }
-  return hits.length === 1 ? hits[0] : null;
+  const stored = (id && index.byId.get(id)) || (key && index.byName.get(key)) || null;
+  return canonicalTennisIoc({ playerId: id, name, stored });
 }

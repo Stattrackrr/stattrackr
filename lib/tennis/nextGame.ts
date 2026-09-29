@@ -5,7 +5,7 @@ import { loadTennisPlayers, loadTennisRankings } from '@/lib/tennis/data';
 import { isTennisQualifyingLabel, type TennisDvpStage } from '@/lib/tennis/dvpShared';
 import { tennisAssignDrawRanks } from '@/lib/tennis/seeds';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
-import { resolveTennisIoc } from '@/lib/tennis/resolveIoc';
+import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisTour } from '@/lib/tennis/types';
 
@@ -226,7 +226,11 @@ function officialPlayer(playerId: string | null, fallback: string): {
   return {
     playerId: player?.playerId || (idAgrees ? id : null) || null,
     name: player?.name || name,
-    ioc: player?.ioc || resolveTennisIoc(player?.playerId || id, player?.name || fallback),
+    ioc: canonicalTennisIoc({
+      playerId: player?.playerId || id,
+      name: player?.name || name,
+      stored: player?.ioc,
+    }),
     rank: player?.rank ?? null,
     imageUrl: player?.imageUrl ?? null,
   };
@@ -995,8 +999,16 @@ export async function getTennisNextGame(opts: {
   if (!playerId && !playerName) return null;
   const byPlayerId = await loadUpcomingByPlayer({ waitForFresh: false });
   const live = indexLiveEvents(byPlayerId, upcomingRuntime().window?.events);
-  const finish = (next: TennisNextGame | null) =>
-    next ? withDrawSeeds(withSurface(next), playerId || null, live) : null;
+  const finish = (next: TennisNextGame | null) => {
+    if (!next) return null;
+    const seeded = withDrawSeeds(withSurface(next), playerId || null, live);
+    const opponentIoc = canonicalTennisIoc({
+      playerId: seeded.opponentId,
+      name: seeded.opponent,
+      stored: seeded.opponentIoc,
+    });
+    return opponentIoc === seeded.opponentIoc ? seeded : { ...seeded, opponentIoc };
+  };
 
   const named: TennisNextGame[] = [];
   if (playerName) {

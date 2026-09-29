@@ -38,6 +38,7 @@ import { tennisRankHistoryMtime, withTennisMatchDayRanks } from '@/lib/tennis/ra
 import { tennisAssignDrawRanks, tennisAssignDrawSeeds } from '@/lib/tennis/seeds';
 import { applyTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
+import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
 export type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
@@ -66,8 +67,15 @@ function roundSortValue(round: string | null | undefined): number {
 function prepareMatchRows(rows: TennisMatchRow[]): TennisMatchRow[] {
   return tennisMatchesPlayed(
     rows.map((row) => {
-      const bestOf = resolveTennisMatchBestOf(row);
-      const next = row.bestOf === bestOf ? row : { ...row, bestOf };
+      const ioc = canonicalTennisIoc({ playerId: row.playerId, name: row.playerName, stored: row.ioc });
+      const opponentIoc = canonicalTennisIoc({
+        playerId: row.opponentId,
+        name: row.opponent,
+        stored: row.opponentIoc,
+      });
+      const withCountry = ioc === row.ioc && opponentIoc === row.opponentIoc ? row : { ...row, ioc, opponentIoc };
+      const bestOf = resolveTennisMatchBestOf(withCountry);
+      const next = withCountry.bestOf === bestOf ? withCountry : { ...withCountry, bestOf };
       return withTennisMatchDayRanks(withTennisHands(applyTennisSurface(next)));
     })
   );
@@ -102,7 +110,7 @@ type DataRuntime = {
   dvpTours: Map<string, CachedTourMatchIndex>;
 };
 
-const DVP_GROUP_VERSION = 4;
+const DVP_GROUP_VERSION = 5;
 
 function dataRuntime(): DataRuntime {
   const g = globalThis as typeof globalThis & { __tennisData?: DataRuntime };

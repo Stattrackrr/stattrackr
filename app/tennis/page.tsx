@@ -58,6 +58,7 @@ import {
   tennisTourLabel,
 } from '@/lib/tennis/chartStats';
 import { tennisFlagUrl, tennisIocToIso2 } from '@/lib/tennis/flags';
+import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { clientTennisHeadshotUrl, tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
 import { propsSportFromTennisTour } from '@/lib/nbaConstants';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
@@ -1095,7 +1096,11 @@ export default function TennisDashboardPage() {
       if (nextOpp) url.searchParams.set('opponent', nextOpp);
       else if (existingOpp) url.searchParams.set('opponent', existingOpp);
       else url.searchParams.delete('opponent');
-      const nextOppIoc = tennisUrlIocValue(nextGameOpponentIoc) || propsOpponentIocFallback;
+      const nextOppIoc = canonicalTennisIoc({
+        playerId: nextGameOpponentId || propsOpponentIdFallback,
+        name: nextOpp || existingOpp,
+        stored: nextGameOpponentIoc || propsOpponentIocFallback,
+      });
       if (nextOppIoc) url.searchParams.set('oioc', nextOppIoc);
       else url.searchParams.delete('oioc');
       const nextOppId = String(nextGameOpponentId || propsOpponentIdFallback || '').trim();
@@ -1558,7 +1563,11 @@ export default function TennisDashboardPage() {
     selectedPlayer && (headerTourLabel || headerPlace || headerRound || headerSurface || headerEventSuffix)
   );
   const matchupLeft = selectedPlayer?.name ? String(selectedPlayer.name).trim() : null;
-  const matchupLeftIoc = selectedPlayer?.ioc || lastLog?.ioc || null;
+  const matchupLeftIoc = canonicalTennisIoc({
+    playerId: selectedPlayer?.playerId,
+    name: selectedPlayer?.name || matchupLeft,
+    stored: selectedPlayer?.ioc || lastLog?.ioc,
+  });
   const rosterOpponent = displayOpponent
     ? rosterPlayers.find((player) => tennisIdentityMatch(player.name, displayOpponent)) ||
       rosterPlayers.find(
@@ -1568,10 +1577,11 @@ export default function TennisDashboardPage() {
       )
     : null;
   const matchupOpponentIoc = displayOpponent
-    ? propsOpponentIocFallback ||
-      nextGameOpponentIoc ||
-      rosterOpponent?.ioc ||
-      null
+    ? canonicalTennisIoc({
+        playerId: nextGameOpponentId || propsOpponentIdFallback,
+        name: displayOpponent,
+        stored: nextGameOpponentIoc || rosterOpponent?.ioc || propsOpponentIocFallback,
+      })
     : null;
   const rosterOpponentRank = displayOpponent
     ? Number(rosterOpponent?.jersey)

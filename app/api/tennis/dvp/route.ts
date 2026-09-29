@@ -18,6 +18,7 @@ import {
   type TennisCachedDvpEvent,
   type TennisCachedDvpPlayer,
 } from '@/lib/tennis/dvpLiveCache';
+import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import {
   findLiveTennisEventForPlayers,
@@ -38,10 +39,11 @@ function humanTennisName(...candidates: Array<string | null | undefined>): strin
 }
 
 function slimDvpPlayer(row: TennisCachedDvpPlayer, opponentId: string, opponentName: string): TennisCachedDvpPlayer {
+  const name = humanTennisName(row.name, row.id === opponentId ? opponentName : null) || row.name;
   return {
     id: row.id,
-    name: humanTennisName(row.name, row.id === opponentId ? opponentName : null) || row.name,
-    ioc: row.ioc,
+    name,
+    ioc: canonicalTennisIoc({ playerId: row.id, name, stored: row.ioc }),
     rankPos: row.rankPos,
     seed: row.seed ?? null,
     drawRank: row.drawRank ?? null,

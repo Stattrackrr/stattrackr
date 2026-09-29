@@ -21,6 +21,7 @@ import {
 import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
 import { readApiTennisPlayerMatches, listApiTennisPlayerIds } from '@/lib/tennis/apiTennis';
 import { TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
+import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 
 type TennisRosterStandings = {
@@ -70,6 +71,24 @@ function mergeMatchRows(primary: TennisMatchRow[], overlay: TennisMatchRow[]): T
   return [...byId.values(), ...extras].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
 }
 
+function withPlayerCountry<T extends { playerId?: string | null; name?: string | null; ioc?: string | null }>(
+  row: T
+): T {
+  const ioc = canonicalTennisIoc({ playerId: row.playerId, name: row.name, stored: row.ioc });
+  return ioc === row.ioc ? row : { ...row, ioc };
+}
+
+function withMatchCountry(row: TennisMatchRow): TennisMatchRow {
+  const ioc = canonicalTennisIoc({ playerId: row.playerId, name: row.playerName, stored: row.ioc });
+  const opponentIoc = canonicalTennisIoc({
+    playerId: row.opponentId,
+    name: row.opponent,
+    stored: row.opponentIoc,
+  });
+  if (ioc === row.ioc && opponentIoc === row.opponentIoc) return row;
+  return { ...row, ioc, opponentIoc };
+}
+
 function filterCurrent(players: TennisPlayer[], standings: TennisRosterStandings | undefined): TennisPlayer[] {
   const ranked = new Set<string>();
   for (const row of standings?.ATP || []) ranked.add(row.playerId);
@@ -83,7 +102,8 @@ export async function loadTennisPlayersCached(opts?: {
 }): Promise<TennisPlayer[]> {
   const roster = await readTennisRosterCache();
   if (roster?.players?.length) {
-    return opts?.currentOnly ? filterCurrent(roster.players, roster.standings) : roster.players;
+    const players = roster.players.map(withPlayerCountry);
+    return opts?.currentOnly ? filterCurrent(players, roster.standings) : players;
   }
   if (getHydratedTennisOverlay()?.players?.length) {
     return loadTennisPlayers(opts);
@@ -98,7 +118,7 @@ export async function loadTennisRankingsCached(
   const limit = opts?.limit && opts.limit > 0 ? opts.limit : 50;
   const roster = await readTennisRosterCache();
   const rows = tour === 'WTA' ? roster?.standings?.WTA : roster?.standings?.ATP;
-  if (rows?.length) return rows.slice(0, limit);
+  if (rows?.length) return rows.slice(0, limit).map(withPlayerCountry);
   if (getHydratedTennisOverlay()?.standings) {
     return loadTennisRankings(tour, opts);
   }
@@ -139,7 +159,8 @@ export async function loadPlayerMatchesCached(opts: {
       }
     }
     if (cachedGames.length) {
-      return opts.tour ? cachedGames.filter((row) => row.tour === opts.tour) : cachedGames;
+      const games = opts.tour ? cachedGames.filter((row) => row.tour === opts.tour) : cachedGames;
+      return games.map(withMatchCountry);
     }
   }
   if (getHydratedTennisOverlay()?.matches?.length) {

@@ -4,13 +4,14 @@
  */
 
 import sharedCache from '@/lib/sharedCache';
+import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 
 export const TENNIS_ROSTER_CACHE_KEY = 'tennis_dashboard_roster_v1';
 export const TENNIS_ROSTER_CACHE_TYPE = 'tennis_roster';
 const TENNIS_PLAYER_LOGS_PREFIX = 'tennis_player_logs_v1:';
-const TENNIS_COMPUTED_PREFIX = 'tennis_dash_computed_v1:';
+const TENNIS_COMPUTED_PREFIX = 'tennis_dash_computed_v2:';
 const TENNIS_SHARDS_MARK_KEY = 'tennis_dashboard_shards_mark_v2';
 
 const LOGS_TTL_SECONDS = 60 * 60 * 24 * 90;
@@ -36,6 +37,35 @@ export type TennisPlayerLogsCache = {
   /** Disk history was already merged, so a later read does not scan the compiled cache again. */
   historyBackfilled?: boolean;
 };
+
+function withRosterCountry<T extends { playerId?: string | null; name?: string | null; ioc?: string | null }>(
+  row: T
+): T {
+  const ioc = canonicalTennisIoc({ playerId: row.playerId, name: row.name, stored: row.ioc });
+  const stored = row.ioc ?? null;
+  return ioc === stored ? row : { ...row, ioc };
+}
+
+function withLogCountry(row: TennisMatchRow): TennisMatchRow {
+  const ioc = canonicalTennisIoc({ playerId: row.playerId, name: row.playerName, stored: row.ioc });
+  const opponentIoc = canonicalTennisIoc({
+    playerId: row.opponentId,
+    name: row.opponent,
+    stored: row.opponentIoc,
+  });
+  const storedIoc = row.ioc ?? null;
+  const storedOpponentIoc = row.opponentIoc ?? null;
+  if (ioc === storedIoc && opponentIoc === storedOpponentIoc) return row;
+  return { ...row, ioc, opponentIoc };
+}
+
+function withLogPayload(payload: TennisPlayerLogsCache, playerId: string): TennisPlayerLogsCache {
+  return {
+    ...payload,
+    playerId,
+    games: payload.games.map(withLogCountry),
+  };
+}
 
 function playerLogsKey(playerId: string): string {
   return `${TENNIS_PLAYER_LOGS_PREFIX}${String(playerId || '').trim()}`;
@@ -89,7 +119,16 @@ export async function writeTennisComputedCache<T>(key: string, value: T): Promis
 
 export async function readTennisRosterCache(): Promise<TennisRosterCache | null> {
   const fromRedis = await sharedCache.getJSON<TennisRosterCache>(TENNIS_ROSTER_CACHE_KEY);
-  if (fromRedis?.players?.length) return fromRedis;
+  if (fromRedis?.players?.length) {
+    return {
+      ...fromRedis,
+      players: fromRedis.players.map(withRosterCountry),
+      standings: {
+        ATP: (fromRedis.standings?.ATP || []).map(withRosterCountry),
+        WTA: (fromRedis.standings?.WTA || []).map(withRosterCountry),
+      },
+    };
+  }
   return null;
 }
 
@@ -120,8 +159,9 @@ export async function readTennisPlayerLogsCache(playerId: string): Promise<Tenni
   if (fromMem) return fromMem;
   const cached = await sharedCache.getJSON<TennisPlayerLogsCache>(playerLogsKey(id));
   if (cached?.games && Array.isArray(cached.games)) {
-    rememberPlayerLogs({ ...cached, playerId: id });
-    return cached;
+    const payload = withLogPayload({ ...cached, playerId: id }, id);
+    rememberPlayerLogs(payload);
+    return payload;
   }
   return null;
 }
@@ -143,15 +183,19 @@ export async function readTennisPlayerLogsCacheMany(
   missing.forEach((id, i) => {
     const games = rows[i]?.games;
     if (!games?.length) return;
-    rememberPlayerLogs({
-      fetchedAt: rows[i]?.fetchedAt || new Date().toISOString(),
-      playerId: id,
-      playerName: rows[i]?.playerName || id,
-      tour: rows[i]?.tour || null,
-      games,
-      historyBackfilled: rows[i]?.historyBackfilled,
-    });
-    out.set(id, games);
+    const payload = withLogPayload(
+      {
+        fetchedAt: rows[i]?.fetchedAt || new Date().toISOString(),
+        playerId: id,
+        playerName: rows[i]?.playerName || id,
+        tour: rows[i]?.tour || null,
+        games,
+        historyBackfilled: rows[i]?.historyBackfilled,
+      },
+      id
+    );
+    rememberPlayerLogs(payload);
+    out.set(id, payload.games);
   });
   return out;
 }

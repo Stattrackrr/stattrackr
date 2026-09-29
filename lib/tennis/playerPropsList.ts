@@ -43,6 +43,7 @@ import {
   tennisNamesMatch,
   tennisTourFromOdds,
 } from '@/lib/tennis/oddsApi';
+import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { resolveTennisIoc } from '@/lib/tennis/resolveIoc';
 import {
   tennisMainLineForStat,
@@ -566,24 +567,29 @@ function fillMissingTennisOpponentIoc(rows: TennisListPropRow[]): TennisListProp
     iocByName.set(String(row.playerName || '').trim().toLowerCase(), ioc);
   }
   return rows.map((row) => {
-    if (row.opponentIoc) return row;
-    const oppId = String(row.opponentId || '').trim();
-    if (oppId && iocById.has(oppId)) return { ...row, opponentIoc: iocById.get(oppId) || row.opponentIoc };
-    const opponent = String(row.opponent || '').trim();
-    if (!opponent) return row;
-    const fromName = iocByName.get(opponent.toLowerCase());
-    if (fromName) return { ...row, opponentIoc: fromName };
-    const named = [...iocByName.entries()].filter(([name]) => tennisIdentityMatch(name, opponent));
-    if (named.length === 1) return { ...row, opponentIoc: named[0][1] };
-    const sibling = rows.find(
-      (other) =>
-        other.playerIoc &&
-        other.gameId === row.gameId &&
-        tennisIdentityMatch(other.playerName, opponent)
-    );
-    if (sibling?.playerIoc) return { ...row, opponentIoc: sibling.playerIoc };
-    const resolved = resolveTennisIoc(oppId || null, opponent);
-    return resolved ? { ...row, opponentIoc: resolved } : row;
+    let next = row;
+    if (!next.opponentIoc) {
+      const oppId = String(next.opponentId || '').trim();
+      const opponent = String(next.opponent || '').trim().toLowerCase();
+      const resolved =
+        (oppId && iocById.get(oppId)) ||
+        (opponent && iocByName.get(opponent)) ||
+        resolveTennisIoc(oppId || null, next.opponent);
+      if (resolved) next = { ...next, opponentIoc: resolved };
+    }
+    return {
+      ...next,
+      playerIoc: canonicalTennisIoc({
+        playerId: next.playerId,
+        name: next.playerName,
+        stored: next.playerIoc,
+      }),
+      opponentIoc: canonicalTennisIoc({
+        playerId: next.opponentId,
+        name: next.opponent,
+        stored: next.opponentIoc,
+      }),
+    };
   });
 }
 
@@ -1230,6 +1236,12 @@ function overlayUpcomingOpponentMeta(
   const data = payload.data.map((row) => {
     const next = upcomingForPropRow(row, byPlayerId);
     if (!next) return row;
+    const opponent = String(row.opponent || '').trim();
+    const sameOpponent =
+      !opponent ||
+      opponent.toLowerCase() === String(next.opponent || '').trim().toLowerCase() ||
+      tennisIdentityMatch(opponent, next.opponent);
+    if (!sameOpponent) return row;
     let patched = row;
     if (next.opponentIoc) patched = { ...patched, opponentIoc: next.opponentIoc };
     if (next.opponentRank != null) patched = { ...patched, opponentRank: next.opponentRank };
@@ -1255,14 +1267,19 @@ function overlayRosterOpponentMeta(
     fallbackIoc?: string | null
   ): { ioc: string | null; id: string | null; rank: number | null } | null => {
     const byId = id ? players.find((player) => player.playerId === id) : null;
+    const idAgrees =
+      Boolean(byId) &&
+      (!name ||
+        byId!.name.toLowerCase() === name.toLowerCase() ||
+        tennisIdentityMatch(byId!.name, name));
     const nameHits = name ? players.filter((player) => tennisIdentityMatch(player.name, name)) : [];
     const hit =
-      byId ||
+      (idAgrees ? byId : null) ||
       nameHits.find((player) => player.name.toLowerCase() === name.toLowerCase()) ||
       (nameHits.length === 1 ? nameHits[0] : null);
     const rankedHit =
       (hit?.playerId && ranked.find((row) => row.playerId === hit.playerId)) ||
-      (id && ranked.find((row) => row.playerId === id)) ||
+      (idAgrees && id && ranked.find((row) => row.playerId === id)) ||
       (name
         ? ranked.filter((row) => tennisIdentityMatch(row.name, name)).length === 1
           ? ranked.find((row) => tennisIdentityMatch(row.name, name))
@@ -1404,8 +1421,9 @@ export async function getTennisPlayerPropsList(opts?: {
   const tour = opts?.tour === 'ATP' || opts?.tour === 'WTA' ? opts.tour : null;
   const payload = filterTennisListByTour(await loadTennisPlayerPropsList(opts?.refresh), tour);
   try {
-    return await overlayLiveTennisDvp(payload);
+    const overlaid = await overlayLiveTennisDvp(payload);
+    return { ...overlaid, data: fillMissingTennisOpponentIoc(overlaid.data) };
   } catch {
-    return payload;
+    return { ...payload, data: fillMissingTennisOpponentIoc(payload.data) };
   }
 }

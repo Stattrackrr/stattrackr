@@ -13,6 +13,7 @@ import { tennisHandForName } from '@/lib/tennis/hands';
 import { lookupTennisSurface, tennisSurfacesMtime } from '@/lib/tennis/surfaces';
 import { derivePointByPointStats, type ApiPointByPointGame } from '@/lib/tennis/pointByPointStats';
 import { tennisIocToIso2 } from '@/lib/tennis/flags';
+import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 
 export const API_TENNIS_EVENT = {
   ATP_SINGLES: '265',
@@ -775,7 +776,10 @@ type TennisOverlaySnapshot = {
 
 type OverlayGetter = () => TennisOverlaySnapshot | null;
 
+const IOC_RESOLVE_VERSION = 2;
+
 type ApiRuntime = {
+  iocVersion: number;
   file: ApiTennisCache | null;
   merged: ApiTennisCache | null;
   players: ApiTennisPlayer[] | null;
@@ -795,6 +799,7 @@ function apiRuntime(): ApiRuntime {
   const g = globalThis as typeof globalThis & { __tennisApi?: ApiRuntime };
   if (!g.__tennisApi) {
     g.__tennisApi = {
+      iocVersion: IOC_RESOLVE_VERSION,
       file: null,
       merged: null,
       players: null,
@@ -808,6 +813,9 @@ function apiRuntime(): ApiRuntime {
       playerIndex: null,
       playerIndexMtime: 0,
     };
+  } else if (g.__tennisApi.iocVersion !== IOC_RESOLVE_VERSION) {
+    g.__tennisApi.iocVersion = IOC_RESOLVE_VERSION;
+    g.__tennisApi.players = null;
   }
   return g.__tennisApi;
 }
@@ -1044,6 +1052,7 @@ export function loadApiTennisPlayers(): ApiTennisPlayer[] | null {
   if (!roster?.players?.length) return null;
   runtime.players = roster.players.map((p) => ({
     ...p,
+    ioc: canonicalTennisIoc({ playerId: p.playerId, name: p.name, stored: p.ioc }),
     hand: tennisHandForName(p.name) || p.hand,
     imageUrl: clientTennisHeadshotUrl(p.playerId, resolveTennisHeadshotUrl(p.playerId, p.imageUrl)),
   }));
@@ -1052,5 +1061,9 @@ export function loadApiTennisPlayers(): ApiTennisPlayer[] | null {
 
 export function loadApiTennisRankings(tour: TennisTour): TennisRankingRow[] | null {
   const rows = loadApiTennisRoster()?.standings?.[tour];
-  return rows?.length ? rows : null;
+  if (!rows?.length) return null;
+  return rows.map((row) => ({
+    ...row,
+    ioc: canonicalTennisIoc({ playerId: row.playerId, name: row.name, stored: row.ioc }),
+  }));
 }
