@@ -354,7 +354,7 @@ export default function DataPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const email = session?.user?.email?.trim().toLowerCase() ?? '';
       if (!session?.access_token || !email) {
-        router.replace('/login?redirect=/data');
+        router.replace('/home');
         return;
       }
       if (email !== DATA_ADMIN_EMAIL) {
@@ -372,7 +372,7 @@ export default function DataPage() {
       }
       if (cancelled) return;
       if (response.status === 401 || response.status === 403) {
-        router.replace('/login?redirect=/data');
+        router.replace('/home');
         return;
       }
       if (!response.ok) {

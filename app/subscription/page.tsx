@@ -16,7 +16,7 @@ export default function SubscriptionPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          router.push('/login?redirect=/subscription');
+          router.replace('/home');
           return;
         }
 

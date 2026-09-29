@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { readEntryIntent, redirectForEntryIntent } from "@/lib/entryIntent";
 
 const DEFAULT_NEXT = "/home";
 
@@ -36,12 +37,14 @@ function AuthCallbackLoading() {
 /**
  * Handles the redirect from Supabase after magic-link verification.
  * Supabase appends access_token and refresh_token to the URL hash.
- * We parse them, set the session, then redirect to /home (or the `next` param).
+ * We parse them, set the session, then send Pro to Stripe, Free into the app,
+ * or otherwise redirect to /home (or the `next` param).
  * We read query params from window.location so this works safely in prerendered builds.
  */
 function AuthCallbackContent() {
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
+  const [detail, setDetail] = useState("Signing you in…");
 
   useEffect(() => {
     const run = async () => {
@@ -60,6 +63,15 @@ function AuthCallbackContent() {
           setStatus("error");
           return;
         }
+        const intent = readEntryIntent();
+        if (intent === "pro") setDetail("Taking you to checkout…");
+        if (intent === "free") setDetail("Opening StatTrackr…");
+        try {
+          const redirected = await redirectForEntryIntent(accessToken);
+          if (redirected) return;
+        } catch (checkoutError) {
+          console.error("Entry checkout error:", checkoutError);
+        }
         setStatus("ok");
         router.replace(next);
         return;
@@ -77,7 +89,7 @@ function AuthCallbackContent() {
         {status === "loading" && (
           <>
             <div className="w-10 h-10 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4" />
-            <p>Signing you in…</p>
+            <p>{detail}</p>
           </>
         )}
         {status === "ok" && (

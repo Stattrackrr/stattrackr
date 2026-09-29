@@ -659,10 +659,13 @@ export default function TennisDashboardPage() {
   const [navigatingToProps, setNavigatingToProps] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [oddsFormat, setOddsFormat] = useState(DEFAULT_ODDS_FORMAT);
-  const { userEmail, username, avatarUrl, isPro, subscriptionChecked, setUsername, setAvatarUrl } = useViewerProfile({
-    loginRedirect: '/login',
+  const { viewerId, userEmail, username, avatarUrl, isPro, subscriptionChecked, setUsername, setAvatarUrl } = useViewerProfile({
     requireAuth: false,
   });
+  useEffect(() => {
+    if (!subscriptionChecked || viewerId) return;
+    router.replace('/home');
+  }, [router, subscriptionChecked, viewerId]);
   const isDesktopLayout = useIsDesktopLayout();
   const showMobileDashCards = isDesktopLayout === false;
   const showDesktopDashCards = isDesktopLayout === true;
@@ -1590,6 +1593,10 @@ export default function TennisDashboardPage() {
   const showStatsLoadingShell =
     !!selectedPlayer && (loadingPlayerFromUrl || statsLoadingForPlayer || !chartDelayElapsed);
   const pulse = isDark ? 'bg-gray-800' : 'bg-gray-200';
+
+  if (!viewerId) {
+    return <div className="min-h-screen bg-[#050d1a]" />;
+  }
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">

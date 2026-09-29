@@ -15,8 +15,6 @@ import {
 } from '@/lib/profileSubscriptionGate';
 
 export type UseViewerProfileOptions = {
-  /** Base login path when signed out (redirect query is appended). */
-  loginRedirect?: string;
   /** When false, stay on the page if there is no session. Default true. */
   requireAuth?: boolean;
 };
@@ -33,7 +31,6 @@ async function resolveAuthUser(): Promise<User | null> {
 
 export function useViewerProfile(options?: UseViewerProfileOptions) {
   const router = useRouter();
-  const loginRedirect = options?.loginRedirect ?? '/login';
   const requireAuth = options?.requireAuth !== false;
 
   const [viewerId, setViewerId] = useState<string | null>(null);
@@ -93,13 +90,7 @@ export function useViewerProfile(options?: UseViewerProfileOptions) {
           }
           setSubscriptionChecked(true);
           if (requireAuth) {
-            setTimeout(() => {
-              const returnTo =
-                typeof window !== 'undefined'
-                  ? `${window.location.pathname}${window.location.search}`
-                  : '/props';
-              router.push(`${loginRedirect}?redirect=${encodeURIComponent(returnTo)}`);
-            }, 0);
+            router.replace('/home');
           }
         }
         return;
@@ -158,7 +149,7 @@ export function useViewerProfile(options?: UseViewerProfileOptions) {
           setIsPro(false);
           setSubscriptionChecked(true);
           if (requireAuth && event === 'SIGNED_OUT') {
-            router.push(loginRedirect);
+            router.replace('/home');
           }
         }
         return;
@@ -176,7 +167,7 @@ export function useViewerProfile(options?: UseViewerProfileOptions) {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [applyFromUserMetadata, loginRedirect, requireAuth, router]);
+  }, [applyFromUserMetadata, requireAuth, router]);
 
   return {
     viewerId,

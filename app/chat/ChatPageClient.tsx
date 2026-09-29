@@ -413,7 +413,7 @@ export default function ChatPageClient() {
       } = await supabase.auth.getSession();
 
       if (!session?.user) {
-        router.replace('/login?redirect=/chat');
+        router.replace('/home');
         return;
       }
 
@@ -487,7 +487,7 @@ export default function ChatPageClient() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         setViewer(DEFAULT_VIEWER);
-        router.replace('/login?redirect=/chat');
+        router.replace('/home');
       }
 
       if (event === 'SIGNED_IN' && session?.user) {

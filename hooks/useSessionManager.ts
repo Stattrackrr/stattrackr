@@ -19,7 +19,7 @@ export function useSessionManager() {
       
       if (!session) {
         // No session in either storage, redirect to login
-        router.replace('/login');
+        router.replace('/home');
         return;
       }
     };
@@ -32,14 +32,14 @@ export function useSessionManager() {
         // Clear all session data
         localStorage.removeItem('stattrackr_remember_me');
         localStorage.removeItem('stattrackr_google_login');
-        router.replace('/login');
+        router.replace('/home');
       }
     });
     
     const { data: { subscription: sessionSub } } = supabaseSessionOnly.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         // Session-only logout
-        router.replace('/login');
+        router.replace('/home');
       }
     });
 

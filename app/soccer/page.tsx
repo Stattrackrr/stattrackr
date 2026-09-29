@@ -770,7 +770,7 @@ function SoccerPageContent() {
           setAvatarUrl(null);
           setSubscriptionChecked(true);
           setTimeout(() => {
-            router.push('/login?redirect=/soccer');
+            router.replace('/home');
           }, 0);
         }
         return;
@@ -805,7 +805,7 @@ function SoccerPageContent() {
           setUserEmail(null);
           setAvatarUrl(null);
           setSubscriptionChecked(true);
-          router.push('/login?redirect=/soccer');
+          router.replace('/home');
         }
       } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && isMounted && session?.user) {
         void checkSubscription();

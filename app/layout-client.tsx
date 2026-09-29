@@ -6,6 +6,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { TrackedBetsProvider } from "@/contexts/TrackedBetsContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import NavigationLoader from "@/components/NavigationLoader";
+import SignedOutGate from "@/components/SignedOutGate";
 import '@/lib/disableConsoleInProduction';
 import { trackMetaEvent, trackMetaPageView } from '@/lib/metaPixel';
 
@@ -88,7 +89,7 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
       <TrackedBetsProvider>
         <ErrorBoundary>
           <NavigationLoader />
-          {children}
+          <SignedOutGate>{children}</SignedOutGate>
         </ErrorBoundary>
       </TrackedBetsProvider>
     </ThemeProvider>

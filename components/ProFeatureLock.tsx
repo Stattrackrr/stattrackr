@@ -102,8 +102,7 @@ function UpgradePrompt({ onClose }: { onClose: () => void }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        const next = `${window.location.pathname}${window.location.search}`;
-        router.push(`/login?redirect=${encodeURIComponent(next)}`);
+        router.replace('/home');
         return;
       }
 

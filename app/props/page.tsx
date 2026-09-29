@@ -2325,7 +2325,7 @@ export default function NBALandingPage() {
     subscriptionChecked,
     setUsername,
     setAvatarUrl,
-  } = useViewerProfile({ loginRedirect: '/login' });
+  } = useViewerProfile();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [todaysGames, setTodaysGames] = useState<Game[]>([]);

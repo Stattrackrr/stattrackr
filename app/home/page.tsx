@@ -16,6 +16,7 @@ import type { User } from '@supabase/supabase-js';
 import { StatTrackrSplash } from '@/components/StatTrackrSplash';
 import HomeQuizLanding from '@/components/HomeQuizLanding';
 import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
+import { readEntryIntent, redirectForEntryIntent, startProCheckout } from '@/lib/entryIntent';
 import { 
   CheckCircle2,
   Check,
@@ -487,6 +488,7 @@ export default function HomePage() {
         }
         setUser(session?.user ?? null);
         if (session?.user) {
+          if (await leaveForEntryIntent(session.access_token)) return;
           await checkPremiumStatus(session.user.id, checkId);
         } else {
           finishBootToMarketing();
@@ -594,6 +596,8 @@ export default function HomePage() {
         return;
       }
       setHasPremium(false);
+      if (redirectingRef.current) return;
+      bootReadyRef.current = true;
       setBootReady(true);
     } catch (error) {
       console.error('Error checking subscription:', error);
@@ -636,75 +640,42 @@ export default function HomePage() {
     }
   };
 
+  const leaveForEntryIntent = async (accessToken: string) => {
+    if (!readEntryIntent()) return false;
+    if (entryIntentHandled.current) return true;
+    entryIntentHandled.current = true;
+    redirectingRef.current = true;
+    setIsRedirectingPro(true);
+    bootReadyRef.current = false;
+    setBootReady(false);
+    try {
+      const redirected = await redirectForEntryIntent(accessToken);
+      if (redirected) return true;
+    } catch (error: any) {
+      console.error('Entry checkout error:', error);
+      alert(error?.message || 'Failed to start checkout. Please try again.');
+    }
+    entryIntentHandled.current = false;
+    redirectingRef.current = false;
+    setIsRedirectingPro(false);
+    finishBootToMarketing();
+    return true;
+  };
+
   const handleSelectPlan = async (planName: string, billingCycle: 'monthly' | 'semiannual' | 'annual') => {
-    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push('/login?redirect=/home');
         return;
       }
-      
-      const priceIds = {
-        monthly: 'price_1TlWpPF0aO6V0EHjEZcvzlEE',
-        semiannual: 'price_1TlWpoF0aO6V0EHjO81pOBgV',
-        annual: 'price_1TlWq3F0aO6V0EHji75auKmP',
-      };
-      
-      const priceId = priceIds[billingCycle];
-      
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ priceId, billingCycle }),
-      });
 
-      const data = await response.json().catch(() => ({}));
-
-      if (response.status === 409 && data.alreadySubscribed) {
-        window.location.href = '/props';
-        return;
-      }
-      
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP error! status: ${response.status}`);
-      }
-      
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Response is not JSON');
-      }
-      
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error(data.error || 'Failed to create checkout session');
-      }
+      await startProCheckout(session.access_token, billingCycle);
     } catch (error: any) {
       console.error('Checkout error:', error);
       alert(error.message || 'Failed to start checkout. Please try again.');
     }
   };
-
-  useEffect(() => {
-    if (!bootReady || !user || entryIntentHandled.current) return;
-    const intent = sessionStorage.getItem('stattrackr_entry_intent');
-    if (!intent) return;
-    if (window.location.pathname !== '/home') return;
-    entryIntentHandled.current = true;
-    sessionStorage.removeItem('stattrackr_entry_intent');
-    if (intent === 'pro' && !hasPremium) {
-      const cycle = sessionStorage.getItem('stattrackr_entry_cycle');
-      sessionStorage.removeItem('stattrackr_entry_cycle');
-      const billing = cycle === 'semiannual' || cycle === 'annual' ? cycle : 'monthly';
-      void handleSelectPlan('Pro', billing);
-      return;
-    }
-    if (intent === 'free') goToProps();
-  }, [bootReady, user, hasPremium]);
 
   const plans = [
     {

@@ -2178,7 +2178,7 @@ export default function AFLPage() {
 
       if (!user) {
         setSubscriptionChecked(true);
-        router.replace('/login?redirect=/afl');
+        router.replace('/home');
         return;
       }
 

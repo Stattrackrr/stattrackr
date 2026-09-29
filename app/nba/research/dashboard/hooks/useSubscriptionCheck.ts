@@ -36,7 +36,7 @@ export function useSubscriptionCheck({
       if (!session?.user) {
         if (isMounted) {
           setTimeout(() => {
-            router.push('/login?redirect=/nba/research/dashboard');
+            router.replace('/home');
           }, 0);
         }
         return;
@@ -117,7 +117,7 @@ export function useSubscriptionCheck({
         if (isMounted) {
           lastSubscriptionStatus = null;
           setIsPro(false);
-          router.push('/login?redirect=/nba/research/dashboard');
+          router.replace('/home');
         }
       }
       // Only check on SIGNED_IN (not TOKEN_REFRESHED to avoid frequent checks)

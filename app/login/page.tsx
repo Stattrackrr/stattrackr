@@ -7,6 +7,7 @@ import { Eye, EyeOff, Mail, Lock, TrendingUp, BarChart3, PieChart, Database, Use
 import { StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { authErrorMessage, emailAccountExists, signInWithEmailPassword } from "@/lib/auth/emailAccount";
+import { redirectForEntryIntent } from "@/lib/entryIntent";
 
 const HOME_ROUTE = "/home";
 
@@ -120,6 +121,11 @@ export default function LoginPage() {
         sessionRedirectStarted.current = false;
         return;
       }
+      try {
+        if (await redirectForEntryIntent(session.access_token)) return;
+      } catch (checkoutError) {
+        console.error("Entry checkout error:", checkoutError);
+      }
       router.replace(pathAfterLogin());
     };
     checkUser();
@@ -168,6 +174,12 @@ export default function LoginPage() {
       } else {
         // Always use persistent session for reliable login
         await signInWithEmailPassword(email, password, rememberMe);
+        const { data: { session } } = await supabase.auth.getSession();
+        try {
+          if (session?.access_token && await redirectForEntryIntent(session.access_token)) return;
+        } catch (checkoutError) {
+          console.error("Entry checkout error:", checkoutError);
+        }
         router.replace(pathAfterLogin());
       }
     } catch (error: any) {
