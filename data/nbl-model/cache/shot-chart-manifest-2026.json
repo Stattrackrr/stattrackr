@@ -2,11 +2,11 @@
   "years": [
     2026
   ],
-  "generatedAt": "2026-09-29T18:37:28.983Z",
-  "fixturesTotal": 13,
+  "generatedAt": "2026-09-30T18:24:47.607Z",
+  "fixturesTotal": 15,
   "fixturesCached": 13,
-  "fixturesFetched": 0,
+  "fixturesFetched": 2,
   "fixturesMissing": 0,
-  "playersCached": 110,
+  "playersCached": 112,
   "defenseTeamsCached": 10
 }

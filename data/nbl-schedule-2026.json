@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-29T18:36:47.043Z",
+  "generatedAt": "2026-09-30T18:24:15.402Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2860,7 +2860,7 @@
       "externalId": "3718a994-58ad-11f1-add9-d98e318e0a1e",
       "startTime": "2026-09-30T09:30:00.000Z",
       "round": "3",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Sydney Kings",
       "homeTeamCode": "SYD",
       "homeTeamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
@@ -2869,8 +2869,8 @@
       "awayTeamCode": "BRI",
       "awayTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 93,
+      "awayScore": 78,
       "venue": "Afterpay Arena",
       "matchSlug": "sydney-kings-v-brisbane-bullets-men-30-09-2026"
     },
@@ -2879,7 +2879,7 @@
       "externalId": "36f8c608-58ad-11f1-aa0e-2bbb920071b5",
       "startTime": "2026-09-30T07:30:00.000Z",
       "round": "3",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "NZ Breakers",
       "homeTeamCode": "NZL",
       "homeTeamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
@@ -2888,8 +2888,8 @@
       "awayTeamCode": "CNS",
       "awayTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 98,
+      "awayScore": 75,
       "venue": "Spark Arena",
       "matchSlug": "nz-breakers-v-cairns-taipans-men-30-09-2026"
     },

@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-09-29T18:35:35.077Z",
+  "generatedAt": "2026-09-30T18:23:30.923Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 195,
   "gameRows": 4367,
@@ -664,7 +664,7 @@
     },
     {
       "playerId": "71771a51-6f51-4a37-a27e-2a123e775a5c",
-      "name": "John Jenkins",
+      "name": "John Jenkins III",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
       "gameCount": 18,
@@ -672,7 +672,7 @@
     },
     {
       "playerId": "71771a51-6f51-4a37-a27e-2a123e775a5c",
-      "name": "John Jenkins",
+      "name": "John Jenkins III",
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
       "gameCount": 18,
