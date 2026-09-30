@@ -4,7 +4,7 @@
   "homeTeam": "Perth Wildcats",
   "awayTeam": "South East Melbourne Phoenix",
   "commenceTime": "2026-10-02T11:30:00.000Z",
-  "capturedAt": "2026-09-29T22:25:39.992Z",
+  "capturedAt": "2026-09-30T05:44:40.854Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -19,7 +19,7 @@
     "PlayUp",
     "Dabble"
   ],
-  "lineCount": 2015,
+  "lineCount": 2020,
   "lines": [
     {
       "player": "Angus Brandt",
@@ -26214,6 +26214,71 @@
       "over": "+700",
       "under": "N/A",
       "overDecimal": 8,
+      "underDecimal": null
+    },
+    {
+      "player": "Eli Pepper",
+      "playerKey": "eli pepper",
+      "book": "Bet Right",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+290",
+      "under": "N/A",
+      "overDecimal": 3.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Eli Pepper",
+      "playerKey": "eli pepper",
+      "book": "Betr",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+280",
+      "under": "N/A",
+      "overDecimal": 3.8,
+      "underDecimal": null
+    },
+    {
+      "player": "Eli Pepper",
+      "playerKey": "eli pepper",
+      "book": "Picklebet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+290",
+      "under": "N/A",
+      "overDecimal": 3.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Eli Pepper",
+      "playerKey": "eli pepper",
+      "book": "PlayUp",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+290",
+      "under": "N/A",
+      "overDecimal": 3.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Elijah Pepper",
+      "playerKey": "elijah pepper",
+      "book": "Cloudbet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+275",
+      "under": "N/A",
+      "overDecimal": 3.75,
       "underDecimal": null
     }
   ]
