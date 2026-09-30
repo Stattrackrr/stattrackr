@@ -303,7 +303,17 @@ html.dark body {
   .st-splash-title,
   .st-splash-dot,
   .st-ask-logo,
-  .st-ask-logo-glow {
+  .st-ask-logo-glow,
+  .quiz-card-in,
+  .quiz-step-forward,
+  .quiz-step-back,
+  .quiz-step-leave,
+  .quiz-step-leave-back,
+  .quiz-option-in,
+  .quiz-progress-live,
+  .quiz-build-glow,
+  .quiz-build-ring,
+  .quiz-build-fill {
     animation: none !important;
   }
 
@@ -361,6 +371,148 @@ html.dark body {
 
 .pro-plan-glow {
   animation: proPlanGlow 1.8s ease-in-out infinite;
+}
+
+@keyframes quizCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes quizStepForward {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateX(64px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+@keyframes quizStepBack {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateX(-64px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+@keyframes quizStepLeave {
+  to {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateX(-48px) scale(0.98);
+  }
+}
+
+@keyframes quizStepLeaveBack {
+  to {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateX(48px) scale(0.98);
+  }
+}
+
+@keyframes quizOptionIn {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes quizProgressShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes quizBuildSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes quizBuildFill {
+  from {
+    transform: scaleX(0.08);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes quizGlowPulse {
+  0%, 100% {
+    opacity: 0.45;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+.quiz-card-in {
+  animation: quizCardIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.quiz-step-forward {
+  animation: quizStepForward 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.quiz-step-back {
+  animation: quizStepBack 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.quiz-step-leave {
+  animation: quizStepLeave 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.quiz-step-leave-back {
+  animation: quizStepLeaveBack 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.quiz-option-in {
+  animation: quizOptionIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.quiz-progress-live {
+  background-image: linear-gradient(90deg, #a855f7, #e879f9, #a855f7);
+  background-size: 200% 100%;
+  animation: quizProgressShimmer 1.4s linear infinite;
+}
+
+.quiz-build-glow {
+  animation: quizGlowPulse 1.6s ease-in-out infinite;
+}
+
+.quiz-build-ring {
+  animation: quizBuildSpin 0.9s linear infinite;
+}
+
+.quiz-build-fill {
+  transform-origin: left center;
+  animation: quizBuildFill 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes liveBadgePulseGreen {

@@ -589,6 +589,10 @@ export default function HomeQuizLanding({
 }) {
   const [phase, setPhase] = useState<'intro' | 'survey' | 'email' | 'plan' | 'offer'>('intro');
   const [step, setStep] = useState(0);
+  const [stepMotion, setStepMotion] = useState<'forward' | 'back'>('forward');
+  const [leaving, setLeaving] = useState<'forward' | 'back' | null>(null);
+  const advancingRef = useRef(false);
+  const motionTimerRef = useRef<number | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -639,8 +643,22 @@ export default function HomeQuizLanding({
   }, [phase, onPhaseChange]);
 
   useEffect(() => {
+    return () => {
+      if (motionTimerRef.current) window.clearTimeout(motionTimerRef.current);
+    };
+  }, []);
+
+  const queueMotion = (run: () => void, delay: number) => {
+    if (motionTimerRef.current) window.clearTimeout(motionTimerRef.current);
+    motionTimerRef.current = window.setTimeout(() => {
+      motionTimerRef.current = null;
+      run();
+    }, delay);
+  };
+
+  useEffect(() => {
     if (phase !== 'plan') return;
-    const timer = window.setTimeout(() => setPhase('offer'), 1100);
+    const timer = window.setTimeout(() => setPhase('offer'), 1500);
     return () => window.clearTimeout(timer);
   }, [phase]);
 
@@ -665,6 +683,7 @@ export default function HomeQuizLanding({
   }, [phase]);
 
   const choose = (id: string) => {
+    if (advancingRef.current) return;
     const current = STEPS[step];
     const nextAnswers: Answers =
       current.key === 'sports'
@@ -677,11 +696,25 @@ export default function HomeQuizLanding({
     const questionStep = (['q1', 'q2', 'q3', 'q4', 'q5'] as const)[step] ?? 'q5';
     if (step < STEPS.length - 1) {
       saveProgressRef.current(questionStep, nextAnswers, false, emailRef.current);
-      setStep(step + 1);
+      advancingRef.current = true;
+      const nextStep = step + 1;
+      setLeaving('forward');
+      queueMotion(() => {
+        setLeaving(null);
+        setStepMotion('forward');
+        setStep(nextStep);
+        advancingRef.current = false;
+      }, 220);
       return;
     }
     saveProgressRef.current('email_prompt', nextAnswers, false, emailRef.current);
-    setPhase('email');
+    advancingRef.current = true;
+    setLeaving('forward');
+    queueMotion(() => {
+      setLeaving(null);
+      advancingRef.current = false;
+      setPhase('email');
+    }, 220);
   };
 
   const optionSelected = (id: string) => {
@@ -803,7 +836,7 @@ export default function HomeQuizLanding({
       <Shell cover>
         <div className="mx-auto flex w-full max-w-md flex-1 items-center px-4 py-10 sm:px-6">
           <form
-            className="w-full overflow-hidden rounded-2xl border border-white/15 bg-[#0a1929] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.85)]"
+            className="quiz-card-in w-full overflow-hidden rounded-2xl border border-white/15 bg-[#0a1929] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.85)]"
             onSubmit={submitEmail}
           >
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-3.5 sm:px-6">
@@ -866,12 +899,21 @@ export default function HomeQuizLanding({
     const sport = sportPhrase(answers.sports);
     return (
       <Shell cover>
-        <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-purple-300">Building your board</p>
-          <h2 className="mt-4 max-w-lg text-3xl font-medium tracking-tight sm:text-4xl">
-            Your {sport} board
-          </h2>
-          <p className="mt-3 text-gray-400">Using the answers you just gave.</p>
+        <div className="relative flex flex-1 flex-col items-center justify-center px-6 text-center">
+          <div aria-hidden className="quiz-build-glow pointer-events-none absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-600/30 blur-3xl" />
+          <div className="relative">
+            <div className="quiz-build-ring h-16 w-16 rounded-full border-2 border-white/10 border-t-purple-400 shadow-[0_0_28px_rgba(168,85,247,0.45)]" />
+          </div>
+          <div className="quiz-card-in relative">
+            <p className="mt-8 text-sm font-medium uppercase tracking-[0.18em] text-purple-300">Building your board</p>
+            <h2 className="mt-4 max-w-lg text-3xl font-medium tracking-tight sm:text-4xl">
+              Your {sport} board
+            </h2>
+            <p className="mt-3 text-gray-400">Using the answers you just gave.</p>
+          </div>
+          <div className="relative mt-8 h-1.5 w-56 overflow-hidden rounded-full bg-white/10">
+            <div className="quiz-build-fill h-full w-full rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-400" />
+          </div>
         </div>
       </Shell>
     );
@@ -882,7 +924,7 @@ export default function HomeQuizLanding({
       <Shell cover>
         <div className="relative mx-auto flex w-full max-w-xl flex-1 items-center px-4 py-10 sm:px-6">
           <div aria-hidden className="pointer-events-none absolute left-1/2 top-[42%] h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-600/25 blur-3xl" />
-          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-[#0a1929] shadow-[0_30px_80px_-36px_rgba(0,0,0,0.9)]">
+          <div className="quiz-card-in relative w-full overflow-hidden rounded-3xl border border-white/10 bg-[#0a1929] shadow-[0_30px_80px_-36px_rgba(0,0,0,0.9)]">
             <div className="flex items-center justify-between px-6 pt-6 sm:px-8">
               <div className="flex items-center gap-2.5">
                 <Image src="/images/stattrackr-logo-512.webp" alt="" width={32} height={32} className="h-8 w-8" />
@@ -973,18 +1015,26 @@ export default function HomeQuizLanding({
   return (
     <Shell cover>
       <div className="mx-auto flex w-full max-w-xl flex-1 items-center px-4 py-10 sm:px-6">
-        <div className="w-full rounded-2xl border border-white/25 bg-[#0a1929] shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_28px_80px_-28px_rgba(0,0,0,0.85)]">
+        <div className="quiz-card-in w-full overflow-hidden rounded-2xl border border-white/25 bg-[#0a1929] shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_28px_80px_-28px_rgba(0,0,0,0.85)]">
           <div className="px-6 py-7 sm:px-8 sm:py-8">
             <div className="mb-8">
               <div className="flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => {
+                    if (advancingRef.current) return;
                     if (step === 0) {
                       setPhase('intro');
                       return;
                     }
-                    setStep(step - 1);
+                    advancingRef.current = true;
+                    setLeaving('back');
+                    queueMotion(() => {
+                      setLeaving(null);
+                      setStepMotion('back');
+                      setStep((current) => current - 1);
+                      advancingRef.current = false;
+                    }, 220);
                   }}
                   className="text-sm font-medium text-gray-400 hover:text-white"
                 >
@@ -1009,7 +1059,7 @@ export default function HomeQuizLanding({
                         index < step
                           ? 'w-full bg-purple-500'
                           : index === step
-                            ? 'w-full bg-gradient-to-r from-purple-500 to-fuchsia-400 shadow-[0_0_16px_rgba(168,85,247,0.55)]'
+                            ? 'quiz-progress-live w-full shadow-[0_0_16px_rgba(168,85,247,0.55)]'
                             : 'w-0'
                       }`}
                     />
@@ -1017,6 +1067,18 @@ export default function HomeQuizLanding({
                 ))}
               </div>
             </div>
+            <div
+              key={`${step}-${stepMotion}`}
+              className={
+                leaving === 'forward'
+                  ? 'quiz-step-leave'
+                  : leaving === 'back'
+                    ? 'quiz-step-leave-back'
+                    : stepMotion === 'back'
+                      ? 'quiz-step-back'
+                      : 'quiz-step-forward'
+              }
+            >
             <h2 className="text-3xl font-semibold tracking-tight sm:text-[2.15rem] sm:leading-tight">{current.question}</h2>
             <div className="mt-8 space-y-3">
               {current.options.map((option, index) => {
@@ -1027,9 +1089,10 @@ export default function HomeQuizLanding({
                     key={option.id}
                     type="button"
                     onClick={() => choose(option.id)}
-                    className={`flex w-full items-center gap-4 rounded-xl border px-4 py-4 text-left transition-colors ${
+                    style={{ animationDelay: `${70 + index * 55}ms` }}
+                    className={`quiz-option-in flex w-full items-center gap-4 rounded-xl border px-4 py-4 text-left transition-[transform,border-color,background-color,box-shadow] duration-200 active:scale-[0.985] ${
                       selected
-                        ? 'border-purple-500 bg-purple-500/15 text-white'
+                        ? 'scale-[1.015] border-purple-400 bg-purple-500/20 text-white shadow-[0_0_24px_-8px_rgba(168,85,247,0.9)]'
                         : 'border-white/10 bg-[#071422] text-gray-100 hover:border-purple-400/60 hover:bg-[#0c1c33]'
                     }`}
                   >
@@ -1046,6 +1109,7 @@ export default function HomeQuizLanding({
                   </button>
                 );
               })}
+            </div>
             </div>
           </div>
         </div>
