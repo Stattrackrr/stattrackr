@@ -213,14 +213,15 @@ export function tennisIdentityMatch(a: string | null | undefined, b: string | nu
 }
 
 /** Identity hits that are one player stored more than once. Null when the name is ambiguous. */
-export function tennisSamePersonRecords<T extends { playerId: string; name: string }>(
+export function tennisSamePersonRecords<T extends { name: string; playerId?: string; id?: string }>(
   hits: T[]
 ): T[] | null {
-  const unique = [...new Map(hits.map((player) => [player.playerId, player])).values()];
+  const idOf = (player: T) => String(player.playerId || player.id || player.name);
+  const unique = [...new Map(hits.map((player) => [idOf(player), player])).values()];
   if (!unique.length) return null;
   const anchor = unique[0];
   const same = unique.every(
-    (player) => player.playerId === anchor.playerId || tennisIdentityMatch(anchor.name, player.name)
+    (player) => idOf(player) === idOf(anchor) || tennisIdentityMatch(anchor.name, player.name)
   );
   return same ? unique : null;
 }

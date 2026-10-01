@@ -1409,7 +1409,7 @@ async function loadTennisPlayerPropsList(refresh?: boolean): Promise<TennisPlaye
   return listBuildInflight;
 }
 
-function rosterHitForListedName(name: string, id: string | null) {
+function rosterHitForListedName(name: string | null | undefined, id: string | null | undefined) {
   const players = loadTennisPlayers();
   const wantId = String(id || '').trim();
   const label = String(name || '').trim();
