@@ -50,6 +50,13 @@ const GOAL_LABEL: Record<string, string> = {
   find: 'Stats are hard to find',
   start: 'No clear place to start',
 };
+const HEARD_LABEL: Record<string, string> = {
+  ads: 'Ads',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  friend: 'A friend',
+  other: 'Other',
+};
 const PLAN_LABEL: Record<string, string> = { pro: 'Pro', free: 'Free' };
 const CYCLE_LABEL: Record<string, string> = {
   monthly: 'Monthly',
@@ -62,6 +69,7 @@ const STAT_IDS = ['opponent', 'advanced', 'form', 'ai'] as const;
 const BETTING_IDS = ['daily', 'few', 'weekly', 'monthly'] as const;
 const RESEARCH_IDS = ['most', 'sometimes', 'never'] as const;
 const GOAL_IDS = ['sites', 'find', 'start'] as const;
+const HEARD_IDS = ['ads', 'instagram', 'tiktok', 'friend', 'other'] as const;
 
 const SERIES = ['#c084fc', '#818cf8', '#38bdf8', '#34d399', '#fb7185', '#fbbf24'];
 
@@ -73,6 +81,7 @@ type SurveyRow = {
   stats: string[] | null;
   research: string | null;
   goal: string | null;
+  heard: string | null;
   plan_choice: string | null;
   billing_cycle: string | null;
   last_step: string | null;
@@ -89,6 +98,8 @@ const STOP_ORDER: { status: string; short: string }[] = [
   { status: 'Answered how often they bet, then left', short: 'Left after betting' },
   { status: 'Answered stats, then left', short: 'Left after stats' },
   { status: 'Answered research, then left', short: 'Left after research' },
+  { status: 'Answered the hardest part, then left', short: 'Left after hardest part' },
+  { status: 'Answered how they heard about us, then left', short: 'Left after referral' },
   { status: 'Reached the email box, then left', short: 'Left at email box' },
   { status: 'Entered email', short: 'Entered email' },
   { status: 'Entered email, then left', short: 'Left after email' },
@@ -117,6 +128,9 @@ function surveyStatus(row: SurveyRow): string {
     case 'q4':
       return 'Answered research, then left';
     case 'q5':
+      return 'Answered the hardest part, then left';
+    case 'q6':
+      return 'Answered how they heard about us, then left';
     case 'email_prompt':
       return 'Reached the email box, then left';
     default:
@@ -434,6 +448,7 @@ export default function DataPage() {
     { label: 'Stats', count: listed.filter((row) => (row.stats?.length ?? 0) > 0).length },
     { label: 'Research', count: listed.filter((row) => Boolean(row.research)).length },
     { label: 'Hardest part', count: listed.filter((row) => Boolean(row.goal)).length },
+    { label: 'Heard about us', count: listed.filter((row) => Boolean(row.heard)).length },
     { label: 'Email', count: enteredEmail },
     { label: 'Saw plan', count: sawPlan },
     { label: 'Chose plan', count: proCount + freeCount },
@@ -480,6 +495,7 @@ export default function DataPage() {
   const stats = orderedCounts(STAT_IDS, STAT_LABEL, (id) => listed.filter((row) => row.stats?.includes(id)).length);
   const research = orderedCounts(RESEARCH_IDS, RESEARCH_LABEL, (id) => listed.filter((row) => row.research === id).length);
   const goals = orderedCounts(GOAL_IDS, GOAL_LABEL, (id) => listed.filter((row) => row.goal === id).length);
+  const heard = orderedCounts(HEARD_IDS, HEARD_LABEL, (id) => listed.filter((row) => row.heard === id).length);
   const allSports = listed.filter((row) => SPORT_IDS.every((id) => row.sports?.includes(id))).length;
 
   const outcome = [
@@ -655,8 +671,11 @@ export default function DataPage() {
               <Panel title="How often they research">
                 <AnswerBars points={research} color={SERIES[3]} />
               </Panel>
-              <Panel title="Hardest part of researching" className="lg:col-span-2">
+              <Panel title="Hardest part of researching">
                 <AnswerBars points={goals} color={SERIES[4]} />
+              </Panel>
+              <Panel title="How they heard about us">
+                <AnswerBars points={heard} color={SERIES[5]} />
               </Panel>
             </div>
 
@@ -693,7 +712,7 @@ export default function DataPage() {
                 <table className="min-w-full text-left text-sm">
                   <thead className="sticky top-0 bg-[#0a1929] text-[11px] uppercase tracking-[0.14em] text-gray-500">
                     <tr>
-                      {['Time', 'Status', 'Email', 'Sports', 'Betting', 'Stats', 'Research', 'Hardest part', 'Plan'].map((heading) => (
+                      {['Time', 'Status', 'Email', 'Sports', 'Betting', 'Stats', 'Research', 'Hardest part', 'Heard about us', 'Plan'].map((heading) => (
                         <th key={heading} className="whitespace-nowrap px-4 py-3 font-medium">
                           {heading}
                         </th>
@@ -703,7 +722,7 @@ export default function DataPage() {
                   <tbody>
                     {visible.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="px-4 py-10 text-gray-500">
+                        <td colSpan={10} className="px-4 py-10 text-gray-500">
                           {listed.length === 0 ? 'No survey responses yet.' : 'Nothing matches that filter.'}
                         </td>
                       </tr>
@@ -722,6 +741,7 @@ export default function DataPage() {
                             <td className="whitespace-nowrap px-4 py-3 text-gray-300">{statText(row.stats)}</td>
                             <td className="whitespace-nowrap px-4 py-3 text-gray-300">{named(row.research, RESEARCH_LABEL)}</td>
                             <td className="whitespace-nowrap px-4 py-3 text-gray-300">{named(row.goal, GOAL_LABEL)}</td>
+                            <td className="whitespace-nowrap px-4 py-3 text-gray-300">{named(row.heard, HEARD_LABEL)}</td>
                             <td className="whitespace-nowrap px-4 py-3 text-gray-200">{planText(row.plan_choice, row.billing_cycle)}</td>
                           </tr>
                         );

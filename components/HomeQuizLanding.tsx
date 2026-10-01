@@ -23,6 +23,7 @@ type Answers = {
   stats?: string[];
   research?: string;
   goal?: string;
+  heard?: string;
 };
 
 type Step = {
@@ -42,7 +43,8 @@ const SPORT_LABEL: Record<string, string> = {
 };
 
 const VISITOR_KEY = 'stattrackr_survey_visitor';
-type ProgressStep = 'started' | 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'email_prompt' | 'email' | 'offer';
+type ProgressStep = 'started' | 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'q6' | 'email_prompt' | 'email' | 'offer';
+const QUESTION_STEPS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6'] as const;
 const PROGRESS_RANK: Record<ProgressStep, number> = {
   started: 0,
   q1: 1,
@@ -50,9 +52,10 @@ const PROGRESS_RANK: Record<ProgressStep, number> = {
   q3: 3,
   q4: 4,
   q5: 5,
-  email_prompt: 6,
-  email: 7,
-  offer: 8,
+  q6: 6,
+  email_prompt: 7,
+  email: 8,
+  offer: 9,
 };
 
 function surveyVisitorId(): string {
@@ -120,6 +123,17 @@ const STEPS: Step[] = [
       { id: 'sites', label: 'Switching between too many sites' },
       { id: 'find', label: 'Finding the stats that matter' },
       { id: 'start', label: 'Knowing where to start' },
+    ],
+  },
+  {
+    key: 'heard',
+    question: 'How did you hear about us?',
+    options: [
+      { id: 'ads', label: 'Ads' },
+      { id: 'instagram', label: 'Instagram' },
+      { id: 'tiktok', label: 'TikTok' },
+      { id: 'friend', label: 'A friend' },
+      { id: 'other', label: 'Other' },
     ],
   },
 ];
@@ -656,6 +670,7 @@ export default function HomeQuizLanding({
         stats: nextAnswers.stats ?? [],
         research: nextAnswers.research ?? null,
         goal: nextAnswers.goal ?? null,
+        heard: nextAnswers.heard ?? null,
         email: emailToSend || null,
         exited,
       }),
@@ -728,7 +743,7 @@ export default function HomeQuizLanding({
           : { ...answers, [current.key]: id };
     setAnswers(nextAnswers);
     answersRef.current = nextAnswers;
-    const questionStep = (['q1', 'q2', 'q3', 'q4', 'q5'] as const)[step] ?? 'q5';
+    const questionStep = QUESTION_STEPS[step] ?? 'q6';
     if (step < STEPS.length - 1) {
       saveProgressRef.current(questionStep, nextAnswers, false, emailRef.current);
       advancingRef.current = true;

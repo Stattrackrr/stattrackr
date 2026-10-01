@@ -5,6 +5,7 @@ import { RateLimiter, checkRateLimit } from '@/lib/rateLimit';
 import {
   formatSurveyTime,
   goalText,
+  heardText,
   isDataAdminEmail,
   listHomeSurveys,
   parseSurveyProgress,
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ rows: listed.rows });
   }
 
-  const header = ['Time', 'Status', 'Email', 'Sports', 'Betting', 'Stats', 'Research', 'Hardest part', 'Plan'];
+  const header = ['Time', 'Status', 'Email', 'Sports', 'Betting', 'Stats', 'Research', 'Hardest part', 'Heard about us', 'Plan'];
   const lines = listed.rows.map((row) =>
     [
       formatSurveyTime(row.created_at),
@@ -102,6 +103,7 @@ export async function GET(request: NextRequest) {
       statText(row.stats),
       researchText(row.research),
       goalText(row.goal),
+      heardText(row.heard),
       planText(row.plan_choice, row.billing_cycle),
     ]
       .map(csvCell)

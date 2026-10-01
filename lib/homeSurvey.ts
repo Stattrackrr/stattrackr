@@ -7,6 +7,7 @@ const STAT_IDS = ['opponent', 'advanced', 'form', 'ai'] as const;
 const BETTING_IDS = ['daily', 'few', 'weekly', 'monthly'] as const;
 const RESEARCH_IDS = ['most', 'sometimes', 'never'] as const;
 const GOAL_IDS = ['sites', 'find', 'start'] as const;
+const HEARD_IDS = ['ads', 'instagram', 'tiktok', 'friend', 'other'] as const;
 const PLAN_IDS = ['pro', 'free'] as const;
 const CYCLE_IDS = ['monthly', 'semiannual', 'annual'] as const;
 
@@ -44,6 +45,14 @@ const GOAL_LABEL: Record<string, string> = {
   start: 'Knowing where to start',
 };
 
+const HEARD_LABEL: Record<string, string> = {
+  ads: 'Ads',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  friend: 'A friend',
+  other: 'Other',
+};
+
 const PLAN_LABEL: Record<string, string> = {
   pro: 'Pro',
   free: 'Free',
@@ -62,6 +71,7 @@ export const SURVEY_STEPS = [
   'q3',
   'q4',
   'q5',
+  'q6',
   'email_prompt',
   'email',
   'offer',
@@ -78,11 +88,12 @@ const STEP_RANK: Record<SurveyStep, number> = {
   q3: 3,
   q4: 4,
   q5: 5,
-  email_prompt: 6,
-  email: 7,
-  offer: 8,
-  pro: 9,
-  free: 9,
+  q6: 6,
+  email_prompt: 7,
+  email: 8,
+  offer: 9,
+  pro: 10,
+  free: 10,
 };
 
 export type HomeSurveyRow = {
@@ -94,6 +105,7 @@ export type HomeSurveyRow = {
   stats: string[];
   research: string | null;
   goal: string | null;
+  heard: string | null;
   plan_choice: string | null;
   billing_cycle: string | null;
   last_step: string | null;
@@ -109,6 +121,7 @@ export type HomeSurveyInput = {
   stats: string[];
   research: string | null;
   goal: string | null;
+  heard: string | null;
 };
 
 export type SurveyProgress = {
@@ -119,6 +132,7 @@ export type SurveyProgress = {
   stats: string[];
   research: string | null;
   goal: string | null;
+  heard: string | null;
   email: string | null;
   exited: boolean;
 };
@@ -162,9 +176,11 @@ export function parseSurveyProgress(body: unknown): SurveyProgress | null {
   const betting = pickOne(record.betting, BETTING_IDS);
   const research = pickOne(record.research, RESEARCH_IDS);
   const goal = pickOne(record.goal, GOAL_IDS);
+  const heard = pickOne(record.heard, HEARD_IDS);
   if (record.betting != null && record.betting !== '' && !betting) return null;
   if (record.research != null && record.research !== '' && !research) return null;
   if (record.goal != null && record.goal !== '' && !goal) return null;
+  if (record.heard != null && record.heard !== '' && !heard) return null;
   const rawEmail = typeof record.email === 'string' ? record.email.trim().toLowerCase() : '';
   const email = rawEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) && rawEmail.length <= 254 ? rawEmail : null;
   if (step === 'email' && !email) return null;
@@ -176,6 +192,7 @@ export function parseSurveyProgress(body: unknown): SurveyProgress | null {
     stats,
     research,
     goal,
+    heard,
     email,
     exited: record.exited === true,
   };
@@ -192,10 +209,12 @@ export function parseHomeSurveyInput(body: unknown): HomeSurveyInput | null {
   const betting = pickOne(record.betting, BETTING_IDS);
   const research = pickOne(record.research, RESEARCH_IDS);
   const goal = pickOne(record.goal, GOAL_IDS);
+  const heard = pickOne(record.heard, HEARD_IDS);
   if (record.betting != null && record.betting !== '' && !betting) return null;
   if (record.research != null && record.research !== '' && !research) return null;
   if (record.goal != null && record.goal !== '' && !goal) return null;
-  return { email, sports, betting, stats, research, goal };
+  if (record.heard != null && record.heard !== '' && !heard) return null;
+  return { email, sports, betting, stats, research, goal, heard };
 }
 
 export function parseSurveyChoice(body: unknown): { id: string; planChoice: 'pro' | 'free'; billingCycle: string | null } | null {
@@ -237,6 +256,10 @@ export function goalText(id: string | null | undefined): string {
   return (id && GOAL_LABEL[id]) || '—';
 }
 
+export function heardText(id: string | null | undefined): string {
+  return (id && HEARD_LABEL[id]) || '—';
+}
+
 export function planText(choice: string | null | undefined, cycle: string | null | undefined): string {
   if (!choice || !PLAN_LABEL[choice]) return 'Not chosen';
   if (choice === 'pro' && cycle && CYCLE_LABEL[cycle]) return `Pro · ${CYCLE_LABEL[cycle]}`;
@@ -267,6 +290,9 @@ export function surveyStatus(row: {
     case 'q4':
       return 'Answered research, then left';
     case 'q5':
+      return 'Answered the hardest part, then left';
+    case 'q6':
+      return 'Answered how they heard about us, then left';
     case 'email_prompt':
       return 'Reached the email box, then left';
     case 'offer':
@@ -289,6 +315,10 @@ export function formatSurveyTime(value: string): string {
   });
 }
 
+function missingHeardColumn(message: string | undefined): boolean {
+  return Boolean(message && /heard/i.test(message) && /column/i.test(message));
+}
+
 export async function saveSurveyProgress(input: SurveyProgress): Promise<{ id: string } | { error: string }> {
   const now = new Date().toISOString();
   const { data: existing, error: lookupError } = await supabaseAdmin
@@ -307,27 +337,50 @@ export async function saveSurveyProgress(input: SurveyProgress): Promise<{ id: s
     stats: input.stats,
     research: input.research,
     goal: input.goal,
+    heard: input.heard,
     last_step: lastStep,
     exited_at: input.exited ? now : null,
     updated_at: now,
   };
   if (input.email) patch.email = input.email;
 
+  const writePatch = async (id: string, body: Record<string, unknown>) => {
+    const first = await supabaseAdmin.from('home_survey_responses').update(body).eq('id', id);
+    if (!first.error || !missingHeardColumn(first.error.message)) return first;
+    const { heard: _heard, ...rest } = body;
+    return supabaseAdmin.from('home_survey_responses').update(rest).eq('id', id);
+  };
+
   if (existing?.id) {
-    const { error } = await supabaseAdmin.from('home_survey_responses').update(patch).eq('id', existing.id);
+    const { error } = await writePatch(existing.id as string, patch);
     if (error) return { error: error.message };
     return { id: existing.id as string };
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('home_survey_responses')
-    .insert({
-      visitor_id: input.visitorId,
-      email: input.email,
-      ...patch,
-    })
-    .select('id')
-    .single();
+  const insertRow = async (body: Record<string, unknown>) => {
+    const first = await supabaseAdmin
+      .from('home_survey_responses')
+      .insert({
+        visitor_id: input.visitorId,
+        email: input.email,
+        ...body,
+      })
+      .select('id')
+      .single();
+    if (!first.error || !missingHeardColumn(first.error.message)) return first;
+    const { heard: _heard, ...rest } = body;
+    return supabaseAdmin
+      .from('home_survey_responses')
+      .insert({
+        visitor_id: input.visitorId,
+        email: input.email,
+        ...rest,
+      })
+      .select('id')
+      .single();
+  };
+
+  let { data, error } = await insertRow(patch);
 
   if (error?.code === '23505') {
     const { data: raced } = await supabaseAdmin
@@ -336,7 +389,7 @@ export async function saveSurveyProgress(input: SurveyProgress): Promise<{ id: s
       .eq('visitor_id', input.visitorId)
       .maybeSingle();
     if (raced?.id) {
-      const { error: updateError } = await supabaseAdmin.from('home_survey_responses').update(patch).eq('id', raced.id);
+      const { error: updateError } = await writePatch(raced.id as string, patch);
       if (updateError) return { error: updateError.message };
       return { id: raced.id as string };
     }
@@ -369,7 +422,7 @@ export async function updateHomeSurveyChoice(
 export async function listHomeSurveys(): Promise<{ rows: HomeSurveyRow[] } | { error: string }> {
   const { data, error } = await supabaseAdmin
     .from('home_survey_responses')
-    .select('id, visitor_id, email, sports, betting, stats, research, goal, plan_choice, billing_cycle, last_step, exited_at, created_at, updated_at')
+    .select('id, visitor_id, email, sports, betting, stats, research, goal, heard, plan_choice, billing_cycle, last_step, exited_at, created_at, updated_at')
     .order('created_at', { ascending: false })
     .limit(2000);
 

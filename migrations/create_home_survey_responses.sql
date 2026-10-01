@@ -19,6 +19,7 @@ create table if not exists public.home_survey_responses (
   updated_at timestamptz not null default now()
 );
 
+alter table public.home_survey_responses add column if not exists heard text;
 alter table public.home_survey_responses add column if not exists visitor_id text;
 alter table public.home_survey_responses add column if not exists last_step text not null default 'started';
 alter table public.home_survey_responses add column if not exists exited_at timestamptz;
