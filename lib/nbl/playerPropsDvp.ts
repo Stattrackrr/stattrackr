@@ -6,6 +6,7 @@
  *   Interior      → shot-chart restricted/paint (player's main rim zone)
  *   Stretch       → 3PT zone for PTS/3PM (spacing identity); paint for REB
  *   Slasher       → restricted/paint (rim attacks; slasher matrix is a leftover bucket)
+ *   PRA / PR / PA / RA → that combo's play-type matrix (same cell math as PTS / REB / AST)
  */
 
 import {
@@ -40,20 +41,22 @@ export type NblPropDvpIndex = {
   matrix: Record<NblPlayTypeStatKey, ReturnType<typeof buildNblPlayTypesPayload>>;
 };
 
+const MATRIX_STATS: NblPlayTypeStatKey[] = ['points', 'assists', 'rebounds', 'pra', 'pr', 'pa', 'ra'];
+
 export function buildNblPropDvpIndex(): NblPropDvpIndex {
-  const points = buildNblPlayTypesPayload({ stat: 'points' });
-  const assists = buildNblPlayTypesPayload({ stat: 'assists' });
-  const rebounds = buildNblPlayTypesPayload({ stat: 'rebounds' });
+  const matrix = Object.fromEntries(
+    MATRIX_STATS.map((stat) => [stat, buildNblPlayTypesPayload({ stat })])
+  ) as NblPropDvpIndex['matrix'];
   const typeByPlayerId = new Map<string, NblPlayTypeId>();
   const typeByName = new Map<string, NblPlayTypeId>();
-  for (const row of points.players) {
+  for (const row of matrix.points.players) {
     typeByPlayerId.set(row.playerId, row.type);
     typeByName.set(row.name.toLowerCase(), row.type);
   }
   return {
     typeByPlayerId,
     typeByName,
-    matrix: { points, assists, rebounds },
+    matrix,
   };
 }
 
@@ -121,7 +124,7 @@ function sourceFor(
   stat: string
 ): 'matrix' | 'three' | 'interior' | 'none' {
   const key = String(stat || '').toLowerCase();
-  if (key === 'pra' || key === 'pr' || key === 'pa' || key === 'ra') return 'none';
+  if (key === 'pra' || key === 'pr' || key === 'pa' || key === 'ra') return type ? 'matrix' : 'three';
   if (key === 'threemade' || key === 'threes' || key === '3pm') return 'three';
 
   if (type === 'primary_bh' || type === 'secondary_bh') {
@@ -165,8 +168,10 @@ export function lookupNblPropDvp(
       const cell = matrixCell(index, type, opts.opponent, matrixStat);
       if (cell) return fromMatrix(cell);
     }
-    // 3PT / stretch / slasher assists with no matrix cell stay blank.
-    if (opts.stat !== 'points' && opts.stat !== 'rebounds') return EMPTY;
+    // Assists with no matrix cell stay blank. Combo stats fall through like points.
+    const statKey = String(opts.stat || '').toLowerCase();
+    const combo = statKey === 'pra' || statKey === 'pr' || statKey === 'pa' || statKey === 'ra';
+    if (opts.stat !== 'points' && opts.stat !== 'rebounds' && !combo) return EMPTY;
     if (type === 'three_shooter' || type === 'stretch_four') {
       return fromShotChart(opts.playerName, opts.opponent, THREE_ZONES);
     }

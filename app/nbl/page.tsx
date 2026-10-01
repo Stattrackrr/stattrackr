@@ -52,6 +52,7 @@ import {
 } from '@/lib/nblTeamCanonical';
 import { defaultNblTeamStat, isNblTeamGameStat } from '@/lib/nbl/teamGameLogsShared';
 import {
+  nblBestLinePick,
   nblBookLines,
   nblExactLineOnBook,
   nblOddsMarketForStat,
@@ -456,6 +457,7 @@ export default function NblDashboardPage() {
   const preferredNblBookmakerRef = useRef<string | null>(null);
   const hasIncomingNblBookOrLineRef = useRef(false);
   const ignoreNextTransientLineRef = useRef(false);
+  const autoLineStatRef = useRef<string | null>(null);
   const incomingAppliedForKeyRef = useRef<string | null>(null);
   const nextGameTeamKeyRef = useRef('');
 
@@ -1058,11 +1060,14 @@ export default function NblDashboardPage() {
     nblPropsMode === 'player' ? nblPlayerOddsByStat[nblOddsStat] ?? EMPTY_NBL_ODDS_BOOKS : nblOddsBooks;
 
   const setMainChartStatAndResetLine = useCallback((stat: string | ((prev: string) => string)) => {
-    setMainChartStat(stat);
+    const next = typeof stat === 'function' ? stat(mainChartStat) : stat;
+    if (next === mainChartStat) return;
+    setMainChartStat(next);
     setNblGameLineValue(null);
     hasIncomingNblBookOrLineRef.current = false;
     preferredNblBookmakerRef.current = null;
-  }, []);
+    autoLineStatRef.current = null;
+  }, [mainChartStat]);
 
   useEffect(() => {
     const key =
@@ -1078,6 +1083,7 @@ export default function NblDashboardPage() {
     incomingAppliedForKeyRef.current = key;
     hasIncomingNblBookOrLineRef.current = false;
     preferredNblBookmakerRef.current = null;
+    autoLineStatRef.current = null;
   }, [nblPropsMode, selectedPlayer?.name, selectedTeam]);
 
   useEffect(() => {
@@ -1173,38 +1179,20 @@ export default function NblDashboardPage() {
   }, [nblOddsTeam, nblOddsOpponent, nblPropsMode, selectedPlayer?.name]);
 
   useEffect(() => {
-    if (!nblDisplayOddsBooks.length) return;
     if (nblOddsMarket !== 'spread' && nblOddsMarket !== 'total') return;
-    const preferredLine = (book: NblBookRow | undefined): number | null => {
-      if (!book) return null;
-      if (nblPropsMode === 'player') {
-        const lines = nblBookLines(book);
-        return parseNblOddsLine(
-          lines.find((l) => l.kind === 'ou' && l.under !== 'N/A')?.line ??
-            book.Total?.line ??
-            lines[0]?.line
-        );
-      }
-      return parseNblOddsLine(nblOddsMarket === 'spread' ? book.Spread?.line : book.Total?.line);
-    };
-    const book = nblDisplayOddsBooks[selectedNblBookIndex] ?? nblDisplayOddsBooks[0];
-    setNblGameLineValue((current) => {
-      if (current != null && Number.isFinite(current)) return current;
-      const parsed = preferredLine(book);
-      if (parsed != null) {
-        ignoreNextTransientLineRef.current = true;
-        return parsed;
-      }
-      const withData = nblDisplayOddsBooks.find((b) => preferredLine(b) != null);
-      const fallback = withData ? preferredLine(withData) : null;
-      if (fallback != null) ignoreNextTransientLineRef.current = true;
-      return fallback;
-    });
-    if (preferredLine(book) == null) {
-      const withData = nblDisplayOddsBooks.findIndex((b) => preferredLine(b) != null);
-      if (withData >= 0 && withData !== selectedNblBookIndex) setSelectedNblBookIndex(withData);
+    // The line opened from the props page stays until the user changes stat.
+    if (hasIncomingNblBookOrLineRef.current) {
+      autoLineStatRef.current = mainChartStat;
+      return;
     }
-  }, [nblPropsMode, nblOddsMarket, nblDisplayOddsBooks, selectedNblBookIndex]);
+    if (!nblDisplayOddsBooks.length) return;
+    if (autoLineStatRef.current === mainChartStat) return;
+    const pick = nblBestLinePick(nblDisplayOddsBooks, nblOddsMarket);
+    if (!pick) return;
+    autoLineStatRef.current = mainChartStat;
+    setNblGameLineValue(pick.line);
+    setSelectedNblBookIndex((prev) => (prev === pick.bookIndex ? prev : pick.bookIndex));
+  }, [nblOddsMarket, nblDisplayOddsBooks, mainChartStat]);
 
   useEffect(() => {
     if (!nblDisplayOddsBooks.length) return;
@@ -1385,20 +1373,21 @@ export default function NblDashboardPage() {
     );
 
   const hasTeamModeSelection = !!String(selectedTeam ?? '').trim();
+  const nblAutoLinePick =
+    nblOddsMarket === 'spread' || nblOddsMarket === 'total'
+      ? nblBestLinePick(nblDisplayOddsBooks, nblOddsMarket)
+      : null;
   const nblBookIndex = nblDisplayOddsBooks.length
-    ? Math.min(selectedNblBookIndex, nblDisplayOddsBooks.length - 1)
+    ? Math.min(
+        nblGameLineValue == null && nblAutoLinePick ? nblAutoLinePick.bookIndex : selectedNblBookIndex,
+        nblDisplayOddsBooks.length - 1
+      )
     : 0;
+  const nblResolvedLineValue =
+    nblGameLineValue ?? (nblAutoLinePick ? nblAutoLinePick.line : null);
   const nblExternalLineValue = (() => {
     if (nblOddsMarket !== 'spread' && nblOddsMarket !== 'total') return null;
-    const book = nblDisplayOddsBooks[nblBookIndex] ?? nblDisplayOddsBooks[0];
-    let value = nblGameLineValue;
-    if (value == null || !Number.isFinite(value)) {
-      if (nblPropsMode === 'player') {
-        value = parseNblOddsLine(book?.Total?.line);
-      } else {
-        value = parseNblOddsLine(nblOddsMarket === 'spread' ? book?.Spread?.line : book?.Total?.line);
-      }
-    }
+    const value = nblResolvedLineValue;
     if (value == null || !Number.isFinite(value)) return null;
     if (nblPropsMode === 'team' && nblOddsMarket === 'spread' && nblTeamSpreadIsAway(nblOddsHomeTeam, selectedTeam)) {
       return -value;
@@ -1845,7 +1834,7 @@ export default function NblDashboardPage() {
                             disabled={nblPropsMode === 'team' ? !hasTeamModeSelection : !selectedPlayer}
                             currentLineValue={
                               nblOddsMarket === 'spread' || nblOddsMarket === 'total'
-                                ? nblGameLineValue
+                                ? nblResolvedLineValue
                                 : undefined
                             }
                             onSelectLineValue={(lineValue) => {

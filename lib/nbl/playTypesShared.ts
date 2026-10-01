@@ -34,12 +34,23 @@ export const NBL_PLAY_TYPE_FULL_LABELS: Record<NblPlayTypeId, string> = {
   stretch_four: 'Stretch',
 };
 
-export type NblPlayTypeStatKey = 'points' | 'assists' | 'rebounds';
+export type NblPlayTypeStatKey =
+  | 'points'
+  | 'assists'
+  | 'rebounds'
+  | 'pra'
+  | 'pr'
+  | 'pa'
+  | 'ra';
 
 export const NBL_PLAY_TYPE_STAT_LABELS: Record<NblPlayTypeStatKey, string> = {
   points: 'PTS',
   assists: 'AST',
   rebounds: 'REB',
+  pra: 'PRA',
+  pr: 'PR',
+  pa: 'PA',
+  ra: 'RA',
 };
 
 export const NBL_PLAY_TYPE_STAT_ALIASES: Record<string, NblPlayTypeStatKey> = {
@@ -52,6 +63,14 @@ export const NBL_PLAY_TYPE_STAT_ALIASES: Record<string, NblPlayTypeStatKey> = {
   reb: 'rebounds',
   rebound: 'rebounds',
   rebounds: 'rebounds',
+  pra: 'pra',
+  pointsreboundsassists: 'pra',
+  pr: 'pr',
+  pointsrebounds: 'pr',
+  pa: 'pa',
+  pointsassists: 'pa',
+  ra: 'ra',
+  reboundsassists: 'ra',
 };
 
 export type NblPlayTypePlayerRow = {
@@ -90,7 +109,7 @@ export type NblPlayTypeRoundPick = {
 export type NblPlayTypeCell = {
   /** Allowed minus type league average, shrunk by sample. Positive = easier matchup. */
   boost: number | null;
-  /** Minutes-weighted PTS/AST/REB this team allowed to this type. */
+  /** Minutes-weighted stat this team allowed to this type. */
   allowed: number | null;
   /** Minutes-weighted type average across the league. */
   league: number | null;

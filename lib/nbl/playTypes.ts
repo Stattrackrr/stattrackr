@@ -392,15 +392,30 @@ function assignPlayTypes(features: PlayerFeatures[], minGames: number): TaggedPl
   }));
 }
 
+function sumParts(parts: Array<number | null>): number | null {
+  if (parts.some((value) => value == null)) return null;
+  return parts.reduce<number>((sum, value) => sum + (value as number), 0);
+}
+
 function gameStatValue(game: NblGameLogRow, stat: NblPlayTypeStatKey): number | null {
+  const points = num(game.points);
+  const rebounds = num(game.rebounds);
+  const assists = num(game.assists);
   switch (stat) {
     case 'assists':
-      return num(game.assists);
+      return assists;
     case 'rebounds':
-      return num(game.rebounds);
+      return rebounds;
+    case 'pra':
+      return num(game.pra) ?? sumParts([points, rebounds, assists]);
+    case 'pr':
+      return num(game.pr) ?? sumParts([points, rebounds]);
+    case 'pa':
+      return num(game.pa) ?? sumParts([points, assists]);
+    case 'ra':
+      return num(game.ra) ?? sumParts([rebounds, assists]);
     case 'points':
-    default:
-      return num(game.points);
+      return points;
   }
 }
 
@@ -475,14 +490,24 @@ function emptyCell(): NblPlayTypeCell {
 }
 
 function seasonStatValue(row: NblLeaguePlayerStatRow, stat: NblPlayTypeStatKey): number | null {
+  const points = num(row.points);
+  const rebounds = num(row.rebounds);
+  const assists = num(row.assists);
   switch (stat) {
     case 'assists':
-      return num(row.assists);
+      return assists;
     case 'rebounds':
-      return num(row.rebounds);
+      return rebounds;
+    case 'pra':
+      return num(row.pra) ?? sumParts([points, rebounds, assists]);
+    case 'pr':
+      return sumParts([points, rebounds]);
+    case 'pa':
+      return sumParts([points, assists]);
+    case 'ra':
+      return sumParts([rebounds, assists]);
     case 'points':
-    default:
-      return num(row.points);
+      return points;
   }
 }
 

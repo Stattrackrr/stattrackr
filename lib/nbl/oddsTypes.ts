@@ -91,6 +91,79 @@ export function nblBookLines(book: NblBookRow | undefined): NblPropLine[] {
 export const NBL_PROPS_MILESTONE_MIN_DECIMAL = 1.55;
 export const NBL_PROPS_MILESTONE_MAX_DECIMAL = 2.6;
 
+/** Decimal price used when a stat has no two-way over/under. */
+export const NBL_ALT_LINE_TARGET_DECIMAL = 1.7;
+
+function nblAmericanNumber(raw: string | undefined | null): number | null {
+  if (raw == null || raw === 'N/A') return null;
+  const n = Number(String(raw).replace(/[^0-9.+-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Smaller means a more even over/under. Matches the line menu order. */
+export function nblOuEvenness(over: string, under: string): number {
+  const o = nblAmericanNumber(over);
+  const u = nblAmericanNumber(under);
+  if (o == null || u == null) return Number.POSITIVE_INFINITY;
+  return Math.abs(Math.abs(o) - Math.abs(u));
+}
+
+function nblPriceDistanceFromTarget(over: string, under: string): number {
+  const prices = [over, under]
+    .map((raw) => nblAmericanToDecimal(raw))
+    .filter((n): n is number => n != null);
+  if (!prices.length) return Number.POSITIVE_INFINITY;
+  return Math.min(...prices.map((dec) => Math.abs(dec - NBL_ALT_LINE_TARGET_DECIMAL)));
+}
+
+/**
+ * Best line for a stat. Two-way over/unders win, most even first.
+ * With no over/under, the line whose price is closest to $1.70.
+ */
+export function nblBestLinePick(
+  books: NblBookRow[] | undefined,
+  market: 'spread' | 'total'
+): { bookIndex: number; line: number } | null {
+  if (!books?.length) return null;
+  const ou: { bookIndex: number; line: number; even: number }[] = [];
+  const alt: { bookIndex: number; line: number; dist: number }[] = [];
+
+  const consider = (bookIndex: number, row: { line: string; over: string; under: string; kind?: string }) => {
+    const line = parseNblOddsLine(row.line);
+    if (line == null) return;
+    const twoWay = row.kind !== 'milestone' && row.over !== 'N/A' && row.under !== 'N/A';
+    if (twoWay) {
+      ou.push({ bookIndex, line, even: nblOuEvenness(row.over, row.under) });
+      return;
+    }
+    if (row.over === 'N/A' && row.under === 'N/A') return;
+    alt.push({ bookIndex, line, dist: nblPriceDistanceFromTarget(row.over, row.under) });
+  };
+
+  books.forEach((book, bookIndex) => {
+    if (market === 'spread') {
+      consider(bookIndex, { ...book.Spread, kind: 'ou' });
+      return;
+    }
+    const lines = nblBookLines(book);
+    if (lines.length) {
+      for (const row of lines) consider(bookIndex, row);
+      return;
+    }
+    if (nblOuHasOdds(book.Total)) consider(bookIndex, { ...book.Total, kind: 'ou' });
+  });
+
+  if (ou.length) {
+    ou.sort((a, b) => a.even - b.even || b.line - a.line || a.bookIndex - b.bookIndex);
+    const best = ou[0];
+    return best ? { bookIndex: best.bookIndex, line: best.line } : null;
+  }
+  if (!alt.length) return null;
+  alt.sort((a, b) => a.dist - b.dist || a.bookIndex - b.bookIndex || a.line - b.line);
+  const best = alt[0];
+  return best ? { bookIndex: best.bookIndex, line: best.line } : null;
+}
+
 export function nblAmericanToDecimal(raw: string | undefined | null): number | null {
   if (raw == null || raw === 'N/A') return null;
   const n = Number(String(raw).replace(/[^0-9.+-]/g, ''));

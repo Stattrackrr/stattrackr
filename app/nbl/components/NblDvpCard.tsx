@@ -99,7 +99,7 @@ function fmtPct(value: number | null | undefined): string {
   return `${Math.round(value)}%`;
 }
 
-const MATRIX_STAT_CHIPS = ['PTS', 'AST', 'REB'] as const;
+const MATRIX_STAT_CHIPS = ['PTS', 'AST', 'REB', 'PRA', 'PR', 'PA', 'RA'] as const;
 
 function chartStatLabel(stat: string): string {
   const key = String(stat || '').trim();
@@ -265,7 +265,7 @@ export function PlayTypesInfoButton({
           league average. Green is an easier matchup. Red means they hold that type down.
           <br />
           <br />
-          The matrix follows PTS, AST, or REB on the main chart.
+          The matrix follows PTS, AST, REB, PRA, PR, PA, or RA on the main chart.
           The purple column is the current opponent. This player&apos;s type is highlighted on the left.
         </span>
       ) : null}
@@ -395,7 +395,7 @@ export default function NblDvpCard({
     return (
       <div className="py-3 px-0.5">
         <p className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
-          Matrix is PTS, AST, or REB
+          Matrix is PTS, AST, REB, PRA, PR, PA, or RA
         </p>
         <p className={`text-xs mt-1.5 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
           Chart is on {current}. Switch to one of these to see type-vs-team boosts

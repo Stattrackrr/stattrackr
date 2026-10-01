@@ -9,6 +9,7 @@ import {
   nblExactLineOnBook,
   nblH2hMeetsMinOdds,
   nblLineMatchingValue,
+  nblOuEvenness,
   nblOuHasOdds,
   parseNblOddsLine,
   type NblBookRow,
@@ -67,13 +68,6 @@ function RegionHeader({ region, isFirst }: { region: BookmakerRegion; isFirst: b
       </div>
     </div>
   );
-}
-
-function ouEvenness(over: string, under: string): number {
-  const o = Math.abs(parseAmerican(over));
-  const u = Math.abs(parseAmerican(under));
-  if (!Number.isFinite(o) || !Number.isFinite(u)) return Number.POSITIVE_INFINITY;
-  return Math.abs(o - u);
 }
 
 interface NblLineSelectorProps {
@@ -161,7 +155,7 @@ export function NblLineSelector({
         }))
         .filter((item) => nblOuHasOdds(item.d))
         .sort((a, b) => {
-          const even = ouEvenness(a.d.over, a.d.under) - ouEvenness(b.d.over, b.d.under);
+          const even = nblOuEvenness(a.d.over, a.d.under) - nblOuEvenness(b.d.over, b.d.under);
           if (even !== 0) return even;
           const na = parseNblOddsLine(a.d.line);
           const nb = parseNblOddsLine(b.d.line);
@@ -179,7 +173,7 @@ export function NblLineSelector({
   const playerOuItems = playerLineItems
     .filter((item) => item.d.kind !== 'milestone')
     .sort((a, b) => {
-      const even = ouEvenness(a.d.over, a.d.under) - ouEvenness(b.d.over, b.d.under);
+      const even = nblOuEvenness(a.d.over, a.d.under) - nblOuEvenness(b.d.over, b.d.under);
       if (even !== 0) return even;
       const na = parseNblOddsLine(a.d.line);
       const nb = parseNblOddsLine(b.d.line);
