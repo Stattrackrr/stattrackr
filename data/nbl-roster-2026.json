@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-30T18:24:25.487Z",
+  "generatedAt": "2026-10-01T18:49:47.404Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 156,
   "players": [
@@ -192,7 +192,7 @@
       "teamCode": "TAS",
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
-      "jersey": null,
+      "jersey": "14",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0c886b1cba6640069b89abf929b044cc?size=800&format=webp"
     },
     {
@@ -882,7 +882,7 @@
       "teamCode": "TAS",
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
-      "jersey": null,
+      "jersey": "6",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/554a21ad6c244f248c31a84d215ef6b9?size=800&format=webp"
     },
     {

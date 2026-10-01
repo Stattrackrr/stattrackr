@@ -1,10 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-09-30T18:24:41.351Z",
+  "generatedAt": "2026-10-01T18:50:04.196Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 156,
-  "gameRows": 308,
+  "gameRows": 328,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -107,7 +107,7 @@
       "name": "Austin Shelley",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/b42c71df-100c-4500-b591-dfb079fe4a7e-2026.json"
     },
     {
@@ -131,7 +131,7 @@
       "name": "Ben Gold",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/b1a9c2de-ca6f-4332-b0e0-2a4fdbcedd06-2026.json"
     },
     {
@@ -155,7 +155,7 @@
       "name": "Biwali Bayles",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/26a882d2-07f4-45af-8e60-8f28eaf9969a-2026.json"
     },
     {
@@ -251,7 +251,7 @@
       "name": "Christian D'Angelo",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/c2814f09-84a5-416d-97ef-8441c3f1186e-2026.json"
     },
     {
@@ -259,7 +259,7 @@
       "name": "Cole Anthony",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/0edcc8b5-60a8-4ebe-b75d-5fb3f64d40e6-2026.json"
     },
     {
@@ -275,7 +275,7 @@
       "name": "Dakota Mathias",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/83f36c6e-d1f1-44cb-8576-78717cc826f2-2026.json"
     },
     {
@@ -315,7 +315,7 @@
       "name": "David Johnson",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/5dc2188c-e53b-4273-9573-aae63a31bd39-2026.json"
     },
     {
@@ -363,7 +363,7 @@
       "name": "Fabijan Krslovic",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/02fa3a79-2bc1-4ad7-97be-44aafcb09d91-2026.json"
     },
     {
@@ -571,7 +571,7 @@
       "name": "Joe Ingles",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/55d2550e-3e91-4863-81b8-d2958bd2dd76-2026.json"
     },
     {
@@ -611,7 +611,7 @@
       "name": "Josh Bannan",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/fdf9d29d-b00b-4db0-a69a-cc5eaa23a234-2026.json"
     },
     {
@@ -619,7 +619,7 @@
       "name": "Josh Oduro",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/81099730-32f6-4aea-a76e-a48cc806d8e0-2026.json"
     },
     {
@@ -707,7 +707,7 @@
       "name": "Kody Stattmann",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/47557326-f6ee-4da8-b4dc-493372a9ffd7-2026.json"
     },
     {
@@ -739,7 +739,7 @@
       "name": "Kyle Bowen",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/3eed080d-4398-49ef-a990-ff5bf86c98ed-2026.json"
     },
     {
@@ -803,7 +803,7 @@
       "name": "Luke Travers",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/46d53277-6741-4431-80c1-aefd8aff6cc9-2026.json"
     },
     {
@@ -835,7 +835,7 @@
       "name": "Malith Machar",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/135b961b-2a30-4044-9d4e-52128c10a33c-2026.json"
     },
     {
@@ -931,7 +931,7 @@
       "name": "Nick Marshall",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/c9019743-60ae-4700-852e-6ae15c1cbef6-2026.json"
     },
     {
@@ -1051,7 +1051,7 @@
       "name": "Sam Waardenburg",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/6f9d3d60-119f-408f-b8f9-a44978929b2e-2026.json"
     },
     {
@@ -1123,7 +1123,7 @@
       "name": "Taran Armstrong",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/23283d39-8a83-44ab-84ac-0bcf1c675c92-2026.json"
     },
     {
@@ -1139,7 +1139,7 @@
       "name": "Tom Wilson",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/fd0678c3-5b7e-4550-bb6b-5849534e3769-2026.json"
     },
     {
@@ -1219,7 +1219,7 @@
       "name": "Will Magnay",
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/cd541bbb-db3f-4821-82e1-c3c104d99fd8-2026.json"
     },
     {
