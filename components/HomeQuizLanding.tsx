@@ -556,6 +556,41 @@ function PageContinue({
   );
 }
 
+function CouponPhrase() {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-2 pr-48 text-sm font-semibold text-white sm:pr-72 sm:text-base">
+      Use code
+      <span className="rounded-md bg-white/20 px-2 py-0.5 font-bold tracking-[0.14em]">NBL27</span>
+      for 10% off
+    </span>
+  );
+}
+
+function HomeCouponStrip() {
+  return (
+    <div
+      className="relative h-9 overflow-hidden bg-gradient-to-r from-violet-700 via-fuchsia-600 to-violet-700"
+      role="region"
+      aria-label="Use code NBL27 for 10% off"
+    >
+      <p className="home-coupon-static hidden h-9 items-center justify-center gap-2 text-sm font-semibold text-white sm:text-base">
+        Use code
+        <span className="rounded-md bg-white/20 px-2 py-0.5 font-bold tracking-[0.14em]">NBL27</span>
+        for 10% off
+      </p>
+      <div className="home-coupon-track flex h-9 w-max items-center" aria-hidden="true">
+        {[0, 1].map((copy) => (
+          <div key={copy} className="flex shrink-0 items-center">
+            {Array.from({ length: 5 }, (_, index) => (
+              <CouponPhrase key={index} />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Shell({
   children,
   cover,
@@ -767,7 +802,9 @@ export default function HomeQuizLanding({
   if (phase === 'intro') {
     return (
       <>
-        <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#050d1a]/95 px-5 backdrop-blur-sm sm:px-8">
+        <div className="sticky top-0 z-40">
+        <HomeCouponStrip />
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#050d1a]/95 px-5 backdrop-blur-sm sm:px-8">
           <div className="flex items-center gap-2">
             <Image
               src="/images/stattrackr-logo-512.webp"
@@ -787,7 +824,8 @@ export default function HomeQuizLanding({
             Sign in
           </button>
         </header>
-        <section className="relative grid min-h-[calc(100dvh-4rem)] bg-[#050d1a] lg:grid-cols-2">
+        </div>
+        <section className="relative grid min-h-[calc(100dvh-6.25rem)] bg-[#050d1a] lg:grid-cols-2">
           <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -left-32 -top-40 h-[40rem] w-[40rem] rounded-full bg-purple-600/20 blur-3xl" />
             <div className="absolute -right-40 top-0 h-[28rem] w-[28rem] rounded-full bg-blue-600/10 blur-3xl" />
@@ -814,7 +852,7 @@ export default function HomeQuizLanding({
             </button>
           </div>
           <div className="order-1 flex min-h-[42vh] p-4 lg:order-2 lg:min-h-0 lg:p-8 lg:pl-4">
-            <div className="relative min-h-[36vh] w-full flex-1 overflow-hidden rounded-[1.75rem] lg:min-h-[calc(100dvh-8rem)]">
+            <div className="relative min-h-[36vh] w-full flex-1 overflow-hidden rounded-[1.75rem] lg:min-h-[calc(100dvh-10.25rem)]">
               <Image
                 src="/images/hero-app-in-use.webp"
                 alt="Someone checking player stats on their phone"

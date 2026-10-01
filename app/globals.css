@@ -313,8 +313,17 @@ html.dark body {
   .quiz-progress-live,
   .quiz-build-glow,
   .quiz-build-ring,
-  .quiz-build-fill {
+  .quiz-build-fill,
+  .home-coupon-track {
     animation: none !important;
+  }
+
+  .home-coupon-track {
+    display: none !important;
+  }
+
+  .home-coupon-static {
+    display: flex !important;
   }
 
   .st-splash-enter,
@@ -513,6 +522,19 @@ html.dark body {
 .quiz-build-fill {
   transform-origin: left center;
   animation: quizBuildFill 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes homeCouponMarquee {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.home-coupon-track {
+  animation: homeCouponMarquee 28s linear infinite;
 }
 
 @keyframes liveBadgePulseGreen {
