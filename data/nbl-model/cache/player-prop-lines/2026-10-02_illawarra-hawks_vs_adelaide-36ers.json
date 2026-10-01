@@ -4,7 +4,7 @@
   "homeTeam": "Illawarra Hawks",
   "awayTeam": "Adelaide 36ers",
   "commenceTime": "2026-10-02T09:30:00.000Z",
-  "capturedAt": "2026-09-30T23:59:02.392Z",
+  "capturedAt": "2026-10-01T06:10:19.238Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -20,7 +20,7 @@
     "PlayUp",
     "Dabble"
   ],
-  "lineCount": 2000,
+  "lineCount": 2009,
   "lines": [
     {
       "player": "Bryce Cotton",
@@ -26020,6 +26020,123 @@
       "over": "+280",
       "under": "N/A",
       "overDecimal": 3.8,
+      "underDecimal": null
+    },
+    {
+      "player": "Bryce Cotton",
+      "playerKey": "bryce cotton",
+      "book": "Bet Right",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "Bryce Cotton",
+      "playerKey": "bryce cotton",
+      "book": "Cloudbet",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "Bryce Cotton",
+      "playerKey": "bryce cotton",
+      "book": "Picklebet",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "Bryce Cotton",
+      "playerKey": "bryce cotton",
+      "book": "PlayUp",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "John Jenkins",
+      "playerKey": "john jenkins",
+      "book": "Bet Right",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-769",
+      "under": "N/A",
+      "overDecimal": 1.13,
+      "underDecimal": null
+    },
+    {
+      "player": "John Jenkins",
+      "playerKey": "john jenkins",
+      "book": "Cloudbet",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-833",
+      "under": "N/A",
+      "overDecimal": 1.12,
+      "underDecimal": null
+    },
+    {
+      "player": "John Jenkins",
+      "playerKey": "john jenkins",
+      "book": "Picklebet",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-769",
+      "under": "N/A",
+      "overDecimal": 1.13,
+      "underDecimal": null
+    },
+    {
+      "player": "John Jenkins",
+      "playerKey": "john jenkins",
+      "book": "PlayUp",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-769",
+      "under": "N/A",
+      "overDecimal": 1.13,
+      "underDecimal": null
+    },
+    {
+      "player": "Milton Doyle",
+      "playerKey": "milton doyle",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 24.5,
+      "label": "25+",
+      "over": "+1000",
+      "under": "N/A",
+      "overDecimal": 11,
       "underDecimal": null
     }
   ]
