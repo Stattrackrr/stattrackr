@@ -560,20 +560,32 @@ function combinedMarketPriority(prop: CombinedPlayerPropRow): number {
   return 8;
 }
 
-function combinedRowQualityScore(prop: CombinedPlayerPropRow): number {
-  const hitPct = (hr?: { hits: number; total: number } | null) =>
-    hr && hr.total > 0 ? (hr.hits / hr.total) * 100 : -1;
+function combinedHitPercent(hr?: { hits: number; total: number } | null): number | null {
+  return hr && hr.total > 0 ? (hr.hits / hr.total) * 100 : null;
+}
+
+/** One combined row per player: best last-10 hit rate, then last-5, then the main market. */
+function combinedRowRank(prop: CombinedPlayerPropRow): number[] {
   const books =
     (Array.isArray(prop.bookmakerLines) ? prop.bookmakerLines.length : 0) ||
     (String(prop.bookmaker || '').trim() ? 1 : 0);
-  return books * 1000 + hitPct(prop.last10HitRate) * 10 + hitPct(prop.last5HitRate);
+  return [
+    (prop.last10HitRate?.total ?? 0) >= 10 ? 1 : 0,
+    combinedHitPercent(prop.last10HitRate) ?? -1,
+    combinedHitPercent(prop.last5HitRate) ?? -1,
+    -combinedMarketPriority(prop),
+    books,
+  ];
 }
 
 function preferCombinedRow(current: CombinedPlayerPropRow, next: CombinedPlayerPropRow): CombinedPlayerPropRow {
-  const prio = combinedMarketPriority(next) - combinedMarketPriority(current);
-  if (prio < 0) return next;
-  if (prio > 0) return current;
-  return combinedRowQualityScore(next) > combinedRowQualityScore(current) ? next : current;
+  const currentRank = combinedRowRank(current);
+  const nextRank = combinedRowRank(next);
+  for (let i = 0; i < currentRank.length; i += 1) {
+    if (nextRank[i] === currentRank[i]) continue;
+    return nextRank[i] > currentRank[i] ? next : current;
+  }
+  return current;
 }
 
 /** Combined tab: one market per player. Sport pages keep every market. */
