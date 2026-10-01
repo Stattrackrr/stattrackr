@@ -19,7 +19,7 @@ import {
   type TennisCachedDvpPlayer,
 } from '@/lib/tennis/dvpLiveCache';
 import { canonicalTennisIoc } from '@/lib/tennis/nationality';
-import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { tennisIdentityMatch, tennisSamePersonRecords } from '@/lib/tennis/oddsApi';
 import {
   findLiveTennisEventForPlayers,
   peekLiveTennisEventIndex,
@@ -70,10 +70,7 @@ function namesAgree(idName: string | null | undefined, opponentName: string): bo
   const name = opponentName.trim();
   if (!label || !name) return false;
   if (label.toLowerCase() === name.toLowerCase()) return true;
-  if (tennisIdentityMatch(label, name)) return true;
-  const last = name.split(/\s+/).filter(Boolean).pop()?.toLowerCase() || '';
-  const idLast = label.split(/\s+/).filter(Boolean).pop()?.toLowerCase() || '';
-  return last.length >= 3 && idLast === last;
+  return tennisIdentityMatch(label, name);
 }
 
 function reconcileOpponentId(
@@ -105,18 +102,10 @@ function findCachedDvpPlayer(
     (row) => humanTennisName(row.name).toLowerCase() === name.toLowerCase()
   );
   if (exact) return exact;
-  const identity = players.filter(
-    (row) => tennisIdentityMatch(row.name, name) && !isNumericTennisId(row.name)
+  const cluster = tennisSamePersonRecords(
+    players.filter((row) => tennisIdentityMatch(row.name, name) && !isNumericTennisId(row.name))
   );
-  if (identity.length === 1) return identity[0];
-  const last = name.split(/\s+/).filter(Boolean).pop() || '';
-  if (last.length < 3) return null;
-  const lastHits = players.filter((row) => {
-    const label = humanTennisName(row.name);
-    if (!label) return false;
-    return label.toLowerCase().split(/\s+/).pop() === last.toLowerCase();
-  });
-  return lastHits.length === 1 ? lastHits[0] : null;
+  return cluster ? cluster[0] : null;
 }
 
 function jsonFromEvent(opts: {

@@ -4,7 +4,7 @@ import { API_TENNIS_SINGLES_EVENTS, isApiGrandSlam, parseApiRound, tourFromEvent
 import { loadTennisPlayers, loadTennisRankings } from '@/lib/tennis/data';
 import { isTennisQualifyingLabel, type TennisDvpStage } from '@/lib/tennis/dvpShared';
 import { tennisAssignDrawRanks } from '@/lib/tennis/seeds';
-import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { tennisIdentityMatch, tennisSamePersonRecords } from '@/lib/tennis/oddsApi';
 import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisTour } from '@/lib/tennis/types';
@@ -204,19 +204,13 @@ function officialPlayer(playerId: string | null, fallback: string): {
     ? players.filter((p) => p.name.toLowerCase() === name.toLowerCase())
     : [];
   const identity = name ? players.filter((p) => tennisIdentityMatch(p.name, name)) : [];
-  const last = name.split(/\s+/).filter(Boolean).pop()?.toLowerCase() || '';
-  const lastHits =
-    last.length >= 3
-      ? players.filter((p) => p.name.toLowerCase().split(/\s+/).pop() === last)
-      : [];
+  const cluster = tennisSamePersonRecords(identity);
   const byName =
     exact.length === 1
       ? exact[0]
-      : identity.length === 1
-        ? identity[0]
-        : lastHits.length === 1
-          ? lastHits[0]
-          : exact[0] || null;
+      : cluster
+        ? [...cluster].sort((a, b) => (a.rank ?? 99999) - (b.rank ?? 99999))[0]
+        : null;
   const idAgrees =
     Boolean(hit) &&
     (!name ||
@@ -233,6 +227,29 @@ function officialPlayer(playerId: string | null, fallback: string): {
     }),
     rank: player?.rank ?? null,
     imageUrl: player?.imageUrl ?? null,
+  };
+}
+
+function withOfficialOpponent(next: TennisNextGame): TennisNextGame {
+  const resolved = officialPlayer(next.opponentId, next.opponent);
+  if (!resolved.playerId && !resolved.ioc) return next;
+  const opponent = resolved.name || next.opponent;
+  const opponentId = resolved.playerId || next.opponentId;
+  const opponentIoc = resolved.ioc || next.opponentIoc;
+  if (
+    opponent === next.opponent &&
+    opponentId === next.opponentId &&
+    opponentIoc === next.opponentIoc
+  ) {
+    return next;
+  }
+  return {
+    ...next,
+    opponent,
+    opponentId,
+    opponentIoc,
+    opponentRank: next.opponentRank ?? resolved.rank,
+    opponentLogo: next.opponentLogo || resolved.imageUrl,
   };
 }
 
@@ -1013,7 +1030,8 @@ export async function getTennisNextGame(opts: {
   const live = indexLiveEvents(byPlayerId, upcomingRuntime().window?.events);
   const finish = (next: TennisNextGame | null) => {
     if (!next) return null;
-    const seeded = withDrawSeeds(withSurface(next), playerId || null, live);
+    const identified = withOfficialOpponent(next);
+    const seeded = withDrawSeeds(withSurface(identified), playerId || null, live);
     const opponentIoc = canonicalTennisIoc({
       playerId: seeded.opponentId,
       name: seeded.opponent,

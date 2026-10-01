@@ -2257,7 +2257,7 @@ export default function TennisDashboardPage() {
                           isDark={!!mounted && isDark}
                           playerId={selectedPlayer?.playerId || null}
                           playerName={matchupLeft}
-                          opponentId={displayOpponent ? nextGameOpponentId : null}
+                          opponentId={statsOpponentId}
                           opponentName={statsOpponent}
                           tour={dvpTour}
                         />
@@ -2460,7 +2460,7 @@ export default function TennisDashboardPage() {
                           isDark={!!mounted && isDark}
                           playerId={selectedPlayer?.playerId || null}
                           playerName={matchupLeft}
-                          opponentId={displayOpponent ? nextGameOpponentId : null}
+                          opponentId={statsOpponentId}
                           opponentName={statsOpponent}
                           tour={dvpTour}
                         />

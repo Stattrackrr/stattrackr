@@ -710,6 +710,26 @@ export async function refreshTennisOddsSnapshots(opts?: {
   }
 }
 
+function snapshotHasChartLines(snapshot: TennisOddsSnapshot | null | undefined): boolean {
+  return Boolean(
+    snapshot?.bookmakers?.some(
+      (book) =>
+        (book.TotalLines?.length || 0) > 0 ||
+        (book.SpreadLines?.length || 0) > 0 ||
+        (book.GamesWonLines?.length || 0) > 0 ||
+        (book.GamesLostLines?.length || 0) > 0
+    )
+  );
+}
+
+function presentIfUseful(
+  snapshot: TennisOddsSnapshot | null | undefined,
+  next: TennisNextGame | null
+): TennisMatchOdds | null {
+  if (!snapshot?.bookmakers?.length || !next) return null;
+  return presentSnapshot(snapshot, next);
+}
+
 export async function getTennisMatchOddsForPlayer(opts: {
   playerId?: string | null;
   playerName?: string | null;
@@ -725,30 +745,44 @@ export async function getTennisMatchOddsForPlayer(opts: {
     opponentName: opponentName || null,
   });
   const fixtureId = String(fixture?.matchId || '').trim();
-  if (fixture && fixtureId) {
-    const snapshot = await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(fixtureId));
-    if (snapshot?.bookmakers?.length) return presentSnapshot(snapshot, fixture);
-  }
+  const fixtureSnapshot = fixtureId
+    ? await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(fixtureId))
+    : null;
   const fromOdds = await findTennisNextGameFromOdds({
     playerName: playerName || fixture?.homeName || fixture?.awayName,
     opponentName: opponentName || fixture?.opponent,
     tour: fixture?.tour,
+    tipoff: fixture?.tipoff,
   });
   const oddsId = String(fromOdds?.matchId || '').trim();
-  if (!fromOdds || !oddsId) return null;
-  const priced = await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(oddsId));
-  if (!priced?.bookmakers?.length) return null;
-  return presentSnapshot(priced, fromOdds);
+  const oddsSnapshot =
+    fromOdds && oddsId && oddsId !== fixtureId
+      ? await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(oddsId))
+      : null;
+  const fixturePriced = presentIfUseful(fixtureSnapshot, fixture);
+  const oddsPriced = presentIfUseful(oddsSnapshot, fromOdds);
+  if (snapshotHasChartLines(fixtureSnapshot) && fixturePriced) return fixturePriced;
+  if (snapshotHasChartLines(oddsSnapshot) && oddsPriced) return oddsPriced;
+  return fixturePriced || oddsPriced;
+}
+
+function sameTennisTipoff(a?: string | null, b?: string | null): boolean {
+  const left = Date.parse(String(a || ''));
+  const right = Date.parse(String(b || ''));
+  if (!Number.isFinite(left) || !Number.isFinite(right)) return false;
+  return Math.abs(left - right) <= 3 * 60 * 60 * 1000;
 }
 
 export async function findTennisNextGameFromOdds(opts: {
   playerName?: string | null;
   opponentName?: string | null;
   tour?: string | null;
+  tipoff?: string | null;
 }): Promise<TennisNextGame | null> {
   const playerName = String(opts.playerName || '').trim();
   if (!playerName) return null;
   const opponentName = String(opts.opponentName || '').trim();
+  const tipoff = String(opts.tipoff || '').trim();
   const tourWant = String(opts.tour || '').trim().toUpperCase();
   const [index, catalog] = await Promise.all([listTennisOddsIndex(), readOddsApiTennisCatalog()]);
   type OddsSide = {
@@ -780,13 +814,13 @@ export async function findTennisNextGameFromOdds(opts: {
   const involves = (home: string, away: string, name: string) =>
     tennisFixtureNamesMatch(home, name) || tennisFixtureNamesMatch(away, name);
   const seen = new Set<string>();
-  const hits: OddsSide[] = [];
+  const matched: OddsSide[] = [];
+  const playerOnly: OddsSide[] = [];
   for (const row of rows) {
     const key = `${row.matchId}|${row.homeName}|${row.awayName}`;
     if (seen.has(key)) continue;
     seen.add(key);
     if (!involves(row.homeName, row.awayName, playerName)) continue;
-    if (opponentName && !involves(row.homeName, row.awayName, opponentName)) continue;
     if (tourWant === 'ATP' || tourWant === 'WTA') {
       const blob = `${row.sportKey || ''} ${row.tournamentName || ''}`.toLowerCase();
       if (blob.includes('wta') || blob.includes('atp')) {
@@ -794,12 +828,12 @@ export async function findTennisNextGameFromOdds(opts: {
         if (tour !== tourWant) continue;
       }
     }
-    hits.push(row);
+    if (!opponentName || involves(row.homeName, row.awayName, opponentName)) matched.push(row);
+    else playerOnly.push(row);
   }
-  const withOpponent = opponentName
-    ? hits.filter((row) => involves(row.homeName, row.awayName, opponentName))
-    : hits;
-  const picked = [...(withOpponent.length ? withOpponent : hits)].sort((a, b) => {
+  const sameTime = tipoff ? playerOnly.filter((row) => sameTennisTipoff(row.commenceTime, tipoff)) : [];
+  const hits = matched.length ? matched : tipoff ? sameTime : playerOnly;
+  const picked = [...hits].sort((a, b) => {
     const ta = Date.parse(String(a.commenceTime || '')) || Number.POSITIVE_INFINITY;
     const tb = Date.parse(String(b.commenceTime || '')) || Number.POSITIVE_INFINITY;
     return ta - tb;

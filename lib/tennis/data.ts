@@ -39,7 +39,7 @@ import { tennisAssignDrawRanks, tennisAssignDrawSeeds } from '@/lib/tennis/seeds
 import { applyTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 import { canonicalTennisIoc } from '@/lib/tennis/nationality';
-import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { tennisIdentityMatch, tennisSamePersonRecords } from '@/lib/tennis/oddsApi';
 
 export type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 export { TENNIS_CURRENT_YEAR, TENNIS_HISTORY_YEARS };
@@ -368,23 +368,15 @@ function findDvpPlayerId(
   if (exact) return exact.playerId;
   const rankedHit = ranked.find((p) => normDvpName(p.name) === normDvpName(key));
   if (rankedHit) return rankedHit.playerId;
-  const identity = roster.filter((p) => tennisIdentityMatch(p.name, key));
-  if (identity.length === 1) return identity[0].playerId;
-  for (const [id, bucket] of buckets) {
-    if (normDvpName(bucket.name) === normDvpName(key) || tennisIdentityMatch(bucket.name, key)) return id;
+  const cluster = tennisSamePersonRecords(roster.filter((p) => tennisIdentityMatch(p.name, key)));
+  if (cluster) {
+    return [...cluster].sort((a, b) => (a.rank ?? 99999) - (b.rank ?? 99999))[0].playerId;
   }
-  const last = key.split(/\s+/).filter(Boolean).pop() || '';
-  if (last.length < 3) return null;
-  const lastKey = last.toLowerCase();
-  const lastHits = roster.filter((p) => normDvpName(p.name).split(/\s+/).pop() === lastKey);
-  if (lastHits.length === 1) return lastHits[0].playerId;
-  const rankedLast = ranked.filter((p) => normDvpName(p.name).split(/\s+/).pop() === lastKey);
-  if (rankedLast.length === 1) return rankedLast[0].playerId;
-  const bucketHits = [...buckets.entries()].filter(
-    ([, bucket]) => normDvpName(bucket.name).split(/\s+/).pop() === lastKey
-  );
-  if (bucketHits.length === 1) return bucketHits[0][0];
-  return null;
+  const bucketHits = [...buckets.entries()]
+    .filter(([, bucket]) => normDvpName(bucket.name) === normDvpName(key) || tennisIdentityMatch(bucket.name, key))
+    .map(([id, bucket]) => ({ playerId: id, name: bucket.name }));
+  const bucketCluster = tennisSamePersonRecords(bucketHits);
+  return bucketCluster ? bucketCluster[0].playerId : null;
 }
 
 function dvpMatchKey(row: TennisMatchRow): string {

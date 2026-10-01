@@ -40,6 +40,7 @@ import {
 import {
   readOddsApiTennisCatalog,
   tennisIdentityMatch,
+  tennisSamePersonRecords,
   tennisNamesMatch,
   tennisTourFromOdds,
 } from '@/lib/tennis/oddsApi';
@@ -373,13 +374,12 @@ function buildPlayerLookup(players: PlayerMeta[]) {
       const identityHits = players.filter((player) => tennisIdentityMatch(player.name, name));
       const scoped = tour ? identityHits.filter((player) => player.tour === tour) : identityHits;
       const pool = scoped.length ? scoped : identityHits;
-      const ranked = pool
+      const cluster = tennisSamePersonRecords(pool);
+      if (!cluster) return exact && (!tour || exact.tour === tour) ? exact : null;
+      const ranked = cluster
         .filter((player) => player.rank != null)
         .sort((a, b) => (a.rank ?? 99999) - (b.rank ?? 99999));
-      if (ranked.length) return ranked[0];
-      if (pool.length === 1) return pool[0];
-      if (exact && (!tour || exact.tour === tour)) return exact;
-      return exact ?? null;
+      return ranked[0] || cluster.find((player) => player.ioc) || cluster[0];
     },
   };
 }
@@ -611,16 +611,11 @@ function findDvpPlayer(
   if (!key) return null;
   const byName = players.find((row) => row.name.toLowerCase() === key);
   if (byName) return byName;
-  const identity = players.filter((row) => tennisIdentityMatch(row.name, opponentName));
-  if (identity.length === 1) return identity[0];
-  const last = key.split(/\s+/).filter(Boolean).pop() || '';
-  if (last.length >= 3) {
-    const lastHits = players.filter(
-      (row) => row.name.toLowerCase().split(/\s+/).pop() === last
-    );
-    if (lastHits.length === 1) return lastHits[0];
-  }
-  return identity[0] || null;
+  const cluster = tennisSamePersonRecords(
+    players.filter((row) => tennisIdentityMatch(row.name, opponentName))
+  );
+  if (!cluster) return null;
+  return [...cluster].sort((a, b) => (a.rankPos ?? 99999) - (b.rankPos ?? 99999))[0];
 }
 
 function snapshotToGame(
@@ -1414,6 +1409,36 @@ async function loadTennisPlayerPropsList(refresh?: boolean): Promise<TennisPlaye
   return listBuildInflight;
 }
 
+function rosterHitForListedName(name: string, id: string | null) {
+  const players = loadTennisPlayers();
+  const wantId = String(id || '').trim();
+  const label = String(name || '').trim();
+  const byId = wantId ? players.find((player) => player.playerId === wantId) : null;
+  if (byId && label && !tennisIdentityMatch(byId.name, label)) return byId.ioc ? byId : null;
+  if (byId?.ioc) return byId;
+  const hits = label ? players.filter((player) => player.ioc && tennisIdentityMatch(player.name, label)) : [];
+  const cluster = tennisSamePersonRecords(hits);
+  if (!cluster) return null;
+  return (
+    [...cluster].sort((a, b) => (a.rank ?? 99999) - (b.rank ?? 99999))[0] || cluster[0]
+  );
+}
+
+/** Cached list rows often keep a blank country even when the roster has one. */
+function fillRosterFlags(rows: TennisListPropRow[]): TennisListPropRow[] {
+  if (!rows.length || !loadTennisPlayers().length) return rows;
+  return rows.map((row) => {
+    const player = rosterHitForListedName(row.playerName, row.playerId);
+    const opponent = rosterHitForListedName(row.opponent, row.opponentId);
+    let next = row;
+    if (player?.ioc && !next.playerIoc) next = { ...next, playerIoc: player.ioc };
+    if (player && !next.playerId) next = { ...next, playerId: player.playerId };
+    if (opponent?.ioc && !next.opponentIoc) next = { ...next, opponentIoc: opponent.ioc };
+    if (opponent && !next.opponentId) next = { ...next, opponentId: opponent.playerId };
+    return next;
+  });
+}
+
 export async function getTennisPlayerPropsList(opts?: {
   refresh?: boolean;
   tour?: TennisTour | null;
@@ -1422,8 +1447,8 @@ export async function getTennisPlayerPropsList(opts?: {
   const payload = filterTennisListByTour(await loadTennisPlayerPropsList(opts?.refresh), tour);
   try {
     const overlaid = await overlayLiveTennisDvp(payload);
-    return { ...overlaid, data: fillMissingTennisOpponentIoc(overlaid.data) };
+    return { ...overlaid, data: fillMissingTennisOpponentIoc(fillRosterFlags(overlaid.data)) };
   } catch {
-    return { ...payload, data: fillMissingTennisOpponentIoc(payload.data) };
+    return { ...payload, data: fillMissingTennisOpponentIoc(fillRosterFlags(payload.data)) };
   }
 }

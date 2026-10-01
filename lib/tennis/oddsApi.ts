@@ -98,10 +98,6 @@ function formatAmericanFromDecimal(raw: string | number | undefined): string {
   return decimalToAmerican(n);
 }
 
-function tennisFirstInitial(value: string): string {
-  return value.trim().replace(/[^A-Za-z]/g, '').charAt(0).toLowerCase();
-}
-
 const NAME_PARTICLES = new Set(['de', 'da', 'do', 'dos', 'das', 'van', 'von', 'del', 'della', 'di', 'le', 'la', 'el']);
 
 function nameParts(value: string): string[] {
@@ -112,6 +108,75 @@ function significantNameTokens(value: string): string[] {
   return nameParts(value)
     .map((part) => normalizeName(part))
     .filter((token) => token.length >= 2 && !NAME_PARTICLES.has(token));
+}
+
+function rawNameTokens(value: string): Array<{ raw: string; norm: string }> {
+  return nameParts(value)
+    .map((raw) => ({ raw, norm: normalizeName(raw) }))
+    .filter((token) => token.norm && !NAME_PARTICLES.has(token.norm));
+}
+
+/** Dotted shorts (F., Ma., Dar.) are initials. The letter is the first character. */
+function isInitialToken(token: { raw: string; norm: string }): boolean {
+  if (token.norm.length === 1) return true;
+  return token.norm.length <= 3 && token.raw.includes('.');
+}
+
+/** Same words in any order. Bu Yunchaokete and Yunchaokete Bu. */
+function sameTokenBag(a: string[], b: string[]): boolean {
+  if (a.length < 2 || a.length !== b.length) return false;
+  if (!a.some((token) => token.length >= 4)) return false;
+  const left = [...a].sort();
+  const right = [...b].sort();
+  return left.every((token, index) => token === right[index]);
+}
+
+function initialsCover(initials: string[], tokens: string[]): boolean {
+  if (!initials.length || initials.length !== tokens.length) return false;
+  const used = new Set<number>();
+  for (const initial of initials) {
+    const idx = tokens.findIndex(
+      (token, index) => !used.has(index) && token.startsWith(initial) && token.length > initial.length
+    );
+    if (idx < 0) return false;
+    used.add(idx);
+  }
+  return true;
+}
+
+/**
+ * F. Last, F. M. Last, and F. J. Last against a full name in any word order.
+ * The spelled-out words must all be present. Every other word must be covered
+ * by an initial, so a shared surname cannot pull in a different player.
+ */
+function abbreviatedNameMatch(a: string, b: string): boolean {
+  const matchOne = (shortName: string, fullName: string) => {
+    const parts = rawNameTokens(shortName);
+    const initials = parts.filter(isInitialToken).map((token) => token.norm.charAt(0));
+    const words = parts.filter((token) => !isInitialToken(token)).map((token) => token.norm);
+    if (!initials.length || !words.length) return false;
+    const fullParts = rawNameTokens(fullName);
+    const fullInitials = fullParts.filter(isInitialToken).map((token) => token.norm.charAt(0));
+    const full = fullParts.filter((token) => !isInitialToken(token)).map((token) => token.norm);
+    if (fullInitials.some((letter) => !initials.includes(letter))) return false;
+    const pending = [...initials];
+    for (const letter of fullInitials) {
+      const idx = pending.indexOf(letter);
+      if (idx < 0) return false;
+      pending.splice(idx, 1);
+    }
+    if (!pending.length) {
+      return full.length === words.length && words.every((word, index) => full[index] === word);
+    }
+    if (full.length !== words.length + pending.length) return false;
+    for (let start = 0; start + words.length <= full.length; start++) {
+      if (!words.every((word, index) => full[start + index] === word)) continue;
+      const remaining = [...full.slice(0, start), ...full.slice(start + words.length)];
+      if (initialsCover(pending, remaining)) return true;
+    }
+    return false;
+  };
+  return matchOne(a, b) || matchOne(b, a);
 }
 
 export function tennisNamesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
@@ -128,7 +193,11 @@ export function tennisNamesMatch(a: string | null | undefined, b: string | null 
   return la.length >= 4 && la === lb;
 }
 
-/** Roster identity: last name plus first initial, or 2+ shared family tokens. Never last-name-only. */
+/**
+ * Same player across roster, fixtures, and odds.
+ * Accepts reversed word order and initials. Never last-name-only, and never
+ * a shared surname plus a first initial when the other names differ.
+ */
 export function tennisIdentityMatch(a: string | null | undefined, b: string | null | undefined): boolean {
   const left = String(a || '').trim();
   const right = String(b || '').trim();
@@ -137,17 +206,23 @@ export function tennisIdentityMatch(a: string | null | undefined, b: string | nu
   const nb = normalizeName(right);
   if (!na || !nb) return false;
   if (na === nb) return true;
-  const la = lastNameToken(left);
-  const lb = lastNameToken(right);
-  const ia = tennisFirstInitial(left);
-  const ib = tennisFirstInitial(right);
-  if (la && la === lb && la.length >= 3 && ia && ia === ib) return true;
   const ta = significantNameTokens(left);
   const tb = significantNameTokens(right);
-  if (!ta.length || !tb.length) return false;
-  const overlap = ta.filter((token) => tb.includes(token) && token.length >= 4);
-  if (overlap.length < 2) return false;
-  return ta.some((token) => token.startsWith(ib)) || tb.some((token) => token.startsWith(ia));
+  if (sameTokenBag(ta, tb)) return true;
+  return abbreviatedNameMatch(left, right);
+}
+
+/** Identity hits that are one player stored more than once. Null when the name is ambiguous. */
+export function tennisSamePersonRecords<T extends { playerId: string; name: string }>(
+  hits: T[]
+): T[] | null {
+  const unique = [...new Map(hits.map((player) => [player.playerId, player])).values()];
+  if (!unique.length) return null;
+  const anchor = unique[0];
+  const same = unique.every(
+    (player) => player.playerId === anchor.playerId || tennisIdentityMatch(anchor.name, player.name)
+  );
+  return same ? unique : null;
 }
 
 /** True when two opponent strings are the same person under different spellings. */
