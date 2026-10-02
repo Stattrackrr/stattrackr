@@ -12,7 +12,7 @@ import { refreshNblOddsData } from '@/lib/nbl/refreshNblOdds';
 export type NblOddsAndPropsIngestResult = {
   success: boolean;
   pulseGames: number; // games from odds-api.net board (legacy field name)
-  snapshots: { saved: number; frozen: number; skipped: number };
+  snapshots: { saved: number; frozen: number; skipped: number; historyWrites: number };
   gameOdds: {
     success: boolean;
     gamesCount: number;
@@ -30,10 +30,9 @@ export async function refreshNblOddsAndPropsIngest(options?: {
   disk?: boolean;
 }): Promise<NblOddsAndPropsIngestResult> {
   const pulseGames = await getNblPulseScoreBoard({ force: true });
-  const snapshots = await persistNblPlayerPropSnapshots(pulseGames, {
-    disk: options?.disk !== false,
-  });
-  const gameOdds = await refreshNblOddsData();
+  const writeDisk = options?.disk !== false;
+  const snapshots = await persistNblPlayerPropSnapshots(pulseGames, { disk: writeDisk });
+  const gameOdds = await refreshNblOddsData({ disk: writeDisk });
   const list = await getNblPlayerPropsList({ refresh: true });
 
   let combinedNbl = 0;

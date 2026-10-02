@@ -6,6 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import { decimalToAmerican } from '@/lib/currencyUtils';
+import { appendNblPlayerPropHistory } from '@/lib/nbl/oddsHistory';
 import {
   classifyPulseNblMarket,
   isPulsePlayerName,
@@ -322,19 +323,30 @@ export async function listNblPlayerPropSnapshots(): Promise<NblPlayerPropSnapsho
 export async function persistNblPlayerPropSnapshots(
   games: PulseNblGame[],
   options?: { disk?: boolean }
-): Promise<{ saved: number; frozen: number; skipped: number }> {
+): Promise<{ saved: number; frozen: number; skipped: number; historyWrites: number }> {
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
   const writeDisk = options?.disk !== false;
   let saved = 0;
   let frozen = 0;
   let skipped = 0;
+  let historyWrites = 0;
 
   for (const game of games) {
     const started = gameHasStarted(game.commenceTime, nowMs);
     const incoming = buildSnapshot(game, nowIso, started);
     const gameKey = nblPlayerPropGameKey(game.homeTeam, game.awayTeam, game.commenceTime);
     const prev = (writeDisk ? readDiskSnapshot(gameKey) : null) ?? (await readRedisSnapshot(gameKey));
+
+    // Timestamped O/U history: the live board as seen right now (pre-merge),
+    // appended only when it differs from the previous capture.
+    if (writeDisk && incoming && !started) {
+      try {
+        if (appendNblPlayerPropHistory(incoming, nowIso)) historyWrites += 1;
+      } catch {
+        /* Vercel FS is read-only */
+      }
+    }
 
     if (!incoming) {
       if (prev && !prev.closing && started) {
@@ -372,7 +384,7 @@ export async function persistNblPlayerPropSnapshots(
     if (becameClosing) frozen += 1;
   }
 
-  return { saved, frozen, skipped };
+  return { saved, frozen, skipped, historyWrites };
 }
 
 export function listNblPlayerPropSnapshotsFromDisk(): NblPlayerPropSnapshot[] {
@@ -386,6 +398,10 @@ export function listNblPlayerPropSnapshotsFromDisk(): NblPlayerPropSnapshot[] {
   } catch {
     return [];
   }
+}
+
+export function readNblPlayerPropSnapshotByGameKey(gameKey: string): NblPlayerPropSnapshot | null {
+  return readDiskSnapshot(gameKey);
 }
 
 export function readNblPlayerPropSnapshotFile(

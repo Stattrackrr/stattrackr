@@ -20,6 +20,7 @@ on:
       - 'lib/nbl/refreshNblPropsIngest.ts'
       - 'scripts/debug-nbl-odds-api-net.ts'
       - 'scripts/snapshot-nbl-player-props.ts'
+      - 'nbl-engine/**'
       - '.github/workflows/nbl-player-prop-snapshots.yml'
 
 concurrency:
@@ -90,11 +91,28 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: npm run snapshot:nbl:player-props
 
+      - name: Setup Python (props engine)
+        if: steps.check.outputs.oan == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run NBL props analysis engine
+        if: steps.check.outputs.oan == 'true'
+        run: |
+          python -m pip install --quiet -e ./nbl-engine
+          python nbl-engine/run.py --days 3 --quiet \
+            --out nbl-engine/out \
+            --publish-dir data/nbl-model/cache/engine-picks
+
       - name: Commit player-prop snapshots
         if: steps.check.outputs.oan == 'true'
         run: |
           bash scripts/ci-commit-data-files.sh "chore(data): NBL odds-api.net player-prop snapshots [skip ci]" \
             "data/nbl-model/cache/player-prop-lines" \
+            "data/nbl-model/cache/player-prop-history" \
+            "data/nbl-model/cache/game-odds-history" \
+            "data/nbl-model/cache/engine-picks" \
             "data/nbl-model/cache/player-props-list.json"
         env:
           GH_TOKEN: ${{ github.token }}

@@ -9,7 +9,8 @@ import { fetchNblInjuriesFromBasketballComAu } from '../lib/nbl/basketballComAuI
 import { omitPlayersWhoPlayedLatestGame } from '../lib/nbl/nblInjuryActiveFilter';
 
 async function main() {
-  const { injuries: rawInjuries, sourceUrl } = await fetchNblInjuriesFromBasketballComAu();
+  const { injuries: rawInjuries, sourceUrl, sourceUpdatedText } =
+    await fetchNblInjuriesFromBasketballComAu();
   const injuries = omitPlayersWhoPlayedLatestGame(rawInjuries);
   if (!injuries.length) throw new Error('No NBL injuries parsed from basketball.com.au');
   const file = path.join(process.cwd(), 'data', 'nbl-injuries.json');
@@ -17,7 +18,8 @@ async function main() {
     generatedAt: new Date().toISOString(),
     source: 'basketball.com.au',
     sourceUrl,
-    sourcePage: '/news/2025-26-nbl-team-lists-and-roster-tracker',
+    sourcePage: new URL(sourceUrl).pathname,
+    sourceUpdatedText,
     injuryCount: injuries.length,
     injuries,
   };

@@ -4,6 +4,7 @@
 
 import { resolveNblClubName } from '@/lib/nblTeamCanonical';
 import sharedCache from '@/lib/sharedCache';
+import { appendNblGameOddsHistory } from '@/lib/nbl/oddsHistory';
 import type { NblBookRow, NblGameOdds, NblOddsCache } from '@/lib/nbl/oddsTypes';
 
 export type { NblBookRow, NblGameOdds, NblOddsCache };
@@ -136,7 +137,11 @@ function parseOutcomesToBookRow(
   };
 }
 
-export async function refreshNblOddsData(options?: { skipWrite?: boolean }): Promise<{
+export async function refreshNblOddsData(options?: {
+  skipWrite?: boolean;
+  /** Append timestamped per-game history files on disk (GitHub Actions only). */
+  disk?: boolean;
+}): Promise<{
   success: boolean;
   gamesCount: number;
   lastUpdated: string;
@@ -201,6 +206,14 @@ export async function refreshNblOddsData(options?: { skipWrite?: boolean }): Pro
     };
     if (!options?.skipWrite) {
       await setNblOddsCache(cachePayload);
+    }
+    if (options?.disk) {
+      try {
+        const written = appendNblGameOddsHistory(games, cachePayload.lastUpdated);
+        if (written) console.log(`[NBL Odds] game-odds history captures written: ${written}`);
+      } catch (err) {
+        console.warn('[NBL Odds] game-odds history write failed', err instanceof Error ? err.message : err);
+      }
     }
 
     return {

@@ -1,105 +1,184 @@
 {
-  "generatedAt": "2026-10-01T18:50:09.032Z",
+  "generatedAt": "2026-10-02T14:28:33.197Z",
   "source": "basketball.com.au",
-  "sourceUrl": "https://www.basketball.com.au/news/2025-26-nbl-team-lists-and-roster-tracker",
-  "sourcePage": "/news/2025-26-nbl-team-lists-and-roster-tracker",
-  "injuryCount": 16,
+  "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
+  "sourcePage": "/news/nbl-injury-report",
+  "sourceUpdatedText": "Tuesday, September 29, 4:00pm AEST",
+  "injuryCount": 20,
   "injuries": [
     {
-      "team": "Brisbane Bullets",
-      "player": "Dakota Mathias",
-      "injury": "Fractured scapula",
-      "returning": "shoulder"
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Casey Prather",
-      "injury": "Knee injury",
-      "returning": "Out the rest of the season"
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Lamar Patterson",
-      "injury": "Hamstring",
-      "returning": "Out of the rest of the season"
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Javon Freeman Liberty",
-      "injury": "Hamstring",
-      "returning": "Not timetable"
-    },
-    {
-      "team": "Cairns Taipans",
-      "player": "Alex Higgins-Titsha",
-      "injury": "Wrist",
-      "returning": "Season"
-    },
-    {
-      "team": "Cairns Taipans",
-      "player": "Sam Waardenburg",
+      "team": "Adelaide 36ers",
+      "player": "Flynn Cameron",
       "injury": "Ankle",
-      "returning": "At least Round 22."
+      "returning": "Round 5",
+      "status": "Out",
+      "note": "Left Adelaide’s NBL27 opener against Melbourne United at John Cain Arena on Saturday 19 September 2026 with an ankle injury, reported by basketball.com.au. He started the game. Michael Randall reported on 23 September that Cameron will not fly to Perth for the trip to the Wildcats. Jai at Fox Sports (@NBLPleb) reported on 27 September that Cameron is sidelined in a moon boot on his right ankle and is expected to be out for up to six weeks. That is an upper bound rather than a date, and no starting point was given for it. The NBL’s 29 September update puts his return at Round 5.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Adelaide 36ers",
+      "player": "Isaac Humphries",
+      "injury": "Knee",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Ruled out of the NBL27 season opener against Melbourne United on Saturday 19 September. Adelaide 36ers confirmed it on 18 September: head coach Trevor Gleeson said Humphries \"had some ongoing knee injuries\" and he did not travel with the squad. Gleeson said he hoped Humphries would be available for the trip to Perth on Thursday, while adding that the club would \"just worry about this week\". No return date has been given and this is an absence from one game, not a season.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Adelaide 36ers",
+      "player": "Bul Kuol",
+      "injury": "ACL",
+      "returning": "TBC",
+      "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "Brisbane Bullets",
+      "player": "Sam McDaniel",
+      "injury": "Hand",
+      "returning": "Round 4",
+      "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "Brisbane Bullets",
+      "player": "Taine Murray",
+      "injury": "Lower Limb",
+      "returning": "Round 4-6",
+      "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "Cairns Taipans",
+      "player": "Jaylin Galloway",
+      "injury": "Shoulder",
+      "returning": "Round 6",
+      "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "Cairns Taipans",
+      "player": "Luke Paul",
+      "injury": "Ankle ligament",
+      "returning": "Test",
+      "status": "Out",
+      "note": "Cairns say scans showed minor ligament damage and put him at 6-8 weeks, with the club aiming to have him back in the early part of the season. The NBL’s 29 September update now lists him as a test.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Illawarra Hawks",
+      "player": "Todd Blanchfield",
+      "injury": "Finger",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Blanchfield has a broken finger. Illawarra head coach Justin Tatum, as reported by basketball.com.au on Monday 28 September 2026: “As of right now, I know Todd Blanchfield’s finger is broken. The timeframe is to be determined.” An earlier report, on Sunday 27 September, had described it as a broken thumb with a four-to-six-week absence; the coach has since said no timeframe is set.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Illawarra Hawks",
+      "player": "Mason Peatling",
+      "injury": "Foot",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Out for Illawarra with a foot injury and awaiting a scan. Illawarra head coach Justin Tatum, as reported by basketball.com.au on Monday 28 September 2026: “Mason will get a scan tomorrow, and hopefully his foot isn’t broken.” No return date has been given. Peatling had left Illawarra’s NBL27 Round 1 game against the New Zealand Breakers at Spark Arena on Sunday 20 September with a back issue; head coach Justin Tatum cleared him the same day, saying “He’s fine. He just got hit on a check-down. He bounced right back and said he’s fine.” That was a back complaint; this one is his foot.",
+      "listedByNbl": true
     },
     {
       "team": "Melbourne United",
-      "player": "Shae Ili",
-      "injury": "Hamstring strain. It's the fourth time this season Ili has been ruled out with a hamstring injury",
-      "returning": "Expected back post FIBA Break"
-    },
-    {
-      "team": "New Zealand Breakers",
-      "player": "Rob Baker II",
-      "injury": "Ruptured ACL",
-      "returning": "Season"
-    },
-    {
-      "team": "New Zealand Breakers",
-      "player": "Karim Lopez",
-      "injury": "Leg",
-      "returning": "No Timetable"
-    },
-    {
-      "team": "Perth Wildcats",
-      "player": "Jaron Rillie",
+      "player": "Shea Ili",
       "injury": "Hamstring",
-      "returning": "season"
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Out of the NBL27 opener against Adelaide on Saturday 19 September, reported by ESPN’s Olgun Uluc on 18 September. Sustained in game two of the Blitz; he did not practice on 8 September and was in the building. No return date has been given. Ili sustained four separate hamstring injuries over the course of last NBL season.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Melbourne United",
+      "player": "Sean Macdonald",
+      "injury": "ACL",
+      "returning": "Season",
+      "status": "Out for the season",
+      "note": "Melbourne United have confirmed the graft from his August 2025 reconstruction failed under rehab loading. He is having a second ACL reconstruction, 9-12 months, and is targeting a return for NBL28 pre-season.",
+      "listedByNbl": true
+    },
+    {
+      "team": "New Zealand Breakers",
+      "player": "Preston Le Gassick",
+      "injury": "Ankle",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "The NBL removed Le Gassick from its own injury list in the 26 September 2026 refresh, having listed him with an ankle injury and no return date. He did not dress for the New Zealand Breakers against Perth at RAC Arena on Friday 26 September. basketball.com.au is holding him as unavailable on that basis; no club or league statement has cleared him.",
+      "listedByNbl": true
+    },
+    {
+      "team": "New Zealand Breakers",
+      "player": "Josiah-Jordan James",
+      "injury": "Hamstring",
+      "returning": "4-6 weeks",
+      "status": "Out",
+      "note": "The Breakers say James has a torn left hamstring and will miss the start of NBL27, and that he will be reassessed in four to six weeks. The club has since signed Mojave King as an injury replacement player, reported by the NBL on September 16, 2026. Reported by Olgun Uluc; the club has not posted it itself.",
+      "listedByNbl": true
     },
     {
       "team": "Perth Wildcats",
-      "player": "Ben Henshall",
-      "injury": "Ankle",
-      "returning": "No Timetable"
+      "player": "Brandon Knight",
+      "injury": "—",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "NOT INJURED. Knight has still not arrived in Australia, so he is unavailable rather than carrying a knock. ESPN’s Olgun Uluc reported on 22 September that he will miss Perth’s game against the Adelaide 36ers on Thursday 24 September, and that he is unlikely to be available for either of the Wildcats’ Round 2 games. The NBL’s own list agrees on the status, carrying him as unavailable with the return TBC, but gives no reason. He was also out of Perth’s NBL27 opener against South East Melbourne on Saturday 19 September; Uluc reported that on 18 September alongside Jaron Rillie, and the lower leg injury in that report is Rillie’s alone.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Perth Wildcats",
+      "player": "Blake Nielsen",
+      "injury": "ACL",
+      "returning": "Season",
+      "status": "Out for the season",
+      "note": "Perth have confirmed a successful reconstruction of a torn ACL in his right knee and say he is expected to miss the entirety of the 2026-27 season. He is a development player, announced by the club on 9 June 2026, and is not in our 12-man projected Perth depth chart. The NBL added him to its own list in the 21 September 2026 refresh.",
+      "listedByNbl": true
     },
     {
       "team": "Sydney Kings",
       "player": "Keli Leaupepe",
-      "injury": "Knee",
-      "returning": "Season"
-    },
-    {
-      "team": "Sydney Kings",
-      "player": "Bul Kuol",
-      "injury": "ACL injury",
-      "returning": "Season"
+      "injury": "ACL",
+      "returning": "Season",
+      "status": "Out for the season",
+      "listedByNbl": true
     },
     {
       "team": "Tasmania JackJumpers",
       "player": "Ben Ayre",
-      "injury": "Groin",
-      "returning": "Likely Season"
+      "injury": "Hip flexor",
+      "returning": "Test",
+      "status": "Out",
+      "note": "WIN News Tasmania’s Brent Costelloe reported from the JackJumpers press conference on Wednesday 17 September that Ayre was \"still a few weeks away from returning\". The NBL’s 21 September list now gives him a return of Round 3, which is consistent with that report. Michael Randall reported on 22 September that he remains out for Tasmania’s trip to Cairns on 23 September.",
+      "listedByNbl": true
     },
     {
       "team": "Tasmania JackJumpers",
-      "player": "Sean Macdonald",
-      "injury": "Knee",
-      "returning": "Season"
+      "player": "Majok Deng",
+      "injury": "Lower leg",
+      "returning": "Round 8-10",
+      "status": "Out",
+      "note": "Michael Randall reported on 22 September 2026 that Deng will miss Tasmania’s trip to the Cairns Taipans on Wednesday 23 September, joining Josh Bannan, Anthony Drmic, Ben Ayre and Bryce Hamilton on the sidelines, without specifying an injury. The NBL’s own list added him as a lower leg injury in its 26 September update, and its 29 September update puts his return at Round 8-10. He did not dress against Cairns.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Tasmania JackJumpers",
+      "player": "Anthony Drmic",
+      "injury": "Back",
+      "returning": "TBC",
+      "status": "Out",
+      "listedByNbl": true
     },
     {
       "team": "Tasmania JackJumpers",
       "player": "Bryce Hamilton",
-      "injury": "Knee",
-      "returning": "status uncertain"
+      "injury": "ACL",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Tasmania have confirmed the knee injury is an ACL, and have signed Nick Stoddart as a Nominated Replacement Player to cover him for the Blitz and the start of the season.",
+      "listedByNbl": true
     }
   ]
 }

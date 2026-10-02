@@ -19,7 +19,7 @@ async function main() {
 
   const result = await refreshNblOddsAndPropsIngest({ disk: true });
   console.log(
-    `[nbl ingest] games=${result.pulseGames} saved=${result.snapshots.saved} frozen=${result.snapshots.frozen} skipped=${result.snapshots.skipped}`
+    `[nbl ingest] games=${result.pulseGames} saved=${result.snapshots.saved} frozen=${result.snapshots.frozen} skipped=${result.snapshots.skipped} history=${result.snapshots.historyWrites}`
   );
   console.log(
     `[nbl ingest] gameOdds=${result.gameOdds.gamesCount} success=${result.gameOdds.success}${result.gameOdds.error ? ` (${result.gameOdds.error})` : ''}`

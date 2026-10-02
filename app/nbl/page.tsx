@@ -28,10 +28,12 @@ import { NblTeamSelectionsCard } from '@/app/nbl/components/NblTeamSelectionsCar
 import { NblLineSelector } from '@/app/nbl/components/NblLineSelector';
 import { NblInjuriesCard } from '@/app/nbl/components/NblInjuriesCard';
 import { NblLadderCard } from '@/app/nbl/components/NblLadderCard';
+import { NblModelPanel } from '@/app/nbl/components/NblModelPanel';
 import { NblSimilarPlayersCard } from '@/app/nbl/components/NblSimilarPlayersCard';
 import { NblPlayerVsTeamPanel } from '@/app/nbl/components/NblPlayerVsTeamPanel';
 import { NBL_DASH_CARD_GLOW } from '@/app/nbl/components/nblDashCardGlow';
 import { NblScoringMixPie } from '@/app/nbl/components/NblScoringMixPie';
+import { NBL_AI_UNDER_MAINTENANCE } from '@/lib/nbl/constants';
 import { ProFeatureLock, ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -73,7 +75,7 @@ const EMPTY_NBL_ODDS_BOOKS: NblBookRow[] = [];
 
 type NblPropsMode = 'player' | 'team';
 type NblRightTab = 'dvp' | 'breakdown' | 'team_matchup';
-type NblPlayerVsTab = 'comparison' | 'similar';
+type NblPlayerVsTab = 'model' | 'comparison' | 'similar';
 
 type NblRosterPlayer = {
   playerId: string | null;
@@ -407,7 +409,7 @@ export default function NblDashboardPage() {
   const [nblRightTabsVisited, setNblRightTabsVisited] = useState<Set<NblRightTab>>(
     () => new Set(['dvp'])
   );
-  const [playerVsContainerTab, setPlayerVsContainerTab] = useState<NblPlayerVsTab>('comparison');
+  const [playerVsContainerTab, setPlayerVsContainerTab] = useState<NblPlayerVsTab>('model');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [rosterPlayers, setRosterPlayers] = useState<NblRosterPlayer[]>([]);
@@ -797,7 +799,9 @@ export default function NblDashboardPage() {
       setNblRightTab('breakdown');
       setNblRightTabsVisited((prev) => new Set(prev).add('breakdown'));
     }
-    if (playerVsContainerTab === 'similar') setPlayerVsContainerTab('comparison');
+    if (playerVsContainerTab === 'similar' || playerVsContainerTab === 'model') {
+      setPlayerVsContainerTab('comparison');
+    }
   }, [freeTier, nblRightTab, playerVsContainerTab]);
 
   const selectPlayer = (player: NblRosterPlayer) => {
@@ -2235,6 +2239,30 @@ export default function NblDashboardPage() {
                     <div className="flex gap-1.5 mb-2">
                       <button
                         type="button"
+                        title={NBL_AI_UNDER_MAINTENANCE ? 'Model is under maintenance' : undefined}
+                        onClick={() => {
+                          if (freeTier) {
+                            openProUpgrade();
+                            return;
+                          }
+                          setPlayerVsContainerTab('model');
+                        }}
+                        className={`relative flex-1 px-1.5 py-2 text-[11px] font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1 ${
+                          playerVsContainerTab === 'model'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
+                      >
+                        Model
+                        {freeTier ? <ProLockMark /> : null}
+                        {!freeTier && NBL_AI_UNDER_MAINTENANCE ? (
+                          <span className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
+                            MAINTENANCE
+                          </span>
+                        ) : null}
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setPlayerVsContainerTab('comparison')}
                         className={`flex-1 px-1.5 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
                           playerVsContainerTab === 'comparison'
@@ -2263,7 +2291,25 @@ export default function NblDashboardPage() {
                         {freeTier ? <ProLockMark /> : null}
                       </button>
                     </div>
-                    {playerVsContainerTab === 'similar' ? (
+                    {playerVsContainerTab === 'model' ? (
+                      <ProFeatureLock locked={freeTier}>
+                        <NblModelPanel
+                          isDark={!!mounted && isDark}
+                          layout="mobile"
+                          playerId={selectedPlayer?.playerId || null}
+                          playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                          opponentName={
+                            nblTeamFilter !== 'All' && nblTeamFilter
+                              ? nblTeamFilter
+                              : displayOpponent
+                          }
+                          selectedStat={mainChartStat}
+                          selectedLine={nblGameLineValue}
+                          onSelectStat={setMainChartStatAndResetLine}
+                          previewLocked={freeTier}
+                        />
+                      </ProFeatureLock>
+                    ) : playerVsContainerTab === 'similar' ? (
                       <NblSimilarPlayersCard
                         isDark={!!mounted && isDark}
                         layout="mobile"
@@ -2633,6 +2679,30 @@ export default function NblDashboardPage() {
                     <div className="flex gap-1 xl:gap-1.5 mb-2">
                       <button
                         type="button"
+                        title={NBL_AI_UNDER_MAINTENANCE ? 'Model is under maintenance' : undefined}
+                        onClick={() => {
+                          if (freeTier) {
+                            openProUpgrade();
+                            return;
+                          }
+                          setPlayerVsContainerTab('model');
+                        }}
+                        className={`relative flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1 ${
+                          playerVsContainerTab === 'model'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
+                      >
+                        Model
+                        {freeTier ? <ProLockMark /> : null}
+                        {!freeTier && NBL_AI_UNDER_MAINTENANCE ? (
+                          <span className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
+                            MAINTENANCE
+                          </span>
+                        ) : null}
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setPlayerVsContainerTab('comparison')}
                         className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
                           playerVsContainerTab === 'comparison'
@@ -2661,7 +2731,25 @@ export default function NblDashboardPage() {
                         {freeTier ? <ProLockMark /> : null}
                       </button>
                     </div>
-                    {playerVsContainerTab === 'similar' ? (
+                    {playerVsContainerTab === 'model' ? (
+                      <ProFeatureLock locked={freeTier}>
+                        <NblModelPanel
+                          isDark={!!mounted && isDark}
+                          layout="desktop"
+                          playerId={selectedPlayer?.playerId || null}
+                          playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                          opponentName={
+                            nblTeamFilter !== 'All' && nblTeamFilter
+                              ? nblTeamFilter
+                              : displayOpponent
+                          }
+                          selectedStat={mainChartStat}
+                          selectedLine={nblGameLineValue}
+                          onSelectStat={setMainChartStatAndResetLine}
+                          previewLocked={freeTier}
+                        />
+                      </ProFeatureLock>
+                    ) : playerVsContainerTab === 'similar' ? (
                       <NblSimilarPlayersCard
                         isDark={!!mounted && isDark}
                         layout="desktop"

@@ -1,0 +1,120 @@
+# Single source of truth for every numeric threshold the engine uses.
+# Nothing in nbl_engine/ hardcodes a cutoff; change behaviour here.
+
+[samples]
+# Minimum current-season games before a player/stat is analysed at all (hard gate).
+min_games_current = 3
+# At or below this many games every claim is flagged small_sample.
+small_sample_games = 5
+# Minimum current-season minutes per game (hard gate: bench-end players skipped).
+min_minutes_avg = 12.0
+# Minimum head-to-head games (all stored seasons) before an H2H inference can confirm.
+h2h_min_games = 2
+# With/without teammate splits need at least this many games in each bucket.
+with_without_min_games = 2
+# Opponent team must have played at least this many games for matchup ranks to count.
+team_min_games = 3
+
+[seasons]
+current_year = 2026
+# Extra seasons to always try for H2H. Loader also picks up every other year
+# sitting in player-logs/ so career meetings are not limited to NBL26/NBL27.
+h2h_prior_years = [2025, 2024, 2023]
+
+[freshness]
+# Stats refresh stamp older than this fails closed (hours).
+max_stats_age_hours = 72.0
+# Prop snapshot capturedAt older than this relative to run time fails closed (hours).
+max_odds_age_hours = 36.0
+
+[form]
+# L5 mean must differ from season mean by at least this fraction to count as form.
+l5_vs_season_delta_pct = 0.15
+# Absolute floor on the delta so tiny stats (3PM) are not noise-flagged.
+l5_vs_season_delta_abs = 0.5
+
+[hit_rate]
+lean_min = 0.60
+strong_min = 0.75
+# Hit rate at or below this supports the under.
+under_max = 0.40
+
+[matchup]
+# Opponent rank for stat allowed (1 = hardest / allows fewest). Rank 8-10 is an easy scoring matchup.
+top_rank = 3
+# >= bottom supports over (easiest defences).
+bottom_rank = 8
+
+[pace]
+# 1 = slowest (hardest). Rank 8-10 is fastest (easier overs).
+top_rank = 3
+bottom_rank = 8
+
+[usage]
+# Player's L5 USG% must exceed season USG% by this many points to count.
+usage_delta_points = 3.0
+# With/without split must move the stat by at least this fraction.
+with_without_delta_pct = 0.15
+
+[shots]
+# Share of a player's FGA that are threes (season) to treat them as a 3PT-dependent scorer.
+three_share_min = 0.35
+# Opponent 3PT FG% allowed rank (1 = hardest / lowest 3P% allowed). Rank 8-10 supports over.
+opp_three_pct_rank_top = 3
+opp_three_pct_rank_bottom = 8
+# Zone matchup (PTS / PRA / PR / PA): a zone counts when it supplies at least this share of the
+# player's scoring; the opponent's shot-chart FG% rank in that zone (1 = hardest, same as the court)
+# is unfavourable at <= zone_rank_top and favourable at >= zone_rank_bottom.
+zone_share_min = 0.10
+zone_rank_top = 3
+zone_rank_bottom = 8
+# Over when the favourable share of the player's points is at least zone_edge_min above the
+# unfavourable share (and vice versa for under).
+zone_edge_min = 0.30
+
+[rebounding]
+# Opponent OREB / DREB allowed per game rank (1 = hardest / allows fewest).
+top_rank = 3
+bottom_rank = 8
+# Signed share of the player's boards from favourable sources needed to vote (0..1).
+edge_min = 0.50
+# REB% L5 minus season (percentage points) that counts as a trend claim.
+reb_pct_trend_points = 2.0
+
+[minutes]
+# L5 minutes minus season minutes below this is a red flag (AVOID gate).
+avoid_trend_delta = -6.0
+# Above this is a positive minutes signal.
+positive_trend_delta = 3.0
+
+[line_movement]
+# Consensus line must move at least this much between first and latest capture.
+min_move = 0.5
+
+[rest]
+# Days between games at or below this is a back-to-back / short rest flag.
+short_rest_days = 1
+
+[scoring]
+# Tier cut-offs on the net directional score (sum of confirmed category weights).
+strong_score = 3.0
+lean_score = 1.5
+# Minimum confirmed categories for the picked direction.
+strong_min_categories = 3
+lean_min_categories = 2
+# If opposing confirmed weight is at least this fraction of supporting weight -> conflicting -> AVOID.
+conflict_ratio = 0.6
+
+[weights]
+form = 1.0
+hit_rate = 1.5
+matchup_allowed = 1.0
+pace = 0.5
+usage = 0.75
+shot_profile = 1.0
+rebounding = 1.0
+minutes = 0.75
+home_away = 0.5
+h2h = 0.5
+injury_impact = 1.0
+line_movement = 0.5

@@ -94,6 +94,18 @@ jobs:
             npm run snapshot:nbl:player-props
           fi
 
+      - name: Setup Python (props engine)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run NBL props analysis engine
+        run: |
+          python -m pip install --quiet -e ./nbl-engine
+          python nbl-engine/run.py --days 3 --quiet \
+            --out nbl-engine/out \
+            --publish-dir data/nbl-model/cache/engine-picks
+
       - name: Write NBL refresh stamp
         run: |
           mkdir -p data
@@ -129,7 +141,10 @@ jobs:
             "data/nbl-model/cache/pbp-chem" \
             "data/nbl-model/cache/lineups" \
             "data/nbl-model/cache/player-prop-lines" \
+            "data/nbl-model/cache/player-prop-history" \
+            "data/nbl-model/cache/game-odds-history" \
             "data/nbl-model/cache/player-props-list.json" \
+            "data/nbl-model/cache/engine-picks" \
             "data/nbl-model/cache/shot-charts" \
             "data/nbl-model/cache/shot-chart-players" \
             "data/nbl-model/cache/shot-chart-defense" \

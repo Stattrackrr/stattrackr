@@ -1,6 +1,15 @@
 /**
- * Scrape NBL injury list from basketball.com.au roster tracker.
- * Shape matches AFL injuries: { team, player, injury, returning }.
+ * Scrape NBL injury list from basketball.com.au.
+ *
+ * Primary source (current season): the living "NBL Injury Report" page, which
+ * renders one `<table class="basketballcomau-inj">` per club with
+ * Player / Status / Injury / Return columns plus a free-text note row.
+ *
+ * Legacy fallback: the season roster-tracker article with `Injuries:` lists
+ * (used when the report page yields no rows).
+ *
+ * Shape matches AFL injuries: { team, player, injury, returning } plus
+ * optional `status` / `note` / `listedByNbl` from the report table.
  */
 
 import {
@@ -14,9 +23,17 @@ export type NblInjuryRow = {
   player: string;
   injury: string;
   returning: string;
+  /** Status column from the injury report (e.g. "Out", "Out for the season", "Day-to-Day"). */
+  status?: string;
+  /** Free-text note row under the player in the injury report. */
+  note?: string;
+  /** True when the page marks the row as on the NBL's own injury list. */
+  listedByNbl?: boolean;
 };
 
-export const NBL_INJURIES_SOURCE_URL =
+export const NBL_INJURIES_SOURCE_URL = 'https://www.basketball.com.au/news/nbl-injury-report';
+
+export const NBL_INJURIES_LEGACY_SOURCE_URL =
   'https://www.basketball.com.au/news/2025-26-nbl-team-lists-and-roster-tracker';
 
 const FETCH_HEADERS = {
@@ -230,9 +247,105 @@ export function parseBasketballComAuInjuriesHtml(html: string): NblInjuryRow[] {
   return out;
 }
 
+function isAvailableStatus(status: string): boolean {
+  const s = status.trim().toLowerCase();
+  return !s || s === 'available' || s === 'fit' || s === 'cleared' || s === 'healthy';
+}
+
+function matchClubFromHeading(title: string): string | null {
+  const key = normalizeTeamKey(title);
+  if (!key) return null;
+  for (const club of NBL_CLUBS) {
+    const ck = normalizeTeamKey(club.name);
+    if (key === ck || key.includes(ck) || ck.includes(key)) return club.name;
+  }
+  return resolveNblClubName(title) || null;
+}
+
+/**
+ * Parse the current-season "NBL Injury Report" page.
+ *
+ * Structure per club:
+ *   <h3 id="club-slug">Club Name – N injuries</h3>
+ *   <table class="... basketballcomau-inj">
+ *     <tr data-status="listed|clear|..."><th scope="row">Player</th>
+ *       <td class="s o">Out</td><td>Injury</td><td>Return</td></tr>
+ *     <tr class="n" data-status="..."><td colspan="4">note…</td></tr>
+ *
+ * Only rows whose Status is not "Available" are returned.
+ */
+export function parseBasketballComAuInjuryReportHtml(html: string): NblInjuryRow[] {
+  const clean = String(html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ');
+
+  const out: NblInjuryRow[] = [];
+  const seen = new Set<string>();
+
+  const tableRe = /<table\b[^>]*basketballcomau-inj[^>]*>([\s\S]*?)<\/table>/gi;
+  let tm: RegExpExecArray | null;
+  while ((tm = tableRe.exec(clean))) {
+    // Nearest preceding <h3> is the club heading.
+    const before = clean.slice(Math.max(0, tm.index - 4000), tm.index);
+    const headings = [...before.matchAll(/<h3\b[^>]*>([\s\S]*?)<\/h3>/gi)];
+    const headingHtml = headings.length ? headings[headings.length - 1][1] : '';
+    const headingText = stripTags(headingHtml).replace(/\s*[–-]\s*(no|\d+)\s+injur(?:y|ies).*$/i, '');
+    const team = matchClubFromHeading(headingText);
+    if (!team) continue;
+
+    const rows = [...tm[1].matchAll(/<tr\b([^>]*)>([\s\S]*?)<\/tr>/gi)];
+    for (let i = 0; i < rows.length; i++) {
+      const attrs = rows[i][1] || '';
+      const body = rows[i][2] || '';
+      if (/class="[^"]*\bn\b[^"]*"/i.test(attrs)) continue; // note rows handled below
+      const nameMatch = body.match(/<th\b[^>]*scope="row"[^>]*>([\s\S]*?)<\/th>/i);
+      if (!nameMatch) continue;
+      const player = stripTags(nameMatch[1]);
+      if (!player) continue;
+      const cells = [...body.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map((m) => stripTags(m[1]));
+      const status = cells[0] || '';
+      if (isAvailableStatus(status)) continue;
+      const injury = cells[1] || '';
+      const returning = cells[2] || '';
+      const dataStatus = (attrs.match(/data-status="([^"]*)"/i) || [])[1] || '';
+
+      let note: string | undefined;
+      const next = rows[i + 1];
+      if (next && /class="[^"]*\bn\b[^"]*"/i.test(next[1] || '')) {
+        const noteCell = (next[2] || '').match(/<td\b[^>]*>([\s\S]*?)<\/td>/i);
+        const text = noteCell ? stripTags(noteCell[1]) : '';
+        if (text) note = text;
+      }
+
+      const key = `${normalizeTeamKey(team)}|${normalizeTeamKey(player)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        team,
+        player,
+        injury: injury || '—',
+        returning: returning || '—',
+        status,
+        ...(note ? { note } : {}),
+        listedByNbl: dataStatus.toLowerCase() === 'listed',
+      });
+    }
+  }
+
+  return out;
+}
+
+/** "last updated on Tuesday, September 29, 4:00pm AEST" as printed on the report page. */
+export function extractInjuryReportUpdatedText(html: string): string | null {
+  const text = stripTags(String(html || '').replace(/<script[\s\S]*?<\/script>/gi, ' '));
+  const m = text.match(/last updated on ([^;.]{6,80})/i);
+  return m ? m[1].trim() : null;
+}
+
 export async function fetchNblInjuriesFromBasketballComAu(): Promise<{
   injuries: NblInjuryRow[];
   sourceUrl: string;
+  sourceUpdatedText: string | null;
 }> {
   const res = await fetch(NBL_INJURIES_SOURCE_URL, {
     headers: FETCH_HEADERS,
@@ -242,6 +355,27 @@ export async function fetchNblInjuriesFromBasketballComAu(): Promise<{
     throw new Error(`basketball.com.au injuries HTTP ${res.status}`);
   }
   const html = await res.text();
-  const injuries = parseBasketballComAuInjuriesHtml(html);
-  return { injuries, sourceUrl: NBL_INJURIES_SOURCE_URL };
+  const injuries = parseBasketballComAuInjuryReportHtml(html);
+  if (injuries.length) {
+    return {
+      injuries,
+      sourceUrl: NBL_INJURIES_SOURCE_URL,
+      sourceUpdatedText: extractInjuryReportUpdatedText(html),
+    };
+  }
+
+  // Fallback: legacy roster-tracker article.
+  const legacy = await fetch(NBL_INJURIES_LEGACY_SOURCE_URL, {
+    headers: FETCH_HEADERS,
+    cache: 'no-store',
+  });
+  if (!legacy.ok) {
+    throw new Error(`basketball.com.au legacy injuries HTTP ${legacy.status}`);
+  }
+  const legacyHtml = await legacy.text();
+  return {
+    injuries: parseBasketballComAuInjuriesHtml(legacyHtml),
+    sourceUrl: NBL_INJURIES_LEGACY_SOURCE_URL,
+    sourceUpdatedText: null,
+  };
 }

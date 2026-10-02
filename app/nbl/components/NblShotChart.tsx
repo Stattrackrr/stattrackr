@@ -478,7 +478,9 @@ export function NblShotChart({
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMakes, setShowMakes] = useState(false);
   const [showAssists, setShowAssists] = useState(false);
-  const [showOppDef, setShowOppDef] = useState(false);
+  const [showOppDef, setShowOppDef] = useState(
+    () => Boolean(opponentTeam && opponentTeam !== 'N/A')
+  );
   const [showAssistDef, setShowAssistDef] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -546,6 +548,18 @@ export function NblShotChart({
       cancelled = true;
     };
   }, [playerName, playerTeam]);
+
+  useEffect(() => {
+    if (opponentTeam && opponentTeam !== 'N/A') {
+      setShowOppDef(true);
+      setShowAssistDef(false);
+      setShowMakes(false);
+      setShowAssists(false);
+    } else {
+      setShowOppDef(false);
+      setShowAssistDef(false);
+    }
+  }, [opponentTeam, playerName]);
 
   useEffect(() => {
     if (!opponentTeam || opponentTeam === 'N/A') {
@@ -1428,7 +1442,7 @@ export function NblShotChart({
           ) : (
             <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
               <span className="text-gray-700 dark:text-gray-300">
-                {showAssists ? 'Assist Distribution:' : showMakes ? 'Make Distribution:' : 'Shot Distribution:'}
+                {showAssists ? 'Assist Distribution:' : showMakes ? 'Make Distribution (% of makes):' : 'Shot Distribution:'}
               </span>
               <div className="flex items-center gap-1">
                 <div className="w-5 h-5 rounded" style={{ backgroundColor: '#10b981' }} />
