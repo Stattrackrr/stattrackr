@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-01T18:49:37.021Z",
+  "generatedAt": "2026-10-02T18:23:37.463Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2803,7 +2803,7 @@
       "externalId": "3724384a-58ad-11f1-bbdc-6d6f61141df2",
       "startTime": "2026-10-02T11:30:00.000Z",
       "round": "3",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Perth Wildcats",
       "homeTeamCode": "PER",
       "homeTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
@@ -2812,8 +2812,8 @@
       "awayTeamCode": "SEM",
       "awayTeamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/SEM.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 92,
+      "awayScore": 88,
       "venue": "RAC Arena",
       "matchSlug": "perth-wildcats-v-south-east-melbourne-phoenix-men-02-10-2026"
     },
@@ -2822,7 +2822,7 @@
       "externalId": "36f2e004-58ad-11f1-aa96-6775645a7b9a",
       "startTime": "2026-10-02T09:30:00.000Z",
       "round": "3",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Illawarra Hawks",
       "homeTeamCode": "ILL",
       "homeTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
@@ -2831,8 +2831,8 @@
       "awayTeamCode": "ADL",
       "awayTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 114,
+      "awayScore": 92,
       "venue": "WIN Entertainment Centre",
       "matchSlug": "illawarra-hawks-v-adelaide-36ers-men-02-10-2026"
     },

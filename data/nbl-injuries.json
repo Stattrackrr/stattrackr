@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-02T14:28:33.197Z",
+  "generatedAt": "2026-10-02T18:24:07.937Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Tuesday, September 29, 4:00pm AEST",
-  "injuryCount": 20,
+  "injuryCount": 21,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -125,7 +125,16 @@
       "injury": "—",
       "returning": "TBC",
       "status": "Out",
-      "note": "NOT INJURED. Knight has still not arrived in Australia, so he is unavailable rather than carrying a knock. ESPN’s Olgun Uluc reported on 22 September that he will miss Perth’s game against the Adelaide 36ers on Thursday 24 September, and that he is unlikely to be available for either of the Wildcats’ Round 2 games. The NBL’s own list agrees on the status, carrying him as unavailable with the return TBC, but gives no reason. He was also out of Perth’s NBL27 opener against South East Melbourne on Saturday 19 September; Uluc reported that on 18 September alongside Jaron Rillie, and the lower leg injury in that report is Rillie’s alone.",
+      "note": "Not playing against South East Melbourne at RAC Arena on Friday 2 October, confirmed by basketball.com.au. He has now arrived in Perth, after missing the start of the season because he was not yet in Australia. He is not carrying a reported injury. The NBL’s own list carries him as unavailable with the return TBC.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Perth Wildcats",
+      "player": "Jo Lual-Acuil Jr",
+      "injury": "Calf",
+      "returning": "Review in 3 weeks",
+      "status": "Out",
+      "note": "Perth confirmed on 1 October that he is out with a calf injury, will miss Friday’s home game against South East Melbourne and will be re-evaluated in about three weeks. Development player Tana Kopa replaces him on the roster. He left Perth’s 97-93 win over the New Zealand Breakers on 26 September after 7 minutes and 38 seconds, first reported by basketball.com.au that night.",
       "listedByNbl": true
     },
     {

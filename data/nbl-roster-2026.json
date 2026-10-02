@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-01T18:49:47.404Z",
+  "generatedAt": "2026-10-02T18:23:49.692Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 156,
+  "playerCount": 157,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -1024,6 +1024,16 @@
       "position": "G",
       "jersey": "15",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fae2a4b073f14ca68d21d05e9fd5b26c?size=800&format=webp"
+    },
+    {
+      "playerId": "37a78ca5-710d-42d4-8754-028ac9c8ba2b",
+      "name": "Makur Maker",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "position": "F",
+      "jersey": "44",
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/48aa009ad0c44231a7e9e992b3403c83?size=800&format=webp"
     },
     {
       "playerId": "c6b7202f-6619-422a-8d2b-8e52a8d48935",
