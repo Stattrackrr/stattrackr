@@ -2,7 +2,7 @@
  * NBL play-by-play via SportRadar Connect embed (nbl.com.au Play By Play tab).
  *
  * GET .../fixture_detail?fixtureId={externalId}&sub=pbp
- * Derives player points, rebounds, and assists by quarter.
+ * Derives player points, rebounds, assists by quarter, and committed fouls.
  */
 
 import {
@@ -33,6 +33,8 @@ export type NblPbpPlayerPoints = {
   q4_ast: number;
   ot_ast: number;
   total_ast: number;
+  /** Personal + offensive + technical fouls. Excludes fouls drawn. */
+  fouls: number;
 };
 
 export type NblMatchPbpPoints = {
@@ -108,6 +110,17 @@ function normalizeEventType(ev: SrPbpEvent): string {
   return String(ev.eventType || '').toLowerCase().replace(/[\s_-]/g, '');
 }
 
+function normalizeEventSubType(ev: SrPbpEvent): string {
+  return String(ev.eventSubType || '').toLowerCase().replace(/[\s_-]/g, '');
+}
+
+/** Box-score fouls: personal, offensive, and technicals. Never "drawn". */
+function isCommittedFoulEvent(ev: SrPbpEvent): boolean {
+  if (normalizeEventType(ev) !== 'foul') return false;
+  const sub = normalizeEventSubType(ev);
+  return Boolean(sub) && sub !== 'drawn';
+}
+
 function periodSlot(periodId: number | null | undefined): PeriodSlot | null {
   const n = Number(periodId);
   if (!Number.isFinite(n) || n < 1) return null;
@@ -155,6 +168,7 @@ function emptyPlayerRow(
     q4_ast: 0,
     ot_ast: 0,
     total_ast: 0,
+    fouls: 0,
   };
 }
 
@@ -235,6 +249,13 @@ export function parseNblPbpPoints(fixtureId: string, json: unknown): NblMatchPbp
         if (!row) continue;
         bumpStat(row, slot, 'reb', 1);
         reboundEventCount += 1;
+        continue;
+      }
+
+      if (isCommittedFoulEvent(ev)) {
+        const row = ensureRow(ev);
+        if (!row) continue;
+        row.fouls += 1;
         continue;
       }
 

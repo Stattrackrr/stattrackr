@@ -114,7 +114,7 @@ function getNblTeamAbbrev(teamName: string): string {
 
 const NBL_TEAM_FILTER_OPTIONS = ['All', ...NBL_CLUBS.map((c) => c.name)];
 const NBL_PAGE_STATE_KEY = 'nblPageState:v1';
-const NBL_PLAYER_LOGS_CACHE_PREFIX = 'nblPlayerLogsCache:v3';
+const NBL_PLAYER_LOGS_CACHE_PREFIX = 'nblPlayerLogsCache:v4';
 const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const CHART_DISPLAY_DELAY_MS = 120;
 const NBL_CHART_TIMEFRAMES: readonly NblChartTimeframe[] = [

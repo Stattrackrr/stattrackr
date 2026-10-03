@@ -1,6 +1,7 @@
 /**
- * Disk cache + overlay for NBL PBP-derived player points/rebounds/assists by quarter
- * and court-chemistry payloads. Dashboard APIs must read cache only (warm scripts fetch live).
+ * Disk cache + overlay for NBL PBP-derived player points/rebounds/assists by quarter,
+ * committed fouls, and court-chemistry payloads. Dashboard APIs must read cache only
+ * (warm scripts fetch live).
  */
 
 import fs from 'fs';
@@ -50,7 +51,11 @@ export function isNblPbpCacheComplete(cached: NblMatchPbpPoints | null | undefin
   if (!cached || !Array.isArray(cached.players)) return false;
   const sample = cached.players[0];
   if (!sample) return true;
-  return typeof sample.q1_reb === 'number' && typeof sample.q1_ast === 'number';
+  return (
+    typeof sample.q1_reb === 'number' &&
+    typeof sample.q1_ast === 'number' &&
+    typeof sample.fouls === 'number'
+  );
 }
 
 export function readCachedPbpPoints(fixtureId: string): NblMatchPbpPoints | null {
@@ -157,6 +162,8 @@ export function overlayNblQuarterPoints(
         ...EMPTY_QUARTER_SPLITS,
       };
     }
+    const boxFouls = toNum(game.fouls) ?? 0;
+    const pbpFouls = typeof player.fouls === 'number' && Number.isFinite(player.fouls) ? player.fouls : 0;
     return {
       ...game,
       q1_pts: player.q1_pts,
@@ -171,6 +178,7 @@ export function overlayNblQuarterPoints(
       q2_ast: quarterOrNull(player.q2_ast),
       q3_ast: quarterOrNull(player.q3_ast),
       q4_ast: quarterOrNull(player.q4_ast),
+      fouls: Math.max(boxFouls, pbpFouls),
     };
   });
 }
