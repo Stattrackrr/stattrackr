@@ -478,9 +478,7 @@ export function NblShotChart({
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMakes, setShowMakes] = useState(false);
   const [showAssists, setShowAssists] = useState(false);
-  const [showOppDef, setShowOppDef] = useState(
-    () => Boolean(opponentTeam && opponentTeam !== 'N/A')
-  );
+  const [showOppDef, setShowOppDef] = useState(false);
   const [showAssistDef, setShowAssistDef] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -550,16 +548,11 @@ export function NblShotChart({
   }, [playerName, playerTeam]);
 
   useEffect(() => {
-    if (opponentTeam && opponentTeam !== 'N/A') {
-      setShowOppDef(true);
-      setShowAssistDef(false);
-      setShowMakes(false);
-      setShowAssists(false);
-    } else {
+    if (!opponentTeam || opponentTeam === 'N/A') {
       setShowOppDef(false);
       setShowAssistDef(false);
     }
-  }, [opponentTeam, playerName]);
+  }, [opponentTeam]);
 
   useEffect(() => {
     if (!opponentTeam || opponentTeam === 'N/A') {
