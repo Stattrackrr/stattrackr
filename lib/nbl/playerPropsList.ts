@@ -27,6 +27,7 @@ import {
 import { buildNblPropDvpIndex, lookupNblPropDvp, type NblPropDvpIndex } from '@/lib/nbl/playerPropsDvp';
 import { lookupNblPlayerPlayType } from '@/lib/nbl/playTypes';
 import {
+  NBL_LIST_SCHEMA,
   readNblPlayerPropsListCache,
   writeNblPlayerPropsListCache,
   type NblListCachePayload,
@@ -84,6 +85,27 @@ function listBookmakerCount(payload: NblListCachePayload | null): number {
   return books.size;
 }
 
+function listOddsAreTwoWay(over?: string | null, under?: string | null): boolean {
+  const o = String(over || '').trim();
+  const u = String(under || '').trim();
+  return o !== '' && o !== 'N/A' && u !== '' && u !== 'N/A';
+}
+
+function listTwoWayCount(payload: NblListCachePayload | null): number {
+  if (!payload?.data?.length) return 0;
+  let count = 0;
+  for (const row of payload.data) {
+    const lines = Array.isArray(row.bookmakerLines) ? row.bookmakerLines : [];
+    if (
+      listOddsAreTwoWay(row.overOdds, row.underOdds) ||
+      lines.some((line) => listOddsAreTwoWay(line.overOdds, line.underOdds))
+    ) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 function listUpdatedAt(payload: NblListCachePayload | null): number {
   const t = Date.parse(String(payload?.lastUpdated || ''));
   return Number.isFinite(t) ? t : 0;
@@ -100,6 +122,7 @@ async function readUsableNblListCache(): Promise<NblListCachePayload | null> {
   // on the props page and would otherwise paint an empty board after cutoff).
   let best = candidates[0];
   let bestLive = -1;
+  let bestTwoWay = -1;
   let bestBooks = -1;
   let bestAt = -1;
   for (const candidate of candidates) {
@@ -108,15 +131,18 @@ async function readUsableNblListCache(): Promise<NblListCachePayload | null> {
       Array.isArray(candidate.games) ? candidate.games : []
     );
     const liveCount = live.props.length;
+    const twoWay = listTwoWayCount({ ...candidate, data: live.props });
     const books = listBookmakerCount(candidate);
     const updatedAt = listUpdatedAt(candidate);
     if (
       liveCount > bestLive ||
-      (liveCount === bestLive && books > bestBooks) ||
-      (liveCount === bestLive && books === bestBooks && updatedAt > bestAt)
+      (liveCount === bestLive && twoWay > bestTwoWay) ||
+      (liveCount === bestLive && twoWay === bestTwoWay && books > bestBooks) ||
+      (liveCount === bestLive && twoWay === bestTwoWay && books === bestBooks && updatedAt > bestAt)
     ) {
       best = candidate;
       bestLive = liveCount;
+      bestTwoWay = twoWay;
       bestBooks = books;
       bestAt = updatedAt;
     }
@@ -151,6 +177,7 @@ type RosterPlayer = {
 
 export type NblPlayerPropsListPayload = {
   success: boolean;
+  listSchema?: number;
   data: CombinedPlayerProp[];
   games: CombinedAflGame[];
   propsCount: number;
@@ -422,7 +449,12 @@ function bookLineAt(book: NblBookRow, value: number): NblPropLine | null {
   );
 }
 
-function consensusLineValue(books: NblBookRow[], stat: string): number | null {
+function isTwoWayOuLine(line: NblPropLine): boolean {
+  return line.kind === 'ou' && line.under !== 'N/A' && line.over !== 'N/A';
+}
+
+/** Consensus line for the props list. Two-way O/U wins the market even if more books only have a milestone. */
+export function nblListConsensusLine(books: NblBookRow[], stat: string): number | null {
   const counts = new Map<number, { books: number; twoWay: number }>();
   for (const book of books) {
     const seen = new Set<number>();
@@ -434,16 +466,18 @@ function consensusLineValue(books: NblBookRow[], stat: string): number | null {
       seen.add(key);
       const row = counts.get(key) ?? { books: 0, twoWay: 0 };
       row.books += 1;
-      if (line.kind === 'ou' && line.under !== 'N/A' && line.over !== 'N/A') row.twoWay += 1;
+      if (isTwoWayOuLine(line)) row.twoWay += 1;
       counts.set(key, row);
     }
   }
   if (!counts.size) return null;
+  const ouPool = [...counts.entries()].filter(([, row]) => row.twoWay > 0);
+  const pool = ouPool.length ? ouPool : [...counts.entries()];
   const want = PREFERRED_THRESHOLDS[stat];
   const wantChart = want != null ? want - 0.5 : null;
-  return [...counts.entries()].sort((a, b) => {
-    if (b[1].books !== a[1].books) return b[1].books - a[1].books;
+  return pool.sort((a, b) => {
     if (b[1].twoWay !== a[1].twoWay) return b[1].twoWay - a[1].twoWay;
+    if (b[1].books !== a[1].books) return b[1].books - a[1].books;
     if (wantChart != null) {
       const da = Math.abs(a[0] - wantChart);
       const db = Math.abs(b[0] - wantChart);
@@ -543,7 +577,7 @@ function toCombinedRow(opts: {
     .filter((b): b is NonNullable<typeof b> => b != null);
   if (!filteredBooks.length) return null;
 
-  const line = consensusLineValue(filteredBooks, opts.stat);
+  const line = nblListConsensusLine(filteredBooks, opts.stat);
   if (line == null) return null;
   const booksAtLine = filteredBooks
     .map((book) => {
@@ -647,6 +681,7 @@ function matchRoster(roster: RosterPlayer[], name: string, team?: string | null)
 function emptyNblListPayload(): NblPlayerPropsListPayload {
   return {
     success: true,
+    listSchema: NBL_LIST_SCHEMA,
     data: [],
     games: [],
     propsCount: 0,
@@ -667,6 +702,7 @@ function payloadFromCache(cached: NonNullable<Awaited<ReturnType<typeof readNblP
   const empty = live.props.length === 0;
   return {
     success: true,
+    listSchema: Number(cached.listSchema) || 0,
     data: live.props,
     games: live.games,
     propsCount: live.props.length,
@@ -794,6 +830,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
   const empty = live.props.length === 0;
   return {
     success: true,
+    listSchema: NBL_LIST_SCHEMA,
     data: live.props,
     games: live.games,
     propsCount: live.props.length,
@@ -816,6 +853,11 @@ export async function getNblPlayerPropsList(opts?: {
 }): Promise<NblPlayerPropsListPayload> {
   if (!opts?.refresh) {
     const cached = await readUsableNblListCache();
+    if (cached?.data?.length && Number(cached.listSchema) === NBL_LIST_SCHEMA) {
+      return payloadFromCache(cached);
+    }
+    const rebuilt = await getNblPlayerPropsList({ refresh: true });
+    if (rebuilt.data.length > 0) return rebuilt;
     if (cached?.data?.length) return payloadFromCache(cached);
     return emptyNblListPayload();
   }

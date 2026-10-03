@@ -1372,7 +1372,7 @@ function normalizeNbaTeam(team: string): string {
 }
 
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v6';
-const NBL_PROPS_CACHE_KEY = 'nbl_props_list_cache_v12';
+const NBL_PROPS_CACHE_KEY = 'nbl_props_list_cache_v13';
 
 const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v19';
 const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v24';
@@ -1679,8 +1679,16 @@ function nblSamePaintLine(a: number | null | undefined, b: number | null | undef
   return Math.abs(a - b) < 0.01;
 }
 
+function nblPaintRowIsTwoWay(prop: PlayerProp): boolean {
+  if (nblOddsPairIsTwoWay(prop.overOdds, prop.underOdds)) return true;
+  return nblTwoWayBookmakerLines(prop).length > 0;
+}
+
 function mergeNblPropForPaint(previous: PlayerProp | undefined, next: PlayerProp): PlayerProp {
   if (!previous) return next;
+  const previousOu = nblPaintRowIsTwoWay(previous);
+  const nextOu = nblPaintRowIsTwoWay(next);
+  if (previousOu !== nextOu) return nextOu ? next : previous;
   const keepLine = Number(next.line);
   const lines = (next.bookmakerLines || []).filter((line) => nblSamePaintLine(line.line, keepLine));
   for (const line of previous.bookmakerLines || []) {
@@ -1707,7 +1715,15 @@ function preferNblPropsForPaint(previous: PlayerProp[], incoming: PlayerProp[]):
   if (!nextRows.length) return prevRows;
   const prevByKey = new Map<string, PlayerProp>();
   for (const row of prevRows) prevByKey.set(nblPropMergeKey(row), row);
-  return nextRows.map((row) => mergeNblPropForPaint(prevByKey.get(nblPropMergeKey(row)), row));
+  const out = nextRows.map((row) => mergeNblPropForPaint(prevByKey.get(nblPropMergeKey(row)), row));
+  const seen = new Set(out.map((row) => nblPropMergeKey(row)));
+  for (const row of prevRows) {
+    const key = nblPropMergeKey(row);
+    if (seen.has(key) || !nblPaintRowIsTwoWay(row)) continue;
+    out.push(row);
+    seen.add(key);
+  }
+  return out;
 }
 
 function isAflCombinedListProp(row: PlayerProp): boolean {
@@ -2093,8 +2109,8 @@ function writeNblOuOnlyFilter(on: boolean) {
     /* ignore quota / private mode */
   }
 }
-const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v19';
-const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v17';
+const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v20';
+const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v18';
 const COMBINED_PROPS_LS_TS_KEY = 'combined_props_snapshot_ls_ts_v15';
 const COMBINED_PROPS_LS_TTL_MS = 30 * 60 * 1000;
 
@@ -6445,7 +6461,7 @@ export default function NBALandingPage() {
     const ready = assemble(true);
     const visible = q ? assemble(false) : ready;
     return {
-      rows: collapseCombinedPropsToOnePerPlayer(visible),
+      rows: q ? visible : collapseCombinedPropsToOnePerPlayer(visible),
       cacheTotal: ready.length,
     };
   }, [playerProps, aflProps, tennisCombinedProps, nblCombinedProps, debouncedSearchQuery, getStatLabel, propsSport]);

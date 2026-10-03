@@ -93,7 +93,6 @@ async function overlayCombinedTennisDvp(
 async function attachCachedNblList(
   snapshot: CombinedPropsSnapshot
 ): Promise<CombinedPropsSnapshot> {
-  if ((snapshot.nbl?.props?.length || 0) > 0) return snapshot;
   const payload = await getNblPlayerPropsList();
   if (!payload.data.length) return snapshot;
   return {

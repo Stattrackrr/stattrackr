@@ -7,14 +7,21 @@
 import sharedCache from '@/lib/sharedCache';
 import type { CombinedAflGame, CombinedPlayerProp } from '@/lib/combinedPropsSnapshotTypes';
 
-export const NBL_LIST_CACHE_KEY = 'nbl_player_props_list_v2';
+export const NBL_LIST_SCHEMA = 3;
+export const NBL_LIST_CACHE_KEY = 'nbl_player_props_list_v3';
 export const NBL_LIST_CACHE_TTL_SECONDS = 8 * 60 * 60;
-const NBL_LIST_LAST_GOOD_KEY = 'nbl_player_props_list_last_good_v2';
+const NBL_LIST_LAST_GOOD_KEY = 'nbl_player_props_list_last_good_v3';
 const NBL_LIST_LAST_GOOD_TTL_SECONDS = 7 * 24 * 60 * 60;
-const NBL_LIST_CACHE_READ_KEYS = [NBL_LIST_CACHE_KEY, NBL_LIST_LAST_GOOD_KEY] as const;
+const NBL_LIST_CACHE_READ_KEYS = [
+  NBL_LIST_CACHE_KEY,
+  NBL_LIST_LAST_GOOD_KEY,
+  'nbl_player_props_list_v2',
+  'nbl_player_props_list_last_good_v2',
+] as const;
 
 export type NblListCachePayload = {
   success?: boolean;
+  listSchema?: number;
   data?: CombinedPlayerProp[];
   games?: CombinedAflGame[];
   propsCount?: number;
