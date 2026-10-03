@@ -31,7 +31,8 @@
       "q3_ast": 1,
       "q4_ast": 2,
       "ot_ast": 0,
-      "total_ast": 8
+      "total_ast": 8,
+      "fouls": 4
     },
     {
       "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
@@ -55,7 +56,8 @@
       "q3_ast": 2,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 1
     },
     {
       "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
@@ -79,7 +81,8 @@
       "q3_ast": 2,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 5
+      "total_ast": 5,
+      "fouls": 1
     },
     {
       "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
@@ -103,7 +106,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 1
     },
     {
       "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
@@ -127,7 +131,8 @@
       "q3_ast": 2,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 5
+      "total_ast": 5,
+      "fouls": 0
     },
     {
       "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
@@ -151,7 +156,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 3
     },
     {
       "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
@@ -175,7 +181,8 @@
       "q3_ast": 2,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 1
     },
     {
       "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
@@ -199,7 +206,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 3
     },
     {
       "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
@@ -223,7 +231,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 5
     },
     {
       "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
@@ -247,7 +256,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 0
     },
     {
       "personId": "50cb4bdd-410d-11f0-aa4b-9dbbf7342624",
@@ -271,7 +281,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 0
     },
     {
       "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
@@ -295,7 +306,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
@@ -319,7 +331,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 4
     },
     {
       "personId": "2c284d9b-410d-11f0-adf3-975350631782",
@@ -343,7 +356,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 3
     },
     {
       "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
@@ -367,7 +381,8 @@
       "q3_ast": 2,
       "q4_ast": 2,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 2
     },
     {
       "personId": "51510092-410d-11f0-80a3-9dbbf7342624",
@@ -391,7 +406,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "5188b88d-410d-11f0-8e81-9dbbf7342624",
@@ -415,7 +431,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 1
     },
     {
       "personId": "4b998bf4-95e4-11f1-8a0a-3dfcf4a739d2",
@@ -439,8 +456,34 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 1
+    },
+    {
+      "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+      "name": "Reuben Te Rangi",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "q1_pts": 0,
+      "q2_pts": 0,
+      "q3_pts": 0,
+      "q4_pts": 0,
+      "ot_pts": 0,
+      "total": 0,
+      "q1_reb": 0,
+      "q2_reb": 0,
+      "q3_reb": 0,
+      "q4_reb": 0,
+      "ot_reb": 0,
+      "total_reb": 0,
+      "q1_ast": 0,
+      "q2_ast": 0,
+      "q3_ast": 0,
+      "q4_ast": 0,
+      "ot_ast": 0,
+      "total_ast": 0,
+      "fouls": 2
     }
   ],
-  "fetchedAt": "2026-09-26T17:05:12.365Z"
+  "fetchedAt": "2026-10-03T17:12:59.208Z"
 }

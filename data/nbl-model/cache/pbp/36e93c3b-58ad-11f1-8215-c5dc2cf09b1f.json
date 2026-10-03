@@ -31,7 +31,8 @@
       "q3_ast": 2,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 9
+      "total_ast": 9,
+      "fouls": 2
     },
     {
       "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
@@ -55,7 +56,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 2
     },
     {
       "personId": "51510092-410d-11f0-80a3-9dbbf7342624",
@@ -79,7 +81,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 1
     },
     {
       "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
@@ -103,7 +106,8 @@
       "q3_ast": 2,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 5
+      "total_ast": 5,
+      "fouls": 4
     },
     {
       "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
@@ -127,7 +131,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 6
+      "total_ast": 6,
+      "fouls": 2
     },
     {
       "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
@@ -151,7 +156,8 @@
       "q3_ast": 0,
       "q4_ast": 3,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 3
     },
     {
       "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
@@ -175,7 +181,8 @@
       "q3_ast": 0,
       "q4_ast": 2,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 5
     },
     {
       "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
@@ -199,11 +206,12 @@
       "q3_ast": 2,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 5
+      "total_ast": 5,
+      "fouls": 4
     },
     {
       "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-      "name": "John Jenkins",
+      "name": "John Jenkins III",
       "teamCode": "ADL",
       "teamName": "Adelaide 36ers",
       "q1_pts": 0,
@@ -223,7 +231,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
@@ -247,7 +256,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
@@ -271,7 +281,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 1
     },
     {
       "personId": "2c284d9b-410d-11f0-adf3-975350631782",
@@ -295,7 +306,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "27885508-95e4-11f1-abbe-93e32340823d",
@@ -319,7 +331,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 3
     },
     {
       "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
@@ -343,7 +356,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 1
     },
     {
       "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
@@ -367,7 +381,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 1
     },
     {
       "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
@@ -391,8 +406,9 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 2
     }
   ],
-  "fetchedAt": "2026-09-24T17:53:47.092Z"
+  "fetchedAt": "2026-10-03T17:13:02.354Z"
 }

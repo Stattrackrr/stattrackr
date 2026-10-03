@@ -31,7 +31,8 @@
       "q3_ast": 3,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 6
+      "total_ast": 6,
+      "fouls": 1
     },
     {
       "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
@@ -55,7 +56,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 3
     },
     {
       "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
@@ -79,7 +81,8 @@
       "q3_ast": 2,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 0
     },
     {
       "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
@@ -103,7 +106,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 2
     },
     {
       "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
@@ -127,7 +131,8 @@
       "q3_ast": 0,
       "q4_ast": 2,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 3
     },
     {
       "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
@@ -151,7 +156,8 @@
       "q3_ast": 2,
       "q4_ast": 2,
       "ot_ast": 0,
-      "total_ast": 6
+      "total_ast": 6,
+      "fouls": 2
     },
     {
       "personId": "da7c4287-893b-11f1-98c2-01a009893656",
@@ -175,7 +181,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 1
     },
     {
       "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
@@ -199,7 +206,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 4
     },
     {
       "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
@@ -223,7 +231,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 2
     },
     {
       "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
@@ -247,7 +256,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 5
     },
     {
       "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
@@ -271,7 +281,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "4fb1e472-410d-11f0-8811-9dbbf7342624",
@@ -295,7 +306,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 4
     },
     {
       "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
@@ -319,7 +331,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 3
     },
     {
       "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
@@ -343,7 +356,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 4
     },
     {
       "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
@@ -367,7 +381,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 1
     },
     {
       "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
@@ -391,7 +406,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 1
     },
     {
       "personId": "5cf14483-410d-11f0-bbde-9dbbf7342624",
@@ -415,7 +431,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
@@ -439,8 +456,9 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 1
     }
   ],
-  "fetchedAt": "2026-09-22T16:05:40.711Z"
+  "fetchedAt": "2026-10-03T17:13:09.313Z"
 }

@@ -31,7 +31,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 6
+      "total_ast": 6,
+      "fouls": 2
     },
     {
       "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
@@ -55,7 +56,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 1
     },
     {
       "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
@@ -79,7 +81,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 3
     },
     {
       "personId": "2c03e41a-410d-11f0-9a5c-975350631782",
@@ -103,7 +106,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "6bac60d0-410d-11f0-939f-9dbbf7342624",
@@ -127,7 +131,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 3
     },
     {
       "personId": "2bf300ef-410d-11f0-bc40-975350631782",
@@ -151,7 +156,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "2ff9b21a-9529-11f1-aab6-a16276011178",
@@ -175,7 +181,8 @@
       "q3_ast": 2,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 1
     },
     {
       "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
@@ -199,7 +206,8 @@
       "q3_ast": 3,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 2
     },
     {
       "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
@@ -223,7 +231,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 6
+      "total_ast": 6,
+      "fouls": 5
     },
     {
       "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
@@ -247,7 +256,8 @@
       "q3_ast": 2,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 1
     },
     {
       "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
@@ -271,7 +281,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "51366849-410d-11f0-abf9-9dbbf7342624",
@@ -295,7 +306,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 3
     },
     {
       "personId": "044adabe-9b71-11f1-a2d2-a32bccc9188e",
@@ -319,7 +331,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "77a99be3-410d-11f0-b289-2902fc2f936f",
@@ -343,7 +356,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 3
     },
     {
       "personId": "76279bf1-410d-11f0-97a3-2902fc2f936f",
@@ -367,7 +381,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 0
     },
     {
       "personId": "6b0a3a2e-410d-11f0-8022-9dbbf7342624",
@@ -391,7 +406,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 5
+      "total_ast": 5,
+      "fouls": 0
     },
     {
       "personId": "50741940-410d-11f0-8ccd-9dbbf7342624",
@@ -415,7 +431,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 0
     },
     {
       "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
@@ -439,7 +456,8 @@
       "q3_ast": 0,
       "q4_ast": 2,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 1
     },
     {
       "personId": "96b6920e-9529-11f1-8aa6-e7683316fd38",
@@ -463,7 +481,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 1
     },
     {
       "personId": "21088b2e-a4fc-11f1-932f-51ce94022040",
@@ -487,7 +506,33 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 0
+    },
+    {
+      "personId": "9a8c42a6-6848-11f1-86bb-41d158e8eeb9",
+      "name": "Jayden Stone",
+      "teamCode": "SYD",
+      "teamName": "Sydney Kings",
+      "q1_pts": 0,
+      "q2_pts": 0,
+      "q3_pts": 0,
+      "q4_pts": 0,
+      "ot_pts": 0,
+      "total": 0,
+      "q1_reb": 0,
+      "q2_reb": 0,
+      "q3_reb": 0,
+      "q4_reb": 0,
+      "ot_reb": 0,
+      "total_reb": 0,
+      "q1_ast": 0,
+      "q2_ast": 0,
+      "q3_ast": 0,
+      "q4_ast": 0,
+      "ot_ast": 0,
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
@@ -511,7 +556,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
@@ -535,8 +581,9 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 4
     }
   ],
-  "fetchedAt": "2026-09-27T17:41:52.872Z"
+  "fetchedAt": "2026-10-03T17:12:55.777Z"
 }

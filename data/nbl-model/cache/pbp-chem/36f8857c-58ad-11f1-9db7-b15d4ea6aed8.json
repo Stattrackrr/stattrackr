@@ -49,8 +49,8 @@
           "pts": 3
         },
         {
-          "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
-          "name": "Matt Kenyon",
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
           "count": 1,
           "pts": 3
         },
@@ -105,7 +105,7 @@
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "count": 1,
           "pts": 2
         }
@@ -234,7 +234,7 @@
     },
     {
       "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-      "name": "John Jenkins",
+      "name": "John Jenkins III",
       "teamCode": "ADL",
       "teamName": "Adelaide 36ers",
       "madeFg": 3,
@@ -434,15 +434,9 @@
       "teamName": "Adelaide 36ers",
       "madeFg": 0,
       "assistedMakes": 0,
-      "assists": 2,
-      "ptsCreated": 5,
+      "assists": 1,
+      "ptsCreated": 2,
       "finds": [
-        {
-          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
-          "name": "Bryce Cotton",
-          "count": 1,
-          "pts": 3
-        },
         {
           "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
           "name": "Zylan Cheatham",
@@ -459,9 +453,15 @@
       "teamName": "Adelaide 36ers",
       "madeFg": 10,
       "assistedMakes": 5,
-      "assists": 1,
-      "ptsCreated": 2,
+      "assists": 2,
+      "ptsCreated": 5,
       "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        },
         {
           "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
           "name": "Keanu Rasmussen",
@@ -610,7 +610,7 @@
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "count": 1,
           "pts": 2
         },
@@ -731,7 +731,7 @@
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "onMin": 0,
           "offMin": 3,
           "onPoss": 0,
@@ -852,7 +852,7 @@
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "onMin": 12.8,
           "offMin": 24,
           "onPoss": 48,
@@ -1001,7 +1001,7 @@
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "onMin": 3.2,
           "offMin": 3,
           "onPoss": 9,
@@ -1122,7 +1122,7 @@
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "onMin": 9.3,
           "offMin": 5.6,
           "onPoss": 35,
@@ -1392,7 +1392,7 @@
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "onMin": 6.1,
           "offMin": 18.9,
           "onPoss": 20,
@@ -1585,7 +1585,7 @@
     },
     {
       "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-      "name": "John Jenkins",
+      "name": "John Jenkins III",
       "teamCode": "ADL",
       "teamName": "Adelaide 36ers",
       "minutes": 15.4,
@@ -2067,7 +2067,7 @@
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "onMin": 0,
           "offMin": 19.6,
           "onPoss": 0,
@@ -2412,7 +2412,7 @@
           "onReb": 1,
           "offReb": 2,
           "onAst": 1,
-          "offAst": 1
+          "offAst": 0
         },
         {
           "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
@@ -2425,7 +2425,7 @@
           "offPts": 0,
           "onReb": 2,
           "offReb": 1,
-          "onAst": 1,
+          "onAst": 0,
           "offAst": 1
         },
         {
@@ -2439,7 +2439,7 @@
           "offPts": 0,
           "onReb": 3,
           "offReb": 0,
-          "onAst": 2,
+          "onAst": 1,
           "offAst": 0
         },
         {
@@ -2453,7 +2453,7 @@
           "offPts": 0,
           "onReb": 1,
           "offReb": 2,
-          "onAst": 1,
+          "onAst": 0,
           "offAst": 1
         },
         {
@@ -2467,7 +2467,7 @@
           "offPts": 0,
           "onReb": 2,
           "offReb": 1,
-          "onAst": 2,
+          "onAst": 1,
           "offAst": 0
         },
         {
@@ -2482,11 +2482,11 @@
           "onReb": 2,
           "offReb": 1,
           "onAst": 1,
-          "offAst": 1
+          "offAst": 0
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "onMin": 5.9,
           "offMin": 9.4,
           "onPoss": 19,
@@ -2496,7 +2496,7 @@
           "onReb": 1,
           "offReb": 2,
           "onAst": 0,
-          "offAst": 2
+          "offAst": 1
         },
         {
           "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
@@ -2510,7 +2510,7 @@
           "onReb": 0,
           "offReb": 3,
           "onAst": 0,
-          "offAst": 2
+          "offAst": 1
         },
         {
           "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
@@ -2524,7 +2524,7 @@
           "onReb": 0,
           "offReb": 3,
           "onAst": 0,
-          "offAst": 2
+          "offAst": 1
         }
       ]
     },
@@ -2547,7 +2547,7 @@
           "onReb": 10,
           "offReb": 2,
           "onAst": 1,
-          "offAst": 0
+          "offAst": 1
         },
         {
           "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
@@ -2560,7 +2560,7 @@
           "offPts": 4,
           "onReb": 10,
           "offReb": 2,
-          "onAst": 1,
+          "onAst": 2,
           "offAst": 0
         },
         {
@@ -2574,7 +2574,7 @@
           "offPts": 0,
           "onReb": 12,
           "offReb": 0,
-          "onAst": 1,
+          "onAst": 2,
           "offAst": 0
         },
         {
@@ -2588,7 +2588,7 @@
           "offPts": 5,
           "onReb": 7,
           "offReb": 5,
-          "onAst": 1,
+          "onAst": 2,
           "offAst": 0
         },
         {
@@ -2603,11 +2603,11 @@
           "onReb": 3,
           "offReb": 9,
           "onAst": 0,
-          "offAst": 1
+          "offAst": 2
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "onMin": 11,
           "offMin": 21.6,
           "onPoss": 38,
@@ -2617,7 +2617,7 @@
           "onReb": 3,
           "offReb": 9,
           "onAst": 0,
-          "offAst": 1
+          "offAst": 2
         },
         {
           "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
@@ -2630,7 +2630,7 @@
           "offPts": 17,
           "onReb": 3,
           "offReb": 9,
-          "onAst": 0,
+          "onAst": 1,
           "offAst": 1
         },
         {
@@ -2645,7 +2645,7 @@
           "onReb": 0,
           "offReb": 12,
           "onAst": 0,
-          "offAst": 1
+          "offAst": 2
         },
         {
           "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
@@ -2659,7 +2659,7 @@
           "onReb": 0,
           "offReb": 12,
           "onAst": 0,
-          "offAst": 1
+          "offAst": 2
         }
       ]
     },
@@ -3282,7 +3282,7 @@
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "onMin": 13.5,
           "offMin": 17.9,
           "onPoss": 51,
@@ -3339,5 +3339,5 @@
       ]
     }
   ],
-  "fetchedAt": "2026-09-27T17:41:52.910Z"
+  "fetchedAt": "2026-10-03T17:12:57.203Z"
 }

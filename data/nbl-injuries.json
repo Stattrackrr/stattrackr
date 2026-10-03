@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T18:24:07.937Z",
+  "generatedAt": "2026-10-03T17:12:42.522Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
@@ -34,14 +34,6 @@
     },
     {
       "team": "Brisbane Bullets",
-      "player": "Sam McDaniel",
-      "injury": "Hand",
-      "returning": "Round 4",
-      "status": "Out",
-      "listedByNbl": true
-    },
-    {
-      "team": "Brisbane Bullets",
       "player": "Taine Murray",
       "injury": "Lower Limb",
       "returning": "Round 4-6",
@@ -50,19 +42,29 @@
     },
     {
       "team": "Cairns Taipans",
+      "player": "Shaun Bruce",
+      "injury": "Groin",
+      "returning": "Round 4",
+      "status": "Out",
+      "note": "Ruled out of Saturday’s game against Melbourne United after a morning fitness test, in the Taipans’ game-day update of 3 October 2026, which says he will return in Round 4. Development player Brody Nunn takes his place in the line-up.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Cairns Taipans",
       "player": "Jaylin Galloway",
       "injury": "Shoulder",
       "returning": "Round 6",
       "status": "Out",
+      "note": "Cairns confirmed in the Taipans’ game preview of 3 October 2026 that he misses Saturday’s game against Melbourne United, and that he is making considerable progress in his rehabilitation.",
       "listedByNbl": true
     },
     {
       "team": "Cairns Taipans",
       "player": "Luke Paul",
       "injury": "Ankle ligament",
-      "returning": "Test",
+      "returning": "Expected 8 Oct",
       "status": "Out",
-      "note": "Cairns say scans showed minor ligament damage and put him at 6-8 weeks, with the club aiming to have him back in the early part of the season. The NBL’s 29 September update now lists him as a test.",
+      "note": "Ruled out of Saturday’s game against Melbourne United after a morning fitness test, in the Taipans’ game-day update of 3 October 2026, which says he is now expected to make his NBL debut at the Cairns Convention Centre on Thursday 8 October. Scans had shown minor ligament damage, and the club first put him at 6-8 weeks.",
       "listedByNbl": true
     },
     {
@@ -85,11 +87,11 @@
     },
     {
       "team": "Melbourne United",
-      "player": "Shea Ili",
-      "injury": "Hamstring",
+      "player": "Chris Goulding",
+      "injury": "Calf",
       "returning": "TBC",
       "status": "Out",
-      "note": "Out of the NBL27 opener against Adelaide on Saturday 19 September, reported by ESPN’s Olgun Uluc on 18 September. Sustained in game two of the Blitz; he did not practice on 8 September and was in the building. No return date has been given. Ili sustained four separate hamstring injuries over the course of last NBL season.",
+      "note": "Goulding will miss Melbourne United’s game against Cairns at John Cain Arena on Saturday 3 October with a calf strain, according to the Taipans’ game preview of 3 October 2026. United have not given a return date.",
       "listedByNbl": true
     },
     {
@@ -104,19 +106,19 @@
     {
       "team": "New Zealand Breakers",
       "player": "Preston Le Gassick",
-      "injury": "Ankle",
+      "injury": "Neck and shoulder",
       "returning": "TBC",
       "status": "Out",
-      "note": "The NBL removed Le Gassick from its own injury list in the 26 September 2026 refresh, having listed him with an ankle injury and no return date. He did not dress for the New Zealand Breakers against Perth at RAC Arena on Friday 26 September. basketball.com.au is holding him as unavailable on that basis; no club or league statement has cleared him.",
+      "note": "New Zealand Breakers general manager Dillon Boucher said on 3 October 2026 that Le Gassick is managing a nerve impingement in his neck and shoulder, and that his return-to-play timeline is not yet certain, reported by Jai at Fox Sports (@NBLPleb). The NBL had listed him with an ankle injury before removing him from its list in the 26 September refresh. He has not played in NBL27.",
       "listedByNbl": true
     },
     {
       "team": "New Zealand Breakers",
       "player": "Josiah-Jordan James",
       "injury": "Hamstring",
-      "returning": "4-6 weeks",
+      "returning": "Assessed 9-23 Oct",
       "status": "Out",
-      "note": "The Breakers say James has a torn left hamstring and will miss the start of NBL27, and that he will be reassessed in four to six weeks. The club has since signed Mojave King as an injury replacement player, reported by the NBL on September 16, 2026. Reported by Olgun Uluc; the club has not posted it itself.",
+      "note": "The Breakers say James has a torn left hamstring, reported by Olgun Uluc on 16 September 2026. On 3 October general manager Dillon Boucher said James is three weeks post-injury and will be assessed at the four-to-six-week mark of his rehabilitation, reported by Jai at Fox Sports (@NBLPleb). Mojave King has joined as injury cover, and Boucher said the club will keep monitoring the import market.",
       "listedByNbl": true
     },
     {

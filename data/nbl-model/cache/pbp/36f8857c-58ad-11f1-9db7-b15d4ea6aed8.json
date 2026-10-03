@@ -31,7 +31,8 @@
       "q3_ast": 0,
       "q4_ast": 2,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 2
     },
     {
       "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
@@ -55,7 +56,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 3
     },
     {
       "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
@@ -77,9 +79,10 @@
       "q1_ast": 0,
       "q2_ast": 1,
       "q3_ast": 0,
-      "q4_ast": 0,
+      "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 2,
+      "fouls": 3
     },
     {
       "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
@@ -103,11 +106,12 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-      "name": "John Jenkins",
+      "name": "John Jenkins III",
       "teamCode": "ADL",
       "teamName": "Adelaide 36ers",
       "q1_pts": 7,
@@ -127,7 +131,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 0
     },
     {
       "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
@@ -151,7 +156,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 4
     },
     {
       "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
@@ -175,7 +181,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 1
     },
     {
       "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
@@ -199,7 +206,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 2
     },
     {
       "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
@@ -223,7 +231,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 2
     },
     {
       "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
@@ -247,7 +256,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 2
     },
     {
       "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
@@ -271,7 +281,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
@@ -295,7 +306,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 2
     },
     {
       "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
@@ -319,7 +331,8 @@
       "q3_ast": 1,
       "q4_ast": 2,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 2
     },
     {
       "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
@@ -343,7 +356,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 0
     },
     {
       "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
@@ -367,7 +381,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 0
     },
     {
       "personId": "2bcb7b76-410d-11f0-afff-975350631782",
@@ -391,7 +406,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 3
     },
     {
       "personId": "6becc941-410d-11f0-bb2d-9dbbf7342624",
@@ -415,7 +431,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 1
     },
     {
       "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
@@ -437,9 +454,10 @@
       "q1_ast": 0,
       "q2_ast": 0,
       "q3_ast": 0,
-      "q4_ast": 2,
+      "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 1,
+      "fouls": 3
     },
     {
       "personId": "2b794dfb-410d-11f0-9261-975350631782",
@@ -463,8 +481,9 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 0
     }
   ],
-  "fetchedAt": "2026-09-27T17:41:52.901Z"
+  "fetchedAt": "2026-10-03T17:12:57.194Z"
 }

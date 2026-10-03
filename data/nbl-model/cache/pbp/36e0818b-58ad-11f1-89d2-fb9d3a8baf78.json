@@ -31,7 +31,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 2
     },
     {
       "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
@@ -55,7 +56,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 7
+      "total_ast": 7,
+      "fouls": 1
     },
     {
       "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
@@ -79,7 +81,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
@@ -103,7 +106,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
@@ -127,7 +131,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 2
     },
     {
       "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
@@ -151,7 +156,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
@@ -175,7 +181,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 4
     },
     {
       "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
@@ -199,7 +206,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 4
     },
     {
       "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
@@ -223,7 +231,8 @@
       "q3_ast": 0,
       "q4_ast": 2,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 4
     },
     {
       "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
@@ -247,7 +256,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 3
     },
     {
       "personId": "2b794dfb-410d-11f0-9261-975350631782",
@@ -271,7 +281,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
@@ -295,7 +306,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 0
     },
     {
       "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
@@ -319,7 +331,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 3
     },
     {
       "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
@@ -343,7 +356,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 4
     },
     {
       "personId": "2bcb7b76-410d-11f0-afff-975350631782",
@@ -367,7 +381,8 @@
       "q3_ast": 2,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 4
+      "total_ast": 4,
+      "fouls": 3
     },
     {
       "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
@@ -391,8 +406,34 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
+    },
+    {
+      "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+      "name": "Lloyd McVeigh",
+      "teamCode": "CNS",
+      "teamName": "Cairns Taipans",
+      "q1_pts": 0,
+      "q2_pts": 0,
+      "q3_pts": 0,
+      "q4_pts": 0,
+      "ot_pts": 0,
+      "total": 0,
+      "q1_reb": 0,
+      "q2_reb": 0,
+      "q3_reb": 0,
+      "q4_reb": 0,
+      "ot_reb": 0,
+      "total_reb": 0,
+      "q1_ast": 0,
+      "q2_ast": 0,
+      "q3_ast": 0,
+      "q4_ast": 0,
+      "ot_ast": 0,
+      "total_ast": 0,
+      "fouls": 2
     }
   ],
-  "fetchedAt": "2026-09-23T12:26:41.082Z"
+  "fetchedAt": "2026-10-03T17:13:06.326Z"
 }

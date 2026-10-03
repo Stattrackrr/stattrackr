@@ -31,7 +31,8 @@
       "q3_ast": 2,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 7
+      "total_ast": 7,
+      "fouls": 4
     },
     {
       "personId": "d386e7f0-7113-11f1-918a-cbf06337e292",
@@ -55,7 +56,8 @@
       "q3_ast": 2,
       "q4_ast": 6,
       "ot_ast": 0,
-      "total_ast": 14
+      "total_ast": 14,
+      "fouls": 2
     },
     {
       "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
@@ -79,7 +81,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 4
     },
     {
       "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
@@ -103,7 +106,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 4
     },
     {
       "personId": "92068945-7e79-11f1-8300-03da7d40c682",
@@ -127,7 +131,8 @@
       "q3_ast": 2,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 5
+      "total_ast": 5,
+      "fouls": 5
     },
     {
       "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
@@ -151,7 +156,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 1
     },
     {
       "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
@@ -175,7 +181,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 3
     },
     {
       "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
@@ -199,7 +206,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
@@ -223,7 +231,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 3
     },
     {
       "personId": "1cea90ee-4809-11f0-b563-ed9943899ab6",
@@ -247,7 +256,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
@@ -271,7 +281,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "506a8485-410d-11f0-8bae-9dbbf7342624",
@@ -295,7 +306,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 3
     },
     {
       "personId": "6be49392-410d-11f0-b2dd-9dbbf7342624",
@@ -319,7 +331,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
@@ -343,7 +356,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 1
     },
     {
       "personId": "50cb4bdd-410d-11f0-aa4b-9dbbf7342624",
@@ -367,7 +381,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 0
     },
     {
       "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
@@ -391,7 +406,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 1
     },
     {
       "personId": "5188b88d-410d-11f0-8e81-9dbbf7342624",
@@ -415,7 +431,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 2
     },
     {
       "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
@@ -439,7 +456,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 3
     },
     {
       "personId": "77506203-410d-11f0-8a9c-2902fc2f936f",
@@ -463,8 +481,9 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 1
     }
   ],
-  "fetchedAt": "2026-09-22T16:05:40.695Z"
+  "fetchedAt": "2026-10-03T17:13:08.259Z"
 }

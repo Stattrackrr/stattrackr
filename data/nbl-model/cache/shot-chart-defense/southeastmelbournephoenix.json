@@ -76,7 +76,7 @@
       "fgm": 36,
       "fgPct": 44.44444444444444,
       "share": 30.111524163568777,
-      "rank": 3,
+      "rank": 2,
       "teamsCompared": 10
     },
     {
@@ -86,7 +86,7 @@
       "fgm": 3,
       "fgPct": 23.076923076923077,
       "share": 4.83271375464684,
-      "rank": 3,
+      "rank": 1,
       "teamsCompared": 10
     },
     {
@@ -96,7 +96,7 @@
       "fgm": 7,
       "fgPct": 33.33333333333333,
       "share": 7.806691449814126,
-      "rank": 3,
+      "rank": 4,
       "teamsCompared": 10
     },
     {
@@ -116,7 +116,7 @@
       "fgm": 17,
       "fgPct": 32.075471698113205,
       "share": 19.702602230483272,
-      "rank": 7,
+      "rank": 6,
       "teamsCompared": 10
     }
   ],
@@ -129,5 +129,5 @@
     "rank": 6,
     "teamsCompared": 10
   },
-  "generatedAt": "2026-10-02T18:24:10.128Z"
+  "generatedAt": "2026-10-03T17:12:45.231Z"
 }

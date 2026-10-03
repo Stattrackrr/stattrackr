@@ -31,7 +31,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 3
     },
     {
       "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
@@ -55,7 +56,8 @@
       "q3_ast": 2,
       "q4_ast": 3,
       "ot_ast": 0,
-      "total_ast": 7
+      "total_ast": 7,
+      "fouls": 3
     },
     {
       "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
@@ -79,7 +81,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 3
+      "total_ast": 3,
+      "fouls": 4
     },
     {
       "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
@@ -103,7 +106,8 @@
       "q3_ast": 1,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 5
     },
     {
       "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
@@ -127,7 +131,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 5
     },
     {
       "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
@@ -151,7 +156,8 @@
       "q3_ast": 2,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 7
+      "total_ast": 7,
+      "fouls": 2
     },
     {
       "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
@@ -175,7 +181,8 @@
       "q3_ast": 0,
       "q4_ast": 2,
       "ot_ast": 0,
-      "total_ast": 6
+      "total_ast": 6,
+      "fouls": 1
     },
     {
       "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
@@ -199,7 +206,8 @@
       "q3_ast": 2,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 2
     },
     {
       "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
@@ -223,7 +231,8 @@
       "q3_ast": 1,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 2
     },
     {
       "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
@@ -247,7 +256,8 @@
       "q3_ast": 0,
       "q4_ast": 1,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 3
     },
     {
       "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
@@ -271,7 +281,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 2
     },
     {
       "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
@@ -295,7 +306,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 3
     },
     {
       "personId": "6c3504bf-410d-11f0-9141-9dbbf7342624",
@@ -319,7 +331,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 6
+      "total_ast": 6,
+      "fouls": 0
     },
     {
       "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
@@ -343,7 +356,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 3
     },
     {
       "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
@@ -367,7 +381,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 3
     },
     {
       "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
@@ -391,7 +406,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 0
     },
     {
       "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
@@ -415,7 +431,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 1
     },
     {
       "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
@@ -439,7 +456,8 @@
       "q3_ast": 2,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 2
+      "total_ast": 2,
+      "fouls": 0
     },
     {
       "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
@@ -463,7 +481,8 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 0
+      "total_ast": 0,
+      "fouls": 1
     },
     {
       "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
@@ -487,8 +506,9 @@
       "q3_ast": 0,
       "q4_ast": 0,
       "ot_ast": 0,
-      "total_ast": 1
+      "total_ast": 1,
+      "fouls": 0
     }
   ],
-  "fetchedAt": "2026-09-22T16:05:45.799Z"
+  "fetchedAt": "2026-10-03T17:13:14.779Z"
 }

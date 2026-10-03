@@ -1,0 +1,220 @@
+{
+  "fixtureId": "36fd4a13-58ad-11f1-9ca2-a9a6cbaba447",
+  "homeTeam": "Melbourne United",
+  "awayTeam": "Cairns Taipans",
+  "homeScore": "95",
+  "awayScore": "107",
+  "tipoff": "2026-10-03T09:30:00",
+  "teams": [
+    {
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "isHome": true,
+      "starters": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "jersey": "3",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/88aceea640ef426cb14319fe874da47b?size=400",
+          "starter": true
+        },
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "jersey": "2",
+          "position": "FC",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/971dc3415a644ed89ef0a1a1ea25e682?size=400",
+          "starter": true
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "jersey": "21",
+          "position": "FC",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/70079138b6e54ea29e86f1908a6c9232?size=400",
+          "starter": true
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "jersey": "23",
+          "position": "GF",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7fb4dce5d8884178a63f0934d3902d69?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f2652d5c3d4741d4acfd5c2469fee0ec?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "024d5bb0-7d7d-11f0-af8e-d779047302e8",
+          "name": "Christian D'Angelo",
+          "jersey": "11",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/65a9611eb83d4f8ea426adbcfed53d83?size=400",
+          "starter": false
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "jersey": "7",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f8956dda45664d3bb1d0a5c0589150cf?size=400",
+          "starter": false
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "jersey": "51",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/afa72628d7ed4c938ca1820a6f7501d4?size=400",
+          "starter": false
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "jersey": "12",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2e27e42851c24727b9af6e328ef168b1?size=400",
+          "starter": false
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "jersey": "15",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/293bff0a0e7e471ca191b4a5273fd5f4?size=400",
+          "starter": false
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "jersey": "18",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5b0d59d63e8c4ea9bac3c437dd39565b?size=400",
+          "starter": false
+        },
+        {
+          "personId": "77ae4eb1-410d-11f0-b973-2902fc2f936f",
+          "name": "Austin Shelley",
+          "jersey": "5",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7048cadd9a7342f6ad1be15a32ead71c?size=400",
+          "starter": false
+        },
+        {
+          "personId": "bb3ad574-6850-11f0-ac9c-5f7791f67913",
+          "name": "Jensen Bradtke",
+          "jersey": "50",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0b4fa3a91f1a43eea1332424a3d4c120?size=400",
+          "starter": false
+        }
+      ]
+    },
+    {
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "isHome": false,
+      "starters": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "jersey": "25",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9c0648c3679b4d97b8408ef7646d9fe8?size=400",
+          "starter": true
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "jersey": "9",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0733c20b27bc49f191514921b9ae511d?size=400",
+          "starter": true
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "jersey": "70",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9aea2db4259e4d469951ee235da6e94d?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "jersey": "2",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72d73d1677c246359d60c6a58a0e2c3c?size=400",
+          "starter": true
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "jersey": "33",
+          "position": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6d522db6a7a748f18947f33fd6cb13e4?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "2b794dfb-410d-11f0-9261-975350631782",
+          "name": "Sunday Dech",
+          "jersey": "44",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72daecd94d104459b7cea919706f3651?size=400",
+          "starter": false
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "jersey": "14",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c6565be393224e388d7fa91c4c5810a3?size=400",
+          "starter": false
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "jersey": "1",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2279edc447f54e6194f6bc4c29b02309?size=400",
+          "starter": false
+        },
+        {
+          "personId": "6becc941-410d-11f0-bb2d-9dbbf7342624",
+          "name": "Walter Brown",
+          "jersey": "22",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f9ba66350c474d3dabb0881acc922016?size=400",
+          "starter": false
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "jersey": "43",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e6cd334efc104d7a94b5c6e54ca1de1f?size=400",
+          "starter": false
+        },
+        {
+          "personId": "7639ea8d-410d-11f0-a3a0-2902fc2f936f",
+          "name": "Brody Nunn",
+          "jersey": "5",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/16a02c593fc9494b89a01dc8640e1c51?size=400",
+          "starter": false
+        }
+      ]
+    }
+  ]
+}

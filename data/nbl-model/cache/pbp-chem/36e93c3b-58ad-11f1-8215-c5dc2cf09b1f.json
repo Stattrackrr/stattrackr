@@ -397,7 +397,7 @@
     },
     {
       "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-      "name": "John Jenkins",
+      "name": "John Jenkins III",
       "teamCode": "ADL",
       "teamName": "Adelaide 36ers",
       "madeFg": 3,
@@ -502,7 +502,7 @@
       "finds": [
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "count": 2,
           "pts": 5
         },
@@ -558,7 +558,7 @@
         },
         {
           "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
-          "name": "John Jenkins",
+          "name": "John Jenkins III",
           "count": 1,
           "pts": 2
         },
@@ -586,5 +586,5 @@
     }
   ],
   "onOff": [],
-  "fetchedAt": "2026-09-24T17:53:47.100Z"
+  "fetchedAt": "2026-10-03T17:13:02.357Z"
 }

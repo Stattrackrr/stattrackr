@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-02T18:23:37.463Z",
+  "generatedAt": "2026-10-03T17:12:12.759Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2765,7 +2765,7 @@
       "externalId": "36fd4a13-58ad-11f1-9ca2-a9a6cbaba447",
       "startTime": "2026-10-03T09:30:00.000Z",
       "round": "3",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Melbourne United",
       "homeTeamCode": "MEL",
       "homeTeamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
@@ -2774,8 +2774,8 @@
       "awayTeamCode": "CNS",
       "awayTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 95,
+      "awayScore": 107,
       "venue": "John Cain Arena",
       "matchSlug": "melbourne-united-v-cairns-taipans-men-03-10-2026"
     },
@@ -2784,7 +2784,7 @@
       "externalId": "37007b03-58ad-11f1-89e4-67a8251482c3",
       "startTime": "2026-10-03T07:30:00.000Z",
       "round": "3",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Brisbane Bullets",
       "homeTeamCode": "BRI",
       "homeTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
@@ -2793,8 +2793,8 @@
       "awayTeamCode": "TAS",
       "awayTeamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 99,
+      "awayScore": 109,
       "venue": "Brisbane Entertainment Centre",
       "matchSlug": "brisbane-bullets-v-tasmania-jackjumpers-men-03-10-2026"
     },
