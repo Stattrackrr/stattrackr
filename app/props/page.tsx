@@ -3364,6 +3364,7 @@ export default function NBALandingPage() {
         aflGames: aflGamesRef.current,
         todaysGames: todaysGamesRef.current,
         selectedAflGameIds: Array.from(selectedAflGamesRef.current),
+        userModifiedAflGames: userModifiedAflGamesRef.current === true,
         combinedPaintUnlocked: combinedPaintUnlockedRef.current,
         combinedFetchComplete: combinedPropsFetchCompleteRef.current,
         noAflOdds: combinedOddsFlagsRef.current.noAflOdds,
@@ -3485,9 +3486,16 @@ export default function NBALandingPage() {
     }
   }, [selectedSurveySport, surveyStorageKey, surveySubmitting]);
 
-  // Reset "user modified" flag when leaving AFL-only filter mode.
+  // Drop a manual games filter only when leaving a sport tab for All/NBA.
+  // The props page first renders as All, then the URL sport is applied, so this
+  // must not clear a filter restored while coming back from a player dashboard.
+  const propsSportForGameFilterRef = useRef(propsSport);
   useEffect(() => {
-    if (!isSecondaryPropsSport(propsSport)) userModifiedAflGamesRef.current = false;
+    const previous = propsSportForGameFilterRef.current;
+    propsSportForGameFilterRef.current = propsSport;
+    if (isSecondaryPropsSport(previous) && !isSecondaryPropsSport(propsSport)) {
+      userModifiedAflGamesRef.current = false;
+    }
   }, [propsSport]);
 
   // Find player (not in props / no odds) modal: bottom-right on mobile, top-right on desktop
@@ -3826,8 +3834,23 @@ export default function NBALandingPage() {
       );
       setAflGames(warmSnapshot.aflGames as AflGameForProps[]);
       setTodaysGames(warmSnapshot.todaysGames as Game[]);
-      selectedAflGamesRef.current = new Set(warmSnapshot.selectedAflGameIds);
-      setSelectedAflGames(new Set(warmSnapshot.selectedAflGameIds));
+      const snapSport = resolvePropsSportParam(String(warmSnapshot.propsSport));
+      const snapGameIds = Array.isArray(warmSnapshot.selectedAflGameIds)
+        ? warmSnapshot.selectedAflGameIds
+        : [];
+      let snapUserModified = warmSnapshot.userModifiedAflGames === true;
+      if (warmSnapshot.userModifiedAflGames == null && isSecondaryPropsSport(snapSport)) {
+        snapUserModified = readSecondaryPropsSessionCache(snapSport).userModifiedGames;
+      }
+      if (isSecondaryPropsSport(snapSport)) {
+        userModifiedAflGamesRef.current = snapUserModified;
+        secondaryGameSelectionRef.current[snapSport] = {
+          ids: snapGameIds,
+          userModified: snapUserModified,
+        };
+      }
+      selectedAflGamesRef.current = new Set(snapGameIds);
+      setSelectedAflGames(new Set(snapGameIds));
       setCombinedPaintUnlocked(warmSnapshot.combinedPaintUnlocked);
       setCombinedFetchComplete(warmSnapshot.combinedFetchComplete);
       setCombinedPropsLoading(false);
@@ -5249,7 +5272,14 @@ export default function NBALandingPage() {
     const propGameIds = propGameIdsFromRows(eligibleProps);
     if (propGameIds.size === 0 && aflGamesWithProps.length === 0) return;
     // Don't auto-select all games after the user has manually toggled them.
-    if (userModifiedAflGamesRef.current) return;
+    // The remembered flag survives a dashboard round-trip in this tab.
+    const remembered = isSecondaryPropsSport(propsSport)
+      ? secondaryGameSelectionRef.current[propsSport]
+      : undefined;
+    if (userModifiedAflGamesRef.current || remembered?.userModified) {
+      if (remembered?.userModified) userModifiedAflGamesRef.current = true;
+      return;
+    }
     const gameIds =
       aflGamesWithProps.length > 0
         ? new Set(aflGamesWithProps.map((g) => g.gameId))

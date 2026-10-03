@@ -206,7 +206,13 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'ballybet': {
     name: 'Bally Bet',
     logo: 'BB',
-    logoUrl: getLogoUrl('ballybet.com'),
+    logoUrl: '/images/bookmakers/ballybet.png?v=20260921c',
+    color: '#E31E24',
+  },
+  'bally bet': {
+    name: 'Bally Bet',
+    logo: 'BB',
+    logoUrl: '/images/bookmakers/ballybet.png?v=20260921c',
     color: '#E31E24',
   },
   'betparx': {
@@ -251,6 +257,18 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     logo: 'BETR',
     logoUrl: '/images/betr.png',
     color: '#6B7280',
+  },
+  'betnation': {
+    name: 'BetNation',
+    logo: 'BN',
+    logoUrl: '/images/bookmakers/betnation.png?v=20260921c',
+    color: '#00C5F0',
+  },
+  'bet nation': {
+    name: 'BetNation',
+    logo: 'BN',
+    logoUrl: '/images/bookmakers/betnation.png?v=20260921c',
+    color: '#00C5F0',
   },
   'betright': {
     name: 'Bet Right',
@@ -582,6 +600,8 @@ const AU_BOOK_KEYS = new Set([
   'betfair_ex_au',
   'betr_au',
   'betr',
+  'betnation',
+  'bet nation',
   'betright',
   'bet right',
   'bet365_au',
@@ -641,8 +661,11 @@ function compactBookKey(key: string): string {
 
 /** Local brand marks in /public/images/bookmakers. Alias keys collapse onto a file slug. */
 const LOCAL_BOOKMAKER_LOGO_SLUGS: Record<string, string> = {
+  ballybet: 'ballybet',
   betr: 'betr',
   betrau: 'betr',
+  betnation: 'betnation',
+  betnationau: 'betnation',
   bet365: 'bet365',
   bet365au: 'bet365',
   bet365nl: 'bet365',
@@ -684,7 +707,9 @@ const BOOK_DOMAINS: Record<string, string> = {
   '1xbet': '1xbet.com',
   '22bet': '22bet.com',
   '888sport': '888sport.com',
+  ballybet: 'ballybet.com',
   bet365: 'bet365.com',
+  betnation: 'betnation.com.au',
   betano: 'betano.com',
   betanysports: 'betanysports.eu',
   betanything: 'betanysports.eu',

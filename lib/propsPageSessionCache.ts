@@ -13,6 +13,8 @@ export type PropsPageWarmSnapshot = {
   aflGames: unknown[];
   todaysGames: unknown[];
   selectedAflGameIds: string[];
+  /** True when the user changed the games filter. Cleared with the tab, not on dashboard back. */
+  userModifiedAflGames?: boolean;
   combinedPaintUnlocked: boolean;
   combinedFetchComplete: boolean;
   noAflOdds: boolean;

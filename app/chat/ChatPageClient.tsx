@@ -23,11 +23,12 @@ import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordM
 import { openProUpgrade } from '@/components/ProFeatureLock';
 import { useTheme } from '@/contexts/ThemeContext';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
-import { ArrowLeft, BarChart3, CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Sparkles, Trash2, X } from 'lucide-react';
 
 type OddsFormat = 'american' | 'decimal';
 const CHAT_ADMIN_EMAIL = 'admin@stattrackr.co';
 const CHAT_ROOM_LAST_READ_PREFIX = 'chat:room-last-read:';
+const PICKS_ROOM_DISABLED = true;
 
 type ViewerState = {
   userId: string | null;
@@ -513,10 +514,15 @@ export default function ChatPageClient() {
         if (!isMounted) return;
         setRooms(loadedRooms);
         setSelectedRoomId((currentRoomId) => {
-          if (currentRoomId && loadedRooms.some((room) => room.id === currentRoomId)) {
+          const generalRoomId = loadedRooms.find((room) => room.slug === 'general')?.id ?? loadedRooms[0]?.id ?? null;
+          const currentRoom = loadedRooms.find((room) => room.id === currentRoomId);
+          if (PICKS_ROOM_DISABLED && currentRoom?.slug === 'picks') {
+            return generalRoomId;
+          }
+          if (currentRoomId && currentRoom) {
             return currentRoomId;
           }
-          return loadedRooms.find((room) => room.slug === 'general')?.id ?? loadedRooms[0]?.id ?? null;
+          return generalRoomId;
         });
       })
       .catch((error: unknown) => {
@@ -1004,7 +1010,10 @@ export default function ChatPageClient() {
     document.execCommand('insertText', false, pastedText.slice(0, CHAT_MAX_MESSAGE_LENGTH));
   }, []);
 
-  const handleSelectRoom = useCallback((roomId: string) => {
+  const handleSelectRoom = useCallback((roomId: string, roomSlug?: string) => {
+    if (PICKS_ROOM_DISABLED && roomSlug === 'picks') {
+      return;
+    }
     setSelectedRoomId(roomId);
     setComposerValue('');
     setComposerError(null);
@@ -1340,6 +1349,7 @@ export default function ChatPageClient() {
                         <div className="flex rounded-2xl border border-gray-200 bg-gray-100 p-1 dark:border-gray-700 dark:bg-[#111827]">
                           {rooms.map((room) => {
                             const isSelected = room.id === selectedRoomId;
+                            const isPicksTab = room.slug === 'picks';
                             const label = room.slug === 'general' ? 'Community' : room.name;
                             const unreadCount = roomUnreadCounts[room.id] ?? 0;
                             const unreadLabel = unreadCount > 9 ? '9+' : unreadCount.toString();
@@ -1348,15 +1358,21 @@ export default function ChatPageClient() {
                               <button
                                 key={room.id}
                                 type="button"
-                                onClick={() => handleSelectRoom(room.id)}
+                                disabled={PICKS_ROOM_DISABLED && isPicksTab}
+                                title={PICKS_ROOM_DISABLED && isPicksTab ? 'AI picks coming soon' : undefined}
+                                onClick={() => handleSelectRoom(room.id, room.slug)}
                                 className={`relative flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                                   isSelected
                                     ? 'bg-purple-600 text-white shadow-sm'
                                     : 'text-gray-600 hover:bg-white/70 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'
-                                }`}
+                                } ${PICKS_ROOM_DISABLED && isPicksTab ? 'cursor-not-allowed opacity-60 hover:bg-transparent hover:text-gray-600 dark:hover:bg-transparent dark:hover:text-gray-300' : ''}`}
                               >
                                 {label}
-                                {unreadCount > 0 ? (
+                                {isPicksTab ? (
+                                  <span className="absolute -right-1 -top-2 inline-flex items-center rounded-md border border-amber-600 bg-amber-600 px-1.5 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
+                                    SOON
+                                  </span>
+                                ) : unreadCount > 0 ? (
                                   <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white ring-2 ring-white dark:ring-[#111827]">
                                     {unreadLabel}
                                   </span>
@@ -1364,6 +1380,15 @@ export default function ChatPageClient() {
                               </button>
                             );
                           })}
+                        </div>
+                      ) : null}
+                      {PICKS_ROOM_DISABLED || isPicksRoom ? (
+                        <div
+                          role="status"
+                          className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-semibold text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                          AI picks coming soon
                         </div>
                       ) : null}
                     </div>
@@ -1384,14 +1409,21 @@ export default function ChatPageClient() {
                     <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300">
                       {threadError}
                     </div>
+                  ) : isPicksRoom ? (
+                    <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                      <Sparkles className="h-8 w-8 text-purple-500" />
+                      <h3 className="mt-4 text-base font-semibold text-gray-900 dark:text-white">
+                        AI picks coming soon
+                      </h3>
+                    </div>
                   ) : messages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                       <MessageSquareText className="h-8 w-8 text-purple-500" />
                       <h3 className="mt-4 text-base font-semibold text-gray-900 dark:text-white">
-                        {isPicksRoom ? 'No picks yet' : 'No messages yet'}
+                        No messages yet
                       </h3>
                       <p className="mt-2 max-w-md text-sm text-gray-500 dark:text-gray-400">
-                        {isPicksRoom ? 'StatTrackr picks will show here.' : 'Start the conversation!'}
+                        Start the conversation!
                       </p>
                     </div>
                   ) : (
@@ -1798,6 +1830,7 @@ export default function ChatPageClient() {
                   )}
                 </div>
 
+                {isPicksRoom ? null : (
                 <div className="shrink-0 border-t border-gray-200 px-5 pb-3 pt-1 dark:border-gray-700 sm:py-4">
                   {!canSendInSelectedRoom ? (
                     <div className="rounded-2xl border border-purple-400/40 bg-purple-500/10 px-4 py-3 text-xs text-purple-100">
@@ -1887,6 +1920,7 @@ export default function ChatPageClient() {
                   </form>
                   )}
                 </div>
+                )}
               </div>
             </section>
           )}
