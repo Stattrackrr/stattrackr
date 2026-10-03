@@ -4,7 +4,7 @@
   "homeTeam": "Melbourne United",
   "awayTeam": "Cairns Taipans",
   "commenceTime": "2026-10-03T09:30:00.000Z",
-  "capturedAt": "2026-10-03T05:29:09.453Z",
+  "capturedAt": "2026-10-03T06:36:20.558Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -30,7 +30,7 @@
     "PlayUp",
     "PointsBet"
   ],
-  "lineCount": 3003,
+  "lineCount": 3012,
   "lines": [
     {
       "player": "Cole Anthony",
@@ -39069,6 +39069,123 @@
       "over": "+285",
       "under": "N/A",
       "overDecimal": 3.85,
+      "underDecimal": null
+    },
+    {
+      "player": "Cole Anthony",
+      "playerKey": "cole anthony",
+      "book": "Sportsbet",
+      "stat": "points",
+      "kind": "ou",
+      "line": 23.5,
+      "label": "23.5",
+      "over": "+101",
+      "under": "-135",
+      "overDecimal": 2.01,
+      "underDecimal": 1.74
+    },
+    {
+      "player": "Jack Mcveigh",
+      "playerKey": "jack mcveigh",
+      "book": "Sportsbet",
+      "stat": "pa",
+      "kind": "ou",
+      "line": 21.5,
+      "label": "21.5",
+      "over": "-127",
+      "under": "-105",
+      "overDecimal": 1.79,
+      "underDecimal": 1.95
+    },
+    {
+      "player": "Jack Mcveigh",
+      "playerKey": "jack mcveigh",
+      "book": "Dabble",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 44.5,
+      "label": "45+",
+      "over": "+1200",
+      "under": "N/A",
+      "overDecimal": 13,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Sportsbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 24.5,
+      "label": "25+",
+      "over": "+2800",
+      "under": "N/A",
+      "overDecimal": 29,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Picklebet",
+      "stat": "ra",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "+525",
+      "under": "N/A",
+      "overDecimal": 6.25,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Sportsbet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+2500",
+      "under": "N/A",
+      "overDecimal": 26,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
+      "book": "Sportsbet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+3000",
+      "under": "N/A",
+      "overDecimal": 31,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
+      "book": "Sportsbet",
+      "stat": "pa",
+      "kind": "ou",
+      "line": 16.5,
+      "label": "16.5",
+      "over": "-103",
+      "under": "-135",
+      "overDecimal": 1.97,
+      "underDecimal": 1.74
+    },
+    {
+      "player": "Reyne Smith",
+      "playerKey": "reyne smith",
+      "book": "Sportsbet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+3000",
+      "under": "N/A",
+      "overDecimal": 31,
       "underDecimal": null
     }
   ]
