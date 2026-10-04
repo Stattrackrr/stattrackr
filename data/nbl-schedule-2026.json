@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-03T17:12:12.759Z",
+  "generatedAt": "2026-10-04T17:28:15.751Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2727,7 +2727,7 @@
       "externalId": "36fff950-58ad-11f1-8de3-37c9e1eacb09",
       "startTime": "2026-10-04T06:00:00.000Z",
       "round": "3",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Adelaide 36ers",
       "homeTeamCode": "ADL",
       "homeTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
@@ -2736,8 +2736,8 @@
       "awayTeamCode": "NZL",
       "awayTeamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "awayLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 72,
+      "awayScore": 88,
       "venue": "Adelaide Entertainment Centre",
       "matchSlug": "adelaide-36ers-v-nz-breakers-men-04-10-2026"
     },
@@ -2746,7 +2746,7 @@
       "externalId": "36fdee6b-58ad-11f1-ac5d-19f7d3a187d4",
       "startTime": "2026-10-04T04:00:00.000Z",
       "round": "3",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
       "homeTeamCode": "SEM",
       "homeTeamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
@@ -2755,8 +2755,8 @@
       "awayTeamCode": "ILL",
       "awayTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 113,
+      "awayScore": 96,
       "venue": "John Cain Arena",
       "matchSlug": "south-east-melbourne-phoenix-v-illawarra-hawks-men-04-10-2026"
     },
