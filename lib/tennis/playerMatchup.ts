@@ -7,6 +7,7 @@ import { resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
 import { readTennisPlayerLogsCacheMany, tennisComputedCacheKey } from '@/lib/tennis/dashboardCache';
 import { loadPlayerMatchesCached, loadTennisPlayersCached, tennisLogsNeedHistory } from '@/lib/tennis/loadCached';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { mergeCareerH2h } from '@/lib/tennis/h2hHistory';
 import {
   TENNIS_MATCHUP_STATS,
   tennisMatchupBoardKey,
@@ -349,7 +350,7 @@ export function tennisMatchupComputedKey(opts: {
   stage?: string | null;
   boards?: boolean;
 }): string {
-  return tennisComputedCacheKey(opts.boards ? 'matchup_boards_v2' : 'matchup_v2', [
+  return tennisComputedCacheKey(opts.boards ? 'matchup_boards_v3' : 'matchup_v3', [
     opts.playerId || opts.playerName,
     opts.opponentId || opts.opponentName,
     opts.tour,
@@ -430,7 +431,14 @@ export async function buildTennisPlayerMatchupAsync(
     .filter((id) => id && tennisLogsNeedHistory(logsById.get(id)));
   if (thinIds.length) {
     const filled = await Promise.all(
-      thinIds.map((id) => loadPlayerMatchesCached({ playerId: id, tour }))
+      thinIds.map((id) =>
+        loadPlayerMatchesCached({
+          playerId: id,
+          tour,
+          opponentId: id === String(resolvedPlayer.id || '') ? resolvedOpponent.id : resolvedPlayer.id,
+          opponentName: id === String(resolvedPlayer.id || '') ? opts.opponentName : opts.playerName,
+        })
+      )
     );
     thinIds.forEach((id, index) => {
       if (filled[index]?.length) logsById.set(id, filled[index]);
@@ -438,6 +446,20 @@ export async function buildTennisPlayerMatchupAsync(
   }
   const extra = opts.extraGamesById;
   const rawById = new Map<string, TennisMatchRow[]>();
+  const playerId = String(resolvedPlayer.id || '').trim();
+  const opponentId = String(resolvedOpponent.id || '').trim();
+  if (playerId) {
+    logsById.set(
+      playerId,
+      await mergeCareerH2h(logsById.get(playerId) || [], playerId, opponentId, opts.opponentName, tour)
+    );
+  }
+  if (opponentId) {
+    logsById.set(
+      opponentId,
+      await mergeCareerH2h(logsById.get(opponentId) || [], opponentId, playerId, opts.playerName, tour)
+    );
+  }
 
   const rawGamesFor = (id: string | null, name: string): TennisMatchRow[] => {
     const key = String(id || '').trim();
@@ -458,11 +480,15 @@ export async function buildTennisPlayerMatchupAsync(
         playerId: probe.player.id || resolvedPlayer.id,
         playerName: probe.player.name || opts.playerName,
         tour,
+        opponentId: probe.opponent.id || resolvedOpponent.id,
+        opponentName: probe.opponent.name || opts.opponentName,
       }),
       loadPlayerMatchesCached({
         playerId: probe.opponent.id || resolvedOpponent.id,
         playerName: probe.opponent.name || opts.opponentName,
         tour,
+        opponentId: probe.player.id || resolvedPlayer.id,
+        opponentName: probe.player.name || opts.playerName,
       }),
     ]);
     const playerId = String(probe.player.id || resolvedPlayer.id || '').trim();

@@ -137,7 +137,6 @@ export function TennisPlayerFormCard({
 
   const recent = useMemo(() => (payload?.recent || []).slice(0, windowN), [payload?.recent, windowN]);
   const formWins = recent.filter((row) => row.isWin).length;
-  const formLosses = recent.length - formWins;
   const streak = useMemo(() => {
     if (!recent.length) return null;
     const first = recent[0].isWin;
@@ -203,7 +202,7 @@ export function TennisPlayerFormCard({
       <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
         <div className="min-w-0 flex flex-wrap items-center gap-2">
           <span className={`text-sm font-semibold tabular-nums ${strong}`}>
-            {formWins}-{formLosses}
+            {formWins}/{recent.length}
           </span>
           {streak ? (
             <span

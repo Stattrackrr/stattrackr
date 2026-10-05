@@ -60,6 +60,9 @@ export function TennisAskPanel({
   tour = 'ATP',
   isGrandSlam = false,
   tournamentName = null,
+  selectedStat = null,
+  selectedLine = null,
+  playerId = null,
   previewLocked = false,
 }: {
   isDark?: boolean;
@@ -69,6 +72,9 @@ export function TennisAskPanel({
   tour?: 'ATP' | 'WTA' | null;
   isGrandSlam?: boolean;
   tournamentName?: string | null;
+  selectedStat?: string | null;
+  selectedLine?: number | null;
+  playerId?: string | null;
   /** Free accounts see the layout, but the panel stays locked. */
   previewLocked?: boolean;
 }) {
@@ -137,16 +143,21 @@ export function TennisAskPanel({
     setMessages((prev) => [...prev, { role: 'user', content: next }]);
     setLoading(true);
     try {
-      const res = await tennisDashboardFetch('/api/tennis/ask', {
+      const res = await fetch('/api/tennis/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(22000),
         body: JSON.stringify({
           question: next,
           player,
+          playerId,
           opponent,
           tour: tourKey,
           isGrandSlam,
           tournamentName,
+          stat: selectedStat,
+          selectedLine,
           history: messages.map((msg) => ({
             role: msg.role,
             content: msg.breakdown?.length ? `${msg.content}\n${msg.breakdown.join('\n')}` : msg.content,
@@ -161,7 +172,9 @@ export function TennisAskPanel({
         : [];
       setMessages((prev) => [...prev, { role: 'assistant', content: reply, breakdown }]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ask failed');
+      const timedOut =
+        err instanceof DOMException && (err.name === 'TimeoutError' || err.name === 'AbortError');
+      setError(timedOut ? 'That took too long. Ask again.' : err instanceof Error ? err.message : 'Ask failed');
     } finally {
       setLoading(false);
     }

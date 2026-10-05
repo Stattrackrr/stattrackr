@@ -14,7 +14,7 @@ import {
   type TennisOppRankFilter,
 } from '@/lib/tennis/advancedAveragesShared';
 import { tennisDashboardFetch } from '@/lib/tennisDashboardFetch';
-import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { tennisIsH2hMatch } from '@/lib/tennis/h2hMatch';
 
 type NblAdvancedFilterKey =
   | 'dvp_rank'
@@ -957,6 +957,8 @@ export function TennisStatsChart({
   const lastAutoSyncedStatRef = useRef<string | null>(null);
 
   const selectedStat = selectedStatProp ?? internalSelectedStat;
+  const isMoneylineChartStat =
+    selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat);
 
   // When Advanced is open, keep opponent-rank advanced selection in sync with the
   // currently selected main stat (for supported AFL opponent-rank stats).
@@ -1201,13 +1203,16 @@ export function TennisStatsChart({
       const targetId = String(nextOpponentId || '').trim();
       if (!targetOpponent && !targetId) data = baseChartData;
       else {
-        const h2hData = baseChartData.filter((row) => {
-          const rowId = String((row as { opponentId?: string | null }).opponentId || '').trim();
-          if (targetId && rowId && rowId === targetId) return true;
-          const rowOpp = row.opponent;
-          if (!rowOpp || typeof rowOpp !== 'string' || !targetOpponent) return false;
-          return tennisIdentityMatch(rowOpp, targetOpponent);
-        });
+        const h2hData = baseChartData.filter((row) =>
+          tennisIsH2hMatch(
+            {
+              opponent: typeof row.opponent === 'string' ? row.opponent : null,
+              opponentId: (row as { opponentId?: string | null }).opponentId,
+            },
+            targetOpponent,
+            targetId
+          )
+        );
         // When no H2H games, show empty so we can display "No recent H2H found" instead of falling back to all games
         data = h2hData;
       }
@@ -1417,10 +1422,10 @@ export function TennisStatsChart({
     const snapped = hasDecimalValues
       ? Math.round(raw * 10) / 10
       : Math.round(raw * 2) / 2;
-    const min = yAxisConfig.domain[0];
+    const min = isMoneylineChartStat ? 0.5 : yAxisConfig.domain[0];
     const max = yAxisConfig.domain[1];
     return Math.max(min, Math.min(max, snapped));
-  }, [hasDecimalValues, lineValue, yAxisConfig.domain]);
+  }, [hasDecimalValues, isMoneylineChartStat, lineValue, yAxisConfig.domain]);
 
   const setLineAndEmit = useCallback((raw: number) => {
     const next = normalizeLineValue(raw);
@@ -1437,6 +1442,15 @@ export function TennisStatsChart({
     const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
     if (input) input.value = '0.5';
   }, [selectedStat, externalLineValue, emitTransientLine]);
+
+  useEffect(() => {
+    if (!isMoneylineChartStat) return;
+    if (lineValue >= 0.5) return;
+    setLineValue(0.5);
+    emitTransientLine(0.5);
+    const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
+    if (input) input.value = '0.5';
+  }, [isMoneylineChartStat, lineValue, emitTransientLine]);
 
   // When external line (e.g. from props URL or selected bookmaker) changes, sync chart line to it.
   // Do not clamp to the current Y domain — expand the domain around the incoming line instead.
@@ -1628,7 +1642,7 @@ export function TennisStatsChart({
             type="number"
             step={sliderStep}
             defaultValue={lineValue}
-            min={yAxisConfig.domain[0]}
+            min={isMoneylineChartStat ? 0.5 : yAxisConfig.domain[0]}
             max={yAxisConfig.domain[1]}
             onChange={(e) => {
               const raw = Number((e.target as HTMLInputElement).value);
@@ -1774,6 +1788,7 @@ export function TennisStatsChart({
               yAxisWidth={26}
               forceGreyBars={isFilterEmpty}
               hideBarValueLabels={isFilterEmpty}
+              minBarSize={isMoneylineChartStat ? 12 : 0}
               hideAverageOverlay={isFilterEmpty}
               hideBettingLineOverlay={isFilterEmpty}
             />

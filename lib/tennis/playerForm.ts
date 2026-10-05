@@ -418,6 +418,7 @@ export function buildTennisPlayerForm(opts: {
   playerName: string;
   opponentName?: string | null;
   tour?: TennisTour | null;
+  rows?: TennisMatchRow[];
 }): TennisPlayerFormPayload {
   const playerName = String(opts.playerName || '').trim();
   const opponentName = String(opts.opponentName || '').trim();
@@ -428,11 +429,14 @@ export function buildTennisPlayerForm(opts: {
     'ATP';
   const resolved = resolvePlayer(playerName, tour);
   const cuts = tourCuts(tour);
-  const all = loadPlayerMatches({
-    playerId: resolved.id,
-    playerName: resolved.id ? null : playerName,
-    tour,
-  }).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  const all = (opts.rows?.length
+    ? opts.rows
+    : loadPlayerMatches({
+        playerId: resolved.id,
+        playerName: resolved.id ? null : playerName,
+        tour,
+      })
+  ).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
 
   const splitRows = all.slice(-PLAYER_FORM_SPLIT_WINDOW).map((row) => ({
     ...row,

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { tennisLastName, TENNIS_STAT_LABELS } from '@/lib/tennis/chartStats';
+import { tennisIsH2hMatch } from '@/lib/tennis/h2hMatch';
 
 const STATS: Array<{ key: string; label: string; pct?: boolean }> = [
   { key: 'aces', label: TENNIS_STAT_LABELS.aces },
@@ -34,18 +35,29 @@ export default function TennisOpponentBreakdownCard({
   isDark = false,
   playerName = null,
   lastOpponent = null,
+  opponentId = null,
   gameLogs = [],
 }: {
   isDark?: boolean;
   playerName?: string | null;
   lastOpponent?: string | null;
+  opponentId?: string | null;
   gameLogs?: Array<Record<string, unknown>>;
 }) {
   const opponent = String(lastOpponent || '').trim();
   const h2h = useMemo(() => {
-    if (!opponent) return [];
-    return (gameLogs || []).filter((g) => String(g.opponent || '').trim() === opponent);
-  }, [gameLogs, opponent]);
+    if (!opponent && !opponentId) return [];
+    return (gameLogs || []).filter((g) =>
+      tennisIsH2hMatch(
+        {
+          opponent: typeof g.opponent === 'string' ? g.opponent : null,
+          opponentId: g.opponentId as string | null | undefined,
+        },
+        opponent,
+        opponentId
+      )
+    );
+  }, [gameLogs, opponent, opponentId]);
 
   const wins = h2h.filter((g) => String(g.result || '').toUpperCase().startsWith('W')).length;
 

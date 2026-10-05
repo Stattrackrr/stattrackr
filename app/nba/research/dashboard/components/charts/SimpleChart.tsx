@@ -97,8 +97,8 @@ interface SimpleChartProps {
   barAnimationEasing?: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear';
   /** Bumps chart/bar keys so animations replay on stat/mode/timeframe changes. */
   chartAnimationKey?: string;
-  /** Force every bar to a muted grey (empty-filter placeholder). */
-  forceGreyBars?: boolean;
+  /** Minimum pixel height for zero-value bars (tennis 0/1 moneyline losses). */
+  minBarSize?: number;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -151,6 +151,7 @@ const SimpleChart = memo(function SimpleChart({
   barAnimationEasing = 'ease-out',
   chartAnimationKey = '',
   forceGreyBars = false,
+  minBarSize = 0,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -260,9 +261,19 @@ const SimpleChart = memo(function SimpleChart({
     [selectedStat, yAxisConfig]
   );
 
+  const isBinaryMoneylineStat = useMemo(
+    () =>
+      (selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat)) &&
+      Number(yAxisConfig?.domain?.[0]) >= 0,
+    [selectedStat, yAxisConfig]
+  );
+
   const getBarState = useCallback((value: number | null, line: number): 'over' | 'push' | 'under' | 'na' => {
     if (value === null || value === undefined || !Number.isFinite(value)) return 'na';
     if (isTogStat) return 'push';
+    if (isBinaryMoneylineStat) {
+      return value >= 1 ? 'over' : 'under';
+    }
     if (isThreeWayMoneylineStat) {
       if (line >= 0.5) {
         if (value >= 1) return 'over';
@@ -280,7 +291,7 @@ const SimpleChart = memo(function SimpleChart({
     if (tennisValueHitsOver(selectedStat, value, line)) return 'over';
     if (value < line) return 'under';
     return 'push';
-  }, [isTogStat, isThreeWayMoneylineStat, isSpreadLikeStat, selectedStat]);
+  }, [isTogStat, isBinaryMoneylineStat, isThreeWayMoneylineStat, isSpreadLikeStat, selectedStat]);
 
   // Initial background gradient (recalculates when chartData, bettingLine, or isDark changes)
   // OPTIMIZATION: Single pass through array instead of two filters
@@ -1226,6 +1237,7 @@ const SimpleChart = memo(function SimpleChart({
             <Bar
               key={`bar-${animationKeySuffix}${selectedStat}-${mergedChartData.length}`}
               dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"}
+              minPointSize={minBarSize || 0}
               isAnimationActive={!disableBarAnimation}
               animationDuration={disableBarAnimation ? 0 : barAnimationDuration}
               animationEasing={barAnimationEasing}
@@ -1440,11 +1452,17 @@ const SimpleChart = memo(function SimpleChart({
                 const { x, y, width, height, fill, payload } = props;
                 const barIndex = props['data-bar-index'] ?? props.index ?? -1;
                 const barValue = payload?.value ?? props['data-bar-value'];
-                const rectHeight = Math.abs(Number(height) || 0);
-                const rectY = (Number(height) || 0) < 0 ? (Number(y) || 0) + (Number(height) || 0) : (Number(y) || 0);
+                const rawHeight = Number(height) || 0;
+                let rectHeight = Math.abs(rawHeight);
+                let rectY = rawHeight < 0 ? (Number(y) || 0) + rawHeight : (Number(y) || 0);
+                if (minBarSize > 0 && rectHeight < minBarSize && Number.isFinite(Number(barValue))) {
+                  rectY = rectY - (minBarSize - rectHeight);
+                  rectHeight = minBarSize;
+                }
                 const HOVER_H = 400;
                 const hoverH = HOVER_H;
                 const hoverY = rectY - HOVER_H;
+                const cap = Math.min(10, Math.max(2, Math.round(rectHeight / 2)));
                 return (
                   <g>
                     {/* Invisible hover rect: full width, top 2/3 of bar slot */}
@@ -1455,8 +1473,8 @@ const SimpleChart = memo(function SimpleChart({
                       width={width}
                       height={rectHeight}
                       fill={fill ?? '#888'}
-                      rx={10}
-                      ry={10}
+                      rx={cap}
+                      ry={cap}
                       className={forceGreyBars ? 'simple-chart-grey-bar' : undefined}
                       data-bar-index={barIndex}
                       data-bar-value={barValue}

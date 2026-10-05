@@ -41,9 +41,9 @@ import {
   readOddsApiTennisCatalog,
   tennisIdentityMatch,
   tennisSamePersonRecords,
-  tennisNamesMatch,
   tennisTourFromOdds,
 } from '@/lib/tennis/oddsApi';
+import { tennisIsH2hMatch } from '@/lib/tennis/h2hMatch';
 import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { resolveTennisIoc } from '@/lib/tennis/resolveIoc';
 import {
@@ -340,8 +340,7 @@ function dashboardDvpFieldsForStat(
 }
 
 function isH2hMatch(row: TennisMatchRow, opponentName: string, opponentId: string | null): boolean {
-  if (opponentId && row.opponentId && String(row.opponentId) === String(opponentId)) return true;
-  return tennisNamesMatch(row.opponent, opponentName);
+  return tennisIsH2hMatch(row, opponentName, opponentId);
 }
 
 function inferMatchTour(

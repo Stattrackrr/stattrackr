@@ -294,6 +294,48 @@ test('questions use the chart main line, not an alt', () => {
   assert.equal(/2\.5 sets/.test(text), false);
 });
 
+test('plus handicap questions do not say too many', () => {
+  const dog = generateQuestions({
+    matchId: 'm1',
+    markets: resolveAvailableMarkets(
+      odds([
+        book({
+          Spread: { line: '+1.5', over: '1.91', under: '1.91' },
+          Total: { line: '22.5', over: '1.91', under: '1.91' },
+        }),
+      ])
+    ),
+    player: 'Djokovic',
+    opponent: 'Medvedev',
+    surface: 'hard',
+    seed: 1,
+    count: 4,
+  }).questions;
+  const playerCover = dog.find((row) => /Djokovic cover \+1\.5/i.test(row.text));
+  assert.ok(playerCover, dog.map((row) => row.text).join(' | '));
+  assert.equal(/too many/i.test(playerCover.text), false, playerCover.text);
+
+  const fav = generateQuestions({
+    matchId: 'm1',
+    markets: resolveAvailableMarkets(
+      odds([
+        book({
+          Spread: { line: '-2.5', over: '1.91', under: '1.91' },
+          Total: { line: '22.5', over: '1.91', under: '1.91' },
+        }),
+      ])
+    ),
+    player: 'Djokovic',
+    opponent: 'Medvedev',
+    surface: 'hard',
+    seed: 1,
+    count: 4,
+  }).questions;
+  const favCover = fav.find((row) => /Djokovic cover -2\.5/i.test(row.text));
+  assert.ok(favCover, fav.map((row) => row.text).join(' | '));
+  assert.match(favCover.text, /too many games to win by/i);
+});
+
 test('validator rejects an EV that does not match the quoted probability', async () => {
   const payload = answerPayload({
     player: 'Tiago Pereira',

@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TENNIS_AI_UNDER_MAINTENANCE } from '@/lib/tennis/constants';
 import { tennisBestOf } from '@/lib/tennis/apiTennis';
+import { answerTennisAsk } from '@/lib/tennis/askAnswer';
+import { inferBestOfFromOdds, summarizeTennisAskOdds } from '@/lib/tennis/askOdds';
+import { TENNIS_AI_UNDER_MAINTENANCE } from '@/lib/tennis/constants';
+import { loadPlayerMatchesCached } from '@/lib/tennis/loadCached';
+import { buildTennisMatchAnalysis } from '@/lib/tennis/matchAnalyst';
+import { getTennisMatchOddsForPlayer } from '@/lib/tennis/odds';
 import { runTennisAi } from '@/lib/tennisAi/live';
 import type { TennisTour } from '@/lib/tennis/types';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 function maintenanceResponse() {
   return NextResponse.json(
@@ -18,6 +26,19 @@ function maintenanceResponse() {
 
 function parseTour(value: unknown): TennisTour {
   return String(value || '').toUpperCase() === 'WTA' ? 'WTA' : 'ATP';
+}
+
+function parseHistory(raw: unknown): Array<{ role: 'user' | 'assistant'; content: string }> {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((row) => {
+      const rec = row as { role?: unknown; content?: unknown };
+      const role = rec?.role === 'assistant' ? 'assistant' : rec?.role === 'user' ? 'user' : null;
+      const content = String(rec?.content || '').trim();
+      return role && content ? { role, content } : null;
+    })
+    .filter((row): row is { role: 'user' | 'assistant'; content: string } => Boolean(row))
+    .slice(-6);
 }
 
 export async function GET(request: NextRequest) {
@@ -56,26 +77,95 @@ export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as {
     question?: unknown;
     player?: unknown;
+    playerId?: unknown;
     opponent?: unknown;
     tour?: unknown;
     isGrandSlam?: unknown;
     tournamentName?: unknown;
+    stat?: unknown;
+    selectedLine?: unknown;
+    history?: unknown;
   } | null;
   const player = String(body?.player || '').trim();
+  const playerId = String(body?.playerId || '').trim();
   const opponent = String(body?.opponent || '').trim();
   const question = String(body?.question || '').trim();
+  const viewingStat = String(body?.stat || '').trim() || null;
+  const selectedRaw = Number(body?.selectedLine);
+  const viewingLine = Number.isFinite(selectedRaw) ? selectedRaw : null;
   if (!player) return NextResponse.json({ success: false, error: 'Select a player first.' }, { status: 400 });
   if (!opponent) return NextResponse.json({ success: false, error: 'Select an opponent to run the match model.' }, { status: 400 });
   if (!question || question.length > 500) {
     return NextResponse.json({ success: false, error: 'Ask a short tennis question.' }, { status: 400 });
   }
   const tour = parseTour(body?.tour);
+  const declaredBestOf = tennisBestOf(tour, body?.isGrandSlam === true);
+  const tournament = String(body?.tournamentName || '');
+  const history = parseHistory(body?.history);
+
+  try {
+    const [odds, playerRows, oppRows] = await Promise.all([
+      Promise.race([
+        getTennisMatchOddsForPlayer({
+          playerId: playerId || null,
+          playerName: player,
+          opponentName: opponent,
+        }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+      ]),
+      loadPlayerMatchesCached({
+        playerId: playerId || null,
+        playerName: player,
+        tour,
+        opponentName: opponent,
+      }),
+      loadPlayerMatchesCached({
+        playerName: opponent,
+        tour,
+        opponentName: player,
+      }),
+    ]);
+    const bestOf = inferBestOfFromOdds(declaredBestOf, odds);
+    const marketOdds = summarizeTennisAskOdds(odds, bestOf);
+    const analysis = buildTennisMatchAnalysis({
+      playerName: player,
+      opponentName: opponent,
+      tour,
+      isGrandSlam: bestOf === 5,
+      tournamentName: tournament,
+      listedTotalLine: marketOdds.listedTotalLine,
+      marketOdds,
+      playerRows,
+      oppRows,
+    });
+    if (analysis) {
+      const reply = await answerTennisAsk({
+        question,
+        analysis,
+        history,
+        viewingStat,
+        viewingLine,
+      });
+      return NextResponse.json({
+        success: true,
+        answer: reply.answer,
+        reasoning: reply.answer,
+        breakdown: reply.breakdown,
+        source: reply.source,
+      });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Ask failed';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
+  }
+
   const result = await runTennisAi({
     player,
     opponent,
+    playerId: playerId || null,
     tour,
-    bestOf: tennisBestOf(tour, body?.isGrandSlam === true),
-    tournament: String(body?.tournamentName || ''),
+    bestOf: declaredBestOf,
+    tournament,
     question,
   });
   if (result.missing === 'doubles') {

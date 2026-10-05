@@ -1193,6 +1193,13 @@ export default function TennisDashboardPage() {
         if (playerId) logsQs.set('playerId', playerId);
         if (playerName) logsQs.set('player', playerName);
         if (selectedPlayer?.tour) logsQs.set('tour', selectedPlayer.tour);
+        const upcomingForLogs = Boolean(playerId) && nextGamePlayerId === playerId;
+        const opponentId = String(
+          (upcomingForLogs && nextGameOpponentId) || propsOpponentIdFallback || ''
+        ).trim();
+        const opponentName = upcomingForLogs ? String(nextGameOpponent || '').trim() : '';
+        if (opponentId) logsQs.set('opponentId', opponentId);
+        if (opponentName) logsQs.set('opponent', opponentName);
         const res = await tennisDashboardFetch(`/api/tennis/matches?${logsQs.toString()}`);
         if (!res.ok) throw new Error(`logs ${res.status}`);
         const data = await res.json();
@@ -1229,7 +1236,7 @@ export default function TennisDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedPlayer?.playerId, selectedPlayer?.name, selectedPlayer?.tour, loadingPlayerFromUrl]);
+  }, [selectedPlayer?.playerId, selectedPlayer?.name, selectedPlayer?.tour, loadingPlayerFromUrl, nextGamePlayerId, nextGameOpponentId, nextGameOpponent, propsOpponentIdFallback]);
 
   // Game Props: team score logs (schedule + cached quarter scores).
   useEffect(() => {
@@ -1527,8 +1534,14 @@ export default function TennisDashboardPage() {
   const displayOpponent = fromUpcoming || tennisUrlOpponentValue(propsOpponentFallback);
   const showUpcomingNA = Boolean(selectedPlayer) && upcomingReady && !displayOpponent;
   const statsOpponent = displayOpponent || lastCompletedOpponent;
+  const lastCompletedOpponentId = String(lastLog?.opponentId || '').trim() || null;
   const statsOpponentId =
-    String((upcomingReady && nextGameOpponentId) || propsOpponentIdFallback || '').trim() || null;
+    String(
+      (upcomingReady && nextGameOpponentId) ||
+        propsOpponentIdFallback ||
+        (!upcomingReady && lastCompletedOpponentId) ||
+        ''
+    ).trim() || null;
   const upcomingIsGrandSlam = Boolean(displayOpponent && nextGameIsGrandSlam);
   const headerTitle = selectedPlayer?.name || 'Select a Player';
   const headerTourLabel = displayOpponent
@@ -2221,9 +2234,12 @@ export default function TennisDashboardPage() {
                           layout="mobile"
                           playerName={matchupLeft}
                           opponentName={displayOpponent}
+                          playerId={selectedPlayer?.playerId || null}
                           tour={dvpTour}
                           isGrandSlam={nextGameIsGrandSlam}
                           tournamentName={nextGameTournament}
+                          selectedStat={mainChartStat}
+                          selectedLine={tennisGameLineValue}
                           previewLocked={freeTier}
                         />
                       </ProFeatureLock>
@@ -2536,9 +2552,12 @@ export default function TennisDashboardPage() {
                           layout="desktop"
                           playerName={matchupLeft}
                           opponentName={displayOpponent}
+                          playerId={selectedPlayer?.playerId || null}
                           tour={dvpTour}
                           isGrandSlam={nextGameIsGrandSlam}
                           tournamentName={nextGameTournament}
+                          selectedStat={mainChartStat}
+                          selectedLine={tennisGameLineValue}
                           previewLocked={freeTier}
                         />
                       </ProFeatureLock>

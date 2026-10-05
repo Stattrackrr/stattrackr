@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts
 import { CHART_CONFIG } from '@/app/nba/research/dashboard/constants';
 import type { NblChartTimeframe } from '@/app/tennis/components/TennisStatsChart';
 import { TENNIS_STAT_LABELS, tennisDominanceRatio } from '@/lib/tennis/chartStats';
-import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { tennisIsH2hMatch } from '@/lib/tennis/h2hMatch';
 
 function toNumericValue(v: unknown): number | null {
   if (v == null) return null;
@@ -117,11 +117,13 @@ function applyTimeframe<T extends BaseRow>(
     const targetOpponent = nextOpponent?.trim() || '';
     const targetId = String(nextOpponentId || '').trim();
     if (!targetOpponent && !targetId) return baseData;
-    return baseData.filter((row) => {
-      const rowId = String(row.opponentId || '').trim();
-      if (targetId && rowId && rowId === targetId) return true;
-      return targetOpponent ? tennisIdentityMatch(row.opponent, targetOpponent) : false;
-    }) as T[];
+    return baseData.filter((row) =>
+      tennisIsH2hMatch(
+        { opponent: row.opponent, opponentId: row.opponentId },
+        targetOpponent,
+        targetId
+      )
+    ) as T[];
   }
   const lastN = parseInt(timeframe.replace('last', ''), 10);
   if (Number.isFinite(lastN) && lastN > 0) return baseData.slice(-lastN) as T[];

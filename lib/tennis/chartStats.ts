@@ -356,6 +356,13 @@ export function resolveTennisMatchBestOf(opts: {
   return opts.isGrandSlam ? 5 : 3;
 }
 
+export function tennisRowsForBestOf<T extends Parameters<typeof resolveTennisMatchBestOf>[0]>(
+  rows: T[],
+  bestOf: 3 | 5
+): T[] {
+  return rows.filter((row) => resolveTennisMatchBestOf(row) === bestOf);
+}
+
 const TENNIS_ROUND_ORDER: Record<string, number> = {
   R128: 1,
   R64: 2,

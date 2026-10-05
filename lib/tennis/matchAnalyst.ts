@@ -1,5 +1,5 @@
 import { tennisBestOf } from '@/lib/tennis/apiTennis';
-import { tennisLastName } from '@/lib/tennis/chartStats';
+import { resolveTennisMatchBestOf, tennisLastName, tennisRowsForBestOf } from '@/lib/tennis/chartStats';
 import { tennisHandForName } from '@/lib/tennis/hands';
 import { tennisRankOnDate } from '@/lib/tennis/rankHistory';
 import {
@@ -9,6 +9,7 @@ import {
   type TennisMatchRow,
   type TennisTour,
 } from '@/lib/tennis/data';
+import { canonicalTennisSurface, lookupTennisSurface } from '@/lib/tennis/surfaces';
 import { buildTennisAskEdge, defaultTennisTotalsLine } from '@/lib/tennis/askOdds';
 import type {
   TennisAnalystDriver,
@@ -45,11 +46,8 @@ function normName(name: string | null | undefined): string {
 }
 
 function normalizeSurface(surface: string | null | undefined): 'hard' | 'clay' | 'grass' | null {
-  const key = String(surface || '')
-    .trim()
-    .toLowerCase();
-  if (key === 'hard' || key === 'clay' || key === 'grass') return key;
-  return null;
+  const hit = canonicalTennisSurface(surface);
+  return hit ? (hit.toLowerCase() as 'hard' | 'clay' | 'grass') : null;
 }
 
 function surfaceLabel(surface: string | null): string | null {
@@ -177,10 +175,27 @@ function roundMaybe(value: number | null, digits: number): number | null {
   return value == null ? null : round(value, digits);
 }
 
-function formRecord(rows: TennisMatchRow[]): { record: string; winPct: number | null } {
-  if (!rows.length) return { record: '0-0', winPct: null };
+function formRecord(rows: TennisMatchRow[]): TennisAnalystPlayer['l5'] {
+  if (!rows.length) return { record: '0-0', winPct: null, results: [] };
   const wins = rows.filter((row) => row.isWin).length;
-  return { record: `${wins}-${rows.length - wins}`, winPct: round((wins / rows.length) * 100, 1) };
+  return {
+    record: `${wins}-${rows.length - wins}`,
+    winPct: round((wins / rows.length) * 100, 1),
+    results: rows.map((row) => ({
+      opponent: tennisLastName(row.opponent),
+      win: Boolean(row.isWin),
+      surface: normalizeSurface(row.surface),
+    })),
+  };
+}
+
+export function tennisFormSampleLabel(
+  n: number,
+  bestOf: 3 | 5,
+  surface: 'hard' | 'clay' | 'grass' | null
+): string {
+  const format = bestOf === 5 ? 'best-of-5' : 'best-of-3';
+  return surface ? `last ${n} ${surface} ${format} matches` : `last ${n} ${format} matches`;
 }
 
 function inferSurface(playerRows: TennisMatchRow[], oppRows: TennisMatchRow[]): 'hard' | 'clay' | 'grass' | null {
@@ -197,21 +212,26 @@ function buildPlayer(
   name: string,
   tour: TennisTour,
   rows: TennisMatchRow[],
-  surface: 'hard' | 'clay' | 'grass' | null
+  surface: 'hard' | 'clay' | 'grass' | null,
+  bestOf: 3 | 5
 ): TennisAnalystPlayer {
   const resolved = resolvePlayer(name, tour);
-  const last = rows.at(-1);
+  const formatRows = tennisRowsForBestOf(rows, bestOf);
+  const formRows = surface
+    ? formatRows.filter((row) => normalizeSurface(row.surface) === surface)
+    : formatRows;
+  const last = formRows.at(-1) ?? formatRows.at(-1) ?? rows.at(-1);
   const rank =
     tennisRankOnDate(resolved.id || '', last?.date || null)?.rank ?? num(last?.playerRank);
-  const l15 = summarize(windowRows(rows, 15));
-  const surfaceRows = surface ? rows.filter((row) => normalizeSurface(row.surface) === surface).slice(-15) : [];
+  const l15 = summarize(windowRows(formatRows, 15));
+  const surfaceRows = formRows.slice(-15);
   return {
     name: resolved.name || name,
     last: tennisLastName(resolved.name || name),
     rank,
     hand: tennisHandForName(resolved.name || name) || last?.hand || null,
-    l5: formRecord(windowRows(rows, 5)),
-    l10: formRecord(windowRows(rows, 10)),
+    l5: formRecord(windowRows(formRows, 5)),
+    l10: formRecord(windowRows(formRows, 10)),
     l15,
     surface:
       surface && surfaceRows.length >= 4
@@ -267,20 +287,17 @@ function fmtNum(value: number | null, digits = 1): string {
   return value.toFixed(digits);
 }
 
-function bo3Games(rows: TennisMatchRow[]): number {
-  const sample = rows.filter((row) => Number(row.bestOf) < 5).slice(-15);
-  const values = (sample.length >= 6 ? sample : rows.slice(-15))
-    .map((row) => num(row.totalGames))
-    .filter((v): v is number => v != null);
-  return mean(values) ?? 22;
-}
-
 function formatGames(rows: TennisMatchRow[], bestOf: 3 | 5): number {
-  if (bestOf !== 5) return bo3Games(rows);
-  const slam = rows.filter((row) => Number(row.bestOf) >= 5).slice(-15);
-  const values = slam.map((row) => num(row.totalGames)).filter((v): v is number => v != null);
-  if (values.length >= 4) return mean(values) ?? 38;
-  return Math.max(36, bo3Games(rows) * 1.75);
+  const sample = tennisRowsForBestOf(rows, bestOf).slice(-15);
+  const values = sample.map((row) => num(row.totalGames)).filter((v): v is number => v != null);
+  if (values.length) return mean(values) ?? (bestOf === 5 ? 38 : 22);
+  if (bestOf === 5) {
+    const bo3 = tennisRowsForBestOf(rows, 3).slice(-15);
+    const bo3Values = bo3.map((row) => num(row.totalGames)).filter((v): v is number => v != null);
+    if (bo3Values.length) return Math.max(36, (mean(bo3Values) ?? 22) * 1.75);
+    return 38;
+  }
+  return 22;
 }
 
 function h2hAvg(rows: TennisMatchRow[], test: (row: TennisMatchRow) => boolean): number | null {
@@ -366,8 +383,11 @@ export function buildTennisMatchAnalysis(opts: {
   tour?: TennisTour | null;
   isGrandSlam?: boolean;
   tournamentName?: string | null;
+  surface?: string | null;
   listedTotalLine?: number | null;
   marketOdds?: TennisMatchAnalysis['marketOdds'];
+  playerRows?: TennisMatchRow[];
+  oppRows?: TennisMatchRow[];
 }): TennisMatchAnalysis | null {
   const playerName = String(opts.playerName || '').trim();
   const opponentName = String(opts.opponentName || '').trim();
@@ -378,24 +398,31 @@ export function buildTennisMatchAnalysis(opts: {
   const playerRes = resolvePlayer(playerName, preferred);
   const oppRes = resolvePlayer(opponentName, playerRes.tour);
   const tour = playerRes.tour;
-  const playerRows = loadPlayerMatches({
-    playerId: playerRes.id,
-    playerName: playerRes.id ? null : playerName,
-    tour,
-  });
-  const oppRows = loadPlayerMatches({
-    playerId: oppRes.id,
-    playerName: oppRes.id ? null : opponentName,
-    tour,
-  });
+  const playerRows = opts.playerRows?.length
+    ? opts.playerRows
+    : loadPlayerMatches({
+        playerId: playerRes.id,
+        playerName: playerRes.id ? null : playerName,
+        tour,
+      });
+  const oppRows = opts.oppRows?.length
+    ? opts.oppRows
+    : loadPlayerMatches({
+        playerId: oppRes.id,
+        playerName: oppRes.id ? null : opponentName,
+        tour,
+      });
   if (!playerRows.length || !oppRows.length) return null;
 
-  const surface = inferSurface(playerRows, oppRows);
-  const player = buildPlayer(playerName, tour, playerRows, surface);
-  const opponent = buildPlayer(opponentName, tour, oppRows, surface);
+  const surface =
+    normalizeSurface(opts.surface) ||
+    normalizeSurface(lookupTennisSurface(opts.tournamentName)) ||
+    inferSurface(playerRows, oppRows);
+  const bestOf = tennisBestOf(tour, Boolean(opts.isGrandSlam));
+  const player = buildPlayer(playerName, tour, playerRows, surface, bestOf);
+  const opponent = buildPlayer(opponentName, tour, oppRows, surface, bestOf);
   const a = pickStats(player);
   const b = pickStats(opponent);
-  const bestOf = tennisBestOf(tour, Boolean(opts.isGrandSlam));
 
   const oppKey = normName(opponent.name);
   const h2hRows = playerRows.filter((row) => normName(row.opponent) === oppKey);
@@ -587,8 +614,8 @@ export function buildTennisMatchAnalysis(opts: {
         mean(h2hRows.map((row) => num(row.totalGames)).filter((v): v is number => v != null)),
         1
       ),
-      avgGamesBo3: h2hAvg(h2hRows, (row) => Number(row.bestOf) < 5),
-      avgGamesBo5: h2hAvg(h2hRows, (row) => Number(row.bestOf) >= 5),
+      avgGamesBo3: h2hAvg(h2hRows, (row) => resolveTennisMatchBestOf(row) === 3),
+      avgGamesBo5: h2hAvg(h2hRows, (row) => resolveTennisMatchBestOf(row) === 5),
       recent: h2hRows
         .slice(-5)
         .reverse()
@@ -636,14 +663,28 @@ function winLossWords(record: string): string {
   return `${wins} win${wins === 1 ? '' : 's'} and ${losses} loss${losses === 1 ? '' : 'es'}`;
 }
 
+/** Last-N form as wins/sample, e.g. 2-3 -> 2/5. */
+export function tennisFormFraction(record: string): string {
+  const match = String(record || '').trim().match(/^(\d+)\s*-\s*(\d+)/);
+  if (!match) return String(record || '');
+  const wins = Number(match[1]);
+  const losses = Number(match[2]);
+  if (!Number.isFinite(wins) || !Number.isFinite(losses)) return String(record || '');
+  return `${wins}/${wins + losses}`;
+}
+
 export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
   const slim = (side: TennisAnalystPlayer) => ({
     name: side.name,
     rank: side.rank,
-    last5: winLossWords(side.l5.record),
-    last10: winLossWords(side.l10.record),
+    last5: tennisFormFraction(side.l5.record),
+    last5Sample: tennisFormSampleLabel(5, analysis.bestOf === 5 ? 5 : 3, normalizeSurface(analysis.surface)),
+    last5Matches: side.l5.results,
+    last10: tennisFormFraction(side.l10.record),
+    last10Sample: tennisFormSampleLabel(10, analysis.bestOf === 5 ? 5 : 3, normalizeSurface(analysis.surface)),
     last15: {
-      record: winLossWords(side.l15.record),
+      sample: analysis.bestOf === 5 ? 'last 15 best-of-5 matches' : 'last 15 best-of-3 matches',
+      record: tennisFormFraction(side.l15.record),
       winPct: side.l15.winPct,
       gameWinPct: side.l15.gameWinPct,
       setWinPct: side.l15.setWinPct,
@@ -668,6 +709,10 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
     surface: side.surface
       ? {
           surface: side.surface.surface,
+          sample:
+            analysis.bestOf === 5
+              ? `last 15 ${side.surface.surface} best-of-5 matches`
+              : `last 15 ${side.surface.surface} best-of-3 matches`,
           record: winLossWords(side.surface.stats.record),
           holdPct: side.surface.stats.holdPct,
           breakPct: side.surface.stats.breakPct,
@@ -689,8 +734,8 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
       label: analysis.bestOf === 5 ? 'Best of 5 Grand Slam' : 'Best of 3',
       note:
         analysis.bestOf === 5
-          ? 'ATP slam. Do not use 21.5 or 22.5 — those are BO3 lines.'
-          : 'Best of 3. 21.5 / 22.5 is the usual totals range.',
+          ? 'ATP slam. Quote last 15 as best-of-5 matches. Do not use 21.5 or 22.5 unless the user typed that number.'
+          : 'Best of 3. Quote last 15 as best-of-3 matches so the punter knows slams are out.',
     },
     player: slim(analysis.player),
     opponent: slim(analysis.opponent),

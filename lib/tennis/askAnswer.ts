@@ -1,15 +1,21 @@
 import {
   compactTennisAnalysis,
+  tennisFormFraction,
+  tennisFormSampleLabel,
   type TennisMatchAnalysis,
 } from '@/lib/tennis/matchAnalyst';
-import { buildTennisAskBrief } from '@/lib/tennis/askBrief';
+import type { TennisAskBrief } from '@/lib/tennis/askBrief';
 import {
   evaluateUserStatLine,
   formatUserLineWindow,
   parseUserStatLine,
   userLineClears,
+  type UserLineContext,
   type UserLineEval,
 } from '@/lib/tennis/askUserLine';
+
+const EMPTY_BRIEF = { similarVsOpponent: [] } as Pick<TennisAskBrief, 'similarVsOpponent'> as TennisAskBrief;
+const OPENAI_TIMEOUT_MS = 15_000;
 
 export type TennisAskMessage = { role: 'user' | 'assistant'; content: string };
 export type TennisAskReply = { answer: string; breakdown: string[]; source: 'model' | 'stats' };
@@ -49,26 +55,30 @@ const LENSES = [
   'break points and who actually gets broken',
 ] as const;
 
-const SYSTEM_PROMPT = `You are a sharp tennis betting analyst on StatTrackr. Talk like a punter texting a mate — short, casual, opinionated. Not like a preview blurb or a research note.
+const SYSTEM_PROMPT = `You are a supporting punter on StatTrackr chatting about this match. Give a clear over/under or side opinion, then back it with the stats. You are not a prediction model.
 
-Use ONLY facts and numbers in the STAT PACK. Never invent a stat, line, rank, score, or percentage. If a market is missing, say you do not have a model price, then still give a stats-based betting read.
+Use ONLY facts and numbers in the STAT PACK. Never invent a stat, line, rank, score, or percentage.
 
 How to write:
+- Talk like a punter texting a mate — short, casual, opinionated.
 - Vary how you open. Do not start every answer the same way.
 - Never write "Here's why."
-- Never say play up, selling sets, live with, or other analyst-speak.
-- Never use the canned line "Our model predicts X with a Y% chance" unless they specifically asked for the model price.
-- Dig into whatever stats matter for THIS question and THIS matchup. Use serve, return, aces, DF, hold, break, DR, games won/lost, totals, sets, first serve, second serve, BP, surface, H2H, rank bands, style splits, DVP, recent scorelines, and similar-player results when they help.
+- Never say the model, model chance, model projection, predicted, edge, EV, no-vig, fair price, or Kelly.
+- Never quote a percent edge vs the book. A listed price is fine. An "X% edge" is not.
+- Dig into whatever stats matter for THIS question: hold, break, aces, DF, games won/lost, last 10 / last 15 totals, H2H, surface, userLine hit rates.
 - Do not recycle the same three facts every time. If two stats disagree, say so.
-- Be specific: names, numbers, surfaces, last 10 / last 15, H2H scores.
+- Be specific: names, numbers, surfaces, last 10 / last 15.
 - No lock, guaranteed, or sure-thing language.
-- Answer in 2 to 4 sentences a punter can use. Then breakdown: 4 to 7 short sentences, each a different fact. Do not repeat the answer.
-- Format first: format.bestOf is this match. ATP slams are best of 5. If bestOf is 5, never mention 21.5 or 22.5 unless the user typed that number. Those are BO3 lines.
-- Totals: totals.listedBookLine is the book total for THIS match. Use that line and the book prices in marketOdds. Model projection is model.expectedTotalGames. Do not invent a 22.5 over-percent in a best of 5.
-- Edge: value.moneyline and value.totals compare model % to book implied (no-vig when both sides exist). Positive edge means the model is higher than the book. Quote those when they ask who to back or if a line is good. If those books are empty, say we do not have a price.
+- Answer in 2 to 4 sentences. Then breakdown: 4 to 7 short sentences, each a different fact. Do not repeat the answer.
+- Format first: format.bestOf is this match. ATP slams are best of 5. If bestOf is 5, never mention 21.5 or 22.5 unless the user typed that number.
+- Say the format out loud. The user cannot see the filter. When you quote last-15 match lengths, overs, hold/break, or hit rates, write "last 15 best-of-3 matches" or "last 15 best-of-5 matches" to match format.bestOf. Never say "last 15" or "last-15 match lengths" without best-of-3 or best-of-5.
+- Totals vs player games: userLine.stat is the source of truth. totalGames = match total (both players). gamesWon = one player's games. "run long" / "match total" / "total games" = match total. "for Xiao" / "games won" = that player's games. In best of 3, 18.5 is a normal PLAYER games line — do not assume it is the match total. In best of 3, 21.5 / 22.5 is usually the match total. In best of 5, 18.5 is player games and 38.5+ is the match total. viewing.stat is only a tie-break when the number could be either.
+- Totals: books.listedTotalLine is the book match total. Grade it with player.last15.totalGames (already the same best-of as this match). Never mix slam lengths (30+ games) into a best-of-3 total.
 - H2H game averages are often from BO3 meetings. Do not compare h2h.avgGames to a BO5 38.5–43.5 total.
-- User-named numbers: if they ask "11+ aces", "over 8.5 aces", "is 10 aces good", or "over 43.5 games", that number is THEIR line. Grade it with userLine in the STAT PACK. Do not say there is no line. Never say pack field names in the answer.
-- Book ace lines: if listedPlayerAceLine or listedMatchAceLine is null, there is NO book ace line. Never compare one player's aces to 11.5 unless they named that number.
+- User-named numbers: grade with userLine. Do not say there is no line. Never say pack field names.
+- Never write pack, STAT PACK, userLine, user line, graded, hit-rate call, or side lean. The punter cannot see those.
+- Last-5 / last-10 form is wins out of matches, like 2/5 or 11/15. Never write 2-3 or 1-4 for a last-N sample. Head-to-head can stay 4-2.
+- Last-5 is player.last5 over player.last5Sample, not the unfiltered L5 moneyline chart. If last5Sample is "last 5 hard best-of-3 matches", say that. Do not count slams or clay in that number. last5Matches are those matches in order.
 
 Return JSON only:
 {"answer":"string","breakdown":["string","string"]}`;
@@ -151,51 +161,118 @@ function parseAskReply(raw: string): { answer: string; breakdown: string[] } {
   };
 }
 
-function buildAskPack(analysis: TennisMatchAnalysis, question: string) {
-  const brief = buildTennisAskBrief({
+function viewingContext(
+  analysis: TennisMatchAnalysis,
+  viewing?: { stat?: string | null; line?: number | null }
+): UserLineContext {
+  return {
+    viewingStat: viewing?.stat || null,
+    viewingLine: viewing?.line ?? null,
+    listedTotalLine: analysis.marketOdds?.listedTotalLine ?? analysis.model.totalsLine ?? null,
+    bestOf: analysis.bestOf === 5 ? 5 : 3,
+    playerLast: analysis.player.last,
+    opponentLast: analysis.opponent.last,
     playerName: analysis.player.name,
     opponentName: analysis.opponent.name,
-    tour: analysis.tour,
-    isGrandSlam: analysis.bestOf === 5,
-    tournamentName: analysis.tournamentName,
-  });
-  return {
-    model: compactTennisAnalysis(analysis),
-    brief,
-    userLine: evaluateUserStatLine(analysis, brief, question),
   };
 }
 
+function punterStats(analysis: TennisMatchAnalysis) {
+  const compact = compactTennisAnalysis(analysis);
+  return {
+    match: compact.match,
+    tour: compact.tour,
+    surface: compact.surface,
+    format: compact.format,
+    player: compact.player,
+    opponent: compact.opponent,
+    h2h: compact.h2h,
+    books: {
+      listedTotalLine: compact.totals.listedBookLine,
+      totals: compact.marketOdds.totals,
+      totalsAtListed: compact.marketOdds.totalsAtListed,
+      moneyline: compact.marketOdds.moneyline,
+    },
+    aces: {
+      playerL15Aces: compact.aces.playerL15Aces,
+      opponentAcesAllowedL15: compact.aces.opponentAcesAllowedL15,
+    },
+  };
+}
+
+function buildAskPack(
+  analysis: TennisMatchAnalysis,
+  question: string,
+  viewing?: { stat?: string | null; line?: number | null }
+) {
+  const ctx = viewingContext(analysis, viewing);
+  return {
+    stats: punterStats(analysis),
+    viewing: {
+      stat: ctx.viewingStat,
+      line: ctx.viewingLine,
+      player: analysis.player.last,
+      hintOnly: true,
+      meaning:
+        'Chart tab is a tie-break only. Follow userLine.stat. BO3 18.5 can be player games won. BO3 21.5+ or "run long" is match total. BO5 18.5 is player games.',
+    },
+    userLine: evaluateUserStatLine(analysis, EMPTY_BRIEF, question, ctx),
+  };
+}
+
+function soundsLikeModelPitch(text: string): boolean {
+  return /\b(the model|our model|model has|model chance|model edge|model projection|positive edge|%\s*edge|\bEV\b|no-vig|kelly)\b/i.test(
+    text
+  );
+}
+
+function soundsLikePackLeak(text: string): boolean {
+  return /\b(stat pack|the pack|userLine|user line|graded|hit-rate call|side lean)\b/i.test(text);
+}
+
+function formatSample(bestOf: 3 | 5): string {
+  return bestOf === 5 ? 'best-of-5' : 'best-of-3';
+}
+
 function localBreakdown(analysis: TennisMatchAnalysis): string[] {
-  const { player, opponent, model, h2h } = analysis;
+  const { player, opponent, h2h } = analysis;
+  const sample = formatSample(analysis.bestOf === 5 ? 5 : 3);
   const lines: string[] = [];
   if (player.l15.aces != null && opponent.l15.acesAllowed != null) {
     lines.push(
-      `${player.last} is averaging ${player.l15.aces} aces over the last 15. ${opponent.last} has been allowing ${opponent.l15.acesAllowed}.`
+      `${player.last} is averaging ${player.l15.aces} aces over his last 15 ${sample} matches. ${opponent.last} has been allowing ${opponent.l15.acesAllowed}.`
     );
   }
   if (player.l15.holdPct != null && opponent.l15.breakPct != null) {
     lines.push(
-      `${player.last} has held ${player.l15.holdPct}% lately. ${opponent.last} has broken ${opponent.l15.breakPct}%.`
+      `${player.last} has held ${player.l15.holdPct}% in last 15 ${sample} matches. ${opponent.last} has broken ${opponent.l15.breakPct}%.`
     );
   }
   if (player.l15.df != null) {
-    lines.push(`${player.last} is coughing up ${player.l15.df} double faults per match in that same window.`);
+    lines.push(`${player.last} is coughing up ${player.l15.df} double faults per match in that same ${sample} window.`);
   }
   if (player.l15.totalGames != null && opponent.l15.totalGames != null) {
     lines.push(
-      `${player.last} matches have been sitting around ${player.l15.totalGames} games. ${opponent.last} around ${opponent.l15.totalGames}.`
+      `Last 15 ${sample} matches: ${player.last} is around ${player.l15.totalGames} total games, ${opponent.last} around ${opponent.l15.totalGames}.`
     );
   }
   lines.push(
-    `${player.last} is ${player.l10.record} over the last 10. ${opponent.last} is ${opponent.l10.record}.`
+    `${player.last} is ${tennisFormFraction(player.l10.record)} over the ${tennisFormSampleLabel(
+      10,
+      analysis.bestOf === 5 ? 5 : 3,
+      analysis.surface === 'hard' || analysis.surface === 'clay' || analysis.surface === 'grass'
+        ? analysis.surface
+        : null
+    )}. ${opponent.last} is ${tennisFormFraction(opponent.l10.record)}.`
   );
   if (h2h.matches) {
     lines.push(`Head to head is ${h2h.record} for ${player.last} across ${h2h.matches} matches.`);
   }
-  lines.push(
-    `The model still has ${model.winner} in front, expected margin about ${Math.abs(model.expectedWinnerMargin)} games.`
-  );
+  if (player.l15.holdPct != null && opponent.l15.holdPct != null) {
+    lines.push(
+      `${player.last} has been holding ${player.l15.holdPct}% on file. ${opponent.last} is at ${opponent.l15.holdPct}%.`
+    );
+  }
   return lines.slice(0, 7);
 }
 
@@ -222,14 +299,15 @@ function buildLocalUserLineReply(
   evaled: UserLineEval,
   analysis: TennisMatchAnalysis
 ): { answer: string; breakdown: string[] } {
-  const l15 = evaled.windows.find((row) => row.label === 'L15');
+  const l15 = evaled.windows.find((row) => row.label.startsWith('L15'));
   const vs = evaled.windows.find((row) => row.label.startsWith('vs '));
   const rates = [l15?.pct, evaled.similarVsOpponent?.pct, vs?.pct].filter(
     (value): value is number => value != null
   );
   const avgHit = rates.length ? rates.reduce((sum, value) => sum + value, 0) / rates.length : null;
   const projClears = evaled.projection != null && userLineClears(evaled.projection, evaled.asked);
-  const hitBit = l15?.pct != null ? `${l15.pct}% of last ${l15.sample}` : null;
+  const sample = formatSample(analysis.bestOf === 5 ? 5 : 3);
+  const hitBit = l15?.pct != null ? `${l15.pct}% of last ${l15.sample} ${sample} matches` : null;
   const similarBit =
     evaled.similarVsOpponent?.pct != null
       ? `${evaled.similarVsOpponent.pct}% of similar players vs ${evaled.opponent}`
@@ -249,18 +327,17 @@ function buildLocalUserLineReply(
 
 function buildLocalAskReply(
   analysis: TennisMatchAnalysis,
-  question: string
+  question: string,
+  viewing?: { stat?: string | null; line?: number | null }
 ): { answer: string; breakdown: string[] } {
   const q = String(question || '').toLowerCase();
   const { player, opponent, model } = analysis;
-  const brief = buildTennisAskBrief({
-    playerName: analysis.player.name,
-    opponentName: analysis.opponent.name,
-    tour: analysis.tour,
-    isGrandSlam: analysis.bestOf === 5,
-    tournamentName: analysis.tournamentName,
-  });
-  const userLine = evaluateUserStatLine(analysis, brief, question);
+  const userLine = evaluateUserStatLine(
+    analysis,
+    EMPTY_BRIEF,
+    question,
+    viewingContext(analysis, viewing)
+  );
   if (userLine) return buildLocalUserLineReply(userLine, analysis);
   const breakdown = localBreakdown(analysis);
   const side = namedSide(q, analysis);
@@ -272,15 +349,15 @@ function buildLocalAskReply(
     const pct = gamesCoverPct(model, targetSide, gamesLine);
     if (pct == null) {
       return {
-        answer: `No exact ${gamesLine} game-line price in the pack. The model still leans ${model.winner} by about ${Math.abs(model.expectedWinnerMargin)} games.`,
+        answer: `I do not have a clean ${gamesLine} cover sample for ${name}. From the last 15 I still lean ${player.last} in the match, but I would not force that spread.`,
         breakdown,
       };
     }
     return {
       answer:
         pct >= 50
-          ? `${name} covering ${gamesLine} games sits at ${pctLabel(pct)} on the model, so that is the lean, not a lock.`
-          : `${name} covering ${gamesLine} games is only ${pctLabel(pct)} on the model. That is a pass unless the price is huge.`,
+          ? `${name} covering ${gamesLine} looks okay off recent matches, but I would not steam it.`
+          : `${name} covering ${gamesLine} has been a struggle lately. I would pass unless the price is huge.`,
       breakdown,
     };
   }
@@ -291,7 +368,7 @@ function buildLocalAskReply(
     return {
       answer:
         playerAces != null
-          ? `There is no listed player ace line on the chart. ${player.last} is at ${playerAces} aces over the last 15${
+          ? `There is no listed player ace line on the chart. ${player.last} is at ${playerAces} aces over the last 15 ${formatSample(analysis.bestOf === 5 ? 5 : 3)} matches${
               oppAllowed != null ? `, and ${opponent.last} has been allowing ${oppAllowed}` : ''
             }, so I would judge the ace spot off that projection, not a fake 11.5.`
           : 'There is no listed ace line on the chart. Use the raw ace and ace-allowed numbers instead.',
@@ -299,56 +376,60 @@ function buildLocalAskReply(
     };
   }
 
-  if (/\btotal|over|under|games\b/.test(q)) {
-    const line = model.totalsLine;
-    const overPct = model.totalsOverPct;
-    const listed = analysis.marketOdds?.listedTotalLine ?? line;
+  if (/\btotal games\b|\bmatch total\b/.test(q) || (/\b(over|under)\b/.test(q) && /\bgames\b/.test(q) && !parseUserStatLine(q, viewingContext(analysis, viewing)))) {
+    const listed = analysis.marketOdds?.listedTotalLine ?? model.totalsLine;
+    const pGames = player.l15.totalGames;
+    const oGames = opponent.l15.totalGames;
     return {
       answer:
         analysis.bestOf === 5
-          ? `This is best of 5. The book total is ${listed}, not a 22.5. Projection is ${model.expectedTotalGames} games, so the over ${listed} sits around ${pctLabel(overPct)}.`
-          : `Book total is ${listed}. Projection is ${model.expectedTotalGames} games, over sits around ${pctLabel(overPct)}.`,
+          ? `This is best of 5, so ignore any 22.5 talk. The book is ${listed}. ${player.last}'s last 15 best-of-5 matches have been around ${pGames ?? 'the high 20s'} games, so I would rather the over than a short one.`
+          : `Under ${listed} is not the side I want if ${player.last}'s last 15 best-of-3 matches have been around ${pGames ?? '22'} games and ${opponent.last} around ${oGames ?? '22'}. I would rather this run long.`,
       breakdown,
     };
   }
 
-  const winPct =
-    side === 'opponent'
-      ? model.opponentWinPct
-      : side === 'player'
-        ? model.playerWinPct
-        : model.winnerSide === 'player'
-          ? model.playerWinPct
-          : model.opponentWinPct;
   const name = side === 'opponent' ? opponent.last : side === 'player' ? player.last : model.winner;
   if (side && name !== model.winner) {
     return {
-      answer: `I would not back ${name} on the moneyline from this pack. The model only has ${name} at ${pctLabel(winPct)}.`,
+      answer: `I would not back ${name} here off the last 15. Hold and break have been pointing the other way.`,
       breakdown,
     };
   }
   return {
-    answer: `${name} is the model side at ${pctLabel(winPct)}. I would still check hold/break and the total before slamming the winner.`,
+    answer: `I would lean ${name} from the recent hold/break, but I would still check the total before slamming the winner.`,
     breakdown,
   };
 }
 
-function askUserContent(question: string, analysis: TennisMatchAnalysis): string {
-  const pack = buildAskPack(analysis, question);
-  const userLine = parseUserStatLine(question);
+function askUserContent(
+  question: string,
+  analysis: TennisMatchAnalysis,
+  viewing?: { stat?: string | null; line?: number | null }
+): string {
+  const pack = buildAskPack(analysis, question, viewing);
+  const userLine = parseUserStatLine(question, viewingContext(analysis, viewing));
   const line = askedGamesLine(question);
   const side = namedSide(question, analysis);
   const lens = LENSES[Math.floor(Math.random() * LENSES.length)];
   const formatLock =
     analysis.bestOf === 5
-      ? `This match is BEST OF 5. Book total is ${analysis.marketOdds?.listedTotalLine ?? analysis.model.totalsLine}. Never quote 22.5.`
-      : `This match is BEST OF 3. Book total is ${analysis.marketOdds?.listedTotalLine ?? analysis.model.totalsLine}.`;
+      ? `This match is BEST OF 5. Every last-15 number is last 15 BEST-OF-5 matches. Say "best-of-5" when you quote those lengths. Book total is ${analysis.marketOdds?.listedTotalLine ?? analysis.model.totalsLine}. Never quote 22.5.`
+      : `This match is BEST OF 3. Every last-15 number is last 15 BEST-OF-3 matches. Say "best-of-3" when you quote those lengths so the punter knows slams are out. Book total is ${analysis.marketOdds?.listedTotalLine ?? analysis.model.totalsLine}.`;
   const lock = pack.userLine
-    ? `The user named ${pack.userLine.asked.display} for ${pack.userLine.subject}. Grade THAT number with userLine hit rates. Do not invent a book line and do not swap in modelDefaultMatchTotal.`
+    ? pack.userLine.asked.stat === 'totalGames'
+      ? `The user asked the MATCH TOTAL ${pack.userLine.asked.display} (both players added). Not ${analysis.player.last}'s games won. Grade with last-15 best-of-${analysis.bestOf === 5 ? 5 : 3} match lengths.`
+      : pack.userLine.asked.stat === 'spread'
+        ? `The user asked a GAME HANDICAP: ${pack.userLine.asked.display} for ${pack.userLine.subject}. Plus = dog (cover by winning or only losing by 1). Minus = favorite (must win by more than that). Never call a plus line "too many".`
+        : `The user asked ${pack.userLine.asked.display} for ${pack.userLine.subject}. Grade THAT player's games won, not the match total.`
     : userLine
-      ? `The user named ${userLine.display}. Grade that number from the stats. Do not invent a book line.`
+      ? userLine.stat === 'totalGames'
+        ? `The user asked the MATCH TOTAL ${userLine.display}. Not one player's games.`
+        : userLine.stat === 'spread'
+          ? `The user asked ${userLine.display}. That is a handicap, not a match total.`
+        : `The user named ${userLine.display}. Grade that number from the stats. Do not invent a book line.`
       : line != null
-        ? `The user asked about a ${line} game cover${side ? ` for ${side === 'player' ? analysis.player.last : analysis.opponent.last}` : ''}. Use that line only if the pack has it.`
+        ? `The user asked about a ${line} game handicap${side ? ` for ${side === 'player' ? analysis.player.last : analysis.opponent.last}` : ''}. Say whether they cover that spread. Never mention the pack.`
         : 'No specific user number was locked.';
   return `${formatLock}\n${lock}\nThis time lean on: ${lens}.\n\nSTAT PACK:\n${JSON.stringify(pack)}\n\nQUESTION:\n${question}`;
 }
@@ -358,7 +439,8 @@ async function openaiReasoning(
   model: string,
   question: string,
   analysis: TennisMatchAnalysis,
-  history: TennisAskMessage[]
+  history: TennisAskMessage[],
+  viewing?: { stat?: string | null; line?: number | null }
 ): Promise<string> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -366,15 +448,16 @@ async function openaiReasoning(
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
     },
+    signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
     body: JSON.stringify({
       model,
-      max_completion_tokens: 1100,
-      reasoning_effort: 'medium',
+      max_completion_tokens: 700,
+      reasoning_effort: 'low',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         ...history.slice(-6).map((msg) => ({ role: msg.role, content: msg.content })),
-        { role: 'user', content: askUserContent(question, analysis) },
+        { role: 'user', content: askUserContent(question, analysis, viewing) },
       ],
     }),
   });
@@ -393,7 +476,8 @@ async function anthropicReasoning(
   model: string,
   question: string,
   analysis: TennisMatchAnalysis,
-  history: TennisAskMessage[]
+  history: TennisAskMessage[],
+  viewing?: { stat?: string | null; line?: number | null }
 ): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -402,14 +486,15 @@ async function anthropicReasoning(
       'anthropic-version': '2023-06-01',
       'Content-Type': 'application/json',
     },
+    signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
     body: JSON.stringify({
       model,
-      max_tokens: 1100,
+      max_tokens: 700,
       temperature: 0.8,
       system: SYSTEM_PROMPT,
       messages: [
         ...history.slice(-6).map((msg) => ({ role: msg.role, content: msg.content })),
-        { role: 'user', content: askUserContent(question, analysis) },
+        { role: 'user', content: askUserContent(question, analysis, viewing) },
       ],
     }),
   });
@@ -428,8 +513,11 @@ export async function answerTennisAsk(opts: {
   analysis: TennisMatchAnalysis;
   history?: TennisAskMessage[];
   allowLlm?: boolean;
+  viewingStat?: string | null;
+  viewingLine?: number | null;
 }): Promise<TennisAskReply> {
-  const local = buildLocalAskReply(opts.analysis, opts.question);
+  const viewing = { stat: opts.viewingStat || null, line: opts.viewingLine ?? null };
+  const local = buildLocalAskReply(opts.analysis, opts.question, viewing);
   if (opts.allowLlm === false) return { ...local, source: 'stats' };
   const cfg = llmConfigured();
   if (!cfg) return { ...local, source: 'stats' };
@@ -437,10 +525,12 @@ export async function answerTennisAsk(opts: {
   try {
     const raw =
       cfg.provider === 'openai'
-        ? await openaiReasoning(cfg.key, cfg.model, opts.question, opts.analysis, history)
-        : await anthropicReasoning(cfg.key, cfg.model, opts.question, opts.analysis, history);
+        ? await openaiReasoning(cfg.key, cfg.model, opts.question, opts.analysis, history, viewing)
+        : await anthropicReasoning(cfg.key, cfg.model, opts.question, opts.analysis, history, viewing);
     const parsed = parseAskReply(raw);
     if (!parsed.answer) return { ...local, source: 'stats' };
+    const blob = `${parsed.answer}\n${parsed.breakdown.join('\n')}`;
+    if (soundsLikeModelPitch(blob) || soundsLikePackLeak(blob)) return { ...local, source: 'stats' };
     return {
       answer: parsed.answer,
       breakdown: parsed.breakdown.length ? parsed.breakdown : local.breakdown,

@@ -1,4 +1,4 @@
-import { tennisDominanceRatio, tennisLastName, resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
+import { tennisDominanceRatio, resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import {
   ADV_AVG_BEST_OF,
@@ -28,6 +28,8 @@ import { readTennisPlayerLogsCacheMany, readTennisRosterCache } from '@/lib/tenn
 import { loadPlayerMatchesCached, tennisLogsNeedHistory } from '@/lib/tennis/loadCached';
 import { tennisHandForName } from '@/lib/tennis/hands';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { tennisIsH2hMatch } from '@/lib/tennis/h2hMatch';
+import { mergeCareerH2h } from '@/lib/tennis/h2hHistory';
 
 function num(v: unknown): number | null {
   if (typeof v === 'number' && Number.isFinite(v)) return v;
@@ -123,14 +125,7 @@ function windowRows(rows: TennisMatchRow[], windowN: AdvAvgWindow, year: number)
 }
 
 function isH2hMatch(row: TennisMatchRow, h2hName: string, h2hId: string | null): boolean {
-  if (h2hId && row.opponentId && String(row.opponentId) === String(h2hId)) return true;
-  const key = normName(h2hName);
-  if (key && normName(row.opponent) === key) return true;
-  const last = tennisLastName(h2hName).toLowerCase();
-  const rowLast = tennisLastName(row.opponent).toLowerCase();
-  const init = key.replace(/[^a-z]/g, '')[0] || '';
-  const rowInit = normName(row.opponent).replace(/[^a-z]/g, '')[0] || '';
-  return Boolean(last && rowLast && last === rowLast && init && init === rowInit);
+  return tennisIsH2hMatch(row, h2hName, h2hId);
 }
 
 function holdPct(row: TennisMatchRow): number | null {
@@ -272,10 +267,11 @@ function buildSide(
     grass: all.filter((row) => normalizeSurface(row.surface) === 'grass'),
     righties: all.filter((row) => normalizeHand(row.opponentHand) === 'R'),
     lefties: all.filter((row) => normalizeHand(row.opponentHand) === 'L'),
-    h2h:
-      h2hName
-        ? all.filter((row) => isH2hMatch(row, h2hName, h2hResolved?.id ?? null))
-        : [],
+    h2h: h2hName
+      ? matches
+          .filter((row) => matchesBestOf(row, bestOf))
+          .filter((row) => isH2hMatch(row, h2hName, h2hResolved?.id ?? null))
+      : [],
   };
   const rows = ADV_AVG_ROWS.map((row) => {
     const sample = buckets[row.key] || [];
@@ -465,7 +461,14 @@ export async function buildTennisAdvancedAveragesCached(
   const thinIds = logIds.filter((id) => tennisLogsNeedHistory(logs.get(id)));
   if (thinIds.length) {
     const filled = await Promise.all(
-      thinIds.map((id) => loadPlayerMatchesCached({ playerId: id, tour }))
+      thinIds.map((id) =>
+        loadPlayerMatchesCached({
+          playerId: id,
+          tour,
+          opponentId: id === playerRes.id ? oppRes?.id : playerRes.id,
+          opponentName: id === playerRes.id ? opts.opponentName : opts.playerName,
+        })
+      )
     );
     thinIds.forEach((id, index) => {
       if (filled[index]?.length) logs.set(id, filled[index]);
@@ -477,14 +480,18 @@ export async function buildTennisAdvancedAveragesCached(
   const opponentMatches =
     opts.opponentMatches ||
     (oppRes?.id ? logs.get(oppRes.id) || [] : []);
+  const [playerWithH2h, opponentWithH2h] = await Promise.all([
+    mergeCareerH2h(playerMatches, playerRes.id, oppRes?.id, opts.opponentName, tour),
+    mergeCareerH2h(opponentMatches, oppRes?.id, playerRes.id, opts.playerName, tour),
+  ]);
   return buildTennisAdvancedAverages({
     ...opts,
     tour,
     playerId: playerRes.id,
     opponentId: oppRes?.id,
     players: roster,
-    playerMatches,
-    opponentMatches,
+    playerMatches: playerWithH2h,
+    opponentMatches: opponentWithH2h,
     includeBoards: opts.includeBoards !== false,
   });
 }

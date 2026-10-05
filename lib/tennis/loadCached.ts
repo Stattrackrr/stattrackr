@@ -23,6 +23,7 @@ import { readApiTennisPlayerMatches, listApiTennisPlayerIds } from '@/lib/tennis
 import { TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
 import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { mergeCareerH2h } from '@/lib/tennis/h2hHistory';
 
 type TennisRosterStandings = {
   ATP?: TennisRankingRow[];
@@ -129,6 +130,8 @@ export async function loadPlayerMatchesCached(opts: {
   playerId?: string | null;
   playerName?: string | null;
   tour?: TennisTour | null;
+  opponentId?: string | null;
+  opponentName?: string | null;
 }): Promise<TennisMatchRow[]> {
   let playerId = String(opts.playerId || '').trim();
   if (!playerId && opts.playerName) {
@@ -159,8 +162,14 @@ export async function loadPlayerMatchesCached(opts: {
       }
     }
     if (cachedGames.length) {
-      const games = opts.tour ? cachedGames.filter((row) => row.tour === opts.tour) : cachedGames;
-      return games.map(withMatchCountry);
+      let games = opts.tour ? cachedGames.filter((row) => row.tour === opts.tour) : cachedGames;
+      if (getHydratedTennisOverlay()?.matches?.length) {
+        const live = loadPlayerMatches({ ...opts, playerId: playerId || opts.playerId });
+        if (live.length) games = mergeMatchRows(games, live);
+      }
+      return (
+        await mergeCareerH2h(games, playerId, opts.opponentId, opts.opponentName, opts.tour)
+      ).map(withMatchCountry);
     }
   }
   if (getHydratedTennisOverlay()?.matches?.length) {
@@ -174,9 +183,12 @@ export async function loadPlayerMatchesCached(opts: {
         games: live,
       });
     }
-    return live;
+    return (
+      await mergeCareerH2h(live, playerId, opts.opponentId, opts.opponentName, opts.tour)
+    ).map(withMatchCountry);
   }
-  return [];
+  if (!playerId) return [];
+  return mergeCareerH2h([], playerId, opts.opponentId, opts.opponentName, opts.tour);
 }
 
 /** Rewrite every Redis player log that is missing compiled 2024–2026 history. */

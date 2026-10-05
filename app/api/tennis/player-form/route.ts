@@ -4,7 +4,7 @@ import {
   tennisComputedCacheKey,
   writeTennisComputedCache,
 } from '@/lib/tennis/dashboardCache';
-import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
+import { loadPlayerMatchesCached } from '@/lib/tennis/loadCached';
 import { buildTennisPlayerForm } from '@/lib/tennis/playerForm';
 import type { TennisTour } from '@/lib/tennis/types';
 
@@ -16,11 +16,16 @@ export async function GET(request: NextRequest) {
   const opponent = String(request.nextUrl.searchParams.get('opponent') || '').trim();
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
   const tour: TennisTour | null = tourParam === 'WTA' || tourParam === 'ATP' ? tourParam : null;
-  const cacheKey = tennisComputedCacheKey('form', [player, opponent, tour]);
+  const cacheKey = tennisComputedCacheKey('form_v3', [player, opponent, tour]);
   const cached = await readTennisComputedCache<Record<string, unknown>>(cacheKey);
   if (cached?.success) return NextResponse.json(cached);
 
-  if (!getHydratedTennisOverlay()?.matches?.length) {
+  const games = await loadPlayerMatchesCached({
+    playerName: player,
+    tour,
+    opponentName: opponent || null,
+  });
+  if (!games.length) {
     return NextResponse.json({
       success: true,
       tour: tour || 'ATP',
@@ -50,6 +55,7 @@ export async function GET(request: NextRequest) {
     playerName: player,
     opponentName: opponent || null,
     tour,
+    rows: games,
   });
   const body = { success: true, ...payload };
   void writeTennisComputedCache(cacheKey, body);

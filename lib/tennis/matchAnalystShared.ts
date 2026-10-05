@@ -23,13 +23,19 @@ export type TennisAnalystStats = {
   over225: number | null;
 };
 
+export type TennisAnalystForm = {
+  record: string;
+  winPct: number | null;
+  results: Array<{ opponent: string; win: boolean; surface: 'hard' | 'clay' | 'grass' | null }>;
+};
+
 export type TennisAnalystPlayer = {
   name: string;
   last: string;
   rank: number | null;
   hand: string | null;
-  l5: { record: string; winPct: number | null };
-  l10: { record: string; winPct: number | null };
+  l5: TennisAnalystForm;
+  l10: TennisAnalystForm;
   l15: TennisAnalystStats;
   surface: { surface: string; stats: TennisAnalystStats } | null;
 };
