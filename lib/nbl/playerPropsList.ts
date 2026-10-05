@@ -2,6 +2,8 @@
  * NBL props-page list. Cache only (odds-api.net board + disk snapshots + player logs).
  * O/U replaces milestones when both exist. Milestone prices on this list must
  * sit between $1.55 and $2.60; the dashboard stays unfiltered.
+ * Snapshots are game-day scoped — last week's closing O/U never rides onto the
+ * next matchup, same as the dashboard.
  */
 
 import fs from 'fs';
@@ -254,40 +256,32 @@ function teamsMatch(a: string | null | undefined, b: string | null | undefined):
   return ca.toLowerCase() === cb.toLowerCase();
 }
 
-/** Same derby even when home/away or date stamps differ across live board vs snapshots. */
+/** Same derby even when home/away stamps differ. Date is required separately. */
 function matchupKey(home: string | null | undefined, away: string | null | undefined): string {
   return [officialTeam(home), officialTeam(away)].filter(Boolean).sort().join('|');
 }
 
-function mergeSnapshots(a: NblPlayerPropSnapshot, b: NblPlayerPropSnapshot): NblPlayerPropSnapshot {
-  const aOfficial = Boolean(resolveNblClubName(a.homeTeam) && resolveNblClubName(a.awayTeam));
-  const bOfficial = Boolean(resolveNblClubName(b.homeTeam) && resolveNblClubName(b.awayTeam));
-  const base = bOfficial && !aOfficial ? b : a;
-  const other = base === a ? b : a;
-  const books = [...new Set([...(base.books || []), ...(other.books || [])])];
-  const lines = [...(base.lines || [])];
-  for (const line of other.lines || []) {
-    if (
-      !lines.some(
-        (existing) =>
-          existing.book === line.book &&
-          existing.stat === line.stat &&
-          existing.playerKey === line.playerKey &&
-          existing.line === line.line &&
-          existing.kind === line.kind
-      )
-    ) {
-      lines.push(line);
-    }
-  }
-  return {
-    ...base,
-    homeTeam: officialTeam(base.homeTeam),
-    awayTeam: officialTeam(base.awayTeam),
-    books,
-    lines,
-    lineCount: lines.length,
-  };
+/** One NBL game — teams plus calendar day. Rematches do not share a stamp. */
+export function nblListGameStamp(
+  home: string | null | undefined,
+  away: string | null | undefined,
+  commenceTime: string | null | undefined
+): string {
+  return `${String(commenceTime || '').slice(0, 10)}|${matchupKey(home, away)}`;
+}
+
+export function nblListSnapshotForGame(
+  snapshots: NblPlayerPropSnapshot[],
+  game: { gameId?: string | null; homeTeam: string; awayTeam: string; commenceTime: string }
+): NblPlayerPropSnapshot | null {
+  const stamp = nblListGameStamp(game.homeTeam, game.awayTeam, game.commenceTime);
+  if (!matchupKey(game.homeTeam, game.awayTeam) || !String(game.commenceTime || '').slice(0, 10)) return null;
+  const matches = snapshots.filter((snap) => {
+    if (game.gameId && snap.gameId && game.gameId === snap.gameId) return true;
+    return nblListGameStamp(snap.homeTeam, snap.awayTeam, snap.commenceTime) === stamp;
+  });
+  if (!matches.length) return null;
+  return matches.sort((a, b) => (b.lineCount || 0) - (a.lineCount || 0))[0];
 }
 
 function mergeBooks(a: NblBookRow[], b: NblBookRow[]): NblBookRow[] {
@@ -329,7 +323,7 @@ function mergeBooks(a: NblBookRow[], b: NblBookRow[]): NblBookRow[] {
 function mergeDuplicatePropRows(props: CombinedPlayerProp[]): CombinedPlayerProp[] {
   const byKey = new Map<string, CombinedPlayerProp>();
   for (const row of props) {
-    const key = `${row.playerId}|${row.statType}|${matchupKey(row.homeTeam, row.awayTeam)}`;
+    const key = `${row.playerId}|${row.statType}|${nblListGameStamp(row.homeTeam, row.awayTeam, row.gameDate)}`;
     const prev = byKey.get(key);
     if (!prev) {
       byKey.set(key, row);
@@ -451,6 +445,10 @@ function bookLineAt(book: NblBookRow, value: number): NblPropLine | null {
 
 function isTwoWayOuLine(line: NblPropLine): boolean {
   return line.kind === 'ou' && line.under !== 'N/A' && line.over !== 'N/A';
+}
+
+function booksHaveTwoWayOu(books: NblBookRow[]): boolean {
+  return books.some((book) => nblBookLines(book).some(isTwoWayOuLine));
 }
 
 /** Consensus line for the props list. Two-way O/U wins the market even if more books only have a milestone. */
@@ -719,12 +717,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
   const roster = loadRoster();
   const pulseGames = await getNblPulseScoreBoard();
   const snapshots = await listNblPlayerPropSnapshots();
-  const snapshotByKey = new Map<string, NblPlayerPropSnapshot>();
-  for (const snap of snapshots) {
-    const key = matchupKey(snap.homeTeam, snap.awayTeam);
-    const prev = snapshotByKey.get(key);
-    snapshotByKey.set(key, prev ? mergeSnapshots(prev, snap) : snap);
-  }
+  const usedStamps = new Set<string>();
 
   const games: CombinedAflGame[] = [];
   const seenGames = new Set<string>();
@@ -738,7 +731,7 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
   ) => {
     const home = officialTeam(game.homeTeam);
     const away = officialTeam(game.awayTeam);
-    const key = matchupKey(home, away);
+    const key = nblListGameStamp(home, away, game.commenceTime);
     if (!seenGames.has(key)) {
       seenGames.add(key);
       games.push({
@@ -790,17 +783,33 @@ async function buildNblPlayerPropsList(): Promise<NblPlayerPropsListPayload> {
     if (!isAflCommenceTimePropsEligible(game.commenceTime)) continue;
     const home = officialTeam(game.homeTeam);
     const away = officialTeam(game.awayTeam);
-    const snap = snapshotByKey.get(matchupKey(home, away));
+    const snap = nblListSnapshotForGame(snapshots, {
+      gameId: game.gameId,
+      homeTeam: home,
+      awayTeam: away,
+      commenceTime: game.commenceTime,
+    });
+    if (snap) {
+      usedStamps.add(nblListGameStamp(snap.homeTeam, snap.awayTeam, snap.commenceTime));
+      if (snap.gameId) usedStamps.add(snap.gameId);
+    }
+    usedStamps.add(nblListGameStamp(home, away, game.commenceTime));
+    if (game.gameId) usedStamps.add(game.gameId);
     const players = [
       ...new Set([...pulsePlayers(game), ...(snap ? snapshotPlayers(snap) : [])]),
     ].filter(isPulsePlayerName);
-    considerGame(game, players, (player, stat) =>
-      mergeBooks(pulseBooksByStat(game, player)[stat] || [], snap ? booksFromSnapshot(snap, player, stat) : [])
-    );
-    snapshotByKey.delete(matchupKey(home, away));
+    considerGame(game, players, (player, stat) => {
+      const live = pulseBooksByStat(game, player)[stat] || [];
+      const fromSnap = snap ? booksFromSnapshot(snap, player, stat) : [];
+      if (!live.length) return fromSnap;
+      if (!booksHaveTwoWayOu(live) && booksHaveTwoWayOu(fromSnap)) return live;
+      return mergeBooks(live, fromSnap);
+    });
   }
 
-  for (const snap of snapshotByKey.values()) {
+  for (const snap of snapshots) {
+    const stamp = nblListGameStamp(snap.homeTeam, snap.awayTeam, snap.commenceTime);
+    if (usedStamps.has(stamp) || (snap.gameId && usedStamps.has(snap.gameId))) continue;
     if (!officialNblClubName(snap.homeTeam) || !officialNblClubName(snap.awayTeam)) continue;
     if (!isAflCommenceTimePropsEligible(snap.commenceTime)) continue;
     considerGame(
@@ -858,7 +867,9 @@ export async function getNblPlayerPropsList(opts?: {
     }
     const rebuilt = await getNblPlayerPropsList({ refresh: true });
     if (rebuilt.data.length > 0) return rebuilt;
-    if (cached?.data?.length) return payloadFromCache(cached);
+    if (cached?.data?.length && Number(cached.listSchema) === NBL_LIST_SCHEMA) {
+      return payloadFromCache(cached);
+    }
     return emptyNblListPayload();
   }
   if (listBuildInflight) return listBuildInflight;
@@ -869,7 +880,9 @@ export async function getNblPlayerPropsList(opts?: {
       return payload;
     }
     const previous = await readUsableNblListCache();
-    if (previous?.data?.length) return payloadFromCache(previous);
+    if (previous?.data?.length && Number(previous.listSchema) === NBL_LIST_SCHEMA) {
+      return payloadFromCache(previous);
+    }
     return payload;
   })().finally(() => {
     listBuildInflight = null;

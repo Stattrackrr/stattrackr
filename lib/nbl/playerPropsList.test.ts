@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
-import { nblListConsensusLine } from './playerPropsList';
+import { nblListConsensusLine, nblListSnapshotForGame } from './playerPropsList';
 import type { NblBookRow } from './oddsTypes';
+import type { NblPlayerPropSnapshot } from './playerPropSnapshots';
 
 function book(name: string, lines: Array<{ line: string; over: string; under: string; kind: 'ou' | 'milestone' }>): NblBookRow {
   const main = lines[0];
@@ -36,6 +37,54 @@ assert.equal(
     'assists'
   ),
   2.5
+);
+
+function snap(partial: Partial<NblPlayerPropSnapshot> & Pick<NblPlayerPropSnapshot, 'gameId' | 'homeTeam' | 'awayTeam' | 'commenceTime'>): NblPlayerPropSnapshot {
+  return {
+    gameKey: `${String(partial.commenceTime).slice(0, 10)}_${partial.homeTeam}_vs_${partial.awayTeam}`,
+    capturedAt: partial.commenceTime,
+    closing: false,
+    source: 'odds-api-net',
+    books: [],
+    lineCount: partial.lineCount ?? 1,
+    lines: [],
+    ...partial,
+  };
+}
+
+const lastWeek = snap({
+  gameId: 'old',
+  homeTeam: 'Melbourne United',
+  awayTeam: 'South East Melbourne Phoenix',
+  commenceTime: '2026-09-24T09:30:00.000Z',
+  lineCount: 40,
+});
+const thisWeek = snap({
+  gameId: 'new',
+  homeTeam: 'South East Melbourne Phoenix',
+  awayTeam: 'Melbourne United',
+  commenceTime: '2026-10-04T09:30:00.000Z',
+  lineCount: 8,
+});
+
+assert.equal(
+  nblListSnapshotForGame([lastWeek, thisWeek], {
+    gameId: 'new',
+    homeTeam: 'Melbourne United',
+    awayTeam: 'South East Melbourne Phoenix',
+    commenceTime: '2026-10-04T09:30:00.000Z',
+  })?.gameId,
+  'new'
+);
+
+assert.equal(
+  nblListSnapshotForGame([lastWeek], {
+    gameId: 'new',
+    homeTeam: 'Melbourne United',
+    awayTeam: 'South East Melbourne Phoenix',
+    commenceTime: '2026-10-04T09:30:00.000Z',
+  }),
+  null
 );
 
 console.log('playerPropsList consensus ok');
