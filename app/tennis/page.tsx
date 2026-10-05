@@ -1521,6 +1521,7 @@ export default function TennisDashboardPage() {
         tour?: string;
         isGrandSlam?: boolean;
         opponent?: string;
+        opponentId?: string | null;
         opponentIoc?: string | null;
         ioc?: string | null;
         tourneyName?: string | null;
