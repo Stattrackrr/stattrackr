@@ -27,7 +27,7 @@
     },
     {
       "path": "/api/cron/refresh-nbl-odds",
-      "schedule": "50 */2 * * *"
+      "schedule": "50 * * * *"
     },
     {
       "path": "/api/cron/refresh-combined-props",

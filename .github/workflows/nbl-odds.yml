@@ -1,0 +1,49 @@
+# Hourly NBL live odds ingest. Separate from nightly NBL Process Stats.
+# Pulls odds-api.net player lines + The Odds API game lines into production
+# Redis so /props stays current as books move.
+name: NBL Odds Ingest
+
+on:
+  schedule:
+    # Every hour at :10 UTC — staggered from the 2h snapshot job (:20) and
+    # the Vercel cron (:50).
+    - cron: '10 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: nbl-odds-ingest
+  cancel-in-progress: false
+
+env:
+  TZ: Australia/Brisbane
+
+jobs:
+  refresh_odds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          lfs: false
+
+      - name: Check prod cron secrets
+        id: check
+        env:
+          PROD_URL: ${{ secrets.PROD_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$PROD_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "PROD_URL or CRON_SECRET not set; skipping NBL odds ingest"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Ingest NBL odds into production
+        if: steps.check.outputs.configured == 'true'
+        env:
+          PROD_URL: ${{ secrets.PROD_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: bash scripts/ingest-nbl-odds.sh
