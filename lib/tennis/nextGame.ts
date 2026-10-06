@@ -7,6 +7,11 @@ import { tennisAssignDrawRanks } from '@/lib/tennis/seeds';
 import { tennisIdentityMatch, tennisSamePersonRecords } from '@/lib/tennis/oddsApi';
 import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
+import {
+  TENNIS_PROPS_LIVE_GRACE_MS,
+  tennisFixtureIsOnCourt,
+  tennisListedMatchupIsPlayersNextGame,
+} from '@/lib/tennis/oddsBoard';
 import type { TennisTour } from '@/lib/tennis/types';
 
 const API_BASE = 'https://api.api-tennis.com/tennis/';
@@ -123,9 +128,6 @@ function nameKey(name: string): string {
   return `name:${name.trim().toLowerCase()}`;
 }
 
-/** API-Tennis "Set 1" / live can appear hours before first ball. Trust it only near tipoff. */
-const LIVE_STATUS_MAX_FUTURE_MS = 2 * 60 * 60 * 1000;
-
 function fixturePhase(
   status: string,
   tipoff: Date | null
@@ -147,23 +149,8 @@ function fixturePhase(
     if (tipoff && tipoff.getTime() > Date.now() + 60 * 60 * 1000) return 'scheduled';
     return 'finished';
   }
-  const now = Date.now();
-  const started = tipoff ? now >= tipoff.getTime() : false;
-  const setOrLive =
-    /^(set\s*)?[1-5]$/.test(s) ||
-    s.includes('live') ||
-    s.includes('progress') ||
-    s.includes('playing');
-  if (setOrLive) {
-    if (!tipoff) return 'live';
-    // Not-before times can lag after a match starts, but not by many hours.
-    if (tipoff.getTime() - now <= LIVE_STATUS_MAX_FUTURE_MS) return 'live';
-    return 'scheduled';
-  }
-  if (!s || s === 'not started' || s === 'scheduled' || s === 'ns') {
-    return started ? 'live' : 'scheduled';
-  }
-  return started ? 'live' : 'scheduled';
+  if (tennisFixtureIsOnCourt(s, tipoff?.getTime() ?? null)) return 'live';
+  return 'scheduled';
 }
 
 async function apiTennisCall(params: Record<string, string>): Promise<any> {
@@ -282,7 +269,18 @@ function toNextGame(
   const tipoff = parseTipoff(fx.event_date, fx.event_time);
   let phase = fixturePhase(String(fx.event_status || ''), tipoff);
   if (phase === 'finished' && !hasPlayedScore(fx)) {
-    phase = tipoff && tipoff.getTime() <= Date.now() ? 'live' : 'scheduled';
+    const age = tipoff ? Date.now() - tipoff.getTime() : Number.POSITIVE_INFINITY;
+    if (age > TENNIS_PROPS_LIVE_GRACE_MS) return null;
+    phase = 'scheduled';
+  }
+  if (phase === 'live' && tipoff && Date.now() - tipoff.getTime() > TENNIS_PROPS_LIVE_GRACE_MS) {
+    const status = String(fx.event_status || '').trim().toLowerCase();
+    const inSet =
+      /^(set\s*)?[1-5]$/.test(status) ||
+      status.includes('live') ||
+      status.includes('progress') ||
+      status.includes('playing');
+    if (!inSet) return null;
   }
   if (phase === 'skip' || phase === 'finished') return null;
   const tournamentName = String(fx.tournament_name || '').trim() || null;
@@ -315,7 +313,7 @@ function toNextGame(
 }
 
 /** A "live" final with no result must not hide the player's real next match. */
-const STALE_LIVE_MS = 6 * 60 * 60 * 1000;
+const STALE_LIVE_MS = TENNIS_PROPS_LIVE_GRACE_MS;
 
 function upcomingRank(next: TennisNextGame, tip: number): number {
   if (!Number.isFinite(tip)) return Number.MAX_SAFE_INTEGER;
@@ -573,12 +571,6 @@ export function tennisCommenceTimeForMatch(
     (matchId ? upcoming.find((game) => String(game.matchId || '').trim() === matchId) : null) ||
     (home && away ? upcoming.find(named) : null);
   if (!hit) return null;
-  if (hit.live) {
-    const tipMs = hit.tipoff ? Date.parse(hit.tipoff) : Number.NaN;
-    if (!Number.isFinite(tipMs)) return new Date().toISOString();
-    const ahead = tipMs - Date.now();
-    if (ahead > 0 && ahead <= LIVE_STATUS_MAX_FUTURE_MS) return new Date().toISOString();
-  }
   return hit.tipoff || null;
 }
 
@@ -593,33 +585,22 @@ export function tennisUpcomingTipoffFor(
     awayName?: string | null;
   }
 ): string | null {
-  const id = String(opts.playerId || '').trim();
-  const fromId = id ? byPlayerId.get(id) : undefined;
-  if (fromId) {
-    return (
-      tennisCommenceTimeForMatch([fromId], {
-        matchId: fromId.matchId,
-        homeName: fromId.homeName,
-        awayName: fromId.awayName,
-      }) || fromId.tipoff
-    );
-  }
-  const name = String(opts.playerName || '').trim();
-  const fromName = name ? byPlayerId.get(nameKey(name)) : undefined;
-  if (fromName) {
-    return (
-      tennisCommenceTimeForMatch([fromName], {
-        matchId: fromName.matchId,
-        homeName: fromName.homeName,
-        awayName: fromName.awayName,
-      }) || fromName.tipoff
-    );
-  }
-  return tennisCommenceTimeForMatch(upcoming, {
+  const listed = {
     matchId: opts.matchId,
     homeName: opts.homeName,
     awayName: opts.awayName,
-  });
+  };
+  const id = String(opts.playerId || '').trim();
+  const fromId = id ? byPlayerId.get(id) : undefined;
+  if (fromId && tennisListedMatchupIsPlayersNextGame(listed, fromId)) {
+    return fromId.tipoff || tennisCommenceTimeForMatch([fromId], listed);
+  }
+  const name = String(opts.playerName || '').trim();
+  const fromName = name ? byPlayerId.get(nameKey(name)) : undefined;
+  if (fromName && tennisListedMatchupIsPlayersNextGame(listed, fromName)) {
+    return fromName.tipoff || tennisCommenceTimeForMatch([fromName], listed);
+  }
+  return tennisCommenceTimeForMatch(upcoming, listed);
 }
 
 export async function overlayTennisStartTimes<

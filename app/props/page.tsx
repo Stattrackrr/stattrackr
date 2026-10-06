@@ -93,6 +93,7 @@ import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { tennisEventPlaceLabel, tennisTourLabel } from '@/lib/tennis/chartStats';
 import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
+import { tennisCommenceTimeStillOnBoard } from '@/lib/tennis/oddsBoard';
 import {
   aggregateTennisPropsForPaint,
   bookmakerLinesFromTennisRow,
@@ -109,6 +110,8 @@ interface Game {
   visitor_team_score?: number;
   /** ISO datetime for tipoff countdown (e.g. AFL from cache) */
   datetime?: string;
+  /** Tennis: on-court only. Do not infer LIVE from a passed not-before time. */
+  live?: boolean;
 }
 
 interface PlayerProp {
@@ -172,6 +175,7 @@ interface PlayerProp {
   opponentDrawRank?: number | null;
   tournamentName?: string | null;
   surface?: string | null;
+  live?: boolean;
 }
 
 
@@ -757,11 +761,14 @@ function TipoffCountdown({
   isDark,
   label = 'Tipoff',
   maxAheadMs,
+  elapsedLiveWindow = true,
 }: {
   game: Game | null;
   isDark: boolean;
   label?: string;
   maxAheadMs?: number;
+  /** NBA/AFL: start time in the last 3 hours means in progress. Tennis must not use this. */
+  elapsedLiveWindow?: boolean;
 }) {
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
@@ -772,18 +779,20 @@ function TipoffCountdown({
   useEffect(() => {
     if (!game) {
       setCountdown(null);
+      setIsGameInProgress(false);
       return;
     }
 
     const now = Date.now();
     let tipoffDate: Date | null = null;
+    const pastFloor = elapsedLiveWindow ? now - liveWindowMs : now - 24 * 60 * 60 * 1000;
     
     // First, try to use the datetime field from the game object (most reliable)
     if ((game as any).datetime) {
       const gameDateTime = new Date((game as any).datetime);
       if (
         !Number.isNaN(gameDateTime.getTime()) &&
-        gameDateTime.getTime() > now - liveWindowMs &&
+        gameDateTime.getTime() > pastFloor &&
         gameDateTime.getTime() < now + aheadLimitMs
       ) {
         tipoffDate = gameDateTime;
@@ -800,7 +809,7 @@ function TipoffCountdown({
         
         // Allow a recently-passed tipoff so the props page can still show LIVE after bounce.
         if (
-          parsedStatus.getTime() > now - liveWindowMs &&
+          parsedStatus.getTime() > pastFloor &&
           !isMidnight &&
           parsedStatus.getTime() < now + aheadLimitMs
         ) {
@@ -810,7 +819,7 @@ function TipoffCountdown({
     }
     
     // Try to parse tipoff from status (this extracts time from status like "7:00 PM")
-    if (!tipoffDate) {
+    if (!tipoffDate && elapsedLiveWindow) {
       tipoffDate = parseBallDontLieTipoff(game);
       
       // If parseBallDontLieTipoff returned midnight UTC, it's likely just a date - try extracting time from status manually
@@ -846,7 +855,7 @@ function TipoffCountdown({
     }
     
     // Last resort: use game.date with 7:30 PM local time
-    if (!tipoffDate && game.date) {
+    if (!tipoffDate && elapsedLiveWindow && game.date) {
       const dateStr = game.date.split('T')[0];
       if (dateStr) {
         const localDate = new Date(dateStr);
@@ -855,9 +864,9 @@ function TipoffCountdown({
       }
     }
     
-    if (!tipoffDate || tipoffDate.getTime() <= now - liveWindowMs) {
+    if (!tipoffDate || (elapsedLiveWindow && tipoffDate.getTime() <= now - liveWindowMs)) {
       setCountdown(null);
-      setIsGameInProgress(false);
+      setIsGameInProgress(Boolean(!elapsedLiveWindow && game.live));
       return;
     }
 
@@ -867,9 +876,10 @@ function TipoffCountdown({
       const diff = tipoff - now;
       setIsBeyond24h(diff > 24 * 60 * 60 * 1000);
       
-      // Check if game is in progress (started within last 3 hours)
       const timeSinceTipoff = now - tipoff;
-      const gameIsLive = timeSinceTipoff > 0 && timeSinceTipoff < liveWindowMs;
+      const gameIsLive = elapsedLiveWindow
+        ? timeSinceTipoff > 0 && timeSinceTipoff < liveWindowMs
+        : Boolean(game.live) && timeSinceTipoff > -2 * 60 * 60 * 1000 && timeSinceTipoff < 6 * 60 * 60 * 1000;
       
       setIsGameInProgress(gameIsLive);
       
@@ -889,7 +899,7 @@ function TipoffCountdown({
     const interval = setInterval(updateCountdown, 1000);
     
     return () => clearInterval(interval);
-  }, [game, aheadLimitMs]);
+  }, [game, aheadLimitMs, elapsedLiveWindow, liveWindowMs]);
 
   if (isGameInProgress) {
     return (
@@ -1374,8 +1384,8 @@ function normalizeNbaTeam(team: string): string {
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v6';
 const NBL_PROPS_CACHE_KEY = 'nbl_props_list_cache_v14';
 
-const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v19';
-const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v24';
+const ATP_PROPS_CACHE_KEY = 'atp_props_list_cache_v21';
+const WTA_PROPS_CACHE_KEY = 'wta_props_list_cache_v26';
 
 
 function aflPropHasHistoricalStats(row: {
@@ -1756,12 +1766,27 @@ function mergeTennisPropForPaint(previous: PlayerProp | undefined, next: PlayerP
 
 /** Keep multi-book odds and real start times when a later list fetch is thinner. */
 function preferTennisPropsForPaint(previous: PlayerProp[], incoming: PlayerProp[]): PlayerProp[] {
-  const prevRows = tennisPropsForPaint(previous);
-  const nextRows = tennisPropsForPaint(incoming);
+  const onBoard = (rows: PlayerProp[]) =>
+    tennisPropsForPaint(rows).filter((row) =>
+      tennisCommenceTimeStillOnBoard(
+        tennisTipoffValue(row.gameDate) ||
+          tennisTipoffValue((row as PlayerProp & { commenceTime?: string | null }).commenceTime) ||
+          row.gameDate
+      )
+    );
+  const prevRows = onBoard(previous);
+  const nextRows = onBoard(incoming);
   if (!nextRows.length) return prevRows;
   if (!prevRows.length) return nextRows;
+  const incomingGameIds = new Set(
+    nextRows.map((row) => String(row.gameId || '').trim()).filter(Boolean)
+  );
   const byKey = new Map<string, PlayerProp>();
-  for (const row of prevRows) byKey.set(tennisPropMergeKey(row), row);
+  for (const row of prevRows) {
+    const gameId = String(row.gameId || '').trim();
+    if (incomingGameIds.size && (!gameId || !incomingGameIds.has(gameId))) continue;
+    byKey.set(tennisPropMergeKey(row), row);
+  }
   for (const row of nextRows) {
     const key = tennisPropMergeKey(row);
     byKey.set(key, mergeTennisPropForPaint(byKey.get(key), row));
@@ -2761,6 +2786,7 @@ export default function NBALandingPage() {
       opponentDrawRank?: number | null;
       tournamentName?: string | null;
       surface?: string | null;
+      live?: boolean;
     }>();
 
     for (const r of rows) {
@@ -2804,6 +2830,7 @@ export default function NBALandingPage() {
         if (!existing.opponentIoc && r.opponentIoc) {
           existing.opponentIoc = r.opponentIoc;
         }
+        if (r.live) existing.live = true;
       } else {
         keyToRow.set(key, {
           playerName: r.playerName,
@@ -2851,6 +2878,7 @@ export default function NBALandingPage() {
           opponentDrawRank: r.opponentDrawRank ?? null,
           tournamentName: r.tournamentName ?? null,
           surface: r.surface ?? null,
+          live: Boolean(r.live),
         });
       }
     }
@@ -2893,6 +2921,7 @@ export default function NBALandingPage() {
         bookmaker: a.bookmakerLines[0]?.bookmaker ?? '',
         confidence: 'Medium',
         gameDate: a.commenceTime,
+        live: Boolean(a.live),
         bookmakerLines: a.bookmakerLines,
         gameId: a.gameId,
         homeTeam: a.homeTeam,
@@ -5090,7 +5119,8 @@ export default function NBALandingPage() {
             status: tipoffAt,
             home_team: { id: 0, abbreviation: '' },
             visitor_team: { id: 0, abbreviation: '' },
-            datetime: tipoffAt
+            datetime: tipoffAt,
+            live: Boolean(prop.live),
           };
         }
       }
@@ -5268,12 +5298,7 @@ export default function NBALandingPage() {
     if (skipPropsRefetchOnceRef.current) {
       skipPropsRefetchOnceRef.current = false;
       const hasWarmRows = isTennisPropsSport(propsSport)
-        ? (tennisListRowsHaveFormStats(tennisPropsForTour(aflProps, propsSport)) ||
-            tennisListRowsHaveFormStats(tennisPropsForTour(tennisCombinedPropsRef.current, propsSport))) &&
-          !tennisLooksOneMarketPerPlayer([
-            ...tennisPropsForTour(aflProps, propsSport),
-            ...tennisPropsForTour(tennisCombinedPropsRef.current, propsSport),
-          ])
+        ? false
         : isNblPropsSport(propsSport)
           ? false
         : aflProps.length > 0 || aflGames.length > 0;
@@ -5299,11 +5324,7 @@ export default function NBALandingPage() {
 
     const secondaryWarmHydrateCanSkipFetch = (): boolean => {
       if (isTennisPropsSport(listSport)) {
-        const tourRows = [
-          ...tennisPropsForTour(aflProps, listSport),
-          ...tennisPropsForTour(tennisCombinedPropsRef.current, listSport),
-        ];
-        return tennisListRowsHaveFormStats(tourRows) && !tennisLooksOneMarketPerPlayer(tourRows);
+        return false;
       }
       if (listSport === 'nbl') {
         return false;
@@ -10912,6 +10933,7 @@ export default function NBALandingPage() {
                                     isDark={mounted && isDark}
                                     label={rowSportKickoffLabel(rowSport)}
                                     maxAheadMs={kickoffMaxAheadMs(rowSport)}
+                                    elapsedLiveWindow={!isTennisPropsSport(rowSport)}
                                   />
                                 </td>
                                 
@@ -11981,7 +12003,7 @@ export default function NBALandingPage() {
                                     </div>
                                     {/* Tipoff Countdown - Next to bookmakers on the right */}
                                     <div className="flex items-start justify-center flex-shrink-0 pr-1 pt-0.5">
-                                      <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} maxAheadMs={kickoffMaxAheadMs(rowSport)} />
+                                      <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} maxAheadMs={kickoffMaxAheadMs(rowSport)} elapsedLiveWindow={!isTennisPropsSport(rowSport)} />
                                     </div>
                                   </div>
                                 );
@@ -11992,7 +12014,7 @@ export default function NBALandingPage() {
                                 : (prop.bookmakerLines || [])
                               ).length === 0) && (
                                 <div className="flex items-center justify-start pr-1">
-                                  <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} maxAheadMs={kickoffMaxAheadMs(rowSport)} />
+                                  <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} maxAheadMs={kickoffMaxAheadMs(rowSport)} elapsedLiveWindow={!isTennisPropsSport(rowSport)} />
                                 </div>
                               )}
                             </div>

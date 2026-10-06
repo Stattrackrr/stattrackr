@@ -1,36 +1,39 @@
-# Rebuild live/upcoming tennis DVP boards and bake ranks onto the props list.
-# Keeps every nominated live-event player in the field (Davis Cup etc. are not
-# trimmed to a 32-draw cap). Redis player logs only — do not hydrate the overlay blob.
-name: Tennis DVP
+# Re-pull API-Tennis order-of-play start times onto odds snapshots.
+# Vercel also has this cron; GitHub */n schedules are delayed for hours, so
+# this workflow uses explicit minute slots.
+name: Tennis Upcoming Times
 
 on:
   schedule:
-    - cron: '*/20 * * * *'
+    - cron: '3 * * * *'
+    - cron: '18 * * * *'
+    - cron: '33 * * * *'
+    - cron: '48 * * * *'
   workflow_dispatch:
 
 concurrency:
-  group: tennis-dvp
+  group: tennis-upcoming-times
   cancel-in-progress: false
 
 env:
   TZ: Australia/Sydney
 
 jobs:
-  build_dvp:
+  refresh_times:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 4
     steps:
       - name: Check PROD_URL and CRON_SECRET
         id: check
         run: |
           if [ -z "${{ secrets.PROD_URL }}" ] || [ -z "${{ secrets.CRON_SECRET }}" ]; then
             echo "configured=false" >> $GITHUB_OUTPUT
-            echo "PROD_URL or CRON_SECRET not set; skipping tennis DVP"
+            echo "PROD_URL or CRON_SECRET not set; skipping tennis upcoming"
           else
             echo "configured=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Rebuild tennis tournament DVP
+      - name: Sync tennis start times from upcoming fixtures
         if: steps.check.outputs.configured == 'true'
         env:
           PROD_URL: ${{ secrets.PROD_URL }}
@@ -46,9 +49,8 @@ jobs:
             http://*|https://*) ;;
             *) ORIGIN="$PROD" ;;
           esac
-          URL="${ORIGIN}/api/cron/refresh-tennis-dvp?sync=1"
+          URL="${ORIGIN}/api/cron/refresh-tennis-upcoming"
           echo "Canonical cron URL: $URL"
-          echo "Building live/upcoming tennis DVP (keep nominated player IDs, then bake ranks)..."
 
           call_cron() {
             local target="$1"
@@ -68,7 +70,7 @@ jobs:
             rm -f "$hdr" "$body"
           }
 
-          call_cron "$URL" 280
+          call_cron "$URL" 50
           if [ "$HTTP_STATUS" = "301" ] || [ "$HTTP_STATUS" = "302" ] || [ "$HTTP_STATUS" = "307" ] || [ "$HTTP_STATUS" = "308" ]; then
             echo "Edge redirect $HTTP_STATUS -> $LOCATION"
             case "$LOCATION" in
@@ -76,12 +78,12 @@ jobs:
               /*) TARGET="${ORIGIN}${LOCATION}" ;;
               *) TARGET="${ORIGIN}/${LOCATION}" ;;
             esac
-            call_cron "$TARGET" 280
+            call_cron "$TARGET" 50
           fi
           echo "Response ($HTTP_STATUS): $BODY"
           OK=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(j.success === true ? 'true' : 'false'); } catch { process.stdout.write('false'); }" "$BODY")
           if [ "$HTTP_STATUS" != "200" ] || [ "$OK" != "true" ]; then
-            echo "Tennis DVP rebuild failed (HTTP ${HTTP_STATUS:-unknown})"
+            echo "Tennis upcoming times failed (HTTP ${HTTP_STATUS:-unknown})"
             exit 1
           fi
-          echo "Tennis DVP ok"
+          echo "Tennis upcoming times ok"

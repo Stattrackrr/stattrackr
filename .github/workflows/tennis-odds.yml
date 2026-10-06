@@ -1,10 +1,14 @@
 # Pull The Odds API tennis catalog, rebuild DVP boards, and bake ranks onto props.
 # Hits production /api/cron/refresh-tennis-odds which also builds DVP.
+# GitHub delays */30 schedules by hours; use explicit slots so ingest actually runs.
 name: Tennis Odds Ingest
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '8 * * * *'
+    - cron: '23 * * * *'
+    - cron: '38 * * * *'
+    - cron: '53 * * * *'
   workflow_dispatch:
 
 concurrency:

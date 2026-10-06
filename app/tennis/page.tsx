@@ -1345,7 +1345,13 @@ export default function TennisDashboardPage() {
 
   // Mark tipoff LIVE for the tennis match window, or when the fixture is already in progress.
   useEffect(() => {
-    if (nextGameLive) {
+    if (nextGameLive && nextGameTipoff) {
+      const age = Date.now() - nextGameTipoff.getTime();
+      if (age >= 0 && age < NBL_MATCH_DURATION_MS) {
+        setIsGameInProgress(true);
+        return;
+      }
+    } else if (nextGameLive && !nextGameTipoff) {
       setIsGameInProgress(true);
       return;
     }

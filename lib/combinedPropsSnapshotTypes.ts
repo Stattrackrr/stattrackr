@@ -58,6 +58,7 @@ export type CombinedPlayerProp = {
   opponentDrawRank?: number | null;
   tournamentName?: string | null;
   surface?: string | null;
+  live?: boolean;
   headshotUrl?: string | null;
   /** AFL Fantasy bucket (DEF/MID/FWD/RUC) from /api/afl/player-props/list. */
   aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;

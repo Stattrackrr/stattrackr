@@ -5,6 +5,7 @@ import {
   filterAflPropRowsByCommenceTime,
   filterAflPropsEligibleGames,
 } from '@/lib/combinedPropsSnapshotTypes';
+import { applyLiveTennisPropsCutoff, tennisCommenceTimeStillOnBoard } from '@/lib/tennis/oddsBoard';
 import { readTennisPlayerPropsListCache } from '@/lib/tennis/playerPropsListCache';
 import {
   aggregateTennisPropsForPaint,
@@ -72,7 +73,18 @@ export function slimCombinedPropsSnapshotForClient(
     nba: { ...snapshot.nba, props: mapProps(snapshot.nba.props) },
     afl: { ...snapshot.afl, props: mapProps(snapshot.afl.props) },
     tennis: snapshot.tennis
-      ? { ...snapshot.tennis, props: mapProps(snapshot.tennis.props) }
+      ? (() => {
+          const cut = applyLiveTennisPropsCutoff(
+            snapshot.tennis.props || [],
+            snapshot.tennis.games || []
+          );
+          return {
+            ...snapshot.tennis,
+            props: mapProps(cut.props),
+            games: cut.games,
+            noTennisOdds: cut.props.length === 0 ? true : snapshot.tennis.noTennisOdds,
+          };
+        })()
       : snapshot.tennis,
     nbl: snapshot.nbl ? { ...snapshot.nbl, props: mapProps(snapshot.nbl.props) } : snapshot.nbl,
   };
@@ -114,7 +126,12 @@ export async function attachCachedTennisSlice(
   snapshot: CombinedPropsSnapshot
 ): Promise<CombinedPropsSnapshot> {
   const current = withAggregatedTennisSlice(snapshot);
-  if ((current.tennis?.props?.length || 0) > 0) return current;
+  const tennisCurrent = (current.tennis?.props || []).some((prop) =>
+    tennisCommenceTimeStillOnBoard(
+      (prop as CombinedPlayerProp & { commenceTime?: string | null }).commenceTime || prop.gameDate
+    )
+  );
+  if (tennisCurrent) return current;
   const payload = await readTennisPlayerPropsListCache();
   if (!payload?.data?.length) return current;
   return {
@@ -153,7 +170,11 @@ function preservePopulatedSportSlices(
   return {
     ...next,
     nba: next.nba?.props?.length ? next.nba : previous.nba,
-    tennis: next.tennis?.props?.length ? next.tennis : previous.tennis,
+    tennis: next.tennis?.props?.length
+      ? next.tennis
+      : next.tennis?.noTennisOdds
+        ? next.tennis
+        : previous.tennis,
     nbl: next.nbl?.props?.length ? next.nbl : previous.nbl,
     afl: next.afl?.props?.length
       ? next.afl
@@ -318,15 +339,32 @@ export async function upsertCombinedSnapshotTennisFromList(payload: {
   noTennisOdds?: boolean;
 }): Promise<number> {
   const props = (Array.isArray(payload.data) ? payload.data : []) as CombinedPlayerProp[];
-  if (!props.length) {
-    const existing = (await getCombinedPropsSnapshot()) || (await getCombinedPropsPaintSnapshot());
-    return existing?.tennis?.props?.length || 0;
-  }
   const now = Date.now();
   const existing =
     (await getCombinedPropsSnapshot()) ||
     (await getCombinedPropsPaintSnapshot()) ||
     emptyCombinedSnapshot(now);
+  if (!props.length) {
+    if (payload.noTennisOdds !== true) return existing.tennis?.props?.length || 0;
+    const wiped: CombinedPropsSnapshot = {
+      ...existing,
+      success: true,
+      generatedAt: new Date(now).toISOString(),
+      staleAt: new Date(now + 15 * 60 * 1000).toISOString(),
+      tennis: {
+        ok: true,
+        status: 200,
+        lastUpdated: payload.lastUpdated ?? null,
+        nextUpdate: payload.nextUpdate ?? null,
+        ingestMessage: payload.ingestMessage ?? null,
+        noTennisOdds: true,
+        games: [],
+        props: [],
+      },
+    };
+    await persistCombinedPropsSnapshot(wiped);
+    return 0;
+  }
   const next: CombinedPropsSnapshot = {
     ...existing,
     success: true,
