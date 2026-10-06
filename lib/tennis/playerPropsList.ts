@@ -1296,10 +1296,19 @@ function dropStaleTennisListRows(
         awayName: row.awayTeam,
         matchId: row.gameId,
         commenceTime,
+        live: row.live,
         playerNextGame: next,
+        dropConfirmedLive: true,
       });
     }
-    return tennisCommenceTimeStillOnBoard(commenceTime);
+    return tennisOddsMatchStillOnBoard({
+      homeName: row.homeTeam,
+      awayName: row.awayTeam,
+      matchId: row.gameId,
+      commenceTime,
+      live: row.live,
+      dropConfirmedLive: true,
+    });
   });
   const gameIds = new Set(data.map((row) => row.gameId));
   const games = payload.games.filter(
@@ -1310,6 +1319,8 @@ function dropStaleTennisListRows(
         awayName: game.awayTeam,
         matchId: game.gameId,
         commenceTime: game.commenceTime,
+        live: game.live,
+        dropConfirmedLive: true,
         playerNextGame: tennisFindUpcomingForListedMatch(upcoming, {
           matchId: game.gameId,
           homeName: game.homeTeam,

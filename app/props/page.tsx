@@ -93,7 +93,12 @@ import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { tennisEventPlaceLabel, tennisTourLabel } from '@/lib/tennis/chartStats';
 import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
-import { tennisCommenceTimeStillOnBoard } from '@/lib/tennis/oddsBoard';
+import {
+  formatTennisStartClock,
+  tennisCommenceTimeStillOnBoard,
+  tennisMatchConfirmedLive,
+  tennisStartColumnState,
+} from '@/lib/tennis/oddsBoard';
 import {
   aggregateTennisPropsForPaint,
   bookmakerLinesFromTennisRow,
@@ -181,13 +186,13 @@ interface PlayerProp {
 
 function secondarySportKickoffLabel(sport: PropsSportMode): string {
   if (sport === 'afl') return 'Bounce';
-  if (isTennisPropsSport(sport)) return 'Start';
+  if (isTennisPropsSport(sport)) return 'Not before';
   return 'Tipoff';
 }
 
 function rowSportKickoffLabel(rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta'): string {
   if (rowSport === 'afl') return 'Bounce';
-  if (isTennisPropsSport(rowSport)) return 'Start';
+  if (isTennisPropsSport(rowSport)) return 'Not before';
   return 'Tipoff';
 }
 
@@ -773,6 +778,7 @@ function TipoffCountdown({
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
   const [isBeyond24h, setIsBeyond24h] = useState(false);
+  const [scheduledClock, setScheduledClock] = useState<string | null>(null);
   const liveWindowMs = 3 * 60 * 60 * 1000;
   const aheadLimitMs = maxAheadMs ?? 7 * 24 * 60 * 60 * 1000;
 
@@ -780,12 +786,13 @@ function TipoffCountdown({
     if (!game) {
       setCountdown(null);
       setIsGameInProgress(false);
+      setScheduledClock(null);
       return;
     }
 
     const now = Date.now();
     let tipoffDate: Date | null = null;
-    const pastFloor = elapsedLiveWindow ? now - liveWindowMs : now - 24 * 60 * 60 * 1000;
+    const pastFloor = elapsedLiveWindow ? now - liveWindowMs : now - aheadLimitMs;
     
     // First, try to use the datetime field from the game object (most reliable)
     if ((game as any).datetime) {
@@ -808,9 +815,10 @@ function TipoffCountdown({
         const isMidnight = parsedStatus.getUTCHours() === 0 && parsedStatus.getUTCMinutes() === 0 && parsedStatus.getUTCSeconds() === 0;
         
         // Allow a recently-passed tipoff so the props page can still show LIVE after bounce.
+        // Tennis not-before times are often midnight UTC or already elapsed — still a real start time.
         if (
           parsedStatus.getTime() > pastFloor &&
-          !isMidnight &&
+          (elapsedLiveWindow ? !isMidnight : true) &&
           parsedStatus.getTime() < now + aheadLimitMs
         ) {
           tipoffDate = parsedStatus;
@@ -864,8 +872,35 @@ function TipoffCountdown({
       }
     }
     
+    if (!elapsedLiveWindow) {
+      const column = tennisStartColumnState({
+        tipoffMs: tipoffDate?.getTime() ?? null,
+        live: Boolean(game.live),
+        nowMs: Date.now(),
+      });
+      if (column.kind === 'live') {
+        setCountdown(null);
+        setScheduledClock(null);
+        setIsGameInProgress(true);
+        return;
+      }
+      if (column.kind === 'clock' && column.tipoffMs != null) {
+        setCountdown(null);
+        setIsGameInProgress(false);
+        setScheduledClock(formatTennisStartClock(new Date(column.tipoffMs)));
+        return;
+      }
+      if (column.kind === 'none' || !tipoffDate) {
+        setCountdown(null);
+        setScheduledClock(null);
+        setIsGameInProgress(false);
+        return;
+      }
+    }
+
     if (!tipoffDate || (elapsedLiveWindow && tipoffDate.getTime() <= now - liveWindowMs)) {
       setCountdown(null);
+      setScheduledClock(null);
       setIsGameInProgress(Boolean(!elapsedLiveWindow && game.live));
       return;
     }
@@ -883,11 +918,23 @@ function TipoffCountdown({
       
       setIsGameInProgress(gameIsLive);
       
-      if (gameIsLive || diff <= 0) {
+      if (gameIsLive) {
         setCountdown(null);
+        setScheduledClock(null);
         return;
       }
-      
+
+      if (diff <= 0) {
+        setCountdown(null);
+        if (!elapsedLiveWindow) {
+          setScheduledClock(formatTennisStartClock(tipoffDate, now));
+        } else {
+          setScheduledClock(null);
+        }
+        return;
+      }
+
+      setScheduledClock(null);
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
@@ -910,6 +957,20 @@ function TipoffCountdown({
           boxShadow: '0 0 10px rgba(34, 197, 94, 0.35), 0 0 5px rgba(22, 163, 74, 0.22), inset 0 1px 0 rgba(134, 239, 172, 0.18)',
         }}>
         <span className="text-xs font-semibold text-red-500 animate-live-pulse-red">LIVE</span>
+      </div>
+    );
+  }
+
+  if (scheduledClock) {
+    return (
+      <div className="inline-flex flex-col items-center justify-center w-[84px] h-16 px-1.5 rounded-xl border-2"
+        style={{
+          background: 'linear-gradient(145deg, #1e293b, #334155)',
+          borderColor: '#64748b',
+          boxShadow: '0 0 14px #47556975, 0 0 7px #47556955, inset 0 1px 0 #ffffff2a',
+        }}>
+        <div className="text-[9px] text-white/90 mb-0.5 tracking-wide leading-tight text-center">{label}</div>
+        <div className="text-[11px] font-semibold text-white leading-tight text-center">{scheduledClock}</div>
       </div>
     );
   }
@@ -1712,7 +1773,24 @@ function tennisDisplayBookmakerLines(prop: PlayerProp) {
 }
 
 function tennisPropsForPaint(rows: PlayerProp[]): PlayerProp[] {
-  return aggregateTennisPropsForPaint(rows.filter(isTennisListProp)) as PlayerProp[];
+  return aggregateTennisPropsForPaint(rows.filter(isTennisListProp).filter(tennisRowStillOnPropsPage)) as PlayerProp[];
+}
+
+function tennisRowStillOnPropsPage(row: PlayerProp): boolean {
+  const tip =
+    tennisTipoffValue(row.gameDate) ||
+    tennisTipoffValue((row as PlayerProp & { commenceTime?: string | null }).commenceTime) ||
+    row.gameDate;
+  const tipMs = Date.parse(String(tip || ''));
+  if (
+    tennisMatchConfirmedLive({
+      live: Boolean(row.live),
+      tipoffMs: Number.isFinite(tipMs) ? tipMs : null,
+    })
+  ) {
+    return false;
+  }
+  return tennisCommenceTimeStillOnBoard(tip);
 }
 
 function tennisTipoffValue(value?: string | null): string {

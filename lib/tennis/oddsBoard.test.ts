@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  applyLiveTennisPropsCutoff,
+  formatTennisStartClock,
   tennisCommenceTimeStillOnBoard,
   tennisFindUpcomingForListedMatch,
   tennisFixtureIsOnCourt,
   tennisListedMatchupIsPlayersNextGame,
   tennisOddsMatchStillOnBoard,
   tennisPairingMatches,
+  tennisStartColumnState,
   tennisStatusLooksOnCourt,
 } from './oddsBoard';
 
@@ -76,7 +79,7 @@ test('stale Medvedev odds drop when Djokovic has a new next match', () => {
   );
 });
 
-test('live current match stays on the board inside the grace window', () => {
+test('live current match stays on the odds index, not the props page', () => {
   const live = {
     matchId: 'live-1',
     homeName: 'Novak Djokovic',
@@ -84,17 +87,50 @@ test('live current match stays on the board inside the grace window', () => {
     tipoff: new Date(now - 90 * 60 * 1000).toISOString(),
     live: true,
   };
-  assert.equal(
-    tennisOddsMatchStillOnBoard({
-      homeName: 'Novak Djokovic',
-      awayName: 'Jannik Sinner',
-      matchId: 'live-1',
-      commenceTime: live.tipoff,
-      playerNextGame: live,
-      nowMs: now,
-    }),
-    true
+  const onIndex = tennisOddsMatchStillOnBoard({
+    homeName: 'Novak Djokovic',
+    awayName: 'Jannik Sinner',
+    matchId: 'live-1',
+    commenceTime: live.tipoff,
+    live: true,
+    playerNextGame: live,
+    nowMs: now,
+  });
+  const onProps = tennisOddsMatchStillOnBoard({
+    homeName: 'Novak Djokovic',
+    awayName: 'Jannik Sinner',
+    matchId: 'live-1',
+    commenceTime: live.tipoff,
+    live: true,
+    playerNextGame: live,
+    nowMs: now,
+    dropConfirmedLive: true,
+  });
+  assert.equal(onIndex, true);
+  assert.equal(onProps, false);
+  const cut = applyLiveTennisPropsCutoff(
+    [
+      {
+        gameId: 'live-1',
+        homeTeam: 'Novak Djokovic',
+        awayTeam: 'Jannik Sinner',
+        commenceTime: live.tipoff,
+        live: true,
+      },
+    ],
+    [
+      {
+        gameId: 'live-1',
+        homeTeam: 'Novak Djokovic',
+        awayTeam: 'Jannik Sinner',
+        commenceTime: live.tipoff,
+        live: true,
+      },
+    ],
+    now
   );
+  assert.equal(cut.props.length, 0);
+  assert.equal(cut.games.length, 0);
 });
 
 test('find upcoming prefers the same pairing, else the player\'s new match', () => {
@@ -119,4 +155,17 @@ test('find upcoming prefers the same pairing, else the player\'s new match', () 
     ),
     false
   );
+});
+
+test('start column shows not-before clock until the match is confirmed live', () => {
+  const past = now - 2 * hour;
+  const upcoming = now + 3 * hour;
+  assert.equal(tennisStartColumnState({ tipoffMs: past, live: false, nowMs: now }).kind, 'clock');
+  assert.equal(tennisStartColumnState({ tipoffMs: upcoming, live: false, nowMs: now }).kind, 'clock');
+  assert.equal(tennisStartColumnState({ tipoffMs: upcoming, live: true, nowMs: now }).kind, 'clock');
+  assert.equal(tennisStartColumnState({ tipoffMs: past, live: true, nowMs: now }).kind, 'live');
+  assert.equal(tennisStartColumnState({ tipoffMs: null, live: false, nowMs: now }).kind, 'none');
+  const label = formatTennisStartClock(new Date(past), now, 'en-US');
+  assert.match(label, /\d/);
+  assert.notEqual(label, '-');
 });

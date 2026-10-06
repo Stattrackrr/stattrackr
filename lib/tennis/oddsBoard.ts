@@ -63,6 +63,56 @@ export function tennisCommenceTimeStillOnBoard(
   return t >= nowMs - TENNIS_PROPS_LIVE_GRACE_MS;
 }
 
+export type TennisStartColumnKind = 'live' | 'countdown' | 'clock' | 'none';
+
+export type TennisStartColumnState = {
+  kind: TennisStartColumnKind;
+  tipoffMs: number | null;
+};
+
+/** Start column: Not before + clock until on-court live is confirmed. */
+export function tennisStartColumnState(opts: {
+  tipoffMs: number | null | undefined;
+  live?: boolean;
+  nowMs?: number;
+}): TennisStartColumnState {
+  const now = opts.nowMs ?? Date.now();
+  const tip = opts.tipoffMs;
+  const hasTip = tip != null && Number.isFinite(tip);
+  if (opts.live) {
+    if (!hasTip) return { kind: 'live', tipoffMs: null };
+    if (tip - now > TENNIS_ON_COURT_MAX_FUTURE_MS) {
+      return { kind: 'clock', tipoffMs: tip };
+    }
+    if (now - tip > TENNIS_PROPS_LIVE_GRACE_MS) {
+      return { kind: 'clock', tipoffMs: tip };
+    }
+    return { kind: 'live', tipoffMs: tip };
+  }
+  if (!hasTip) return { kind: 'none', tipoffMs: null };
+  return { kind: 'clock', tipoffMs: tip };
+}
+
+export function tennisMatchConfirmedLive(opts: {
+  live?: boolean;
+  tipoffMs?: number | null;
+  nowMs?: number;
+}): boolean {
+  return tennisStartColumnState(opts).kind === 'live';
+}
+
+export function formatTennisStartClock(at: Date, nowMs = Date.now(), locale?: string): string {
+  const d = new Date(at.getTime());
+  const now = new Date(nowMs);
+  const timeOpts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  if (sameDay) return d.toLocaleTimeString(locale, timeOpts);
+  return d.toLocaleString(locale, { weekday: 'short', ...timeOpts });
+}
+
 export function tennisFindUpcomingForListedMatch<T extends TennisBoardMatch>(
   upcoming: T[],
   listed: { matchId?: string | null; homeName?: string | null; awayName?: string | null }
@@ -106,17 +156,30 @@ export function tennisOddsMatchStillOnBoard(opts: {
   awayName?: string | null;
   matchId?: string | null;
   commenceTime?: string | null;
+  live?: boolean;
   playerNextGame?: TennisBoardMatch | null;
   nowMs?: number;
+  /** Props page: drop matches once they are actually on court. Odds index keeps them. */
+  dropConfirmedLive?: boolean;
 }): boolean {
   const now = opts.nowMs ?? Date.now();
   const next = opts.playerNextGame || null;
   if (next && !tennisListedMatchupIsPlayersNextGame(opts, next)) return false;
   const tip = next?.tipoff || next?.commenceTime || opts.commenceTime;
-  if (next?.live) {
-    const t = Date.parse(String(tip || ''));
-    if (!Number.isFinite(t)) return true;
-    return t > now || now - t <= TENNIS_PROPS_LIVE_GRACE_MS;
+  const tipMs = Date.parse(String(tip || ''));
+  if (
+    opts.dropConfirmedLive &&
+    tennisMatchConfirmedLive({
+      live: Boolean(opts.live || next?.live),
+      tipoffMs: Number.isFinite(tipMs) ? tipMs : null,
+      nowMs: now,
+    })
+  ) {
+    return false;
+  }
+  if (next?.live && !opts.dropConfirmedLive) {
+    if (!Number.isFinite(tipMs)) return true;
+    return tipMs > now || now - tipMs <= TENNIS_PROPS_LIVE_GRACE_MS;
   }
   return tennisCommenceTimeStillOnBoard(tip, now);
 }
@@ -128,17 +191,36 @@ export function applyLiveTennisPropsCutoff<
     awayTeam?: string | null;
     commenceTime?: string | null;
     gameDate?: string | null;
+    live?: boolean;
   },
-  G extends { gameId: string; commenceTime?: string | null; homeTeam?: string; awayTeam?: string },
+  G extends {
+    gameId: string;
+    commenceTime?: string | null;
+    homeTeam?: string;
+    awayTeam?: string;
+    live?: boolean;
+  },
 >(props: T[], games: G[], nowMs = Date.now()) {
-  const gamesFiltered = games.filter((game) => {
-    if (!game.commenceTime) return true;
-    return tennisCommenceTimeStillOnBoard(game.commenceTime, nowMs);
-  });
+  const stillOnPropsPage = (live: boolean | undefined, commenceTime: string | null | undefined) => {
+    const tipMs = Date.parse(String(commenceTime || ''));
+    if (
+      tennisMatchConfirmedLive({
+        live: Boolean(live),
+        tipoffMs: Number.isFinite(tipMs) ? tipMs : null,
+        nowMs,
+      })
+    ) {
+      return false;
+    }
+    if (!commenceTime) return true;
+    return tennisCommenceTimeStillOnBoard(commenceTime, nowMs);
+  };
+  const gamesFiltered = games.filter((game) => stillOnPropsPage(game.live, game.commenceTime));
   const gameIds = new Set(gamesFiltered.map((game) => game.gameId).filter(Boolean));
   const propsFiltered = props.filter((row) => {
-    if (row.gameId && gameIds.has(row.gameId)) return true;
     const tip = row.commenceTime || row.gameDate;
+    if (!stillOnPropsPage(row.live, tip)) return false;
+    if (row.gameId && gameIds.has(row.gameId)) return true;
     if (!tip) return Boolean(row.gameId && gameIds.size === 0);
     return tennisCommenceTimeStillOnBoard(tip, nowMs);
   });
