@@ -1,7 +1,7 @@
 {
   "year": 2023,
   "seasonLabel": "NBL24",
-  "generatedAt": "2026-10-05T21:06:19.404Z",
+  "generatedAt": "2026-10-06T18:53:58.571Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 141,
   "withSeasonStats": 136,
@@ -1286,7 +1286,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "G",
       "jersey": "43",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b15f63d3137748b2b7a1484c5cbb6e7a?size=800&format=webp",
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/255edae0c3fc45a69d7b1a321b554933?size=800&format=webp",
       "games": 0,
       "gamesStarted": 0,
       "minutes": null,

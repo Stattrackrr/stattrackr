@@ -1,7 +1,7 @@
 {
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-10-05T21:05:54.917Z",
+  "generatedAt": "2026-10-06T18:53:37.364Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 139,
   "withSeasonStats": 135,
@@ -2663,7 +2663,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
       "jersey": "7",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cf0d61ee1e78463bb0f9a15ef9c90d0a?size=800&format=webp",
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/dfad776aae8946c487215d8c5cd97356?size=800&format=webp",
       "games": 17,
       "gamesStarted": 7,
       "minutes": 19.65,

@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-05T21:07:03.122Z",
+  "generatedAt": "2026-10-06T18:54:37.186Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 157,
+  "playerCount": 158,
   "gameRows": 448,
   "players": [
     {
@@ -261,6 +261,14 @@
       "teamCode": "MEL",
       "gameCount": 4,
       "cacheFile": "nbl-model/cache/player-logs/0edcc8b5-60a8-4ebe-b75d-5fb3f64d40e6-2026.json"
+    },
+    {
+      "playerId": "1c13057d-a3d6-4ae4-bf68-be727f03f83a",
+      "name": "Corey Webster",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/1c13057d-a3d6-4ae4-bf68-be727f03f83a-2026.json"
     },
     {
       "playerId": "6c3024b9-ffb8-4a9d-bb23-1e99191f98b9",
