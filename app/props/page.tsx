@@ -187,7 +187,7 @@ interface PlayerProp {
 function secondarySportKickoffLabel(sport: PropsSportMode): string {
   if (sport === 'afl') return 'Bounce';
   if (isTennisPropsSport(sport)) return 'Not before';
-  return 'Tipoff';
+  return 'Start';
 }
 
 function rowSportKickoffLabel(rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta'): string {
