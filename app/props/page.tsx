@@ -1985,11 +1985,22 @@ function combinedModeHasAflRows(aflProps: PlayerProp[]): boolean {
   return aflProps.some(isAflCombinedListProp);
 }
 
+type CombinedPaintOddsFlags = {
+  noAflOdds?: boolean;
+  noTennisOdds?: boolean;
+  noNblOdds?: boolean;
+  nbaSettled?: boolean;
+};
+
+function combinedModeHasTennisRows(tennisProps: PlayerProp[]): boolean {
+  return tennisProps.some((prop) => isTennisPropStatType(prop.statType));
+}
 
 function combinedModeMissingSecondarySlice(
   aflProps: PlayerProp[],
-  opts?: { noAflOdds?: boolean }
+  opts?: CombinedPaintOddsFlags
 ): { missingAfl: boolean } {
+  if (!AFL_PUBLIC_ENABLED) return { missingAfl: false };
   const noAflOdds = opts?.noAflOdds === true;
   const hasAfl = combinedModeHasAflRows(aflProps);
   const missingAfl = !noAflOdds && !hasAfl;
@@ -1998,8 +2009,9 @@ function combinedModeMissingSecondarySlice(
 
 function isCombinedSecondaryPaintReady(
   aflProps: PlayerProp[],
-  opts?: { noAflOdds?: boolean }
+  opts?: CombinedPaintOddsFlags
 ): boolean {
+  if (!AFL_PUBLIC_ENABLED) return true;
   const noAflOdds = opts?.noAflOdds === true;
   return noAflOdds || combinedModeHasAflRows(aflProps);
 }
@@ -2012,18 +2024,40 @@ function combinedModeHasVisibleRows(
 ): boolean {
   if (nbaProps.length > 0) return true;
   if (aflProps.some(isAflCombinedListProp)) return true;
-  if (tennisProps.some((prop) => isTennisPropStatType(prop.statType))) return true;
+  if (combinedModeHasTennisRows(tennisProps)) return true;
   if (nblProps.some(isNblListProp)) return true;
   return false;
+}
+
+/** True when every enabled sport has arrived (rows or confirmed no-odds). */
+function combinedModeFirstPaintReady(
+  nbaProps: PlayerProp[],
+  aflProps: PlayerProp[],
+  tennisProps: PlayerProp[] = [],
+  nblProps: PlayerProp[] = [],
+  oddsFlags?: CombinedPaintOddsFlags
+): boolean {
+  const nbaReady =
+    !NBA_PUBLIC_ENABLED || nbaProps.length > 0 || oddsFlags?.nbaSettled === true;
+  const aflReady = isCombinedSecondaryPaintReady(aflProps, oddsFlags);
+  const tennisReady =
+    !TENNIS_PUBLIC_ENABLED ||
+    oddsFlags?.noTennisOdds === true ||
+    combinedModeHasTennisRows(tennisProps);
+  const nblReady =
+    !NBL_PUBLIC_ENABLED || oddsFlags?.noNblOdds === true || nblProps.some(isNblListProp);
+  return nbaReady && aflReady && tennisReady && nblReady;
 }
 
 function combinedModeNeedsDataRefresh(
   nbaProps: PlayerProp[],
   aflProps: PlayerProp[],
   partialRefetchAttempted: { afl: boolean },
-  oddsFlags?: { noAflOdds?: boolean }
+  oddsFlags?: CombinedPaintOddsFlags,
+  tennisProps: PlayerProp[] = [],
+  nblProps: PlayerProp[] = []
 ): boolean {
-  if (!combinedModeHasVisibleRows(nbaProps, aflProps)) return true;
+  if (!combinedModeHasVisibleRows(nbaProps, aflProps, tennisProps, nblProps)) return true;
   const { missingAfl } = combinedModeMissingSecondarySlice(aflProps, oddsFlags);
   if (missingAfl && !partialRefetchAttempted.afl) return true;
   if (aflProps.some(isAflCombinedListProp) && aflPropsMissingHistoricalStats(aflProps)) {
@@ -2653,8 +2687,11 @@ export default function NBALandingPage() {
   todaysGamesRef.current = todaysGames;
   const propsSportRef = useRef<PropsSportMode>(propsSport);
   propsSportRef.current = propsSport;
-  const combinedOddsFlagsRef = useRef<{ noAflOdds: boolean }>({
+  const combinedOddsFlagsRef = useRef<CombinedPaintOddsFlags>({
     noAflOdds: false,
+    noTennisOdds: false,
+    noNblOdds: false,
+    nbaSettled: false,
   });
   const [aflPropsLoading, setAflPropsLoading] = useState(false);
   const [aflPropsFetchComplete, setAflPropsFetchComplete] = useState(false);
@@ -3285,12 +3322,6 @@ export default function NBALandingPage() {
       : null;
     const tennisPropsNext =
       tennisPropsFromSnapshot ?? tennisCombinedPropsRef.current.filter(isTennisListProp);
-    const snapshotNoAflOdds = combinedSnapshot?.afl?.noAflOdds === true;
-    combinedOddsFlagsRef.current = {
-      noAflOdds: snapshotNoAflOdds && aflPropsNext.length === 0,
-    };
-    const oddsFlagsNext = combinedOddsFlagsRef.current;
-    const noAflOdds = oddsFlagsNext.noAflOdds;
     const mergedNba = mergeNbaPropsWithStoredCalculatedStats(nbaRows);
 
     propsLoadedRef.current = mergedNba.props.length > 0;
@@ -3306,19 +3337,22 @@ export default function NBALandingPage() {
         : combinedSnapshot?.nbl?.noNblOdds === true
           ? []
           : nblCombinedPropsRef.current.filter(isNblListProp);
-    const combinedVisible = combinedModeHasVisibleRows(
+    combinedOddsFlagsRef.current = {
+      noAflOdds: combinedSnapshot?.afl?.noAflOdds === true && aflPropsNext.length === 0,
+      noTennisOdds: combinedSnapshot?.tennis?.noTennisOdds === true && tennisPropsNext.length === 0,
+      noNblOdds: combinedSnapshot?.nbl?.noNblOdds === true && nblPropsNext.length === 0,
+      nbaSettled: Array.isArray(combinedSnapshot?.nba?.props),
+    };
+    const oddsFlagsNext = combinedOddsFlagsRef.current;
+    const noAflOdds = oddsFlagsNext.noAflOdds === true;
+    const combinedComplete = combinedModeFirstPaintReady(
       mergedNba.props,
       aflPropsNext,
       tennisPropsNext,
-      nblPropsNext
+      nblPropsNext,
+      oddsFlagsNext
     );
-    const { missingAfl } = combinedModeMissingSecondarySlice(
-      aflPropsNext,
-      combinedOddsFlagsRef.current
-    );
-    const combinedComplete = combinedVisible && !missingAfl;
-    const paintUnlocked =
-      isCombinedSecondaryPaintReady(aflPropsNext, oddsFlagsNext) || combinedVisible;
+    const paintUnlocked = combinedComplete;
 
     const activeSport = propsSportRef.current;
     const keepSecondaryList = isTennisPropsSport(activeSport) || isNblPropsSport(activeSport);
@@ -3401,7 +3435,7 @@ export default function NBALandingPage() {
       setAflPropsLoading(false);
     }
     setCombinedFetchComplete(combinedComplete);
-    setCombinedPropsLoading(!combinedVisible || missingAfl);
+    setCombinedPropsLoading(!combinedComplete);
     setCombinedPaintUnlocked(paintUnlocked);
 
     if (options?.persistCaches !== false) {
@@ -3409,11 +3443,14 @@ export default function NBALandingPage() {
     }
   }, [mergeNbaPropsWithStoredCalculatedStats, persistCombinedSnapshotCaches, setSecondaryPropsFetchComplete, syncSelectedAflGames, setCombinedFetchComplete]);
 
-  // Re-unlock combined paint when returning to All with both slices already in memory.
+  // Re-unlock combined paint when returning to All with every enabled sport already in memory.
   useEffect(() => {
     if (propsSport !== 'combined' || combinedPaintUnlocked) return;
-    const ready = isCombinedSecondaryPaintReady(
+    const ready = combinedModeFirstPaintReady(
+      playerPropsRef.current,
       aflPropsRef.current,
+      tennisCombinedPropsRef.current,
+      nblCombinedPropsRef.current,
       combinedOddsFlagsRef.current
     );
     if (ready) {
@@ -3421,7 +3458,7 @@ export default function NBALandingPage() {
       setCombinedFetchComplete(true);
       setCombinedPropsLoading(false);
     }
-  }, [propsSport, aflProps, combinedPaintUnlocked, setCombinedFetchComplete]);
+  }, [propsSport, aflProps, tennisCombinedProps, nblCombinedProps, playerProps, combinedPaintUnlocked, setCombinedFetchComplete]);
 
   const skipPropsRefetchOnceRef = useRef(false);
 
@@ -3443,7 +3480,7 @@ export default function NBALandingPage() {
         userModifiedAflGames: userModifiedAflGamesRef.current === true,
         combinedPaintUnlocked: combinedPaintUnlockedRef.current,
         combinedFetchComplete: combinedPropsFetchCompleteRef.current,
-        noAflOdds: combinedOddsFlagsRef.current.noAflOdds,
+        noAflOdds: combinedOddsFlagsRef.current.noAflOdds === true,
         scrollY: window.scrollY,
         currentPage: currentPageRef.current,
       };
@@ -3887,6 +3924,9 @@ export default function NBALandingPage() {
       initialFetchCompletedRef.current = true;
       combinedOddsFlagsRef.current = {
         noAflOdds: warmSnapshot.noAflOdds,
+        noTennisOdds: false,
+        noNblOdds: false,
+        nbaSettled: (warmSnapshot.playerProps as PlayerProp[]).length > 0 || !NBA_PUBLIC_ENABLED,
       };
       if (!urlSpecifiesSport) {
         const restoredSport = resolvePropsSportParam(String(warmSnapshot.propsSport));
@@ -3927,7 +3967,19 @@ export default function NBALandingPage() {
       }
       selectedAflGamesRef.current = new Set(snapGameIds);
       setSelectedAflGames(new Set(snapGameIds));
-      setCombinedPaintUnlocked(warmSnapshot.combinedPaintUnlocked);
+      setCombinedPaintUnlocked(
+        combinedModeFirstPaintReady(
+          paintedNbaProps,
+          paintedAflProps,
+          Array.isArray(warmSnapshot.tennisCombinedProps)
+            ? (warmSnapshot.tennisCombinedProps as PlayerProp[])
+            : [],
+          Array.isArray(warmSnapshot.nblCombinedProps)
+            ? (warmSnapshot.nblCombinedProps as PlayerProp[]).filter(isNblListProp)
+            : [],
+          combinedOddsFlagsRef.current
+        )
+      );
       setCombinedFetchComplete(warmSnapshot.combinedFetchComplete);
       setCombinedPropsLoading(false);
       setPropsLoading(false);
@@ -3989,16 +4041,20 @@ export default function NBALandingPage() {
             paintedNoAflOdds = parsed?.afl?.noAflOdds === true;
             restoredNbaCache = nbaProps.length > 0;
             restoredAflCache = aflPropsCached.length > 0 || aflGamesCached.length > 0;
-            const partialCombinedCache = (() => {
-              const { missingAfl } = combinedModeMissingSecondarySlice(
-                aflPropsCached,
-                {
-                  noAflOdds: parsed?.afl?.noAflOdds === true,
-                }
-              );
-              return missingAfl;
-            })();
-            if (partialCombinedCache) {
+            const restoreFlags: CombinedPaintOddsFlags = {
+              noAflOdds: parsed?.afl?.noAflOdds === true,
+              noTennisOdds: parsed?.tennis?.noTennisOdds === true,
+              noNblOdds: parsed?.nbl?.noNblOdds === true,
+              nbaSettled: Array.isArray(parsed?.nba?.props),
+            };
+            const restoreReady = combinedModeFirstPaintReady(
+              nbaProps,
+              aflPropsCached,
+              tennisHydrate.length > 0 ? tennisHydrate : tennisFromSnapshot,
+              nblPropsCached.filter(isNblListProp),
+              restoreFlags
+            );
+            if (!restoreReady) {
               setCombinedFetchComplete(false);
               restoredCombinedSnapshot = false;
             } else {
@@ -4256,20 +4312,21 @@ export default function NBALandingPage() {
           paintedTennisProps,
           nblHydrate
         );
-        const { missingAfl } = combinedModeMissingSecondarySlice(
+        const combinedComplete = combinedModeFirstPaintReady(
+          paintedNbaProps,
           paintedAflProps,
-          { noAflOdds: paintedNoAflOdds }
+          paintedTennisProps,
+          nblHydrate,
+          {
+            noAflOdds: paintedNoAflOdds,
+            noTennisOdds: combinedOddsFlagsRef.current.noTennisOdds,
+            noNblOdds: combinedOddsFlagsRef.current.noNblOdds,
+            nbaSettled: combinedOddsFlagsRef.current.nbaSettled || paintedNbaProps.length > 0,
+          }
         );
-        const combinedComplete = restoredCombinedSnapshot || (!missingAfl && hasCombinedPaint);
         setCombinedFetchComplete(combinedComplete);
-        setCombinedPropsLoading(!hasCombinedPaint);
-        setCombinedPaintUnlocked(
-          restoredCombinedSnapshot ||
-            isCombinedSecondaryPaintReady(paintedAflProps, {
-              noAflOdds: paintedNoAflOdds,
-            }) ||
-            hasCombinedPaint
-        );
+        setCombinedPropsLoading(!combinedComplete);
+        setCombinedPaintUnlocked(combinedComplete);
         setPropsLoading(!hasCombinedPaint && paintedNbaProps.length === 0);
         setAflPropsLoading(!hasCombinedPaint && paintedAflProps.length === 0);
       }
@@ -5967,60 +6024,55 @@ export default function NBALandingPage() {
         return;
       }
 
+      const firstPaintReady = combinedModeFirstPaintReady(
+        playerPropsRef.current,
+        aflPropsRef.current,
+        tennisCombinedPropsRef.current,
+        nblCombinedPropsRef.current,
+        combinedOddsFlagsRef.current
+      );
+
       if (
         !forceRefresh &&
         !debugStats &&
         combinedPropsFetchCompleteRef.current &&
-        combinedModeHasVisibleRows(
-          playerPropsRef.current,
-          aflPropsRef.current,
-          tennisCombinedPropsRef.current,
-          nblCombinedPropsRef.current
-        ) &&
+        firstPaintReady &&
         !combinedModeNeedsDataRefresh(
           playerPropsRef.current,
           aflPropsRef.current,
           partialRefetchFlags(),
-          combinedOddsFlagsRef.current
+          combinedOddsFlagsRef.current,
+          tennisCombinedPropsRef.current,
+          nblCombinedPropsRef.current
         )
       ) {
         setCombinedPropsLoading(false);
         setPropsLoading(false);
         setAflPropsLoading(false);
-        setCombinedPaintUnlocked(
-          isCombinedSecondaryPaintReady(aflPropsRef.current, combinedOddsFlagsRef.current)
-        );
+        setCombinedPaintUnlocked(true);
         return;
       }
 
       if (combinedWarmToggleRef.current && !forceRefresh && !debugStats) {
         combinedWarmToggleRef.current = false;
         if (
+          firstPaintReady &&
           !combinedModeNeedsDataRefresh(
             playerPropsRef.current,
             aflPropsRef.current,
             partialRefetchFlags(),
-            combinedOddsFlagsRef.current
+            combinedOddsFlagsRef.current,
+            tennisCombinedPropsRef.current,
+            nblCombinedPropsRef.current
           )
         ) {
-          setCombinedPaintUnlocked(
-            isCombinedSecondaryPaintReady(aflPropsRef.current, combinedOddsFlagsRef.current)
-          );
+          setCombinedPaintUnlocked(true);
           return;
         }
       }
       combinedWarmToggleRef.current = false;
 
-      const hasWarmCombinedCache =
-        combinedPropsFetchCompleteRef.current ||
-        combinedModeHasVisibleRows(
-          playerPropsRef.current,
-          aflPropsRef.current,
-          tennisCombinedPropsRef.current,
-          nblCombinedPropsRef.current
-        );
-
-      if (!hasWarmCombinedCache) {
+      if (!firstPaintReady) {
         setCombinedPaintUnlocked(false);
         setCombinedPropsLoading(true);
         setPropsLoading(true);
@@ -6029,13 +6081,14 @@ export default function NBALandingPage() {
         }
       }
 
-      if (NBA_PUBLIC_ENABLED && playerPropsRef.current.length === 0) {
+      if (firstPaintReady && NBA_PUBLIC_ENABLED && playerPropsRef.current.length === 0) {
         launchNbaProgressiveFetch();
       }
 
+      if (firstPaintReady) {
       void (async () => {
+        if (!AFL_PUBLIC_ENABLED) return;
         if (aflPropsRef.current.some(isAflCombinedListProp)) {
-          setCombinedPaintUnlocked(true);
           setAflPropsLoading(false);
           return;
         }
@@ -6133,6 +6186,7 @@ export default function NBALandingPage() {
           // NBL paints from its own list cache; other sports stay visible.
         }
       })();
+      }
 
       const params = new URLSearchParams();
       if (forceRefresh) params.set('refresh', '1');
@@ -6158,17 +6212,19 @@ export default function NBALandingPage() {
         }
 
         applyCombinedSnapshot(payload, {
-          persistCaches: (payload?.tennis?.props?.length || 0) > 0 || (payload?.nbl?.props?.length || 0) > 0,
+          persistCaches: true,
         });
         void refillMissingSecondarySlices(payload, debugStats);
-        const completeAfterSnapshot = !combinedModeNeedsDataRefresh(
+        const completeAfterSnapshot = combinedModeFirstPaintReady(
           playerPropsRef.current,
           aflPropsRef.current,
-          partialRefetchFlags(),
+          tennisCombinedPropsRef.current,
+          nblCombinedPropsRef.current,
           combinedOddsFlagsRef.current
         );
         setCombinedFetchComplete(completeAfterSnapshot);
         setCombinedPropsLoading(!completeAfterSnapshot);
+        setCombinedPaintUnlocked(completeAfterSnapshot);
         setPropsLoading(!completeAfterSnapshot && playerPropsRef.current.length === 0);
         if (propsSportRef.current === 'combined' || propsSportRef.current === 'afl') {
           setAflPropsLoading(
@@ -6178,7 +6234,7 @@ export default function NBALandingPage() {
       } catch (error) {
         console.warn('[Props] Combined payload fetch failed, falling back to direct parallel requests:', error);
         try {
-          const [nbaResponse, aflResponse] = await Promise.all([
+          const [nbaResponse, aflResponse, tennisResponse, nblResponse] = await Promise.all([
             NBA_PUBLIC_ENABLED
               ? fetch('/api/nba/player-props', { cache: forceRefresh ? 'no-store' : 'default' })
               : Promise.resolve(
@@ -6187,16 +6243,43 @@ export default function NBALandingPage() {
                     headers: { 'Content-Type': 'application/json' },
                   })
                 ),
-            fetch(getSecondaryPropsListUrl('afl', debugStats), { cache: 'no-store' }),
+            AFL_PUBLIC_ENABLED
+              ? fetch(getSecondaryPropsListUrl('afl', debugStats), { cache: 'no-store' })
+              : Promise.resolve(
+                  new Response(JSON.stringify({ success: true, data: [], noAflOdds: true }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                  })
+                ),
+            TENNIS_PUBLIC_ENABLED
+              ? fetchSecondaryPropsList('/api/tennis/player-props/list')
+              : Promise.resolve(
+                  new Response(JSON.stringify({ success: true, data: [], noTennisOdds: true }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                  })
+                ),
+            NBL_PUBLIC_ENABLED
+              ? fetchSecondaryPropsList('/api/nbl/player-props/list')
+              : Promise.resolve(
+                  new Response(JSON.stringify({ success: true, data: [], noNblOdds: true }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                  })
+                ),
           ]);
-          const [nbaPayload, aflPayload] = await Promise.all([
+          const [nbaPayload, aflPayload, tennisPayload, nblPayload] = await Promise.all([
             nbaResponse.json().catch(() => null),
             aflResponse.json().catch(() => null),
+            tennisResponse.json().catch(() => null),
+            nblResponse.json().catch(() => null),
           ]);
-          if (!nbaResponse.ok && !aflResponse.ok) {
+          if (!nbaResponse.ok && !aflResponse.ok && !tennisResponse.ok && !nblResponse.ok) {
             throw new Error('Fallback combined props requests failed');
           }
           const aflResult = aggregateAflListPayload(aflPayload);
+          const tennisResult = aggregateSecondaryListPayload(tennisPayload, 'atp');
+          const nblResult = aggregateSecondaryListPayload(nblPayload, 'nbl');
           applyCombinedSnapshot({
             success: true,
             snapshotVersion: 1,
@@ -6216,10 +6299,30 @@ export default function NBALandingPage() {
               lastUpdated: aflResult.lastUpdated ?? null,
               nextUpdate: aflResult.nextUpdate ?? null,
               ingestMessage: aflResult.ingestMessage ?? null,
-              noAflOdds: aflResult.noAflOdds === true,
+              noAflOdds: aflResult.noAflOdds === true || !AFL_PUBLIC_ENABLED,
               games: aflResult.games,
               props: aflResult.aggregated,
               debugMeta: aflResult.debugMeta ?? null,
+            },
+            tennis: {
+              ok: tennisResponse.ok,
+              status: tennisResponse.status,
+              lastUpdated: null,
+              nextUpdate: null,
+              ingestMessage: null,
+              noTennisOdds: !tennisResult.aggregated.some(isTennisListProp),
+              games: tennisResult.games,
+              props: tennisResult.aggregated.filter(isTennisListProp),
+            },
+            nbl: {
+              ok: nblResponse.ok,
+              status: nblResponse.status,
+              lastUpdated: null,
+              nextUpdate: null,
+              ingestMessage: null,
+              noNblOdds: !nblResult.aggregated.some(isNblListProp),
+              games: nblResult.games,
+              props: nblResult.aggregated.filter(isNblListProp),
             },
           });
           combinedPartialAflRefetchAttemptedRef.current = true;
@@ -7239,19 +7342,19 @@ export default function NBALandingPage() {
       ? activeFilteredCount > 0
       : isSecondaryListMode
         ? activeFilteredCount > 0 || secondaryPaintableProps.length > 0
-        : activeFilteredCount > 0;
+        : propsSport === 'combined'
+          ? combinedPaintUnlocked && activeFilteredCount > 0
+          : activeFilteredCount > 0;
 
   const isPropsLoadingSkeleton = useMemo(() => {
-    if (secondaryPropsPaintRows) return false;
-    if (activeFilteredCount !== 0) return false;
     if (propsSport === 'combined') {
-      if (debouncedSearchQuery.trim()) return false;
+      if (debouncedSearchQuery.trim() && activeFilteredCount !== 0 && combinedPaintUnlocked) return false;
       if (!combinedPaintUnlocked) return true;
-      if (combinedPropsLoading || propsLoading || aflPropsLoading || !combinedPropsFetchComplete) {
-        return true;
-      }
+      if (combinedPropsLoading || !combinedPropsFetchComplete) return true;
       return false;
     }
+    if (secondaryPropsPaintRows) return false;
+    if (activeFilteredCount !== 0) return false;
     if (
       (isSecondaryListMode && (aflPropsLoading || !aflPropsFetchComplete)) ||
       (propsSport === 'nba' && !showNoPropsMessage)
@@ -7629,17 +7732,24 @@ export default function NBALandingPage() {
           {
             afl: combinedPartialAflRefetchAttemptedRef.current,
           },
+          combinedOddsFlagsRef.current,
+          tennisCombinedProps,
+          nblCombinedProps
+        );
+        const paintReady = combinedModeFirstPaintReady(
+          playerProps,
+          aflProps,
+          tennisCombinedProps,
+          nblCombinedProps,
           combinedOddsFlagsRef.current
         );
-        setCombinedFetchComplete(!needsCombinedRefresh);
-        setCombinedPropsLoading(needsCombinedRefresh);
-        setCombinedPaintUnlocked(
-          isCombinedSecondaryPaintReady(aflProps, combinedOddsFlagsRef.current)
-        );
+        setCombinedFetchComplete(paintReady && !needsCombinedRefresh);
+        setCombinedPropsLoading(!paintReady || needsCombinedRefresh);
+        setCombinedPaintUnlocked(paintReady);
         setAflPropsLoading(false);
         setSecondaryPropsFetchComplete(true);
-        combinedWarm = true;
-        combinedWarmToggleRef.current = !needsCombinedRefresh;
+        combinedWarm = paintReady;
+        combinedWarmToggleRef.current = paintReady && !needsCombinedRefresh;
         try {
           persistCombinedSnapshotCaches({
             success: true,
@@ -7727,9 +7837,16 @@ export default function NBALandingPage() {
           setAflProps(restoredAflProps);
           setAflGames(matchedAflGames.length > 0 ? matchedAflGames : restoredAflGames);
         }
-        combinedWarm = true;
-        combinedWarmToggleRef.current = true;
-        setCombinedPaintUnlocked(true);
+        const nblLeavingPaintReady = combinedModeFirstPaintReady(
+          playerProps,
+          restoredAflProps,
+          tennisCombinedProps,
+          aflProps.filter(isNblListProp),
+          combinedOddsFlagsRef.current
+        );
+        combinedWarm = nblLeavingPaintReady;
+        combinedWarmToggleRef.current = nblLeavingPaintReady;
+        setCombinedPaintUnlocked(nblLeavingPaintReady);
         setAflPropsLoading(false);
         setSecondaryPropsFetchComplete(true);
       }
@@ -7812,18 +7929,24 @@ export default function NBALandingPage() {
           {
             afl: combinedPartialAflRefetchAttemptedRef.current,
           },
+          combinedOddsFlagsRef.current,
+          tennisMerged,
+          nblCombinedProps
+        );
+        const canPaint = combinedModeFirstPaintReady(
+          playerProps,
+          restoredAflProps,
+          tennisMerged,
+          nblCombinedProps,
           combinedOddsFlagsRef.current
         );
-        const canPaint =
-          isCombinedSecondaryPaintReady(restoredAflProps, combinedOddsFlagsRef.current) ||
-          combinedModeHasVisibleRows(playerProps, restoredAflProps, tennisMerged, nblCombinedProps);
         setCombinedPaintUnlocked(canPaint);
         setCombinedFetchComplete(!needsCombinedRefresh && canPaint);
-        setCombinedPropsLoading(needsCombinedRefresh && !canPaint);
+        setCombinedPropsLoading(!canPaint || needsCombinedRefresh);
         setAflPropsLoading(false);
         setSecondaryPropsFetchComplete(true);
         combinedWarm = canPaint;
-        combinedWarmToggleRef.current = !needsCombinedRefresh;
+        combinedWarmToggleRef.current = canPaint && !needsCombinedRefresh;
       }
 
       if (!combinedWarm) {
@@ -8033,8 +8156,11 @@ export default function NBALandingPage() {
         setCombinedPaintUnlocked(true);
         setAflPropsLoading(false);
       } else {
-        const ready = isCombinedSecondaryPaintReady(
+        const ready = combinedModeFirstPaintReady(
+          playerPropsRef.current,
           aflPropsRef.current,
+          tennisCombinedPropsRef.current,
+          nblCombinedPropsRef.current,
           combinedOddsFlagsRef.current
         );
         if (ready) {
