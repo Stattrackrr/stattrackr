@@ -72,7 +72,7 @@ export type TennisStartColumnState = {
 
 /** Start column: Not before + clock until on-court live is confirmed. */
 export function tennisStartColumnState(opts: {
-  tipoffMs: number | null | undefined;
+  tipoffMs?: number | null;
   live?: boolean;
   nowMs?: number;
 }): TennisStartColumnState {
