@@ -53,9 +53,13 @@ export async function GET(request: NextRequest) {
     const next =
       (await getTennisNextGame({ playerId, playerName, opponentName, tour })) ||
       (await findTennisNextGameFromOdds({ playerName, opponentName, tour }));
-    return NextResponse.json(nextGameJson(playerId || null, next, tour));
+    return NextResponse.json(nextGameJson(playerId || null, next, tour), {
+      headers: { 'Cache-Control': 'private, no-store' },
+    });
   } catch (err) {
     console.warn('[tennis-next-game]', err);
-    return NextResponse.json(nextGameJson(request.nextUrl.searchParams.get('playerId'), null, null));
+    return NextResponse.json(nextGameJson(request.nextUrl.searchParams.get('playerId'), null, null), {
+      headers: { 'Cache-Control': 'private, no-store' },
+    });
   }
 }

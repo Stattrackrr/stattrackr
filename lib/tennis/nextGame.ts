@@ -517,10 +517,19 @@ async function loadUpcomingByPlayer(_opts?: {
   const cached = await readUpcomingFromRedis();
   if (cached?.byPlayerId.size && (!memory?.byPlayerId.size || cached.fetchedAt >= memory.fetchedAt)) {
     rememberWindow(cached.byPlayerId, cached.fetchedAt, cached.events || []);
+    if (!isFresh(cached.fetchedAt)) {
+      void warmTennisUpcomingFixtures({ force: true });
+    }
     return cached.byPlayerId;
   }
-  if (memory?.byPlayerId.size) return memory.byPlayerId;
+  if (memory?.byPlayerId.size) {
+    if (!isFresh(memory.fetchedAt)) {
+      void warmTennisUpcomingFixtures({ force: true });
+    }
+    return memory.byPlayerId;
+  }
 
+  void warmTennisUpcomingFixtures({ force: true });
   rememberWindow(new Map());
   return new Map();
 }

@@ -46,7 +46,6 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useViewerProfile } from '@/hooks/useViewerProfile';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
-import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
 import { TENNIS_AI_UNDER_MAINTENANCE, TENNIS_CURRENT_YEAR, TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
 import {
@@ -71,9 +70,7 @@ import {
 } from '@/lib/tennisDashboardFetch';
 import { isTennisQualifyingLabel } from '@/lib/tennis/dvpShared';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
-
-/** Tennis match LIVE window (~5-set length). */
-const NBL_MATCH_DURATION_MS = 6 * 60 * 60 * 1000;
+import { formatTennisStartClock, tennisMatchConfirmedLive } from '@/lib/tennis/oddsBoard';
 
 type NblPropsMode = 'player' | 'team';
 type NblRightTab = 'dvp' | 'team_matchup' | 'match_info';
@@ -146,8 +143,8 @@ function TennisAbbrevFlag({
 const NBL_PAGE_STATE_KEY = 'tennisPageState:v4';
 const NBL_PLAYER_LOGS_CACHE_PREFIX = 'tennisPlayerLogsCache:v9';
 const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes; network always revalidates
-const TENNIS_NEXT_GAME_CLIENT_TTL_MS = 1000 * 90;
-const TENNIS_NEXT_GAME_POLL_MS = 60_000;
+const TENNIS_NEXT_GAME_CLIENT_TTL_MS = 1000 * 20;
+const TENNIS_NEXT_GAME_POLL_MS = 20_000;
 const tennisNextGameClientCache = new Map<
   string,
   { savedAt: number; payload: TennisNextGameClient }
@@ -305,20 +302,10 @@ function TennisHeaderCountdown({
   tipoff: Date | null;
   variant: 'desktop' | 'mobile';
 }) {
-  const [countdown, setCountdown] = useState<{
-    hours: number;
-    minutes: number;
-    seconds: number;
-  } | null>(null);
-  useCountdownTimer({
-    nextGameTipoff: show ? tipoff : null,
-    isGameInProgress: live,
-    setCountdown,
-  });
-  const clock = countdown
-    ? `${String(countdown.hours).padStart(2, '0')}:${String(countdown.minutes).padStart(2, '0')}:${String(countdown.seconds).padStart(2, '0')}`
-    : '';
-  if (show && live) {
+  const tipoffMs = tipoff && !Number.isNaN(tipoff.getTime()) ? tipoff.getTime() : null;
+  const confirmedLive = tennisMatchConfirmedLive({ live, tipoffMs });
+  const clock = tipoffMs != null ? formatTennisStartClock(new Date(tipoffMs)) : '';
+  if (show && confirmedLive) {
     return variant === 'desktop' ? (
       <div className="flex flex-col items-center flex-shrink-0 min-w-0">
         <div className="text-xs xl:text-sm font-semibold text-green-600 dark:text-green-400 animate-live-pulse-green">
@@ -329,30 +316,21 @@ function TennisHeaderCountdown({
       <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">LIVE</span>
     );
   }
-  if (show && countdown) {
+  if (show && clock) {
     return variant === 'desktop' ? (
-      <div className="flex flex-col items-center flex-shrink-0 min-w-0 w-14 xl:w-20">
+      <div className="flex flex-col items-center flex-shrink-0 min-w-0">
         <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">
-          Match in
+          Not before
         </div>
-        <div className="text-xs xl:text-sm font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
+        <div className="text-[11px] xl:text-xs font-semibold text-gray-900 dark:text-white leading-tight text-center">
           {clock}
         </div>
       </div>
     ) : (
       <div className="flex flex-col items-center flex-shrink-0">
-        <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Match in</div>
-        <div className="text-[10px] font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
+        <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Not before</div>
+        <div className="text-[10px] font-semibold text-gray-900 dark:text-white leading-tight text-center">
           {clock}
-        </div>
-      </div>
-    );
-  }
-  if (show && tipoff && variant === 'desktop') {
-    return (
-      <div className="flex flex-col items-center flex-shrink-0 min-w-0">
-        <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
-          Game time passed
         </div>
       </div>
     );
@@ -768,8 +746,14 @@ export default function TennisDashboardPage() {
     setNextGameOpponentSeed(payload.opponentSeed);
     setNextGameTopSeedName(payload.topSeedName);
     const tipRaw = payload.tipoff ? new Date(payload.tipoff) : null;
-    setNextGameTipoff(tipRaw && !Number.isNaN(tipRaw.getTime()) ? tipRaw : null);
-    setIsGameInProgress(payload.live);
+    const tipoff = tipRaw && !Number.isNaN(tipRaw.getTime()) ? tipRaw : null;
+    setNextGameTipoff(tipoff);
+    setIsGameInProgress(
+      tennisMatchConfirmedLive({
+        live: payload.live,
+        tipoffMs: tipoff?.getTime() ?? null,
+      })
+    );
   }, []);
 
   selectedPlayerIdRef.current = String(selectedPlayer?.playerId || '').trim() || null;
@@ -1315,7 +1299,9 @@ export default function TennisDashboardPage() {
         const hintedOpp =
           tennisUrlOpponentValue(propsOpponentFallbackRef.current) || readTennisUrlOpponent();
         if (hintedOpp) qs.set('opponent', hintedOpp);
-        const res = await tennisDashboardFetch(`/api/tennis/next-game?${qs.toString()}`);
+        const res = await tennisDashboardFetch(`/api/tennis/next-game?${qs.toString()}`, {
+          cache: 'no-store',
+        });
         const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
         if (cancelled) return;
         if (!res.ok || !data) return;
@@ -1343,30 +1329,14 @@ export default function TennisDashboardPage() {
     applyUpcoming,
   ]);
 
-  // Mark tipoff LIVE for the tennis match window, or when the fixture is already in progress.
+  // LIVE only when the fixture is actually on court — never from a passed not-before time.
   useEffect(() => {
-    if (nextGameLive && nextGameTipoff) {
-      const age = Date.now() - nextGameTipoff.getTime();
-      if (age >= 0 && age < NBL_MATCH_DURATION_MS) {
-        setIsGameInProgress(true);
-        return;
-      }
-    } else if (nextGameLive && !nextGameTipoff) {
-      setIsGameInProgress(true);
-      return;
-    }
-    if (!nextGameTipoff) {
-      setIsGameInProgress(false);
-      return;
-    }
-    const tick = () => {
-      const now = Date.now();
-      const tip = nextGameTipoff.getTime();
-      setIsGameInProgress(now >= tip && now - tip < NBL_MATCH_DURATION_MS);
-    };
-    tick();
-    const id = setInterval(tick, 30_000);
-    return () => clearInterval(id);
+    setIsGameInProgress(
+      tennisMatchConfirmedLive({
+        live: nextGameLive,
+        tipoffMs: nextGameTipoff?.getTime() ?? null,
+      })
+    );
   }, [nextGameTipoff, nextGameLive]);
 
   // Reset supporting to the first context-relevant pill when main chart stat changes.
@@ -1739,7 +1709,7 @@ export default function TennisDashboardPage() {
                             </div>
                             <TennisHeaderCountdown
                               show={Boolean(displayOpponent)}
-                              live={isGameInProgress}
+                              live={nextGameLive}
                               tipoff={nextGameTipoff}
                               variant="desktop"
                             />
@@ -1838,7 +1808,7 @@ export default function TennisDashboardPage() {
                             />
                             <TennisHeaderCountdown
                               show={Boolean(displayOpponent)}
-                              live={isGameInProgress}
+                              live={nextGameLive}
                               tipoff={nextGameTipoff}
                               variant="mobile"
                             />
