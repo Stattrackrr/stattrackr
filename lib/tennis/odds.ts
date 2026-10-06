@@ -29,6 +29,7 @@ import {
   tennisPairingMatches,
 } from '@/lib/tennis/oddsBoard';
 import { deleteTennisPlayerPropsListCache } from '@/lib/tennis/playerPropsListCache';
+import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import {
   filterTennisOuLines,
   type TennisBookRow,
