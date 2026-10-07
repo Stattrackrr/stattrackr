@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-06T18:54:38.905Z",
+  "generatedAt": "2026-10-07T19:20:12.561Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
-  "sourceUpdatedText": "Tuesday, September 29, 4:00pm AEST",
-  "injuryCount": 21,
+  "sourceUpdatedText": "Wednesday, October 7, 7:00pm AEDT",
+  "injuryCount": 22,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -44,9 +44,9 @@
       "team": "Cairns Taipans",
       "player": "Shaun Bruce",
       "injury": "Groin",
-      "returning": "Round 4",
-      "status": "Out",
-      "note": "Ruled out of Saturday’s game against Melbourne United after a morning fitness test, in the Taipans’ game-day update of 3 October 2026, which says he will return in Round 4. Development player Brody Nunn takes his place in the line-up.",
+      "returning": "Test",
+      "status": "Day-to-Day",
+      "note": "A game-day decision for Thursday’s home game against Brisbane, the Taipans confirmed on 7 October 2026, reported by Jai of Fox Sports (@NBLPleb). He missed the 3 October game against Melbourne United after a morning fitness test.",
       "listedByNbl": true
     },
     {
@@ -55,16 +55,7 @@
       "injury": "Shoulder",
       "returning": "Round 6",
       "status": "Out",
-      "note": "Cairns confirmed in the Taipans’ game preview of 3 October 2026 that he misses Saturday’s game against Melbourne United, and that he is making considerable progress in his rehabilitation.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Cairns Taipans",
-      "player": "Luke Paul",
-      "injury": "Ankle ligament",
-      "returning": "Expected 8 Oct",
-      "status": "Out",
-      "note": "Ruled out of Saturday’s game against Melbourne United after a morning fitness test, in the Taipans’ game-day update of 3 October 2026, which says he is now expected to make his NBL debut at the Cairns Convention Centre on Thursday 8 October. Scans had shown minor ligament damage, and the club first put him at 6-8 weeks.",
+      "note": "He is targeting the Taipans’ home game against the New Zealand Breakers on Sunday 25 October for his return from shoulder surgery and his Cairns debut, reported by Michael Randall of the Herald Sun on 7 October 2026. He has not played since 30 June, for Australia against Puerto Rico. Cairns said in their 3 October game preview that he was making considerable progress in his rehabilitation.",
       "listedByNbl": true
     },
     {
@@ -89,7 +80,7 @@
       "team": "Melbourne United",
       "player": "Chris Goulding",
       "injury": "Calf",
-      "returning": "TBC",
+      "returning": "Round 5",
       "status": "Out",
       "note": "Goulding will miss Melbourne United’s game against Cairns at John Cain Arena on Saturday 3 October with a calf strain, according to the Taipans’ game preview of 3 October 2026. United have not given a return date.",
       "listedByNbl": true
@@ -125,7 +116,7 @@
       "team": "Perth Wildcats",
       "player": "Brandon Knight",
       "injury": "—",
-      "returning": "TBC",
+      "returning": "Round 4",
       "status": "Out",
       "note": "Not playing against South East Melbourne at RAC Arena on Friday 2 October, confirmed by basketball.com.au. He has now arrived in Perth, after missing the start of the season because he was not yet in Australia. He is not carrying a reported injury. The NBL’s own list carries him as unavailable with the return TBC.",
       "listedByNbl": true
@@ -146,6 +137,22 @@
       "returning": "Season",
       "status": "Out for the season",
       "note": "Perth have confirmed a successful reconstruction of a torn ACL in his right knee and say he is expected to miss the entirety of the 2026-27 season. He is a development player, announced by the club on 9 June 2026, and is not in our 12-man projected Perth depth chart. The NBL added him to its own list in the 21 September 2026 refresh.",
+      "listedByNbl": true
+    },
+    {
+      "team": "South East Melbourne Phoenix",
+      "player": "Daniel Foster",
+      "injury": "Back",
+      "returning": "TBC",
+      "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "South East Melbourne Phoenix",
+      "player": "Hunter Goodrick",
+      "injury": "Knee",
+      "returning": "TBC",
+      "status": "Out",
       "listedByNbl": true
     },
     {

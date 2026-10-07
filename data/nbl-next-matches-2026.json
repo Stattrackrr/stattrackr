@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-06T18:54:10.975Z",
+  "generatedAt": "2026-10-07T19:19:40.705Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-      "name": "Adelaide 36ers",
-      "team_code": "ADL",
-      "nextMatches": [
-        {
-          "id": "80117067-2814-42c8-96ba-d9b986bad896",
-          "match_slug": "adelaide-36ers-v-melbourne-united-men-07-10-2026",
-          "match_title": "Adelaide 36ers v Melbourne United men 07-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
-          "external_id": "36fc0fd6-58ad-11f1-8ed4-c9ba3efad88d",
-          "start_time_datetime": "2026-10-07T08:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "opponent_name": "Melbourne United",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
-          "venue": "Adelaide Entertainment Centre",
-          "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
-        }
-      ]
-    },
-    {
-      "id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-      "name": "Melbourne United",
-      "team_code": "MEL",
-      "nextMatches": [
-        {
-          "id": "80117067-2814-42c8-96ba-d9b986bad896",
-          "match_slug": "adelaide-36ers-v-melbourne-united-men-07-10-2026",
-          "match_title": "Adelaide 36ers v Melbourne United men 07-10-2026",
-          "match_ticket_url": "https://pages.melbourneutd.com.au/nbl27-tickets-hub/?lid=0g7nc1z6h8fv",
-          "external_id": "36fc0fd6-58ad-11f1-8ed4-c9ba3efad88d",
-          "start_time_datetime": "2026-10-07T08:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-          "opponent_name": "Adelaide 36ers",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-          "venue": "Adelaide Entertainment Centre",
-          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
-        }
-      ]
-    },
     {
       "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "name": "Cairns Taipans",
@@ -153,6 +111,27 @@
       ]
     },
     {
+      "id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+      "name": "Melbourne United",
+      "team_code": "MEL",
+      "nextMatches": [
+        {
+          "id": "7092a801-5f1f-46c0-a3ac-cf75042fdc40",
+          "match_slug": "south-east-melbourne-phoenix-v-melbourne-united-men-10-10-2026",
+          "match_title": "South East Melbourne Phoenix v Melbourne United men 10-10-2026",
+          "match_ticket_url": "https://pages.melbourneutd.com.au/nbl27-tickets-hub/?lid=0g7nc1z6h8fv",
+          "external_id": "3703c23b-58ad-11f1-bf9b-db7d6019155e",
+          "start_time_datetime": "2026-10-10T08:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "opponent_name": "South East Melbourne Phoenix",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
+        }
+      ]
+    },
+    {
       "id": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "name": "Perth Wildcats",
       "team_code": "PER",
@@ -212,6 +191,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
           "venue": "Afterpay Arena",
           "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
+        }
+      ]
+    },
+    {
+      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "name": "Adelaide 36ers",
+      "team_code": "ADL",
+      "nextMatches": [
+        {
+          "id": "bf4c9009-9e78-45ee-bbda-e0d0126fb870",
+          "match_slug": "sydney-kings-v-adelaide-36ers-men-11-10-2026",
+          "match_title": "Sydney Kings v Adelaide 36ers men 11-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
+          "external_id": "36fffdc1-58ad-11f1-b499-f3575d2dc39f",
+          "start_time_datetime": "2026-10-11T04:00:00.000Z",
+          "is_home": false,
+          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "opponent_name": "Sydney Kings",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
+          "venue": "Afterpay Arena",
+          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
         }
       ]
     }

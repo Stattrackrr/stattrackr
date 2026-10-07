@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-06T18:54:09.926Z",
+  "generatedAt": "2026-10-07T19:19:39.677Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2708,7 +2708,7 @@
       "externalId": "36fc0fd6-58ad-11f1-8ed4-c9ba3efad88d",
       "startTime": "2026-10-07T08:30:00.000Z",
       "round": "4",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Adelaide 36ers",
       "homeTeamCode": "ADL",
       "homeTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
@@ -2717,8 +2717,8 @@
       "awayTeamCode": "MEL",
       "awayTeamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 91,
+      "awayScore": 96,
       "venue": "Adelaide Entertainment Centre",
       "matchSlug": "adelaide-36ers-v-melbourne-united-men-07-10-2026"
     },
