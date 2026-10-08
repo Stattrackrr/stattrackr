@@ -196,6 +196,15 @@ async function apiTennisCall(params: Record<string, string>): Promise<any> {
   return null;
 }
 
+export function tennisStandingRows(json: unknown): ApiTennisStanding[] {
+  const payload = json as { success?: unknown; result?: unknown } | null;
+  if (!payload?.success || !Array.isArray(payload.result)) return [];
+  return (payload.result as ApiTennisStanding[]).filter((row) => {
+    const key = String(row?.player_key ?? '').trim();
+    return /^\d+$/.test(key) && String(row?.player || '').trim() !== '';
+  });
+}
+
 function standingToPlayer(row: ApiTennisStanding, tour: TennisTour): ApiPlayerInfo {
   const playerId = String(row.player_key);
   return {
@@ -418,8 +427,8 @@ export async function fetchTennisIncrementalWindow(
   ]);
   const fixtureEvents = [...mainEvents, ...lowerEvents];
 
-  const atpStandings = (Array.isArray(atpStandingsJson?.result) ? atpStandingsJson.result : []) as ApiTennisStanding[];
-  const wtaStandings = (Array.isArray(wtaStandingsJson?.result) ? wtaStandingsJson.result : []) as ApiTennisStanding[];
+  const atpStandings = tennisStandingRows(atpStandingsJson);
+  const wtaStandings = tennisStandingRows(wtaStandingsJson);
   const players = new Map<string, ApiPlayerInfo>();
   for (const row of atpStandings) players.set(String(row.player_key), standingToPlayer(row, 'ATP'));
   for (const row of wtaStandings) players.set(String(row.player_key), standingToPlayer(row, 'WTA'));
@@ -602,8 +611,8 @@ export async function refreshTennisStandings(): Promise<{ atp: number; wta: numb
     apiTennisCall({ method: 'get_standings', event_type: 'ATP' }),
     apiTennisCall({ method: 'get_standings', event_type: 'WTA' }),
   ]);
-  const atpStandings = (Array.isArray(atpStandingsJson?.result) ? atpStandingsJson.result : []) as ApiTennisStanding[];
-  const wtaStandings = (Array.isArray(wtaStandingsJson?.result) ? wtaStandingsJson.result : []) as ApiTennisStanding[];
+  const atpStandings = tennisStandingRows(atpStandingsJson);
+  const wtaStandings = tennisStandingRows(wtaStandingsJson);
   const players: ApiTennisPlayer[] = [];
   for (const row of atpStandings) {
     const p = standingToPlayer(row, 'ATP');

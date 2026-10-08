@@ -302,7 +302,7 @@ function pickRosterPlayers(
 ): TennisPlayer[] {
   const byId = new Map<string, TennisPlayer>();
   for (const player of overlay.players || []) {
-    const id = String(player?.playerId || '').trim();
+    const id = validRosterId(player?.playerId);
     if (id) byId.set(id, slimPlayer(player));
   }
   const out: TennisPlayer[] = [];
@@ -402,14 +402,38 @@ function mergePlayerGames(existing: TennisMatchRow[], incoming: TennisMatchRow[]
   return { games: capGames([...byId.values()]), added, updated };
 }
 
+function validRosterId(value: string | null | undefined): string {
+  const id = String(value || '').trim();
+  return id && id !== 'undefined' && id !== 'null' ? id : '';
+}
+
+const MIN_STANDINGS_ROWS = 50;
+
+function cleanStandings(rows: TennisRankingRow[] | null | undefined): TennisRankingRow[] {
+  return (rows || []).filter(
+    (row) => validRosterId(row?.playerId) && String(row?.name || '').trim() && Number(row?.pos) > 0
+  );
+}
+
+/** A short or malformed standings list (an API error payload) must not replace a real one. */
+export function pickStandings(
+  incoming: TennisRankingRow[] | null | undefined,
+  existing: TennisRankingRow[] | null | undefined
+): TennisRankingRow[] {
+  const next = cleanStandings(incoming);
+  if (next.length >= MIN_STANDINGS_ROWS) return next;
+  const prev = cleanStandings(existing);
+  return prev.length >= next.length ? prev : next;
+}
+
 function mergeRosterPlayers(primary: TennisPlayer[], extra: TennisPlayer[]): TennisPlayer[] {
   const byId = new Map<string, TennisPlayer>();
   for (const player of primary) {
-    const id = String(player?.playerId || '').trim();
+    const id = validRosterId(player?.playerId);
     if (id) byId.set(id, slimPlayer(player));
   }
   for (const player of extra) {
-    const id = String(player?.playerId || '').trim();
+    const id = validRosterId(player?.playerId);
     if (!id) continue;
     const prev = byId.get(id);
     byId.set(id, slimPlayer(prev ? { ...prev, ...player, imageUrl: player.imageUrl || prev.imageUrl } : player));
@@ -463,8 +487,8 @@ export async function mergeTennisPlayerLogsIncremental(
     matches: overlay.matches,
     players: mergeRosterPlayers(existingRoster?.players || [], overlay.players || []),
     standings: {
-      ATP: overlay.standings?.ATP?.length ? overlay.standings.ATP : existingRoster?.standings?.ATP || [],
-      WTA: overlay.standings?.WTA?.length ? overlay.standings.WTA : existingRoster?.standings?.WTA || [],
+      ATP: pickStandings(overlay.standings?.ATP, existingRoster?.standings?.ATP),
+      WTA: pickStandings(overlay.standings?.WTA, existingRoster?.standings?.WTA),
     },
   };
   const rosterPlayers = pickRosterPlayers(rosterOverlay, priorityIds, incomingById);
