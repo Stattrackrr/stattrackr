@@ -944,7 +944,10 @@ function extractRosterFromCacheText(raw: string): ApiTennisRoster | null {
   }
 }
 
-function readApiTennisDiskRoster(): { roster: ApiTennisRoster | null; mtime: number } {
+function readApiTennisDiskRoster(opts?: { allowCacheJson?: boolean }): {
+  roster: ApiTennisRoster | null;
+  mtime: number;
+} {
   const file = apiTennisRosterPath();
   try {
     if (fs.existsSync(file)) {
@@ -955,6 +958,7 @@ function readApiTennisDiskRoster(): { roster: ApiTennisRoster | null; mtime: num
   } catch {
     /* ignore corrupt sidecar */
   }
+  if (opts?.allowCacheJson === false) return { roster: null, mtime: 0 };
   const cacheFile = apiTennisCachePath();
   try {
     if (!fs.existsSync(cacheFile)) return { roster: null, mtime: 0 };
@@ -1021,11 +1025,11 @@ function mergeRosterWithOverlay(
   };
 }
 
-export function loadApiTennisRoster(): ApiTennisRoster | null {
+export function loadApiTennisRoster(opts?: { allowCacheJson?: boolean }): ApiTennisRoster | null {
   const runtime = apiRuntime();
   const overlay = runtime.overlayGetter();
   const overlayAt = overlay?.fetchedAt || '';
-  const { roster: disk, mtime } = readApiTennisDiskRoster();
+  const { roster: disk, mtime } = readApiTennisDiskRoster(opts);
   if (runtime.roster && runtime.rosterDiskMtime === mtime && runtime.rosterOverlayAt === overlayAt) {
     return runtime.roster;
   }

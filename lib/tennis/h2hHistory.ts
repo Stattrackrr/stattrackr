@@ -1,20 +1,12 @@
 /**
- * Career head-to-head from API-Tennis get_H2H.
- * Player logs only cover TENNIS_HISTORY_YEARS (2024–2026), so dashboard H2H
- * is empty for pairs whose meetings are older. Fetch the pair, map to rows,
- * and merge at read time.
+ * Career head-to-head from stored pair cache (Redis, then data/tennis/api-tennis/h2h).
+ * Dashboard GETs never call API-Tennis get_H2H.
  */
 
 import fs from 'fs';
 import path from 'path';
 import sharedCache from '@/lib/sharedCache';
-import {
-  apiTennisDir,
-  loadApiTennisPlayers,
-  mapApiFixtureToRows,
-  type ApiPlayerInfo,
-  type ApiTennisFixture,
-} from '@/lib/tennis/apiTennis';
+import { apiTennisDir } from '@/lib/tennis/apiTennis';
 import { loadTennisPlayers } from '@/lib/tennis/data';
 import {
   mergeTennisH2hRows,
@@ -24,7 +16,6 @@ import {
 } from '@/lib/tennis/h2hMatch';
 import type { TennisMatchRow, TennisTour } from '@/lib/tennis/types';
 
-const API_BASE = 'https://api.api-tennis.com/tennis/';
 const REDIS_PREFIX = 'tennis_h2h_pair_v1:';
 const REDIS_TTL_SECONDS = 2 * 60 * 60;
 const EMPTY_TTL_MS = 15 * 60 * 1000;
@@ -43,10 +34,6 @@ type MemEntry = { at: number; ttlMs: number; games: TennisMatchRow[] };
 const mem = new Map<string, MemEntry>();
 const inflight = new Map<string, Promise<TennisMatchRow[]>>();
 
-function apiKey(): string {
-  return String(process.env.API_TENNIS_KEY || '').trim();
-}
-
 function h2hDir(): string {
   return path.join(apiTennisDir(), 'h2h');
 }
@@ -57,25 +44,6 @@ function diskPath(pairKey: string): string {
 
 function redisKey(pairKey: string): string {
   return `${REDIS_PREFIX}${pairKey}`;
-}
-
-function playerInfoMap(): Map<string, ApiPlayerInfo> {
-  const map = new Map<string, ApiPlayerInfo>();
-  const players = loadApiTennisPlayers() || loadTennisPlayers();
-  for (const player of players) {
-    const id = String(player.playerId || '').trim();
-    if (!id) continue;
-    map.set(id, {
-      playerId: id,
-      name: player.name,
-      tour: player.tour,
-      ioc: player.ioc ?? null,
-      rank: player.rank ?? null,
-      rankPoints: player.rankPoints ?? null,
-      imageUrl: null,
-    });
-  }
-  return map;
 }
 
 function remember(pairKey: string, games: TennisMatchRow[], ttlMs: number) {
@@ -106,65 +74,6 @@ function readDisk(pairKey: string): H2hPairCache | null {
   }
 }
 
-function writeDisk(payload: H2hPairCache) {
-  try {
-    fs.mkdirSync(h2hDir(), { recursive: true });
-    fs.writeFileSync(
-      diskPath(tennisH2hPairKey(payload.firstId, payload.secondId)),
-      JSON.stringify(payload)
-    );
-  } catch {
-    /* ignore quota / read-only */
-  }
-}
-
-async function apiTennisCall(params: Record<string, string>): Promise<any> {
-  const key = apiKey();
-  if (!key) return null;
-  const qs = new URLSearchParams({ APIkey: key, ...params });
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const res = await fetch(`${API_BASE}?${qs.toString()}`, {
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(20_000),
-    }).catch(() => null);
-    if (!res) {
-      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 400));
-      continue;
-    }
-    if (res.status === 429 || res.status >= 500) {
-      await new Promise((resolve) => setTimeout(resolve, attempt * 800));
-      continue;
-    }
-    const json = await res.json().catch(() => null);
-    if (!json?.success && attempt < 2) {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      continue;
-    }
-    return json;
-  }
-  return null;
-}
-
-function fixturesFromH2hPayload(json: any): ApiTennisFixture[] {
-  const result = json?.result;
-  const list = result?.H2H || result?.h2h;
-  return Array.isArray(list) ? list : Array.isArray(result) ? result : [];
-}
-
-async function fetchPairRows(firstId: string, secondId: string): Promise<TennisMatchRow[]> {
-  const json = await apiTennisCall({
-    method: 'get_H2H',
-    first_player_key: firstId,
-    second_player_key: secondId,
-  });
-  if (!json?.success) return [];
-  const fixtures = fixturesFromH2hPayload(json);
-  if (!fixtures.length) return [];
-  const players = playerInfoMap();
-  return fixtures.flatMap((fx) => mapApiFixtureToRows(fx, players));
-}
-
 async function loadPairRows(playerId: string, opponentId: string): Promise<TennisMatchRow[]> {
   const pairKey = tennisH2hPairKey(playerId, opponentId);
   const cached = memoryGames(pairKey);
@@ -184,20 +93,8 @@ async function loadPairRows(playerId: string, opponentId: string): Promise<Tenni
       void sharedCache.setJSON(redisKey(pairKey), fromDisk, REDIS_TTL_SECONDS);
       return fromDisk.games;
     }
-    const games = await fetchPairRows(playerId, opponentId);
-    const ttlMs = games.length ? HIT_TTL_MS : EMPTY_TTL_MS;
-    remember(pairKey, games, ttlMs);
-    if (games.length) {
-      const payload: H2hPairCache = {
-        fetchedAt: new Date().toISOString(),
-        firstId: playerId,
-        secondId: opponentId,
-        games,
-      };
-      writeDisk(payload);
-      void sharedCache.setJSON(redisKey(pairKey), payload, REDIS_TTL_SECONDS);
-    }
-    return games;
+    remember(pairKey, [], EMPTY_TTL_MS);
+    return [];
   })();
 
   inflight.set(pairKey, job);

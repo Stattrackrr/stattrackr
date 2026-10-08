@@ -52,6 +52,24 @@ function clubName(code: string | null | undefined): string {
   return getNblClubByCode(code)?.name || code;
 }
 
+function lastNameOf(name: string | null | undefined): string {
+  return String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .at(-1) || String(name || '');
+}
+
+function leanSide(pick: NblEnginePick): 'over' | 'under' {
+  if (pick.side === 'over' || pick.side === 'under') return pick.side;
+  return pick.score_over >= pick.score_under ? 'over' : 'under';
+}
+
+function punterStance(pick: NblEnginePick): { stance: 'over' | 'under' | 'leave'; mixed: boolean } {
+  if (pick.tier === 'AVOID') return { stance: 'leave', mixed: true };
+  return { stance: leanSide(pick), mixed: pick.tier === 'NO EDGE' };
+}
+
 function matchStatFromQuestion(question: string, fallback: string): string {
   const q = question.toLowerCase();
   for (const row of STAT_ALIASES) {
@@ -65,6 +83,7 @@ export type NblAskIntent = 'take' | 'other_markets' | 'best_line' | 'shot' | 'mo
 export function nblQuestionIntent(question: string): NblAskIntent {
   const q = question.toLowerCase();
   if (/\bwhere does\b|\bscore from\b|\bshot chart\b|\bfrom against\b/.test(q)) return 'shot';
+  if (/\bhow do you see\b|\bwhat(?:'s| is) the (?:model|lean)\b/.test(q)) return 'model';
 
   // "best line AND market / quick bet / looking into" is a pick, not a price quote.
   const wantsAPlay =
@@ -261,9 +280,7 @@ function compactPick(pick: NblEnginePick, requestedLine?: number | null) {
     statLabel: pick.stat_label,
     line: pick.line,
     side: pick.side,
-    tier: pick.tier,
-    scoreOver: pick.score_over,
-    scoreUnder: pick.score_under,
+    ...punterStance(pick),
     confirmed: pick.confirmed_categories.map(nblEngineCategoryLabel),
     failedGates: pick.gates.filter((g) => !g.passed).map((g) => ({ gate: g.gate, detail: g.detail })),
     bestOver,
@@ -294,8 +311,6 @@ function compactPick(pick: NblEnginePick, requestedLine?: number | null) {
       meaning:
         'Two lists. Shot-chart zone ranks (claims that say "shot-chart #N") match Opp Def Rank on the court. PTS D / "for PTS allowed" is box-score team allowed — a different ranking. Never mix them or "correct" a zone with PTS D.',
     },
-    matchupRule:
-      'Hard defence is one input, not an automatic under or AVOID. Easy defence is not an automatic over. AVOID means evidence conflicts or a red flag fired.',
     claims: pick.claims.map((c) => c.as_text),
     inferences: pick.inferences.map((inf) => ({
       category: nblEngineCategoryLabel(inf.category),
@@ -303,7 +318,6 @@ function compactPick(pick: NblEnginePick, requestedLine?: number | null) {
       status: inf.status,
       reason: inf.reason,
     })),
-    templateNarrative: pick.narrative,
   };
 }
 
@@ -328,7 +342,15 @@ function buildPack(
     viewing: panel.pick ? compactPick(panel.pick, requestedLine) : null,
     card: cardPicks.map(cardRow),
     suggestedTake: suggested ? cardRow(suggested) : null,
-    markets: panel.markets,
+    markets: panel.markets.map(({ stat, stat_label, line, side, kind, bestOver, bestUnder }) => ({
+      stat,
+      stat_label,
+      line,
+      side,
+      kind,
+      bestOver,
+      bestUnder,
+    })),
     pick: panel.pick ? compactPick(panel.pick, requestedLine) : null,
     take: panel.pick ? takeQuote(panel.pick) : null,
   };
@@ -408,11 +430,6 @@ function takeQuote(pick: NblEnginePick): { side: 'over' | 'under'; quote: { line
   return { side: favored, quote: favoredQuote };
 }
 
-function leanSide(pick: NblEnginePick): 'over' | 'under' {
-  if (pick.side === 'over' || pick.side === 'under') return pick.side;
-  return pick.score_over >= pick.score_under ? 'over' : 'under';
-}
-
 function cardRow(pick: NblEnginePick) {
   const quotes = nblStoredLineQuotes(pick);
   const taken = takeQuote(pick);
@@ -422,9 +439,7 @@ function cardRow(pick: NblEnginePick) {
     statLabel: pick.stat_label,
     line: pick.line,
     side,
-    tier: pick.tier,
-    scoreOver: pick.score_over,
-    scoreUnder: pick.score_under,
+    ...punterStance(pick),
     bestOver: quotes.bestOver,
     bestUnder: quotes.bestUnder,
     take: taken,
@@ -574,6 +589,75 @@ function localShotReply(panel: NblEnginePanelPayload): { answer: string; breakdo
   };
 }
 
+function localModelReply(panel: NblEnginePanelPayload): { answer: string; breakdown: string[] } {
+  const pick = panel.pick;
+  if (!pick) {
+    return {
+      answer: panel.reason || 'No sportsbook line was on the board when the engine last ran.',
+      breakdown: [],
+    };
+  }
+  const { stance, mixed } = punterStance(pick);
+  const line = pick.line;
+  const last = lastNameOf(pick.player_name);
+  const opp = clubName(pick.opponent_code) || pick.opponent_code;
+  const side = stance === 'leave' ? leanSide(pick) : stance;
+  const withPlay = pick.inferences.filter(
+    (inf) => inf.status === 'confirmed' && inf.direction === side && inf.reason
+  );
+  const against = pick.inferences.filter(
+    (inf) =>
+      inf.status === 'confirmed' &&
+      inf.direction !== 'neutral' &&
+      inf.direction !== side &&
+      inf.reason
+  );
+  const breakdown = [...withPlay, ...against]
+    .map((inf) => cleanClaimText(inf.reason))
+    .filter(Boolean)
+    .slice(0, 5);
+  const why = withPlay[0] ? cleanClaimText(withPlay[0].reason) : '';
+  const push = against[0] ? cleanClaimText(against[0].reason) : '';
+  const market =
+    line != null ? `${last}'s ${pick.stat_label} ${line} vs ${opp}` : `${last}'s ${pick.stat_label} vs ${opp}`;
+
+  if (stance === 'leave') {
+    return {
+      answer: `I'd leave ${market} alone. The reads conflict.`,
+      breakdown,
+    };
+  }
+  if (mixed) {
+    let answer = `I wouldn't force ${market}.`;
+    if (why) answer += ` ${side === 'under' ? 'The under' : 'The over'} has a case — ${why.charAt(0).toLowerCase()}${why.slice(1)}`;
+    if (push) answer += ` ${push.charAt(0).toLowerCase()}${push.slice(1)}`;
+    return { answer, breakdown };
+  }
+  const taken = takeQuote(pick);
+  if (taken) {
+    const books = taken.quote.books.length ? ` (${taken.quote.books.join(', ')})` : '';
+    const head = `I'd take ${pick.stat_label} ${taken.side} ${taken.quote.line} at ${taken.quote.price}${books}.`;
+    return { answer: why ? `${head} ${why}` : head, breakdown };
+  }
+  const head =
+    line != null
+      ? `I'd lean ${last} ${side} ${line} ${pick.stat_label} vs ${opp}.`
+      : `I'd lean ${last} ${side} ${pick.stat_label} vs ${opp}.`;
+  return { answer: why ? `${head} ${why}` : head, breakdown };
+}
+
+function looksLikeEngineJargon(answer: string): boolean {
+  return (
+    /\bthe model says\b/i.test(answer) ||
+    /\bno edge\b/i.test(answer) ||
+    /\bverdict\b/i.test(answer) ||
+    /\bAVOID\b/.test(answer) ||
+    /\bSTRONG\s+(OVER|UNDER)\b/i.test(answer) ||
+    /\bLEAN\s+(OVER|UNDER)\b/i.test(answer) ||
+    /\bKelly\b|\bno-vig\b|\bfair price\b/i.test(answer)
+  );
+}
+
 function answersTheQuestion(
   question: string,
   answer: string,
@@ -615,7 +699,8 @@ function answersTheQuestion(
     if (/^\s*avoid\b/i.test(answer)) return false;
     return /% of .*makes|shot-chart #\d/i.test(answer);
   }
-  return true;
+  if (looksLikeEngineJargon(answer)) return false;
+  return /\bover\b|\bunder\b|\bi'?d\b|\bwouldn't\b|\bleave\b|\blean\b/i.test(answer);
 }
 
 function localReply(
@@ -628,25 +713,36 @@ function localReply(
   if (intent === 'take') return localTakeReply(panel);
   if (intent === 'other_markets') return localOtherMarketsReply(panel, lookup || {});
   if (intent === 'shot') return localShotReply(panel);
-  const pick = panel.pick;
-  if (!pick) {
-    return {
-      answer: panel.reason || 'No sportsbook line was on the board when the engine last ran.',
-      breakdown: panel.markets.map(
-        (m) => `${m.stat_label} ${m.line ?? '—'} · ${m.tier}${m.side ? ` ${m.side}` : ''}`
-      ),
-    };
-  }
-  const breakdown = pick.inferences
-    .filter((inf) => inf.status === 'confirmed' && inf.reason)
-    .slice(0, 6)
-    .map((inf) => `${nblEngineCategoryLabel(inf.category)}: ${inf.reason}`);
-  return { answer: pick.narrative, breakdown };
+  return localModelReply(panel);
 }
 
-const SYSTEM_PROMPT = `You are ChatGPT on StatTrackr for NBL props. A punter is talking to you in chat. Understand what they asked, the way a person would. History is prior chat, not the question.
+const LENSES = [
+  'hit rate versus this line',
+  'last few games and streaks',
+  'H2H versus current form',
+  'teammates in or out',
+  'minutes and usage',
+  'matchup rank versus how he actually scored on tough D',
+  'shot profile against this defence',
+] as const;
+
+const SYSTEM_PROMPT = `You are a supporting punter on StatTrackr chatting about this NBL matchup. Give a clear over/under opinion, then back it with the stats. You are not a prediction model.
 
 Use ONLY facts and numbers in the STAT PACK. Never invent a stat, line, rank, sample size, percentage, or price. Never do maths. If a number is not in the pack, skip it.
+
+How to write:
+- Talk like a punter texting a mate — short, casual, opinionated.
+- Vary how you open. Do not start every answer the same way.
+- Never write "Here's why."
+- Never say the model, model chance, model projection, predicted, edge, EV, no-vig, fair price, Kelly, NO EDGE, AVOID, STRONG, LEAN, or Verdict.
+- Never quote a percent edge vs the book. A listed price is fine.
+- Dig into whatever stats matter for THIS question: hit rates, last few games, H2H, teammates out, minutes, usage, matchup ranks, shot profile.
+- Do not recycle the same three facts every time. If two stats disagree, say so.
+- Be specific: names, numbers, opponents.
+- No lock, guaranteed, or sure-thing language.
+- Answer in 2 to 4 sentences. Then breakdown: 3 to 5 short sentences, each a different fact. Do not repeat the answer.
+- Surname after first mention.
+- Never write pack, STAT PACK, viewing, suggestedTake, stance, mixed, or field names. The punter cannot see those.
 
 THE QUESTION IS THE SOURCE OF TRUTH. pack.hint is a guess — if it conflicts with the question, follow the question.
 pack.viewing / pack.pick is the stat on the chart (often points). That is NOT automatically the answer.
@@ -659,13 +755,14 @@ When they ask what you'd take, pick a prop, who you're on, if you had to bet, a 
 - Then WHY from suggestedTake.confirmed only. Pushback from suggestedTake.pushback only.
 - Never recommend over 1.5 and then argue under 2.5. Never mix two lines in one take.
 
-When they ask what the model is / should they bet this / the verdict: verdict first on pack.viewing, then the story. AVOID means conflict or a red flag, not "hard D so fade".
+When they ask how you see it / what's the model / should they bet this / your lean:
+- Give YOUR punter opinion on pack.viewing. Lean over, lean under, or say you wouldn't force it.
+- Never mention a model or a verdict label.
+- If stance is leave, say you'd leave it. If mixed, give the lean and the pushback.
 
 When they ask best line / best price / which book — and they did NOT ask which market to play: "Best {statLabel} over is {line} at {price} ({books})" from that market. No verdict.
 
 When they ask where he scores / shot chart: quote "X% of makes" and shot-chart #N only. Never add zone percentages. Never "X% of scoring from weak spots".
-
-Talk like a punter texting a mate — short, plain, opinionated. 2 to 4 sentences, then 3 to 5 breakdown bullets that continue the story. Vary how you open. Surname after first mention. No "Here's why." No lock language.
 
 Matchup rank is ONE input. Hard defence is not an automatic under. Easy defence is not an automatic over. If he already went over against similarly tough Ds, say that.
 
@@ -699,7 +796,7 @@ async function openaiReasoning(
         ...history.slice(-6).map((msg) => ({ role: msg.role, content: msg.content })),
         {
           role: 'user',
-          content: `STAT PACK:\n${JSON.stringify(pack)}\n\nQUESTION (answer this, not the previous chat):\n${question}`,
+          content: `This time lean on: ${LENSES[Math.floor(Math.random() * LENSES.length)]}.\n\nSTAT PACK:\n${JSON.stringify(pack)}\n\nQUESTION (answer this, not the previous chat):\n${question}`,
         },
       ],
     }),

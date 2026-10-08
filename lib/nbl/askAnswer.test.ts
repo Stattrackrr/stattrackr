@@ -14,6 +14,7 @@ assert.equal(
 );
 assert.equal(nblQuestionIntent("What's the best line on Waardenburg?"), 'best_line');
 assert.equal(nblQuestionIntent("What's the model on Waardenburg vs Cairns?"), 'model');
+assert.equal(nblQuestionIntent('How do you see Waardenburg vs Cairns?'), 'model');
 assert.equal(
   nblQuestionIntent('if you had to pick a prop for this player who are u taking and why?'),
   'take'
@@ -52,7 +53,7 @@ async function main() {
     allowLlm: false,
   });
   assert.match(quick.answer, /I'd take /i);
-  assert.match(quick.answer, /\bPRA\b|\bPR\b|\bPTS\b|\bREB\b|\bAST\b|\b3PM\b/i);
+  assert.match(quick.answer, /\bPRA\b|\bPA\b|\bPR\b|\bPTS\b|\bREB\b|\bAST\b|\b3PM\b/i);
   assert.doesNotMatch(quick.answer, /^\s*Best over is \d/i);
   assert.doesNotMatch(quick.answer, /^\s*AVOID/i);
 
@@ -76,8 +77,21 @@ async function main() {
   assert.match(others.answer, /I'd look at /i);
   assert.doesNotMatch(others.answer, /^\s*(Model:\s*)?AVOID/i);
   assert.doesNotMatch(others.answer, /wouldn'?t force another market/i);
-  assert.match(others.answer, /\bPRA\b|\bPR\b|\bREB\b|\bAST\b|\b3PM\b/i);
+  assert.match(others.answer, /\bPRA\b|\bPA\b|\bPR\b|\bREB\b|\bAST\b|\b3PM\b/i);
   assert.ok(others.breakdown.length > 0, 'other markets need a list');
+
+  const modelQ = await answerNblAsk({
+    question: "What's the model on Waardenburg vs Cairns?",
+    playerName: 'Sam Waardenburg',
+    opponent: 'Cairns',
+    stat: 'points',
+    allowLlm: false,
+  });
+  assert.doesNotMatch(modelQ.answer, /the model says/i);
+  assert.doesNotMatch(modelQ.answer, /no edge/i);
+  assert.doesNotMatch(modelQ.answer, /verdict/i);
+  assert.doesNotMatch(modelQ.answer, /\bAVOID\b/);
+  assert.match(modelQ.answer, /i'?d |wouldn't |lean /i);
 
   const mcveigh = await answerNblAsk({
     question:
@@ -92,6 +106,7 @@ async function main() {
   assert.doesNotMatch(mcveigh.answer, /I'd take \S+ over/i);
 
   console.log('nbl ask take vs best_line ok');
+  console.log('model:', modelQ.answer);
   console.log('take:', screenshot.answer);
   console.log('why:', screenshot.breakdown.join(' | '));
   console.log('books:', books.answer);

@@ -73,6 +73,7 @@ import {
 } from '@/lib/tennisDashboardFetch';
 import { isTennisQualifyingLabel } from '@/lib/tennis/dvpShared';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
+import { findTennisRosterPlayer } from '@/lib/tennis/rosterMatch';
 import { formatTennisStartClock, tennisMatchConfirmedLive } from '@/lib/tennis/oddsBoard';
 
 type NblPropsMode = 'player' | 'team';
@@ -144,7 +145,7 @@ function TennisAbbrevFlag({
   );
 }
 const NBL_PAGE_STATE_KEY = 'tennisPageState:v4';
-const NBL_PLAYER_LOGS_CACHE_PREFIX = 'tennisPlayerLogsCache:v9';
+const NBL_PLAYER_LOGS_CACHE_PREFIX = 'tennisPlayerLogsCache:v10';
 const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes; network always revalidates
 const TENNIS_NEXT_GAME_CLIENT_TTL_MS = 1000 * 20;
 const TENNIS_NEXT_GAME_POLL_MS = 20_000;
@@ -373,10 +374,17 @@ function isTennisPlayer(
 
 function asTennisPlayer(raw: unknown): NblRosterPlayer | null {
   if (!raw || typeof raw !== 'object') return null;
-  const player = raw as NblRosterPlayer;
+  const player = raw as NblRosterPlayer & { rank?: number | null };
   if (!isTennisPlayer(player)) return null;
+  const jerseyFromRank =
+    player.rank != null && Number(player.rank) > 0 ? String(player.rank) : null;
+  const jersey =
+    player.jersey != null && String(player.jersey).trim() !== ''
+      ? String(player.jersey)
+      : jerseyFromRank;
   return {
     ...player,
+    jersey,
     imageUrl: clientTennisHeadshotUrl(player.playerId, player.imageUrl),
   };
 }
@@ -527,8 +535,9 @@ function readInitialNblSelection(): {
     const persistedPlayer = asTennisPlayer(persisted?.selectedPlayer);
     const sameName =
       persistedPlayer &&
-      normalizeNblPlayerNameForMatch(persistedPlayer.name) ===
-        normalizeNblPlayerNameForMatch(targetName);
+      (normalizeNblPlayerNameForMatch(persistedPlayer.name) ===
+        normalizeNblPlayerNameForMatch(targetName) ||
+        tennisIdentityMatch(persistedPlayer.name, targetName));
     const player: NblRosterPlayer = sameName
       ? persistedPlayer!
       : {
@@ -957,25 +966,7 @@ export default function TennisDashboardPage() {
       setStatsLoadingForPlayer(false);
       return;
     }
-    const want = normalizeNblPlayerNameForMatch(selectedPlayer.name);
-    const teamWant = isTennisTourName(selectedPlayer.team)
-      ? String(selectedPlayer.team).toUpperCase()
-      : isTennisTourName(selectedPlayer.tour)
-        ? String(selectedPlayer.tour).toUpperCase()
-        : '';
-    const byId = selectedPlayer.playerId
-      ? rosterPlayers.find((p) => p.playerId && p.playerId === selectedPlayer.playerId)
-      : null;
-    const byName =
-      rosterPlayers.find((p) => {
-        if (normalizeNblPlayerNameForMatch(p.name) !== want) return false;
-        if (!teamWant) return true;
-        return String(p.team || p.tour || '').toUpperCase() === teamWant;
-      }) || rosterPlayers.find((p) => normalizeNblPlayerNameForMatch(p.name) === want);
-    const idMatchesName =
-      Boolean(byId) &&
-      (!want || normalizeNblPlayerNameForMatch(byId!.name) === want);
-    const match = (idMatchesName ? byId : null) || byName;
+    const match = findTennisRosterPlayer(rosterPlayers, selectedPlayer);
     if (match) {
       const tour = tennisPlayerTour(match);
       setSelectedPlayer(match);
@@ -1502,14 +1493,27 @@ export default function TennisDashboardPage() {
   }, [tennisOddsBooks]);
 
   const chartGameLogsForPlayer = useMemo(() => {
-    return selectedPlayerGameLogs.map((g, idx) => ({ ...g, __nblGameIndex: idx }));
-  }, [selectedPlayerGameLogs]);
+    const iocById = new Map<string, string>();
+    for (const player of rosterPlayers) {
+      const id = String(player.playerId || '').trim();
+      const ioc = String(player.ioc || '').trim();
+      if (id && ioc) iocById.set(id, ioc);
+    }
+    return selectedPlayerGameLogs.map((g, idx) => {
+      const opponentId = String(g.opponentId || '').trim();
+      const playerId = String(g.playerId || '').trim();
+      const opponentIoc =
+        String(g.opponentIoc || '').trim() || (opponentId ? iocById.get(opponentId) : null) || null;
+      const ioc = String(g.ioc || '').trim() || (playerId ? iocById.get(playerId) : null) || null;
+      return { ...g, opponentIoc, ioc, __nblGameIndex: idx };
+    });
+  }, [selectedPlayerGameLogs, rosterPlayers]);
 
   const chartGameLogs = chartGameLogsForPlayer;
   const allChartGameLogs = chartGameLogsForPlayer;
 
-  const lastLog = selectedPlayerGameLogs.length
-    ? (selectedPlayerGameLogs[selectedPlayerGameLogs.length - 1] as {
+  const lastLog = chartGameLogsForPlayer.length
+    ? (chartGameLogsForPlayer[chartGameLogsForPlayer.length - 1] as {
         tour?: string;
         isGrandSlam?: boolean;
         opponent?: string;
@@ -1569,18 +1573,19 @@ export default function TennisDashboardPage() {
     selectedPlayer && (headerTourLabel || headerPlace || headerRound || headerSurface || headerEventSuffix)
   );
   const matchupLeft = selectedPlayer?.name ? String(selectedPlayer.name).trim() : null;
+  const rosterSelf = selectedPlayer
+    ? findTennisRosterPlayer(rosterPlayers, selectedPlayer)
+    : null;
   const matchupLeftIoc = canonicalTennisIoc({
-    playerId: selectedPlayer?.playerId,
+    playerId: selectedPlayer?.playerId || rosterSelf?.playerId,
     name: selectedPlayer?.name || matchupLeft,
-    stored: selectedPlayer?.ioc || lastLog?.ioc,
+    stored: selectedPlayer?.ioc || rosterSelf?.ioc || lastLog?.ioc,
   });
   const rosterOpponent = displayOpponent
-    ? rosterPlayers.find((player) => tennisIdentityMatch(player.name, displayOpponent)) ||
-      rosterPlayers.find(
-        (player) =>
-          normalizeNblPlayerNameForMatch(player.name) ===
-          normalizeNblPlayerNameForMatch(displayOpponent)
-      )
+    ? findTennisRosterPlayer(rosterPlayers, {
+        playerId: nextGameOpponentId || propsOpponentIdFallback,
+        name: displayOpponent,
+      })
     : null;
   const matchupOpponentIoc = displayOpponent
     ? canonicalTennisIoc({
@@ -1596,7 +1601,7 @@ export default function TennisDashboardPage() {
     ? nextGameOpponentRank ??
       (Number.isFinite(rosterOpponentRank) && rosterOpponentRank > 0 ? rosterOpponentRank : null)
     : null;
-  const playerRankRaw = Number(selectedPlayer?.jersey);
+  const playerRankRaw = Number(selectedPlayer?.jersey ?? rosterSelf?.jersey);
   const matchupPlayerRank =
     Number.isFinite(playerRankRaw) && playerRankRaw > 0 ? playerRankRaw : null;
   const matchupLeftAbbrev = matchupLeft || '';
@@ -1682,11 +1687,9 @@ export default function TennisDashboardPage() {
                               <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">
                                 {headerTitle}
                               </h1>
-                              {nblPropsMode === 'player' &&
-                              selectedPlayer?.jersey != null &&
-                              String(selectedPlayer.jersey).trim() !== '' ? (
+                              {nblPropsMode === 'player' && matchupPlayerRank != null ? (
                                 <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 flex-shrink-0">
-                                  #{String(selectedPlayer.jersey)}
+                                  #{matchupPlayerRank}
                                 </span>
                               ) : null}
                             </div>
@@ -1720,6 +1723,7 @@ export default function TennisDashboardPage() {
                               <TennisAbbrevFlag
                                 code={matchupLeft}
                                 ioc={matchupLeftIoc}
+                                rank={matchupPlayerRank}
                                 textClassName="font-bold text-gray-900 dark:text-white text-xs xl:text-sm"
                               />
                             </div>
@@ -1788,11 +1792,9 @@ export default function TennisDashboardPage() {
                               <h1 className="text-base font-bold text-gray-900 dark:text-white truncate">
                                 {headerTitle}
                               </h1>
-                              {nblPropsMode === 'player' &&
-                              selectedPlayer?.jersey != null &&
-                              String(selectedPlayer.jersey).trim() !== '' ? (
+                              {nblPropsMode === 'player' && matchupPlayerRank != null ? (
                                 <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                                  #{String(selectedPlayer.jersey)}
+                                  #{matchupPlayerRank}
                                 </span>
                               ) : null}
                             </div>
@@ -1820,6 +1822,7 @@ export default function TennisDashboardPage() {
                             <TennisAbbrevFlag
                               code={matchupLeftAbbrev || matchupLeft}
                               ioc={matchupLeftIoc}
+                              rank={matchupPlayerRank}
                               textClassName="text-xs font-semibold text-gray-900 dark:text-white"
                             />
                             <TennisHeaderCountdown
@@ -2013,7 +2016,7 @@ export default function TennisDashboardPage() {
                         <div className={`h-[180px] rounded-lg animate-pulse ${pulse}`} />
                       ) : (
                         <TennisBoxScore
-                          gameLogs={selectedPlayerGameLogs}
+                          gameLogs={chartGameLogsForPlayer}
                           selectedPlayer={selectedPlayer}
                           isLoading={statsLoadingForPlayer || showStatsLoadingShell}
                           isDark={!!mounted && isDark}
@@ -2152,7 +2155,7 @@ export default function TennisDashboardPage() {
                               live={nextGameLive}
                               isGameInProgress={isGameInProgress}
                               topSeedName={displayOpponent ? nextGameTopSeedName : null}
-                              gameLogs={selectedPlayerGameLogs}
+                              gameLogs={chartGameLogsForPlayer}
                             />
                           </div>
                         )}
@@ -2282,7 +2285,7 @@ export default function TennisDashboardPage() {
                     className={`lg:hidden w-full min-w-0 flex-shrink-0 rounded-lg ${TENNIS_DASH_CARD_GLOW} overflow-hidden mb-6`}
                   >
                     <TennisBoxScore
-                      gameLogs={selectedPlayerGameLogs}
+                      gameLogs={chartGameLogsForPlayer}
                       selectedPlayer={selectedPlayer}
                       isLoading={statsLoadingForPlayer || showStatsLoadingShell}
                       isDark={!!mounted && isDark}
@@ -2448,7 +2451,7 @@ export default function TennisDashboardPage() {
                               live={nextGameLive}
                               isGameInProgress={isGameInProgress}
                               topSeedName={displayOpponent ? nextGameTopSeedName : null}
-                              gameLogs={selectedPlayerGameLogs}
+                              gameLogs={chartGameLogsForPlayer}
                             />
                           </div>
                         )}

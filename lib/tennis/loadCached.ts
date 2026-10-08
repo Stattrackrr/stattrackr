@@ -11,7 +11,6 @@ import {
 } from '@/lib/tennis/dashboardCache';
 import {
   loadPlayerMatches,
-  loadTennisPlayers,
   loadTennisRankings,
   type TennisMatchRow,
   type TennisPlayer,
@@ -19,9 +18,9 @@ import {
   type TennisTour,
 } from '@/lib/tennis/data';
 import { getHydratedTennisOverlay } from '@/lib/tennis/ingest';
-import { readApiTennisPlayerMatches, listApiTennisPlayerIds } from '@/lib/tennis/apiTennis';
+import { loadApiTennisRoster, readApiTennisPlayerMatches, listApiTennisPlayerIds } from '@/lib/tennis/apiTennis';
 import { TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
-import { canonicalTennisIoc } from '@/lib/tennis/nationality';
+import { tennisIocFromStoredOrRoster } from '@/lib/tennis/resolveIoc';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { mergeCareerH2h } from '@/lib/tennis/h2hHistory';
 
@@ -75,19 +74,60 @@ function mergeMatchRows(primary: TennisMatchRow[], overlay: TennisMatchRow[]): T
 function withPlayerCountry<T extends { playerId?: string | null; name?: string | null; ioc?: string | null }>(
   row: T
 ): T {
-  const ioc = canonicalTennisIoc({ playerId: row.playerId, name: row.name, stored: row.ioc });
+  const ioc = tennisIocFromStoredOrRoster({ playerId: row.playerId, name: row.name, stored: row.ioc });
   return ioc === row.ioc ? row : { ...row, ioc };
 }
 
 function withMatchCountry(row: TennisMatchRow): TennisMatchRow {
-  const ioc = canonicalTennisIoc({ playerId: row.playerId, name: row.playerName, stored: row.ioc });
-  const opponentIoc = canonicalTennisIoc({
+  const ioc = tennisIocFromStoredOrRoster({
+    playerId: row.playerId,
+    name: row.playerName,
+    stored: row.ioc,
+  });
+  const opponentIoc = tennisIocFromStoredOrRoster({
     playerId: row.opponentId,
     name: row.opponent,
     stored: row.opponentIoc,
   });
   if (ioc === row.ioc && opponentIoc === row.opponentIoc) return row;
   return { ...row, ioc, opponentIoc };
+}
+
+export function fillTennisPlayerRanks(
+  players: TennisPlayer[],
+  standings?: TennisRosterStandings
+): TennisPlayer[] {
+  if (!players.length) return players;
+  const posById = new Map<string, number>();
+  for (const row of [...(standings?.ATP || []), ...(standings?.WTA || [])]) {
+    const id = String(row.playerId || '').trim();
+    const pos = Number(row.pos);
+    if (id && Number.isFinite(pos) && pos > 0) posById.set(id, pos);
+  }
+  let missing = 0;
+  const fromStandings = players.map((player) => {
+    if (player.rank != null && Number(player.rank) > 0) return player;
+    const pos = posById.get(player.playerId);
+    if (pos) return { ...player, rank: pos };
+    missing += 1;
+    return player;
+  });
+  if (!missing) return fromStandings;
+  const disk = loadApiTennisRoster({ allowCacheJson: false })?.players || [];
+  if (!disk.length) return fromStandings;
+  const byId = new Map(disk.map((player) => [player.playerId, player]));
+  return fromStandings.map((player) => {
+    if (player.rank != null && Number(player.rank) > 0) return player;
+    const hit = byId.get(player.playerId);
+    if (!hit) return player;
+    return {
+      ...player,
+      name: hit.name || player.name,
+      rank: hit.rank ?? player.rank,
+      rankPoints: player.rankPoints ?? hit.rankPoints,
+      ioc: player.ioc || hit.ioc,
+    };
+  });
 }
 
 function filterCurrent(players: TennisPlayer[], standings: TennisRosterStandings | undefined): TennisPlayer[] {
@@ -98,18 +138,52 @@ function filterCurrent(players: TennisPlayer[], standings: TennisRosterStandings
   return players.filter((player) => ranked.has(player.playerId));
 }
 
+export function takeCurrentTennisRoster(
+  players: TennisPlayer[],
+  standings?: TennisRosterStandings
+): TennisPlayer[] {
+  const standingCount = (standings?.ATP?.length || 0) + (standings?.WTA?.length || 0);
+  if (standingCount >= 50) {
+    const current = filterCurrent(players, standings);
+    if (current.length >= 50) return current;
+  }
+  const ranked = players.filter((player) => player.rank != null && Number(player.rank) > 0);
+  return ranked.length ? ranked : players;
+}
+
+function usableTennisRoster(players: TennisPlayer[]): TennisPlayer[] {
+  return players.filter((player) => {
+    const id = String(player.playerId || '').trim();
+    const name = String(player.name || '').trim();
+    return id && id !== 'undefined' && name && name !== 'undefined';
+  });
+}
+
 export async function loadTennisPlayersCached(opts?: {
   currentOnly?: boolean;
 }): Promise<TennisPlayer[]> {
   const roster = await readTennisRosterCache();
-  if (roster?.players?.length) {
-    const players = roster.players.map(withPlayerCountry);
-    return opts?.currentOnly ? filterCurrent(players, roster.standings) : players;
+  const redisPlayers = usableTennisRoster(roster?.players || []);
+  if (redisPlayers.length >= 50) {
+    const players = fillTennisPlayerRanks(redisPlayers.map(withPlayerCountry), roster?.standings);
+    return opts?.currentOnly ? takeCurrentTennisRoster(players, roster?.standings) : players;
   }
-  if (getHydratedTennisOverlay()?.players?.length) {
-    return loadTennisPlayers(opts);
+  // Disk roster.json only — never parse the 528MB match cache on a dashboard GET.
+  const diskRoster = loadApiTennisRoster({ allowCacheJson: false });
+  const disk = usableTennisRoster((diskRoster?.players || []).map(withPlayerCountry));
+  if (disk.length) {
+    if (!opts?.currentOnly) return disk;
+    const ranked = disk.filter((player) => player.rank != null && Number(player.rank) > 0);
+    return ranked.length ? ranked : disk;
   }
-  return [];
+  const overlayPlayers = usableTennisRoster(getHydratedTennisOverlay()?.players || []);
+  if (overlayPlayers.length) {
+    const players = overlayPlayers.map(withPlayerCountry);
+    if (!opts?.currentOnly) return players;
+    const ranked = players.filter((player) => player.rank != null && Number(player.rank) > 0);
+    return ranked.length ? ranked : players;
+  }
+  return redisPlayers;
 }
 
 export async function loadTennisRankingsCached(
@@ -145,22 +219,10 @@ export async function loadPlayerMatchesCached(opts: {
   }
   if (playerId) {
     const cached = await readTennisPlayerLogsCache(playerId);
-    let cachedGames = cached?.games || [];
-    if (tennisLogsNeedHistory(cachedGames) || !cached?.historyBackfilled) {
-      const fromDisk = readApiTennisPlayerMatches(playerId);
-      if (fromDisk.length && redisMissingDiskHistory(cachedGames, fromDisk)) {
-        const games = mergeMatchRows(fromDisk, cachedGames);
-        const written = await writeTennisPlayerLogsCache({
-          fetchedAt: new Date().toISOString(),
-          playerId,
-          playerName: games[0]?.playerName || cached?.playerName || String(opts.playerName || playerId),
-          tour: opts.tour || games[0]?.tour || cached?.tour || null,
-          games,
-          historyBackfilled: true,
-        });
-        cachedGames = written?.games?.length ? written.games : games;
-      }
-    }
+    const cachedGames = cached?.games || [];
+    // Never JSON.parse data/tennis/api-tennis/cache.json (~500MB) on a dashboard GET.
+    // That blocks the event loop for seconds and stalls every other tennis request.
+    // History backfill belongs to the tennis process-stats workflow.
     if (cachedGames.length) {
       let games = opts.tour ? cachedGames.filter((row) => row.tour === opts.tour) : cachedGames;
       if (getHydratedTennisOverlay()?.matches?.length) {

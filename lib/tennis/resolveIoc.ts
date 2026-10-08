@@ -1,4 +1,4 @@
-import { loadTennisPlayers, loadTennisRankings } from '@/lib/tennis/data';
+import { loadApiTennisRoster } from '@/lib/tennis/apiTennis';
 import { tennisIocToIso2 } from '@/lib/tennis/flags';
 import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 
@@ -31,13 +31,12 @@ function add(index: IocIndex, id: string | null | undefined, name: string | null
 function iocIndex(): IocIndex {
   if (cached && (cached.byId.size > 0 || cached.byName.size > 0)) return cached;
   const index: IocIndex = { byId: new Map(), byName: new Map() };
-  for (const player of loadTennisPlayers()) {
+  const roster = loadApiTennisRoster({ allowCacheJson: false });
+  for (const player of roster?.players || []) {
     add(index, player.playerId, player.name, player.ioc);
   }
-  for (const tour of ['ATP', 'WTA'] as const) {
-    for (const row of loadTennisRankings(tour, { limit: 2000 })) {
-      add(index, row.playerId, row.name, row.ioc);
-    }
+  for (const row of [...(roster?.standings?.ATP || []), ...(roster?.standings?.WTA || [])]) {
+    add(index, row.playerId, row.name, row.ioc);
   }
   if (index.byId.size || index.byName.size) cached = index;
   return index;
@@ -52,4 +51,13 @@ export function resolveTennisIoc(
   const key = String(name || '').trim().toLowerCase();
   const stored = (id && index.byId.get(id)) || (key && index.byName.get(key)) || null;
   return canonicalTennisIoc({ playerId: id, name, stored });
+}
+
+/** Keep a valid stored country; otherwise look the player up on the disk roster. */
+export function tennisIocFromStoredOrRoster(input: {
+  playerId?: string | null;
+  name?: string | null;
+  stored?: string | null;
+}): string | null {
+  return canonicalTennisIoc(input) || resolveTennisIoc(input.playerId, input.name);
 }

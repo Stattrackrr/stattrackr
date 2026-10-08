@@ -22,7 +22,7 @@ const fallbackWarnings = new Set<string>();
 const UPSTASH_MAX_REQUEST_BYTES = 8 * 1024 * 1024;
 const GZIP_MIN_BYTES = 32 * 1024;
 const GET_MANY_CHUNK = 20;
-const UPSTASH_TIMEOUT_MS = 8000;
+const UPSTASH_TIMEOUT_MS = 2000;
 
 type GzipPacked = { v: 1; encoding: 'gzip-json'; payload: string };
 

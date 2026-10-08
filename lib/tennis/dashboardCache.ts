@@ -4,7 +4,7 @@
  */
 
 import sharedCache from '@/lib/sharedCache';
-import { canonicalTennisIoc } from '@/lib/tennis/nationality';
+import { tennisIocFromStoredOrRoster } from '@/lib/tennis/resolveIoc';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 
@@ -41,14 +41,18 @@ export type TennisPlayerLogsCache = {
 function withRosterCountry<T extends { playerId?: string | null; name?: string | null; ioc?: string | null }>(
   row: T
 ): T {
-  const ioc = canonicalTennisIoc({ playerId: row.playerId, name: row.name, stored: row.ioc });
+  const ioc = tennisIocFromStoredOrRoster({ playerId: row.playerId, name: row.name, stored: row.ioc });
   const stored = row.ioc ?? null;
   return ioc === stored ? row : { ...row, ioc };
 }
 
 function withLogCountry(row: TennisMatchRow): TennisMatchRow {
-  const ioc = canonicalTennisIoc({ playerId: row.playerId, name: row.playerName, stored: row.ioc });
-  const opponentIoc = canonicalTennisIoc({
+  const ioc = tennisIocFromStoredOrRoster({
+    playerId: row.playerId,
+    name: row.playerName,
+    stored: row.ioc,
+  });
+  const opponentIoc = tennisIocFromStoredOrRoster({
     playerId: row.opponentId,
     name: row.opponent,
     stored: row.opponentIoc,

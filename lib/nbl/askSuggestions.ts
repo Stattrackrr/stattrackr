@@ -16,7 +16,7 @@ export function nblPunterQuestions(playerName: string, opponentName: string): st
   const opp = opponentLabel(opponentName);
   if (!playerName.trim() || !opp) return [];
   return [
-    `What's the model on ${last} vs ${opp}?`,
+    `How do you see ${last} vs ${opp}?`,
     `Where does ${last} score from against ${opp}'s defence?`,
     `What's the best line on ${last}?`,
   ];
