@@ -4,6 +4,18 @@ import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 export const TENNIS_PROPS_LIVE_GRACE_MS = 6 * 60 * 60 * 1000;
 /** API-Tennis "Set 1" can appear well before first ball. */
 export const TENNIS_ON_COURT_MAX_FUTURE_MS = 2 * 60 * 60 * 1000;
+/** Elapsed not-before is not live. Kept as an export so leftover imports compile. */
+export const TENNIS_LIVE_AFTER_TIPOFF_MS = Number.POSITIVE_INFINITY;
+
+function tennisTipoffInPlayWindow(
+  tipoffMs: number | null | undefined,
+  nowMs: number
+): boolean {
+  if (tipoffMs == null || !Number.isFinite(tipoffMs)) return true;
+  if (tipoffMs - nowMs > TENNIS_ON_COURT_MAX_FUTURE_MS) return false;
+  if (nowMs - tipoffMs > TENNIS_PROPS_LIVE_GRACE_MS) return false;
+  return true;
+}
 
 export function tennisStatusLooksOnCourt(status: string): boolean {
   const s = String(status || '').trim().toLowerCase();
@@ -15,17 +27,40 @@ export function tennisStatusLooksOnCourt(status: string): boolean {
   );
 }
 
-/** True only when the fixture is actually being played, not when a not-before time has elapsed. */
+/** Walkovers / retirements / cancellations are done, even when the label has spaces. */
+export function tennisFixtureStatusIsTerminal(status: string): boolean {
+  const s = String(status || '').trim().toLowerCase();
+  const compact = s.replace(/[\s./_-]/g, '');
+  if (
+    compact === 'cancelled' ||
+    compact === 'canceled' ||
+    compact === 'walkover' ||
+    compact === 'wo' ||
+    compact === 'abandoned' ||
+    compact === 'abd'
+  ) {
+    return true;
+  }
+  return s === 'finished' || s.includes('retir');
+}
+
+/** Scheduled not-before times that elapsed this far are not the player's next match. */
+export function tennisScheduledTipoffStillCurrent(
+  tipoffMs: number | null | undefined,
+  nowMs = Date.now()
+): boolean {
+  if (tipoffMs == null || !Number.isFinite(tipoffMs)) return true;
+  return nowMs - tipoffMs <= TENNIS_PROPS_LIVE_GRACE_MS;
+}
+
+/** True when API-Tennis says the fixture is on court, inside the play window. */
 export function tennisFixtureIsOnCourt(
   status: string,
   tipoffMs: number | null | undefined,
   nowMs = Date.now()
 ): boolean {
   if (!tennisStatusLooksOnCourt(status)) return false;
-  if (tipoffMs == null || !Number.isFinite(tipoffMs)) return true;
-  if (tipoffMs - nowMs > TENNIS_ON_COURT_MAX_FUTURE_MS) return false;
-  if (nowMs - tipoffMs > TENNIS_PROPS_LIVE_GRACE_MS) return false;
-  return true;
+  return tennisTipoffInPlayWindow(tipoffMs, nowMs);
 }
 
 export type TennisBoardMatch = {
@@ -79,15 +114,8 @@ export function tennisStartColumnState(opts: {
   const now = opts.nowMs ?? Date.now();
   const tip = opts.tipoffMs;
   const hasTip = tip != null && Number.isFinite(tip);
-  if (opts.live) {
-    if (!hasTip) return { kind: 'live', tipoffMs: null };
-    if (tip - now > TENNIS_ON_COURT_MAX_FUTURE_MS) {
-      return { kind: 'clock', tipoffMs: tip };
-    }
-    if (now - tip > TENNIS_PROPS_LIVE_GRACE_MS) {
-      return { kind: 'clock', tipoffMs: tip };
-    }
-    return { kind: 'live', tipoffMs: tip };
+  if (opts.live && tennisTipoffInPlayWindow(hasTip ? tip : null, now)) {
+    return { kind: 'live', tipoffMs: hasTip ? tip : null };
   }
   if (!hasTip) return { kind: 'none', tipoffMs: null };
   return { kind: 'clock', tipoffMs: tip };

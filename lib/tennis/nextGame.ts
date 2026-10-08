@@ -10,7 +10,9 @@ import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import {
   TENNIS_PROPS_LIVE_GRACE_MS,
   tennisFixtureIsOnCourt,
+  tennisFixtureStatusIsTerminal,
   tennisListedMatchupIsPlayersNextGame,
+  tennisScheduledTipoffStillCurrent,
 } from '@/lib/tennis/oddsBoard';
 import type { TennisTour } from '@/lib/tennis/types';
 
@@ -19,7 +21,7 @@ const CACHE_TTL_MS = 2 * 60 * 1000;
 const LOOKAHEAD_DAYS = 21;
 const FIELD_LOOKBACK_DAYS = 12;
 export const TENNIS_UPCOMING_CACHE_KEY = 'tennis_upcoming_v7';
-export const TENNIS_UPCOMING_TTL_SECONDS = 20 * 60;
+export const TENNIS_UPCOMING_TTL_SECONDS = 5 * 60;
 const FETCH_TIMEOUT_MS = 5000;
 
 export type TennisNextGame = {
@@ -133,21 +135,11 @@ function fixturePhase(
   tipoff: Date | null
 ): 'finished' | 'live' | 'scheduled' | 'skip' {
   const s = String(status || '').trim().toLowerCase();
-  if (
-    s === 'cancelled' ||
-    s === 'canceled' ||
-    s === 'walkover' ||
-    s === 'wo' ||
-    s === 'w/o' ||
-    s === 'abandoned' ||
-    s === 'abd'
-  ) {
-    return 'skip';
-  }
-  if (s === 'finished' || s.includes('retir')) {
-    // Draw slots are sometimes marked finished before tipoff (e.g. slam finals).
-    if (tipoff && tipoff.getTime() > Date.now() + 60 * 60 * 1000) return 'scheduled';
-    return 'finished';
+  if (tennisFixtureStatusIsTerminal(s)) {
+    if ((s === 'finished' || s.includes('retir')) && tipoff && tipoff.getTime() > Date.now() + 60 * 60 * 1000) {
+      return 'scheduled';
+    }
+    return s === 'finished' || s.includes('retir') ? 'finished' : 'skip';
   }
   if (tennisFixtureIsOnCourt(s, tipoff?.getTime() ?? null)) return 'live';
   return 'scheduled';
@@ -268,6 +260,7 @@ function toNextGame(
   const resolved = officialPlayer(opponentId, opponentRaw);
   const tipoff = parseTipoff(fx.event_date, fx.event_time);
   let phase = fixturePhase(String(fx.event_status || ''), tipoff);
+  if (phase === 'scheduled' && hasPlayedScore(fx)) phase = 'live';
   if (phase === 'finished' && !hasPlayedScore(fx)) {
     const age = tipoff ? Date.now() - tipoff.getTime() : Number.POSITIVE_INFINITY;
     if (age > TENNIS_PROPS_LIVE_GRACE_MS) return null;
@@ -283,6 +276,9 @@ function toNextGame(
     if (!inSet) return null;
   }
   if (phase === 'skip' || phase === 'finished') return null;
+  if (phase === 'scheduled' && !tennisScheduledTipoffStillCurrent(tipoff?.getTime() ?? null)) {
+    return null;
+  }
   const tournamentName = String(fx.tournament_name || '').trim() || null;
   const tournamentKey = fx.tournament_key != null ? String(fx.tournament_key) : null;
   const round = parseApiRound(fx.tournament_round) || null;
@@ -315,10 +311,13 @@ function toNextGame(
 /** A "live" final with no result must not hide the player's real next match. */
 const STALE_LIVE_MS = TENNIS_PROPS_LIVE_GRACE_MS;
 
+const SCHEDULED_RANK_BIAS = 1e15;
+
 function upcomingRank(next: TennisNextGame, tip: number): number {
   if (!Number.isFinite(tip)) return Number.MAX_SAFE_INTEGER;
   if (next.live && Date.now() - tip > STALE_LIVE_MS) return Number.MAX_SAFE_INTEGER - 1;
-  return tip;
+  if (next.live) return tip;
+  return tip + SCHEDULED_RANK_BIAS;
 }
 
 function rememberUpcoming(
@@ -453,12 +452,11 @@ async function fetchUpcomingLive(): Promise<{
   const indexed = indexFixtures(fixtures);
   const events = unionLiveEvents(upcomingRuntime().window?.events, indexed.events);
   rememberWindow(indexed.byPlayerId, Date.now(), events);
-  try {
-    const { seedTennisLogsFromFixtures } = await import('@/lib/tennis/ingest');
-    await seedTennisLogsFromFixtures(fixtures, [...indexed.byPlayerId.keys()]);
-  } catch {
-    /* DVP logs are best-effort; upcoming still publishes */
-  }
+  void import('@/lib/tennis/ingest')
+    .then(({ seedTennisLogsFromFixtures }) =>
+      seedTennisLogsFromFixtures(fixtures, [...indexed.byPlayerId.keys()])
+    )
+    .catch(() => undefined);
   return {
     byPlayerId: indexed.byPlayerId,
     events,
@@ -997,9 +995,19 @@ function nextGameInvolvesName(next: TennisNextGame, name: string): boolean {
   return namesMatch(next.homeName, n) || namesMatch(next.awayName, n);
 }
 
+function cachedNextStillPlayable(next: TennisNextGame | null, nowMs = Date.now()): next is TennisNextGame {
+  if (!next) return false;
+  if (tennisFixtureStatusIsTerminal(next.status || '')) return false;
+  if (next.live) return true;
+  const tip = next.tipoff ? Date.parse(next.tipoff) : NaN;
+  return tennisScheduledTipoffStillCurrent(Number.isFinite(tip) ? tip : null, nowMs);
+}
+
 function pickSoonestNextGame(games: TennisNextGame[]): TennisNextGame | null {
-  if (!games.length) return null;
-  return [...games].sort((a, b) => {
+  const playable = games.filter((row) => cachedNextStillPlayable(row));
+  if (!playable.length) return null;
+  return [...playable].sort((a, b) => {
+    if (a.live !== b.live) return a.live ? -1 : 1;
     const ta = Date.parse(String(a.tipoff || '')) || Number.POSITIVE_INFINITY;
     const tb = Date.parse(String(b.tipoff || '')) || Number.POSITIVE_INFINITY;
     return ta - tb;
@@ -1016,11 +1024,61 @@ export async function getTennisNextGame(opts: {
   const playerName = String(opts.playerName || '').trim();
   const opponentName = String(opts.opponentName || '').trim();
   if (!playerId && !playerName) return null;
-  const byPlayerId = await loadUpcomingByPlayer({ waitForFresh: false });
+
+  const pick = (byPlayerId: Map<string, TennisNextGame>): TennisNextGame | null => {
+    const named: TennisNextGame[] = [];
+    if (playerName) {
+      const seen = new Set<string>();
+      for (const next of byPlayerId.values()) {
+        const key = String(next.matchId || `${next.homeName}|${next.awayName}|${next.tipoff}`);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (!nextGameInvolvesName(next, playerName) || namesMatch(next.opponent, playerName)) continue;
+        named.push(next);
+      }
+    }
+    const withOpponent = opponentName
+      ? named.filter((next) => nextGameInvolvesName(next, opponentName))
+      : named;
+    const byId = playerId ? byPlayerId.get(playerId) || null : null;
+    const byIdOk =
+      byId &&
+      cachedNextStillPlayable(byId) &&
+      (!playerName || nextGameInvolvesName(byId, playerName)) &&
+      (!opponentName || nextGameInvolvesName(byId, opponentName))
+        ? byId
+        : null;
+    const byNameKey = playerName ? byPlayerId.get(nameKey(playerName)) || null : null;
+    const byNameKeyOk =
+      byNameKey &&
+      cachedNextStillPlayable(byNameKey) &&
+      (!playerName || nextGameInvolvesName(byNameKey, playerName)) &&
+      (!opponentName || nextGameInvolvesName(byNameKey, opponentName))
+        ? byNameKey
+        : null;
+    return byIdOk || byNameKeyOk || pickSoonestNextGame(withOpponent) || pickSoonestNextGame(named);
+  };
+
+  let byPlayerId = await loadUpcomingByPlayer({ waitForFresh: false });
+  let next = pick(byPlayerId);
+  const fetchedAt = upcomingRuntime().window?.fetchedAt ?? 0;
+  const rawCached =
+    (playerId ? byPlayerId.get(playerId) : null) ||
+    (playerName ? byPlayerId.get(nameKey(playerName)) : null) ||
+    null;
+  const unplayableCached = Boolean(rawCached && !cachedNextStillPlayable(rawCached));
+  if (unplayableCached) {
+    await warmTennisUpcomingFixtures({ force: true });
+    byPlayerId = upcomingRuntime().window?.byPlayerId ?? byPlayerId;
+    next = pick(byPlayerId);
+  } else if (next && !next.live && !isFresh(fetchedAt)) {
+    void warmTennisUpcomingFixtures({ force: true });
+  }
+
   const live = indexLiveEvents(byPlayerId, upcomingRuntime().window?.events);
-  const finish = (next: TennisNextGame | null) => {
-    if (!next) return null;
-    const identified = withOfficialOpponent(next);
+  const finish = (row: TennisNextGame | null) => {
+    if (!row) return null;
+    const identified = withOfficialOpponent(row);
     const seeded = withDrawSeeds(withSurface(identified), playerId || null, live);
     const opponentIoc = canonicalTennisIoc({
       playerId: seeded.opponentId,
@@ -1029,36 +1087,5 @@ export async function getTennisNextGame(opts: {
     });
     return opponentIoc === seeded.opponentIoc ? seeded : { ...seeded, opponentIoc };
   };
-
-  const named: TennisNextGame[] = [];
-  if (playerName) {
-    const seen = new Set<string>();
-    for (const next of byPlayerId.values()) {
-      const key = String(next.matchId || `${next.homeName}|${next.awayName}|${next.tipoff}`);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      if (!nextGameInvolvesName(next, playerName) || namesMatch(next.opponent, playerName)) continue;
-      named.push(next);
-    }
-  }
-  const withOpponent = opponentName
-    ? named.filter((next) => nextGameInvolvesName(next, opponentName))
-    : named;
-
-  const byId = playerId ? byPlayerId.get(playerId) || null : null;
-  const byIdOk =
-    byId &&
-    (!playerName || nextGameInvolvesName(byId, playerName)) &&
-    (!opponentName || nextGameInvolvesName(byId, opponentName))
-      ? byId
-      : null;
-  const byNameKey = playerName ? byPlayerId.get(nameKey(playerName)) || null : null;
-  const byNameKeyOk =
-    byNameKey &&
-    (!playerName || nextGameInvolvesName(byNameKey, playerName)) &&
-    (!opponentName || nextGameInvolvesName(byNameKey, opponentName))
-      ? byNameKey
-      : null;
-
-  return finish(byIdOk || byNameKeyOk || pickSoonestNextGame(withOpponent) || pickSoonestNextGame(named));
+  return finish(next);
 }

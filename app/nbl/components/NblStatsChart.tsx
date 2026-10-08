@@ -766,6 +766,8 @@ interface NblStatsChartProps {
   uiResetToken?: string | number;
   /** Free accounts opened from a prop can only keep that stat selected. */
   lockOtherStats?: boolean;
+  /** Distinct odds lines per stat pill. Hidden when a stat has none. */
+  statLineCounts?: Record<string, number>;
 }
 
 export function NblStatsChart({
@@ -800,6 +802,7 @@ export function NblStatsChart({
   gamePropsTeam = null,
   uiResetToken,
   lockOtherStats = false,
+  statLineCounts,
 }: NblStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
@@ -1723,6 +1726,7 @@ export function NblStatsChart({
                 onSelect={applySelectedStat}
                 isDark={isDark}
                 darker
+                lineCount={statLineCounts?.[k]}
               />
             ))}
           </div>

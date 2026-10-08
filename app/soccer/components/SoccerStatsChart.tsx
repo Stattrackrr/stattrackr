@@ -7,6 +7,7 @@ import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import { DEFAULT_ODDS_FORMAT } from '@/lib/currencyUtils';
+import { countPostedOddsLines } from '@/lib/dashboardStatLineCounts';
 
 export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'h2h' | 'all' | `season:${number}`;
 type SoccerVenueFilter = 'all' | 'HOME' | 'AWAY';
@@ -1092,6 +1093,16 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const competitionDropdownRef = useRef<HTMLDivElement>(null);
   const previousSelectedStatRef = useRef(selectedStat);
+  const statLineCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    const ml = oddsBooks.filter(
+      (book) => book.moneyline.home || book.moneyline.draw || book.moneyline.away
+    ).length;
+    if (ml > 0) out.moneyline = ml;
+    const totals = countPostedOddsLines(oddsBooks.flatMap((book) => book.totalGoals.map((row) => row.line)));
+    if (totals > 0) out.total_goals = totals;
+    return out;
+  }, [oddsBooks]);
 
   useEffect(() => {
     const href = String(selectedTeamHref || '').trim();
@@ -1582,6 +1593,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
                 onSelect={setSelectedStat}
                 isDark={isDark}
                 darker
+                lineCount={statLineCounts[key]}
               />
             ))}
           </div>

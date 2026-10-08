@@ -19,14 +19,17 @@ import { TennisAskPanel } from '@/app/tennis/components/TennisAskPanel';
 import { TennisLineSelector } from '@/app/tennis/components/TennisLineSelector';
 import {
   isTennisOuStat,
+  TENNIS_OU_STATS,
   tennisBestMoneylinePick,
   tennisBestOuPick,
+  tennisH2hMeetsMinOdds,
   tennisLineMatches,
   tennisMainLineForStat,
   tennisOuLinesForStat,
   tennisParseLineNumber,
   type TennisBookRow,
 } from '@/lib/tennis/oddsTypes';
+import { countPostedOddsLines } from '@/lib/dashboardStatLineCounts';
 import {
   TennisSupportingStats,
   defaultSupportingStatForMain,
@@ -1485,6 +1488,19 @@ export default function TennisDashboardPage() {
     if (idx != null) setSelectedTennisBookIndex(idx);
   }, [mainChartStat, tennisOddsBooks]);
 
+  const tennisStatLineCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    const ml = tennisOddsBooks.filter((book) => tennisH2hMeetsMinOdds(book.H2H)).length;
+    if (ml > 0) out.moneyline = ml;
+    for (const stat of TENNIS_OU_STATS) {
+      const count = countPostedOddsLines(
+        tennisOddsBooks.flatMap((book) => tennisOuLinesForStat(book, stat).map((row) => row.line))
+      );
+      if (count > 0) out[stat] = count;
+    }
+    return out;
+  }, [tennisOddsBooks]);
+
   const chartGameLogsForPlayer = useMemo(() => {
     return selectedPlayerGameLogs.map((g, idx) => ({ ...g, __nblGameIndex: idx }));
   }, [selectedPlayerGameLogs]);
@@ -1907,6 +1923,7 @@ export default function TennisDashboardPage() {
                     withWithoutMode="with"
                     clearTeammateFilter={() => undefined}
                     rosterPlayers={rosterPlayers}
+                    statLineCounts={tennisStatLineCounts}
                     slotLeftOfLine={
                       tennisOddsLoading ? (
                         <div className={`h-8 w-[100px] sm:w-[110px] md:w-[120px] rounded-lg animate-pulse flex-shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />

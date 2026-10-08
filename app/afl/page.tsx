@@ -66,6 +66,7 @@ import { buildAflJournalQuickPreset } from '@/lib/buildAflJournalQuickPreset';
 import { buildAflGameDedupeKey, dedupeAflGames, aflGamesIncludeSeason, resolveAflGameSeason } from '@/lib/aflGameDedupe';
 import { playerHasFootywireSlugOverride } from '@/lib/aflFootywireSlugOverrides';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
+import { countPostedOddsLines, countMoneylineBooks } from '@/lib/dashboardStatLineCounts';
 
 /** Match /props player cards: purple-tint border + soft violet outer glow (light + dark). */
 const AFL_DASH_CARD_GLOW =
@@ -1776,6 +1777,43 @@ export default function AFLPage() {
     aflCurrentLineValue,
     aflGameLineValue,
   ]);
+
+  const aflStatLineCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    if (aflPropsMode === 'player') {
+      const disposals = countPostedOddsLines(
+        aflPlayerPropsBooks.flatMap((book) => {
+          const rows: Array<string | null> = [];
+          const ou = book.Disposals;
+          if (ou?.line && ou.line !== 'N/A' && (ou.over !== 'N/A' || ou.under !== 'N/A')) rows.push(ou.line);
+          const alt = book.DisposalsOver;
+          if (alt?.line && alt.line !== 'N/A' && alt.over !== 'N/A') rows.push(alt.line);
+          return rows;
+        })
+      );
+      if (disposals > 0) out.disposals = disposals;
+      const goals = countPostedOddsLines(
+        aflPlayerPropsBooks.flatMap((book) => getGoalsMarketLines(book).map((row) => row.line))
+      );
+      if (goals > 0) out.goals = goals;
+      const marks = countPostedOddsLines(aflPlayerPropsBooks.map((book) => book.MarksOver?.line));
+      if (marks > 0) out.marks = marks;
+      const tackles = countPostedOddsLines(aflPlayerPropsBooks.map((book) => book.TacklesOver?.line));
+      if (tackles > 0) out.tackles = tackles;
+      return out;
+    }
+    const ml = countMoneylineBooks(aflOddsBooks);
+    if (ml > 0) out.moneyline = ml;
+    const spread = countPostedOddsLines(
+      aflOddsBooks.map((book) => (book.Spread?.line && book.Spread.line !== 'N/A' ? book.Spread.line : null))
+    );
+    if (spread > 0) out.spread = spread;
+    const total = countPostedOddsLines(
+      aflOddsBooks.map((book) => (book.Total?.line && book.Total.line !== 'N/A' ? book.Total.line : null))
+    );
+    if (total > 0) out.total_points = total;
+    return out;
+  }, [aflOddsBooks, aflPlayerPropsBooks, aflPropsMode]);
 
   // When stat changes: pick a book that has data for the new stat (switch if current doesn't), set line from that book, and ignore the next transient-line so chart's stat-average emit doesn't overwrite. For disposals, prefer O/U then Over-only.
   useEffect(() => {
@@ -4967,6 +5005,7 @@ export default function AFLPage() {
                           setWithWithoutMode('with');
                         }}
                         selectedStat={mainChartStat}
+                        statLineCounts={aflStatLineCounts}
                         selectedTimeframe={aflChartTimeframe}
                         onTimeframeChange={setAflChartTimeframe}
                         onSelectedStatChange={setMainChartStat}

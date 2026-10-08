@@ -3,12 +3,15 @@ import test from 'node:test';
 import {
   applyLiveTennisPropsCutoff,
   formatTennisStartClock,
+  TENNIS_PROPS_LIVE_GRACE_MS,
   tennisCommenceTimeStillOnBoard,
   tennisFindUpcomingForListedMatch,
   tennisFixtureIsOnCourt,
+  tennisFixtureStatusIsTerminal,
   tennisListedMatchupIsPlayersNextGame,
   tennisOddsMatchStillOnBoard,
   tennisPairingMatches,
+  tennisScheduledTipoffStillCurrent,
   tennisStartColumnState,
   tennisStatusLooksOnCourt,
 } from './oddsBoard';
@@ -155,6 +158,22 @@ test('find upcoming prefers the same pairing, else the player\'s new match', () 
     ),
     false
   );
+});
+
+test('Walk Over and spaced walkover labels are finished, not scheduled', () => {
+  assert.equal(tennisFixtureStatusIsTerminal('Walk Over'), true);
+  assert.equal(tennisFixtureStatusIsTerminal('walkover'), true);
+  assert.equal(tennisFixtureStatusIsTerminal('W/O'), true);
+  assert.equal(tennisFixtureStatusIsTerminal('Retired'), true);
+  assert.equal(tennisFixtureStatusIsTerminal('Set 2'), false);
+  assert.equal(tennisFixtureStatusIsTerminal('Not Started'), false);
+});
+
+test('days-old not-before times are not the next match; delayed starts still are', () => {
+  assert.equal(tennisScheduledTipoffStillCurrent(now - 6 * 24 * hour, now), false);
+  assert.equal(tennisScheduledTipoffStillCurrent(now - 2 * hour, now), true);
+  assert.equal(tennisScheduledTipoffStillCurrent(now + hour, now), true);
+  assert.equal(tennisScheduledTipoffStillCurrent(now - TENNIS_PROPS_LIVE_GRACE_MS - 1, now), false);
 });
 
 test('start column shows not-before clock until the match is confirmed live', () => {

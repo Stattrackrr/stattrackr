@@ -734,6 +734,8 @@ interface NblStatsChartProps {
   tour?: 'ATP' | 'WTA' | null;
   /** Free accounts opened from a prop can only keep that stat selected. */
   lockOtherStats?: boolean;
+  /** Distinct odds lines per stat pill. Hidden when a stat has none. */
+  statLineCounts?: Record<string, number>;
 }
 
 export function TennisStatsChart({
@@ -770,6 +772,7 @@ export function TennisStatsChart({
   uiResetToken,
   tour = null,
   lockOtherStats = false,
+  statLineCounts,
 }: NblStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
@@ -1620,6 +1623,7 @@ export function TennisStatsChart({
                 }}
                 isDark={isDark}
                 darker
+                lineCount={statLineCounts?.[k]}
               />
             ))}
           </div>

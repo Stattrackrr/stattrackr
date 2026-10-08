@@ -57,10 +57,13 @@ import {
   nblBestLinePick,
   nblBookLines,
   nblExactLineOnBook,
+  nblH2hMeetsMinOdds,
   nblOddsMarketForStat,
+  nblOuHasOdds,
   parseNblOddsLine,
   type NblBookRow,
 } from '@/lib/nbl/oddsTypes';
+import { countPostedOddsLines } from '@/lib/dashboardStatLineCounts';
 import { normalizeNblStat } from '@/lib/propsDashboardLinks';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { readNblNextGamePrefetch, writeNblNextGamePrefetch } from '@/lib/nbl/nblNextGamePrefetch';
@@ -1062,6 +1065,27 @@ export default function NblDashboardPage() {
   const nblOddsMarket = nblOddsMarketForStat(nblPropsMode, nblOddsStat);
   const nblDisplayOddsBooks =
     nblPropsMode === 'player' ? nblPlayerOddsByStat[nblOddsStat] ?? EMPTY_NBL_ODDS_BOOKS : nblOddsBooks;
+  const nblStatLineCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    if (nblPropsMode === 'player') {
+      for (const [stat, books] of Object.entries(nblPlayerOddsByStat)) {
+        const count = countPostedOddsLines(books.flatMap((book) => nblBookLines(book).map((row) => row.line)));
+        if (count > 0) out[stat] = count;
+      }
+      return out;
+    }
+    const ml = nblOddsBooks.filter((book) => nblH2hMeetsMinOdds(book.H2H)).length;
+    if (ml > 0) out.moneyline = ml;
+    const spread = countPostedOddsLines(
+      nblOddsBooks.map((book) => (nblOuHasOdds(book.Spread) ? book.Spread.line : null))
+    );
+    if (spread > 0) out.spread = spread;
+    const total = countPostedOddsLines(
+      nblOddsBooks.map((book) => (nblOuHasOdds(book.Total) ? book.Total.line : null))
+    );
+    if (total > 0) out.total_pts = total;
+    return out;
+  }, [nblOddsBooks, nblPlayerOddsByStat, nblPropsMode]);
 
   const setMainChartStatAndResetLine = useCallback((stat: string | ((prev: string) => string)) => {
     const next = typeof stat === 'function' ? stat(mainChartStat) : stat;
@@ -1817,6 +1841,7 @@ export default function NblDashboardPage() {
                     withWithoutMode={withWithoutMode}
                     clearTeammateFilter={clearTeammateFilter}
                     rosterPlayers={rosterPlayers}
+                    statLineCounts={nblStatLineCounts}
                     slotLeftOfLine={
                       showNblOddsChip ? (
                         nblOddsChipLoading ? (

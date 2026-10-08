@@ -3,20 +3,36 @@
 import { useState, useMemo, useRef, useEffect, memo, useCallback } from 'react';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
-import { HomeAwaySelect, OverRatePill } from './ui';
+import { HomeAwaySelect, OverRatePill, StatLineCountBadge } from './ui';
 import { SECOND_AXIS_FILTER_OPTIONS } from '../constants';
 import { updateBettingLinePosition } from '../utils/chartUtils';
 import { AltLineItem, partitionAltLineItems, getBookRowKey } from '../utils/oddsUtils';
+import { countPostedOddsLines, countMoneylineBooks } from '@/lib/dashboardStatLineCounts';
 import { ABBR_TO_TEAM_ID, getEspnLogoCandidates } from '../utils/teamUtils';
 
 // Per-button memoized components to prevent unrelated re-renders
-const StatPill = memo(function StatPill({ label, value, isSelected, onSelect, isDark }: { label: string; value: string; isSelected: boolean; onSelect: (v: string) => void; isDark: boolean }) {
+const StatPill = memo(function StatPill({
+  label,
+  value,
+  isSelected,
+  onSelect,
+  isDark,
+  lineCount,
+}: {
+  label: string;
+  value: string;
+  isSelected: boolean;
+  onSelect: (v: string) => void;
+  isDark: boolean;
+  lineCount?: number | null;
+}) {
   const handleInteraction = useCallback((e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     onSelect(value);
   }, [onSelect, value]);
-  
+  const showCount = typeof lineCount === 'number' && lineCount > 0;
+
   return (
     <button
       type="button"
@@ -26,15 +42,27 @@ const StatPill = memo(function StatPill({ label, value, isSelected, onSelect, is
         e.stopPropagation();
         onSelect(value);
       }}
+      aria-label={showCount ? `${label}, ${lineCount} lines` : label}
       style={{ position: 'relative', zIndex: 50, pointerEvents: 'auto', touchAction: 'manipulation' }}
       className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer ${
         isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
       }`}
     >
-      {label}
+      <span className="inline-flex items-center gap-1.5">
+        {label}
+        {typeof lineCount === 'number' && lineCount > 0 ? (
+          <StatLineCountBadge count={lineCount} selected={isSelected} />
+        ) : null}
+      </span>
     </button>
   );
-}, (prev, next) => prev.isSelected === next.isSelected && prev.label === next.label && prev.value === next.value && prev.isDark === next.isDark);
+}, (prev, next) =>
+  prev.isSelected === next.isSelected &&
+  prev.label === next.label &&
+  prev.value === next.value &&
+  prev.isDark === next.isDark &&
+  prev.lineCount === next.lineCount
+);
 
 const TimeframeBtn = memo(function TimeframeBtn({ value, isSelected, onSelect }: { value: string; isSelected: boolean; onSelect: (v: string) => void }) {
   const handleInteraction = useCallback((e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
@@ -833,6 +861,28 @@ const ChartControls = function ChartControls({
     }
   }, [displayLine, realOddsData, selectedStat, oddsLoading, selectedBookmaker]);
   
+   const statLineCounts = useMemo(() => {
+      const books = Array.isArray(realOddsData) ? realOddsData : [];
+      const out: Record<string, number> = {};
+      for (const stat of currentStatOptions as Array<{ key: string }>) {
+        const key = getBookRowKey(stat.key);
+        if (!key) continue;
+        const count =
+          key === 'H2H'
+            ? countMoneylineBooks(books)
+            : countPostedOddsLines(
+                books.map((book: any) => {
+                  const row = book?.[key];
+                  if (!row || row.line === 'N/A') return null;
+                  if (row.over === 'N/A' && row.under === 'N/A') return null;
+                  return row.line;
+                })
+              );
+        if (count > 0) out[stat.key] = count;
+      }
+      return out;
+    }, [currentStatOptions, realOddsData]);
+
    const StatPills = useMemo(() => (
       <div className="mb-4 sm:mb-5 md:mb-4 mt-1 sm:mt-0 w-full max-w-full">
         <div
@@ -841,12 +891,20 @@ const ChartControls = function ChartControls({
         >
           <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
             {currentStatOptions.map((s: any) => (
-              <StatPill key={s.key} label={s.label} value={s.key} isSelected={selectedStat === s.key} onSelect={onSelectStat} isDark={isDark} />
+              <StatPill
+                key={s.key}
+                label={s.label}
+                value={s.key}
+                isSelected={selectedStat === s.key}
+                onSelect={onSelectStat}
+                isDark={isDark}
+                lineCount={statLineCounts[s.key]}
+              />
             ))}
           </div>
         </div>
       </div>
-    ), [isDark, currentStatOptions, selectedStat, onSelectStat]);
+    ), [isDark, currentStatOptions, selectedStat, onSelectStat, statLineCounts]);
 
     const TimeframeButtons = useMemo(() => {
       const timeframeOptions = [

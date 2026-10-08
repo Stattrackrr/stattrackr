@@ -593,6 +593,8 @@ interface AflStatsChartProps {
   gamePropsTeam?: string | null;
   /** Increment/change to force-close chart UI controls (splits/advanced) on context changes. */
   uiResetToken?: string | number;
+  /** Distinct odds lines per stat pill. Hidden when a stat has none. */
+  statLineCounts?: Record<string, number>;
 }
 
 export function AflStatsChart({
@@ -626,6 +628,7 @@ export function AflStatsChart({
   nextOpponent = null,
   gamePropsTeam = null,
   uiResetToken,
+  statLineCounts,
 }: AflStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
@@ -1359,6 +1362,7 @@ export function AflStatsChart({
                 }}
                 isDark={isDark}
                 darker
+                lineCount={statLineCounts?.[k]}
               />
             ))}
           </div>
