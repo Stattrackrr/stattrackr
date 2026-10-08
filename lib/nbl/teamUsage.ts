@@ -201,7 +201,8 @@ const REB_TOTALS: { pct: string; got: string; onCourt: 'trebOnCourt' | 'orebOnCo
   { pct: 'drebPct', got: 'drebGot', onCourt: 'drebOnCourt', boards: 'defensiveRebounds' },
 ];
 
-function aggregatePlayerStats(games: NblGameLogRow[]): {
+/** Counting stats (POSS, PTS, TREB got/available, …) are per game; rates stay rates. */
+export function aggregateNblTeamUsageStats(games: NblGameLogRow[]): {
   minutes: number;
   games: number;
   stats: Record<string, number>;
@@ -264,8 +265,8 @@ function aggregatePlayerStats(games: NblGameLogRow[]): {
     if (covered !== n || onCourt <= 0) continue;
     const got = rebGot[reb.pct] || 0;
     stats[reb.pct] = round1((100 * got) / onCourt);
-    stats[reb.got] = got;
-    stats[reb.onCourt] = round1(onCourt);
+    stats[reb.got] = round1(got / n);
+    stats[reb.onCourt] = round1(onCourt / n);
   }
   return { minutes: round1(minuteSum / n), games: n, stats };
 }
@@ -360,7 +361,7 @@ export function loadNblTeamUsage(opts: {
   for (const p of roster) {
     const playerId = String(p.playerId);
     const games = applyLastN(loadPlayerGames(playerId, opts.year), opts.lastN ?? null);
-    const agg = aggregatePlayerStats(games);
+    const agg = aggregateNblTeamUsageStats(games);
     if (!agg) continue;
     const keep =
       includePlayerId === playerId || (agg.games >= 1 && agg.minutes >= MIN_AVG_MINUTES);
@@ -397,7 +398,7 @@ export function loadNblTeamUsage(opts: {
       const playedWith = gameMatchesKeys(game, focusKeys);
       return includePlayerId ? playedWith : teammateMode === 'with' ? playedWith : !playedWith;
     });
-    const agg = aggregatePlayerStats(games);
+    const agg = aggregateNblTeamUsageStats(games);
     return agg ? toUsagePlayer(p.playerId, p.name, agg) : emptyUsagePlayer(p);
   });
 

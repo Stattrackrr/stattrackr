@@ -37,16 +37,16 @@ type PieStat = {
 
 const REB_INFO: Record<string, string> = {
   trebPct:
-    'TREB is the total rebounds available while that player is on the court, not the team total for the game. Minutes differ, so the total is different for each player. The percentage is his share of that on-court total.',
+    'TREB is rebounds grabbed per game out of boards available per game while that player is on the court, not the team total. Minutes differ, so available boards differ by player. The percentage is his share of that on-court total.',
   orebPct:
-    'OREB is the offensive rebounds available while that player is on the court, not the team total for the game. Minutes differ, so the total is different for each player. The percentage is his share of that on-court total.',
+    'OREB is offensive rebounds grabbed per game out of offensive boards available per game while that player is on the court, not the team total. Minutes differ, so available boards differ by player. The percentage is his share of that on-court total.',
   drebPct:
-    'DREB is the defensive rebounds available while that player is on the court, not the team total for the game. Minutes differ, so the total is different for each player. The percentage is his share of that on-court total.',
+    'DREB is defensive rebounds grabbed per game out of defensive boards available per game while that player is on the court, not the team total. Minutes differ, so available boards differ by player. The percentage is his share of that on-court total.',
 };
 
 const PIE_STATS: PieStat[] = [
   { key: 'usgPct', short: 'USG', full: 'Usage %', pct: true },
-  { key: 'possUsed', short: 'POSS', full: 'Possessions used', pct: false },
+  { key: 'possUsed', short: 'POSS', full: 'Possessions used per game', pct: false },
   { key: 'ptsPerPoss', short: 'PPP', full: 'Points per possession', pct: false, digits: 2 },
   { key: 'astPerPoss', short: 'AST/P', full: 'Assists per possession', pct: false, digits: 2 },
   { key: 'trebPct', short: 'TREB', full: 'Rebound %', pct: true },
