@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-07T19:19:40.705Z",
+  "generatedAt": "2026-10-08T19:15:59.992Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
-      "name": "Cairns Taipans",
-      "team_code": "CNS",
-      "nextMatches": [
-        {
-          "id": "54940bec-f846-4de6-93d3-91dabcac8c49",
-          "match_slug": "cairns-taipans-v-brisbane-bullets-men-08-10-2026",
-          "match_title": "Cairns Taipans v Brisbane Bullets men 08-10-2026",
-          "match_ticket_url": "https://tickets.taipans.com/",
-          "external_id": "37023ff5-58ad-11f1-88e1-6f9744c8d3ab",
-          "start_time_datetime": "2026-10-08T08:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-          "opponent_name": "Brisbane Bullets",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-          "venue": "Cairns Convention Centre",
-          "opponent_logo_blurhash": "LAD9iCxu0s5dS+s*s+xU0aIwoI}$"
-        }
-      ]
-    },
-    {
-      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-      "name": "Brisbane Bullets",
-      "team_code": "BRI",
-      "nextMatches": [
-        {
-          "id": "54940bec-f846-4de6-93d3-91dabcac8c49",
-          "match_slug": "cairns-taipans-v-brisbane-bullets-men-08-10-2026",
-          "match_title": "Cairns Taipans v Brisbane Bullets men 08-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS27",
-          "external_id": "37023ff5-58ad-11f1-88e1-6f9744c8d3ab",
-          "start_time_datetime": "2026-10-08T08:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
-          "opponent_name": "Cairns Taipans",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-          "venue": "Cairns Convention Centre",
-          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
-        }
-      ]
-    },
     {
       "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "name": "Illawarra Hawks",
@@ -212,6 +170,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
           "venue": "Afterpay Arena",
           "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
+        }
+      ]
+    },
+    {
+      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "name": "Cairns Taipans",
+      "team_code": "CNS",
+      "nextMatches": [
+        {
+          "id": "da09b00d-059c-4631-8582-337512695ea7",
+          "match_slug": "illawarra-hawks-v-cairns-taipans-men-11-10-2026",
+          "match_title": "Illawarra Hawks v Cairns Taipans men 11-10-2026",
+          "match_ticket_url": "https://tickets.taipans.com/",
+          "external_id": "36fb1b72-58ad-11f1-a2a4-7da015763581",
+          "start_time_datetime": "2026-10-11T06:00:00.000Z",
+          "is_home": false,
+          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "opponent_name": "Illawarra Hawks",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
+          "venue": "WIN Entertainment Centre",
+          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
+        }
+      ]
+    },
+    {
+      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "name": "Brisbane Bullets",
+      "team_code": "BRI",
+      "nextMatches": [
+        {
+          "id": "352d3deb-fb75-41a5-aafa-67db4db9b676",
+          "match_slug": "brisbane-bullets-v-south-east-melbourne-phoenix-men-15-10-2026",
+          "match_title": "Brisbane Bullets v South East Melbourne Phoenix men 15-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS27",
+          "external_id": "36fd506c-58ad-11f1-a57f-6d6fb61b331b",
+          "start_time_datetime": "2026-10-15T08:30:00.000Z",
+          "is_home": true,
+          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "opponent_name": "South East Melbourne Phoenix",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
+          "venue": "Brisbane Entertainment Centre",
+          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
         }
       ]
     }

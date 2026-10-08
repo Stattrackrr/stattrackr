@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-07T19:20:12.561Z",
+  "generatedAt": "2026-10-08T19:16:28.557Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Wednesday, October 7, 7:00pm AEDT",
-  "injuryCount": 22,
+  "injuryCount": 23,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -34,6 +34,15 @@
     },
     {
       "team": "Brisbane Bullets",
+      "player": "Sam McDaniel",
+      "injury": "Lower leg",
+      "returning": "Round 8",
+      "status": "Out",
+      "note": "Ruled out with a lower leg injury suffered in Saturday’s game, with an estimated return of about six weeks, in Brisbane’s update of 7 October 2026; Josh Duach suits up in his absence. The NBL’s list of the same evening has him back in Round 8. He had returned from a hand injury on 3 October.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Brisbane Bullets",
       "player": "Taine Murray",
       "injury": "Lower Limb",
       "returning": "Round 4-6",
@@ -42,11 +51,11 @@
     },
     {
       "team": "Cairns Taipans",
-      "player": "Shaun Bruce",
-      "injury": "Groin",
-      "returning": "Test",
-      "status": "Day-to-Day",
-      "note": "A game-day decision for Thursday’s home game against Brisbane, the Taipans confirmed on 7 October 2026, reported by Jai of Fox Sports (@NBLPleb). He missed the 3 October game against Melbourne United after a morning fitness test.",
+      "player": "Sunday Dech",
+      "injury": "Hamstring",
+      "returning": "Round 8",
+      "status": "Out",
+      "note": "The Taipans confirmed on 7 October 2026 that Dech will be out for at least four weeks with a hamstring injury, reported by Jai of Fox Sports (@NBLPleb). The NBL’s list of the same evening has him back in Round 8.",
       "listedByNbl": true
     },
     {

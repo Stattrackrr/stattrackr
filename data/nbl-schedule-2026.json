@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-07T19:19:39.677Z",
+  "generatedAt": "2026-10-08T19:15:59.037Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2689,7 +2689,7 @@
       "externalId": "37023ff5-58ad-11f1-88e1-6f9744c8d3ab",
       "startTime": "2026-10-08T08:30:00.000Z",
       "round": "4",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Cairns Taipans",
       "homeTeamCode": "CNS",
       "homeTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
@@ -2698,8 +2698,8 @@
       "awayTeamCode": "BRI",
       "awayTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 97,
+      "awayScore": 91,
       "venue": "Cairns Convention Centre",
       "matchSlug": "cairns-taipans-v-brisbane-bullets-men-08-10-2026"
     },
