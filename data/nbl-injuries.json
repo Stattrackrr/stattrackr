@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-08T19:16:28.557Z",
+  "generatedAt": "2026-10-09T18:47:28.864Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Wednesday, October 7, 7:00pm AEDT",
-  "injuryCount": 23,
+  "injuryCount": 22,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -38,7 +38,7 @@
       "injury": "Lower leg",
       "returning": "Round 8",
       "status": "Out",
-      "note": "Ruled out with a lower leg injury suffered in Saturday’s game, with an estimated return of about six weeks, in Brisbane’s update of 7 October 2026; Josh Duach suits up in his absence. The NBL’s list of the same evening has him back in Round 8. He had returned from a hand injury on 3 October.",
+      "note": "Will miss at least six weeks with a lower leg injury, the NBL reported on 9 October 2026 in announcing that Brisbane have signed Mawot Mag as his injury replacement player. He was hurt in Brisbane’s home game against Tasmania on Saturday 3 October, the night he returned from a hand injury, and Brisbane’s update of 7 October ruled him out for about six weeks, with Josh Duach suiting up in his absence. The NBL’s list of 7 October has him back in Round 8.",
       "listedByNbl": true
     },
     {
@@ -80,9 +80,9 @@
       "team": "Illawarra Hawks",
       "player": "Mason Peatling",
       "injury": "Foot",
-      "returning": "TBC",
-      "status": "Out",
-      "note": "Out for Illawarra with a foot injury and awaiting a scan. Illawarra head coach Justin Tatum, as reported by basketball.com.au on Monday 28 September 2026: “Mason will get a scan tomorrow, and hopefully his foot isn’t broken.” No return date has been given. Peatling had left Illawarra’s NBL27 Round 1 game against the New Zealand Breakers at Spark Arena on Sunday 20 September with a back issue; head coach Justin Tatum cleared him the same day, saying “He’s fine. He just got hit on a check-down. He bounced right back and said he’s fine.” That was a back complaint; this one is his foot.",
+      "returning": "Season",
+      "status": "Out for the season",
+      "note": "Out for the remainder of the NBL27 season. The Illawarra Hawks announced on Friday 9 October 2026, as reported by NBL.com.au, that Peatling will undergo season-ending foot surgery following recommendations from specialists. A club spokesperson: “While the procedure will rule Mason out for the remainder of the NBL27 season, it is expected to provide the best outcome for his long-term health and a full recovery.” He made two appearances this season. On Monday 28 September Illawarra head coach Justin Tatum had said, as reported by basketball.com.au: “Mason will get a scan tomorrow, and hopefully his foot isn’t broken.” Peatling had earlier left Illawarra’s NBL27 Round 1 game against the New Zealand Breakers at Spark Arena on Sunday 20 September with a back issue; Tatum cleared him the same day, saying “He’s fine. He just got hit on a check-down. He bounced right back and said he’s fine.” That was a back complaint; this one is his foot.",
       "listedByNbl": true
     },
     {
@@ -119,15 +119,6 @@
       "returning": "Assessed 9-23 Oct",
       "status": "Out",
       "note": "The Breakers say James has a torn left hamstring, reported by Olgun Uluc on 16 September 2026. On 3 October general manager Dillon Boucher said James is three weeks post-injury and will be assessed at the four-to-six-week mark of his rehabilitation, reported by Jai at Fox Sports (@NBLPleb). Mojave King has joined as injury cover, and Boucher said the club will keep monitoring the import market.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Perth Wildcats",
-      "player": "Brandon Knight",
-      "injury": "—",
-      "returning": "Round 4",
-      "status": "Out",
-      "note": "Not playing against South East Melbourne at RAC Arena on Friday 2 October, confirmed by basketball.com.au. He has now arrived in Perth, after missing the start of the season because he was not yet in Australia. He is not carrying a reported injury. The NBL’s own list carries him as unavailable with the return TBC.",
       "listedByNbl": true
     },
     {

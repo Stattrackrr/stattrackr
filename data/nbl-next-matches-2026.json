@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-08T19:15:59.992Z",
+  "generatedAt": "2026-10-09T18:46:53.868Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-      "name": "Illawarra Hawks",
-      "team_code": "ILL",
-      "nextMatches": [
-        {
-          "id": "c7330209-df81-4b51-86b5-9b122f8191f5",
-          "match_slug": "illawarra-hawks-v-tasmania-jackjumpers-men-09-10-2026",
-          "match_title": "Illawarra Hawks v Tasmania JackJumpers men 09-10-2026",
-          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
-          "external_id": "36fe21e3-58ad-11f1-ba69-dd12ee8972e9",
-          "start_time_datetime": "2026-10-09T08:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-          "opponent_name": "Tasmania JackJumpers",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-          "venue": "WIN Entertainment Centre",
-          "opponent_logo_blurhash": "L25$batj01ah1hWW^Moe00V[.kSz"
-        }
-      ]
-    },
-    {
-      "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-      "name": "Tasmania JackJumpers",
-      "team_code": "TAS",
-      "nextMatches": [
-        {
-          "id": "c7330209-df81-4b51-86b5-9b122f8191f5",
-          "match_slug": "illawarra-hawks-v-tasmania-jackjumpers-men-09-10-2026",
-          "match_title": "Illawarra Hawks v Tasmania JackJumpers men 09-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=JACKJUMP27",
-          "external_id": "36fe21e3-58ad-11f1-ba69-dd12ee8972e9",
-          "start_time_datetime": "2026-10-09T08:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "opponent_name": "Illawarra Hawks",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-          "venue": "WIN Entertainment Centre",
-          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
-        }
-      ]
-    },
     {
       "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "name": "South East Melbourne Phoenix",
@@ -174,6 +132,27 @@
       ]
     },
     {
+      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "name": "Illawarra Hawks",
+      "team_code": "ILL",
+      "nextMatches": [
+        {
+          "id": "da09b00d-059c-4631-8582-337512695ea7",
+          "match_slug": "illawarra-hawks-v-cairns-taipans-men-11-10-2026",
+          "match_title": "Illawarra Hawks v Cairns Taipans men 11-10-2026",
+          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
+          "external_id": "36fb1b72-58ad-11f1-a2a4-7da015763581",
+          "start_time_datetime": "2026-10-11T06:00:00.000Z",
+          "is_home": true,
+          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "opponent_name": "Cairns Taipans",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
+          "venue": "WIN Entertainment Centre",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
       "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "name": "Cairns Taipans",
       "team_code": "CNS",
@@ -212,6 +191,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
           "venue": "Brisbane Entertainment Centre",
           "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
+        }
+      ]
+    },
+    {
+      "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+      "name": "Tasmania JackJumpers",
+      "team_code": "TAS",
+      "nextMatches": [
+        {
+          "id": "a40d1c6a-784a-471d-825b-875c7088462e",
+          "match_slug": "tasmania-jackjumpers-v-adelaide-36ers-men-16-10-2026",
+          "match_title": "Tasmania JackJumpers v Adelaide 36ers men 16-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=JACKJUMP27",
+          "external_id": "3700bf63-58ad-11f1-89a0-03625b994063",
+          "start_time_datetime": "2026-10-16T08:30:00.000Z",
+          "is_home": true,
+          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+          "opponent_name": "Adelaide 36ers",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
+          "venue": "MyState Bank Arena",
+          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
         }
       ]
     }

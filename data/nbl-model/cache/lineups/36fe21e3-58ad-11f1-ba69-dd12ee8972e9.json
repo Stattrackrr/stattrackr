@@ -1,0 +1,24 @@
+{
+  "fixtureId": "36fe21e3-58ad-11f1-ba69-dd12ee8972e9",
+  "homeTeam": "Illawarra Hawks",
+  "awayTeam": "Tasmania JackJumpers",
+  "homeScore": "112",
+  "awayScore": "122",
+  "tipoff": "2026-10-09T08:30:00",
+  "teams": [
+    {
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "isHome": true,
+      "starters": [],
+      "bench": []
+    },
+    {
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "isHome": false,
+      "starters": [],
+      "bench": []
+    }
+  ]
+}

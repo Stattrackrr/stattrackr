@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-08T19:15:59.037Z",
+  "generatedAt": "2026-10-09T18:46:52.427Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2670,7 +2670,7 @@
       "externalId": "36fe21e3-58ad-11f1-ba69-dd12ee8972e9",
       "startTime": "2026-10-09T08:30:00.000Z",
       "round": "4",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Illawarra Hawks",
       "homeTeamCode": "ILL",
       "homeTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
@@ -2679,8 +2679,8 @@
       "awayTeamCode": "TAS",
       "awayTeamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 112,
+      "awayScore": 122,
       "venue": "WIN Entertainment Centre",
       "matchSlug": "illawarra-hawks-v-tasmania-jackjumpers-men-09-10-2026"
     },
