@@ -12,6 +12,7 @@
  * (memory-only) when the HTTP body would still exceed that cap.
  */
 
+import { createHash } from 'crypto';
 import { gunzipSync, gzipSync } from 'zlib';
 
 const REST_URL = process.env.UPSTASH_REDIS_REST_URL || '';
@@ -23,6 +24,19 @@ const UPSTASH_MAX_REQUEST_BYTES = 8 * 1024 * 1024;
 const GZIP_MIN_BYTES = 32 * 1024;
 const GET_MANY_CHUNK = 20;
 const UPSTASH_TIMEOUT_MS = 2000;
+/** Strict ops guard data that must never be overwritten from a failed read, so they wait longer and retry. */
+const STRICT_TIMEOUT_MS = 10_000;
+const STRICT_ATTEMPTS = 3;
+const STRICT_CHUNK = 10;
+/** Replace KEYS[1] only if it still holds the exact value the caller read (sha1 ARGV[1], '' = absent). */
+const CAS_SET_SCRIPT = `local cur = redis.call('GET', KEYS[1])
+if cur then
+  if redis.sha1hex(cur) ~= ARGV[1] then return 0 end
+elseif ARGV[1] ~= '' then
+  return 0
+end
+redis.call('SET', KEYS[1], ARGV[2], 'EX', ARGV[3])
+return 1`;
 
 type GzipPacked = { v: 1; encoding: 'gzip-json'; payload: string };
 
@@ -130,6 +144,62 @@ async function upstash(command: unknown[]): Promise<unknown> {
   return json[0];
 }
 
+/** Every command must succeed; any transport, HTTP, or per-command error throws. */
+async function upstashPipelineStrict(commands: unknown[][]): Promise<unknown[]> {
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < STRICT_ATTEMPTS; attempt += 1) {
+    if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+    try {
+      const res = await fetch(`${REST_URL}/pipeline`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${REST_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(commands),
+        signal: AbortSignal.timeout(STRICT_TIMEOUT_MS),
+      });
+      if (!res.ok) throw new Error(`Upstash error ${res.status}`);
+      const json = (await res.json()) as unknown;
+      if (!Array.isArray(json) || json.length !== commands.length) {
+        throw new Error('Upstash pipeline returned a malformed response');
+      }
+      return json.map((item) => {
+        if (item && typeof item === 'object' && 'error' in item && (item as { error?: unknown }).error) {
+          throw new Error(`Upstash command error: ${String((item as { error: unknown }).error)}`);
+        }
+        return item && typeof item === 'object' && 'result' in item ? (item as { result: unknown }).result : item;
+      });
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
+function sha1(value: string): string {
+  return createHash('sha1').update(value).digest('hex');
+}
+
+/** Decode a raw stored string. Returns undefined when the value exists but cannot be decoded. */
+export function decodeSharedCacheRaw<T>(raw: string | null): T | null | undefined {
+  if (raw == null || raw === '') return null;
+  try {
+    const value = unpackGzipJson<T>(JSON.parse(raw));
+    return value == null ? undefined : value;
+  } catch {
+    return undefined;
+  }
+}
+
+export type SharedCacheCasEntry = {
+  key: string;
+  /** The raw string returned by getRawManyStrict, or null when the key was absent. */
+  expectedRaw: string | null;
+  value: unknown;
+  ttlSeconds: number;
+};
+
 /** 'redis' when UPSTASH_* are set (shared across processes); 'memory' otherwise (per-process). */
 export function getSharedCacheBackend(): 'redis' | 'memory' {
   return HAS_UPSTASH ? 'redis' : 'memory';
@@ -208,6 +278,77 @@ export const sharedCache = {
       }
       return hit.v as T;
     });
+  },
+  /**
+   * Raw stored strings for keys (null = absent). Never falls back to memory on a Redis failure:
+   * throws instead, so callers cannot mistake "could not read" for "nothing stored".
+   */
+  async getRawManyStrict(keys: string[]): Promise<Array<string | null>> {
+    if (!keys.length) return [];
+    if (!HAS_UPSTASH) {
+      return keys.map((key) => {
+        const hit = memory.get(key);
+        if (!hit || (hit.exp && Date.now() > hit.exp)) return null;
+        return JSON.stringify(hit.v);
+      });
+    }
+    const out: Array<string | null> = [];
+    for (let i = 0; i < keys.length; i += STRICT_CHUNK) {
+      const chunk = keys.slice(i, i + STRICT_CHUNK);
+      const results = await upstashPipelineStrict(chunk.map((key) => ['GET', key]));
+      for (const result of results) {
+        if (result == null) out.push(null);
+        else if (typeof result === 'string') out.push(result);
+        else throw new Error('Upstash GET returned a non-string value');
+      }
+    }
+    return out;
+  },
+  /**
+   * Atomic compare-and-set per key: writes only if the key still holds expectedRaw.
+   * Returns per-entry true (written) / false (changed since read, or too large). Throws on Redis failure.
+   */
+  async casSetMany(entries: SharedCacheCasEntry[]): Promise<boolean[]> {
+    if (!entries.length) return [];
+    if (!HAS_UPSTASH) {
+      return entries.map(({ key, expectedRaw, value, ttlSeconds }) => {
+        const hit = memory.get(key);
+        const live = hit && !(hit.exp && Date.now() > hit.exp) ? JSON.stringify(hit.v) : null;
+        if (live !== expectedRaw) return false;
+        memory.set(key, { v: value, exp: ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : 0 });
+        return true;
+      });
+    }
+    const out: boolean[] = new Array(entries.length).fill(false);
+    for (let i = 0; i < entries.length; i += STRICT_CHUNK) {
+      const chunk = entries.slice(i, i + STRICT_CHUNK);
+      const commands: unknown[][] = [];
+      const slots: number[] = [];
+      chunk.forEach(({ key, expectedRaw, value, ttlSeconds }, j) => {
+        const { body, skipped } = encodeUpstashValue(value);
+        if (skipped) {
+          console.warn(`[sharedCache] skip Redis CAS ${key} (${body.length} bytes > ${UPSTASH_MAX_REQUEST_BYTES})`);
+          return;
+        }
+        const expected = expectedRaw == null ? '' : sha1(expectedRaw);
+        commands.push(['EVAL', CAS_SET_SCRIPT, 1, key, expected, body, String(ttlSeconds)]);
+        slots.push(i + j);
+      });
+      if (!commands.length) continue;
+      const results = await upstashPipelineStrict(commands);
+      results.forEach((result, j) => {
+        const applied = Number(result) === 1;
+        out[slots[j]] = applied;
+        if (applied) {
+          const entry = entries[slots[j]];
+          memory.set(entry.key, {
+            v: entry.value,
+            exp: entry.ttlSeconds > 0 ? Date.now() + entry.ttlSeconds * 1000 : 0,
+          });
+        }
+      });
+    }
+    return out;
   },
   async deleteJSON(key: string): Promise<void> {
     if (HAS_UPSTASH) {

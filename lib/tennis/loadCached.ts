@@ -4,10 +4,8 @@
 
 import {
   readTennisPlayerLogsCache,
-  readTennisPlayerLogsCacheMany,
   readTennisRosterCache,
-  writeTennisPlayerLogsCache,
-  writeTennisPlayerLogsCacheMany,
+  upsertTennisPlayerLogs,
 } from '@/lib/tennis/dashboardCache';
 import {
   loadPlayerMatches,
@@ -46,12 +44,6 @@ function coversHistoryYears(games: TennisMatchRow[]): boolean {
 export function tennisLogsNeedHistory(games: readonly TennisMatchRow[] | null | undefined): boolean {
   if (!games?.length || games.length < 12) return true;
   return !coversHistoryYears(games as TennisMatchRow[]);
-}
-
-function redisMissingDiskHistory(redisGames: TennisMatchRow[], diskGames: TennisMatchRow[]): boolean {
-  if (!diskGames.length) return false;
-  if (redisGames.length < diskGames.length) return true;
-  return !coversHistoryYears(redisGames) && coversHistoryYears(diskGames);
 }
 
 function mergeMatchRows(primary: TennisMatchRow[], overlay: TennisMatchRow[]): TennisMatchRow[] {
@@ -237,13 +229,15 @@ export async function loadPlayerMatchesCached(opts: {
   if (getHydratedTennisOverlay()?.matches?.length) {
     const live = loadPlayerMatches({ ...opts, playerId: playerId || opts.playerId });
     if (live.length && playerId) {
-      void writeTennisPlayerLogsCache({
-        fetchedAt: new Date().toISOString(),
-        playerId,
-        playerName: live[0]?.playerName || String(opts.playerName || playerId),
-        tour: opts.tour || live[0]?.tour || null,
-        games: live,
-      });
+      void upsertTennisPlayerLogs([
+        {
+          fetchedAt: new Date().toISOString(),
+          playerId,
+          playerName: live[0]?.playerName || String(opts.playerName || playerId),
+          tour: opts.tour || live[0]?.tour || null,
+          games: live,
+        },
+      ]).catch((err) => console.warn('[tennis logs] overlay upsert skipped', err));
     }
     return (
       await mergeCareerH2h(live, playerId, opts.opponentId, opts.opponentName, opts.tour)
@@ -253,42 +247,45 @@ export async function loadPlayerMatchesCached(opts: {
   return mergeCareerH2h([], playerId, opts.opponentId, opts.opponentName, opts.tour);
 }
 
-/** Rewrite every Redis player log that is missing compiled 2024–2026 history. */
+/** Merge compiled disk history into every Redis player log. Never removes a stored game. */
 export async function backfillAllTennisPlayerLogs(): Promise<{
   players: number;
   repaired: number;
   unchanged: number;
+  refused: number;
+  conflicts: number;
 }> {
   const ids = listApiTennisPlayerIds();
   let repaired = 0;
   let unchanged = 0;
+  let refused = 0;
+  let conflicts = 0;
   const batchSize = 40;
   for (let i = 0; i < ids.length; i += batchSize) {
-    const slice = ids.slice(i, i + batchSize);
-    const existing = await readTennisPlayerLogsCacheMany(slice);
     const payloads = [];
-    for (const id of slice) {
-      const disk = readApiTennisPlayerMatches(id);
-      const redisGames = existing.get(id) || [];
-      if (!redisMissingDiskHistory(redisGames, disk)) {
-        unchanged += 1;
-        continue;
-      }
-      const games = mergeMatchRows(disk, redisGames);
+    for (const id of ids.slice(i, i + batchSize)) {
+      const games = readApiTennisPlayerMatches(id);
+      if (!games.length) continue;
       payloads.push({
         fetchedAt: new Date().toISOString(),
         playerId: id,
-        playerName: games.find((row) => row.playerName)?.playerName || redisGames[0]?.playerName || id,
-        tour: games.find((row) => row.tour)?.tour || redisGames[0]?.tour || null,
+        playerName: games.find((row) => row.playerName)?.playerName || id,
+        tour: games.find((row) => row.tour)?.tour || null,
         games,
         historyBackfilled: true,
       });
     }
-    if (payloads.length) repaired += await writeTennisPlayerLogsCacheMany(payloads);
+    const result = await upsertTennisPlayerLogs(payloads);
+    repaired += result.written;
+    unchanged += result.unchanged;
+    refused += result.refused;
+    conflicts += result.conflicts;
     const done = Math.min(i + batchSize, ids.length);
     if (done === ids.length || done % 400 === 0) {
-      console.log(`[tennis history] ${done}/${ids.length} repaired=${repaired} unchanged=${unchanged}`);
+      console.log(
+        `[tennis history] ${done}/${ids.length} repaired=${repaired} unchanged=${unchanged} refused=${refused} conflicts=${conflicts}`
+      );
     }
   }
-  return { players: ids.length, repaired, unchanged };
+  return { players: ids.length, repaired, unchanged, refused, conflicts };
 }

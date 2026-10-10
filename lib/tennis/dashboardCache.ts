@@ -3,7 +3,7 @@
  * Never stores the 13MB overlay in Redis or on disk.
  */
 
-import sharedCache from '@/lib/sharedCache';
+import sharedCache, { decodeSharedCacheRaw, type SharedCacheCasEntry } from '@/lib/sharedCache';
 import { tennisIocFromStoredOrRoster } from '@/lib/tennis/resolveIoc';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
@@ -15,6 +15,8 @@ const TENNIS_COMPUTED_PREFIX = 'tennis_dash_computed_v2:';
 const TENNIS_SHARDS_MARK_KEY = 'tennis_dashboard_shards_mark_v2';
 
 const LOGS_TTL_SECONDS = 60 * 60 * 24 * 90;
+/** Player history outlives long injury layoffs; every successful write refreshes it. */
+const PLAYER_LOGS_TTL_SECONDS = 60 * 60 * 24 * 730;
 const COMPUTED_TTL_SECONDS = 6 * 60 * 60;
 const MARK_TTL_SECONDS = 60 * 60 * 24 * 40;
 const MAX_ROSTER_PLAYERS = 2000;
@@ -232,28 +234,171 @@ function fitPlayerLogsPayload(payload: TennisPlayerLogsCache): TennisPlayerLogsC
   return next;
 }
 
-export async function writeTennisPlayerLogsCache(
-  payload: TennisPlayerLogsCache
-): Promise<TennisPlayerLogsCache | null> {
-  const next = fitPlayerLogsPayload(payload);
-  if (!next) return null;
-  rememberPlayerLogs(next);
-  await sharedCache.setJSON(playerLogsKey(next.playerId), next, LOGS_TTL_SECONDS);
-  return next;
+export type TennisPlayerLogsStore = {
+  /** Raw stored strings (null = absent). Must throw when the store cannot be read. */
+  readRaw(keys: string[]): Promise<Array<string | null>>;
+  /** Per-entry compare-and-set against expectedRaw. Must throw when the store cannot be written. */
+  casWrite(entries: SharedCacheCasEntry[]): Promise<boolean[]>;
+};
+
+const sharedLogsStore: TennisPlayerLogsStore = {
+  readRaw: (keys) => sharedCache.getRawManyStrict(keys),
+  casWrite: (entries) => sharedCache.casSetMany(entries),
+};
+
+const UPSERT_CHUNK = 20;
+const UPSERT_ATTEMPTS = 4;
+
+export type TennisPlayerLogsUpsertResult = {
+  written: number;
+  added: number;
+  updated: number;
+  unchanged: number;
+  /** Stored value undecodable, or the merge would have dropped stored games. Left untouched. */
+  refused: number;
+  /** Key kept changing under concurrent writers. Left untouched; the next run retries. */
+  conflicts: number;
+};
+
+function decodeStoredPlayerLogs(raw: string | null): TennisPlayerLogsCache | null | undefined {
+  const value = decodeSharedCacheRaw<TennisPlayerLogsCache>(raw);
+  if (value === null) return null;
+  if (value === undefined || typeof value !== 'object' || !Array.isArray(value.games)) return undefined;
+  return value;
 }
 
-export async function writeTennisPlayerLogsCacheMany(payloads: TennisPlayerLogsCache[]): Promise<number> {
-  const entries = payloads
-    .map((payload) => fitPlayerLogsPayload(payload))
-    .filter((payload): payload is TennisPlayerLogsCache => Boolean(payload))
-    .map((payload) => ({
-      key: playerLogsKey(payload.playerId),
-      value: payload,
-      ttlSeconds: LOGS_TTL_SECONDS,
-    }));
-  if (!entries.length) return 0;
-  await sharedCache.setJSONMany(entries);
-  return entries.length;
+function storedGameKey(row: TennisMatchRow): string {
+  return row?.matchId ? `id:${row.matchId}` : `row:${JSON.stringify(row)}`;
+}
+
+/** True when next keeps every stored game, or only lost the oldest ones to the per-player cap. */
+export function tennisLogsKeepStoredGames(stored: TennisMatchRow[], next: TennisMatchRow[]): boolean {
+  if (next.length < stored.length) return false;
+  if (next.length >= MAX_GAMES_PER_PLAYER) return true;
+  const kept = new Set(next.map(storedGameKey));
+  return stored.every((row) => kept.has(storedGameKey(row)));
+}
+
+function combineIncomingPayloads(payloads: TennisPlayerLogsCache[]): Map<string, TennisPlayerLogsCache> {
+  const byId = new Map<string, TennisPlayerLogsCache>();
+  for (const payload of payloads) {
+    const id = String(payload?.playerId || '').trim();
+    if (!id || !Array.isArray(payload?.games) || !payload.games.length) continue;
+    const prev = byId.get(id);
+    byId.set(
+      id,
+      prev
+        ? {
+            ...prev,
+            ...payload,
+            playerId: id,
+            games: mergePlayerGames(prev.games, payload.games).games,
+            historyBackfilled: Boolean(prev.historyBackfilled || payload.historyBackfilled) || undefined,
+          }
+        : { ...payload, playerId: id }
+    );
+  }
+  return byId;
+}
+
+/**
+ * The only path that writes tennis player logs to Redis.
+ * - Reads the stored log strictly: if Redis cannot be read this throws and nothing is written.
+ * - Merges incoming games on top of stored games by matchId (stored games are never dropped).
+ * - Refuses any write that would hold fewer or different stored games, or overwrite an undecodable value.
+ * - Writes with compare-and-set, so a concurrent writer is re-read and re-merged instead of clobbered.
+ */
+export async function upsertTennisPlayerLogs(
+  payloads: TennisPlayerLogsCache[],
+  store: TennisPlayerLogsStore = sharedLogsStore
+): Promise<TennisPlayerLogsUpsertResult> {
+  const result: TennisPlayerLogsUpsertResult = {
+    written: 0,
+    added: 0,
+    updated: 0,
+    unchanged: 0,
+    refused: 0,
+    conflicts: 0,
+  };
+  const incomingById = combineIncomingPayloads(payloads);
+  const ids = [...incomingById.keys()];
+  for (let i = 0; i < ids.length; i += UPSERT_CHUNK) {
+    let pending = ids.slice(i, i + UPSERT_CHUNK);
+    for (let attempt = 0; attempt < UPSERT_ATTEMPTS && pending.length; attempt += 1) {
+      const raws = await store.readRaw(pending.map(playerLogsKey));
+      if (!Array.isArray(raws) || raws.length !== pending.length) {
+        throw new Error('[tennis logs] store returned a malformed read; refusing to write');
+      }
+      const entries: SharedCacheCasEntry[] = [];
+      const plans: Array<{ id: string; next: TennisPlayerLogsCache; added: number; updated: number }> = [];
+      pending.forEach((id, j) => {
+        const incoming = incomingById.get(id)!;
+        const stored = decodeStoredPlayerLogs(raws[j]);
+        if (stored === undefined) {
+          result.refused += 1;
+          console.warn(`[tennis logs] ${id}: stored log is undecodable; left untouched`);
+          return;
+        }
+        const storedGames = stored?.games || [];
+        const merged = mergePlayerGames(storedGames, incoming.games);
+        if (stored && merged.added === 0 && merged.updated === 0) {
+          result.unchanged += 1;
+          return;
+        }
+        const incomingName = String(incoming.playerName || '').trim();
+        const next = fitPlayerLogsPayload({
+          fetchedAt: incoming.fetchedAt || new Date().toISOString(),
+          playerId: id,
+          playerName: incomingName && incomingName !== id ? incomingName : stored?.playerName || incomingName || id,
+          tour: incoming.tour || stored?.tour || null,
+          games: merged.games,
+          historyBackfilled: Boolean(stored?.historyBackfilled || incoming.historyBackfilled) || undefined,
+        });
+        if (!next || !tennisLogsKeepStoredGames(storedGames, next.games)) {
+          result.refused += 1;
+          console.warn(
+            `[tennis logs] ${id}: write would drop stored games (${storedGames.length} -> ${next?.games.length ?? 0}); left untouched`
+          );
+          return;
+        }
+        entries.push({
+          key: playerLogsKey(id),
+          expectedRaw: raws[j],
+          value: next,
+          ttlSeconds: PLAYER_LOGS_TTL_SECONDS,
+        });
+        plans.push({ id, next, added: merged.added, updated: merged.updated });
+      });
+      const applied = entries.length ? await store.casWrite(entries) : [];
+      if (!Array.isArray(applied) || applied.length !== entries.length) {
+        throw new Error('[tennis logs] store returned a malformed write result');
+      }
+      const retry: string[] = [];
+      plans.forEach((plan, j) => {
+        if (applied[j] === true) {
+          result.written += 1;
+          result.added += plan.added;
+          result.updated += plan.updated;
+          rememberPlayerLogs(withLogPayload(plan.next, plan.id));
+        } else {
+          retry.push(plan.id);
+        }
+      });
+      pending = retry;
+    }
+    if (pending.length) {
+      result.conflicts += pending.length;
+      console.warn(`[tennis logs] ${pending.length} logs kept changing during write; left for the next run`);
+    }
+  }
+  return result;
+}
+
+/** Roster read for a write path: throws if Redis cannot be read, so a failed read never shrinks the roster. */
+async function readTennisRosterCacheStrict(): Promise<TennisRosterCache | null> {
+  const [raw] = await sharedCache.getRawManyStrict([TENNIS_ROSTER_CACHE_KEY]);
+  const value = decodeSharedCacheRaw<TennisRosterCache>(raw);
+  return value && Array.isArray(value.players) && value.players.length ? value : null;
 }
 
 type OverlayLike = {
@@ -382,20 +527,21 @@ function mergePlayerGames(existing: TennisMatchRow[], incoming: TennisMatchRow[]
 } {
   const byId = new Map<string, TennisMatchRow>();
   for (const row of existing) {
-    if (row?.matchId) byId.set(row.matchId, row);
+    if (row) byId.set(storedGameKey(row), row);
   }
   let added = 0;
   let updated = 0;
   for (const row of incoming) {
     if (!row?.matchId) continue;
-    const prev = byId.get(row.matchId);
+    const key = storedGameKey(row);
+    const prev = byId.get(key);
     if (!prev) {
-      byId.set(row.matchId, row);
+      byId.set(key, row);
       added += 1;
       continue;
     }
     if (matchStatCount(row) > matchStatCount(prev)) {
-      byId.set(row.matchId, row);
+      byId.set(key, row);
       updated += 1;
     }
   }
@@ -457,31 +603,22 @@ export async function mergeTennisPlayerLogsIncremental(
   const incomingById = groupOverlayGames(overlay);
   const onlyPriority = opts?.onlyPriority === true;
   const playerIds = [...incomingById.keys()].filter((id) => !onlyPriority || priorityIds.has(id));
-  const existingLogs = await readTennisPlayerLogsCacheMany(playerIds);
-
-  let added = 0;
-  let updated = 0;
-  const payloads: TennisPlayerLogsCache[] = [];
-  for (const playerId of playerIds) {
-    const incoming = incomingById.get(playerId) || [];
-    const prevGames = existingLogs.get(playerId) || [];
-    const merged = mergePlayerGames(prevGames, incoming);
-    added += merged.added;
-    updated += merged.updated;
-    if (merged.added > 0 || merged.updated > 0 || !existingLogs.has(playerId)) {
-      payloads.push({
+  const upserted = await upsertTennisPlayerLogs(
+    playerIds.map((playerId) => {
+      const incoming = incomingById.get(playerId) || [];
+      return {
         fetchedAt,
         playerId,
-        playerName: incoming[0]?.playerName || prevGames[0]?.playerName || playerId,
-        tour: incoming[0]?.tour || prevGames[0]?.tour || null,
-        games: merged.games,
-        historyBackfilled: memoryPlayerLogs(playerId)?.historyBackfilled,
-      });
-    }
-  }
-  const logs = payloads.length ? await writeTennisPlayerLogsCacheMany(payloads) : 0;
+        playerName: incoming[0]?.playerName || playerId,
+        tour: incoming[0]?.tour || null,
+        games: incoming,
+      };
+    })
+  );
+  const { added, updated } = upserted;
+  const logs = upserted.written;
 
-  const existingRoster = await readTennisRosterCache();
+  const existingRoster = await readTennisRosterCacheStrict();
   const rosterOverlay: OverlayLike = {
     fetchedAt,
     matches: overlay.matches,
