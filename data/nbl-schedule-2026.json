@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-09T18:46:52.427Z",
+  "generatedAt": "2026-10-10T17:47:52.544Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2632,7 +2632,7 @@
       "externalId": "3705bd4d-58ad-11f1-8baa-ede76c1d904d",
       "startTime": "2026-10-10T10:30:00.000Z",
       "round": "4",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Perth Wildcats",
       "homeTeamCode": "PER",
       "homeTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
@@ -2641,8 +2641,8 @@
       "awayTeamCode": "NZL",
       "awayTeamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "awayLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 100,
+      "awayScore": 84,
       "venue": "RAC Arena",
       "matchSlug": "perth-wildcats-v-nz-breakers-men-10-10-2026"
     },
@@ -2651,7 +2651,7 @@
       "externalId": "3703c23b-58ad-11f1-bf9b-db7d6019155e",
       "startTime": "2026-10-10T08:30:00.000Z",
       "round": "4",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
       "homeTeamCode": "SEM",
       "homeTeamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
@@ -2660,8 +2660,8 @@
       "awayTeamCode": "MEL",
       "awayTeamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 99,
+      "awayScore": 104,
       "venue": "John Cain Arena",
       "matchSlug": "south-east-melbourne-phoenix-v-melbourne-united-men-10-10-2026"
     },
