@@ -138,11 +138,6 @@ export async function readTennisRosterCache(): Promise<TennisRosterCache | null>
   return null;
 }
 
-export async function writeTennisRosterCache(roster: TennisRosterCache): Promise<void> {
-  if (jsonBytes(roster) > MAX_VALUE_BYTES) return;
-  await sharedCache.setJSON(TENNIS_ROSTER_CACHE_KEY, roster, LOGS_TTL_SECONDS);
-}
-
 const LOG_MEM_TTL_MS = 60_000;
 const logMem = new Map<string, { at: number; payload: TennisPlayerLogsCache }>();
 
@@ -394,11 +389,77 @@ export async function upsertTennisPlayerLogs(
   return result;
 }
 
-/** Roster read for a write path: throws if Redis cannot be read, so a failed read never shrinks the roster. */
-async function readTennisRosterCacheStrict(): Promise<TennisRosterCache | null> {
-  const [raw] = await sharedCache.getRawManyStrict([TENNIS_ROSTER_CACHE_KEY]);
-  const value = decodeSharedCacheRaw<TennisRosterCache>(raw);
-  return value && Array.isArray(value.players) && value.players.length ? value : null;
+const STORED_STANDINGS_ROWS = 500;
+
+/** True when next keeps every stored roster player (unless at the cap) and does not lose usable standings. */
+export function tennisRosterKeepsStored(stored: TennisRosterCache | null, next: TennisRosterCache): boolean {
+  if (!stored) return true;
+  const storedIds = (stored.players || []).map((player) => validRosterId(player?.playerId)).filter(Boolean);
+  if (next.players.length < MAX_ROSTER_PLAYERS) {
+    const kept = new Set(next.players.map((player) => player.playerId));
+    if (!storedIds.every((id) => kept.has(id))) return false;
+  } else if (next.players.length < Math.min(storedIds.length, MAX_ROSTER_PLAYERS)) {
+    return false;
+  }
+  for (const tour of ['ATP', 'WTA'] as const) {
+    const before = cleanStandings(stored.standings?.[tour]).length;
+    const after = next.standings?.[tour]?.length || 0;
+    if (before >= MIN_STANDINGS_ROWS && after < MIN_STANDINGS_ROWS) return false;
+  }
+  return true;
+}
+
+/**
+ * The only path that writes the tennis roster. Strict read (throws on Redis failure), union with stored
+ * players, refuse any shrink, compare-and-set write. Returns the number of players in the stored roster.
+ */
+async function upsertTennisRoster(
+  overlay: OverlayLike,
+  fetchedAt: string,
+  priorityIds: Set<string>,
+  incomingById: Map<string, TennisMatchRow[]>
+): Promise<number> {
+  for (let attempt = 0; attempt < UPSERT_ATTEMPTS; attempt += 1) {
+    const [raw] = await sharedCache.getRawManyStrict([TENNIS_ROSTER_CACHE_KEY]);
+    const decoded = decodeSharedCacheRaw<TennisRosterCache>(raw);
+    if (decoded === undefined) {
+      console.warn('[tennis roster] stored roster is undecodable; left untouched');
+      return 0;
+    }
+    const stored = decoded && Array.isArray(decoded.players) ? decoded : null;
+    const rosterOverlay: OverlayLike = {
+      fetchedAt,
+      matches: overlay.matches,
+      players: mergeRosterPlayers(stored?.players || [], overlay.players || []),
+      standings: {
+        ATP: pickStandings(overlay.standings?.ATP, stored?.standings?.ATP),
+        WTA: pickStandings(overlay.standings?.WTA, stored?.standings?.WTA),
+      },
+    };
+    const players = pickRosterPlayers(rosterOverlay, priorityIds, incomingById);
+    if (!players.length) return stored?.players.length || 0;
+    const next: TennisRosterCache = {
+      fetchedAt,
+      players,
+      standings: {
+        ATP: (rosterOverlay.standings?.ATP || []).slice(0, STORED_STANDINGS_ROWS),
+        WTA: (rosterOverlay.standings?.WTA || []).slice(0, STORED_STANDINGS_ROWS),
+      },
+    };
+    if (!tennisRosterKeepsStored(stored, next)) {
+      console.warn(
+        `[tennis roster] write would drop stored players or standings (${stored?.players.length ?? 0} -> ${players.length}); left untouched`
+      );
+      return stored?.players.length || 0;
+    }
+    if (jsonBytes(next) > MAX_VALUE_BYTES) return stored?.players.length || 0;
+    const [applied] = await sharedCache.casSetMany([
+      { key: TENNIS_ROSTER_CACHE_KEY, expectedRaw: raw, value: next, ttlSeconds: LOGS_TTL_SECONDS },
+    ]);
+    if (applied) return players.length;
+  }
+  console.warn('[tennis roster] roster kept changing during write; left for the next run');
+  return 0;
 }
 
 type OverlayLike = {
@@ -618,36 +679,16 @@ export async function mergeTennisPlayerLogsIncremental(
   const { added, updated } = upserted;
   const logs = upserted.written;
 
-  const existingRoster = await readTennisRosterCacheStrict();
-  const rosterOverlay: OverlayLike = {
-    fetchedAt,
-    matches: overlay.matches,
-    players: mergeRosterPlayers(existingRoster?.players || [], overlay.players || []),
-    standings: {
-      ATP: pickStandings(overlay.standings?.ATP, existingRoster?.standings?.ATP),
-      WTA: pickStandings(overlay.standings?.WTA, existingRoster?.standings?.WTA),
-    },
-  };
-  const rosterPlayers = pickRosterPlayers(rosterOverlay, priorityIds, incomingById);
-  if (rosterPlayers.length) {
-    await writeTennisRosterCache({
-      fetchedAt,
-      players: rosterPlayers,
-      standings: {
-        ATP: (rosterOverlay.standings?.ATP || []).slice(0, 500),
-        WTA: (rosterOverlay.standings?.WTA || []).slice(0, 500),
-      },
-    });
-  }
+  const rosterPlayers = await upsertTennisRoster(overlay, fetchedAt, priorityIds, incomingById);
 
   if (!onlyPriority) {
     await sharedCache.setJSON(
       TENNIS_SHARDS_MARK_KEY,
-      { fetchedAt, logs, players: rosterPlayers.length, added, updated },
+      { fetchedAt, logs, players: rosterPlayers, added, updated },
       MARK_TTL_SECONDS
     );
   }
-  return { players: rosterPlayers.length, logs, added, updated, skipped: false };
+  return { players: rosterPlayers, logs, added, updated, skipped: false };
 }
 
 export async function tennisLogsLookHealthy(): Promise<boolean> {

@@ -647,13 +647,18 @@ function snapshotToGame(
   };
 }
 
+/** A healthy Redis roster holds ~2000 players; below this, names on the board will not resolve to ids. */
+const MIN_LIST_ROSTER_PLAYERS = 500;
+
 async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayload> {
   await hydrateTennisMatchOverlay({ allowRemote: false });
   const roster = await readTennisRosterCache();
   let playerRows = roster?.players || [];
-  if (!playerRows.length) {
-    playerRows = loadTennisPlayers();
-    if (!playerRows.length) playerRows = loadTennisPlayers({ currentOnly: true });
+  if (playerRows.length < MIN_LIST_ROSTER_PLAYERS) {
+    let extra = loadTennisPlayers();
+    if (!extra.length) extra = loadTennisPlayers({ currentOnly: true });
+    const seen = new Set(playerRows.map((player) => player.playerId));
+    playerRows = [...playerRows, ...extra.filter((player) => !seen.has(player.playerId))];
   }
   const [index, catalog, players, liveEvents, dvpStore] = await Promise.all([
     listTennisOddsIndex(),

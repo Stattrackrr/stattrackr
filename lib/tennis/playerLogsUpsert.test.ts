@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { gzipSync } from 'node:zlib';
 import {
+  tennisRosterKeepsStored,
+  type TennisRosterCache,
   tennisLogsKeepStoredGames,
   upsertTennisPlayerLogs,
   type TennisPlayerLogsCache,
@@ -147,6 +149,25 @@ test('duplicate payloads for one player in a batch are combined', async () => {
     fake.store
   );
   assert.equal(fake.stored('2838')?.games.length, 22);
+});
+
+function roster(players: number, standings: number): TennisRosterCache {
+  const row = (i: number) => ({ playerId: String(1000 + i), name: `P ${i}`, tour: 'ATP' as const, ioc: null, hand: null, height: null, rank: i + 1, rankPoints: null, imageUrl: null });
+  return {
+    fetchedAt: '2026-10-10T00:00:00.000Z',
+    players: Array.from({ length: players }, (_, i) => row(i)),
+    standings: {
+      ATP: Array.from({ length: standings }, (_, i) => ({ pos: i + 1, playerId: String(1000 + i), name: `P ${i}`, tour: 'ATP' as const, points: 1, ioc: null })),
+      WTA: [],
+    },
+  };
+}
+
+test('a roster write that would shrink the stored roster is refused (the 105-player wipe)', () => {
+  assert.equal(tennisRosterKeepsStored(roster(1900, 500), roster(105, 0)), false);
+  assert.equal(tennisRosterKeepsStored(roster(1900, 500), roster(1900, 0)), false);
+  assert.equal(tennisRosterKeepsStored(roster(1900, 500), roster(1950, 500)), true);
+  assert.equal(tennisRosterKeepsStored(null, roster(105, 0)), true);
 });
 
 test('the keep-stored-games invariant only allows the oldest games to fall off at the cap', () => {
