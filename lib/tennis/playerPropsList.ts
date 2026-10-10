@@ -69,7 +69,7 @@ import {
 } from '@/lib/tennis/dvpShared';
 import { tennisAssignDrawRanks, tennisAssignDrawSeeds } from '@/lib/tennis/seeds';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
-import type { TennisMatchRow, TennisTour } from '@/lib/tennis/types';
+import type { TennisMatchRow, TennisPlayer, TennisTour } from '@/lib/tennis/types';
 import {
   TENNIS_LIST_CACHE_KEY,
   readTennisPlayerPropsListCache,
@@ -1566,11 +1566,15 @@ async function loadTennisPlayerPropsList(refresh?: boolean): Promise<TennisPlaye
   return listBuildInflight;
 }
 
-function rosterHitForListedName(name: string | null | undefined, id: string | null | undefined) {
-  const players = loadTennisPlayers();
+function rosterHitForListedName(
+  players: TennisPlayer[],
+  playersById: Map<string, TennisPlayer>,
+  name: string | null | undefined,
+  id: string | null | undefined
+) {
   const wantId = String(id || '').trim();
   const label = String(name || '').trim();
-  const byId = wantId ? players.find((player) => player.playerId === wantId) : null;
+  const byId = wantId ? playersById.get(wantId) || null : null;
   if (byId && label && !tennisIdentityMatch(byId.name, label)) return byId.ioc ? byId : null;
   if (byId?.ioc) return byId;
   const hits = label ? players.filter((player) => player.ioc && tennisIdentityMatch(player.name, label)) : [];
@@ -1583,10 +1587,18 @@ function rosterHitForListedName(name: string | null | undefined, id: string | nu
 
 /** Cached list rows often keep a blank country even when the roster has one. */
 function fillRosterFlags(rows: TennisListPropRow[]): TennisListPropRow[] {
-  if (!rows.length || !loadTennisPlayers().length) return rows;
+  const players = rows.length ? loadTennisPlayers() : [];
+  if (!players.length) return rows;
+  const playersById = new Map(players.map((player) => [player.playerId, player]));
+  const hits = new Map<string, TennisPlayer | null>();
+  const hitFor = (name: string | null | undefined, id: string | null | undefined) => {
+    const key = `${String(id || '').trim()}|${String(name || '').trim()}`;
+    if (!hits.has(key)) hits.set(key, rosterHitForListedName(players, playersById, name, id));
+    return hits.get(key) ?? null;
+  };
   return rows.map((row) => {
-    const player = rosterHitForListedName(row.playerName, row.playerId);
-    const opponent = rosterHitForListedName(row.opponent, row.opponentId);
+    const player = hitFor(row.playerName, row.playerId);
+    const opponent = hitFor(row.opponent, row.opponentId);
     let next = row;
     if (player?.ioc && !next.playerIoc) next = { ...next, playerIoc: player.ioc };
     if (player && !next.playerId) next = { ...next, playerId: player.playerId };

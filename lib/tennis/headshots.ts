@@ -34,12 +34,16 @@ type HeadshotRuntime = {
   localIds: Set<string> | null;
   byName: Map<string, string> | null;
   mtime: number;
+  checkedAt: number;
 };
+
+/** List endpoints resolve thousands of headshots per request; sync stat calls per row add seconds. */
+const INDEX_RECHECK_MS = 30_000;
 
 function headshotRuntime(): HeadshotRuntime {
   const g = globalThis as typeof globalThis & { __tennisHeadshots?: HeadshotRuntime };
   if (!g.__tennisHeadshots) {
-    g.__tennisHeadshots = { index: undefined, localIds: null, byName: null, mtime: 0 };
+    g.__tennisHeadshots = { index: undefined, localIds: null, byName: null, mtime: 0, checkedAt: 0 };
   }
   return g.__tennisHeadshots;
 }
@@ -66,6 +70,8 @@ export function tennisHeadshotFilePath(playerId: string, ext: 'jpg' | 'png' = 'j
 
 export function loadTennisHeadshotsIndex(): TennisHeadshotsIndex | null {
   const runtime = headshotRuntime();
+  if (runtime.index !== undefined && Date.now() - runtime.checkedAt < INDEX_RECHECK_MS) return runtime.index;
+  runtime.checkedAt = Date.now();
   const file = fs.existsSync(tennisHeadshotsIndexPath())
     ? tennisHeadshotsIndexPath()
     : tennisHeadshotsIndexFallbackPath();
@@ -142,7 +148,7 @@ function hasCachedTennisHeadshot(
   id: string,
   entry: TennisHeadshotEntry | undefined
 ): boolean {
-  if (localHeadshotIds().has(id) || tennisHeadshotLocalFile(id)) return true;
+  if (localHeadshotIds().has(id)) return true;
   if (!entry) return false;
   return Boolean(entry.ok || String(entry.file || '').trim());
 }
