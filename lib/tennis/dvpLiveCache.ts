@@ -167,9 +167,17 @@ export async function readTennisDvpLiveEvent(opts: {
   return findCachedTennisDvpEvent(store, opts);
 }
 
-function isPlausibleTennisDvpField(event: TennisCachedDvpEvent | null | undefined): event is TennisCachedDvpEvent {
+/**
+ * Live fields keep every entrant (main draw plus qualifiers), so a 96-draw Masters is ~132 and a
+ * Slam up to 128 main + 128 qualifying. Anything larger is a whole-tour list, not one event.
+ */
+const MAX_PLAUSIBLE_DVP_FIELD = 256;
+
+export function isPlausibleTennisDvpField(
+  event: TennisCachedDvpEvent | null | undefined
+): event is TennisCachedDvpEvent {
   const n = Number(event?.fieldSize) || event?.windows?.last10?.length || 0;
-  return n >= 4 && n <= 128;
+  return n >= 4 && n <= MAX_PLAUSIBLE_DVP_FIELD;
 }
 
 export function findCachedTennisDvpEvent(
