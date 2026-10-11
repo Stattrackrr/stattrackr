@@ -736,6 +736,11 @@ interface NblStatsChartProps {
   lockOtherStats?: boolean;
   /** Distinct odds lines per stat pill. Hidden when a stat has none. */
   statLineCounts?: Record<string, number>;
+  /**
+   * Emits the games currently shown on the main chart, oldest → newest (newest on the right).
+   * Used so Supporting stats stay in the same order after BO3/surface/L10 filters.
+   */
+  onChartGameLogsChange?: (games: Array<Record<string, unknown>>) => void;
 }
 
 export function TennisStatsChart({
@@ -773,6 +778,7 @@ export function TennisStatsChart({
   tour = null,
   lockOtherStats = false,
   statLineCounts,
+  onChartGameLogsChange,
 }: NblStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
@@ -1252,6 +1258,30 @@ export function TennisStatsChart({
     });
     return ordered;
   }, [baseChartData, selectedTimeframe, season, nextOpponent, nextOpponentId, filteredGameLogs, gameToChartRow, effectiveSeason]);
+
+  // Keep Supporting stats on the same filtered games / left→right order as the main chart.
+  useEffect(() => {
+    if (!onChartGameLogsChange) return;
+    const byIndex = new Map<number, Record<string, unknown>>();
+    for (let i = 0; i < gameLogs.length; i++) {
+      const g = gameLogs[i] as Record<string, unknown>;
+      const idx =
+        typeof g.__nblGameIndex === 'number' && Number.isFinite(g.__nblGameIndex)
+          ? (g.__nblGameIndex as number)
+          : i;
+      byIndex.set(idx, g);
+    }
+    const ordered = chartData
+      .map((row) => {
+        const idx =
+          typeof (row as { sourceGameIndex?: unknown }).sourceGameIndex === 'number'
+            ? ((row as { sourceGameIndex: number }).sourceGameIndex)
+            : null;
+        return idx != null ? byIndex.get(idx) ?? null : null;
+      })
+      .filter((g): g is Record<string, unknown> => !!g);
+    onChartGameLogsChange(ordered);
+  }, [chartData, gameLogs, onChartGameLogsChange]);
 
   const secondAxisData = useMemo(() => {
     if (!showAdvancedFilters || !selectedAdvancedFilter) return null;
