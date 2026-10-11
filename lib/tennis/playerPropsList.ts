@@ -1227,34 +1227,42 @@ export async function bakeCachedTennisDvp(): Promise<{ props: number; withDvp: n
   return { props: baked.data.length, withDvp };
 }
 
+/** Rows repeat the same match ~10x (one per prop line); each lookup scans every upcoming fixture. */
+function memoByKey<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
+  const cache = new Map<string, R>();
+  return (...args: A) => {
+    const key = args.map((arg) => String(arg ?? '')).join('\u0000');
+    if (cache.has(key)) return cache.get(key) as R;
+    const value = fn(...args);
+    cache.set(key, value);
+    return value;
+  };
+}
+
 function overlayUpcomingTimes(
   payload: TennisPlayerPropsListPayload,
   upcoming: Awaited<ReturnType<typeof listUniqueUpcomingTennisGames>>,
   byPlayerId?: Map<string, TennisNextGame>
 ): TennisPlayerPropsListPayload {
   if (!upcoming.length && !byPlayerId?.size) return payload;
-  const tipFor = (
-    gameId: string,
-    home: string,
-    away: string,
-    playerId?: string | null,
-    playerName?: string | null
-  ) =>
-    tennisUpcomingTipoffFor(byPlayerId || new Map(), upcoming, {
-      playerId,
-      playerName,
-      matchId: gameId,
-      homeName: home,
-      awayName: away,
-    });
-  const liveFor = (gameId: string, home: string, away: string, playerId?: string | null) => {
+  const tipFor = memoByKey(
+    (gameId: string, home: string, away: string, playerId?: string | null, playerName?: string | null) =>
+      tennisUpcomingTipoffFor(byPlayerId || new Map(), upcoming, {
+        playerId,
+        playerName,
+        matchId: gameId,
+        homeName: home,
+        awayName: away,
+      })
+  );
+  const liveFor = memoByKey((gameId: string, home: string, away: string, playerId?: string | null) => {
     const listed = { matchId: gameId, homeName: home, awayName: away };
     const fromPlayer = playerId ? byPlayerId?.get(String(playerId).trim()) : undefined;
     const hit =
       (fromPlayer && tennisListedMatchupIsPlayersNextGame(listed, fromPlayer) ? fromPlayer : null) ||
       tennisFindUpcomingForListedMatch(upcoming, listed);
     return Boolean(hit?.live && tennisListedMatchupIsPlayersNextGame(listed, hit));
-  };
+  });
   const games = payload.games.map((game) => {
     const tip = tipFor(game.gameId, game.homeTeam, game.awayTeam);
     const live = liveFor(game.gameId, game.homeTeam, game.awayTeam);
@@ -1286,15 +1294,17 @@ function dropStaleTennisListRows(
   upcoming: Awaited<ReturnType<typeof listUniqueUpcomingTennisGames>>,
   byPlayerId?: Map<string, TennisNextGame>
 ): TennisPlayerPropsListPayload {
+  const players = byPlayerId || new Map<string, TennisNextGame>();
+  const forPlayer = memoByKey((playerId: string | null | undefined, playerName: string | null | undefined) =>
+    upcomingForPropRow({ playerId, playerName } as TennisListPropRow, players)
+  );
+  const forListed = memoByKey((matchId: string, homeName: string, awayName: string) =>
+    tennisFindUpcomingForListedMatch(upcoming, { matchId, homeName, awayName })
+  );
   const data = payload.data.filter((row) => {
     const commenceTime =
       row.commenceTime || (row as TennisListPropRow & { gameDate?: string }).gameDate;
-    const next = upcomingForPropRow(row, byPlayerId || new Map()) ||
-      tennisFindUpcomingForListedMatch(upcoming, {
-        matchId: row.gameId,
-        homeName: row.homeTeam,
-        awayName: row.awayTeam,
-      });
+    const next = forPlayer(row.playerId, row.playerName) || forListed(row.gameId, row.homeTeam, row.awayTeam);
     if (next || upcoming.length) {
       return tennisOddsMatchStillOnBoard({
         homeName: row.homeTeam,
@@ -1326,11 +1336,7 @@ function dropStaleTennisListRows(
         commenceTime: game.commenceTime,
         live: game.live,
         dropConfirmedLive: true,
-        playerNextGame: tennisFindUpcomingForListedMatch(upcoming, {
-          matchId: game.gameId,
-          homeName: game.homeTeam,
-          awayName: game.awayTeam,
-        }),
+        playerNextGame: forListed(game.gameId, game.homeTeam, game.awayTeam),
       })
   );
   const empty = data.length === 0;
@@ -1374,8 +1380,11 @@ function overlayUpcomingOpponentMeta(
   byPlayerId: Map<string, TennisNextGame>
 ): TennisPlayerPropsListPayload {
   if (!byPlayerId.size) return payload;
+  const forPlayer = memoByKey((playerId: string | null | undefined, playerName: string | null | undefined) =>
+    upcomingForPropRow({ playerId, playerName } as TennisListPropRow, byPlayerId)
+  );
   const data = payload.data.map((row) => {
-    const next = upcomingForPropRow(row, byPlayerId);
+    const next = forPlayer(row.playerId, row.playerName);
     if (!next) return row;
     const opponent = String(row.opponent || '').trim();
     const sameOpponent =
@@ -1402,7 +1411,7 @@ function overlayRosterOpponentMeta(
   const players = roster?.players || [];
   const ranked = [...(roster?.standings?.ATP || []), ...(roster?.standings?.WTA || [])];
   if (!players.length && !ranked.length) return payload;
-  const iocFor = (
+  const iocFor = memoByKey((
     id: string | null,
     name: string,
     fallbackIoc?: string | null
@@ -1434,7 +1443,7 @@ function overlayRosterOpponentMeta(
       id: resolvedId,
       rank: hit?.rank ?? rankedHit?.pos ?? null,
     };
-  };
+  });
   const data = payload.data.map((row) => {
     if (row.opponentIoc && row.opponentId) return row;
     const found = iocFor(String(row.opponentId || '').trim() || null, String(row.opponent || '').trim(), row.opponentIoc);

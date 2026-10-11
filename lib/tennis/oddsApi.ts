@@ -100,20 +100,46 @@ function formatAmericanFromDecimal(raw: string | number | undefined): string {
 
 const NAME_PARTICLES = new Set(['de', 'da', 'do', 'dos', 'das', 'van', 'von', 'del', 'della', 'di', 'le', 'la', 'el']);
 
+/**
+ * Name matching runs rows x fixtures on every props-list request. Unicode normalize + regex per
+ * comparison cost ~11s of blocked event loop per request, so prepared names and pair results are cached.
+ */
+const NAME_CACHE_MAX = 50_000;
+const preparedNames = new Map<
+  string,
+  { norm: string; significant: string[]; raw: Array<{ raw: string; norm: string }> }
+>();
+const identityPairs = new Map<string, boolean>();
+
+function boundedSet<K, V>(map: Map<K, V>, key: K, value: V): V {
+  if (map.size >= NAME_CACHE_MAX) map.clear();
+  map.set(key, value);
+  return value;
+}
+
+function preparedName(value: string) {
+  const hit = preparedNames.get(value);
+  if (hit) return hit;
+  const parts = nameParts(value);
+  const raw = parts
+    .map((part) => ({ raw: part, norm: normalizeName(part) }))
+    .filter((token) => token.norm && !NAME_PARTICLES.has(token.norm));
+  const significant = parts
+    .map((part) => normalizeName(part))
+    .filter((token) => token.length >= 2 && !NAME_PARTICLES.has(token));
+  return boundedSet(preparedNames, value, { norm: normalizeName(value), significant, raw });
+}
+
 function nameParts(value: string): string[] {
   return value.trim().split(/[\s-]+/).filter(Boolean);
 }
 
 function significantNameTokens(value: string): string[] {
-  return nameParts(value)
-    .map((part) => normalizeName(part))
-    .filter((token) => token.length >= 2 && !NAME_PARTICLES.has(token));
+  return preparedName(value).significant;
 }
 
 function rawNameTokens(value: string): Array<{ raw: string; norm: string }> {
-  return nameParts(value)
-    .map((raw) => ({ raw, norm: normalizeName(raw) }))
-    .filter((token) => token.norm && !NAME_PARTICLES.has(token.norm));
+  return preparedName(value).raw;
 }
 
 /** Dotted shorts (F., Ma., Dar.) are initials. The letter is the first character. */
@@ -183,8 +209,8 @@ export function tennisNamesMatch(a: string | null | undefined, b: string | null 
   const left = String(a || '').trim();
   const right = String(b || '').trim();
   if (!left || !right) return false;
-  const na = normalizeName(left);
-  const nb = normalizeName(right);
+  const na = preparedName(left).norm;
+  const nb = preparedName(right).norm;
   if (!na || !nb) return false;
   if (na === nb) return true;
   if (na.includes(nb) || nb.includes(na)) return true;
@@ -202,8 +228,15 @@ export function tennisIdentityMatch(a: string | null | undefined, b: string | nu
   const left = String(a || '').trim();
   const right = String(b || '').trim();
   if (!left || !right) return false;
-  const na = normalizeName(left);
-  const nb = normalizeName(right);
+  const pairKey = left < right ? `${left}\u0000${right}` : `${right}\u0000${left}`;
+  const cached = identityPairs.get(pairKey);
+  if (cached !== undefined) return cached;
+  return boundedSet(identityPairs, pairKey, computeIdentityMatch(left, right));
+}
+
+function computeIdentityMatch(left: string, right: string): boolean {
+  const na = preparedName(left).norm;
+  const nb = preparedName(right).norm;
   if (!na || !nb) return false;
   if (na === nb) return true;
   const ta = significantNameTokens(left);
