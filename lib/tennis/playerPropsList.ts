@@ -6,7 +6,11 @@
 
 import sharedCache from '@/lib/sharedCache';
 import { hydrateTennisMatchOverlay, getHydratedTennisOverlay } from '@/lib/tennis/ingest';
-import { readTennisPlayerLogsCacheMany, readTennisRosterCache } from '@/lib/tennis/dashboardCache';
+import {
+  applyStandingsRanks,
+  readTennisPlayerLogsCacheMany,
+  readTennisRosterCache,
+} from '@/lib/tennis/dashboardCache';
 import { loadPlayerMatchesCached, tennisLogsNeedHistory } from '@/lib/tennis/loadCached';
 import { upsertCombinedSnapshotTennisFromList } from '@/lib/combinedPropsSnapshotPaint';
 import { tennisMatchesPlayed } from '@/lib/tennis/chartStats';
@@ -660,6 +664,7 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
     const seen = new Set(playerRows.map((player) => player.playerId));
     playerRows = [...playerRows, ...extra.filter((player) => !seen.has(player.playerId))];
   }
+  playerRows = applyStandingsRanks(playerRows, roster?.standings);
   const [index, catalog, players, liveEvents, dvpStore] = await Promise.all([
     listTennisOddsIndex(),
     readOddsApiTennisCatalog(),

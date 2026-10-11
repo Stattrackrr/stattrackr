@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { gzipSync } from 'node:zlib';
 import {
+  applyStandingsRanks,
+  mergeRosterPlayer,
   tennisRosterKeepsStored,
   type TennisRosterCache,
   tennisLogsKeepStoredGames,
@@ -168,6 +170,29 @@ test('a roster write that would shrink the stored roster is refused (the 105-pla
   assert.equal(tennisRosterKeepsStored(roster(1900, 500), roster(1900, 0)), false);
   assert.equal(tennisRosterKeepsStored(roster(1900, 500), roster(1950, 500)), true);
   assert.equal(tennisRosterKeepsStored(null, roster(105, 0)), true);
+});
+
+test('a fixture-only player row never erases a stored rank (the empty Top 50 filter)', () => {
+  const stored = { playerId: '2073', name: 'F. Auger-Aliassime', tour: 'ATP' as const, ioc: 'CAN', hand: 'R', height: 193, rank: 6, rankPoints: 4000, imageUrl: '/h/2073' };
+  const fromFixture = { playerId: '2073', name: 'F. Auger-Aliassime', tour: 'ATP' as const, ioc: null, hand: null, height: null, rank: null, rankPoints: null, imageUrl: null };
+  assert.deepEqual(mergeRosterPlayer(stored, fromFixture), stored);
+  assert.equal(mergeRosterPlayer(stored, { ...fromFixture, rank: 5 }).rank, 5);
+});
+
+test('standings positions fill and correct player ranks', () => {
+  const players = [
+    { playerId: '1000', name: 'A', tour: 'ATP' as const, ioc: null, hand: null, height: null, rank: null, rankPoints: null },
+    { playerId: '1001', name: 'B', tour: 'ATP' as const, ioc: null, hand: null, height: null, rank: 40, rankPoints: null },
+    { playerId: '9999', name: 'C', tour: 'ATP' as const, ioc: null, hand: null, height: null, rank: 700, rankPoints: null },
+  ];
+  const ranked = applyStandingsRanks(players, roster(0, 2).standings);
+  assert.deepEqual(ranked.map((p) => p.rank), [1, 2, 700]);
+});
+
+test('a roster write that would drop a known rank is refused', () => {
+  const next = roster(1900, 500);
+  next.players[5] = { ...next.players[5], rank: null };
+  assert.equal(tennisRosterKeepsStored(roster(1900, 500), next), false);
 });
 
 test('the keep-stored-games invariant only allows the oldest games to fall off at the cap', () => {

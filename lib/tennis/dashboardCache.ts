@@ -391,9 +391,18 @@ export async function upsertTennisPlayerLogs(
 
 const STORED_STANDINGS_ROWS = 500;
 
-/** True when next keeps every stored roster player (unless at the cap) and does not lose usable standings. */
+/**
+ * True when next keeps every stored roster player (unless at the cap), does not lose usable standings,
+ * and no kept player loses a known rank.
+ */
 export function tennisRosterKeepsStored(stored: TennisRosterCache | null, next: TennisRosterCache): boolean {
   if (!stored) return true;
+  const nextById = new Map(next.players.map((player) => [player.playerId, player]));
+  for (const player of stored.players || []) {
+    if (player?.rank == null) continue;
+    const kept = nextById.get(validRosterId(player.playerId));
+    if (kept && kept.rank == null) return false;
+  }
   const storedIds = (stored.players || []).map((player) => validRosterId(player?.playerId)).filter(Boolean);
   if (next.players.length < MAX_ROSTER_PLAYERS) {
     const kept = new Set(next.players.map((player) => player.playerId));
@@ -427,14 +436,15 @@ async function upsertTennisRoster(
       return 0;
     }
     const stored = decoded && Array.isArray(decoded.players) ? decoded : null;
+    const standings = {
+      ATP: pickStandings(overlay.standings?.ATP, stored?.standings?.ATP),
+      WTA: pickStandings(overlay.standings?.WTA, stored?.standings?.WTA),
+    };
     const rosterOverlay: OverlayLike = {
       fetchedAt,
       matches: overlay.matches,
-      players: mergeRosterPlayers(stored?.players || [], overlay.players || []),
-      standings: {
-        ATP: pickStandings(overlay.standings?.ATP, stored?.standings?.ATP),
-        WTA: pickStandings(overlay.standings?.WTA, stored?.standings?.WTA),
-      },
+      players: applyStandingsRanks(mergeRosterPlayers(stored?.players || [], overlay.players || []), standings),
+      standings,
     };
     const players = pickRosterPlayers(rosterOverlay, priorityIds, incomingById);
     if (!players.length) return stored?.players.length || 0;
@@ -448,7 +458,7 @@ async function upsertTennisRoster(
     };
     if (!tennisRosterKeepsStored(stored, next)) {
       console.warn(
-        `[tennis roster] write would drop stored players or standings (${stored?.players.length ?? 0} -> ${players.length}); left untouched`
+        `[tennis roster] write would drop stored players, standings or ranks (${stored?.players.length ?? 0} -> ${players.length}); left untouched`
       );
       return stored?.players.length || 0;
     }
@@ -643,9 +653,44 @@ function mergeRosterPlayers(primary: TennisPlayer[], extra: TennisPlayer[]): Ten
     const id = validRosterId(player?.playerId);
     if (!id) continue;
     const prev = byId.get(id);
-    byId.set(id, slimPlayer(prev ? { ...prev, ...player, imageUrl: player.imageUrl || prev.imageUrl } : player));
+    byId.set(id, slimPlayer(prev ? mergeRosterPlayer(prev, player) : player));
   }
   return [...byId.values()];
+}
+
+/** Fixture-only player rows carry null rank/hand/height; a missing incoming value never erases a stored one. */
+export function mergeRosterPlayer(prev: TennisPlayer, next: TennisPlayer): TennisPlayer {
+  return {
+    playerId: prev.playerId,
+    name: String(next.name || '').trim() || prev.name,
+    tour: next.tour || prev.tour,
+    ioc: next.ioc || prev.ioc || null,
+    hand: next.hand || prev.hand || null,
+    height: next.height ?? prev.height ?? null,
+    rank: next.rank ?? prev.rank ?? null,
+    rankPoints: next.rankPoints ?? prev.rankPoints ?? null,
+    imageUrl: next.imageUrl || prev.imageUrl || null,
+  };
+}
+
+/** Current standings position is the authoritative rank for any player listed in them. */
+export function applyStandingsRanks(
+  players: TennisPlayer[],
+  standings: { ATP?: TennisRankingRow[]; WTA?: TennisRankingRow[] } | null | undefined
+): TennisPlayer[] {
+  const byId = new Map<string, TennisRankingRow>();
+  for (const row of [...(standings?.ATP || []), ...(standings?.WTA || [])]) {
+    const id = validRosterId(row?.playerId);
+    if (id && Number(row.pos) > 0) byId.set(id, row);
+  }
+  if (!byId.size) return players;
+  return players.map((player) => {
+    const row = byId.get(player.playerId);
+    if (!row) return player;
+    const rank = Number(row.pos);
+    const rankPoints = row.points ?? player.rankPoints ?? null;
+    return player.rank === rank && player.rankPoints === rankPoints ? player : { ...player, rank, rankPoints };
+  });
 }
 
 /**

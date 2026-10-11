@@ -1,3 +1,4 @@
+import { tennisPlayerIdentityKey } from '@/lib/tennis/aggregatePropsForPaint';
 import { tennisOuEvenness } from '@/lib/tennis/oddsTypes';
 
 type TennisMarketLineRow = {
@@ -18,9 +19,9 @@ type TennisMarketLineRow = {
 };
 
 function tennisMarketCollapseKey(row: TennisMarketLineRow): string {
-  const player = String(row.playerName || '').trim().toLowerCase();
+  const player = tennisPlayerIdentityKey(row.playerName);
   const game = String(row.gameId || '').trim();
-  const opp = String(row.opponent || '').trim().toLowerCase();
+  const opp = tennisPlayerIdentityKey(row.opponent);
   const stat = String(row.statType || '').trim().toLowerCase();
   return `${player}|${game || opp}|${stat}`;
 }

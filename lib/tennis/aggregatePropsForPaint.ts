@@ -39,13 +39,39 @@ function tennisPaintTipoff(value?: string | null): string {
   return dateOnly ? '' : raw;
 }
 
+/**
+ * One key per person across name formats: API-Tennis "A. Davidovich Fokina", Odds API
+ * "Alejandro Davidovich Fokina" and stored rows from either all give "a d fokina".
+ */
+export function tennisPlayerIdentityKey(name: string | null | undefined): string {
+  const tokens = String(name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+  if (tokens.length < 2) return tokens.join(' ');
+  const last = tokens[tokens.length - 1]!;
+  return [...tokens.slice(0, -1).map((token) => token[0]), last].join(' ');
+}
+
+/** Same player, match and market regardless of line. */
+export function tennisPaintMarketKey(row: {
+  playerName?: string | null;
+  gameId?: string | null;
+  statType?: string | null;
+}): string {
+  return `${tennisPlayerIdentityKey(row.playerName)}|${row.gameId || ''}|${row.statType || ''}`;
+}
+
 export function tennisPaintRowKey(row: {
   playerName?: string | null;
   gameId?: string | null;
   statType?: string | null;
   line?: number | null;
 }): string {
-  return `${row.playerName || ''}|${row.gameId || ''}|${row.statType || ''}|${row.line ?? ''}`;
+  return `${tennisPaintMarketKey(row)}|${row.line ?? ''}`;
 }
 
 function normalizeBookmakerLine(
