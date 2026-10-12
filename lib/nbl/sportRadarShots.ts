@@ -41,7 +41,7 @@ export type NblMatchShotChart = {
   fetchedAt: string;
 };
 
-type SrShotRow = {
+export type SrShotRow = {
   eventId?: string | null;
   personId?: string | null;
   name?: string | null;
@@ -51,6 +51,7 @@ type SrShotRow = {
   clock?: string | null;
   eventType?: string | null;
   subType?: string | null;
+  eventSubType?: string | null;
   desc?: string | null;
   success?: boolean | null;
   successString?: string | null;
@@ -66,6 +67,19 @@ function srHeaders(): HeadersInit {
     Origin: 'https://nbl.com.au',
     Referer: 'https://nbl.com.au/',
   };
+}
+
+/**
+ * SportRadar has served shots both as `shotChart.shots` and (from Oct 2026) split per quarter
+ * under `periodData[].shots`, with `shotChart` holding only competitors/persons.
+ */
+export function sportRadarShotRows(
+  data: { shotChart?: { shots?: SrShotRow[] | null }; periodData?: Array<{ shots?: SrShotRow[] | null }> } | null | undefined
+): SrShotRow[] {
+  const flat = data?.shotChart?.shots;
+  if (Array.isArray(flat) && flat.length > 0) return flat;
+  const byPeriod = Array.isArray(data?.periodData) ? data!.periodData! : [];
+  return byPeriod.flatMap((period) => (Array.isArray(period?.shots) ? period.shots : []));
 }
 
 export async function fetchNblMatchShotChart(
@@ -101,8 +115,9 @@ export async function fetchNblMatchShotChart(
       };
       shotChart?: {
         shots?: SrShotRow[];
-        competitors?: Record<string, SrCompetitor>;
+        competitors?: Record<string, SrCompetitor> | SrCompetitor[];
       };
+      periodData?: Array<{ shots?: SrShotRow[] | null }>;
     };
   };
 
@@ -122,7 +137,7 @@ export async function fetchNblMatchShotChart(
     }
   }
 
-  const rawShots = Array.isArray(json.data?.shotChart?.shots) ? json.data!.shotChart!.shots! : [];
+  const rawShots = sportRadarShotRows(json.data);
   const shots: NblRawShot[] = [];
 
   for (const row of rawShots) {
@@ -147,7 +162,8 @@ export async function fetchNblMatchShotChart(
       periodId: typeof row.periodId === 'number' ? row.periodId : null,
       clock: row.clock != null ? String(row.clock) : null,
       eventType: row.eventType != null ? String(row.eventType) : null,
-      subType: row.subType != null ? String(row.subType) : null,
+      subType:
+        (row.eventSubType ?? row.subType) != null ? String(row.eventSubType ?? row.subType) : null,
       desc: row.desc != null ? String(row.desc) : null,
       made,
       x,

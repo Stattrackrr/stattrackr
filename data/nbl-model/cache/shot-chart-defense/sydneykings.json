@@ -6,117 +6,117 @@
   ],
   "gamesUsed": 4,
   "fixturesFetched": 0,
-  "fixturesCached": 3,
-  "shotCount": 229,
+  "fixturesCached": 4,
+  "shotCount": 303,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 36,
-      "fgm": 23,
-      "fgPct": 63.888888888888886,
-      "share": 15.72052401746725
+      "fga": 45,
+      "fgm": 29,
+      "fgPct": 64.44444444444444,
+      "share": 14.85148514851485
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 57,
-      "fgm": 34,
-      "fgPct": 59.64912280701754,
-      "share": 24.890829694323145
+      "fga": 68,
+      "fgm": 39,
+      "fgPct": 57.35294117647059,
+      "share": 22.442244224422442
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 10,
-      "fgm": 4,
-      "fgPct": 40,
-      "share": 4.366812227074235
+      "fga": 14,
+      "fgm": 6,
+      "fgPct": 42.857142857142854,
+      "share": 4.62046204620462
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 27,
-      "fgm": 9,
-      "fgPct": 33.33333333333333,
-      "share": 11.790393013100436
+      "fga": 39,
+      "fgm": 15,
+      "fgPct": 38.46153846153847,
+      "share": 12.871287128712872
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 44,
-      "fgm": 10,
-      "fgPct": 22.727272727272727,
-      "share": 19.213973799126638
+      "fga": 53,
+      "fgm": 13,
+      "fgPct": 24.528301886792452,
+      "share": 17.491749174917494
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 55,
-      "fgm": 20,
-      "fgPct": 36.36363636363637,
-      "share": 24.017467248908297
+      "fga": 84,
+      "fgm": 28,
+      "fgPct": 33.33333333333333,
+      "share": 27.722772277227726
     }
   ],
   "ranks": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 36,
-      "fgm": 23,
-      "fgPct": 63.888888888888886,
-      "share": 15.72052401746725,
-      "rank": 3,
+      "fga": 45,
+      "fgm": 29,
+      "fgPct": 64.44444444444444,
+      "share": 14.85148514851485,
+      "rank": 4,
       "teamsCompared": 10
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 57,
-      "fgm": 34,
-      "fgPct": 59.64912280701754,
-      "share": 24.890829694323145,
+      "fga": 68,
+      "fgm": 39,
+      "fgPct": 57.35294117647059,
+      "share": 22.442244224422442,
       "rank": 10,
       "teamsCompared": 10
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 10,
-      "fgm": 4,
-      "fgPct": 40,
-      "share": 4.366812227074235,
-      "rank": 7,
+      "fga": 14,
+      "fgm": 6,
+      "fgPct": 42.857142857142854,
+      "share": 4.62046204620462,
+      "rank": 8,
       "teamsCompared": 10
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 27,
-      "fgm": 9,
-      "fgPct": 33.33333333333333,
-      "share": 11.790393013100436,
-      "rank": 4,
+      "fga": 39,
+      "fgm": 15,
+      "fgPct": 38.46153846153847,
+      "share": 12.871287128712872,
+      "rank": 5,
       "teamsCompared": 10
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 44,
-      "fgm": 10,
-      "fgPct": 22.727272727272727,
-      "share": 19.213973799126638,
+      "fga": 53,
+      "fgm": 13,
+      "fgPct": 24.528301886792452,
+      "share": 17.491749174917494,
       "rank": 1,
       "teamsCompared": 10
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 55,
-      "fgm": 20,
-      "fgPct": 36.36363636363637,
-      "share": 24.017467248908297,
-      "rank": 9,
+      "fga": 84,
+      "fgm": 28,
+      "fgPct": 33.33333333333333,
+      "share": 27.722772277227726,
+      "rank": 7,
       "teamsCompared": 10
     }
   ],
@@ -129,5 +129,5 @@
     "rank": 2,
     "teamsCompared": 10
   },
-  "generatedAt": "2026-10-11T18:02:40.198Z"
+  "generatedAt": "2026-10-12T11:54:12.150Z"
 }

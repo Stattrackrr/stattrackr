@@ -112,12 +112,14 @@ async function main() {
   let fixturesCached = 0;
   let fixturesFetched = 0;
   let fixturesMissing = 0;
+  const missingIds: string[] = [];
 
   await mapPool(fixtureIds, concurrency, async (fixtureId, i) => {
     const before = Boolean(readCachedShotChart(fixtureId));
     const chart = await getMatchShotChart(fixtureId, { forceRefresh: force, cacheOnly: false });
     if (!chart || chart.shots.length === 0) {
       fixturesMissing += 1;
+      missingIds.push(fixtureId);
       if ((i + 1) % 25 === 0 || i === fixtureIds.length - 1) {
         console.log(`[warm-nbl-shot-charts] fixtures ${i + 1}/${fixtureIds.length} (missing=${fixturesMissing})`);
       }
@@ -131,6 +133,13 @@ async function main() {
       );
     }
   });
+
+  if (missingIds.length) {
+    // Completed games with no shots usually mean the SportRadar response shape changed.
+    console.log(
+      `::warning title=NBL shot charts missing::${missingIds.length} completed fixtures returned no shots: ${missingIds.join(', ')}`
+    );
+  }
 
   const players = loadPlayersForYears([...new Set([...years, 2026])]);
   const rosterNames = players.map((p) => String(p.name || '').trim()).filter(Boolean);
