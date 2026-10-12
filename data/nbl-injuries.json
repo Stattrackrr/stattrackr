@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-11T18:02:36.093Z",
+  "generatedAt": "2026-10-12T21:44:16.588Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Wednesday, October 7, 7:00pm AEDT",
-  "injuryCount": 23,
+  "injuryCount": 22,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -188,14 +188,6 @@
       "returning": "Round 8-10",
       "status": "Out",
       "note": "Michael Randall reported on 22 September 2026 that Deng will miss Tasmania’s trip to the Cairns Taipans on Wednesday 23 September, joining Josh Bannan, Anthony Drmic, Ben Ayre and Bryce Hamilton on the sidelines, without specifying an injury. The NBL’s own list added him as a lower leg injury in its 26 September update, and its 29 September update puts his return at Round 8-10. He did not dress against Cairns.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Tasmania JackJumpers",
-      "player": "Anthony Drmic",
-      "injury": "Back",
-      "returning": "TBC",
-      "status": "Out",
       "listedByNbl": true
     },
     {

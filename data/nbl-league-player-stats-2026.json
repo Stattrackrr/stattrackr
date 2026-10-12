@@ -1,11 +1,11 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-11T18:02:19.160Z",
+  "generatedAt": "2026-10-12T21:43:51.562Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 158,
+  "playerCount": 159,
   "withSeasonStats": 130,
-  "missingSeasonStats": 28,
+  "missingSeasonStats": 29,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -2976,6 +2976,33 @@
       "ftPct": 0.875,
       "threeMade": 0.75,
       "pra": 13.5
+    },
+    {
+      "playerId": "b3b5ecb0-ba46-4821-9e2b-6e4180a30f95",
+      "name": "Mawot Mag",
+      "firstName": "Mawot",
+      "lastName": "Mag",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "position": "G",
+      "jersey": "3",
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d27ad131a4c646bd81b24a65efc6bf57?size=800&format=webp",
+      "games": 0,
+      "gamesStarted": 0,
+      "minutes": null,
+      "points": null,
+      "rebounds": null,
+      "assists": null,
+      "steals": null,
+      "blocks": null,
+      "turnovers": null,
+      "fouls": null,
+      "fgPct": null,
+      "threePct": null,
+      "ftPct": null,
+      "threeMade": null,
+      "pra": null
     },
     {
       "playerId": "9b04b8b2-c234-4c8e-8653-d896d66267a9",

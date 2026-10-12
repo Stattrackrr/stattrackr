@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-11T18:02:29.686Z",
+  "generatedAt": "2026-10-12T21:44:07.149Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 158,
+  "playerCount": 159,
   "gameRows": 584,
   "players": [
     {
@@ -885,6 +885,14 @@
       "teamCode": "SYD",
       "gameCount": 4,
       "cacheFile": "nbl-model/cache/player-logs/83582125-9e71-4e7c-ae15-07f11333b2da-2026.json"
+    },
+    {
+      "playerId": "b3b5ecb0-ba46-4821-9e2b-6e4180a30f95",
+      "name": "Mawot Mag",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/b3b5ecb0-ba46-4821-9e2b-6e4180a30f95-2026.json"
     },
     {
       "playerId": "9b04b8b2-c234-4c8e-8653-d896d66267a9",
