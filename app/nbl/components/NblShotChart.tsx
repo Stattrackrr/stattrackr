@@ -9,6 +9,7 @@ import {
   NBL_SHOT_CHART_SEASON_YEAR,
   nblSeasonLabel,
 } from '@/lib/nblTeamCanonical';
+import { NblShotHeatMap, type NblHeatPoint } from '@/app/nbl/components/NblShotHeatMap';
 
 const SHOT_CHART_SEASON_LABEL = nblSeasonLabel(NBL_SHOT_CHART_SEASON_YEAR);
 
@@ -34,7 +35,10 @@ type PlayerPayload = {
   assistCount?: number;
   assistGamesUsed?: number;
   assistZones?: NblZoneStat[];
+  points?: NblHeatPoint[];
 };
+
+const NO_HEAT_POINTS: NblHeatPoint[] = [];
 
 type DefensePayload = {
   success: boolean;
@@ -468,6 +472,121 @@ function AnalysisAccordion({
   );
 }
 
+type CourtView = 'attempts' | 'makes' | 'oppDef' | 'assists' | 'assistDef';
+
+const VIEW_ACTIVE_CLASS: Record<CourtView, string> = {
+  attempts: 'bg-blue-600 text-white shadow-sm',
+  makes: 'bg-green-600 text-white shadow-sm',
+  oppDef: 'bg-purple-600 text-white shadow-sm',
+  assists: 'bg-teal-600 text-white shadow-sm',
+  assistDef: 'bg-purple-600 text-white shadow-sm',
+};
+
+function ViewGroup({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div
+      className={`flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1 dark:border-gray-700/70 dark:bg-[#071321] ${className ?? ''}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ViewButton({
+  view,
+  active,
+  onSelect,
+  title,
+  disabled,
+  children,
+}: {
+  view: CourtView;
+  active: boolean;
+  onSelect: (view: CourtView) => void;
+  title?: string;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-pressed={active}
+      disabled={disabled}
+      onClick={() => onSelect(view)}
+      className={`flex-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+        active
+          ? VIEW_ACTIVE_CLASS[view]
+          : disabled
+            ? 'cursor-not-allowed text-gray-400 dark:text-gray-600'
+            : 'text-gray-600 hover:bg-white hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FlameIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
+      <path d="M8.6 1c.3 2.2-.9 3.4-2 4.6C5.5 6.8 4.5 8 4.5 9.9 4.5 12.7 6.1 15 8.4 15c2.4 0 3.9-2 3.9-4.6 0-1.5-.6-2.8-1.4-3.7-.1 1-.6 1.8-1.4 2.2.4-2.8-.4-5.6-.9-7.9Z" />
+    </svg>
+  );
+}
+
+function HeatToggle({
+  heat,
+  disabled,
+  onChange,
+}: {
+  heat: boolean;
+  disabled: boolean;
+  onChange: (heat: boolean) => void;
+}) {
+  const on = heat && !disabled;
+  const option = (value: boolean, label: string, icon?: React.ReactNode) => (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={on === value}
+      disabled={disabled}
+      onClick={() => onChange(value)}
+      className={`relative z-10 flex w-[70px] items-center justify-center gap-1 rounded-full py-1.5 text-[11px] font-semibold transition-colors ${
+        on === value
+          ? value
+            ? 'text-white'
+            : 'text-gray-900 dark:text-white'
+          : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+      } ${disabled ? 'cursor-not-allowed' : ''}`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Chart style"
+      title={disabled ? 'Heat view is available on Attempts and Makes' : undefined}
+      className={`relative ml-auto inline-flex shrink-0 rounded-full border border-gray-200 bg-gray-100 p-0.5 transition-opacity dark:border-gray-700/70 dark:bg-[#071321] ${
+        disabled ? 'opacity-40' : ''
+      }`}
+    >
+      <span
+        aria-hidden
+        className={`absolute inset-y-0.5 left-0.5 w-[70px] rounded-full shadow transition-all duration-300 ease-out ${
+          on
+            ? 'translate-x-[70px] bg-gradient-to-r from-orange-500 to-rose-500 shadow-orange-500/30'
+            : 'translate-x-0 bg-white dark:bg-[#1c2f4a]'
+        }`}
+      />
+      {option(false, 'Standard')}
+      {option(true, 'Heat', <FlameIcon />)}
+    </div>
+  );
+}
+
 export function NblShotChart({
   isDark = true,
   playerName,
@@ -477,6 +596,7 @@ export function NblShotChart({
 }: NblShotChartProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMakes, setShowMakes] = useState(false);
+  const [heatView, setHeatView] = useState(false);
   const [showAssists, setShowAssists] = useState(false);
   const [showOppDef, setShowOppDef] = useState(false);
   const [showAssistDef, setShowAssistDef] = useState(false);
@@ -487,6 +607,34 @@ export function NblShotChart({
   const [defenseLoading, setDefenseLoading] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const clipId = `nblRoundedCourt-${useId().replace(/:/g, '')}`;
+  const hasOpponent = Boolean(opponentTeam && opponentTeam !== 'N/A');
+  const activeView: CourtView = showAssistDef
+    ? 'assistDef'
+    : showOppDef
+      ? 'oppDef'
+      : showAssists
+        ? 'assists'
+        : showMakes
+          ? 'makes'
+          : 'attempts';
+  const selectView = (view: CourtView) => {
+    setShowMakes(view === 'makes');
+    setShowOppDef(view === 'oppDef');
+    setShowAssists(view === 'assists');
+    setShowAssistDef(view === 'assistDef');
+  };
+  useEffect(() => {
+    if (hasOpponent) return;
+    setShowOppDef(false);
+    setShowAssistDef(false);
+  }, [hasOpponent]);
+  const canShowHeat = !showAssists && !showOppDef && !showAssistDef;
+  const showHeat = heatView && canShowHeat;
+  const allHeatPoints = playerData?.points ?? NO_HEAT_POINTS;
+  const heatPoints = useMemo(
+    () => (showMakes ? allHeatPoints.filter((p) => p[2] === 1) : allHeatPoints),
+    [allHeatPoints, showMakes]
+  );
 
   useEffect(() => {
     if (!playerName) {
@@ -1157,110 +1305,79 @@ export function NblShotChart({
                   <span className="text-green-600 dark:text-green-400">Makes</span> - Player&apos;s
                   make distribution
                   <br />
-                  <span className="text-purple-600 dark:text-purple-400">Opp Def Rank</span> - Team
+                  <span className="text-orange-500 dark:text-orange-400">Standard / Heat</span> - On
+                  Attempts or Makes, Heat shows frequency from the exact spot of every shot. Brighter = more often.
+                  <br />
+                  <span className="text-purple-600 dark:text-purple-400">Opp Def</span> - Team
                   defense rankings by zone (lower % = better rank). Zones with no stats show a grey dash.
                   <br />
                   <span className="text-teal-600 dark:text-teal-400">Assists</span> - Where his
                   assists finish this season. Same court locations as the shot chart.
                   <br />
-                  <span className="text-purple-600 dark:text-purple-400">Opp Ast Rank</span> - Where
+                  <span className="text-purple-600 dark:text-purple-400">Opp Ast</span> - Where
                   this opponent allows the fewest assists. #1 restricts that zone the most.
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMakes(false);
-                  setShowAssists(false);
-                  setShowOppDef(false);
-                  setShowAssistDef(false);
-                }}
-                className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                  !showMakes && !showAssists && !showOppDef && !showAssistDef
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
+            <HeatToggle heat={heatView} disabled={!canShowHeat} onChange={setHeatView} />
+          </div>
+
+          <div className="flex flex-wrap gap-x-3 gap-y-2">
+            <ViewGroup className="min-w-[230px] flex-[3]">
+              <ViewButton view="attempts" active={activeView === 'attempts'} onSelect={selectView}>
                 Attempts
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMakes(true);
-                  setShowAssists(false);
-                  setShowOppDef(false);
-                  setShowAssistDef(false);
-                }}
-                className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                  showMakes && !showAssists && !showOppDef && !showAssistDef
-                    ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
+              </ViewButton>
+              <ViewButton view="makes" active={activeView === 'makes'} onSelect={selectView}>
                 Makes
-              </button>
-              {opponentTeam && opponentTeam !== 'N/A' ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowOppDef(true);
-                    setShowAssistDef(false);
-                    setShowMakes(false);
-                    setShowAssists(false);
-                  }}
-                  className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                    showOppDef && !showAssistDef
-                      ? 'bg-purple-600 text-white hover:bg-purple-700'
-                      : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {defenseLoading ? 'Opp Def…' : 'Opp Def Rank'}
-                </button>
-              ) : null}
-              <span className="mx-1 w-3 shrink-0" aria-hidden="true" />
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAssists(true);
-                  setShowMakes(false);
-                  setShowOppDef(false);
-                  setShowAssistDef(false);
-                }}
-                className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                  showAssists && !showOppDef && !showAssistDef
-                    ? 'bg-teal-600 text-white hover:bg-teal-700'
-                    : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
+              </ViewButton>
+              <ViewButton
+                view="oppDef"
+                active={activeView === 'oppDef'}
+                onSelect={selectView}
+                disabled={!hasOpponent}
+                title={hasOpponent ? 'Opponent defense rank by zone' : 'Available once the next opponent is known'}
               >
+                {defenseLoading ? 'Opp Def…' : 'Opp Def'}
+              </ViewButton>
+            </ViewGroup>
+            <ViewGroup className="min-w-[160px] flex-[2]">
+              <ViewButton view="assists" active={activeView === 'assists'} onSelect={selectView}>
                 Assists
-              </button>
-              {opponentTeam && opponentTeam !== 'N/A' ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAssistDef(true);
-                    setShowOppDef(false);
-                    setShowMakes(false);
-                    setShowAssists(false);
-                  }}
-                  className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                    showAssistDef
-                      ? 'bg-purple-600 text-white hover:bg-purple-700'
-                      : 'bg-gray-200 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {defenseLoading ? 'Ast Def…' : 'Opp Ast Rank'}
-                </button>
-              ) : null}
-            </div>
+              </ViewButton>
+              <ViewButton
+                view="assistDef"
+                active={activeView === 'assistDef'}
+                onSelect={selectView}
+                disabled={!hasOpponent}
+                title={hasOpponent ? 'Opponent assist defense rank by zone' : 'Available once the next opponent is known'}
+              >
+                {defenseLoading ? 'Opp Ast…' : 'Opp Ast'}
+              </ViewButton>
+            </ViewGroup>
           </div>
 
           {showAssists && assistCount <= 0 ? (
             <p className="text-xs text-gray-500 dark:text-gray-400">No assist locations this season.</p>
           ) : null}
 
+          {showHeat ? (
+            <>
+              {!valuesLocked && !loading && heatPoints.length === 0 ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {showMakes ? 'No made shot locations this season.' : 'No shot locations this season.'}
+                </p>
+              ) : null}
+              <NblShotHeatMap
+                points={heatPoints}
+                isDark={isDark}
+                locked={valuesLocked}
+                clipId={clipId}
+                label={showMakes ? 'Make frequency' : 'Shot frequency'}
+                countLabel={showMakes ? 'makes' : 'shots'}
+              />
+            </>
+          ) : (
+          <>
           <svg
             viewBox="0 0 500 380"
             className="w-full"
@@ -1454,6 +1571,8 @@ export function NblShotChart({
                 <span className="text-gray-600 dark:text-gray-400">&lt;10%</span>
               </div>
             </div>
+          )}
+          </>
           )}
 
           {(!showOppDef && !showAssistDef && canShowPlayerBreakdown) ||

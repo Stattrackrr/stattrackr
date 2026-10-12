@@ -65,6 +65,21 @@ function pctToMetres(half: HalfCourtPoint): { xm: number; ym: number } {
   };
 }
 
+/** FIBA half-court dimensions (metres) shared with the heat-map court drawing. */
+export const NBL_COURT = {
+  widthM: COURT_WIDTH_M,
+  rimFromBaselineM: RIM_FROM_BASELINE_M,
+} as const;
+
+/**
+ * Exact shot spot on the offense half court: `across` 0–15 m from the sideline the chart
+ * draws on the left (the `leftCorner3` side), `depth` metres out from the baseline.
+ */
+export function nblShotCourtMetres(x: number, y: number): { across: number; depth: number } {
+  const { xm, ym } = pctToMetres(toOffenseHalfCourt(x, y));
+  return { across: ym, depth: xm };
+}
+
 export function distanceFromRimMetres(half: HalfCourtPoint): number {
   const { xm, ym } = pctToMetres(half);
   const dx = xm - RIM_FROM_BASELINE_M;

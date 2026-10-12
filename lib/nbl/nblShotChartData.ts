@@ -19,6 +19,7 @@ import {
   aggregateZoneStats,
   classifyNblShotZone,
   emptyZoneStats,
+  nblShotCourtMetres,
   type NblShotZoneId,
   type NblZoneStat,
 } from '@/lib/nbl/nblShotZones';
@@ -278,6 +279,20 @@ export type NblFtScoringStat = {
   playersCompared: number;
 };
 
+/** [across m, depth m, made 1/0, three 1/0] — see `nblShotCourtMetres`. */
+export type NblShotPoint = [number, number, 0 | 1, 0 | 1];
+
+export function nblShotPoint(shot: Pick<NblRawShot, 'x' | 'y' | 'made' | 'eventType' | 'desc' | 'zone'>): NblShotPoint {
+  const { across, depth } = nblShotCourtMetres(shot.x, shot.y);
+  const type = `${shot.eventType || ''} ${shot.desc || ''}`.toLowerCase();
+  const three =
+    type.includes('3pt') ||
+    shot.zone === 'leftCorner3' ||
+    shot.zone === 'rightCorner3' ||
+    shot.zone === 'aboveBreak3';
+  return [Math.round(across * 100) / 100, Math.round(depth * 100) / 100, shot.made ? 1 : 0, three ? 1 : 0];
+}
+
 export type NblPlayerShotChartResult = {
   mode: 'player';
   playerName: string;
@@ -290,6 +305,8 @@ export type NblPlayerShotChartResult = {
   zones: NblZoneStat[];
   ranks?: NblScoringRank[];
   ftScoring?: NblFtScoringStat;
+  /** Every located shot for the heat map. */
+  points?: NblShotPoint[];
   /** Omitted from disk aggregates to keep cache small. */
   shots?: Array<
     NblRawShot & {
@@ -575,6 +592,7 @@ type FixtureShotBundle = {
   team: string | null;
   fixtures: Set<string>;
   shots: Array<{ zone: NblShotZoneId | null; made: boolean }>;
+  points: NblShotPoint[];
 };
 
 function listCachedFixtures(): NblMatchShotChart[] {
@@ -643,11 +661,13 @@ export function rebuildPlayerShotChartAggregatesFromFixtures(options?: {
           team: shot.teamName ?? null,
           fixtures: new Set(),
           shots: [],
+          points: [],
         };
         byKey.set(key, bundle);
       }
       bundle.fixtures.add(chart.fixtureId);
       bundle.shots.push({ zone: shot.zone, made: shot.made });
+      bundle.points.push(nblShotPoint(shot));
     }
   }
 
@@ -666,6 +686,7 @@ export function rebuildPlayerShotChartAggregatesFromFixtures(options?: {
       fixturesCached: bundle.fixtures.size,
       shotCount: bundle.shots.length,
       zones: aggregateZoneStats(bundle.shots),
+      points: bundle.points,
       generatedAt,
     };
     writePlayerShotChartCache(result);
@@ -694,6 +715,7 @@ export function rebuildPlayerShotChartAggregatesFromFixtures(options?: {
       fixturesCached: best.fixtures.size,
       shotCount: best.shots.length,
       zones: aggregateZoneStats(best.shots),
+      points: best.points,
       generatedAt,
     });
     playersWritten += 1;
