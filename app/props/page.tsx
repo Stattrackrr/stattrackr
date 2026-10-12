@@ -6703,6 +6703,11 @@ export default function NBALandingPage() {
         if (aVal === null && bVal === null) return 0;
         if (aVal === null) return 1;
         if (bVal === null) return -1;
+        if (aVal === bVal && column === 'l10') {
+          const aL5 = percent(a.last5HitRate) ?? -1;
+          const bL5 = percent(b.last5HitRate) ?? -1;
+          return direction === 'asc' ? bL5 - aL5 : aL5 - bL5;
+        }
         return direction === 'asc' ? bVal - aVal : aVal - bVal;
       });
       return out;
@@ -6714,12 +6719,10 @@ export default function NBALandingPage() {
       const aHasFullL10 = aL10Total >= 10;
       const bHasFullL10 = bL10Total >= 10;
       if (aHasFullL10 !== bHasFullL10) return aHasFullL10 ? -1 : 1;
-      const aL10 = percent(a.last10HitRate);
-      const bL10 = percent(b.last10HitRate);
-      if (aL10 !== null || bL10 !== null) return (bL10 ?? -1) - (aL10 ?? -1);
-      const aL5 = percent(a.last5HitRate);
-      const bL5 = percent(b.last5HitRate);
-      if (aL5 !== null || bL5 !== null) return (bL5 ?? -1) - (aL5 ?? -1);
+      const l10Diff = (percent(b.last10HitRate) ?? -1) - (percent(a.last10HitRate) ?? -1);
+      if (l10Diff !== 0) return l10Diff;
+      const l5Diff = (percent(b.last5HitRate) ?? -1) - (percent(a.last5HitRate) ?? -1);
+      if (l5Diff !== 0) return l5Diff;
       const aDvp = a.dvpRating != null && a.dvpRating > 0 ? a.dvpRating : null;
       const bDvp = b.dvpRating != null && b.dvpRating > 0 ? b.dvpRating : null;
       if (aDvp !== null || bDvp !== null) {
@@ -6786,6 +6789,11 @@ export default function NBALandingPage() {
         if (aVal === null && bVal === null) return 0;
         if (aVal === null) return 1;
         if (bVal === null) return -1;
+        if (aVal === bVal && column === 'l10') {
+          const aL5 = percent(a.last5HitRate) ?? -1;
+          const bL5 = percent(b.last5HitRate) ?? -1;
+          return direction === 'asc' ? bL5 - aL5 : aL5 - bL5;
+        }
         return direction === 'asc' ? bVal - aVal : aVal - bVal;
       });
       return out;
@@ -6800,13 +6808,11 @@ export default function NBALandingPage() {
       // Prioritize props with a full 10-game sample; smaller samples stay visible but rank later.
       if (aHasFullL10 !== bHasFullL10) return aHasFullL10 ? -1 : 1;
 
-      const aL10 = percent(a.last10HitRate);
-      const bL10 = percent(b.last10HitRate);
-      if (aL10 !== null || bL10 !== null) return (bL10 ?? -1) - (aL10 ?? -1);
+      const l10Diff = (percent(b.last10HitRate) ?? -1) - (percent(a.last10HitRate) ?? -1);
+      if (l10Diff !== 0) return l10Diff;
 
-      const aL5 = percent(a.last5HitRate);
-      const bL5 = percent(b.last5HitRate);
-      if (aL5 !== null || bL5 !== null) return (bL5 ?? -1) - (aL5 ?? -1);
+      const l5Diff = (percent(b.last5HitRate) ?? -1) - (percent(a.last5HitRate) ?? -1);
+      if (l5Diff !== 0) return l5Diff;
 
       const aDvp = a.dvpRating != null && a.dvpRating > 0 ? a.dvpRating : null;
       const bDvp = b.dvpRating != null && b.dvpRating > 0 ? b.dvpRating : null;
@@ -7129,6 +7135,11 @@ export default function NBALandingPage() {
         if (aValue === null && bValue === null) return 0;
         if (aValue === null) return 1; // nulls go to end
         if (bValue === null) return -1;
+        if (aValue === bValue && column === 'l10') {
+          const aL5 = percent(a.last5HitRate) ?? -1;
+          const bL5 = percent(b.last5HitRate) ?? -1;
+          return direction === 'asc' ? bL5 - aL5 : aL5 - bL5;
+        }
         
         // Sort based on direction
         // For hit rates, IP, and streak: "asc" (best) = highest values first (descending sort)
@@ -7147,17 +7158,11 @@ export default function NBALandingPage() {
       // Keep partial samples (e.g. 2/2) visible, but rank them after full 10-game samples.
       if (aHasFullL10 !== bHasFullL10) return aHasFullL10 ? -1 : 1;
 
-      const aL10 = percent(a.last10HitRate);
-      const bL10 = percent(b.last10HitRate);
-      if (aL10 !== null || bL10 !== null) {
-        return (bL10 ?? -1) - (aL10 ?? -1);
-      }
+      const l10Diff = (percent(b.last10HitRate) ?? -1) - (percent(a.last10HitRate) ?? -1);
+      if (l10Diff !== 0) return l10Diff;
 
-      const aL5 = percent(a.last5HitRate);
-      const bL5 = percent(b.last5HitRate);
-      if (aL5 !== null || bL5 !== null) {
-        return (bL5 ?? -1) - (aL5 ?? -1);
-      }
+      const l5Diff = (percent(b.last5HitRate) ?? -1) - (percent(a.last5HitRate) ?? -1);
+      if (l5Diff !== 0) return l5Diff;
 
       const aDvp = a.dvpRating != null && a.dvpRating > 0 ? a.dvpRating : null;
       const bDvp = b.dvpRating != null && b.dvpRating > 0 ? b.dvpRating : null;
