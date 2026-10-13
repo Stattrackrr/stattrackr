@@ -48,6 +48,8 @@ export type TennisNextGame = {
   opponentSeed: number | null;
   topSeedName: string | null;
   topSeedId: string | null;
+  /** API-Tennis `event_type_type`, e.g. "Atp Singles", "Challenger Men Singles", "Itf Women Singles". */
+  eventType?: string | null;
 };
 
 export type TennisLiveEvent = {
@@ -307,6 +309,7 @@ function toNextGame(
     opponentSeed: null,
     topSeedName: null,
     topSeedId: null,
+    eventType: fx.event_type_type ? String(fx.event_type_type) : null,
   };
 }
 

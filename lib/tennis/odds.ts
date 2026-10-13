@@ -646,10 +646,28 @@ function catalogMatchAsNextGame(match: OddsApiTennisMatch): TennisNextGame {
   };
 }
 
-function pickRefreshTargets(games: TennisNextGame[]): TennisNextGame[] {
-  const live = games.filter((game) => game.live);
-  const rest = games.filter((game) => !game.live);
-  return [...live, ...rest].slice(0, MAX_SNAPSHOT_MATCHES);
+/** 0 = ATP/WTA main tour, 1 = Challenger, 2 = ITF. */
+export function tennisRefreshTier(game: Pick<TennisNextGame, 'eventType' | 'tournamentName'>): number {
+  const type = String(game.eventType || '').toLowerCase();
+  if (type.includes('itf')) return 2;
+  if (type.includes('challenger')) return 1;
+  if (/^(atp|wta) singles$/.test(type.trim())) return 0;
+  if (/^[MW]\d{2,3}\b/.test(String(game.tournamentName || '').trim())) return 2;
+  return type ? 1 : 0;
+}
+
+/** The snapshot cap is filled main tour first; time order alone hands it to the ITF morning slate. */
+export function pickRefreshTargets(games: TennisNextGame[]): TennisNextGame[] {
+  return games
+    .map((game, order) => ({ game, order }))
+    .sort(
+      (a, b) =>
+        Number(b.game.live) - Number(a.game.live) ||
+        tennisRefreshTier(a.game) - tennisRefreshTier(b.game) ||
+        a.order - b.order
+    )
+    .slice(0, MAX_SNAPSHOT_MATCHES)
+    .map(({ game }) => game);
 }
 
 function refreshInflightRuntime(): {
