@@ -1,13 +1,24 @@
 import fs from 'fs';
 import path from 'path';
 import { rosettaUtcMs } from '@/lib/aiPicks/grade/nbl';
-import type { NblFinal } from '@/lib/aiPicks/model/nblGames';
+import type { NblFinal, NblGameContext } from '@/lib/aiPicks/model/nblGames';
+import { nblPropContext } from '@/lib/aiPicks/model/nblContext';
 import { DEFAULT_AI_PICKS_PARAMS, type AiSportParams } from '@/lib/aiPicks/params';
 import {
   buildNblGameCandidates,
   buildNblPropCandidates,
+  type NblPropGameContext,
   type NblResolvedPlayer,
 } from '@/lib/aiPicks/candidates/nbl';
+import {
+  injuriesFor,
+  loadNblContextData,
+  matchupFor,
+  playedSinceReport,
+  restDays,
+  teamContext,
+  teamInjuryImpact,
+} from '@/lib/aiPicks/candidates/nblContextData';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
 import { flattenPulseNblGame, playerKeyOf } from '@/lib/nbl/playerPropSnapshots';
 import { loadNblPlayerGameLogs } from '@/lib/nbl/playerGameLogsServer';
@@ -27,6 +38,8 @@ export type NblScanResult = {
   games: Array<{ eventLabel: string; startsAt: string; propLines: number; players: number; gameBooks: number }>;
   unresolvedPlayers: string[];
   boardUpdatedAt: string | null;
+  /** Context sources that could not be used this scan (stale injury report, ...). */
+  contextIssues?: string[];
 };
 
 function readRoster(year: number): RosterPlayer[] {
@@ -104,17 +117,50 @@ export async function scanNblCandidates(opts: {
 
   const roster = readRoster(season);
   const finals = await loadFinals(season);
+  const ctx = loadNblContextData({ season, finals, nowMs });
+  result.contextIssues = ctx.errors;
   const logCache = new Map<string, Promise<NblGameLogRow[]>>();
   const gamesFor = (id: string) => {
     let hit = logCache.get(id);
     if (!hit) logCache.set(id, (hit = loadPlayerGames(id, season)));
     return hit;
   };
+  /** Players on a team's injury list who have not played since it was written, with their logs. */
+  const outFor = async (team: string) => {
+    const rows = await Promise.all(
+      injuriesFor(ctx, team).map(async (entry) => {
+        const hit = resolvePlayer(entry.player, roster, [team]);
+        return { entry, playerId: hit?.playerId ?? null, games: hit ? await gamesFor(hit.playerId) : null };
+      })
+    );
+    return rows.filter((r) => !playedSinceReport(r.games, r.entry.reportedAt));
+  };
+  const gameContext = async (homeTeam: string, awayTeam: string, commenceTime: string): Promise<NblGameContext> => {
+    const [homeOut, awayOut] = await Promise.all([outFor(homeTeam), outFor(awayTeam)]);
+    const h = teamInjuryImpact(ctx, homeTeam, homeOut, season);
+    const a = teamInjuryImpact(ctx, awayTeam, awayOut, season);
+    return {
+      home: teamContext(ctx, homeTeam),
+      away: teamContext(ctx, awayTeam),
+      leaguePace: ctx.league?.pace || null,
+      homeOutPoints: h.points,
+      awayOutPoints: a.points,
+      homeOut: h.names,
+      awayOut: a.names,
+      homeRestDays: restDays(ctx, homeTeam, commenceTime),
+      awayRestDays: restDays(ctx, awayTeam, commenceTime),
+      strength: params.contextStrength,
+    };
+  };
 
   for (const game of propGames) {
     const lines = flattenPulseNblGame(game);
     const byPlayer = new Map<string, typeof lines>();
     for (const l of lines) byPlayer.set(l.playerKey, [...(byPlayer.get(l.playerKey) ?? []), l]);
+    const outByTeam = new Map<string, Awaited<ReturnType<typeof outFor>>>([
+      [nblTeamKey(game.homeTeam), await outFor(game.homeTeam)],
+      [nblTeamKey(game.awayTeam), await outFor(game.awayTeam)],
+    ]);
     let players = 0;
     for (const playerLines of byPlayer.values()) {
       const name = playerLines[0]!.player;
@@ -124,9 +170,43 @@ export async function scanNblCandidates(opts: {
         continue;
       }
       const resolved: NblResolvedPlayer = { playerId: hit.playerId, name: hit.name, team: hit.team, games: await gamesFor(hit.playerId) };
-      const opponent = nblTeamKey(hit.team) === nblTeamKey(game.homeTeam) ? game.awayTeam : game.homeTeam;
+      const isHome = nblTeamKey(hit.team) === nblTeamKey(game.homeTeam);
+      const opponent = isHome ? game.awayTeam : game.homeTeam;
+      const mates = outByTeam.get(nblTeamKey(hit.team)) ?? [];
+      const self = mates.find((m) => m.playerId === hit.playerId || namesMatch(m.entry.player, hit.name));
+      const teammatesOut = mates.filter((m) => m !== self).map((m) => ({ ...m.entry, games: m.games }));
+      const teamCtx = teamContext(ctx, hit.team);
+      const oppCtx = teamContext(ctx, opponent);
+      const rest = restDays(ctx, hit.team, game.commenceTime);
+      const context: NblPropGameContext = {
+        listed: self ? self.entry : null,
+        forStat: (stat) =>
+          nblPropContext({
+            stat,
+            games: resolved.games,
+            currentSeason: season,
+            isHome,
+            dvp: matchupFor(ctx, hit.playerId, hit.name, opponent, stat),
+            team: teamCtx,
+            opponent: oppCtx,
+            league: ctx.league,
+            teammatesOut,
+            restDays: rest,
+            strength: params.contextStrength,
+          }),
+        facts: {
+          team: teamCtx,
+          opponent: oppCtx,
+          leagueDefRtg: ctx.league ? Math.round(ctx.league.defRtg * 10) / 10 : null,
+          teammatesOut: teammatesOut.map((m) => `${m.player} (${m.status})`),
+          opponentOut: (outByTeam.get(nblTeamKey(opponent)) ?? []).map((m) => `${m.entry.player} (${m.entry.status})`),
+          restDays: rest,
+          opponentRestDays: restDays(ctx, opponent, game.commenceTime),
+          home: isHome,
+        },
+      };
       result.candidates.push(
-        ...buildNblPropCandidates({ game, lines: playerLines, player: resolved, opponent, params, currentSeason: season, nowMs })
+        ...buildNblPropCandidates({ game, lines: playerLines, player: resolved, opponent, params, currentSeason: season, nowMs, context })
       );
       players += 1;
     }
@@ -141,7 +221,8 @@ export async function scanNblCandidates(opts: {
   }
 
   for (const odds of oddsGames) {
-    result.candidates.push(...buildNblGameCandidates({ odds, finals, params, currentSeason: season }));
+    const context = await gameContext(odds.homeTeam, odds.awayTeam, odds.commenceTime);
+    result.candidates.push(...buildNblGameCandidates({ odds, finals, params, currentSeason: season, context }));
     if (!propGames.some((g) => sameGame(g, odds))) {
       result.games.push({ eventLabel: `${odds.awayTeam} @ ${odds.homeTeam}`, startsAt: odds.commenceTime, propLines: 0, players: 0, gameBooks: odds.bookmakers.length });
     }

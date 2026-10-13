@@ -34,6 +34,11 @@ export type AiSportParams = {
   maxSinglesPerDay: number;
   /** Learned stake multiplier per market group (see modelGroup); missing means 1. */
   stakeScale: Record<string, number>;
+  /**
+   * How hard game-specific context moves the model (NBL: matchup, pace, teammates out, rest;
+   * tennis: Elo, ranking, fatigue). 1 = as built, 0 = logs/serve stats only.
+   */
+  contextStrength: number;
 };
 
 export type AiStakingParams = {
@@ -91,6 +96,7 @@ export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
     postWindowHours: 6,
     maxSinglesPerDay: 3,
     stakeScale: {},
+    contextStrength: 1,
   },
   tennis: {
     modelWeight: {
@@ -114,6 +120,7 @@ export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
     postWindowHours: 8,
     maxSinglesPerDay: 3,
     stakeScale: {},
+    contextStrength: 1,
     dayForm: 0.065,
   },
 };

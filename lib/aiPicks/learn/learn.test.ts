@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
 import type { Proposal } from '@/lib/aiPicks/decide/select';
-import { bestWeight, learnSport, pickMetrics, shrinkStep, type LearnSample } from '@/lib/aiPicks/learn/learn';
+import { bestStrength, bestWeight, learnSport, pickMetrics, shrinkStep, type LearnSample } from '@/lib/aiPicks/learn/learn';
 import { DEFAULT_AI_PICKS_PARAMS, modelGroup, modelVersion } from '@/lib/aiPicks/params';
 import type { AiPick, AiPickLeg } from '@/lib/aiPicks/types';
 import { kellyStake, sizeUnits, snapUnits, trackRecords } from '@/lib/aiPicks/units';
@@ -145,4 +145,33 @@ test('learning: model weight moves toward the better blend, one small step', () 
   const r = learnSport('tennis', P.tennis, rows, [], modelGroup);
   assert.equal(r.params.modelWeight.total_games, 0.45);
   assert.equal(r.metrics.groups.total_games!.bestWeight, 0.8);
+});
+
+function ctxSample(base: number, full: number, won: 0 | 1): LearnSample {
+  return { group: 'match_winner', market: 'match_winner', side: 'yes', line: null, won, model: full, marketProb: base, blended: full, contextBase: base, contextFull: full };
+}
+
+/** Plays where the off model says 50% and the full model says 60%; `hit` of every 10 win. */
+function ctxBatch(n: number, hit: number): LearnSample[] {
+  return Array.from({ length: n }, (_, i) => ctxSample(0.5, 0.6, (i % 10 < hit ? 1 : 0) as 0 | 1));
+}
+
+test('context strength: best fit follows the results', () => {
+  assert.equal(bestStrength(ctxBatch(100, 6).map((s) => ({ base: s.contextBase!, full: s.contextFull!, won: s.won }))), 1);
+  assert.equal(bestStrength(ctxBatch(100, 5).map((s) => ({ base: s.contextBase!, full: s.contextFull!, won: s.won }))), 0);
+  assert.equal(bestStrength(ctxBatch(100, 7).map((s) => ({ base: s.contextBase!, full: s.contextFull!, won: s.won }))), 1.5);
+});
+
+test('learning: context strength moves one small step, only on enough plays where context mattered', () => {
+  const thin = learnSport('tennis', P.tennis, ctxBatch(50, 5), [], () => 'x');
+  assert.equal(thin.params.contextStrength, 1);
+  const flat = learnSport('tennis', P.tennis, Array.from({ length: 200 }, () => ctxSample(0.5, 0.501, 0)), [], () => 'x');
+  assert.equal(flat.params.contextStrength, 1);
+  assert.equal(flat.metrics.context.n, 0);
+
+  const wrong = learnSport('tennis', P.tennis, ctxBatch(300, 5), [], () => 'x');
+  assert.equal(wrong.params.contextStrength, 0.9);
+  assert.ok(wrong.changes.some((c) => c.startsWith('context strength 1 -> 0.9')));
+  const right = learnSport('nbl', P.nbl, ctxBatch(300, 7), [], () => 'x');
+  assert.equal(right.params.contextStrength, 1.1);
 });

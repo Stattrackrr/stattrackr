@@ -1,12 +1,13 @@
 'use client';
 
-import { Loader2, Sparkles } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Check, Clock, Loader2, Minus, Sparkles, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { supabase } from '@/lib/supabaseClient';
 import { aiPicksAsRecordBets, fetchAiPicks } from '@/lib/aiPicks/client';
 import { legSelection } from '@/lib/aiPicks/format';
-import type { AiPick, AiPickStatus } from '@/lib/aiPicks/types';
+import { getBookmakerInfo } from '@/lib/bookmakers';
+import type { AiPick, AiPickLeg, AiPickStatus } from '@/lib/aiPicks/types';
 import { computePickRecordStats, formatUnits } from '@/lib/officialPicksRecordStats';
 
 export const AI_PICKS_NAME = 'Stattrackr AI';
@@ -14,104 +15,153 @@ export const AI_PICKS_AVATAR = '/images/stattrackr-icon-192.png';
 
 const SPORT_LABELS: Record<string, string> = { nbl: 'NBL', tennis: 'Tennis', nba: 'NBA', afl: 'AFL', mixed: 'Mixed' };
 
-const STATUS_STYLES: Record<AiPickStatus, string> = {
-  pending: 'bg-gray-500/15 text-gray-600 dark:text-gray-300',
-  win: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-  loss: 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
-  push: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-  void: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+const STATUS_META: Record<AiPickStatus, { label: string; pill: string; accent: string; Icon: typeof Clock }> = {
+  pending: {
+    label: 'Pending',
+    pill: 'bg-gray-100 text-gray-600 ring-gray-200 dark:bg-white/5 dark:text-gray-300 dark:ring-white/10',
+    accent: 'bg-purple-500/70',
+    Icon: Clock,
+  },
+  win: {
+    label: 'Won',
+    pill: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30',
+    accent: 'bg-emerald-500',
+    Icon: Check,
+  },
+  loss: {
+    label: 'Lost',
+    pill: 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30',
+    accent: 'bg-rose-500',
+    Icon: X,
+  },
+  push: {
+    label: 'Push',
+    pill: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30',
+    accent: 'bg-amber-500',
+    Icon: Minus,
+  },
+  void: {
+    label: 'Void',
+    pill: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30',
+    accent: 'bg-amber-500',
+    Icon: Minus,
+  },
 };
 
-const STATUS_LABELS: Record<AiPickStatus, string> = {
-  pending: 'Pending',
-  win: 'Won',
-  loss: 'Lost',
-  push: 'Push',
-  void: 'Void',
-};
-
-function fmtWhen(iso: string): string {
+function fmtPosted(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 }
 
-function StatusBadge({ status }: { status: AiPickStatus }) {
+function fmtStart(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+}
+
+function StatusPill({ status, compact = false }: { status: AiPickStatus; compact?: boolean }) {
+  const { label, pill, Icon } = STATUS_META[status];
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${STATUS_STYLES[status]}`}>
-      {STATUS_LABELS[status]}
+    <span
+      className={`inline-flex items-center gap-1 rounded-full ring-1 ring-inset ${pill} ${
+        compact ? 'p-1' : 'px-2 py-0.5 text-[11px] font-semibold'
+      }`}
+      title={label}
+    >
+      <Icon className="h-3 w-3" strokeWidth={2.5} />
+      {!compact && label}
     </span>
   );
 }
 
-function AiPosterRow({ postedAt }: { postedAt: string }) {
+function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2">
-      <img src={AI_PICKS_AVATAR} alt={AI_PICKS_NAME} className="h-8 w-8 shrink-0 rounded-full object-cover" />
-      <div className="min-w-0">
-        <div className="flex items-center gap-1 text-sm font-semibold text-gray-900 dark:text-white">
-          {AI_PICKS_NAME}
-          <Sparkles className="h-3.5 w-3.5 text-purple-500" aria-label="AI" />
-        </div>
-        <div className="text-[11px] text-gray-500 dark:text-gray-400">{fmtWhen(postedAt)}</div>
-      </div>
+    <div className="min-w-0 px-3 py-2">
+      <div className="text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</div>
+      <div className="mt-0.5 truncate text-sm font-semibold tabular-nums text-gray-900 dark:text-white">{children}</div>
     </div>
   );
+}
+
+function legMeta(leg: AiPickLeg): string {
+  const parts = [leg.eventLabel, fmtStart(leg.startsAt)];
+  if (leg.resultValue != null) parts.push(`Result ${leg.resultValue}`);
+  return parts.filter(Boolean).join(' · ');
 }
 
 function PickCard({ pick }: { pick: AiPick }) {
   const settled = pick.status !== 'pending';
   const profit = pick.profitUnits ?? 0;
+  const isMulti = pick.kind === 'multi';
+  const book = getBookmakerInfo(pick.bookmaker).name;
+  const single = pick.legs[0];
+
   return (
-    <article className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm dark:border-gray-700/80 dark:bg-[#111c2d]">
-      <div className="flex items-start justify-between gap-2">
-        <AiPosterRow postedAt={pick.postedAt} />
-        <div className="flex shrink-0 items-center gap-1.5">
-          <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-700 dark:text-purple-300">
-            {SPORT_LABELS[pick.sport] ?? pick.sport} · {pick.kind === 'multi' ? `${pick.legs.length}-leg multi` : 'Single'}
+    <article className="relative overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm dark:border-white/[0.07] dark:bg-[#0f1a2b]">
+      <span className={`absolute inset-y-0 left-0 w-1 ${STATUS_META[pick.status].accent}`} aria-hidden />
+
+      <div className="flex items-center justify-between gap-3 px-4 pt-3.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <img src={AI_PICKS_AVATAR} alt={AI_PICKS_NAME} className="h-6 w-6 shrink-0 rounded-full object-cover" />
+          <span className="flex items-center gap-1 text-[13px] font-semibold text-gray-900 dark:text-white">
+            {AI_PICKS_NAME}
+            <Sparkles className="h-3 w-3 text-purple-500" aria-label="AI" />
           </span>
-          <StatusBadge status={pick.status} />
+          <span className="truncate text-[11px] text-gray-400 dark:text-gray-500">· {fmtPosted(pick.postedAt)}</span>
         </div>
+        <StatusPill status={pick.status} />
       </div>
 
-      <h4 className="mt-3 text-[15px] font-semibold text-gray-900 dark:text-white">{pick.title}</h4>
+      <div className="px-4 pb-3 pt-3">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-300">
+          {SPORT_LABELS[pick.sport] ?? pick.sport}
+          <span className="text-gray-300 dark:text-gray-600">/</span>
+          <span className="text-gray-500 dark:text-gray-400">{isMulti ? `${pick.legs.length}-leg multi` : 'Single'}</span>
+        </div>
 
-      <div className="mt-2 space-y-1.5">
-        {pick.legs.map((leg) => (
-          <div
-            key={leg.id}
-            className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700/70 dark:bg-[#0a1929]"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium text-gray-900 dark:text-white">{legSelection(leg)}</div>
-              <div className="truncate text-[11px] text-gray-500 dark:text-gray-400">
-                {leg.eventLabel} · {fmtWhen(leg.startsAt)}
-                {leg.resultValue != null ? ` · Result: ${leg.resultValue}` : ''}
-                {leg.resultNote ? ` · ${leg.resultNote}` : ''}
-              </div>
-            </div>
-            {pick.kind === 'multi' && <span className="text-xs font-semibold tabular-nums text-gray-700 dark:text-gray-300">{leg.price.toFixed(2)}</span>}
-            {pick.kind === 'multi' && leg.status !== 'pending' && <StatusBadge status={leg.status} />}
-            <BookmakerLogo bookKey={leg.bookmaker} className="h-6 w-6 shrink-0 rounded-md object-contain" />
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
-        <span>
-          <span className="font-bold text-gray-900 dark:text-white">{pick.units}u</span> stake
-        </span>
-        <span>
-          @ <span className="font-bold tabular-nums text-gray-900 dark:text-white">{pick.price.toFixed(2)}</span> {pick.bookmaker}
-        </span>
-        {settled && (
-          <span className={`font-bold ${profit > 0 ? 'text-emerald-600 dark:text-emerald-400' : profit < 0 ? 'text-rose-600 dark:text-rose-400' : ''}`}>
-            {formatUnits(profit, { showSign: true })}
-          </span>
+        {!isMulti && single ? (
+          <>
+            <h4 className="text-base font-semibold leading-snug text-gray-900 dark:text-white">{legSelection(single)}</h4>
+            <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{legMeta(single)}</p>
+          </>
+        ) : (
+          <ol className="space-y-2">
+            {pick.legs.map((leg, i) => (
+              <li key={leg.id} className="flex items-start gap-2.5">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-purple-500/10 text-[10px] font-bold text-purple-600 dark:text-purple-300">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold leading-snug text-gray-900 dark:text-white">{legSelection(leg)}</div>
+                  <div className="truncate text-xs text-gray-500 dark:text-gray-400">{legMeta(leg)}</div>
+                </div>
+                <span className="mt-0.5 text-xs font-semibold tabular-nums text-gray-600 dark:text-gray-300">{leg.price.toFixed(2)}</span>
+                {leg.status !== 'pending' && <StatusPill status={leg.status} compact />}
+              </li>
+            ))}
+          </ol>
         )}
       </div>
 
-      {pick.writeUp && <p className="mt-2.5 whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">{pick.writeUp}</p>}
+      <div className="mx-4 mb-4 grid grid-cols-3 divide-x divide-gray-200/80 rounded-xl bg-gray-50 dark:divide-white/[0.07] dark:bg-white/[0.03]">
+        <Stat label="Odds">{pick.price.toFixed(2)}</Stat>
+        <Stat label={settled ? 'Result' : 'Stake'}>
+          {settled ? (
+            <span className={profit > 0 ? 'text-emerald-600 dark:text-emerald-400' : profit < 0 ? 'text-rose-600 dark:text-rose-400' : ''}>
+              {formatUnits(profit, { showSign: true })}
+            </span>
+          ) : (
+            `${pick.units}u`
+          )}
+        </Stat>
+        <Stat label="Bookmaker">
+          <span className="flex items-center gap-1.5">
+            <BookmakerLogo bookKey={pick.bookmaker} className="h-4 w-4 shrink-0 rounded object-contain" />
+            <span className="truncate">{book}</span>
+          </span>
+        </Stat>
+      </div>
     </article>
   );
 }
@@ -122,17 +172,16 @@ function RecordStrip({ picks }: { picks: AiPick[] }) {
   const cells: Array<{ label: string; value: string; tone?: number }> = [
     { label: 'Units', value: formatUnits(stats.totalPL, { showSign: true }), tone: stats.totalPL },
     { label: 'ROI', value: `${stats.roi.toFixed(1)}%`, tone: stats.roi },
-    { label: 'Win %', value: `${stats.winRate.toFixed(0)}%` },
     { label: 'Record', value: `${stats.wins}-${stats.losses}${stats.voids ? `-${stats.voids}` : ''}` },
     { label: 'Pending', value: String(pending) },
   ];
   return (
-    <div className="grid grid-cols-5 overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-700/80 dark:bg-[#111c2d]">
-      {cells.map((c, i) => (
-        <div key={c.label} className={`px-2 py-2 text-center ${i ? 'border-l border-gray-200 dark:border-gray-700/80' : ''}`}>
-          <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">{c.label}</div>
+    <div className="grid grid-cols-4 divide-x divide-gray-200/80 rounded-2xl border border-gray-200/80 bg-white shadow-sm dark:divide-white/[0.07] dark:border-white/[0.07] dark:bg-[#0f1a2b]">
+      {cells.map((c) => (
+        <div key={c.label} className="px-2 py-2.5 text-center">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">{c.label}</div>
           <div
-            className={`text-sm font-bold tabular-nums ${
+            className={`mt-0.5 text-base font-bold tabular-nums ${
               c.tone == null || c.tone === 0
                 ? 'text-gray-900 dark:text-white'
                 : c.tone > 0

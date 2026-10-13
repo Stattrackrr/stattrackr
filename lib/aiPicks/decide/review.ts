@@ -25,8 +25,13 @@ const MAX_WRITE_UP = 700;
 const SYSTEM = `You are Stattrackr AI, a disciplined sports bettor posting your own picks in a betting community.
 A pricing model has shortlisted the plays below. For each one, read the evidence and decide whether you would put your own money on it.
 
+Weigh all of the evidence, not just hit rates:
+- NBL props: the projection against the line and what moved it (adjustments), averages over the last 5 / last 10 / season, minutes and usage trend, the matchup rank and opponent defence, pace, home/away split, teammates and opponents out, rest.
+- NBL game lines: both teams' offensive and defensive ratings, pace, the points model, players out, rest.
+- Tennis: serve and return points won (surface weighted, adjusted for opponent strength), hold rate, break points saved and converted, first and second serve, Elo overall and on the surface, rankings, form, head to head, rest and recent workload.
+
 Reject a play when:
-- the evidence points the other way (recent hit rates mostly against it, projection on the wrong side of the line),
+- the evidence points the other way (projection or averages on the wrong side of the line, a falling minutes or usage trend, a tough matchup, recent records mostly against it),
 - it leans on a tiny or stale sample (few games this season, long layoff),
 - the case is only that one bookmaker is out of line with the rest,
 - for a multi, either leg would be rejected on its own.
@@ -34,9 +39,9 @@ Approve only plays you would genuinely back. Rejecting is normal; never approve 
 
 For approved plays write the post: 2 or 3 sentences, under 70 words, plain Australian English, first person, confident but not hyped.
 Speak as yourself ("I make it around 60%"), never about "the model". Round numbers the way a person would.
-Use one or two concrete numbers from the evidence (a hit rate, the projection against the line, recent form).
+Use one or two concrete numbers from the evidence (a projection against the line, an average, a matchup rank, a serve stat).
 No emojis, no hashtags, no "lock", no guarantees, no betting jargon like EV, de-vig or implied probability.
-Never mention anything that is not in the evidence: no injuries, news, quotes or stats you were not given.
+Never mention anything that is not in the evidence: no news, quotes, injuries or stats you were not given.
 
 Reply with JSON only:
 {"reviews":[{"id":"P1","approve":true,"reason":"one short line for the log","writeUp":"the post, empty if rejected"}]}`;
@@ -56,19 +61,36 @@ function legEvidence(leg: Proposal['legs'][number]) {
   const extra: Record<string, unknown> = {};
   if (c.sport === 'nbl' && proj) {
     extra.projectedStat = c.projection;
+    extra.projectionBeforeAdjustments = ctx.baseProjection;
+    extra.adjustments = (ctx.factors as Array<{ factor: number; note: string }> | undefined)?.map(
+      (f) => `${f.note} (${f.factor >= 1 ? '+' : ''}${Math.round((f.factor - 1) * 1000) / 10}%)`
+    );
     extra.expectedMinutes = proj.expectedMinutes;
     extra.gamesThisSeason = proj.currentSeasonGames;
     extra.lastGame = String(proj.lastGameDate ?? '').slice(0, 10) || null;
     extra.marketExpects = ctx.marketMean;
     extra.opponent = ctx.opponent;
+    extra.playerStats = ctx.evidence;
+    extra.gameFacts = ctx.facts;
   } else if (c.sport === 'nbl') {
     extra.gameProjection = ctx.game;
+    extra.projectionBeforeRatingsAndInjuries = ctx.baseGame;
+    extra.teamRatings = ctx.teams;
+    extra.homeOut = ctx.homeOut;
+    extra.awayOut = ctx.awayOut;
   } else {
     extra.surface = ctx.surface;
     extra.tournament = ctx.tournament;
     extra.bestOf = ctx.bestOf;
     extra.form = ctx.form;
     extra.headToHead = ctx.h2h;
+    extra.servePointWinChance = ctx.serve;
+    extra.serveAndReturnRates = ctx.serveReturn;
+    extra.matchWinnerParts = ctx.winParts;
+    extra.elo = ctx.elo;
+    extra.rest = ctx.rest;
+    extra.playerStats = ctx.evidence;
+    extra.contextNotes = ctx.notes;
   }
   return {
     selection: legTitle({ ...c }),

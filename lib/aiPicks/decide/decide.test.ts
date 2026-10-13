@@ -5,7 +5,7 @@ import { candidateKey } from '../candidates/types';
 import { DEFAULT_AI_PICKS_PARAMS as P } from '../params';
 import type { AiPick } from '../types';
 import { aiDayKey, gameIdentity, readiness, type WatchPoint } from './timing';
-import { chooseMulti, chooseSingles, multiKey, qualifiesSingle, type PostedState, type Watched } from './select';
+import { chooseMulti, chooseSingles, multiKey, qualifiesSingle, subjectId, type PostedState, type Watched } from './select';
 import { isClosedRow, nextWatchRow, postedState } from './watch';
 import { parseReview } from './review';
 import { pickTitle } from '../format';
@@ -63,6 +63,7 @@ const empty = (): PostedState => ({
   singleGamesToday: new Set(),
   playersToday: new Set(),
   selectionsBacked: new Set(),
+  subjectsUsed: new Set(),
 });
 
 test('day boundary is Sydney time', () => {
@@ -138,6 +139,32 @@ test('multi: separate games, priced at one book, at least 1.65', () => {
   assert.equal(chooseMulti(short.map((c) => ({ c, history: held() })), P, empty(), NOW, { keys: new Set(), rejected: new Set() }), null);
 });
 
+test('one pick per subject: a tennis match, an NBL player in a game, an NBL game', () => {
+  const near = iso(NOW + 2 * H);
+  const handicap = cand({ eventKey: 'm1', market: 'game_handicap', player: 'A. One', side: 'yes', line: 5.5, startsAt: near });
+  const games = cand({ eventKey: 'm1', market: 'player_games', player: 'A. One', side: 'over', line: 7.5, startsAt: near });
+  const opponent = cand({ eventKey: 'm1', market: 'player_games', player: 'B. Two', side: 'under', line: 9.5, startsAt: near });
+  assert.equal(subjectId(handicap), subjectId(games));
+  assert.equal(subjectId(handicap), subjectId(opponent));
+
+  const nbl = { sport: 'nbl', eventKey: 'g', eventLabel: 'NZ Breakers @ Sydney Kings', startsAt: near };
+  const pts = subjectId({ ...nbl, market: 'points', player: 'Jaylin Galloway' });
+  assert.equal(pts, subjectId({ ...nbl, market: 'pra', player: 'jaylin galloway' }));
+  assert.notEqual(pts, subjectId({ ...nbl, market: 'points', player: 'Kendric Davis' }));
+  assert.equal(subjectId({ ...nbl, market: 'h2h', player: null }), subjectId({ ...nbl, market: 'total', player: null }));
+  assert.notEqual(pts, subjectId({ ...nbl, market: 'h2h', player: null }));
+
+  const used = { ...empty(), subjectsUsed: new Set([subjectId(handicap)]) };
+  assert.equal(chooseSingles([{ c: games, history: held() }], P, used, NOW).length, 0);
+
+  const other = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'Bet365', price: 1.38 }] });
+  const leg = cand({ ...games, key: undefined, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
+  const w: Watched[] = [leg, other].map((c) => ({ c, history: held() }));
+  assert.ok(chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set() }));
+  assert.equal(chooseMulti(w, P, used, NOW, { keys: new Set(), rejected: new Set() }), null);
+  assert.equal(chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set(), subjects: new Set([subjectId(handicap)]) }), null);
+});
+
 test('watchlist: history grows, posted and review-rejected rows stay closed', () => {
   const c = cand();
   const first = nextWatchRow(c, undefined, iso(NOW))!;
@@ -201,6 +228,7 @@ test('posted state counts today in Sydney and remembers used selections', () => 
   assert.equal(s.multisToday, 1);
   assert.ok(s.usedKeys.has(candidateKey(leg)));
   assert.ok(s.playersToday.has('tennis|a. one'));
+  assert.ok(s.subjectsUsed.has(subjectId(leg)));
 });
 
 test('review parsing fails closed', () => {

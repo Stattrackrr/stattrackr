@@ -30,7 +30,7 @@ function blendedRate(form: { surface: FormRecord; surfaceLast10: FormRecord; las
 }
 
 /** Win rate from surface form, with last 10 weighted ahead of the longer sample. Two even records stay near 50%. */
-function formWinProb(features: MatchupFeatures, selection: string): number | null {
+export function formWinProb(features: MatchupFeatures, selection: string): number | null {
   const mine = selection === 'OPPONENT' ? features.opponent.form : features.player.form;
   const theirs = selection === 'OPPONENT' ? features.player.form : features.opponent.form;
   const p = blendedRate(mine);

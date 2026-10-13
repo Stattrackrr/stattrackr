@@ -4,6 +4,7 @@
  */
 
 import { normalCdf, normalSideProbs, round, type SideProbs } from '@/lib/aiPicks/model/math';
+import type { NblTeamContext } from '@/lib/aiPicks/model/nblContext';
 import { normalizeTeamKey, resolveNblClubName } from '@/lib/nblTeamCanonical';
 
 export type NblFinal = { date: string; season: number; home: string; away: string; homeScore: number; awayScore: number };
@@ -90,6 +91,76 @@ export function projectNblGame(home: string, away: string, finals: NblFinal[], c
     leagueAverage: lg,
   };
 }
+
+export type NblGameContext = {
+  home: NblTeamContext | null;
+  away: NblTeamContext | null;
+  leaguePace: number | null;
+  /** Points each side loses to players on the injury list (already scaled for replacements). */
+  homeOutPoints: number;
+  awayOutPoints: number;
+  homeOut: string[];
+  awayOut: string[];
+  homeRestDays: number | null;
+  awayRestDays: number | null;
+  /** 1 = as built, 0 = points model only. */
+  strength: number;
+};
+
+const RATINGS_WEIGHT = 0.5;
+const BACK_TO_BACK_POINTS = 1.5;
+
+/**
+ * Points model with the margin blended toward a possessions model (expected pace x each side's
+ * offence against the other's defence per 100), then injuries and short turnarounds taken off each
+ * side. The possessions model reads relative strength well but runs a few points low on totals, so
+ * totals stay on the points model.
+ */
+export function adjustNblGame(p: NblGameProjection, ctx: NblGameContext): NblGameProjection & { notes: string[] } {
+  let homePts = (p.total + p.homeMargin) / 2;
+  let awayPts = (p.total - p.homeMargin) / 2;
+  const notes: string[] = [];
+  const { home: h, away: a } = ctx;
+  const pace = h?.pace && a?.pace ? (h.pace + a.pace) / 2 : ctx.leaguePace;
+  if (h && a && pace && h.games >= 3 && a.games >= 3) {
+    const homeR = (pace * (h.offRtg + a.defRtg)) / 200 + NBL_HOME_COURT / 2;
+    const awayR = (pace * (a.offRtg + h.defRtg)) / 200 - NBL_HOME_COURT / 2;
+    const shift = (RATINGS_WEIGHT * (homeR - awayR - p.homeMargin)) / 2;
+    homePts += shift;
+    awayPts -= shift;
+    notes.push(`Ratings model: pace ${round(pace, 1)}, margin ${round(homeR - awayR, 1)}`);
+  }
+  if (ctx.homeOutPoints > 0) {
+    homePts -= ctx.homeOutPoints;
+    notes.push(`Home missing ${ctx.homeOut.join(', ')} (-${round(ctx.homeOutPoints, 1)} pts)`);
+  }
+  if (ctx.awayOutPoints > 0) {
+    awayPts -= ctx.awayOutPoints;
+    notes.push(`Away missing ${ctx.awayOut.join(', ')} (-${round(ctx.awayOutPoints, 1)} pts)`);
+  }
+  if (ctx.homeRestDays != null && ctx.homeRestDays <= 1) {
+    homePts -= BACK_TO_BACK_POINTS;
+    notes.push('Home on a back to back');
+  }
+  if (ctx.awayRestDays != null && ctx.awayRestDays <= 1) {
+    awayPts -= BACK_TO_BACK_POINTS;
+    notes.push('Away on a back to back');
+  }
+  const s = ctx.strength;
+  return {
+    ...p,
+    homeMargin: round(p.homeMargin + s * (homePts - awayPts - p.homeMargin), 2),
+    total: round(p.total + s * (homePts + awayPts - p.total), 1),
+    notes,
+  };
+}
+
+/** Scoring a team loses when a player is out: most of it is picked up by whoever replaces him. */
+export function injuryPoints(pointsPerGame: number): number {
+  return Math.max(0, pointsPerGame) * 0.35;
+}
+
+export const MAX_INJURY_POINTS = 6;
 
 export function nblH2hProb(p: NblGameProjection, side: 'home' | 'away'): number {
   const home = 1 - normalCdf(-p.homeMargin / p.marginSd);

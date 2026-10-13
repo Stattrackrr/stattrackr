@@ -5,7 +5,9 @@
  *   - tennis day-form swing: from how often three-set matches really happened vs the model,
  *   - NBL milestone margin: from how often milestones really landed vs the market's fair price,
  *   - minimum edge: tighter when the posted picks lose to the closing price, looser when they beat it,
- *   - stake scale per market group: from closing-price value on posted picks.
+ *   - stake scale per market group: from closing-price value on posted picks,
+ *   - context strength: how hard matchups, pace, injuries, Elo, rankings and fatigue move the
+ *     model, from whether the adjusted or unadjusted numbers called the results better.
  * Each change needs a minimum sample, moves a small step per night and stays inside hard bounds,
  * so a lucky or unlucky week cannot swing the system.
  */
@@ -24,6 +26,16 @@ export type LearnSample = {
   model: number | null;
   marketProb: number | null;
   blended: number;
+  /** Model alone with game context off / at full strength, when stored. */
+  contextBase?: number | null;
+  contextFull?: number | null;
+};
+
+export type ContextMetrics = {
+  n: number;
+  logLossOff: number | null;
+  logLossFull: number | null;
+  bestStrength: number | null;
 };
 
 export type GroupMetrics = {
@@ -40,7 +52,13 @@ export type PickMetrics = { n: number; roi: number | null; clvN: number; clv: nu
 export type LearnResult<T extends AiSportParams> = {
   params: T;
   changes: string[];
-  metrics: { samples: number; groups: Record<string, GroupMetrics>; picks: PickMetrics; groupPicks: Record<string, PickMetrics> };
+  metrics: {
+    samples: number;
+    groups: Record<string, GroupMetrics>;
+    picks: PickMetrics;
+    groupPicks: Record<string, PickMetrics>;
+    context: ContextMetrics;
+  };
 };
 
 const WEIGHT = { minN: 40, priorN: 150, step: 0.05, max: 0.8, grid: 0.05 };
@@ -48,6 +66,8 @@ const DAY_FORM = { minN: 60, threshold: 0.03, step: 0.005, lo: 0.03, hi: 0.1 };
 const MILESTONE_POWER = { minN: 60, threshold: 0.02, step: 0.01, lo: 1, hi: 1.2 };
 const MIN_EV = { minN: 30, loseClv: -0.01, winClv: 0.02, step: 0.005, lo: 0.025, hi: 0.06, legGap: 0.01, legLo: 0.015 };
 const STAKE = { minN: 20, perClv: 3, lo: 0.6, hi: 1.25, step: 0.1 };
+/** Plays where context moved the model by less than this say nothing about its strength. */
+const CONTEXT = { minN: 60, priorN: 150, step: 0.1, lo: 0, hi: 1.5, grid: 0.05, minMove: 0.005 };
 
 function logLoss(p: number, y: 0 | 1): number {
   const q = clamp(p, 0.01, 0.99);
@@ -65,6 +85,34 @@ export function bestWeight(samples: Array<{ model: number; marketProb: number; w
     if (loss < best.loss - 1e-12) best = { w: round(w, 2), loss };
   }
   return best.w;
+}
+
+type ContextSample = { base: number; full: number; won: 0 | 1 };
+
+const atStrength = (s: ContextSample, k: number) => s.base + k * (s.full - s.base);
+
+/** Context strength in [lo, hi] whose model (off -> full, scaled) had the lowest log loss. */
+export function bestStrength(samples: ContextSample[]): number | null {
+  if (!samples.length) return null;
+  let best = { k: 1, loss: Infinity };
+  for (let k = CONTEXT.lo; k <= CONTEXT.hi + 1e-9; k += CONTEXT.grid) {
+    const loss = mean(samples.map((s) => logLoss(atStrength(s, k), s.won)));
+    if (loss < best.loss - 1e-12) best = { k: round(k, 2), loss };
+  }
+  return best.k;
+}
+
+export function contextMetrics(samples: LearnSample[]): ContextMetrics & { usable: ContextSample[] } {
+  const usable = samples
+    .filter((s) => s.contextBase != null && s.contextFull != null && Math.abs(s.contextFull - s.contextBase) >= CONTEXT.minMove)
+    .map((s) => ({ base: s.contextBase!, full: s.contextFull!, won: s.won }));
+  return {
+    usable,
+    n: usable.length,
+    logLossOff: usable.length ? round(mean(usable.map((s) => logLoss(s.base, s.won))), 4) : null,
+    logLossFull: usable.length ? round(mean(usable.map((s) => logLoss(s.full, s.won))), 4) : null,
+    bestStrength: usable.length >= CONTEXT.minN ? bestStrength(usable) : null,
+  };
 }
 
 /** Move toward the target by at most `step`, pulled back toward the current value on thin samples. */
@@ -161,6 +209,13 @@ export function learnSport<T extends AiSportParams>(
     }
   }
 
+  const { usable: _usable, ...context } = contextMetrics(samples);
+  if (context.bestStrength != null) {
+    const cur = params.contextStrength;
+    const next = clamp(shrinkStep(cur, context.bestStrength, context.n, CONTEXT.priorN, CONTEXT.step), CONTEXT.lo, CONTEXT.hi);
+    set('context strength', cur, next, (v) => (params.contextStrength = v), 2);
+  }
+
   const pm = pickMetrics(picks);
   if (pm.clvN >= MIN_EV.minN && pm.clv != null) {
     const dir = pm.clv < MIN_EV.loseClv ? 1 : pm.clv > MIN_EV.winClv && (pm.roi ?? 0) >= 0 ? -1 : 0;
@@ -186,5 +241,5 @@ export function learnSport<T extends AiSportParams>(
     set(`${group} stake scale`, cur, cur + clamp(target - cur, -STAKE.step, STAKE.step), (v) => (params.stakeScale[group] = v), 2);
   }
 
-  return { params, changes, metrics: { samples: samples.length, groups, picks: pm, groupPicks } };
+  return { params, changes, metrics: { samples: samples.length, groups, picks: pm, groupPicks, context } };
 }

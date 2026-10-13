@@ -26,13 +26,16 @@ import {
   type NblPropProjection,
 } from '@/lib/aiPicks/model/nblProps';
 import {
+  adjustNblGame,
   nblH2hProb,
   nblSpreadProbs,
   nblTotalProbs,
   projectNblGame,
   type NblFinal,
+  type NblGameContext,
   type NblGameProjection,
 } from '@/lib/aiPicks/model/nblGames';
+import { nblPlayerEvidence, type NblInjuryContext, type NblPropContext } from '@/lib/aiPicks/model/nblContext';
 import { effectiveModelWeight, type AiSportParams } from '@/lib/aiPicks/params';
 import {
   BLOCKING_FLAG,
@@ -142,6 +145,15 @@ function marketProbsAt(
   return mkt.source === 'main' ? fitted : null;
 }
 
+export type NblPropGameContext = {
+  /** Game-specific adjustment for one stat (matchup, pace, teammates out, ...). */
+  forStat: (stat: NblPropMarket) => NblPropContext;
+  /** The player's own injury-list entry, if any. */
+  listed: NblInjuryContext | null;
+  /** Shared facts for the review (team/opponent ratings, who is out on each side). */
+  facts: Record<string, unknown>;
+};
+
 export function buildNblPropCandidates(input: {
   game: NblGameRef;
   lines: NblSnapLine[];
@@ -150,6 +162,7 @@ export function buildNblPropCandidates(input: {
   params: AiSportParams;
   currentSeason: number;
   nowMs: number;
+  context?: NblPropGameContext;
 }): AiCandidate[] {
   const { game, player, params } = input;
   const eventKey = nblPlayerPropGameKey(game.homeTeam, game.awayTeam, game.commenceTime);
@@ -161,11 +174,17 @@ export function buildNblPropCandidates(input: {
   }
 
   for (const [stat, lines] of byStat) {
-    const proj = projectNblProp(player.games, stat, { currentSeason: input.currentSeason });
-    if (!proj) continue;
+    const base = projectNblProp(player.games, stat, { currentSeason: input.currentSeason });
+    if (!base) continue;
+    const ctx = input.context?.forStat(stat) ?? { factors: [], total: 1, fullTotal: 1 };
+    const scaled = (t: number): NblPropProjection => ({ ...base, mean: round(base.mean * t, 2), variance: round(base.variance * t, 2) });
+    const proj = scaled(ctx.total);
+    const fullProj = scaled(ctx.fullTotal);
     const mkt = marketMean(lines, proj, params.oneWayMarginPower);
     if (!mkt) continue;
     const baseFlags: string[] = [];
+    const listed = input.context?.listed;
+    if (listed) baseFlags.push(/out/i.test(listed.status) ? `Listed out on the injury report (${listed.status})` : `On the injury report (${listed.status})`);
     if (proj.currentSeasonGames < 2) baseFlags.push('Fewer than 2 games this season');
     const lastMs = Date.parse(String(proj.lastGameDate || ''));
     if (Number.isFinite(lastMs) && input.nowMs - lastMs > STALE_PLAYER_DAYS * 86_400_000) {
@@ -218,6 +237,12 @@ export function buildNblPropCandidates(input: {
           quotes: sel.quotes.sort((a, b) => b.price - a.price),
           modelProb: round(sideWin(model, sel.side)),
           marketProb: round(sideWin(market, sel.side)),
+          contextProbs: input.context
+            ? {
+                base: round(sideWin(nblPropSideProbs(base, sel.line), sel.side)),
+                full: round(sideWin(nblPropSideProbs(fullProj, sel.line), sel.side)),
+              }
+            : null,
           prob: round(prob),
           pushProb: round(mixed.push),
           ev: round(ev),
@@ -228,11 +253,16 @@ export function buildNblPropCandidates(input: {
           flags,
           context: {
             projection: proj,
+            baseProjection: base.mean,
+            adjustment: ctx.total,
+            factors: ctx.factors,
             marketMean: round(mkt.mean, 2),
             marketSource: mkt.source,
             mainLine: mkt.mainLine,
             modelWeight: round(w),
             opponent: input.opponent,
+            evidence: nblPlayerEvidence(player.games, stat, input.currentSeason),
+            facts: input.context?.facts,
           },
         })
       );
@@ -276,11 +306,14 @@ export function buildNblGameCandidates(input: {
   finals: NblFinal[];
   params: AiSportParams;
   currentSeason: number;
+  context?: NblGameContext;
 }): AiCandidate[] {
   const { odds, params } = input;
   const game: NblGameRef = { homeTeam: odds.homeTeam, awayTeam: odds.awayTeam, commenceTime: odds.commenceTime };
   const eventKey = nblPlayerPropGameKey(game.homeTeam, game.awayTeam, game.commenceTime);
-  const proj = projectNblGame(game.homeTeam, game.awayTeam, input.finals, input.currentSeason);
+  const baseProj = projectNblGame(game.homeTeam, game.awayTeam, input.finals, input.currentSeason);
+  const proj = input.context ? adjustNblGame(baseProj, input.context) : { ...baseProj, notes: [] as string[] };
+  const fullProj = input.context ? adjustNblGame(baseProj, { ...input.context, strength: 1 }) : null;
   const sample = Math.min(proj.home?.games ?? 0, proj.away?.games ?? 0);
   const q = gameQuotes(odds);
   const out: AiCandidate[] = [];
@@ -291,18 +324,19 @@ export function buildNblGameCandidates(input: {
     line: number | null;
     team: string | null;
     quotes: CandidateQuote[];
-    model: SideProbs;
+    price: (p: NblGameProjection) => SideProbs;
     fair: SideProbs | null;
     marketKind: AiPickMarketKind;
     projection: number;
   }) => {
     const picked = bestQuote(args.quotes);
     if (!picked || !args.fair) return;
+    const model = args.price(proj);
     const w = effectiveModelWeight(params.modelWeight[args.market as string] ?? 0.25, sample, params.sampleHalfLife);
-    const mixed = blend(args.model, args.fair, w);
+    const mixed = blend(model, args.fair, w);
     const prob = sideWin(mixed, args.side);
     const flags = [...picked.flags];
-    const gap = Math.abs(sideWin(args.model, args.side) - sideWin(args.fair, args.side));
+    const gap = Math.abs(sideWin(model, args.side) - sideWin(args.fair, args.side));
     if (gap > params.maxModelMarketGap) flags.push(`Model and market differ by ${Math.round(gap * 100)}%`);
     if (sample < 3) flags.push('Few games of team form');
     const ev = evPerUnit(prob, picked.best.price, mixed.push);
@@ -326,8 +360,11 @@ export function buildNblGameCandidates(input: {
         bestPrice: picked.best.price,
         bestBook: picked.best.book,
         quotes: args.quotes.sort((a, b) => b.price - a.price),
-        modelProb: round(sideWin(args.model, args.side)),
+        modelProb: round(sideWin(model, args.side)),
         marketProb: round(sideWin(args.fair, args.side)),
+        contextProbs: fullProj
+          ? { base: round(sideWin(args.price(baseProj), args.side)), full: round(sideWin(args.price(fullProj), args.side)) }
+          : null,
         prob: round(prob),
         pushProb: round(mixed.push),
         ev: round(ev),
@@ -336,7 +373,14 @@ export function buildNblGameCandidates(input: {
         supportScore: null,
         ...eligibility(picked.best.price, args.marketKind, blocked, params),
         flags,
-        context: { game: proj, modelWeight: round(w) },
+        context: {
+          game: proj,
+          baseGame: { homeMargin: baseProj.homeMargin, total: baseProj.total },
+          modelWeight: round(w),
+          teams: input.context ? { home: input.context.home, away: input.context.away } : null,
+          homeOut: input.context?.homeOut ?? [],
+          awayOut: input.context?.awayOut ?? [],
+        },
       })
     );
   };
@@ -345,10 +389,10 @@ export function buildNblGameCandidates(input: {
     q.h2hHome.map((x) => (x.otherPrice ? fairTwoWay(x.price, x.otherPrice)?.[0] : null)).filter((p): p is number => p != null)
   );
   if (fairH2h != null) {
-    const homeModel = nblH2hProb(proj, 'home');
     const asProbs = (p: number): SideProbs => ({ over: p, under: 1 - p, push: 0 });
-    push({ market: 'h2h', side: 'home', line: null, team: game.homeTeam, quotes: q.h2hHome.map(({ book, price }) => ({ book, price })), model: asProbs(homeModel), fair: asProbs(fairH2h), marketKind: 'main', projection: proj.homeMargin });
-    push({ market: 'h2h', side: 'away', line: null, team: game.awayTeam, quotes: q.h2hAway.map(({ book, price }) => ({ book, price })), model: asProbs(homeModel), fair: asProbs(fairH2h), marketKind: 'main', projection: -proj.homeMargin });
+    const price = (p: NblGameProjection) => asProbs(nblH2hProb(p, 'home'));
+    push({ market: 'h2h', side: 'home', line: null, team: game.homeTeam, quotes: q.h2hHome.map(({ book, price }) => ({ book, price })), price, fair: asProbs(fairH2h), marketKind: 'main', projection: proj.homeMargin });
+    push({ market: 'h2h', side: 'away', line: null, team: game.awayTeam, quotes: q.h2hAway.map(({ book, price }) => ({ book, price })), price, fair: asProbs(fairH2h), marketKind: 'main', projection: -proj.homeMargin });
   }
 
   const mainSpread = consensusLine(q.spreads.map((s) => s.homeLine));
@@ -358,9 +402,9 @@ export function buildNblGameCandidates(input: {
     if (fair == null) continue;
     const market: SideProbs = { over: fair, under: 1 - fair, push: 0 };
     const kind: AiPickMarketKind = homeLine === mainSpread ? 'main' : 'alternate';
-    const model = nblSpreadProbs(proj, 'home', homeLine);
-    push({ market: 'spread', side: 'home', line: homeLine, team: game.homeTeam, quotes: at.filter((s) => s.home).map((s) => ({ book: s.book, price: s.home! })), model, fair: market, marketKind: kind, projection: proj.homeMargin });
-    push({ market: 'spread', side: 'away', line: -homeLine, team: game.awayTeam, quotes: at.filter((s) => s.away).map((s) => ({ book: s.book, price: s.away! })), model, fair: market, marketKind: kind, projection: -proj.homeMargin });
+    const price = (p: NblGameProjection) => nblSpreadProbs(p, 'home', homeLine);
+    push({ market: 'spread', side: 'home', line: homeLine, team: game.homeTeam, quotes: at.filter((s) => s.home).map((s) => ({ book: s.book, price: s.home! })), price, fair: market, marketKind: kind, projection: proj.homeMargin });
+    push({ market: 'spread', side: 'away', line: -homeLine, team: game.awayTeam, quotes: at.filter((s) => s.away).map((s) => ({ book: s.book, price: s.away! })), price, fair: market, marketKind: kind, projection: -proj.homeMargin });
   }
 
   const mainTotal = consensusLine(q.totals.map((t) => t.line));
@@ -370,9 +414,9 @@ export function buildNblGameCandidates(input: {
     if (fair == null) continue;
     const market: SideProbs = { over: fair, under: 1 - fair, push: 0 };
     const kind: AiPickMarketKind = line === mainTotal ? 'main' : 'alternate';
-    const model = nblTotalProbs(proj, line);
-    push({ market: 'total', side: 'over', line, team: null, quotes: at.filter((t) => t.over).map((t) => ({ book: t.book, price: t.over! })), model, fair: market, marketKind: kind, projection: proj.total });
-    push({ market: 'total', side: 'under', line, team: null, quotes: at.filter((t) => t.under).map((t) => ({ book: t.book, price: t.under! })), model, fair: market, marketKind: kind, projection: proj.total });
+    const price = (p: NblGameProjection) => nblTotalProbs(p, line);
+    push({ market: 'total', side: 'over', line, team: null, quotes: at.filter((t) => t.over).map((t) => ({ book: t.book, price: t.over! })), price, fair: market, marketKind: kind, projection: proj.total });
+    push({ market: 'total', side: 'under', line, team: null, quotes: at.filter((t) => t.under).map((t) => ({ book: t.book, price: t.under! })), price, fair: market, marketKind: kind, projection: proj.total });
   }
   return out;
 }

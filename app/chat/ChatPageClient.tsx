@@ -19,7 +19,7 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AiPicksFeed } from '@/components/chat/AiPicksFeed';
+import { AI_PICKS_AVATAR, AI_PICKS_NAME, AiPicksFeed } from '@/components/chat/AiPicksFeed';
 import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
 import { aiPicksAsRecordBets, fetchAiPicks, fetchAiPicksPublic } from '@/lib/aiPicks/client';
 import { openProUpgrade } from '@/components/ProFeatureLock';
@@ -270,8 +270,6 @@ export default function ChatPageClient() {
   const [showPicksRecordModal, setShowPicksRecordModal] = useState(false);
   const [aiPicksPublic, setAiPicksPublic] = useState(false);
   const picksRoomLocked = !viewer.isAdmin && !aiPicksPublic;
-  const picksRoomLockedRef = useRef(picksRoomLocked);
-  picksRoomLockedRef.current = picksRoomLocked;
 
   useEffect(() => {
     if (!viewer.userId) return;
@@ -532,9 +530,6 @@ export default function ChatPageClient() {
         setSelectedRoomId((currentRoomId) => {
           const generalRoomId = loadedRooms.find((room) => room.slug === 'general')?.id ?? loadedRooms[0]?.id ?? null;
           const currentRoom = loadedRooms.find((room) => room.id === currentRoomId);
-          if (picksRoomLockedRef.current && currentRoom?.slug === 'picks') {
-            return generalRoomId;
-          }
           if (currentRoomId && currentRoom) {
             return currentRoomId;
           }
@@ -1026,10 +1021,7 @@ export default function ChatPageClient() {
     document.execCommand('insertText', false, pastedText.slice(0, CHAT_MAX_MESSAGE_LENGTH));
   }, []);
 
-  const handleSelectRoom = useCallback((roomId: string, roomSlug?: string) => {
-    if (picksRoomLockedRef.current && roomSlug === 'picks') {
-      return;
-    }
+  const handleSelectRoom = useCallback((roomId: string) => {
     setSelectedRoomId(roomId);
     setComposerValue('');
     setComposerError(null);
@@ -1337,7 +1329,7 @@ export default function ChatPageClient() {
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
-                          {isPicksRoom ? (
+                          {isPicksRoom && !picksRoomLocked ? (
                             <button
                               type="button"
                               onClick={() => setShowPicksRecordModal(true)}
@@ -1374,19 +1366,18 @@ export default function ChatPageClient() {
                               <button
                                 key={room.id}
                                 type="button"
-                                disabled={picksRoomLocked && isPicksTab}
-                                title={picksRoomLocked && isPicksTab ? 'AI picks coming soon' : undefined}
-                                onClick={() => handleSelectRoom(room.id, room.slug)}
+                                title={picksRoomLocked && isPicksTab ? 'Stattrackr AI is in its learning phase' : undefined}
+                                onClick={() => handleSelectRoom(room.id)}
                                 className={`relative flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                                   isSelected
                                     ? 'bg-purple-600 text-white shadow-sm'
                                     : 'text-gray-600 hover:bg-white/70 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'
-                                } ${picksRoomLocked && isPicksTab ? 'cursor-not-allowed opacity-60 hover:bg-transparent hover:text-gray-600 dark:hover:bg-transparent dark:hover:text-gray-300' : ''}`}
+                                }`}
                               >
                                 {label}
                                 {isPicksTab && picksRoomLocked ? (
                                   <span className="absolute -right-1 -top-2 inline-flex items-center rounded-md border border-amber-600 bg-amber-600 px-1.5 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
-                                    SOON
+                                    LEARNING
                                   </span>
                                 ) : unreadCount > 0 ? (
                                   <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white ring-2 ring-white dark:ring-[#111827]">
@@ -1396,15 +1387,6 @@ export default function ChatPageClient() {
                               </button>
                             );
                           })}
-                        </div>
-                      ) : null}
-                      {picksRoomLocked ? (
-                        <div
-                          role="status"
-                          className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-semibold text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200"
-                        >
-                          <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                          AI picks coming soon
                         </div>
                       ) : null}
                     </div>
@@ -1418,11 +1400,40 @@ export default function ChatPageClient() {
                 >
                   {isPicksRoom ? (
                     picksRoomLocked ? (
-                      <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-                        <Sparkles className="h-8 w-8 text-purple-500" />
-                        <h3 className="mt-4 text-base font-semibold text-gray-900 dark:text-white">
-                          AI picks coming soon
-                        </h3>
+                      <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center">
+                        <div className="w-full max-w-md rounded-2xl border border-purple-300/60 bg-white p-6 shadow-sm dark:border-purple-500/30 dark:bg-[#111c2d]">
+                          <div className="flex items-center justify-center gap-2">
+                            <img src={AI_PICKS_AVATAR} alt="" className="h-10 w-10 rounded-full object-cover" />
+                            <span className="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">
+                              {AI_PICKS_NAME}
+                              <Sparkles className="h-4 w-4 text-purple-500" aria-label="AI" />
+                            </span>
+                          </div>
+                          <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Learning phase
+                          </span>
+                          <h3 className="mt-3 text-lg font-semibold text-gray-900 dark:text-white">
+                            Stattrackr AI is still learning
+                          </h3>
+                          <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                            It is posting and grading picks behind the scenes while it learns from every result. Picks will open here once it has built a proven track record.
+                          </p>
+                          <ul className="mt-4 space-y-2 text-left text-sm text-gray-700 dark:text-gray-300">
+                            <li className="flex gap-2">
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
+                              Scans NBL and tennis lines across every bookmaker
+                            </li>
+                            <li className="flex gap-2">
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
+                              Only posts when it finds a play worth taking
+                            </li>
+                            <li className="flex gap-2">
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
+                              Grades every pick and learns from the results
+                            </li>
+                          </ul>
+                        </div>
                       </div>
                     ) : (
                       <AiPicksFeed />

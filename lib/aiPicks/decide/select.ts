@@ -52,6 +52,8 @@ export type PostedState = {
   playersToday: Set<string>;
   /** Selections (`game|market|who`) already backed, to stop over and under on the same thing. */
   selectionsBacked: Set<string>;
+  /** Subjects (see subjectId) already in any posted pick, single or multi leg. */
+  subjectsUsed: Set<string>;
 };
 
 export function sportParams(params: AiPicksParams, sport: string): AiSportParams {
@@ -63,6 +65,20 @@ export function selectionId(
 ): string {
   const who = (c.player || (c.sport === 'tennis' ? '' : c.team) || '').toLowerCase();
   return `${gameIdentity(c)}|${c.market}|${who}`;
+}
+
+/**
+ * What a bet is really about; only one pick may be on each. A tennis match is one subject (handicap,
+ * games, sets and winner all ride on the same result), an NBL player in a game is one, and an NBL
+ * game's own lines (head to head, line, total) are one.
+ */
+export function subjectId(
+  c: Pick<AiCandidate, 'eventKey' | 'eventLabel' | 'startsAt' | 'market' | 'player'> & { sport: string }
+): string {
+  const game = gameIdentity(c);
+  if (c.sport === 'tennis') return game;
+  if (isNblPropMarket(c.market) && c.player) return `${game}|player|${c.player.toLowerCase()}`;
+  return `${game}|game`;
 }
 
 type Check = { ok: true } | { ok: false; reason: string };
@@ -102,7 +118,7 @@ function rankScore(c: AiCandidate): number {
 }
 
 function conflicts(c: AiCandidate, state: PostedState): boolean {
-  return state.usedKeys.has(c.key) || state.selectionsBacked.has(selectionId(c));
+  return state.usedKeys.has(c.key) || state.selectionsBacked.has(selectionId(c)) || state.subjectsUsed.has(subjectId(c));
 }
 
 /** Ready singles in posting order, within today's caps: one per sport per run, one per game and player per day. */
@@ -172,13 +188,13 @@ export function chooseMulti(
   params: AiPicksParams,
   state: PostedState,
   nowMs: number,
-  exclude: { keys: Set<string>; rejected: Set<string> }
+  exclude: { keys: Set<string>; rejected: Set<string>; subjects?: Set<string> }
 ): Proposal | null {
   if (state.multisToday >= MAX_MULTIS_PER_DAY) return null;
   const pool = watched
     .filter((w) => w.c.prob >= MIN_LEG_PROB && (w.c.supportScore == null || w.c.supportScore >= MIN_LEG_SUPPORT))
     .filter((w) => qualifiesLeg(w.c, params, nowMs).ok && heldUp(w.history, nowMs))
-    .filter((w) => !conflicts(w.c, state) && !exclude.keys.has(w.c.key))
+    .filter((w) => !conflicts(w.c, state) && !exclude.keys.has(w.c.key) && !exclude.subjects?.has(subjectId(w.c)))
     .sort((a, b) => b.c.ev - a.c.ev)
     .slice(0, MAX_LEG_POOL);
   let best: Proposal | null = null;

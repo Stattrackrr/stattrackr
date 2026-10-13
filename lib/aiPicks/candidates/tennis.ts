@@ -7,6 +7,7 @@ import type { AiPickMarketKind, AiPickSide } from '@/lib/aiPicks/types';
 import type { TennisMarket } from '@/lib/aiPicks/markets';
 import { coherentPair, evPerUnit, fairTwoWay, median, round } from '@/lib/aiPicks/model/math';
 import { anchorSimulation } from '@/lib/aiPicks/model/tennisAnchor';
+import type { TennisContext } from '@/lib/aiPicks/model/tennisContext';
 import { effectiveModelWeight, type AiTennisParams } from '@/lib/aiPicks/params';
 import {
   BLOCKING_FLAG,
@@ -326,8 +327,13 @@ export function buildTennisCandidates(input: {
   params: AiTennisParams;
   /** Re-simulate every market but match winner at the blended match-winner probability. */
   anchor?: { sims: number; seed: number };
+  /** Surface/opponent-adjusted serve rates and the full match-winner blend. */
+  context?: TennisContext;
+  /** Recent stat lines per player for the review. */
+  evidence?: { home: unknown; away: unknown };
 }): AiCandidate[] {
-  const { match, sim, features, params } = input;
+  const { match, features, params, context: tc } = input;
+  const sim = tc?.sim ?? input.sim;
   const { selections, pairs } = tennisSelections(input.books);
   const mains = mainLines(selections, pairs);
   const names = { home: match.homeName, away: match.awayName };
@@ -335,14 +341,15 @@ export function buildTennisCandidates(input: {
 
   const winSel = selections.find((s) => s.market === 'match_winner' && s.who === 'home');
   const fairHome = winSel ? marketFair(winSel, pairs) : null;
-  const modelHome = tennisModelProb({ market: 'match_winner', who: 'home', side: 'yes', line: null }, sim, features)?.prob ?? null;
+  const baseHome = tc ? (tennisModelProb({ market: 'match_winner', who: 'home', side: 'yes', line: null }, input.sim, features)?.prob ?? null) : null;
+  const modelHome = tc?.winProb ?? tennisModelProb({ market: 'match_winner', who: 'home', side: 'yes', line: null }, sim, features)?.prob ?? null;
   const wWin = effectiveModelWeight(params.modelWeight.match_winner ?? 0.3, sample, params.sampleHalfLife);
   const anchored =
     input.anchor && fairHome != null && modelHome != null
       ? anchorSimulation(
           {
-            pA: features.pServePlayer,
-            pB: features.pServeOpponent,
+            pA: tc?.pA ?? features.pServePlayer,
+            pB: tc?.pB ?? features.pServeOpponent,
             bestOf: match.bestOf,
             uncertainty: Math.hypot(features.serveUncertainty, params.dayForm),
           },
@@ -358,7 +365,10 @@ export function buildTennisCandidates(input: {
 
   for (const sel of selections) {
     const picked = bestQuote(sel.quotes);
-    const model = tennisModelProb(sel, sel.market === 'match_winner' || !anchored ? sim : anchored.sim, features);
+    const model =
+      sel.market === 'match_winner' && tc
+        ? { prob: sel.who === 'home' ? tc.winProb : 1 - tc.winProb, push: 0 }
+        : tennisModelProb(sel, sel.market === 'match_winner' || !anchored ? sim : anchored.sim, features);
     if (!picked || !model) continue;
     const fair = marketFair(sel, pairs);
     const w = effectiveModelWeight(params.modelWeight[sel.market] ?? 0.3, sample, params.sampleHalfLife);
@@ -396,6 +406,13 @@ export function buildTennisCandidates(input: {
       quotes: sel.quotes.sort((a, b) => b.price - a.price),
       modelProb: round(model.prob),
       marketProb: fair == null ? null : round(fair),
+      contextProbs:
+        sel.market === 'match_winner' && tc && baseHome != null
+          ? {
+              base: round(sel.who === 'home' ? baseHome : 1 - baseHome),
+              full: round(sel.who === 'home' ? tc.fullWinProb : 1 - tc.fullWinProb),
+            }
+          : null,
       prob: round(prob),
       pushProb: round(model.push),
       ev: round(ev),
@@ -409,10 +426,23 @@ export function buildTennisCandidates(input: {
         bestOf: match.bestOf,
         tournament: match.tournament,
         modelWeight: round(w),
-        serve: { home: round(features.pServePlayer), away: round(features.pServeOpponent) },
+        serve: { home: round(tc?.pA ?? features.pServePlayer), away: round(tc?.pB ?? features.pServeOpponent) },
+        baseServe: tc ? { home: round(features.pServePlayer), away: round(features.pServeOpponent) } : undefined,
+        serveReturn: tc?.serve,
+        winParts: tc?.parts,
+        notes: tc?.notes,
         anchorShift: anchored ? round(anchored.shift) : null,
         form: { home: features.player.form, away: features.opponent.form },
         h2h: { homeWins: features.h2hWins, played: features.h2hPlayed },
+        elo: {
+          home: { overall: Math.round(features.player.elo), surface: Math.round(features.player.surfaceElo) },
+          away: { overall: Math.round(features.opponent.elo), surface: Math.round(features.opponent.surfaceElo) },
+        },
+        rest: {
+          home: { days: features.player.restDays == null ? null : Math.round(features.player.restDays), minutes14: Math.round(features.player.minutes14) },
+          away: { days: features.opponent.restDays == null ? null : Math.round(features.opponent.restDays), minutes14: Math.round(features.opponent.minutes14) },
+        },
+        evidence: input.evidence,
       },
     };
     out.push({ ...c, key: candidateKey({ ...c, player: player ?? match.homeName }) });

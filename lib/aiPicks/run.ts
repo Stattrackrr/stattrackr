@@ -14,6 +14,7 @@ import {
   POST_HORIZON_MS,
   qualifiesLeg,
   qualifiesSingle,
+  subjectId,
   bookKey,
   type Proposal,
   type Watched,
@@ -284,7 +285,11 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
       const singles = chooseSingles(watched, params, state, nowMs);
       const singleKeys = new Set(singles.map((s) => s.key));
       const closedMultis = new Set(await listClosedMultiKeys(new Date(nowMs - RECENT_PICKS_MS).toISOString()));
-      const multi = chooseMulti(watched, params, state, nowMs, { keys: singleKeys, rejected: closedMultis });
+      const multi = chooseMulti(watched, params, state, nowMs, {
+        keys: singleKeys,
+        rejected: closedMultis,
+        subjects: new Set(singles.map((s) => subjectId(s.legs[0]!.c))),
+      });
       const proposals: Proposal[] = [...singles];
       if (multi) {
         const prior = (await listWatchRows([multi.key]))[0];

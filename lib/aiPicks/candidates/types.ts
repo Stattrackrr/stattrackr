@@ -26,6 +26,11 @@ export type AiCandidate = {
   quotes: CandidateQuote[];
   modelProb: number | null;
   marketProb: number | null;
+  /**
+   * Model alone for this side with game context switched off (base) and at full strength (full),
+   * so the learning loop can tune how hard context moves the model.
+   */
+  contextProbs?: { base: number; full: number } | null;
   /** Blend of model and market, the number EV uses. */
   prob: number;
   pushProb: number;
@@ -53,7 +58,7 @@ export function distinctPrices(quotes: CandidateQuote[]): number[] {
 }
 
 /** Flags that rule a candidate out: bad or missing data rather than a weak edge. */
-export const BLOCKING_FLAG = /Fewer than|Has not played|Not enough|retired|Only one side|differ by|far apart|too big to trust/;
+export const BLOCKING_FLAG = /Fewer than|Has not played|Not enough|retired|Only one side|differ by|far apart|too big to trust|Listed out/;
 
 export function edgeFlag(ev: number, maxTrustedEv: number): string | null {
   return ev > maxTrustedEv ? `Edge of ${Math.round(ev * 100)}% is too big to trust` : null;

@@ -31,6 +31,8 @@ export function watchSample(row: WatchRow): LearnSample | null {
     model: row.raw_model_prob == null ? null : Number(row.raw_model_prob),
     marketProb: row.market_prob == null ? null : Number(row.market_prob),
     blended,
+    contextBase: row.base_model_prob == null ? null : Number(row.base_model_prob),
+    contextFull: row.full_model_prob == null ? null : Number(row.full_model_prob),
   };
 }
 

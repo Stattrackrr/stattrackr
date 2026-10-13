@@ -1,6 +1,7 @@
 import { DEFAULT_AI_PICKS_PARAMS, type AiTennisParams } from '@/lib/aiPicks/params';
 import { buildTennisCandidates, type TennisMatchRef } from '@/lib/aiPicks/candidates/tennis';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
+import { tennisContext, tennisPlayerEvidence } from '@/lib/aiPicks/model/tennisContext';
 import { inferBestOfFromOdds } from '@/lib/tennis/askOdds';
 import { readTennisPlayerLogsCacheMany } from '@/lib/tennis/dashboardCache';
 import { readUpcomingTennisByPlayerCache, type TennisNextGame } from '@/lib/tennis/nextGame';
@@ -94,18 +95,34 @@ export async function scanTennisCandidates(opts: { nowMs?: number; horizonMs?: n
       awayTeam: awayName,
       bookmakers: snap.bookmakers,
     });
+    const asOf = new Date(nowMs).toISOString();
+    const history = historyFromRows([...homeLogs, ...awayLogs], tour);
     const pack = buildMatchPack({
-      asOf: new Date(nowMs).toISOString(),
+      asOf,
       tour,
       surface,
       bestOf,
       playerId: homeId,
       opponentId: awayId,
-      history: historyFromRows([...homeLogs, ...awayLogs], tour),
+      history,
       markets: [],
       sims: 8000,
       seed: 7,
     });
+    const context = tennisContext({
+      history,
+      features: pack.features,
+      homeId,
+      awayId,
+      baseSim: pack.sim,
+      strength: params.contextStrength,
+      sims: 8000,
+      seed: 7,
+    });
+    const evidence = {
+      home: tennisPlayerEvidence(homeLogs.filter((r) => r.playerId === homeId), { surface, asOf, opponentHand: pack.features.opponent.hand }),
+      away: tennisPlayerEvidence(awayLogs.filter((r) => r.playerId === awayId), { surface, asOf, opponentHand: pack.features.player.hand }),
+    };
     const match: TennisMatchRef = {
       matchId: String(fx.next.matchId),
       homeId,
@@ -125,6 +142,8 @@ export async function scanTennisCandidates(opts: { nowMs?: number; horizonMs?: n
       logs: { home: homeLogs, away: awayLogs },
       params,
       anchor: { sims: 8000, seed: 7 },
+      context,
+      evidence,
     });
     result.candidates.push(...built);
     result.matches.push({ eventLabel: label, startsAt, books: snap.bookmakers.length, candidates: built.length });

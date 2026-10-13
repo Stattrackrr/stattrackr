@@ -4,7 +4,7 @@ import { round } from '@/lib/aiPicks/model/math';
 import type { WatchRow } from '@/lib/aiPicks/server';
 import type { AiPick } from '@/lib/aiPicks/types';
 import { aiDayKey, gameIdentity, type WatchPoint } from '@/lib/aiPicks/decide/timing';
-import { selectionId, type PostedState } from '@/lib/aiPicks/decide/select';
+import { selectionId, subjectId, type PostedState } from '@/lib/aiPicks/decide/select';
 
 const MAX_HISTORY = 24;
 export const REVIEW_REJECTED = 'AI review:';
@@ -56,6 +56,8 @@ export function nextWatchRow(c: AiCandidate, existing: WatchRow | undefined, now
       raw_model_prob: c.modelProb == null ? null : round(c.modelProb, 4),
       market_prob: c.marketProb == null ? null : round(c.marketProb, 4),
       push_prob: round(c.pushProb, 4),
+      base_model_prob: c.contextProbs ? round(c.contextProbs.base, 4) : null,
+      full_model_prob: c.contextProbs ? round(c.contextProbs.full, 4) : null,
     },
   };
 }
@@ -69,6 +71,7 @@ export function postedState(picks: AiPick[], nowMs: number): PostedState {
     singleGamesToday: new Set(),
     playersToday: new Set(),
     selectionsBacked: new Set(),
+    subjectsUsed: new Set(),
   };
   for (const pick of picks) {
     const isToday = aiDayKey(pick.postedAt) === today;
@@ -76,6 +79,7 @@ export function postedState(picks: AiPick[], nowMs: number): PostedState {
     if (isToday && pick.kind === 'single') state.singlesToday[pick.sport] = (state.singlesToday[pick.sport] ?? 0) + 1;
     for (const leg of pick.legs) {
       state.usedKeys.add(candidateKey(leg));
+      state.subjectsUsed.add(subjectId(leg));
       if (leg.status === 'pending') state.selectionsBacked.add(selectionId(leg));
       if (isToday && pick.kind === 'single') {
         state.singleGamesToday.add(gameIdentity(leg));

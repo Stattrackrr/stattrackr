@@ -124,6 +124,9 @@ export type WatchRow = {
   raw_model_prob?: number | null;
   market_prob?: number | null;
   push_prob?: number | null;
+  /** Model alone with game context off / at full strength (see AiCandidate.contextProbs). */
+  base_model_prob?: number | null;
+  full_model_prob?: number | null;
   result_status?: 'win' | 'loss' | 'push' | 'void' | null;
   result_value?: number | null;
   graded_at?: string | null;
@@ -264,9 +267,19 @@ export async function listClosedMultiKeys(sinceIso: string): Promise<string[]> {
   return (rows ?? []).map((r) => r.candidate_key);
 }
 
+const CONTEXT_COLUMNS = /base_model_prob|full_model_prob/;
+
 export async function upsertWatchRows(rows: WatchRow[]): Promise<void> {
   for (let i = 0; i < rows.length; i += 200) {
-    check(await db().from('ai_pick_watchlist').upsert(rows.slice(i, i + 200), { onConflict: 'candidate_key' }), 'watchlist upsert');
+    const batch = rows.slice(i, i + 200);
+    const res = await db().from('ai_pick_watchlist').upsert(batch, { onConflict: 'candidate_key' });
+    // Before migrations/ai_picks_context_learning.sql is run the columns do not exist; keep scanning without them.
+    if (res.error && CONTEXT_COLUMNS.test(res.error.message)) {
+      const stripped = batch.map(({ base_model_prob: _b, full_model_prob: _f, ...rest }) => rest);
+      check(await db().from('ai_pick_watchlist').upsert(stripped, { onConflict: 'candidate_key' }), 'watchlist upsert');
+      continue;
+    }
+    check(res, 'watchlist upsert');
   }
 }
 
