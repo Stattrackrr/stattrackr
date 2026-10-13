@@ -44,6 +44,18 @@
     {
       "path": "/api/cron/refresh-tennis-ai",
       "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/ai-picks-grade",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/ai-picks-run",
+      "schedule": "5,20,35,50 * * * *"
+    },
+    {
+      "path": "/api/cron/ai-picks-learn",
+      "schedule": "30 16 * * *"
     }
   ],
   "functions": {
@@ -121,6 +133,15 @@
     },
     "app/api/cron/refresh-tennis-dvp/route.ts": {
       "maxDuration": 180
+    },
+    "app/api/cron/ai-picks-grade/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/cron/ai-picks-run/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/cron/ai-picks-learn/route.ts": {
+      "maxDuration": 120
     },
     "app/api/props/combined/route.ts": {
       "maxDuration": 180

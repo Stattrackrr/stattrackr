@@ -56,7 +56,7 @@ export function winASetProb(sim: Pick<SimSummary, 'setScores'>, selection: strin
   return null;
 }
 
-function sideProb(
+export function sideProb(
   market: AvailableMarket,
   sim: SimSummary,
   features: MatchupFeatures

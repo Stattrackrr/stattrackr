@@ -119,6 +119,12 @@ function boardMarksPeriod(games: PulseNblGame[]): boolean {
   );
 }
 
+/** Stored board only: never calls the odds API. */
+export async function readNblPulseScoreBoardCache(): Promise<{ lastUpdated: string | null; games: PulseNblGame[] }> {
+  const cached = await sharedCache.getJSON<PulseNblBoard>(CACHE_KEY);
+  return { lastUpdated: cached?.lastUpdated ?? null, games: cached?.games ?? [] };
+}
+
 export async function getNblPulseScoreBoard(options?: { force?: boolean }): Promise<PulseNblGame[]> {
   const cached = await sharedCache.getJSON<PulseNblBoard>(CACHE_KEY);
   const cachedGames = cached?.games?.length ? cached.games : null;

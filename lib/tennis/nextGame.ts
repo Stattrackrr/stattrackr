@@ -1006,6 +1006,12 @@ export async function listTennisUpcomingPlayerIdsForEvent(opts: {
   return tennisLiveEventPlayerIds(live, opts.tournamentKey, opts.tournamentName);
 }
 
+/** Stored fixtures only: never fetches or rewrites the upcoming cache. */
+export async function readUpcomingTennisByPlayerCache(): Promise<{ fetchedAt: number | null; byPlayerId: Map<string, TennisNextGame> }> {
+  const cached = await readUpcomingFromRedis();
+  return { fetchedAt: cached?.fetchedAt ?? null, byPlayerId: cached?.byPlayerId ?? new Map() };
+}
+
 export async function listUpcomingTennisByPlayer(opts?: {
   waitForFresh?: boolean;
 }): Promise<Map<string, TennisNextGame>> {

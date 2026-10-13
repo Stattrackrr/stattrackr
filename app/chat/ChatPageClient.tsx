@@ -19,7 +19,9 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AiPicksFeed } from '@/components/chat/AiPicksFeed';
 import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
+import { aiPicksAsRecordBets, fetchAiPicks, fetchAiPicksPublic } from '@/lib/aiPicks/client';
 import { openProUpgrade } from '@/components/ProFeatureLock';
 import { useTheme } from '@/contexts/ThemeContext';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
@@ -28,7 +30,6 @@ import { ArrowLeft, BarChart3, CornerUpLeft, Loader2, MessageSquareText, Pin, Pl
 type OddsFormat = 'american' | 'decimal';
 const CHAT_ADMIN_EMAIL = 'admin@stattrackr.co';
 const CHAT_ROOM_LAST_READ_PREFIX = 'chat:room-last-read:';
-const PICKS_ROOM_DISABLED = true;
 
 type ViewerState = {
   userId: string | null;
@@ -267,6 +268,21 @@ export default function ChatPageClient() {
 
   const [viewer, setViewer] = useState<ViewerState>(DEFAULT_VIEWER);
   const [showPicksRecordModal, setShowPicksRecordModal] = useState(false);
+  const [aiPicksPublic, setAiPicksPublic] = useState(false);
+  const picksRoomLocked = !viewer.isAdmin && !aiPicksPublic;
+  const picksRoomLockedRef = useRef(picksRoomLocked);
+  picksRoomLockedRef.current = picksRoomLocked;
+
+  useEffect(() => {
+    if (!viewer.userId) return;
+    let cancelled = false;
+    void fetchAiPicksPublic().then((isPublic) => {
+      if (!cancelled) setAiPicksPublic(isPublic);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [viewer.userId]);
   const [oddsFormat, setOddsFormat] = useState<OddsFormat>(DEFAULT_ODDS_FORMAT);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -516,7 +532,7 @@ export default function ChatPageClient() {
         setSelectedRoomId((currentRoomId) => {
           const generalRoomId = loadedRooms.find((room) => room.slug === 'general')?.id ?? loadedRooms[0]?.id ?? null;
           const currentRoom = loadedRooms.find((room) => room.id === currentRoomId);
-          if (PICKS_ROOM_DISABLED && currentRoom?.slug === 'picks') {
+          if (picksRoomLockedRef.current && currentRoom?.slug === 'picks') {
             return generalRoomId;
           }
           if (currentRoomId && currentRoom) {
@@ -1011,7 +1027,7 @@ export default function ChatPageClient() {
   }, []);
 
   const handleSelectRoom = useCallback((roomId: string, roomSlug?: string) => {
-    if (PICKS_ROOM_DISABLED && roomSlug === 'picks') {
+    if (picksRoomLockedRef.current && roomSlug === 'picks') {
       return;
     }
     setSelectedRoomId(roomId);
@@ -1316,7 +1332,7 @@ export default function ChatPageClient() {
                             </h2>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             {isPicksRoom
-                              ? 'Follow official StatTrackr plays and react with the community.'
+                              ? 'Picks from Stattrackr AI, posted, tracked and graded automatically.'
                               : 'Discuss bets, share slips, talk through plays, and hang out with the community.'}
                           </p>
                         </div>
@@ -1358,17 +1374,17 @@ export default function ChatPageClient() {
                               <button
                                 key={room.id}
                                 type="button"
-                                disabled={PICKS_ROOM_DISABLED && isPicksTab}
-                                title={PICKS_ROOM_DISABLED && isPicksTab ? 'AI picks coming soon' : undefined}
+                                disabled={picksRoomLocked && isPicksTab}
+                                title={picksRoomLocked && isPicksTab ? 'AI picks coming soon' : undefined}
                                 onClick={() => handleSelectRoom(room.id, room.slug)}
                                 className={`relative flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                                   isSelected
                                     ? 'bg-purple-600 text-white shadow-sm'
                                     : 'text-gray-600 hover:bg-white/70 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'
-                                } ${PICKS_ROOM_DISABLED && isPicksTab ? 'cursor-not-allowed opacity-60 hover:bg-transparent hover:text-gray-600 dark:hover:bg-transparent dark:hover:text-gray-300' : ''}`}
+                                } ${picksRoomLocked && isPicksTab ? 'cursor-not-allowed opacity-60 hover:bg-transparent hover:text-gray-600 dark:hover:bg-transparent dark:hover:text-gray-300' : ''}`}
                               >
                                 {label}
-                                {isPicksTab ? (
+                                {isPicksTab && picksRoomLocked ? (
                                   <span className="absolute -right-1 -top-2 inline-flex items-center rounded-md border border-amber-600 bg-amber-600 px-1.5 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
                                     SOON
                                   </span>
@@ -1382,7 +1398,7 @@ export default function ChatPageClient() {
                           })}
                         </div>
                       ) : null}
-                      {PICKS_ROOM_DISABLED || isPicksRoom ? (
+                      {picksRoomLocked ? (
                         <div
                           role="status"
                           className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-semibold text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200"
@@ -1400,7 +1416,18 @@ export default function ChatPageClient() {
                   onScroll={handleMessageListScroll}
                   className="chat-scrollbar relative z-0 min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain px-5 py-4"
                 >
-                  {loadingMessages ? (
+                  {isPicksRoom ? (
+                    picksRoomLocked ? (
+                      <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                        <Sparkles className="h-8 w-8 text-purple-500" />
+                        <h3 className="mt-4 text-base font-semibold text-gray-900 dark:text-white">
+                          AI picks coming soon
+                        </h3>
+                      </div>
+                    ) : (
+                      <AiPicksFeed />
+                    )
+                  ) : loadingMessages ? (
                     <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Loading messages...
@@ -1408,13 +1435,6 @@ export default function ChatPageClient() {
                   ) : threadError ? (
                     <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300">
                       {threadError}
-                    </div>
-                  ) : isPicksRoom ? (
-                    <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-                      <Sparkles className="h-8 w-8 text-purple-500" />
-                      <h3 className="mt-4 text-base font-semibold text-gray-900 dark:text-white">
-                        AI picks coming soon
-                      </h3>
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
@@ -1932,7 +1952,13 @@ export default function ChatPageClient() {
         onClose={() => setShowPicksRecordModal(false)}
         isAdmin={viewer.isAdmin}
         isDark={isDark}
+        loadBets={loadAiRecordBets}
+        subtitle="Stattrackr AI units performance. Every pick is graded automatically."
       />
     </div>
   );
+}
+
+async function loadAiRecordBets() {
+  return aiPicksAsRecordBets(await fetchAiPicks(1000));
 }

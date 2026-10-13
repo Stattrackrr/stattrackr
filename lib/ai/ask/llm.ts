@@ -14,14 +14,17 @@ export function askLlmConfig(sportModel?: string | null): AskLlmConfig | null {
   return null;
 }
 
-async function openaiReply(cfg: AskLlmConfig, system: string, turns: AskMessage[], timeoutMs: number): Promise<string> {
+export type LlmCallOptions = { timeoutMs: number; maxTokens?: number; temperature?: number };
+export type LlmReply = { text: string; tokensIn: number; tokensOut: number };
+
+async function openaiReply(cfg: AskLlmConfig, system: string, turns: AskMessage[], opts: LlmCallOptions): Promise<LlmReply> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json' },
-    signal: AbortSignal.timeout(timeoutMs),
+    signal: AbortSignal.timeout(opts.timeoutMs),
     body: JSON.stringify({
       model: cfg.model,
-      max_completion_tokens: 700,
+      max_completion_tokens: opts.maxTokens ?? 700,
       reasoning_effort: 'low',
       response_format: { type: 'json_object' },
       messages: [{ role: 'system', content: system }, ...turns],
@@ -29,35 +32,49 @@ async function openaiReply(cfg: AskLlmConfig, system: string, turns: AskMessage[
   });
   const json = (await res.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
     error?: { message?: string };
   };
   if (!res.ok) throw new Error(json?.error?.message || `OpenAI ${res.status}`);
   const text = json.choices?.[0]?.message?.content?.trim();
   if (!text) throw new Error('Empty model response');
-  return text;
+  return { text, tokensIn: json.usage?.prompt_tokens ?? 0, tokensOut: json.usage?.completion_tokens ?? 0 };
 }
 
-async function anthropicReply(cfg: AskLlmConfig, system: string, turns: AskMessage[], timeoutMs: number): Promise<string> {
+async function anthropicReply(cfg: AskLlmConfig, system: string, turns: AskMessage[], opts: LlmCallOptions): Promise<LlmReply> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': cfg.key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-    signal: AbortSignal.timeout(timeoutMs),
-    body: JSON.stringify({ model: cfg.model, max_tokens: 700, temperature: 0.8, system, messages: turns }),
+    signal: AbortSignal.timeout(opts.timeoutMs),
+    body: JSON.stringify({
+      model: cfg.model,
+      max_tokens: opts.maxTokens ?? 700,
+      temperature: opts.temperature ?? 0.8,
+      system,
+      messages: turns,
+    }),
   });
-  const json = (await res.json()) as { content?: Array<{ text?: string }>; error?: { message?: string } };
+  const json = (await res.json()) as {
+    content?: Array<{ text?: string }>;
+    usage?: { input_tokens?: number; output_tokens?: number };
+    error?: { message?: string };
+  };
   if (!res.ok) throw new Error(json?.error?.message || `Anthropic ${res.status}`);
   const text = json.content
     ?.map((part) => part.text || '')
     .join('')
     .trim();
   if (!text) throw new Error('Empty model response');
-  return text;
+  return { text, tokensIn: json.usage?.input_tokens ?? 0, tokensOut: json.usage?.output_tokens ?? 0 };
 }
 
-export function callAskLlm(cfg: AskLlmConfig, system: string, turns: AskMessage[], timeoutMs: number): Promise<string> {
-  return cfg.provider === 'openai'
-    ? openaiReply(cfg, system, turns, timeoutMs)
-    : anthropicReply(cfg, system, turns, timeoutMs);
+/** Like callAskLlm, with token usage and per-call limits. */
+export function callLlm(cfg: AskLlmConfig, system: string, turns: AskMessage[], opts: LlmCallOptions): Promise<LlmReply> {
+  return cfg.provider === 'openai' ? openaiReply(cfg, system, turns, opts) : anthropicReply(cfg, system, turns, opts);
+}
+
+export async function callAskLlm(cfg: AskLlmConfig, system: string, turns: AskMessage[], timeoutMs: number): Promise<string> {
+  return (await callLlm(cfg, system, turns, { timeoutMs })).text;
 }
 
 function lightClean(raw: string): string {

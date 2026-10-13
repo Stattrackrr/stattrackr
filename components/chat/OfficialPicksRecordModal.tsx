@@ -36,6 +36,9 @@ type OfficialPicksRecordModalProps = {
   onClose: () => void;
   isAdmin: boolean;
   isDark: boolean;
+  /** Read-only record from another source (e.g. AI picks); hides the manual editor. */
+  loadBets?: () => Promise<OfficialPickBet[]>;
+  subtitle?: string;
 };
 
 const RESULT_OPTIONS: OfficialPickResult[] = ['pending', 'win', 'loss', 'void'];
@@ -71,7 +74,15 @@ function plClass(value: number): string {
   return 'text-gray-900 dark:text-white';
 }
 
-export function OfficialPicksRecordModal({ isOpen, onClose, isAdmin, isDark }: OfficialPicksRecordModalProps) {
+export function OfficialPicksRecordModal({
+  isOpen,
+  onClose,
+  isAdmin: viewerIsAdmin,
+  isDark,
+  loadBets: loadBetsFrom,
+  subtitle,
+}: OfficialPicksRecordModalProps) {
+  const isAdmin = viewerIsAdmin && !loadBetsFrom;
   const [mounted, setMounted] = useState(false);
   const [bets, setBets] = useState<OfficialPickBet[]>([]);
   const [loading, setLoading] = useState(false);
@@ -101,14 +112,14 @@ export function OfficialPicksRecordModal({ isOpen, onClose, isAdmin, isDark }: O
     setLoading(true);
     setLoadError(null);
     try {
-      const rows = await fetchOfficialPicksBets();
+      const rows = await (loadBetsFrom ?? fetchOfficialPicksBets)();
       setBets(rows);
     } catch (error) {
       setLoadError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadBetsFrom]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -235,7 +246,7 @@ export function OfficialPicksRecordModal({ isOpen, onClose, isAdmin, isDark }: O
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Picks Record</h2>
               <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                Official StatTrackr units performance.{isAdmin ? '' : ' View only.'}
+                {subtitle ?? `Official StatTrackr units performance.${isAdmin ? '' : ' View only.'}`}
               </p>
             </div>
             <div className="flex items-center gap-2">

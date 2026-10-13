@@ -412,6 +412,10 @@ export function readNblPlayerPropSnapshotByGameKey(gameKey: string): NblPlayerPr
   return readDiskSnapshot(gameKey);
 }
 
+export async function readNblPlayerPropSnapshotByKeyAsync(gameKey: string): Promise<NblPlayerPropSnapshot | null> {
+  return readDiskSnapshot(gameKey) ?? (await readRedisSnapshot(gameKey));
+}
+
 export function readNblPlayerPropSnapshotFile(
   home: string,
   away: string,
