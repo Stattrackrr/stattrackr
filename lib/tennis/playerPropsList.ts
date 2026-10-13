@@ -13,6 +13,7 @@ import {
 } from '@/lib/tennis/dashboardCache';
 import { loadPlayerMatchesCached, tennisLogsNeedHistory } from '@/lib/tennis/loadCached';
 import { upsertCombinedSnapshotTennisFromList } from '@/lib/combinedPropsSnapshotPaint';
+import { dropTennisWinASetRowsWithoutPrice } from '@/lib/tennis/aggregatePropsForPaint';
 import { tennisMatchesPlayed } from '@/lib/tennis/chartStats';
 import { TENNIS_CURRENT_YEAR, loadPlayerMatches, loadTennisPlayers, tennisDvpProfile } from '@/lib/tennis/data';
 import {

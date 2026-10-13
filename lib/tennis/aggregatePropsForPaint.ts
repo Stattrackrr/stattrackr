@@ -101,13 +101,16 @@ export function bookmakerLinesFromTennisRow(row: TennisPaintRow): TennisPaintBoo
     overOdds: row.overOdds,
     underOdds: row.underOdds,
   };
+  const winASet = row.statType === 'setsWon' || row.statType === 'setsLost';
   if (Array.isArray(row.bookmakerLines) && row.bookmakerLines.length > 0) {
     return row.bookmakerLines
       .map((line) => normalizeBookmakerLine(line, fallback))
-      .filter((line): line is TennisPaintBookmakerLine => Boolean(line));
+      .filter((line): line is TennisPaintBookmakerLine => Boolean(line))
+      .filter((line) => !winASet || hasPrice(line.overOdds));
   }
   const single = normalizeBookmakerLine(fallback, fallback);
-  return single && (single.bookmaker || (single.overOdds && single.overOdds !== 'N/A')) ? [single] : [];
+  if (!single || (winASet && !hasPrice(single.overOdds))) return [];
+  return single.bookmaker || (single.overOdds && single.overOdds !== 'N/A') ? [single] : [];
 }
 
 function mergeBookmakerLines(
@@ -161,6 +164,46 @@ export function aggregateTennisPropsForPaint<T extends TennisPaintRow>(rows: T[]
     if (!existing.bookmaker && incoming[0]?.bookmaker) existing.bookmaker = incoming[0].bookmaker;
   }
   return Array.from(grouped.values());
+}
+
+function hasPrice(value: string | null | undefined): boolean {
+  const raw = String(value ?? '').trim();
+  return raw !== '' && raw !== 'N/A' && raw !== '—' && raw !== '-';
+}
+
+/**
+ * Sets won/lost rows read as "to win a set". A row (or book) without that price would only show the
+ * straight-sets side, so it is removed — this also cleans rows stored before the build-time rule.
+ */
+export function dropTennisWinASetRowsWithoutPrice<T extends TennisPaintRow>(rows: T[]): T[] {
+  if (!Array.isArray(rows)) return [];
+  const out: T[] = [];
+  for (const row of rows) {
+    if (row.statType !== 'setsWon' && row.statType !== 'setsLost') {
+      out.push(row);
+      continue;
+    }
+    if (!Array.isArray(row.bookmakerLines) || !row.bookmakerLines.length) {
+      if (hasPrice(row.overOdds)) out.push(row);
+      continue;
+    }
+    const lines = row.bookmakerLines.filter((line) => hasPrice(line.overOdds));
+    if (!lines.length) continue;
+    if (lines.length === row.bookmakerLines.length) {
+      out.push(row);
+      continue;
+    }
+    const first = lines[0]!;
+    out.push({
+      ...row,
+      bookmakerLines: lines,
+      bookmaker: first.bookmaker || row.bookmaker,
+      line: first.line ?? row.line,
+      overOdds: first.overOdds,
+      underOdds: first.underOdds,
+    });
+  }
+  return out;
 }
 
 export function tennisPropsNeedPaintAggregation(rows: TennisPaintRow[] | null | undefined): boolean {

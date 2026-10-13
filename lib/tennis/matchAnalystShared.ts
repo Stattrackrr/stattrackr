@@ -21,6 +21,8 @@ export type TennisAnalystStats = {
   totalGames: number | null;
   over215: number | null;
   over225: number | null;
+  /** Retired / walkover matches in the window, left out of the games numbers. */
+  retiredLeftOut: number;
   /** Counts over finished matches, written as hits/sample (e.g. "12/15"). */
   wonASet: string | null;
   straightSetWins: string | null;
@@ -34,6 +36,15 @@ export type TennisAnalystForm = {
   results: Array<{ opponent: string; win: boolean; surface: 'hard' | 'clay' | 'grass' | null }>;
 };
 
+/** How recent the form is, with "ago" text worked out in code so the AI never does date maths. */
+export type TennisAnalystTimeline = {
+  /** Current run across all matches, newest first. */
+  streak: { result: 'won' | 'lost'; count: number } | null;
+  lastMatch: { date: string; daysAgo: number; ago: string; won: boolean; opponent: string } | null;
+  /** Oldest match in the last-15 window for this format. */
+  last15From: { date: string; ago: string } | null;
+};
+
 export type TennisAnalystPlayer = {
   name: string;
   last: string;
@@ -43,6 +54,7 @@ export type TennisAnalystPlayer = {
   l10: TennisAnalystForm;
   l15: TennisAnalystStats;
   surface: { surface: string; stats: TennisAnalystStats } | null;
+  timeline: TennisAnalystTimeline;
 };
 
 export type TennisAnalystEdge = {
@@ -82,7 +94,10 @@ export type TennisMatchAnalysis = {
     avgGames: number | null;
     avgGamesBo3: number | null;
     avgGamesBo5: number | null;
-    recent: Array<{ date: string | null; winner: string; score: string }>;
+    recent: Array<{ date: string | null; ago: string | null; winner: string; score: string; surface: string | null }>;
+    lastMeeting: { date: string; ago: string; monthsAgo: number } | null;
+    /** Oldest match on file for the player; meetings before this are not in the data. */
+    onFileSince: string | null;
   };
   model: {
     winner: string;

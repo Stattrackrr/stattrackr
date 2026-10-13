@@ -19,6 +19,7 @@ import { TennisAskPanel } from '@/app/tennis/components/TennisAskPanel';
 import { TennisLineSelector } from '@/app/tennis/components/TennisLineSelector';
 import {
   isTennisOuStat,
+  TENNIS_DASHBOARD_LINES,
   TENNIS_OU_STATS,
   tennisBestMoneylinePick,
   tennisBestOuPick,
@@ -1429,7 +1430,9 @@ export default function TennisDashboardPage() {
         prev != null && Number.isFinite(prev) && Math.abs(prev - value) < tol ? prev : value
       );
       const idx = tennisOddsBooks.findIndex((book) =>
-        tennisOuLinesForStat(book, mainChartStat).some((row) => tennisLineMatches(row.line, value, tol))
+        tennisOuLinesForStat(book, mainChartStat, TENNIS_DASHBOARD_LINES).some((row) =>
+          tennisLineMatches(row.line, value, tol)
+        )
       );
       if (idx >= 0 && idx !== selectedTennisBookIndex) setSelectedTennisBookIndex(idx);
     };
@@ -1476,7 +1479,7 @@ export default function TennisDashboardPage() {
       return;
     }
     if (hasIncomingTennisBookOrLineRef.current) return;
-    const best = tennisBestOuPick(tennisOddsBooks, mainChartStat);
+    const best = tennisBestOuPick(tennisOddsBooks, mainChartStat, TENNIS_DASHBOARD_LINES);
     const n = tennisParseLineNumber(best?.line.line);
     if (best) {
       setSelectedTennisBookIndex((prev) => {
@@ -1502,7 +1505,9 @@ export default function TennisDashboardPage() {
     if (ml > 0) out.moneyline = ml;
     for (const stat of TENNIS_OU_STATS) {
       const count = countPostedOddsLines(
-        tennisOddsBooks.flatMap((book) => tennisOuLinesForStat(book, stat).map((row) => row.line))
+        tennisOddsBooks.flatMap((book) =>
+          tennisOuLinesForStat(book, stat, TENNIS_DASHBOARD_LINES).map((row) => row.line)
+        )
       );
       if (count > 0) out[stat] = count;
     }
@@ -1976,7 +1981,9 @@ export default function TennisDashboardPage() {
                           return tennisGameLineValue;
                         }
                         const book = tennisOddsBooks[selectedTennisBookIndex];
-                        const n = tennisParseLineNumber(tennisMainLineForStat(book, mainChartStat)?.line);
+                        const n = tennisParseLineNumber(
+                          tennisMainLineForStat(book, mainChartStat, TENNIS_DASHBOARD_LINES)?.line
+                        );
                         if (n != null) return n;
                       }
                       return 0.5;

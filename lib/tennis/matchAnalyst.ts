@@ -21,6 +21,7 @@ import type {
   TennisAnalystEdge,
   TennisAnalystPlayer,
   TennisAnalystStats,
+  TennisAnalystTimeline,
   TennisMatchAnalysis,
 } from '@/lib/tennis/matchAnalystShared';
 
@@ -102,6 +103,62 @@ function windowRows(rows: TennisMatchRow[], n: number): TennisMatchRow[] {
   return rows.slice(-n);
 }
 
+/** Retired, walkover or abandoned. Books void game totals on these, so they stay out of games numbers. */
+export function tennisRowRetired(row: Pick<TennisMatchRow, 'score'>): boolean {
+  return /\b(ret(?:ired)?|w\/o|walkover|def(?:ault)?|abd|abn|abandoned)\b/i.test(String(row.score || ''));
+}
+
+export function tennisAgo(
+  date: string | null | undefined,
+  now = Date.now()
+): { ago: string; days: number; months: number } | null {
+  const at = Date.parse(String(date || ''));
+  if (!Number.isFinite(at)) return null;
+  const days = Math.max(0, Math.floor((now - at) / 86_400_000));
+  const months = Math.floor(days / 30.44);
+  const ago =
+    days === 0
+      ? 'today'
+      : days === 1
+        ? 'yesterday'
+        : days < 14
+          ? `${days} days ago`
+          : days < 60
+            ? `${Math.round(days / 7)} weeks ago`
+            : months < 24
+              ? `${months} months ago`
+              : `${Math.floor(days / 365.25)} years ago`;
+  return { ago, days, months };
+}
+
+export function tennisTimelineForRows(
+  rows: TennisMatchRow[],
+  formatRows: TennisMatchRow[],
+  now = Date.now()
+): TennisAnalystTimeline {
+  const played = rows.filter((row) => row.date);
+  const newest = played.at(-1);
+  let count = 0;
+  for (let i = played.length - 1; i >= 0 && Boolean(played[i]!.isWin) === Boolean(newest?.isWin); i -= 1) count += 1;
+  const lastAgo = newest ? tennisAgo(newest.date, now) : null;
+  const oldest15 = formatRows.slice(-15)[0];
+  const fromAgo = oldest15 ? tennisAgo(oldest15.date, now) : null;
+  return {
+    streak: newest && count ? { result: newest.isWin ? 'won' : 'lost', count } : null,
+    lastMatch:
+      newest?.date && lastAgo
+        ? {
+            date: newest.date,
+            daysAgo: lastAgo.days,
+            ago: lastAgo.ago,
+            won: Boolean(newest.isWin),
+            opponent: tennisLastName(newest.opponent),
+          }
+        : null,
+    last15From: oldest15?.date && fromAgo ? { date: oldest15.date, ago: fromAgo.ago } : null,
+  };
+}
+
 function emptyStats(): TennisAnalystStats {
   return {
     matches: 0,
@@ -126,6 +183,7 @@ function emptyStats(): TennisAnalystStats {
     totalGames: null,
     over215: null,
     over225: null,
+    retiredLeftOut: 0,
     wonASet: null,
     straightSetWins: null,
     straightSetLosses: null,
@@ -154,14 +212,15 @@ function setRecords(rows: TennisMatchRow[]): Pick<
 function summarize(rows: TennisMatchRow[]): TennisAnalystStats {
   if (!rows.length) return emptyStats();
   const wins = rows.filter((row) => row.isWin).length;
-  const gamesWon = mean(rows.map((row) => num(row.gamesWon)).filter((v): v is number => v != null));
-  const gamesLost = mean(rows.map((row) => num(row.gamesLost)).filter((v): v is number => v != null));
-  const totalGames = mean(rows.map((row) => num(row.totalGames)).filter((v): v is number => v != null));
+  const completed = rows.filter((row) => !tennisRowRetired(row));
+  const gamesWon = mean(completed.map((row) => num(row.gamesWon)).filter((v): v is number => v != null));
+  const gamesLost = mean(completed.map((row) => num(row.gamesLost)).filter((v): v is number => v != null));
+  const totalGames = mean(completed.map((row) => num(row.totalGames)).filter((v): v is number => v != null));
   const setsWon = mean(rows.map((row) => num(row.setsWon)).filter((v): v is number => v != null));
   const setsLost = mean(rows.map((row) => num(row.setsLost)).filter((v): v is number => v != null));
   const gamePlayed = gamesWon != null && gamesLost != null ? gamesWon + gamesLost : null;
   const setPlayed = setsWon != null && setsLost != null ? setsWon + setsLost : null;
-  const withGames = rows.map((row) => num(row.totalGames)).filter((v): v is number => v != null);
+  const withGames = completed.map((row) => num(row.totalGames)).filter((v): v is number => v != null);
   return {
     matches: rows.length,
     record: `${wins}-${rows.length - wins}`,
@@ -195,6 +254,7 @@ function summarize(rows: TennisMatchRow[]): TennisAnalystStats {
     totalGames: roundMaybe(totalGames, 1),
     over215: withGames.length ? round((withGames.filter((n) => n >= 22).length / withGames.length) * 100, 0) : null,
     over225: withGames.length ? round((withGames.filter((n) => n >= 23).length / withGames.length) * 100, 0) : null,
+    retiredLeftOut: rows.length - completed.length,
     ...setRecords(rows),
   };
 }
@@ -265,6 +325,7 @@ function buildPlayer(
       surface && surfaceRows.length >= 4
         ? { surface, stats: summarize(surfaceRows) }
         : null,
+    timeline: tennisTimelineForRows(rows, formatRows),
   };
 }
 
@@ -316,7 +377,7 @@ function fmtNum(value: number | null, digits = 1): string {
 }
 
 function formatGames(rows: TennisMatchRow[], bestOf: 3 | 5): number {
-  const sample = tennisRowsForBestOf(rows, bestOf).slice(-15);
+  const sample = tennisRowsForBestOf(rows, bestOf).slice(-15).filter((row) => !tennisRowRetired(row));
   const values = sample.map((row) => num(row.totalGames)).filter((v): v is number => v != null);
   if (values.length) return mean(values) ?? (bestOf === 5 ? 38 : 22);
   if (bestOf === 5) {
@@ -330,7 +391,12 @@ function formatGames(rows: TennisMatchRow[], bestOf: 3 | 5): number {
 
 function h2hAvg(rows: TennisMatchRow[], test: (row: TennisMatchRow) => boolean): number | null {
   return roundMaybe(
-    mean(rows.filter(test).map((row) => num(row.totalGames)).filter((v): v is number => v != null)),
+    mean(
+      rows
+        .filter((row) => test(row) && !tennisRowRetired(row))
+        .map((row) => num(row.totalGames))
+        .filter((v): v is number => v != null)
+    ),
     1
   );
 }
@@ -638,10 +704,7 @@ export function buildTennisMatchAnalysis(opts: {
       opponentWins: h2hRows.length - h2hWins,
       record: h2hRows.length ? `${h2hWins}-${h2hRows.length - h2hWins}` : '0-0',
       surfaceRecord: surfaceH2h.length ? `${surfaceWins}-${surfaceH2h.length - surfaceWins} ${surface}` : null,
-      avgGames: roundMaybe(
-        mean(h2hRows.map((row) => num(row.totalGames)).filter((v): v is number => v != null)),
-        1
-      ),
+      avgGames: h2hAvg(h2hRows, () => true),
       avgGamesBo3: h2hAvg(h2hRows, (row) => resolveTennisMatchBestOf(row) === 3),
       avgGamesBo5: h2hAvg(h2hRows, (row) => resolveTennisMatchBestOf(row) === 5),
       recent: h2hRows
@@ -649,9 +712,17 @@ export function buildTennisMatchAnalysis(opts: {
         .reverse()
         .map((row) => ({
           date: row.date,
+          ago: tennisAgo(row.date)?.ago ?? null,
           winner: row.isWin ? player.last : opponent.last,
           score: row.score || '',
+          surface: normalizeSurface(row.surface),
         })),
+      lastMeeting: (() => {
+        const lastRow = h2hRows.at(-1);
+        const when = lastRow?.date ? tennisAgo(lastRow.date) : null;
+        return lastRow?.date && when ? { date: lastRow.date, ago: when.ago, monthsAgo: when.months } : null;
+      })(),
+      onFileSince: playerRows.find((row) => row.date)?.date ?? null,
     },
     model: {
       winner,
@@ -731,6 +802,7 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
       totalGames: side.l15.totalGames,
       gamesWon: side.l15.gamesWon,
       gamesLost: side.l15.gamesLost,
+      retiredLeftOutOfGames: side.l15.retiredLeftOut,
       over215: side.l15.over215,
       over225: side.l15.over225,
       wonASet: side.l15.wonASet,
@@ -751,6 +823,16 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
           winPct: side.surface.stats.winPct,
         }
       : null,
+    timeline: {
+      currentStreak: side.timeline.streak
+        ? `${side.timeline.streak.result} ${side.timeline.streak.count} in a row`
+        : null,
+      lastPlayed: side.timeline.lastMatch
+        ? `${side.timeline.lastMatch.ago} (${side.timeline.lastMatch.won ? 'beat' : 'lost to'} ${side.timeline.lastMatch.opponent})`
+        : null,
+      daysSinceLastMatch: side.timeline.lastMatch?.daysAgo ?? null,
+      last15GoesBackTo: side.timeline.last15From?.ago ?? null,
+    },
   });
   const totalsEdge = analysis.edges.find((row) => row.id === 'totals');
   const projPlayerAces =
@@ -777,6 +859,20 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
       avgGames: analysis.h2h.avgGames,
       avgGamesBo3: analysis.h2h.avgGamesBo3,
       avgGamesBo5: analysis.h2h.avgGamesBo5,
+      onFileSince: (() => {
+        const at = Date.parse(String(analysis.h2h.onFileSince || ''));
+        return Number.isFinite(at)
+          ? new Date(at).toLocaleString('en-AU', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+          : null;
+      })(),
+      lastMeeting: analysis.h2h.lastMeeting?.ago ?? null,
+      monthsSinceLastMeeting: analysis.h2h.lastMeeting?.monthsAgo ?? null,
+      meetings: analysis.h2h.recent.map((row) => ({
+        when: row.ago,
+        winner: row.winner,
+        score: row.score,
+        surface: row.surface,
+      })),
       note:
         analysis.bestOf === 5
           ? 'H2H game averages are often from BO3 meetings. Do not compare them to tonight’s BO5 total.'

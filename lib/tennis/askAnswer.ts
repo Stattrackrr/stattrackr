@@ -1,7 +1,6 @@
 import {
   compactTennisAnalysis,
   tennisFormFraction,
-  tennisFormSampleLabel,
   type TennisMatchAnalysis,
 } from '@/lib/tennis/matchAnalyst';
 import type { TennisAskBrief } from '@/lib/tennis/askBrief';
@@ -65,6 +64,7 @@ Use ONLY facts and numbers in the STAT PACK. Never invent a stat, line, rank, sc
 
 How to write:
 - Talk like a punter texting a mate — short, casual, opinionated.
+- Keep it easy to read. Short sentences, everyday words, one idea per sentence. No abbreviations like L15, BO3, H2H, RPW, BP or DF — write "last 15", "best-of-3", "head to head", "double faults". Say "holds serve 69% of the time", not "hold % 69".
 - Vary how you open. Do not start every answer the same way.
 - Never write "Here's why."
 - Never say the model, model chance, model projection, predicted, edge, EV, no-vig, fair price, or Kelly.
@@ -73,7 +73,7 @@ How to write:
 - Do not recycle the same three facts every time. If two stats disagree, say so.
 - Be specific: names, numbers, surfaces, last 10 / last 15.
 - No lock, guaranteed, or sure-thing language.
-- Answer in 2 to 4 sentences. Then breakdown: 4 to 7 short sentences, each a different fact. Do not repeat the answer.
+- Answer in 2 to 3 short sentences. Then breakdown: 4 to 6 short sentences, each a different fact. Do not repeat the answer.
 - Format first: format.bestOf is this match. ATP slams are best of 5. If bestOf is 5, never mention 21.5 or 22.5 unless the user typed that number.
 - Say the format out loud. The user cannot see the filter. When you quote last-15 match lengths, overs, hold/break, or hit rates, write "last 15 best-of-3 matches" or "last 15 best-of-5 matches" to match format.bestOf. Never say "last 15" or "last-15 match lengths" without best-of-3 or best-of-5.
 - Totals vs player games: userLine.stat is the source of truth. totalGames = match total (both players). gamesWon = one player's games. "run long" / "match total" / "total games" = match total. "for Xiao" / "games won" = that player's games. In best of 3, 18.5 is a normal PLAYER games line — do not assume it is the match total. In best of 3, 21.5 / 22.5 is usually the match total. In best of 5, 18.5 is player games and 38.5+ is the match total. viewing.stat is only a tie-break when the number could be either.
@@ -82,9 +82,18 @@ How to write:
 - H2H game averages are often from BO3 meetings. Do not compare h2h.avgGames to a BO5 38.5–43.5 total.
 - User-named numbers: grade with userLine. Do not say there is no line. Never say pack field names.
 - Never write pack, STAT PACK, userLine, user line, graded, hit-rate call, or side lean. The punter cannot see those.
-- Last-5 / last-10 form is wins out of matches, like 2/5 or 11/15. Never write 2-3 or 1-4 for a last-N sample. Head-to-head can stay 4-2.
+- Win records in plain words: "won 2 of her last 5 clay matches", "won 11 of his last 15". Never write "record is 2/5" or 2-3 for a last-N sample. Head-to-head can stay "leads 4-2".
+- Over/under and cover counts in plain words too: "the under landed in 3 of her last 14". Never put a win record and an over/under count in the same sentence — keep them apart so neither reads like the other.
 - Last-5 is player.last5 over player.last5Sample, not the unfiltered L5 moneyline chart. If last5Sample is "last 5 hard best-of-3 matches", say that. Do not count slams or clay in that number. last5Matches are those matches in order.
 - Win records come only from last5 / last10 / last15.record / surface.record. A handicap or over/under hit rate (like covered 13 of 15) is not a win record. Never write "X is 15/15" from a cover or over hit rate.
+- Retired and walkover matches are left out of every games number and over/under count. If a count left one out, quote it as it is (like 3 of 14) and you may say a retirement was left out.
+- Time matters. Use timeline and h2h when they change the picture, and copy their "ago" wording — never work out dates yourself:
+  - Head to head: if monthsSinceLastMeeting is 12 or more, say how long ago it was and give it less weight ("she lost both meetings, but the last one was 14 months ago"). Name the surface if it differs from this match.
+  - Streaks: if currentStreak is 3 or more in a row, set it beside the bigger record when it tells a different story ("won 10 of her last 15, and she has won the last 7 in a row").
+  - Rest: if daysSinceLastMatch is 30 or more, say how long she or he has been out. If it is 0 or 1, say they played yesterday or today.
+  - If last15GoesBackTo is more than 12 months, say that sample is old.
+  - Head to head only covers matches since h2h.onFileSince. With no meetings, say "no meetings since <onFileSince>", never that they have never played.
+  - Skip all of these when they do not matter to the question.
 - Pronouns: use player.pronouns and opponent.pronouns exactly. They come from the tour (ATP = men, WTA = women). Never guess gender from a first name or initial.
 
 Return JSON only:
@@ -289,17 +298,20 @@ function localBreakdown(analysis: TennisMatchAnalysis): string[] {
       `Last 15 ${sample} matches: ${player.last} is around ${player.l15.totalGames} total games, ${opponent.last} around ${opponent.l15.totalGames}.`
     );
   }
-  lines.push(
-    `${player.last} is ${tennisFormFraction(player.l10.record)} over the ${tennisFormSampleLabel(
-      10,
-      analysis.bestOf === 5 ? 5 : 3,
-      analysis.surface === 'hard' || analysis.surface === 'clay' || analysis.surface === 'grass'
-        ? analysis.surface
-        : null
-    )}. ${opponent.last} is ${tennisFormFraction(opponent.l10.record)}.`
-  );
+  const surface =
+    analysis.surface === 'hard' || analysis.surface === 'clay' || analysis.surface === 'grass' ? `${analysis.surface} ` : '';
+  const wonOfLast = (record: string, pronoun: string) => {
+    const [wins, total] = tennisFormFraction(record).split('/');
+    return `has won ${wins} of ${pronoun} last ${total} ${surface}${sample} matches`;
+  };
+  lines.push(`${player.last} ${wonOfLast(player.l10.record, their)}. ${opponent.last} ${wonOfLast(opponent.l10.record, their)}.`);
+  const streak = player.timeline.streak;
+  if (streak && streak.count >= 3) {
+    lines.push(`${player.last} has ${streak.result} ${their} last ${streak.count} matches in a row.`);
+  }
   if (h2h.matches) {
-    lines.push(`Head to head is ${h2h.record} for ${player.last} across ${h2h.matches} matches.`);
+    const old = h2h.lastMeeting && h2h.lastMeeting.monthsAgo >= 12 ? `, but the last meeting was ${h2h.lastMeeting.ago}` : '';
+    lines.push(`Head to head is ${h2h.record} for ${player.last} across ${h2h.matches} matches${old}.`);
   }
   if (player.l15.holdPct != null && opponent.l15.holdPct != null) {
     lines.push(

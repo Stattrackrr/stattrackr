@@ -1371,6 +1371,13 @@ export function TennisStatsChart({
       for (let t = 0; t <= max + 1e-9; t += 0.5) ticks.push(Math.round(t * 10) / 10);
       return { domain: [0, max] as [number, number], ticks };
     }
+    const setsCap = selectedStat === 'totalSets' ? 5 : selectedStat === 'setsWon' || selectedStat === 'setsLost' ? 3 : null;
+    if (setsCap != null) {
+      return {
+        domain: [0, setsCap] as [number, number],
+        ticks: Array.from({ length: setsCap + 1 }, (_, i) => i),
+      };
+    }
     const useMaxPlusOne =
       selectedStat === 'steals' ||
       selectedStat === 'blocks' ||

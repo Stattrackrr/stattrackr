@@ -2,7 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { summarizeTennisAskOdds } from './askOdds';
 import { tennisSetHandicapSide, tennisWinASetMarket } from './odds';
-import { isTennisOuStat, tennisMainLineForStat, tennisOuLinesForStat, type TennisBookRow } from './oddsTypes';
+import {
+  isTennisOuStat,
+  TENNIS_DASHBOARD_LINES,
+  tennisBestOuPick,
+  tennisMainLineForStat,
+  tennisOuLineIsMain,
+  tennisOuLinesForStat,
+  type TennisBookRow,
+} from './oddsTypes';
 import { resolveAvailableMarkets } from '../tennisAi/availability';
 import { winASetProb } from '../tennisAi/pack';
 
@@ -94,6 +102,48 @@ test('a short-priced favourite has no win-a-set line rather than only the straig
   assert.deepEqual(tennisOuLinesForStat(row, 'setsWon'), []);
   assert.equal(tennisMainLineForStat(row, 'setsWon'), undefined);
   assert.deepEqual(tennisOuLinesForStat(row, 'setsLost'), [{ line: '0.5', over: '+140', under: '-180' }]);
+});
+
+test('dashboard shows every set price with the match line from the moneyline', () => {
+  const row = book({
+    H2H: { home: '-222', away: '+184' },
+    SetsWonLines: [{ line: '0.5', over: '-625', under: '+370' }],
+    SetsLostLines: [{ line: '0.5', over: '-154', under: '+113' }],
+    TotalSetsLines: [{ line: '2.5', over: '+180', under: '-250' }],
+  });
+  assert.deepEqual(tennisOuLinesForStat(row, 'setsWon'), []);
+  assert.deepEqual(tennisOuLinesForStat(row, 'setsWon', TENNIS_DASHBOARD_LINES), [
+    { line: '0.5', over: '-625', under: '+370' },
+    { line: '1.5', over: '-222', under: '+184' },
+  ]);
+  assert.deepEqual(tennisOuLinesForStat(row, 'setsLost', TENNIS_DASHBOARD_LINES), [
+    { line: '0.5', over: '-154', under: '+113' },
+    { line: '1.5', over: '+184', under: '-222' },
+  ]);
+  assert.equal(tennisMainLineForStat(row, 'setsWon', TENNIS_DASHBOARD_LINES)?.line, '0.5');
+  const slam = book({
+    H2H: { home: '-400', away: '+300' },
+    SetsWonLines: [{ line: '0.5', over: '-2000', under: '+900' }],
+    TotalSetsLines: [{ line: '3.5', over: '-110', under: '-110' }],
+  });
+  assert.deepEqual(
+    tennisOuLinesForStat(slam, 'setsWon', TENNIS_DASHBOARD_LINES).map((line) => line.line),
+    ['0.5', '2.5']
+  );
+});
+
+test('dashboard opens sets won on the win-a-set line even when another book only has the match line', () => {
+  const matchOnly = book({ name: 'Sportsbet', H2H: { home: '-110', away: '-110' } });
+  const withWinASet = book({
+    name: 'TAB',
+    H2H: { home: '-400', away: '+300' },
+    SetsWonLines: [{ line: '0.5', over: '-2000', under: '+900' }],
+  });
+  const pick = tennisBestOuPick([matchOnly, withWinASet], 'setsWon', TENNIS_DASHBOARD_LINES);
+  assert.equal(pick?.bookIndex, 1);
+  assert.equal(pick?.line.line, '0.5');
+  assert.equal(tennisOuLineIsMain(matchOnly, 'setsWon', '1.5', TENNIS_DASHBOARD_LINES), false);
+  assert.equal(tennisOuLineIsMain(withWinASet, 'setsWon', '0.5', TENNIS_DASHBOARD_LINES), true);
 });
 
 test('sets lost carries the opponent win-a-set price for the viewed player', () => {

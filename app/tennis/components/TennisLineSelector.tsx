@@ -7,6 +7,7 @@ import { getBookmakerInfo, getBookmakerRegion, type BookmakerRegion } from '@/li
 import { tennisLastName } from '@/lib/tennis/chartStats';
 import {
   isTennisOuStat,
+  TENNIS_DASHBOARD_LINES,
   tennisH2hMeetsMinOdds,
   tennisLineMatches,
   tennisMainLineForStat,
@@ -114,8 +115,8 @@ export function TennisLineSelector({
   const isMoneyline = selectedStat === 'moneyline';
   const isOu = isTennisOuStat(selectedStat);
   const selectedBook = books[selectedBookIndex];
-  const ouLines = tennisOuLinesForStat(selectedBook, selectedStat);
-  const mainOu = tennisMainLineForStat(selectedBook, selectedStat);
+  const ouLines = tennisOuLinesForStat(selectedBook, selectedStat, TENNIS_DASHBOARD_LINES);
+  const mainOu = tennisMainLineForStat(selectedBook, selectedStat, TENNIS_DASHBOARD_LINES);
   const displayOu: TennisOuLine | undefined =
     currentLineValue != null && Number.isFinite(currentLineValue)
       ? ouLines.find((row) => tennisLineMatches(row.line, currentLineValue)) ?? mainOu ?? ouLines[0]
@@ -138,10 +139,10 @@ export function TennisLineSelector({
 
   const ouDropdownItems = isOu
     ? books.flatMap((book, bookIndex) =>
-        tennisOuLinesForStat(book, selectedStat).map((d) => ({ bookIndex, d }))
+        tennisOuLinesForStat(book, selectedStat, TENNIS_DASHBOARD_LINES).map((d) => ({ bookIndex, d }))
       ).sort((a, b) => {
-        const aMain = tennisOuLineIsMain(books[a.bookIndex], selectedStat, a.d);
-        const bMain = tennisOuLineIsMain(books[b.bookIndex], selectedStat, b.d);
+        const aMain = tennisOuLineIsMain(books[a.bookIndex], selectedStat, a.d, TENNIS_DASHBOARD_LINES);
+        const bMain = tennisOuLineIsMain(books[b.bookIndex], selectedStat, b.d, TENNIS_DASHBOARD_LINES);
         if (aMain !== bMain) return aMain ? -1 : 1;
         const even = tennisOuEvenness(a.d) - tennisOuEvenness(b.d);
         if (even !== 0) return even;

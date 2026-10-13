@@ -1659,10 +1659,18 @@ function isTennisPropStatType(statType: string): boolean {
   );
 }
 
+/** "To win a set" rows need the to-win price; browser-cached rows can predate the server rule. */
+function tennisWinASetRowHasPrice(row: PlayerProp): boolean {
+  if (row.statType !== 'setsWon' && row.statType !== 'setsLost') return true;
+  const over = String(row.overOdds ?? '').trim();
+  return over !== '' && over !== 'N/A' && over !== '—' && over !== '-';
+}
+
 function isTennisListProp(row: PlayerProp): boolean {
   return (
     isTennisPropStatType(row.statType) &&
-    propsSportFromTennisTour(row.team || row.homeTeamCode) != null
+    propsSportFromTennisTour(row.team || row.homeTeamCode) != null &&
+    tennisWinASetRowHasPrice(row)
   );
 }
 

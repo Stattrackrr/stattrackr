@@ -204,8 +204,51 @@ export function tennisSetMarketPriceLines(book: TennisBookRow | undefined, stat:
     .filter((line): line is TennisOuLine => line != null);
 }
 
-export function tennisOuLinesForStat(book: TennisBookRow | undefined, stat: string): TennisOuLine[] {
+export type TennisOuLineOptions = {
+  /** Dashboard: every set-market price with no floor, plus the match line taken from the moneyline. */
+  allSetPrices?: boolean;
+};
+
+export const TENNIS_DASHBOARD_LINES: TennisOuLineOptions = { allSetPrices: true };
+
+function bookIsBestOf5(book: TennisBookRow): boolean {
+  const totals = book.TotalSetsLines?.length ? book.TotalSetsLines : book.TotalSets ? [book.TotalSets] : [];
+  return totals.some((row) => row.line !== 'N/A' && ouLineNumber(row) >= 3.5);
+}
+
+function hasAmericanPrice(price: string | undefined): price is string {
+  return decimalFromAmericanStr(price) != null;
+}
+
+/**
+ * Winning the match is winning 2 sets in best of 3 (3 in best of 5), so that sets line is the
+ * moneyline. Books are oriented for the viewed player: H2H.home is them.
+ */
+function dashboardSetLines(book: TennisBookRow, stat: string): TennisOuLine[] {
+  const lines = filterTennisOuLines(stat, rawLinesForStat(book, stat)).filter(
+    (row) => lineIsHalfPoint(row.line) && (hasAmericanPrice(row.over) || hasAmericanPrice(row.under))
+  );
+  if (stat === 'totalSets') return lines;
+  const matchLine = bookIsBestOf5(book) ? 2.5 : 1.5;
+  const over = stat === 'setsWon' ? book.H2H?.home : book.H2H?.away;
+  const under = stat === 'setsWon' ? book.H2H?.away : book.H2H?.home;
+  if ((hasAmericanPrice(over) || hasAmericanPrice(under)) && !lines.some((row) => ouLineNumber(row) === matchLine)) {
+    lines.push({
+      line: String(matchLine),
+      over: hasAmericanPrice(over) ? over : 'N/A',
+      under: hasAmericanPrice(under) ? under : 'N/A',
+    });
+  }
+  return lines.sort((a, b) => ouLineNumber(a) - ouLineNumber(b));
+}
+
+export function tennisOuLinesForStat(
+  book: TennisBookRow | undefined,
+  stat: string,
+  opts?: TennisOuLineOptions
+): TennisOuLine[] {
   if (!book) return [];
+  if (TENNIS_SET_MARKET_STATS.has(stat) && opts?.allSetPrices) return dashboardSetLines(book, stat);
   if (TENNIS_SET_MARKET_STATS.has(stat)) {
     const lines = tennisSetMarketPriceLines(book, stat);
     // Sets won/lost read as "to win a set"; an under-only line would show the straight-sets price instead.
@@ -301,10 +344,22 @@ export function tennisOuEvenness(line: TennisOuLine | undefined): number {
   return 10 + Math.abs(only - 1.9);
 }
 
-export function tennisMainLineForStat(book: TennisBookRow | undefined, stat: string): TennisOuLine | undefined {
+function dashboardWinASetFirst(stat: string, opts?: TennisOuLineOptions): boolean {
+  return Boolean(opts?.allSetPrices) && (stat === 'setsWon' || stat === 'setsLost');
+}
+
+export function tennisMainLineForStat(
+  book: TennisBookRow | undefined,
+  stat: string,
+  opts?: TennisOuLineOptions
+): TennisOuLine | undefined {
   if (!book) return undefined;
-  const lines = tennisOuLinesForStat(book, stat);
+  const lines = tennisOuLinesForStat(book, stat, opts);
   if (!lines.length) return undefined;
+  if (dashboardWinASetFirst(stat, opts)) {
+    const winASet = lines.find((row) => ouLineNumber(row) === 0.5);
+    if (winASet) return winASet;
+  }
   const median = medianLineNumber(lines);
   const nearMedian = lines.filter((row) => Math.abs(ouLineNumber(row) - median) <= 2);
   const pool = nearMedian.length ? nearMedian : lines;
@@ -318,34 +373,45 @@ export function tennisMainLineForStat(book: TennisBookRow | undefined, stat: str
 export function tennisOuLineIsMain(
   book: TennisBookRow | undefined,
   stat: string,
-  line: TennisOuLine | string | number | null | undefined
+  line: TennisOuLine | string | number | null | undefined,
+  opts?: TennisOuLineOptions
 ): boolean {
-  const main = tennisMainLineForStat(book, stat);
+  const main = tennisMainLineForStat(book, stat, opts);
   if (!main) return false;
   const n =
     typeof line === 'object' && line
       ? tennisParseLineNumber(line.line)
       : tennisParseLineNumber(line == null ? null : String(line));
+  if (dashboardWinASetFirst(stat, opts) && n !== 0.5) return false;
   return tennisLineMatches(main.line, n);
 }
 
 export function tennisBestOuPick(
   books: TennisBookRow[] | undefined,
-  stat: string
+  stat: string,
+  opts?: TennisOuLineOptions
 ): { bookIndex: number; line: TennisOuLine } | undefined {
   if (!books?.length) return undefined;
-  let best: { bookIndex: number; line: TennisOuLine; even: number; preferred: number } | undefined;
+  const winASetFirst = dashboardWinASetFirst(stat, opts);
+  let best:
+    | { bookIndex: number; line: TennisOuLine; even: number; preferred: number; winASet: boolean }
+    | undefined;
   books.forEach((book, bookIndex) => {
-    const line = tennisMainLineForStat(book, stat);
+    const line = tennisMainLineForStat(book, stat, opts);
     if (!line) return;
     const prefRank = preferredBookRank(book.name);
     const even = tennisOuEvenness(line);
+    const winASet = winASetFirst && ouLineNumber(line) === 0.5;
+    if (best && winASet !== best.winASet) {
+      if (winASet) best = { bookIndex, line, even, preferred: prefRank, winASet };
+      return;
+    }
     if (
       !best ||
       even < best.even - 0.001 ||
       (Math.abs(even - best.even) < 0.001 && prefRank < best.preferred)
     ) {
-      best = { bookIndex, line, even, preferred: prefRank };
+      best = { bookIndex, line, even, preferred: prefRank, winASet };
     }
   });
   return best ? { bookIndex: best.bookIndex, line: best.line } : undefined;

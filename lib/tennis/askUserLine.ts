@@ -4,6 +4,7 @@
 
 import { sortTennisMatchesOldestFirst, tennisRowsForBestOf } from '@/lib/tennis/chartStats';
 import { loadPlayerMatches } from '@/lib/tennis/data';
+import { tennisRowRetired } from '@/lib/tennis/matchAnalyst';
 import type { TennisMatchAnalysis } from '@/lib/tennis/matchAnalystShared';
 import type { TennisAskBrief } from '@/lib/tennis/askBrief';
 import type { TennisMatchRow, TennisTour } from '@/lib/tennis/types';
@@ -24,6 +25,8 @@ export type UserLineWindow = {
   sample: number;
   hits: number;
   pct: number | null;
+  /** Retired / walkover matches in the window, not counted either way. */
+  retiredLeftOut?: number;
 };
 
 export type UserLineEval = {
@@ -231,9 +234,16 @@ function statFromRow(row: TennisMatchRow, stat: UserStatKey): number | null {
 
 function windowRate(rows: TennisMatchRow[], line: UserStatLine, take?: number): UserLineWindow {
   const slice = take ? rows.slice(-take) : rows;
-  const values = slice.map((row) => statFromRow(row, line.stat)).filter((v): v is number => v != null);
+  const completed = slice.filter((row) => !tennisRowRetired(row));
+  const values = completed.map((row) => statFromRow(row, line.stat)).filter((v): v is number => v != null);
   const hits = values.filter((v) => userLineClears(v, line)).length;
-  return { label: take ? `L${take}` : 'Sample', sample: values.length, hits, pct: pct(hits, values.length) };
+  return {
+    label: take ? `L${take}` : 'Sample',
+    sample: values.length,
+    hits,
+    pct: pct(hits, values.length),
+    ...(slice.length > completed.length ? { retiredLeftOut: slice.length - completed.length } : {}),
+  };
 }
 
 function lineFromAsk(q: string, ctx?: UserLineContext): { threshold: number; under: boolean | null } | null {
