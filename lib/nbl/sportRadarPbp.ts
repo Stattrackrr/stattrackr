@@ -202,7 +202,8 @@ export function parseNblPbpPoints(fixtureId: string, json: unknown): NblMatchPbp
     [homeComp?.name, awayComp?.name].map((n) => String(n || '').trim().toLowerCase()).filter(Boolean)
   );
 
-  const pbp = data.pbp;
+  // SportRadar moved events from `pbp` (keyed by period) to `periodData` (array of periods) in Oct 2026.
+  const pbp = data.pbp ?? data.periodData;
   if (!pbp || typeof pbp !== 'object') return null;
 
   const byPlayer = new Map<string, NblPbpPlayerPoints>();

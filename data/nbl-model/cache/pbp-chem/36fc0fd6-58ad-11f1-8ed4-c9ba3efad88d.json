@@ -1,0 +1,641 @@
+{
+  "fixtureId": "36fc0fd6-58ad-11f1-8ed4-c9ba3efad88d",
+  "homeTeam": "Adelaide 36ers",
+  "awayTeam": "Melbourne United",
+  "homeTeamCode": "ADL",
+  "awayTeamCode": "MEL",
+  "lineupValid": false,
+  "players": [
+    {
+      "personId": "75fe4664-410d-11f0-a67d-2902fc2f936f",
+      "name": "Ben Griscti",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+      "name": "Bryce Cotton",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 11,
+      "assistedMakes": 8,
+      "assists": 10,
+      "ptsCreated": 22,
+      "finds": [
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 6,
+          "pts": 12
+        },
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
+          "name": "John Jenkins III",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 4,
+          "pts": 10
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+          "name": "Deonte Williams",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
+          "name": "John Jenkins III",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+      "name": "Cole Anthony",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 6,
+      "assistedMakes": 3,
+      "assists": 4,
+      "ptsCreated": 9,
+      "finds": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "0f83407b-410d-11f0-8c13-9dbbf7342624",
+      "name": "Corey Webster",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "c658f351-75cc-11f1-9795-d1fdb3712424",
+      "name": "Deonte Williams",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+      "name": "Fabijan Krslovic",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "516ccd9a-410d-11f0-b7aa-9dbbf7342624",
+      "name": "Isaac White",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+      "name": "Jacob Rigoni",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
+          "name": "John Jenkins III",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+      "name": "Joe Ingles",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 5,
+      "assistedMakes": 1,
+      "assists": 4,
+      "ptsCreated": 4,
+      "finds": [
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "38c500ec-f10b-11f0-8aaf-db8065a34bd1",
+      "name": "John Jenkins III",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "75eadf37-410d-11f0-96ca-2902fc2f936f",
+          "name": "Jacob Rigoni",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+      "name": "Josh Oduro",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 6,
+      "assistedMakes": 3,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+      "name": "Keanu Rasmussen",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+      "name": "Kyle Bowen",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 3,
+      "assistedMakes": 3,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "count": 3,
+          "pts": 7
+        }
+      ]
+    },
+    {
+      "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+      "name": "Luke Travers",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 6,
+      "assistedMakes": 5,
+      "assists": 4,
+      "ptsCreated": 9,
+      "finds": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+      "name": "Malith Machar",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "4fbce56d-410d-11f0-9f23-9dbbf7342624",
+      "name": "Matt Kenyon",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+      "name": "Nick Rakocevic",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 15,
+      "assistedMakes": 7,
+      "assists": 2,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 6,
+          "pts": 12
+        },
+        {
+          "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+          "name": "Zylan Cheatham",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+      "name": "Sam Waardenburg",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 3,
+      "ptsCreated": 9,
+      "finds": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+      "name": "Shea Ili",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 6,
+      "ptsCreated": 15,
+      "finds": [
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "count": 3,
+          "pts": 7
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+      "name": "Tom Wilson",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "75ac7795-410d-11f0-a812-2902fc2f936f",
+      "name": "Zylan Cheatham",
+      "teamCode": "ADL",
+      "teamName": "Adelaide 36ers",
+      "madeFg": 4,
+      "assistedMakes": 2,
+      "assists": 8,
+      "ptsCreated": 14,
+      "finds": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 4,
+          "pts": 10
+        },
+        {
+          "personId": "6c400b70-410d-11f0-981c-9dbbf7342624",
+          "name": "Keanu Rasmussen",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "aa0319fe-9a80-11f0-b3c8-412517d7cfd1",
+          "name": "Nick Rakocevic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5000dcdc-410d-11f0-87be-9dbbf7342624",
+          "name": "Bryce Cotton",
+          "count": 2,
+          "pts": 4
+        }
+      ]
+    }
+  ],
+  "onOff": [],
+  "fetchedAt": "2026-10-13T12:54:15.980Z"
+}

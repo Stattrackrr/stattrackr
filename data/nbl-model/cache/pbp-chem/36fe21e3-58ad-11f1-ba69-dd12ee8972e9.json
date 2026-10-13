@@ -1,0 +1,3398 @@
+{
+  "fixtureId": "36fe21e3-58ad-11f1-ba69-dd12ee8972e9",
+  "homeTeam": "Illawarra Hawks",
+  "awayTeam": "Tasmania JackJumpers",
+  "homeTeamCode": "ILL",
+  "awayTeamCode": "TAS",
+  "lineupValid": true,
+  "players": [
+    {
+      "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+      "name": "Ben Gold",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 5,
+      "assistedMakes": 4,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+          "name": "Biwali Bayles",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 2,
+          "pts": 5
+        }
+      ]
+    },
+    {
+      "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+      "name": "Biwali Bayles",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+      "name": "Dakota Mathias",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+      "name": "Daniel Grida",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+      "name": "David Johnson",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 9,
+      "assistedMakes": 4,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "count": 2,
+          "pts": 5
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 2,
+          "pts": 4
+        }
+      ]
+    },
+    {
+      "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+      "name": "Johny Narkle",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+      "name": "Josh Bannan",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 10,
+      "assistedMakes": 8,
+      "assists": 4,
+      "ptsCreated": 9,
+      "finds": [
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 3,
+          "pts": 8
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 3,
+          "pts": 7
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+      "name": "Kelan Martin",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 7,
+      "assistedMakes": 4,
+      "assists": 3,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+      "name": "Kody Stattmann",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+      "name": "Kyle Adnam",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 4,
+      "assistedMakes": 2,
+      "assists": 2,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "count": 2,
+          "pts": 5
+        }
+      ]
+    },
+    {
+      "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+      "name": "Lamar Patterson",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 2,
+      "assistedMakes": 0,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "count": 2,
+          "pts": 5
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+      "name": "Makur Maker",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 2,
+      "ptsCreated": 4,
+      "finds": [
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+      "name": "Milton Doyle",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 8,
+      "assistedMakes": 4,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+      "name": "Nick Marshall",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 5,
+      "ptsCreated": 10,
+      "finds": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 3,
+          "pts": 8
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+      "name": "Sam Froling",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 5,
+      "assistedMakes": 3,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+      "name": "Taran Armstrong",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 6,
+      "assistedMakes": 3,
+      "assists": 5,
+      "ptsCreated": 13,
+      "finds": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 3,
+          "pts": 7
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 2,
+          "pts": 6
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+      "name": "Tyler Harvey",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 1,
+      "assistedMakes": 0,
+      "assists": 2,
+      "ptsCreated": 6,
+      "finds": [
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+      "name": "Wani Swaka Lo Buluk",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+      "name": "Will Magnay",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 4,
+      "assistedMakes": 0,
+      "assists": 8,
+      "ptsCreated": 17,
+      "finds": [
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+      "name": "William Hickey",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "madeFg": 9,
+      "assistedMakes": 2,
+      "assists": 4,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    }
+  ],
+  "onOff": [
+    {
+      "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+      "name": "Ben Gold",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 16.1,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 7.7,
+          "offMin": 8.4,
+          "onPoss": 25,
+          "offPoss": 27,
+          "onPts": 5,
+          "offPts": 9,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 8.4,
+          "offMin": 7.7,
+          "onPoss": 27,
+          "offPoss": 25,
+          "onPts": 9,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 8.4,
+          "offMin": 7.7,
+          "onPoss": 27,
+          "offPoss": 25,
+          "onPts": 9,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 12.1,
+          "offMin": 4,
+          "onPoss": 40,
+          "offPoss": 12,
+          "onPts": 12,
+          "offPts": 2,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 4.2,
+          "offMin": 11.9,
+          "onPoss": 12,
+          "offPoss": 40,
+          "onPts": 2,
+          "offPts": 12,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 9.4,
+          "offMin": 6.8,
+          "onPoss": 34,
+          "offPoss": 18,
+          "onPts": 11,
+          "offPts": 3,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+          "name": "Biwali Bayles",
+          "onMin": 7.7,
+          "offMin": 8.4,
+          "onPoss": 25,
+          "offPoss": 27,
+          "onPts": 5,
+          "offPts": 9,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 6.5,
+          "offMin": 9.6,
+          "onPoss": 18,
+          "offPoss": 34,
+          "onPts": 3,
+          "offPts": 11,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+      "name": "Biwali Bayles",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 9.8,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 9.8,
+          "offMin": 0,
+          "onPoss": 31,
+          "offPoss": 0,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 0,
+          "offMin": 9.8,
+          "onPoss": 0,
+          "offPoss": 31,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 2.1,
+          "offMin": 7.7,
+          "onPoss": 6,
+          "offPoss": 25,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 6.7,
+          "offMin": 3.1,
+          "onPoss": 23,
+          "offPoss": 8,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 1.3,
+          "offMin": 8.6,
+          "onPoss": 2,
+          "offPoss": 29,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 7.7,
+          "offMin": 2.1,
+          "onPoss": 25,
+          "offPoss": 6,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 7.2,
+          "offMin": 2.6,
+          "onPoss": 24,
+          "offPoss": 7,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 4.5,
+          "offMin": 5.3,
+          "onPoss": 13,
+          "offPoss": 18,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+      "name": "Dakota Mathias",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 9.1,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 6.1,
+          "offMin": 2.9,
+          "onPoss": 17,
+          "offPoss": 10,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 7.8,
+          "offMin": 1.3,
+          "onPoss": 25,
+          "offPoss": 2,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 7.8,
+          "offMin": 1.3,
+          "onPoss": 25,
+          "offPoss": 2,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 5.1,
+          "offMin": 4,
+          "onPoss": 15,
+          "offPoss": 12,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 4.2,
+          "offMin": 4.9,
+          "onPoss": 12,
+          "offPoss": 15,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 4,
+          "offMin": 5.1,
+          "onPoss": 12,
+          "offPoss": 15,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+          "name": "Biwali Bayles",
+          "onMin": 1.3,
+          "offMin": 7.8,
+          "onPoss": 2,
+          "offPoss": 25,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 0,
+          "offMin": 9.1,
+          "onPoss": 0,
+          "offPoss": 27,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+      "name": "Daniel Grida",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 16.4,
+      "teammates": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "onMin": 4.6,
+          "offMin": 11.8,
+          "onPoss": 20,
+          "offPoss": 35,
+          "onPts": 1,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "onMin": 0,
+          "offMin": 16.4,
+          "onPoss": 0,
+          "offPoss": 55,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "onMin": 6,
+          "offMin": 10.4,
+          "onPoss": 19,
+          "offPoss": 36,
+          "onPts": 6,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "onMin": 11.8,
+          "offMin": 4.6,
+          "onPoss": 35,
+          "offPoss": 20,
+          "onPts": 8,
+          "offPts": 1,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "onMin": 1.4,
+          "offMin": 15.1,
+          "onPoss": 4,
+          "offPoss": 51,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "onMin": 0,
+          "offMin": 16.4,
+          "onPoss": 0,
+          "offPoss": 55,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "onMin": 16.4,
+          "offMin": 0,
+          "onPoss": 55,
+          "offPoss": 0,
+          "onPts": 9,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "onMin": 11.8,
+          "offMin": 4.6,
+          "onPoss": 35,
+          "offPoss": 20,
+          "onPts": 8,
+          "offPts": 1,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "onMin": 4.6,
+          "offMin": 11.8,
+          "onPoss": 20,
+          "offPoss": 35,
+          "onPts": 1,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "onMin": 9,
+          "offMin": 7.4,
+          "onPoss": 32,
+          "offPoss": 23,
+          "onPts": 3,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+      "name": "David Johnson",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 17.7,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 13.4,
+          "offMin": 4.3,
+          "onPoss": 45,
+          "offPoss": 16,
+          "onPts": 29,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 10.5,
+          "offMin": 7.2,
+          "onPoss": 37,
+          "offPoss": 24,
+          "onPts": 17,
+          "offPts": 15,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 12.6,
+          "offMin": 5.1,
+          "onPoss": 43,
+          "offPoss": 18,
+          "onPts": 22,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 11.5,
+          "offMin": 6.1,
+          "onPoss": 43,
+          "offPoss": 18,
+          "onPts": 25,
+          "offPts": 7,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 4,
+          "offMin": 13.7,
+          "onPoss": 12,
+          "offPoss": 49,
+          "onPts": 2,
+          "offPts": 30,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 9.4,
+          "offMin": 8.3,
+          "onPoss": 34,
+          "offPoss": 27,
+          "onPts": 13,
+          "offPts": 19,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+          "name": "Biwali Bayles",
+          "onMin": 7.2,
+          "offMin": 10.5,
+          "onPoss": 24,
+          "offPoss": 37,
+          "onPts": 15,
+          "offPts": 17,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 2.1,
+          "offMin": 15.5,
+          "onPoss": 6,
+          "offPoss": 55,
+          "onPts": 5,
+          "offPts": 27,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+      "name": "Johny Narkle",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 5.1,
+      "teammates": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "onMin": 2.2,
+          "offMin": 2.9,
+          "onPoss": 7,
+          "offPoss": 10,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "onMin": 0,
+          "offMin": 5.1,
+          "onPoss": 0,
+          "offPoss": 17,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "onMin": 2.9,
+          "offMin": 2.2,
+          "onPoss": 10,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "onMin": 2.9,
+          "offMin": 2.2,
+          "onPoss": 10,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "onMin": 2.2,
+          "offMin": 2.9,
+          "onPoss": 7,
+          "offPoss": 10,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "onMin": 5.1,
+          "offMin": 0,
+          "onPoss": 17,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "onMin": 5.1,
+          "offMin": 0,
+          "onPoss": 17,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "onMin": 0,
+          "offMin": 5.1,
+          "onPoss": 0,
+          "offPoss": 17,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "onMin": 0,
+          "offMin": 5.1,
+          "onPoss": 0,
+          "offPoss": 17,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "onMin": 0,
+          "offMin": 5.1,
+          "onPoss": 0,
+          "offPoss": 17,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+      "name": "Josh Bannan",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 32.3,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 23.9,
+          "offMin": 8.4,
+          "onPoss": 79,
+          "offPoss": 27,
+          "onPts": 16,
+          "offPts": 9,
+          "onReb": 5,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 30.2,
+          "offMin": 2.1,
+          "onPoss": 100,
+          "offPoss": 6,
+          "onPts": 25,
+          "offPts": 0,
+          "onReb": 7,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 27.2,
+          "offMin": 5.1,
+          "onPoss": 90,
+          "offPoss": 16,
+          "onPts": 18,
+          "offPts": 7,
+          "onReb": 5,
+          "offReb": 2,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 7.8,
+          "offMin": 24.5,
+          "onPoss": 25,
+          "offPoss": 81,
+          "onPts": 12,
+          "offPts": 13,
+          "onReb": 4,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 8.4,
+          "offMin": 23.9,
+          "onPoss": 27,
+          "offPoss": 79,
+          "onPts": 9,
+          "offPts": 16,
+          "onReb": 2,
+          "offReb": 5,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 12.6,
+          "offMin": 19.8,
+          "onPoss": 43,
+          "offPoss": 63,
+          "onPts": 7,
+          "offPts": 18,
+          "onReb": 4,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+          "name": "Biwali Bayles",
+          "onMin": 2.1,
+          "offMin": 30.2,
+          "onPoss": 6,
+          "offPoss": 100,
+          "onPts": 0,
+          "offPts": 25,
+          "onReb": 0,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 17,
+          "offMin": 15.3,
+          "onPoss": 54,
+          "offPoss": 52,
+          "onPts": 13,
+          "offPts": 12,
+          "onReb": 1,
+          "offReb": 6,
+          "onAst": 2,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+      "name": "Kelan Martin",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 30,
+      "teammates": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "onMin": 12.1,
+          "offMin": 17.9,
+          "onPoss": 36,
+          "offPoss": 54,
+          "onPts": 6,
+          "offPts": 17,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "onMin": 15.2,
+          "offMin": 14.8,
+          "onPoss": 45,
+          "offPoss": 45,
+          "onPts": 6,
+          "offPts": 17,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "onMin": 24.2,
+          "offMin": 5.8,
+          "onPoss": 74,
+          "offPoss": 16,
+          "onPts": 13,
+          "offPts": 10,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "onMin": 13.3,
+          "offMin": 16.7,
+          "onPoss": 40,
+          "offPoss": 50,
+          "onPts": 13,
+          "offPts": 10,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "onMin": 2.9,
+          "offMin": 27,
+          "onPoss": 10,
+          "offPoss": 80,
+          "onPts": 7,
+          "offPts": 16,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "onMin": 18.1,
+          "offMin": 11.9,
+          "onPoss": 54,
+          "offPoss": 36,
+          "onPts": 17,
+          "offPts": 6,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "onMin": 17.9,
+          "offMin": 12.1,
+          "onPoss": 54,
+          "offPoss": 36,
+          "onPts": 17,
+          "offPts": 6,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "onMin": 11.8,
+          "offMin": 18.1,
+          "onPoss": 35,
+          "offPoss": 55,
+          "onPts": 10,
+          "offPts": 13,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "onMin": 0,
+          "offMin": 30,
+          "onPoss": 0,
+          "offPoss": 90,
+          "onPts": 0,
+          "offPts": 23,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "onMin": 4.4,
+          "offMin": 25.5,
+          "onPoss": 12,
+          "offPoss": 78,
+          "onPts": 3,
+          "offPts": 20,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+      "name": "Kody Stattmann",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 19.4,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 15.2,
+          "offMin": 4.2,
+          "onPoss": 50,
+          "offPoss": 11,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 14.9,
+          "offMin": 4.5,
+          "onPoss": 48,
+          "offPoss": 13,
+          "onPts": 1,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 17,
+          "offMin": 2.4,
+          "onPoss": 54,
+          "offPoss": 7,
+          "onPts": 4,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 17.3,
+          "offMin": 2.1,
+          "onPoss": 55,
+          "offPoss": 6,
+          "onPts": 3,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 0,
+          "offMin": 19.4,
+          "onPoss": 0,
+          "offPoss": 61,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 6.5,
+          "offMin": 12.9,
+          "onPoss": 18,
+          "offPoss": 43,
+          "onPts": 2,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 2.1,
+          "offMin": 17.3,
+          "onPoss": 6,
+          "offPoss": 55,
+          "onPts": 3,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+          "name": "Biwali Bayles",
+          "onMin": 4.5,
+          "offMin": 14.9,
+          "onPoss": 13,
+          "offPoss": 48,
+          "onPts": 5,
+          "offPts": 1,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+      "name": "Kyle Adnam",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 9,
+      "teammates": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "onMin": 4.6,
+          "offMin": 4.4,
+          "onPoss": 20,
+          "offPoss": 12,
+          "onPts": 10,
+          "offPts": 1,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "onMin": 0,
+          "offMin": 9,
+          "onPoss": 0,
+          "offPoss": 32,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "onMin": 0,
+          "offMin": 9,
+          "onPoss": 0,
+          "offPoss": 32,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "onMin": 4.4,
+          "offMin": 4.6,
+          "onPoss": 12,
+          "offPoss": 20,
+          "onPts": 1,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "onMin": 0,
+          "offMin": 9,
+          "onPoss": 0,
+          "offPoss": 32,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "onMin": 0,
+          "offMin": 9,
+          "onPoss": 0,
+          "offPoss": 32,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "onMin": 9,
+          "offMin": 0,
+          "onPoss": 32,
+          "offPoss": 0,
+          "onPts": 11,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "onMin": 4.4,
+          "offMin": 4.6,
+          "onPoss": 12,
+          "offPoss": 20,
+          "onPts": 1,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "onMin": 9,
+          "offMin": 0,
+          "onPoss": 32,
+          "offPoss": 0,
+          "onPts": 11,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "onMin": 4.6,
+          "offMin": 4.4,
+          "onPoss": 20,
+          "offPoss": 12,
+          "onPts": 10,
+          "offPts": 1,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+      "name": "Lamar Patterson",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 7.8,
+      "teammates": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "onMin": 7.5,
+          "offMin": 0.3,
+          "onPoss": 32,
+          "offPoss": 2,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "onMin": 3.2,
+          "offMin": 4.6,
+          "onPoss": 14,
+          "offPoss": 20,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "onMin": 3.2,
+          "offMin": 4.6,
+          "onPoss": 14,
+          "offPoss": 20,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "onMin": 0,
+          "offMin": 7.8,
+          "onPoss": 0,
+          "offPoss": 34,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "onMin": 1.3,
+          "offMin": 6.5,
+          "onPoss": 6,
+          "offPoss": 28,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "onMin": 0,
+          "offMin": 7.8,
+          "onPoss": 0,
+          "offPoss": 34,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "onMin": 6.5,
+          "offMin": 1.3,
+          "onPoss": 28,
+          "offPoss": 6,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "onMin": 0.3,
+          "offMin": 7.5,
+          "onPoss": 2,
+          "offPoss": 32,
+          "onPts": 0,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "onMin": 4.6,
+          "offMin": 3.2,
+          "onPoss": 20,
+          "offPoss": 14,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "onMin": 4.6,
+          "offMin": 3.2,
+          "onPoss": 20,
+          "offPoss": 14,
+          "onPts": 6,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+      "name": "Makur Maker",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 20.4,
+      "teammates": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "onMin": 2.2,
+          "offMin": 18.2,
+          "onPoss": 7,
+          "offPoss": 56,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "onMin": 3.4,
+          "offMin": 17,
+          "onPoss": 11,
+          "offPoss": 52,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "onMin": 12.4,
+          "offMin": 8,
+          "onPoss": 40,
+          "offPoss": 23,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "onMin": 17.9,
+          "offMin": 2.5,
+          "onPoss": 54,
+          "offPoss": 9,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "onMin": 5.9,
+          "offMin": 14.5,
+          "onPoss": 18,
+          "offPoss": 45,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "onMin": 5.1,
+          "offMin": 15.3,
+          "onPoss": 17,
+          "offPoss": 46,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "onMin": 18.1,
+          "offMin": 2.3,
+          "onPoss": 56,
+          "offPoss": 7,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "onMin": 11.8,
+          "offMin": 8.5,
+          "onPoss": 35,
+          "offPoss": 28,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "onMin": 0.3,
+          "offMin": 20.1,
+          "onPoss": 2,
+          "offPoss": 61,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "onMin": 4.4,
+          "offMin": 16,
+          "onPoss": 12,
+          "offPoss": 51,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+      "name": "Milton Doyle",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 27.4,
+      "teammates": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "onMin": 15,
+          "offMin": 12.4,
+          "onPoss": 48,
+          "offPoss": 40,
+          "onPts": 13,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "onMin": 18.4,
+          "offMin": 9,
+          "onPoss": 59,
+          "offPoss": 29,
+          "onPts": 13,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "onMin": 24.2,
+          "offMin": 3.3,
+          "onPoss": 74,
+          "offPoss": 14,
+          "onPts": 14,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "onMin": 13.3,
+          "offMin": 14.2,
+          "onPoss": 42,
+          "offPoss": 46,
+          "onPts": 10,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "onMin": 2.9,
+          "offMin": 24.5,
+          "onPoss": 10,
+          "offPoss": 78,
+          "onPts": 0,
+          "offPts": 20,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "onMin": 14.2,
+          "offMin": 13.2,
+          "onPoss": 46,
+          "offPoss": 42,
+          "onPts": 10,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "onMin": 12.4,
+          "offMin": 15,
+          "onPoss": 40,
+          "offPoss": 48,
+          "onPts": 7,
+          "offPts": 13,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "onMin": 6,
+          "offMin": 21.4,
+          "onPoss": 19,
+          "offPoss": 69,
+          "onPts": 7,
+          "offPts": 13,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "onMin": 3.2,
+          "offMin": 24.2,
+          "onPoss": 14,
+          "offPoss": 74,
+          "onPts": 6,
+          "offPts": 14,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "onMin": 0,
+          "offMin": 27.4,
+          "onPoss": 0,
+          "offPoss": 88,
+          "onPts": 0,
+          "offPts": 20,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+      "name": "Nick Marshall",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 33.9,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 28.4,
+          "offMin": 5.5,
+          "onPoss": 96,
+          "offPoss": 17,
+          "onPts": 8,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 27.2,
+          "offMin": 6.7,
+          "onPoss": 90,
+          "offPoss": 23,
+          "onPts": 8,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 27.2,
+          "offMin": 6.7,
+          "onPoss": 90,
+          "offPoss": 23,
+          "onPts": 8,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 5.1,
+          "offMin": 28.8,
+          "onPoss": 15,
+          "offPoss": 98,
+          "onPts": 2,
+          "offPts": 6,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 12.1,
+          "offMin": 21.8,
+          "onPoss": 40,
+          "offPoss": 73,
+          "onPts": 0,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 5
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 11.5,
+          "offMin": 22.4,
+          "onPoss": 43,
+          "offPoss": 70,
+          "onPts": 3,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+          "name": "Biwali Bayles",
+          "onMin": 6.7,
+          "offMin": 27.2,
+          "onPoss": 23,
+          "offPoss": 90,
+          "onPts": 0,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 5
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 17.3,
+          "offMin": 16.6,
+          "onPoss": 55,
+          "offPoss": 58,
+          "onPts": 3,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 4
+        }
+      ]
+    },
+    {
+      "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+      "name": "Sam Froling",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 21.8,
+      "teammates": [
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "onMin": 15,
+          "offMin": 6.8,
+          "onPoss": 48,
+          "offPoss": 27,
+          "onPts": 9,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "onMin": 15,
+          "offMin": 6.8,
+          "onPoss": 48,
+          "offPoss": 27,
+          "onPts": 9,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "onMin": 12.1,
+          "offMin": 9.7,
+          "onPoss": 36,
+          "offPoss": 39,
+          "onPts": 9,
+          "offPts": 3,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "onMin": 13.1,
+          "offMin": 8.7,
+          "onPoss": 42,
+          "offPoss": 33,
+          "onPts": 2,
+          "offPts": 10,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "onMin": 2.2,
+          "offMin": 19.7,
+          "onPoss": 7,
+          "offPoss": 68,
+          "onPts": 0,
+          "offPts": 12,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "onMin": 10.9,
+          "offMin": 10.9,
+          "onPoss": 40,
+          "offPoss": 35,
+          "onPts": 10,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "onMin": 2.2,
+          "offMin": 19.6,
+          "onPoss": 7,
+          "offPoss": 68,
+          "onPts": 0,
+          "offPts": 12,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "onMin": 4.6,
+          "offMin": 17.2,
+          "onPoss": 20,
+          "offPoss": 55,
+          "onPts": 3,
+          "offPts": 9,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "onMin": 7.5,
+          "offMin": 14.3,
+          "onPoss": 32,
+          "offPoss": 43,
+          "onPts": 3,
+          "offPts": 9,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "onMin": 4.6,
+          "offMin": 17.2,
+          "onPoss": 20,
+          "offPoss": 55,
+          "onPts": 3,
+          "offPts": 9,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+      "name": "Taran Armstrong",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 30.2,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 21.8,
+          "offMin": 8.4,
+          "onPoss": 73,
+          "offPoss": 27,
+          "onPts": 15,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 30.2,
+          "offMin": 0,
+          "onPoss": 100,
+          "offPoss": 0,
+          "onPts": 15,
+          "offPts": 2,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 27.2,
+          "offMin": 2.9,
+          "onPoss": 90,
+          "offPoss": 10,
+          "onPts": 15,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 7.8,
+          "offMin": 22.4,
+          "onPoss": 25,
+          "offPoss": 75,
+          "onPts": 5,
+          "offPts": 12,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 8.4,
+          "offMin": 21.8,
+          "onPoss": 27,
+          "offPoss": 73,
+          "onPts": 4,
+          "offPts": 13,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 10.5,
+          "offMin": 19.8,
+          "onPoss": 37,
+          "offPoss": 63,
+          "onPts": 6,
+          "offPts": 11,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 4,
+          "offAst": 1
+        },
+        {
+          "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+          "name": "Biwali Bayles",
+          "onMin": 0,
+          "offMin": 30.2,
+          "onPoss": 0,
+          "offPoss": 100,
+          "onPts": 0,
+          "offPts": 17,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 5
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 14.9,
+          "offMin": 15.3,
+          "onPoss": 48,
+          "offPoss": 52,
+          "onPts": 8,
+          "offPts": 9,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 4
+        }
+      ]
+    },
+    {
+      "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+      "name": "Tyler Harvey",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 16.8,
+      "teammates": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "onMin": 13.1,
+          "offMin": 3.7,
+          "onPoss": 42,
+          "offPoss": 11,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "onMin": 13.2,
+          "offMin": 3.6,
+          "onPoss": 42,
+          "offPoss": 11,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "onMin": 13.3,
+          "offMin": 3.5,
+          "onPoss": 42,
+          "offPoss": 11,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "onMin": 13.3,
+          "offMin": 3.5,
+          "onPoss": 40,
+          "offPoss": 13,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "onMin": 2.2,
+          "offMin": 14.7,
+          "onPoss": 7,
+          "offPoss": 46,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "onMin": 3.6,
+          "offMin": 13.2,
+          "onPoss": 11,
+          "offPoss": 42,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "onMin": 5.9,
+          "offMin": 10.9,
+          "onPoss": 18,
+          "offPoss": 35,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "onMin": 1.4,
+          "offMin": 15.4,
+          "onPoss": 4,
+          "offPoss": 49,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "onMin": 1.3,
+          "offMin": 15.5,
+          "onPoss": 6,
+          "offPoss": 47,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "onMin": 0,
+          "offMin": 16.8,
+          "onPoss": 0,
+          "offPoss": 53,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+      "name": "Wani Swaka Lo Buluk",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 18.4,
+      "teammates": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "onMin": 15,
+          "offMin": 3.4,
+          "onPoss": 48,
+          "offPoss": 11,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "onMin": 18.4,
+          "offMin": 0,
+          "onPoss": 59,
+          "offPoss": 0,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "onMin": 15.2,
+          "offMin": 3.2,
+          "onPoss": 45,
+          "offPoss": 14,
+          "onPts": 2,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "onMin": 13.2,
+          "offMin": 5.2,
+          "onPoss": 42,
+          "offPoss": 17,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "onMin": 0,
+          "offMin": 18.4,
+          "onPoss": 0,
+          "offPoss": 59,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "onMin": 5.2,
+          "offMin": 13.2,
+          "onPoss": 17,
+          "offPoss": 42,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "onMin": 3.4,
+          "offMin": 15,
+          "onPoss": 11,
+          "offPoss": 48,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "onMin": 0,
+          "offMin": 18.4,
+          "onPoss": 0,
+          "offPoss": 59,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "onMin": 3.2,
+          "offMin": 15.2,
+          "onPoss": 14,
+          "offPoss": 45,
+          "onPts": 3,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "onMin": 0,
+          "offMin": 18.4,
+          "onPoss": 0,
+          "offPoss": 59,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+      "name": "Will Magnay",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 31.6,
+      "teammates": [
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 21.8,
+          "offMin": 9.8,
+          "onPoss": 73,
+          "offPoss": 31,
+          "onPts": 9,
+          "offPts": 5,
+          "onReb": 7,
+          "offReb": 2,
+          "onAst": 5,
+          "offAst": 3
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 23.9,
+          "offMin": 7.7,
+          "onPoss": 79,
+          "offPoss": 25,
+          "onPts": 9,
+          "offPts": 5,
+          "onReb": 7,
+          "offReb": 2,
+          "onAst": 7,
+          "offAst": 1
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "onMin": 28.4,
+          "offMin": 3.1,
+          "onPoss": 96,
+          "offPoss": 8,
+          "onPts": 14,
+          "offPts": 0,
+          "onReb": 9,
+          "offReb": 0,
+          "onAst": 6,
+          "offAst": 2
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 6.1,
+          "offMin": 25.5,
+          "onPoss": 17,
+          "offPoss": 87,
+          "onPts": 0,
+          "offPts": 14,
+          "onReb": 1,
+          "offReb": 8,
+          "onAst": 1,
+          "offAst": 7
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "onMin": 7.7,
+          "offMin": 23.9,
+          "onPoss": 25,
+          "offPoss": 79,
+          "onPts": 5,
+          "offPts": 9,
+          "onReb": 2,
+          "offReb": 7,
+          "onAst": 1,
+          "offAst": 7
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "onMin": 13.4,
+          "offMin": 18.2,
+          "onPoss": 45,
+          "offPoss": 59,
+          "onPts": 7,
+          "offPts": 7,
+          "onReb": 5,
+          "offReb": 4,
+          "onAst": 4,
+          "offAst": 4
+        },
+        {
+          "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+          "name": "Biwali Bayles",
+          "onMin": 9.8,
+          "offMin": 21.8,
+          "onPoss": 31,
+          "offPoss": 73,
+          "onPts": 5,
+          "offPts": 9,
+          "onReb": 2,
+          "offReb": 7,
+          "onAst": 3,
+          "offAst": 5
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 15.2,
+          "offMin": 16.3,
+          "onPoss": 50,
+          "offPoss": 54,
+          "onPts": 7,
+          "offPts": 7,
+          "onReb": 3,
+          "offReb": 6,
+          "onAst": 5,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+      "name": "William Hickey",
+      "teamCode": "ILL",
+      "teamName": "Illawarra Hawks",
+      "minutes": 26.8,
+      "teammates": [
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "onMin": 10.9,
+          "offMin": 15.9,
+          "onPoss": 40,
+          "offPoss": 49,
+          "onPts": 7,
+          "offPts": 14,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "onMin": 5.2,
+          "offMin": 21.6,
+          "onPoss": 17,
+          "offPoss": 72,
+          "onPts": 2,
+          "offPts": 19,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "onMin": 14.2,
+          "offMin": 12.6,
+          "onPoss": 46,
+          "offPoss": 43,
+          "onPts": 7,
+          "offPts": 14,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "onMin": 18.1,
+          "offMin": 8.7,
+          "onPoss": 54,
+          "offPoss": 35,
+          "onPts": 14,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "onMin": 3.6,
+          "offMin": 23.2,
+          "onPoss": 11,
+          "offPoss": 78,
+          "onPts": 2,
+          "offPts": 19,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "onMin": 5.1,
+          "offMin": 21.6,
+          "onPoss": 17,
+          "offPoss": 72,
+          "onPts": 2,
+          "offPts": 19,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "onMin": 18.1,
+          "offMin": 8.7,
+          "onPoss": 56,
+          "offPoss": 33,
+          "onPts": 16,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "onMin": 16.4,
+          "offMin": 10.3,
+          "onPoss": 55,
+          "offPoss": 34,
+          "onPts": 17,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "onMin": 6.5,
+          "offMin": 20.3,
+          "onPoss": 28,
+          "offPoss": 61,
+          "onPts": 5,
+          "offPts": 16,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "2bf300ef-410d-11f0-bc40-975350631782",
+          "name": "Kyle Adnam",
+          "onMin": 9,
+          "offMin": 17.7,
+          "onPoss": 32,
+          "offPoss": 57,
+          "onPts": 12,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 2
+        }
+      ]
+    }
+  ],
+  "fetchedAt": "2026-10-13T12:54:12.719Z"
+}

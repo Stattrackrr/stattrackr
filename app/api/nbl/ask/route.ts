@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   if (!(await requestIsPro(request))) return proRequiredResponse('The NBL model');
   const body = (await request.json().catch(() => null)) as {
     question?: unknown;
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
       stat,
       selectedLine,
       history,
+      startedAt,
     });
     return NextResponse.json({
       success: true,

@@ -1,20 +1,41 @@
 /**
- * Request-time OpenAI write-up for the NBL props engine, same pattern as tennis:
- * the Python engine is the model; gpt-5.6-luna only restates numbers already in the pack.
+ * NBL ask AI. Same shared brain as tennis (lib/ai/ask): the pack is built from the player's real
+ * game logs plus the engine's stored prices and reasons; only the NBL rules and facts differ.
  */
 
-import { getNblClubByCode } from '@/lib/nblTeamCanonical';
-import { nblPunterQuestions } from '@/lib/nbl/askSuggestions';
-import { findNblEnginePanel, findNblEnginePlayerPicks, NBL_ASK_BEST_PLAY_STAT, rankNblPlayPicks, selectNblAskPick } from '@/lib/nbl/enginePicks';
-import { readNblPlayerPropSnapshotByGameKey } from '@/lib/nbl/playerPropSnapshots';
+import { askPriceCheck, type AskPriceOffer } from '@/lib/ai/ask/guards';
+import { askLlmConfig, askReplyText, type AskMessage, type AskReplyText } from '@/lib/ai/ask/llm';
+import { buildAskSystemPrompt, buildAskUserContent } from '@/lib/ai/ask/rules';
+import { runAskAi } from '@/lib/ai/ask/run';
 import {
-  nblEngineCategoryLabel,
+  nblHeadToHead,
+  nblInjuriesFor,
+  nblLineRead,
+  nblPlayerForm,
+  nblStatFromQuestion,
+  NBL_ASK_STAT_WORDS,
+  type NblLineRead,
+} from '@/lib/nbl/askAnalysis';
+import { nblPunterQuestions } from '@/lib/nbl/askSuggestions';
+import {
+  findNblEnginePanel,
+  findNblEnginePlayerPicks,
+  NBL_ASK_BEST_PLAY_STAT,
+  nblClubCodeFor,
+  rankNblPlayPicks,
+  selectNblAskPick,
+} from '@/lib/nbl/enginePicks';
+import {
+  NBL_MIN_MODEL_DECIMAL,
   nblStoredLineQuotes,
   type NblEnginePanelPayload,
   type NblEnginePick,
 } from '@/lib/nbl/engineShared';
+import { loadNblPlayerGameLogs } from '@/lib/nbl/playerGameLogsServer';
+import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
+import { getNblClubByCode, NBL_CHART_HISTORY_YEARS } from '@/lib/nblTeamCanonical';
 
-export type NblAskMessage = { role: 'user' | 'assistant'; content: string };
+export type NblAskMessage = AskMessage;
 export type NblAskReply = {
   answer: string;
   breakdown: string[];
@@ -23,28 +44,8 @@ export type NblAskReply = {
   reason: string | null;
 };
 
-const STAT_ALIASES: Array<{ key: string; words: string[] }> = [
-  { key: 'pra', words: ['pra', 'pts+reb+ast', 'points rebounds assists'] },
-  { key: 'threeMade', words: ['3pm', 'threes', '3-pointers', '3pt', 'three'] },
-  { key: 'rebounds', words: ['rebounds', 'rebound', 'boards', 'reb'] },
-  { key: 'assists', words: ['assists', 'assist', 'ast'] },
-  { key: 'points', words: ['points', 'pts', 'scoring'] },
-  { key: 'pr', words: ['pts+reb', 'points + rebounds'] },
-  { key: 'pa', words: ['pts+ast', 'points + assists'] },
-  { key: 'ra', words: ['reb+ast', 'rebounds + assists'] },
-];
-
-function llmConfigured(): { key: string; model: string } | null {
-  const key = String(process.env.OPENAI_API_KEY || '').trim();
-  if (!key) return null;
-  const model =
-    String(process.env.NBL_ASK_MODEL || process.env.TENNIS_ASK_MODEL || 'gpt-5.6-luna').trim() ||
-    'gpt-5.6-luna';
-  return { key, model };
-}
-
 export function nblAskConfigured(): boolean {
-  return llmConfigured() != null;
+  return askLlmConfig(process.env.NBL_ASK_MODEL) != null;
 }
 
 function clubName(code: string | null | undefined): string {
@@ -53,29 +54,44 @@ function clubName(code: string | null | undefined): string {
 }
 
 function lastNameOf(name: string | null | undefined): string {
-  return String(name || '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .at(-1) || String(name || '');
+  return String(name || '').trim().split(/\s+/).filter(Boolean).at(-1) || String(name || '');
+}
+
+function statWords(stat: string): string {
+  return NBL_ASK_STAT_WORDS[stat] ?? stat;
+}
+
+/** Engine reason text uses stat codes; the punter sees plain words. */
+function plainWords(text: string): string {
+  return String(text || '')
+    .replace(/\(\s*box score, not a shot-chart zone rank\.?\s*\)/gi, '')
+    .replace(/\s*box score, not a shot-chart zone rank\.?/gi, '')
+    .replace(/\s*One input among many[^.]*\./gi, '')
+    .replace(/\bPRA\b/g, 'points + rebounds + assists')
+    .replace(/\bPTS D\b/g, 'points-allowed defence')
+    .replace(/\bFGA\b/g, 'field goal attempts')
+    .replace(/\bFG%/g, 'field goal %')
+    .replace(/\bPTS\b/g, 'points')
+    .replace(/\bREB\b/g, 'rebounds')
+    .replace(/\bAST\b/g, 'assists')
+    .replace(/\b3PM\b/g, 'threes made')
+    .replace(/\bH2H\b/g, 'head to head')
+    .replace(/\bL(5|10|15)\b/g, 'last $1')
+    .replace(/\bgame\(s\)/g, 'games')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,;:])/g, '$1')
+    .trim();
+}
+
+function firstSentence(text: string): string {
+  const cleaned = plainWords(text);
+  const sentence = cleaned.match(/^.+?[.](?=\s|$)/);
+  return (sentence ? sentence[0] : cleaned).trim();
 }
 
 function leanSide(pick: NblEnginePick): 'over' | 'under' {
   if (pick.side === 'over' || pick.side === 'under') return pick.side;
   return pick.score_over >= pick.score_under ? 'over' : 'under';
-}
-
-function punterStance(pick: NblEnginePick): { stance: 'over' | 'under' | 'leave'; mixed: boolean } {
-  if (pick.tier === 'AVOID') return { stance: 'leave', mixed: true };
-  return { stance: leanSide(pick), mixed: pick.tier === 'NO EDGE' };
-}
-
-function matchStatFromQuestion(question: string, fallback: string): string {
-  const q = question.toLowerCase();
-  for (const row of STAT_ALIASES) {
-    if (row.words.some((word) => q.includes(word))) return row.key;
-  }
-  return fallback;
 }
 
 export type NblAskIntent = 'take' | 'other_markets' | 'best_line' | 'shot' | 'model';
@@ -84,6 +100,11 @@ export function nblQuestionIntent(question: string): NblAskIntent {
   const q = question.toLowerCase();
   if (/\bwhere does\b|\bscore from\b|\bshot chart\b|\bfrom against\b/.test(q)) return 'shot';
   if (/\bhow do you see\b|\bwhat(?:'s| is) the (?:model|lean)\b/.test(q)) return 'model';
+
+  // "Best line for Cooks" is his best bet on any market; "best points line" or "best price" stays a price quote.
+  if (/\bbest (?:line|bet|play|prop|market|pick)s?\b/.test(q) && !/\bprices?\b|\bbooks?\b|\bbookies?\b/.test(q) && !nblStatFromQuestion(q)) {
+    return 'take';
+  }
 
   // "best line AND market / quick bet / looking into" is a pick, not a price quote.
   const wantsAPlay =
@@ -122,693 +143,13 @@ export function nblQuestionIntent(question: string): NblAskIntent {
     return 'take';
   }
   if (
-    /\bbest line\b|\bbest price\b|\bwhich book|\bbookies?\b/.test(q) ||
+    /\bbest line\b|\bbest (?:[a-z+']+ ){1,3}line\b|\bbest price\b|\bwhich book|\bbookies?\b/.test(q) ||
     /\bline to (take|bet)\b|\btake to bet\b|\bwhat(?:'s| is) the line\b|\bwhich line\b|\bwhat line\b/.test(q) ||
     /\bbest over\b|\bbest under\b|\bwhere to take\b|\bwhat to take\b|\bwhich number\b/.test(q)
   ) {
     return 'best_line';
   }
   return 'model';
-}
-
-function postedLines(pick: NblEnginePick | null): number[] {
-  if (!pick) return [];
-  const rows = pick.line_summary?.book_lines || [];
-  const out = rows.map((row) => row.line);
-  if (pick.line != null) out.push(pick.line);
-  return out;
-}
-
-function lineNamedInQuestion(question: string, posted: number[]): number | null {
-  const nums = [...question.matchAll(/\d+(?:\.\d+)?/g)].map((m) => Number(m[0]));
-  for (const n of nums) {
-    if (!Number.isFinite(n)) continue;
-    if (posted.some((p) => Math.abs(p - n) < 1e-6)) return n;
-  }
-  return null;
-}
-
-function lightClean(raw: string): string {
-  return String(raw || '')
-    .replace(/\*\*/g, '')
-    .replace(/^\s*[-*•]\s+/gm, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-}
-
-function parseAskReply(raw: string): { answer: string; breakdown: string[] } {
-  const trimmed = String(raw || '').trim();
-  const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]) as { answer?: unknown; breakdown?: unknown };
-      const answer = lightClean(String(parsed.answer || ''));
-      const breakdown = Array.isArray(parsed.breakdown)
-        ? parsed.breakdown
-            .map((row) => lightClean(String(row || '')))
-            .filter(Boolean)
-            .slice(0, 5)
-        : [];
-      if (answer) return { answer, breakdown };
-    } catch {
-      /* fall through */
-    }
-  }
-  const parts = trimmed
-    .split(/\n+/)
-    .map((row) => lightClean(row))
-    .filter(Boolean);
-  return {
-    answer: parts[0] || 'Not enough in the pack to price that cleanly.',
-    breakdown: parts.slice(1, 6),
-  };
-}
-
-function numbersIn(text: string): string[] {
-  return text.match(/(?<![\d.])-?\d+(?:\.\d+)?/g) || [];
-}
-
-function collectNumbers(value: unknown, found: Set<string>) {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    found.add(String(value));
-    found.add(String(Math.round(value * 10) / 10));
-    if (Number.isInteger(value)) found.add(value.toFixed(0));
-  } else if (typeof value === 'string') {
-    for (const num of numbersIn(value)) found.add(num);
-  } else if (Array.isArray(value)) {
-    value.forEach((item) => collectNumbers(item, found));
-  } else if (value && typeof value === 'object') {
-    Object.values(value).forEach((item) => collectNumbers(item, found));
-  }
-}
-
-function inventedNumbers(text: string, pack: unknown): string[] {
-  const allowed = new Set<string>();
-  collectNumbers(pack, allowed);
-  return numbersIn(text).filter((num) => !allowed.has(num));
-}
-
-function playerKeyOf(name: string): string {
-  return String(name || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
-function bookBoardForPick(pick: NblEnginePick) {
-  const snap = readNblPlayerPropSnapshotByGameKey(pick.game_key);
-  if (!snap) return [];
-  const key = playerKeyOf(pick.player_name);
-  return snap.lines
-    .filter(
-      (row) =>
-        row.stat === pick.stat &&
-        (row.playerKey === key || playerKeyOf(row.player) === key)
-    )
-    .map((row) => ({
-      book: row.book,
-      kind: row.kind,
-      line: row.line,
-      label: row.label,
-      overDecimal: row.overDecimal,
-      underDecimal: row.underDecimal,
-    }));
-}
-
-function booksTiedAt(
-  board: ReturnType<typeof bookBoardForPick>,
-  line: number | null | undefined,
-  price: number | null | undefined,
-  side: 'over' | 'under'
-): string[] {
-  if (line == null || price == null) return [];
-  const key = side === 'over' ? 'overDecimal' : 'underDecimal';
-  const names = board
-    .filter((row) => row.line === line && row[key] === price)
-    .map((row) => row.book);
-  return [...new Set(names)];
-}
-
-function compactPick(pick: NblEnginePick, requestedLine?: number | null) {
-  const board = bookBoardForPick(pick);
-  const quotes = nblStoredLineQuotes(pick, { atLine: requestedLine });
-  const overBooks = [...(quotes.bestOver?.books || [])];
-  const underBooks = [...(quotes.bestUnder?.books || [])];
-  if (quotes.bestOver && !overBooks.length) {
-    overBooks.push(...booksTiedAt(board, quotes.bestOver.line, quotes.bestOver.price, 'over'));
-  }
-  if (quotes.bestUnder && !underBooks.length) {
-    underBooks.push(...booksTiedAt(board, quotes.bestUnder.line, quotes.bestUnder.price, 'under'));
-  }
-  const bestOver = quotes.bestOver
-    ? { ...quotes.bestOver, books: overBooks.length ? overBooks : quotes.bestOver.books }
-    : null;
-  const bestUnder = quotes.bestUnder
-    ? { ...quotes.bestUnder, books: underBooks.length ? underBooks : quotes.bestUnder.books }
-    : null;
-  return {
-    player: pick.player_name,
-    team: pick.team_code,
-    opponent: pick.opponent_code,
-    opponentName: clubName(pick.opponent_code),
-    isHome: pick.is_home,
-    game: pick.game_label,
-    tipoffUtc: pick.tipoff_utc,
-    stat: pick.stat,
-    statLabel: pick.stat_label,
-    line: pick.line,
-    side: pick.side,
-    ...punterStance(pick),
-    confirmed: pick.confirmed_categories.map(nblEngineCategoryLabel),
-    failedGates: pick.gates.filter((g) => !g.passed).map((g) => ({ gate: g.gate, detail: g.detail })),
-    bestOver,
-    bestUnder,
-    bookBoard: board,
-    whyItHappened: {
-      seasonGames: pick.claims.find((c) => c.metric === 'season_games')?.as_text ?? null,
-      seasonSlate: pick.claims.find((c) => c.metric === 'season_slate')?.as_text ?? null,
-      seasonVsDHits: pick.claims.find((c) => c.metric === 'season_vs_d_hits')?.as_text ?? null,
-      h2hGames: pick.claims.find((c) => c.metric === 'h2h_games')?.as_text ?? null,
-      h2hMinutesVsNow: pick.claims.find((c) => c.metric === 'h2h_minutes_vs_now')?.as_text ?? null,
-      h2hHitRate: pick.claims.find((c) => c.metric === 'h2h_hit_rate')?.as_text ?? null,
-    },
-    forThePlay: pick.inferences
-      .filter((inf) => inf.status === 'confirmed' && inf.direction === pick.side)
-      .map((inf) => nblEngineCategoryLabel(inf.category)),
-    againstThePlay: pick.inferences
-      .filter(
-        (inf) =>
-          inf.status === 'confirmed' &&
-          inf.direction !== 'neutral' &&
-          inf.direction !== pick.side
-      )
-      .map((inf) => nblEngineCategoryLabel(inf.category)),
-    rankConvention: {
-      hardest: 1,
-      easiest: 10,
-      meaning:
-        'Two lists. Shot-chart zone ranks (claims that say "shot-chart #N") match Opp Def Rank on the court. PTS D / "for PTS allowed" is box-score team allowed — a different ranking. Never mix them or "correct" a zone with PTS D.',
-    },
-    claims: pick.claims.map((c) => c.as_text),
-    inferences: pick.inferences.map((inf) => ({
-      category: nblEngineCategoryLabel(inf.category),
-      direction: inf.direction,
-      status: inf.status,
-      reason: inf.reason,
-    })),
-  };
-}
-
-function buildPack(
-  panel: NblEnginePanelPayload,
-  intent: NblAskIntent,
-  requestedLine?: number | null
-) {
-  const cardPicks = findNblEnginePlayerPicks({
-    playerId: panel.pick?.player_id || null,
-    playerName: panel.pick?.player_name || null,
-    opponent: panel.game?.opponent_code || null,
-  });
-    const suggested = selectNblAskPick(cardPicks);
-  return {
-    engineVersion: panel.engine_version,
-    generatedAt: panel.generated_at,
-    game: panel.game,
-    reason: panel.reason,
-    hint: intent,
-    requestedLine: requestedLine ?? null,
-    viewing: panel.pick ? compactPick(panel.pick, requestedLine) : null,
-    card: cardPicks.map(cardRow),
-    suggestedTake: suggested ? cardRow(suggested) : null,
-    markets: panel.markets.map(({ stat, stat_label, line, side, kind, bestOver, bestUnder }) => ({
-      stat,
-      stat_label,
-      line,
-      side,
-      kind,
-      bestOver,
-      bestUnder,
-    })),
-    pick: panel.pick ? compactPick(panel.pick, requestedLine) : null,
-    take: panel.pick ? takeQuote(panel.pick) : null,
-  };
-}
-
-export function nblAskSuggestions(panel: NblEnginePanelPayload, playerName?: string | null): string[] {
-  const player = playerName || panel.pick?.player_name || '';
-  const opp = clubName(panel.game?.opponent_code) || '';
-  return nblPunterQuestions(player, opp);
-}
-
-function formatQuote(
-  q: { line: number; price: number; books: string[] } | null | undefined,
-  side: 'over' | 'under',
-  label?: string
-): string | null {
-  if (!q) return null;
-  const books = q.books.length ? ` (${q.books.join(', ')})` : '';
-  const market = label ? ` ${label}` : '';
-  return `Best ${side} ${label} is ${q.line} at ${q.price}${books}`;
-}
-
-function localBestLineReply(
-  panel: NblEnginePanelPayload,
-  requestedLine?: number | null
-): { answer: string; breakdown: string[] } {
-  const pick = panel.pick;
-  const stored = pick ? nblStoredLineQuotes(pick, { atLine: requestedLine }) : { bestOver: null, bestUnder: null };
-  const markets = panel.markets || [];
-  const focus = markets.find((m) => m.stat === pick?.stat) ?? markets[0];
-  const over = stored.bestOver || focus?.bestOver;
-  const under = stored.bestUnder || focus?.bestUnder;
-  const main = requestedLine ?? focus?.line ?? pick?.line ?? null;
-  const label = focus?.stat_label || pick?.stat_label || 'PTS';
-  const overTxt = formatQuote(over, 'over', label);
-  if (!overTxt && main == null) {
-    return {
-      answer: panel.reason || 'No sportsbook line was on the board when the engine last ran.',
-      breakdown: [],
-    };
-  }
-  let answer = overTxt
-    ? `${overTxt}.`
-    : `Main ${label} line is ${main}. No bettable over (1.50+) on the board.`;
-  if (over && main != null && over.line !== main && requestedLine == null) {
-    answer += ` Main ${label} line is ${main}.`;
-  }
-  const underTxt = formatQuote(under, 'under', label);
-  if (underTxt && under && (!over || under.line !== over.line || under.price !== over.price)) {
-    answer += ` ${underTxt}.`;
-  }
-  return { answer, breakdown: [] };
-}
-
-function cleanClaimText(text: string): string {
-  const cleaned = lightClean(text)
-    .replace(/\(\s*box score, not a shot-chart zone rank\.?\s*\)/gi, '')
-    .replace(/\s*box score, not a shot-chart zone rank\.?/gi, '')
-    .replace(/\s*One input among many[^.]*\./gi, '')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\s+([.,;:])/g, '$1')
-    .trim();
-  const sentence = cleaned.match(/^.+?[.](?=\s|$)/);
-  return (sentence ? sentence[0] : cleaned).trim();
-}
-
-function takeQuote(pick: NblEnginePick): { side: 'over' | 'under'; quote: { line: number; price: number; books: string[] } } | null {
-  const quotes = nblStoredLineQuotes(pick, { atLine: pick.line });
-  const favored: 'over' | 'under' =
-    pick.side === 'over' || pick.side === 'under'
-      ? pick.side
-      : pick.score_over >= pick.score_under
-        ? 'over'
-        : 'under';
-  const favoredQuote = favored === 'over' ? quotes.bestOver : quotes.bestUnder;
-  if (!favoredQuote) return null;
-  return { side: favored, quote: favoredQuote };
-}
-
-function cardRow(pick: NblEnginePick) {
-  const quotes = nblStoredLineQuotes(pick);
-  const taken = takeQuote(pick);
-  const side = leanSide(pick);
-  return {
-    stat: pick.stat,
-    statLabel: pick.stat_label,
-    line: pick.line,
-    side,
-    ...punterStance(pick),
-    bestOver: quotes.bestOver,
-    bestUnder: quotes.bestUnder,
-    take: taken,
-    priced: Boolean(taken),
-    confirmed: pick.inferences
-      .filter((inf) => inf.status === 'confirmed' && inf.direction === side && inf.reason)
-      .map((inf) => ({
-        category: nblEngineCategoryLabel(inf.category),
-        direction: inf.direction,
-        reason: inf.reason,
-      })),
-    pushback: pick.inferences
-      .filter(
-        (inf) =>
-          inf.status === 'confirmed' &&
-          inf.direction !== 'neutral' &&
-          inf.direction !== side &&
-          inf.reason
-      )
-      .map((inf) => ({
-        category: nblEngineCategoryLabel(inf.category),
-        direction: inf.direction,
-        reason: inf.reason,
-      })),
-  };
-}
-
-function localTakeReply(panel: NblEnginePanelPayload): { answer: string; breakdown: string[] } {
-  const pick = panel.pick;
-  if (!pick) {
-    return {
-      answer: panel.reason || 'No sportsbook line was on the board when the engine last ran.',
-      breakdown: [],
-    };
-  }
-  const side = leanSide(pick);
-  const line = pick.line;
-  const taken = takeQuote(pick);
-  const withPlay = pick.inferences.filter(
-    (inf) => inf.status === 'confirmed' && inf.direction === side && inf.reason
-  );
-  const against = pick.inferences.filter(
-    (inf) =>
-      inf.status === 'confirmed' &&
-      inf.direction !== 'neutral' &&
-      inf.direction !== side &&
-      inf.reason
-  );
-  const breakdown = [
-    ...withPlay.map((inf) => `${nblEngineCategoryLabel(inf.category)}: ${cleanClaimText(inf.reason)}`),
-    ...against
-      .slice(0, 1)
-      .map((inf) => `Pushback — ${nblEngineCategoryLabel(inf.category)}: ${cleanClaimText(inf.reason)}`),
-  ].slice(0, 5);
-  if (taken) {
-    const books = taken.quote.books.length ? ` (${taken.quote.books.join(', ')})` : '';
-    return {
-      answer: `I'd take ${pick.stat_label} ${taken.side} ${taken.quote.line} at ${taken.quote.price}${books}.`,
-      breakdown,
-    };
-  }
-  if (line == null) {
-    return {
-      answer: `No bettable ${pick.stat_label} price (1.50+) on the board.`,
-      breakdown,
-    };
-  }
-  const other = nblStoredLineQuotes(pick).bestOver;
-  const skipGimme = other
-    ? ` I wouldn't take the ${other.line} over at ${other.price} — that's the other side.`
-    : '';
-  return {
-    answer: `I'd be on ${pick.stat_label} ${side} ${line}. No ${side} price is on the board.${skipGimme}`,
-    breakdown,
-  };
-}
-
-function formatTakeLine(pick: NblEnginePick): string | null {
-  const taken = takeQuote(pick);
-  if (!taken) return null;
-  const books = taken.quote.books.length ? ` (${taken.quote.books.join(', ')})` : '';
-  return `${pick.stat_label} ${taken.side} ${taken.quote.line} at ${taken.quote.price}${books}`;
-}
-
-function marketWhy(pick: NblEnginePick, side: 'over' | 'under'): string {
-  const support = pick.inferences.find(
-    (inf) => inf.status === 'confirmed' && inf.direction === side && inf.reason
-  );
-  const matchup = pick.inferences.find(
-    (inf) => inf.status === 'confirmed' && inf.category === 'matchup_allowed' && inf.reason
-  );
-  const hit = pick.inferences.find(
-    (inf) => inf.status === 'confirmed' && inf.category === 'hit_rate' && inf.reason
-  );
-  return cleanClaimText(support?.reason || matchup?.reason || hit?.reason || '');
-}
-
-function localOtherMarketsReply(
-  panel: NblEnginePanelPayload,
-  lookup: { playerId?: string | null; playerName?: string | null; opponent?: string | null }
-): { answer: string; breakdown: string[] } {
-  const skipStat = panel.pick?.stat || 'points';
-  const skipLabel = panel.pick?.stat_label || 'PTS';
-  const picks = findNblEnginePlayerPicks({
-    playerId: lookup.playerId || panel.pick?.player_id || null,
-    playerName: lookup.playerName || panel.pick?.player_name || null,
-    opponent: lookup.opponent || panel.game?.opponent_code || null,
-  });
-  const ranked = rankNblPlayPicks(picks.filter((p) => p.stat !== skipStat));
-  const live = ranked.filter((p) => p.tier === 'STRONG' || p.tier === 'LEAN' || p.tier === 'NO EDGE');
-  const others = (live.length ? live : ranked).slice(0, 3);
-  if (!others.length) {
-    return {
-      answer: `No other bettable market besides ${skipLabel} is on the board.`,
-      breakdown: [],
-    };
-  }
-  const first = others[0];
-  const taken = takeQuote(first);
-  const head = formatTakeLine(first);
-  const why = taken ? marketWhy(first, taken.side) : '';
-  const answer = why ? `I'd look at ${head} first. ${why}` : `I'd look at ${head} first.`;
-  const breakdown = others.map((p) => {
-    const row = formatTakeLine(p);
-    const q = takeQuote(p);
-    const reason = q ? marketWhy(p, q.side) : '';
-    return reason ? `${row}. ${reason}` : row || p.stat_label;
-  });
-  return { answer, breakdown: breakdown.slice(0, 4) };
-}
-
-function localShotReply(panel: NblEnginePanelPayload): { answer: string; breakdown: string[] } {
-  const pick = panel.pick;
-  if (!pick) {
-    return {
-      answer: panel.reason || 'No shot profile stored for this matchup.',
-      breakdown: [],
-    };
-  }
-  const shares = pick.claims.filter((c) => String(c.metric || '').startsWith('zone_share_'));
-  const ranks = pick.claims.filter((c) => String(c.metric || '').startsWith('opp_zone_rank_'));
-  const edge = pick.claims.find((c) => c.metric === 'zone_matchup_edge');
-  const answer = shares[0]?.as_text || edge?.as_text || pick.narrative;
-  return {
-    answer,
-    breakdown: [...shares.slice(1), ...ranks, edge].filter(Boolean).map((c) => c!.as_text).slice(0, 5),
-  };
-}
-
-function localModelReply(panel: NblEnginePanelPayload): { answer: string; breakdown: string[] } {
-  const pick = panel.pick;
-  if (!pick) {
-    return {
-      answer: panel.reason || 'No sportsbook line was on the board when the engine last ran.',
-      breakdown: [],
-    };
-  }
-  const { stance, mixed } = punterStance(pick);
-  const line = pick.line;
-  const last = lastNameOf(pick.player_name);
-  const opp = clubName(pick.opponent_code) || pick.opponent_code;
-  const side = stance === 'leave' ? leanSide(pick) : stance;
-  const withPlay = pick.inferences.filter(
-    (inf) => inf.status === 'confirmed' && inf.direction === side && inf.reason
-  );
-  const against = pick.inferences.filter(
-    (inf) =>
-      inf.status === 'confirmed' &&
-      inf.direction !== 'neutral' &&
-      inf.direction !== side &&
-      inf.reason
-  );
-  const breakdown = [...withPlay, ...against]
-    .map((inf) => cleanClaimText(inf.reason))
-    .filter(Boolean)
-    .slice(0, 5);
-  const why = withPlay[0] ? cleanClaimText(withPlay[0].reason) : '';
-  const push = against[0] ? cleanClaimText(against[0].reason) : '';
-  const market =
-    line != null ? `${last}'s ${pick.stat_label} ${line} vs ${opp}` : `${last}'s ${pick.stat_label} vs ${opp}`;
-
-  if (stance === 'leave') {
-    return {
-      answer: `I'd leave ${market} alone. The reads conflict.`,
-      breakdown,
-    };
-  }
-  if (mixed) {
-    let answer = `I wouldn't force ${market}.`;
-    if (why) answer += ` ${side === 'under' ? 'The under' : 'The over'} has a case — ${why.charAt(0).toLowerCase()}${why.slice(1)}`;
-    if (push) answer += ` ${push.charAt(0).toLowerCase()}${push.slice(1)}`;
-    return { answer, breakdown };
-  }
-  const taken = takeQuote(pick);
-  if (taken) {
-    const books = taken.quote.books.length ? ` (${taken.quote.books.join(', ')})` : '';
-    const head = `I'd take ${pick.stat_label} ${taken.side} ${taken.quote.line} at ${taken.quote.price}${books}.`;
-    return { answer: why ? `${head} ${why}` : head, breakdown };
-  }
-  const head =
-    line != null
-      ? `I'd lean ${last} ${side} ${line} ${pick.stat_label} vs ${opp}.`
-      : `I'd lean ${last} ${side} ${pick.stat_label} vs ${opp}.`;
-  return { answer: why ? `${head} ${why}` : head, breakdown };
-}
-
-function looksLikeEngineJargon(answer: string): boolean {
-  return (
-    /\bthe model says\b/i.test(answer) ||
-    /\bno edge\b/i.test(answer) ||
-    /\bverdict\b/i.test(answer) ||
-    /\bAVOID\b/.test(answer) ||
-    /\bSTRONG\s+(OVER|UNDER)\b/i.test(answer) ||
-    /\bLEAN\s+(OVER|UNDER)\b/i.test(answer) ||
-    /\bKelly\b|\bno-vig\b|\bfair price\b/i.test(answer)
-  );
-}
-
-function answersTheQuestion(
-  question: string,
-  answer: string,
-  intent: NblAskIntent,
-  requestedLine?: number | null,
-  takeLock?: { side: 'over' | 'under'; line: number | null; priced: boolean }
-): boolean {
-  if (intent === 'take' || intent === 'other_markets') {
-    if (/^\s*(avoid|stay away|no edge|model:)/i.test(answer)) return false;
-    if (/wouldn't force another market/i.test(answer)) return false;
-    if (intent === 'other_markets') {
-      return /i'?d look at|i'?d take|i'?d be on|\blook at\b/i.test(answer);
-    }
-    if (takeLock) {
-      const rec = answer.match(/i'?d (?:take|be on) \S+ (over|under) (\d+(?:\.\d+)?)/i);
-      if (rec) {
-        if (rec[1] !== takeLock.side) return false;
-        if (takeLock.line != null && Math.abs(Number(rec[2]) - takeLock.line) > 0.05) return false;
-      }
-      if (takeLock.side === 'under' && /i'?d take \S+ over/i.test(answer)) return false;
-    }
-    return /i'?d take|i'?d be on|\btake (?:the )?(?:over|under)\b/i.test(answer);
-  }
-  if (intent === 'best_line') {
-    if (/\bavoid\b|\bstay away\b|\bno edge\b|\bdon'?t bet\b|\bfade\b|\blean\b|\bstrong\b/i.test(answer)) {
-      return false;
-    }
-    const short = answer.match(/(\d+(?:\.\d+)?)\s+at\s+(1\.(?:0\d|1\d))\b/);
-    if (short) {
-      const line = Number(short[1]);
-      const asked =
-        (requestedLine != null && Math.abs(requestedLine - line) < 1e-6) ||
-        question.includes(String(line));
-      if (!asked) return false;
-    }
-    return /\bbest over\b|\bbest under\b|\bat\s+\d|main .+ line is/i.test(answer);
-  }
-  if (intent === 'shot') {
-    if (/^\s*avoid\b/i.test(answer)) return false;
-    return /% of .*makes|shot-chart #\d/i.test(answer);
-  }
-  if (looksLikeEngineJargon(answer)) return false;
-  return /\bover\b|\bunder\b|\bi'?d\b|\bwouldn't\b|\bleave\b|\blean\b/i.test(answer);
-}
-
-function localReply(
-  panel: NblEnginePanelPayload,
-  intent: NblAskIntent = 'model',
-  requestedLine?: number | null,
-  lookup?: { playerId?: string | null; playerName?: string | null; opponent?: string | null }
-): { answer: string; breakdown: string[] } {
-  if (intent === 'best_line') return localBestLineReply(panel, requestedLine);
-  if (intent === 'take') return localTakeReply(panel);
-  if (intent === 'other_markets') return localOtherMarketsReply(panel, lookup || {});
-  if (intent === 'shot') return localShotReply(panel);
-  return localModelReply(panel);
-}
-
-const LENSES = [
-  'hit rate versus this line',
-  'last few games and streaks',
-  'H2H versus current form',
-  'teammates in or out',
-  'minutes and usage',
-  'matchup rank versus how he actually scored on tough D',
-  'shot profile against this defence',
-] as const;
-
-const SYSTEM_PROMPT = `You are a supporting punter on StatTrackr chatting about this NBL matchup. Give a clear over/under opinion, then back it with the stats. You are not a prediction model.
-
-Use ONLY facts and numbers in the STAT PACK. Never invent a stat, line, rank, sample size, percentage, or price. Never do maths. If a number is not in the pack, skip it.
-
-How to write:
-- Talk like a punter texting a mate — short, casual, opinionated.
-- Vary how you open. Do not start every answer the same way.
-- Never write "Here's why."
-- Never say the model, model chance, model projection, predicted, edge, EV, no-vig, fair price, Kelly, NO EDGE, AVOID, STRONG, LEAN, or Verdict.
-- Never quote a percent edge vs the book. A listed price is fine.
-- Dig into whatever stats matter for THIS question: hit rates, last few games, H2H, teammates out, minutes, usage, matchup ranks, shot profile.
-- Do not recycle the same three facts every time. If two stats disagree, say so.
-- Be specific: names, numbers, opponents.
-- No lock, guaranteed, or sure-thing language.
-- Answer in 2 to 4 sentences. Then breakdown: 3 to 5 short sentences, each a different fact. Do not repeat the answer.
-- Surname after first mention.
-- Never write pack, STAT PACK, viewing, suggestedTake, stance, mixed, or field names. The punter cannot see those.
-
-THE QUESTION IS THE SOURCE OF TRUTH. pack.hint is a guess — if it conflicts with the question, follow the question.
-pack.viewing / pack.pick is the stat on the chart (often points). That is NOT automatically the answer.
-pack.card is every priced market for this player this game. pack.suggestedTake is the best stored play on that card.
-
-When they ask what you'd take, pick a prop, who you're on, if you had to bet, a quick bet, the best line AND market, or what to look into:
-- One bet only. pack.suggestedTake.side and pack.suggestedTake.line are the play. Hit rates in the pack are vs THAT line.
-- If suggestedTake.take has a price: "I'd take {statLabel} {side} {line} at {price} ({books})."
-- If suggestedTake.take is null: "I'd be on {statLabel} {side} {line}." Say there is no {side} price. Do NOT flip to the over on a cheaper milestone (1.5 when the line is 2.5).
-- Then WHY from suggestedTake.confirmed only. Pushback from suggestedTake.pushback only.
-- Never recommend over 1.5 and then argue under 2.5. Never mix two lines in one take.
-
-When they ask how you see it / what's the model / should they bet this / your lean:
-- Give YOUR punter opinion on pack.viewing. Lean over, lean under, or say you wouldn't force it.
-- Never mention a model or a verdict label.
-- If stance is leave, say you'd leave it. If mixed, give the lean and the pushback.
-
-When they ask best line / best price / which book — and they did NOT ask which market to play: "Best {statLabel} over is {line} at {price} ({books})" from that market. No verdict.
-
-When they ask where he scores / shot chart: quote "X% of makes" and shot-chart #N only. Never add zone percentages. Never "X% of scoring from weak spots".
-
-Matchup rank is ONE input. Hard defence is not an automatic under. Easy defence is not an automatic over. If he already went over against similarly tough Ds, say that.
-
-Ranks: shot-chart #N = court Opp Def Rank (FG% allowed). PTS D / "for PTS allowed" is box-score team allowed — a different list. Never mix them. 1st = hardest.
-
-Books: quote a price once. TAB Touch is TABtouch. Do not volunteer a milestone below 1.50 unless they named that line.
-
-Return JSON only:
-{"answer":"string","breakdown":["string","string"]}`;
-
-async function openaiReasoning(
-  key: string,
-  model: string,
-  question: string,
-  pack: unknown,
-  history: NblAskMessage[]
-): Promise<string> {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      max_completion_tokens: 1100,
-      reasoning_effort: 'medium',
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...history.slice(-6).map((msg) => ({ role: msg.role, content: msg.content })),
-        {
-          role: 'user',
-          content: `This time lean on: ${LENSES[Math.floor(Math.random() * LENSES.length)]}.\n\nSTAT PACK:\n${JSON.stringify(pack)}\n\nQUESTION (answer this, not the previous chat):\n${question}`,
-        },
-      ],
-    }),
-  });
-  const json = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-    error?: { message?: string };
-  };
-  if (!res.ok) throw new Error(json?.error?.message || `OpenAI ${res.status}`);
-  const text = json.choices?.[0]?.message?.content?.trim();
-  if (!text) throw new Error('Empty model response');
-  return text;
 }
 
 export function loadNblAskPanel(opts: {
@@ -819,10 +160,10 @@ export function loadNblAskPanel(opts: {
   question?: string | null;
 }): NblEnginePanelPayload {
   const intent = opts.question ? nblQuestionIntent(opts.question) : 'model';
-  const named = opts.question ? matchStatFromQuestion(opts.question, '') : '';
+  const named = opts.question ? nblStatFromQuestion(opts.question) : null;
   const stat =
     named ||
-    (intent === 'take' && !named ? NBL_ASK_BEST_PLAY_STAT : '') ||
+    (intent === 'take' ? NBL_ASK_BEST_PLAY_STAT : '') ||
     ((intent === 'best_line' || intent === 'other_markets') && opts.stat ? opts.stat : '') ||
     'points';
   return findNblEnginePanel({
@@ -831,6 +172,536 @@ export function loadNblAskPanel(opts: {
     opponent: opts.opponent && opts.opponent !== 'All' ? opts.opponent : null,
     stat,
   });
+}
+
+export function nblAskSuggestions(panel: NblEnginePanelPayload, playerName?: string | null): string[] {
+  const player = playerName || panel.pick?.player_name || '';
+  const opp = clubName(panel.game?.opponent_code) || '';
+  return nblPunterQuestions(player, opp);
+}
+
+type Quote = { line: number; price: number; books: string[] };
+
+function priceText(q: Quote): string {
+  const books = q.books.length ? ` (${q.books.join(', ')})` : '';
+  return `${q.price}${books}`;
+}
+
+function takeQuote(pick: NblEnginePick): { side: 'over' | 'under'; quote: Quote } | null {
+  const side = leanSide(pick);
+  const quotes = nblStoredLineQuotes(pick, { atLine: pick.line });
+  const quote = side === 'over' ? quotes.bestOver : quotes.bestUnder;
+  return quote && quote.price >= NBL_MIN_MODEL_DECIMAL - 1e-9 ? { side, quote } : null;
+}
+
+/** "20+ points" is over 19.5; "over 9.5" or a bare 9.5 is the line itself. */
+function lineFromQuestion(question: string): number | null {
+  const plus = question.match(/(?<![\d.])(\d{1,2})\s*\+/);
+  if (plus) return Number(plus[1]) - 0.5;
+  const half = question.match(/(?<![\d.])(\d{1,2}\.5)(?![\d])/);
+  if (half) return Number(half[1]);
+  const ou = question.match(/\b(?:over|under|o|u)\s*(\d{1,2}(?:\.\d)?)\b/i);
+  return ou ? Number(ou[1]) : null;
+}
+
+type RankedBet = {
+  pick: NblEnginePick;
+  side: 'over' | 'under';
+  quote: Quote;
+  read: NblLineRead;
+  score: number;
+};
+
+type NblAskContext = {
+  question: string;
+  intent: NblAskIntent;
+  panel: NblEnginePanelPayload;
+  games: NblGameLogRow[];
+  player: string;
+  last: string;
+  teamCode: string | null;
+  opponentCode: string | null;
+  stat: string;
+  line: number | null;
+  lineFromUser: boolean;
+  read: NblLineRead | null;
+  cardPicks: NblEnginePick[];
+  ranked: RankedBet[];
+};
+
+function readFor(ctx: NblAskContext, stat: string, line: number | null): NblLineRead | null {
+  return line == null ? null : nblLineRead(ctx.games, stat, line, ctx.opponentCode);
+}
+
+const RECORD_WEIGHTS = { last5: 0.15, last10: 0.3, last15: 0.15, season: 0.2, against: 0.2 } as const;
+const MIN_LIKED_RECORD = 0.55;
+
+/** Weighted share of games that landed on this side of the line across his recent, season and head-to-head windows. */
+function sideRecord(read: NblLineRead, side: 'over' | 'under'): number | null {
+  let total = 0;
+  let weight = 0;
+  for (const w of read.windows) {
+    if (!w.games) continue;
+    const key = w.window.startsWith('against ')
+      ? 'against'
+      : w.window === 'this season'
+        ? 'season'
+        : w.games <= 5
+          ? 'last5'
+          : w.games <= 10
+            ? 'last10'
+            : 'last15';
+    if ((key === 'against' || key === 'season') && w.games < 3) continue;
+    total += RECORD_WEIGHTS[key] * ((side === 'over' ? w.overs : w.unders) / w.games);
+    weight += RECORD_WEIGHTS[key];
+  }
+  return weight ? total / weight : null;
+}
+
+/** Records within 5% count as level, then the bigger price wins, so the same data always ranks the same way. */
+function byBet(a: RankedBet, b: RankedBet): number {
+  return (
+    Math.round(b.score * 20) - Math.round(a.score * 20) ||
+    b.quote.price - a.quote.price ||
+    b.quote.books.length - a.quote.books.length ||
+    b.score - a.score
+  );
+}
+
+/** His best priced line per market (1.50 or more, side backed by his record), best first. */
+function rankBets(ctx: NblAskContext): RankedBet[] {
+  const best = new Map<string, RankedBet>();
+  for (const pick of ctx.cardPicks) {
+    const lines = [...new Set((pick.line_summary?.book_lines || []).map((row) => row.line))];
+    for (const line of lines) {
+      const read = readFor(ctx, pick.stat, line);
+      if (!read || !read.windows.some((w) => w.window.startsWith('last ') && w.games >= 4)) continue;
+      const quotes = nblStoredLineQuotes(pick, { atLine: line });
+      for (const side of ['over', 'under'] as const) {
+        const quote = side === 'over' ? quotes.bestOver : quotes.bestUnder;
+        if (!isFairPrice(quote)) continue;
+        const score = sideRecord(read, side);
+        if (score == null || score < MIN_LIKED_RECORD) continue;
+        const bet: RankedBet = { pick, side, quote, read, score };
+        const prev = best.get(pick.stat);
+        if (!prev || byBet(bet, prev) < 0) best.set(pick.stat, bet);
+      }
+    }
+  }
+  return [...best.values()].sort(byBet);
+}
+
+function betText(ctx: NblAskContext, bet: RankedBet): string {
+  return `${ctx.last} ${bet.read.statWords} ${bet.side} ${bet.quote.line} at ${priceText(bet.quote)}`;
+}
+
+function betRecordLine(ctx: NblAskContext, bet: RankedBet): string | null {
+  const recent = recentWindow(bet.read);
+  if (!recent) return null;
+  const hits = bet.side === 'over' ? recent.overs : recent.unders;
+  const vs = bet.read.windows.find((w) => w.window.startsWith('against '));
+  const vsText = vs && vs.games >= 3 ? `, and ${bet.side === 'over' ? vs.overs : vs.unders} of ${vs.games} ${vs.window}` : '';
+  return `${bet.read.statWords} ${bet.side} ${bet.quote.line}: ${hits} of his ${recent.window}${vsText}.`;
+}
+
+/** The last-10 window, or the biggest recent one when he has played fewer games. */
+function recentWindow(read: NblLineRead | null) {
+  const recent = (read?.windows || []).filter((w) => w.window.startsWith('last ') && w.games <= 10);
+  return recent.at(-1) ?? null;
+}
+
+function logBreakdown(ctx: NblAskContext, read: NblLineRead | null): string[] {
+  const lines: string[] = [];
+  const form = nblPlayerForm(ctx.games, read?.stat ?? ctx.stat);
+  if (read) {
+    const recent = recentWindow(read);
+    if (recent) lines.push(`${ctx.last} has gone over ${read.line} ${read.statWords} in ${recent.overs} of his ${recent.window}.`);
+    const season = read.windows.find((w) => w.window === 'this season');
+    if (season && season.games >= 3 && season.games !== recent?.games) {
+      lines.push(`This season it is ${season.overs} of ${season.games}, averaging ${season.average} ${read.statWords}.`);
+    }
+    if (read.run) lines.push(`He has gone ${read.run}.`);
+    const vs = read.windows.find((w) => w.window.startsWith('against '));
+    if (vs) {
+      const h2h = nblHeadToHead(ctx.games, ctx.opponentCode, read.stat);
+      const when = h2h.lastMeeting ? `, the last one ${h2h.lastMeeting}` : '';
+      lines.push(`${vs.window.replace(/^against/, 'Against')} he has gone over in ${vs.overs} of ${vs.games}${when}.`);
+    }
+  }
+  const minutes = form.averages.last5.minutes;
+  const seasonMinutes = form.averages.thisSeason.minutes;
+  if (minutes != null && seasonMinutes != null) {
+    lines.push(`He is playing ${minutes} minutes over his last 5, against ${seasonMinutes} for the season.`);
+  }
+  const injuries = nblInjuriesFor(ctx.teamCode, ctx.opponentCode, ctx.player);
+  if (injuries.teammatesOut.length) {
+    lines.push(`Teammates out: ${injuries.teammatesOut.map((row) => row.player).join(', ')}.`);
+  }
+  return lines.slice(0, 6);
+}
+
+function engineReasons(pick: NblEnginePick, side: 'over' | 'under') {
+  const confirmed = pick.inferences.filter((inf) => inf.status === 'confirmed' && inf.reason);
+  return {
+    for: confirmed.filter((inf) => inf.direction === side).map((inf) => firstSentence(inf.reason)),
+    against: confirmed
+      .filter((inf) => inf.direction !== 'neutral' && inf.direction !== side)
+      .map((inf) => firstSentence(inf.reason)),
+  };
+}
+
+function localBestLineReply(ctx: NblAskContext): AskReplyText {
+  const pick = ctx.panel.pick;
+  const stored = pick ? nblStoredLineQuotes(pick, { atLine: ctx.lineFromUser ? ctx.line : null }) : null;
+  const focus = ctx.panel.markets.find((m) => m.stat === pick?.stat) ?? ctx.panel.markets[0];
+  const over = stored?.bestOver || focus?.bestOver;
+  const under = stored?.bestUnder || focus?.bestUnder;
+  const words = statWords(focus?.stat || pick?.stat || ctx.stat);
+  if (!over && !under) {
+    return { answer: ctx.panel.reason || `No ${words} price was on the board when the lines were last checked.`, breakdown: [] };
+  }
+  const parts = [
+    over ? `Best over price for ${ctx.last}'s ${words} is ${over.line} at ${priceText(over)}.` : null,
+    under && (!over || under.line !== over.line || under.price !== over.price)
+      ? `Best under is ${under.line} at ${priceText(under)}.`
+      : null,
+  ].filter(Boolean);
+  const view = localModelReply(ctx);
+  return { answer: `${parts.join(' ')} ${view.answer}`, breakdown: view.breakdown };
+}
+
+function localTakeReply(ctx: NblAskContext): AskReplyText {
+  const [top, next] = ctx.ranked;
+  if (top) {
+    const also = next ? ` I also like ${betText(ctx, next)}.` : '';
+    return {
+      answer: `I'd take ${betText(ctx, top)}.${also}`,
+      breakdown: [top, next]
+        .filter((bet): bet is RankedBet => Boolean(bet))
+        .map((bet) => betRecordLine(ctx, bet))
+        .filter((line): line is string => Boolean(line)),
+    };
+  }
+  const pick =
+    rankNblPlayPicks(ctx.cardPicks).find((p) => takeQuote(p)) ?? selectNblAskPick(ctx.cardPicks) ?? ctx.panel.pick;
+  if (!pick) return localModelReply(ctx);
+  const taken = takeQuote(pick);
+  const side = leanSide(pick);
+  const read = readFor(ctx, pick.stat, taken?.quote.line ?? pick.line);
+  const reasons = engineReasons(pick, side);
+  const breakdown = [...logBreakdown(ctx, read), ...reasons.for.slice(0, 1)].slice(0, 6);
+  if (taken) {
+    return {
+      answer: `I'd take ${ctx.last} ${statWords(pick.stat)} ${taken.side} ${taken.quote.line} at ${priceText(taken.quote)}.`,
+      breakdown,
+    };
+  }
+  return {
+    answer:
+      pick.line != null
+        ? tooShortSides(pick).includes(`${side} ${pick.line}`)
+          ? `I'd be on ${ctx.last} ${statWords(pick.stat)} ${side} ${pick.line}, but the price is too short to bet.`
+          : `I'd be on ${ctx.last} ${statWords(pick.stat)} ${side} ${pick.line}, but there is no ${side} price on the board.`
+        : `No ${statWords(pick.stat)} price is on the board for ${ctx.last}.`,
+    breakdown,
+  };
+}
+
+function localOtherMarketsReply(ctx: NblAskContext): AskReplyText {
+  const skip = ctx.panel.pick?.stat || ctx.stat;
+  const ranked = rankNblPlayPicks(ctx.cardPicks.filter((p) => p.stat !== skip));
+  const others = ranked.slice(0, 3);
+  if (!others.length) {
+    return { answer: `No other priced market besides ${statWords(skip)} is on the board for ${ctx.last}.`, breakdown: [] };
+  }
+  const describe = (pick: NblEnginePick) => {
+    const taken = takeQuote(pick);
+    if (!taken) return null;
+    const l10 = recentWindow(readFor(ctx, pick.stat, taken.quote.line));
+    const hit = l10 ? ` He has gone ${taken.side} in ${taken.side === 'over' ? l10.overs : l10.unders} of his last ${l10.games}.` : '';
+    return `${statWords(pick.stat)} ${taken.side} ${taken.quote.line} at ${priceText(taken.quote)}.${hit}`;
+  };
+  const rows = others.map(describe).filter((row): row is string => Boolean(row));
+  if (!rows.length) {
+    return { answer: `No other priced market besides ${statWords(skip)} is on the board for ${ctx.last}.`, breakdown: [] };
+  }
+  return { answer: `I'd look at ${ctx.last} ${rows[0]}`, breakdown: rows.slice(1) };
+}
+
+function localShotReply(ctx: NblAskContext): AskReplyText {
+  const pick = ctx.panel.pick;
+  if (!pick) return { answer: ctx.panel.reason || 'No shot profile stored for this matchup.', breakdown: [] };
+  const shares = pick.claims.filter((c) => String(c.metric || '').startsWith('zone_share_'));
+  const ranks = pick.claims.filter((c) => String(c.metric || '').startsWith('opp_zone_rank_'));
+  const edge = pick.claims.find((c) => c.metric === 'zone_matchup_edge');
+  return {
+    answer: plainWords(shares[0]?.as_text || edge?.as_text || pick.narrative),
+    breakdown: [...shares.slice(1), ...ranks, edge]
+      .filter(Boolean)
+      .map((c) => plainWords(c!.as_text))
+      .slice(0, 5),
+  };
+}
+
+function localModelReply(ctx: NblAskContext): AskReplyText {
+  const pick = ctx.panel.pick && ctx.panel.pick.stat === ctx.stat ? ctx.panel.pick : null;
+  const read = ctx.read;
+  const words = statWords(ctx.stat);
+  const opp = clubName(ctx.opponentCode);
+  const breakdown = logBreakdown(ctx, read);
+  if (!read) {
+    return {
+      answer: ctx.panel.reason || `There is no ${words} line on the board for ${ctx.last} against ${opp} yet.`,
+      breakdown,
+    };
+  }
+  const l10 = recentWindow(read);
+  const fromLogs: 'over' | 'under' | null = l10 && l10.games >= 4
+    ? l10.overs / l10.games >= 0.6
+      ? 'over'
+      : l10.unders / l10.games >= 0.6
+        ? 'under'
+        : null
+    : null;
+  const engine = pick && pick.tier !== 'AVOID' && pick.tier !== 'NO EDGE' && pick.line === read.line ? leanSide(pick) : null;
+  const side = engine ?? fromLogs;
+  const market = `${ctx.last} ${words} ${read.line} against ${opp}`;
+  if (!side || (engine && fromLogs && engine !== fromLogs)) {
+    return { answer: `I wouldn't force ${market}. The numbers point both ways.`, breakdown };
+  }
+  const quote = pick ? nblStoredLineQuotes(pick, { atLine: read.line }) : null;
+  const price = side === 'over' ? quote?.bestOver : quote?.bestUnder;
+  const head = price
+    ? `I'd lean ${ctx.last} ${side} ${read.line} ${words} at ${priceText(price)}.`
+    : `I'd lean ${ctx.last} ${side} ${read.line} ${words}.`;
+  const why = l10 ? ` He has gone ${side} in ${side === 'over' ? l10.overs : l10.unders} of his last ${l10.games}.` : '';
+  return { answer: `${head}${why}`, breakdown };
+}
+
+function localReply(ctx: NblAskContext): AskReplyText {
+  if (ctx.intent === 'best_line') return localBestLineReply(ctx);
+  if (ctx.intent === 'take') return localTakeReply(ctx);
+  if (ctx.intent === 'other_markets') return localOtherMarketsReply(ctx);
+  if (ctx.intent === 'shot') return localShotReply(ctx);
+  return localModelReply(ctx);
+}
+
+const MATCHUP_GROUPS: Array<{ key: string; test: (c: NblEnginePick['claims'][number]) => boolean }> = [
+  { key: 'opponentDefence', test: (c) => c.category === 'matchup_allowed' },
+  { key: 'versusToughAndEasyDefences', test: (c) => c.metric === 'season_vs_d_hits' || c.metric === 'season_slate' },
+  { key: 'pace', test: (c) => c.category === 'pace' && c.metric === 'opp_pace' },
+  { key: 'withAndWithoutInjuredTeammates', test: (c) => c.category === 'injury_impact' || c.metric === 'teammate_out' },
+  { key: 'usageAndShots', test: (c) => c.category === 'usage' },
+  { key: 'minutes', test: (c) => c.category === 'minutes' },
+  { key: 'homeAway', test: (c) => c.category === 'home_away' },
+  { key: 'headToHeadBySeason', test: (c) => /^h2h_mean_\d{4}$/.test(c.metric) || c.metric === 'h2h_minutes_vs_now' },
+  { key: 'rest', test: (c) => c.metric === 'rest_days' },
+];
+
+/** The engine's matchup facts for one market, grouped and in plain words. */
+function matchupFacts(pick: NblEnginePick | null): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  if (!pick) return out;
+  for (const group of MATCHUP_GROUPS) {
+    const rows = pick.claims.filter(group.test).map((c) => plainWords(c.as_text)).filter(Boolean);
+    if (rows.length) out[group.key] = [...new Set(rows)];
+  }
+  return out;
+}
+
+function isFairPrice(q: Quote | null | undefined): q is Quote {
+  return Boolean(q && q.price >= NBL_MIN_MODEL_DECIMAL - 1e-9);
+}
+
+/** Every line the books offer on this market (milestone ladders included), fair prices only, with his hit rates there. */
+function lineLadder(ctx: NblAskContext, pick: NblEnginePick) {
+  const lines = [...new Set((pick.line_summary?.book_lines || []).map((row) => row.line))].sort((a, b) => a - b);
+  return lines.flatMap((line) => {
+    const q = nblStoredLineQuotes(pick, { atLine: line });
+    const over = isFairPrice(q.bestOver) ? q.bestOver : null;
+    const under = isFairPrice(q.bestUnder) ? q.bestUnder : null;
+    if (!over && !under) return [];
+    return [{ line, over, under, hitRates: readFor(ctx, pick.stat, line)?.windows ?? [] }];
+  });
+}
+
+function tooShortSides(pick: NblEnginePick): string[] {
+  if (pick.line == null) return [];
+  const q = nblStoredLineQuotes(pick, { atLine: pick.line });
+  return (['over', 'under'] as const)
+    .filter((side) => {
+      const quote = side === 'over' ? q.bestOver : q.bestUnder;
+      return quote != null && !isFairPrice(quote);
+    })
+    .map((side) => `${side} ${pick.line}`);
+}
+
+/** Milestone-only markets (10+ and so on) have no under to bet; these are the under lines worth waiting for, with his hit rates. */
+function waitForUnder(ctx: NblAskContext, pick: NblEnginePick | null) {
+  const rows = pick?.line_summary?.book_lines || [];
+  if (!pick || pick.line == null || !rows.length || rows.some((row) => row.under_decimal != null)) return null;
+  if (leanSide(pick) !== 'under') return null;
+  return [pick.line, pick.line + 1, pick.line + 2].map((line) => {
+    const read = readFor(ctx, pick.stat, line);
+    return { line, hitRates: read?.windows ?? [], run: read?.run ?? null };
+  });
+}
+
+function marketRow(ctx: NblAskContext, pick: NblEnginePick) {
+  const quotes = nblStoredLineQuotes(pick);
+  const side = leanSide(pick);
+  const taken = takeQuote(pick);
+  const read = readFor(ctx, pick.stat, pick.line);
+  const reasons = engineReasons(pick, side);
+  return {
+    market: statWords(pick.stat),
+    line: pick.line,
+    lean: side,
+    leanStrength: pick.tier === 'STRONG' ? 'firm' : pick.tier === 'LEAN' ? 'mild' : 'none',
+    bestOver: quotes.bestOver,
+    bestUnder: quotes.bestUnder,
+    priceForLean: taken ? taken.quote : null,
+    hitRates: read?.windows ?? [],
+    reasonsFor: reasons.for,
+    reasonsAgainst: reasons.against,
+    opponentDefence: matchupFacts(pick).opponentDefence ?? [],
+    otherLines: lineLadder(ctx, pick).filter((row) => row.line !== pick.line),
+    tooShortToBet: tooShortSides(pick),
+    waitForUnder: waitForUnder(ctx, pick),
+  };
+}
+
+function buildPack(ctx: NblAskContext) {
+  const form = nblPlayerForm(ctx.games, ctx.stat);
+  const focusPick = ctx.cardPicks.find((p) => p.stat === ctx.stat) ?? null;
+  const quotes = focusPick ? nblStoredLineQuotes(focusPick, { atLine: ctx.line }) : null;
+  const fair = (q: Quote | null | undefined) => (q && (ctx.lineFromUser || isFairPrice(q)) ? q : null);
+  const best = selectNblAskPick(ctx.cardPicks);
+  return {
+    game: {
+      label: ctx.panel.game?.game_label ?? null,
+      player: ctx.player,
+      team: clubName(ctx.teamCode),
+      opponent: clubName(ctx.opponentCode),
+      home: ctx.panel.game?.is_home ?? null,
+    },
+    player: {
+      name: ctx.player,
+      pronouns: 'he / him / his / himself',
+      gamesThisSeason: form.gamesThisSeason,
+      averages: form.averages,
+      lastGames: form.lastGames,
+    },
+    focus: {
+      market: statWords(ctx.stat),
+      line: ctx.line,
+      lineIs: ctx.lineFromUser ? 'the number the user named' : 'the book line on the chart',
+      hitRates: ctx.read?.windows ?? [],
+      run: ctx.read?.run ?? null,
+      bestOver: fair(quotes?.bestOver),
+      bestUnder: fair(quotes?.bestUnder),
+      lean: focusPick ? leanSide(focusPick) : null,
+      leanStrength: focusPick ? (focusPick.tier === 'STRONG' ? 'firm' : focusPick.tier === 'LEAN' ? 'mild' : 'none') : null,
+      reasonsFor: focusPick ? engineReasons(focusPick, leanSide(focusPick)).for : [],
+      reasonsAgainst: focusPick ? engineReasons(focusPick, leanSide(focusPick)).against : [],
+      matchup: matchupFacts(focusPick),
+      waitForUnder: waitForUnder(ctx, focusPick),
+    },
+    userLine: ctx.lineFromUser && ctx.read ? { market: ctx.read.statWords, line: ctx.read.line, hitRates: ctx.read.windows, run: ctx.read.run } : null,
+    timeline: form.timeline,
+    h2h: nblHeadToHead(ctx.games, ctx.opponentCode, ctx.stat),
+    rankedBets: ctx.ranked.slice(0, 3).map((bet, i) => ({
+      rank: i + 1,
+      market: bet.read.statWords,
+      side: bet.side,
+      line: bet.quote.line,
+      price: bet.quote.price,
+      books: bet.quote.books,
+      hitRates: bet.read.windows,
+      run: bet.read.run,
+      reasonsFor: engineReasons(bet.pick, bet.side).for,
+      reasonsAgainst: engineReasons(bet.pick, bet.side).against,
+      opponentDefence: matchupFacts(bet.pick).opponentDefence ?? [],
+    })),
+    markets: ctx.cardPicks.map((pick) => marketRow(ctx, pick)),
+    bestPricedPlay: best ? { market: statWords(best.stat), side: leanSide(best), line: best.line, price: takeQuote(best)?.quote ?? null } : null,
+    injuries: nblInjuriesFor(ctx.teamCode, ctx.opponentCode, ctx.player),
+    shotProfile: (ctx.panel.pick?.claims || [])
+      .filter((c) => /^(zone_share_|opp_zone_rank_|zone_matchup_edge)/.test(String(c.metric || '')))
+      .map((c) => plainWords(c.as_text))
+      .slice(0, 6),
+  };
+}
+
+const LENSES = [
+  'hit rate versus this line',
+  'last few games and streaks',
+  'head to head versus current form',
+  'teammates in or out',
+  'minutes and role',
+  'how the matchup compares with how he has actually gone against tough defences',
+  'shot profile against this defence',
+] as const;
+
+const NBL_RULES = `NBL basketball:
+- No stat codes like PTS, REB, AST, 3PM, PRA, P+R, L5, L10, H2H, DNP or USG — write "points", "rebounds", "assists", "threes made", "points + rebounds + assists", "last 10", "head to head".
+- Stats that matter: hit rates against the line (last 5, last 10, last 15, this season, against this opponent), over/under runs, averages, minutes and role, teammates out, head to head with how long ago, matchup and pace.
+- focus is the market on the chart. focus.line is the book line unless the user named a number — then grade userLine first.
+- Think like a punter sizing up a matchup: put his numbers beside what this opponent gives up. focus.matchup has what the defence allows and its rank, how he has gone against tough and easy defences, his numbers with and without the injured teammates, usage and shots, minutes, home and away, head to head by season, and rest. The best answers weigh his form against the matchup and the role change, not just a hit rate.
+- With and without teammates matters most when those teammates are out tonight — say how his numbers move without them.
+- Hit rates are overs and unders at that exact line, like "over 9.5 points in 6 of his last 10 games". A push (landing exactly on a whole-number line) is neither.
+- markets is every priced market for him this game. When they want a bet and rankedBets is filled, use rankedBets in its order. Otherwise choose from markets with a price; bestPricedPlay is the strongest priced read on his card — prefer it unless his game logs clearly disagree, and if they do, say why.
+- Each market's lean and reasons are one read among the stats, not a must. If his logs disagree, say so.
+- Milestone markets (2+, 10+ and so on) only offer the over. When his numbers back the under there (waitForUnder is filled in), you cannot bet the milestone, but you can say you would wait and take an under line from waitForUnder if one goes up, e.g. "I'd wait and take under 12.5", then give his under record at that line (not the milestone line). Pick the waitForUnder line whose hit rates back the under best. When you lean under on a milestone market, this beats a bare pass. Say there is no under price yet and never make one up.
+- Do not volunteer a price under 1.50 unless they named that line. Quote a price once. TAB Touch is TABtouch.
+- Ranks: shot-chart #N is the zone rank on the court (field goal % allowed). "Points allowed" ranks are box-score team allowed — a different list. Never mix them. 1st is the hardest defence; for pace, 1st is the slowest.
+- Matchup rank is one input. A hard defence is not an automatic under, an easy one is not an automatic over.
+- Injuries: only name players listed in injuries. Never guess return dates beyond what is listed.
+- Shot chart questions: quote "X% of makes" and shot-chart #N from shotProfile only.
+- NBL players are men: he / him.`;
+
+const SYSTEM_PROMPT = buildAskSystemPrompt({ subject: 'this NBL game', sportRules: NBL_RULES });
+
+function priceOffers(picks: NblEnginePick[]): AskPriceOffer[] {
+  const offers: AskPriceOffer[] = [];
+  for (const pick of picks) {
+    for (const row of pick.line_summary?.book_lines || []) {
+      if (row.over_decimal != null) offers.push({ side: 'over', line: row.line, price: row.over_decimal });
+      if (row.under_decimal != null) offers.push({ side: 'under', line: row.line, price: row.under_decimal });
+    }
+  }
+  return offers;
+}
+
+function locksFor(ctx: NblAskContext): string[] {
+  const words = statWords(ctx.stat);
+  const locks = [
+    ctx.lineFromUser && ctx.line != null
+      ? `The user named ${ctx.line} ${words} for ${ctx.last}. Grade that number with his hit rates at ${ctx.line}.`
+      : ctx.line != null
+        ? `The chart is on ${ctx.last} ${words}, book line ${ctx.line}.`
+        : `No book line for ${ctx.last} ${words} — talk about his form and say there is no line.`,
+  ];
+  if (ctx.intent === 'take' && ctx.ranked.length) {
+    const [top, next] = ctx.ranked;
+    locks.push(
+      `They want THE best bet on ${ctx.last}, on any market. rankedBets is already ranked on his record at each line, priced ${NBL_MIN_MODEL_DECIMAL.toFixed(2)} or more. Lead with rank 1: "I'd take ${betText(ctx, top)}" and the main reason.${
+        next ? ` Then a sentence starting "I also like" with rank 2: ${betText(ctx, next)}, and its reason.` : ''
+      } Keep this order and these exact lines and prices. Breakdown: his record at each of those lines first, then the matchup facts that back them. Never quote a price under ${NBL_MIN_MODEL_DECIMAL.toFixed(2)}.`
+    );
+  } else if (ctx.intent === 'take') {
+    locks.push(
+      `They want THE best bet on ${ctx.last}, on any market — points, rebounds, assists, threes made or a combo, not just the chart. Weigh every row in markets, including each market's otherLines (alternative lines like 3+ or 4+ with their own prices and hit rates). Only prices of ${NBL_MIN_MODEL_DECIMAL.toFixed(2)} or more are listed. Pick the market, line and side where his hit rates at that line and the matchup most clearly back it — a higher line at a fair price often beats a short main line. Name the market, side, line, price and book, then the main reasons. Never quote a price under ${NBL_MIN_MODEL_DECIMAL.toFixed(2)}; tooShortToBet sides are priced but too short — call them too short, never "no price". If the side his numbers back has no price, pick another market, or on a milestone market say you would wait for an under line from waitForUnder — never take the opposite side because it has a price. Prefer a priced bet when one is solid; waiting for an under is fine when that under is clearly the strongest read. If nothing is worth a bet, say you would pass and name the one closest to a bet.`
+    );
+  }
+  if (ctx.intent === 'other_markets') locks.push(`They want a market other than ${words}. Pick from the rest of markets.`);
+  if (ctx.intent === 'best_line') {
+    locks.push(
+      'They asked for the best line. Lead with the best over and under price and book for that market, then say which side you would take or that you would pass, and the main reason why. If you lean under and there is no under price (focus.waitForUnder is filled), say which under line you would wait for instead of just passing, and lead the breakdown with his under record at THAT line from waitForUnder.'
+    );
+  }
+  locks.push(`${ctx.last} is a man. Refer to him as he / him / his.`);
+  return locks;
 }
 
 export async function answerNblAsk(opts: {
@@ -842,52 +713,87 @@ export async function answerNblAsk(opts: {
   selectedLine?: number | null;
   history?: NblAskMessage[];
   allowLlm?: boolean;
+  startedAt?: number;
 }): Promise<NblAskReply> {
   const intent = nblQuestionIntent(opts.question);
   const panel = loadNblAskPanel(opts);
   const suggestions = nblAskSuggestions(panel, opts.playerName);
-  const requestedLine =
-    lineNamedInQuestion(opts.question, postedLines(panel.pick)) ??
-    (intent === 'best_line' &&
-    opts.selectedLine != null &&
-    Number.isFinite(Number(opts.selectedLine))
-      ? Number(opts.selectedLine)
-      : null);
-  const local = localReply(panel, intent, requestedLine, opts);
   const base = { suggestions, reason: panel.reason };
-  if (opts.allowLlm === false) {
-    return { ...local, source: 'stats', ...base };
-  }
-  const canLlm = Boolean(panel.pick);
-  if (!canLlm) {
-    return { ...local, source: 'stats', ...base };
-  }
-  const cfg = llmConfigured();
-  if (!cfg) return { ...local, source: 'stats', ...base };
-  const takeLock = panel.pick
-    ? {
-        side: leanSide(panel.pick),
-        line: panel.pick.line,
-        priced: Boolean(takeQuote(panel.pick)),
-      }
-    : undefined;
-  const pack = buildPack(panel, intent, requestedLine);
-  try {
-    const raw = await openaiReasoning(cfg.key, cfg.model, opts.question, pack, opts.history || []);
-    const parsed = parseAskReply(raw);
-    if (!parsed.answer) return { ...local, source: 'stats', ...base };
-    const extra = inventedNumbers(`${parsed.answer}\n${parsed.breakdown.join('\n')}`, pack);
-    if (extra.length) return { ...local, source: 'stats', ...base };
-    if (!answersTheQuestion(opts.question, parsed.answer, intent, requestedLine, takeLock)) {
-      return { ...local, source: 'stats', ...base };
+  const playerId = opts.playerId || panel.pick?.player_id || null;
+  const logs = loadNblPlayerGameLogs({ playerId, name: playerId ? null : opts.playerName, years: [...NBL_CHART_HISTORY_YEARS] });
+  const games = logs?.games ?? [];
+  const player = panel.pick?.player_name || logs?.name || opts.playerName || '';
+  const cardPicks = findNblEnginePlayerPicks({
+    playerId,
+    playerName: player || null,
+    opponent: panel.game?.opponent_code || opts.opponent || null,
+  });
+  const opponentCode = panel.game?.opponent_code || nblClubCodeFor(opts.opponent);
+  const teamCode = panel.pick?.team_code || cardPicks[0]?.team_code || games.at(-1)?.teamCode || null;
+  const named = nblStatFromQuestion(opts.question);
+  const stat = named || panel.pick?.stat || opts.stat || 'points';
+  const userLine = lineFromQuestion(opts.question);
+  const chartLine =
+    stat === (opts.stat || 'points') && opts.selectedLine != null && Number.isFinite(Number(opts.selectedLine))
+      ? Number(opts.selectedLine)
+      : null;
+  const focusPick = cardPicks.find((p) => p.stat === stat) ?? (panel.pick?.stat === stat ? panel.pick : null);
+  const line = userLine ?? chartLine ?? focusPick?.line ?? null;
+  const ctx: NblAskContext = {
+    question: opts.question,
+    intent,
+    panel,
+    games,
+    player,
+    last: lastNameOf(player),
+    teamCode,
+    opponentCode,
+    stat,
+    line,
+    lineFromUser: userLine != null,
+    read: null,
+    cardPicks,
+    ranked: [],
+  };
+  if (intent === 'take' && !named) {
+    ctx.ranked = rankBets(ctx);
+    const top = ctx.ranked[0];
+    if (top && userLine == null) {
+      ctx.stat = top.pick.stat;
+      ctx.line = top.quote.line;
     }
-    return {
-      answer: parsed.answer,
-      breakdown: parsed.breakdown.length ? parsed.breakdown : local.breakdown,
-      source: 'model',
-      ...base,
-    };
-  } catch {
-    return { ...local, source: 'stats', ...base };
   }
+  ctx.read = readFor(ctx, ctx.stat, ctx.line);
+
+  const local = localReply(ctx);
+  if (!games.length && !panel.pick) return { ...local, source: 'stats', ...base };
+  const pack = buildPack(ctx);
+  const reply = await runAskAi({
+    sportModel: process.env.NBL_ASK_MODEL,
+    system: SYSTEM_PROMPT,
+    userContent: buildAskUserContent({
+      locks: locksFor(ctx),
+      lens: LENSES[Math.floor(Math.random() * LENSES.length)],
+      pack,
+      question: opts.question,
+    }),
+    history: opts.history,
+    question: opts.question,
+    pack,
+    local,
+    allowLlm: opts.allowLlm,
+    startedAt: opts.startedAt,
+    checks: [
+      (r) =>
+        /\b(she|her|hers|herself)\b/i.test(askReplyText(r))
+          ? `${ctx.last} is a man. Use he / him / his.`
+          : null,
+      (r) =>
+        ctx.intent === 'take' && !ctx.lineFromUser && /\b1\.[0-4]\d\b/.test(askReplyText(r))
+          ? `That price is under ${NBL_MIN_MODEL_DECIMAL.toFixed(2)}. Pick a market priced ${NBL_MIN_MODEL_DECIMAL.toFixed(2)} or more, or pass.`
+          : null,
+      askPriceCheck(priceOffers(cardPicks)),
+    ],
+  });
+  return { ...reply, ...base };
 }

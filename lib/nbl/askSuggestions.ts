@@ -18,6 +18,6 @@ export function nblPunterQuestions(playerName: string, opponentName: string): st
   return [
     `How do you see ${last} vs ${opp}?`,
     `Where does ${last} score from against ${opp}'s defence?`,
-    `What's the best line on ${last}?`,
+    `What's the best line for ${last}?`,
   ];
 }

@@ -1,3 +1,4 @@
+import { askAgo, askMonthYear } from '@/lib/ai/ask/timeline';
 import { tennisBestOf } from '@/lib/tennis/apiTennis';
 import {
   resolveTennisMatchBestOf,
@@ -108,28 +109,7 @@ export function tennisRowRetired(row: Pick<TennisMatchRow, 'score'>): boolean {
   return /\b(ret(?:ired)?|w\/o|walkover|def(?:ault)?|abd|abn|abandoned)\b/i.test(String(row.score || ''));
 }
 
-export function tennisAgo(
-  date: string | null | undefined,
-  now = Date.now()
-): { ago: string; days: number; months: number } | null {
-  const at = Date.parse(String(date || ''));
-  if (!Number.isFinite(at)) return null;
-  const days = Math.max(0, Math.floor((now - at) / 86_400_000));
-  const months = Math.floor(days / 30.44);
-  const ago =
-    days === 0
-      ? 'today'
-      : days === 1
-        ? 'yesterday'
-        : days < 14
-          ? `${days} days ago`
-          : days < 60
-            ? `${Math.round(days / 7)} weeks ago`
-            : months < 24
-              ? `${months} months ago`
-              : `${Math.floor(days / 365.25)} years ago`;
-  return { ago, days, months };
-}
+export const tennisAgo = askAgo;
 
 export function tennisTimelineForRows(
   rows: TennisMatchRow[],
@@ -859,12 +839,7 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
       avgGames: analysis.h2h.avgGames,
       avgGamesBo3: analysis.h2h.avgGamesBo3,
       avgGamesBo5: analysis.h2h.avgGamesBo5,
-      onFileSince: (() => {
-        const at = Date.parse(String(analysis.h2h.onFileSince || ''));
-        return Number.isFinite(at)
-          ? new Date(at).toLocaleString('en-AU', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-          : null;
-      })(),
+      onFileSince: askMonthYear(analysis.h2h.onFileSince),
       lastMeeting: analysis.h2h.lastMeeting?.ago ?? null,
       monthsSinceLastMeeting: analysis.h2h.lastMeeting?.monthsAgo ?? null,
       meetings: analysis.h2h.recent.map((row) => ({

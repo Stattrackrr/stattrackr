@@ -36,6 +36,12 @@ async function main() {
   console.log(`[warm-nbl-pbp] years=${years.join(',')} concurrency=${concurrency} force=${force}`);
   const result = await warmNblPbpPoints({ years, concurrency, forceRefresh: force });
   console.log('[warm-nbl-pbp] done', result);
+  if (result.missing > 0) {
+    // Annotates the GitHub run without failing it, so the rest of the nightly data still commits.
+    console.log(
+      `::warning title=NBL play-by-play missing::${result.missing} finished game(s) have no readable play-by-play; quarter splits and chemistry will be missing for them.`
+    );
+  }
 }
 
 main().catch((err) => {

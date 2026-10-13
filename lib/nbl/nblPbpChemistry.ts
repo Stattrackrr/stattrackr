@@ -287,7 +287,8 @@ export function parseNblPbpChemistry(fixtureId: string, json: unknown): NblFixtu
     [homeComp?.name, awayComp?.name].map((n) => String(n || '').trim().toLowerCase()).filter(Boolean)
   );
 
-  const pbp = data.pbp;
+  // SportRadar moved events from `pbp` (keyed by period) to `periodData` (array of periods) in Oct 2026.
+  const pbp = data.pbp ?? data.periodData;
   if (!pbp || typeof pbp !== 'object') return null;
 
   const periodKeys = Object.keys(pbp as Record<string, unknown>).sort((a, b) => Number(a) - Number(b));

@@ -1,3 +1,6 @@
+import { askReplyText, askLlmConfig, type AskMessage } from '@/lib/ai/ask/llm';
+import { buildAskSystemPrompt, buildAskUserContent } from '@/lib/ai/ask/rules';
+import { runAskAi, type AskReply } from '@/lib/ai/ask/run';
 import {
   compactTennisAnalysis,
   tennisFormFraction,
@@ -15,36 +18,12 @@ import {
 } from '@/lib/tennis/askUserLine';
 
 const EMPTY_BRIEF = { similarVsOpponent: [] } as Pick<TennisAskBrief, 'similarVsOpponent'> as TennisAskBrief;
-const OPENAI_TIMEOUT_MS = 15_000;
-/** The ask panel aborts at 22s; AI calls must finish inside this, measured from the request arriving. */
-const ASK_BUDGET_MS = 19_000;
-const MIN_REWRITE_MS = 4_000;
 
-export type TennisAskMessage = { role: 'user' | 'assistant'; content: string };
-export type TennisAskReply = { answer: string; breakdown: string[]; source: 'model' | 'stats' };
-
-function llmConfigured(): { provider: 'openai' | 'anthropic'; key: string; model: string } | null {
-  const openai = String(process.env.OPENAI_API_KEY || '').trim();
-  if (openai) {
-    return {
-      provider: 'openai',
-      key: openai,
-      model: String(process.env.TENNIS_ASK_MODEL || 'gpt-5.6-luna').trim() || 'gpt-5.6-luna',
-    };
-  }
-  const anthropic = String(process.env.ANTHROPIC_API_KEY || '').trim();
-  if (anthropic) {
-    return {
-      provider: 'anthropic',
-      key: anthropic,
-      model: String(process.env.TENNIS_ASK_MODEL || 'claude-3-5-haiku-latest').trim() || 'claude-3-5-haiku-latest',
-    };
-  }
-  return null;
-}
+export type TennisAskMessage = AskMessage;
+export type TennisAskReply = AskReply;
 
 export function tennisAskConfigured(): boolean {
-  return llmConfigured() != null;
+  return askLlmConfig(process.env.TENNIS_ASK_MODEL) != null;
 }
 
 const LENSES = [
@@ -58,46 +37,23 @@ const LENSES = [
   'break points and who actually gets broken',
 ] as const;
 
-const SYSTEM_PROMPT = `You are a supporting punter on StatTrackr chatting about this match. Give a clear over/under or side opinion, then back it with the stats. You are not a prediction model.
-
-Use ONLY facts and numbers in the STAT PACK. Never invent a stat, line, rank, score, or percentage.
-
-How to write:
-- Talk like a punter texting a mate — short, casual, opinionated.
-- Keep it easy to read. Short sentences, everyday words, one idea per sentence. No abbreviations like L15, BO3, H2H, RPW, BP or DF — write "last 15", "best-of-3", "head to head", "double faults". Say "holds serve 69% of the time", not "hold % 69".
-- Vary how you open. Do not start every answer the same way.
-- Never write "Here's why."
-- Never say the model, model chance, model projection, predicted, edge, EV, no-vig, fair price, or Kelly.
-- Never quote a percent edge vs the book. A listed price is fine. An "X% edge" is not.
-- Dig into whatever stats matter for THIS question: hold, break, aces, DF, games won/lost, last 10 / last 15 totals, H2H, surface, userLine hit rates.
-- Do not recycle the same three facts every time. If two stats disagree, say so.
-- Be specific: names, numbers, surfaces, last 10 / last 15.
-- No lock, guaranteed, or sure-thing language.
-- Answer in 2 to 3 short sentences. Then breakdown: 4 to 6 short sentences, each a different fact. Do not repeat the answer.
+const TENNIS_RULES = `Tennis:
+- No abbreviations like L15, BO3, H2H, RPW, BP or DF — write "last 15", "best-of-3", "head to head", "double faults". Say "holds serve 69% of the time", not "hold % 69".
+- Stats that matter: hold, break, aces, double faults, games won/lost, last 10 / last 15 totals, head to head, surface, userLine hit rates. Name surfaces when you use them.
 - Format first: format.bestOf is this match. ATP slams are best of 5. If bestOf is 5, never mention 21.5 or 22.5 unless the user typed that number.
 - Say the format out loud. The user cannot see the filter. When you quote last-15 match lengths, overs, hold/break, or hit rates, write "last 15 best-of-3 matches" or "last 15 best-of-5 matches" to match format.bestOf. Never say "last 15" or "last-15 match lengths" without best-of-3 or best-of-5.
 - Totals vs player games: userLine.stat is the source of truth. totalGames = match total (both players). gamesWon = one player's games. "run long" / "match total" / "total games" = match total. "for Xiao" / "games won" = that player's games. In best of 3, 18.5 is a normal PLAYER games line — do not assume it is the match total. In best of 3, 21.5 / 22.5 is usually the match total. In best of 5, 18.5 is player games and 38.5+ is the match total. viewing.stat is only a tie-break when the number could be either.
 - Totals: books.listedTotalLine is the book match total. Grade it with player.last15.totalGames (already the same best-of as this match). Never mix slam lengths (30+ games) into a best-of-3 total.
 - Set markets: books.sets has, per book, each player to win a set, each player in straight sets, and the total sets line. A null price is not offered, so never quote or suggest it. To win a set is graded with last15.wonASet, straight sets with last15.straightSetWins and the other side's straightSetLosses, total sets over with last15.decidingSet. Those are hits over finished matches, like 12/15.
 - H2H game averages are often from BO3 meetings. Do not compare h2h.avgGames to a BO5 38.5–43.5 total.
-- User-named numbers: grade with userLine. Do not say there is no line. Never say pack field names.
-- Never write pack, STAT PACK, userLine, user line, graded, hit-rate call, or side lean. The punter cannot see those.
-- Win records in plain words: "won 2 of her last 5 clay matches", "won 11 of his last 15". Never write "record is 2/5" or 2-3 for a last-N sample. Head-to-head can stay "leads 4-2".
-- Over/under and cover counts in plain words too: "the under landed in 3 of her last 14". Never put a win record and an over/under count in the same sentence — keep them apart so neither reads like the other.
+- Cover counts read like over/under counts: "covered in 9 of her last 15", never next to a win record.
 - Last-5 is player.last5 over player.last5Sample, not the unfiltered L5 moneyline chart. If last5Sample is "last 5 hard best-of-3 matches", say that. Do not count slams or clay in that number. last5Matches are those matches in order.
 - Win records come only from last5 / last10 / last15.record / surface.record. A handicap or over/under hit rate (like covered 13 of 15) is not a win record. Never write "X is 15/15" from a cover or over hit rate.
 - Retired and walkover matches are left out of every games number and over/under count. If a count left one out, quote it as it is (like 3 of 14) and you may say a retirement was left out.
-- Time matters. Use timeline and h2h when they change the picture, and copy their "ago" wording — never work out dates yourself:
-  - Head to head: if monthsSinceLastMeeting is 12 or more, say how long ago it was and give it less weight ("she lost both meetings, but the last one was 14 months ago"). Name the surface if it differs from this match.
-  - Streaks: if currentStreak is 3 or more in a row, set it beside the bigger record when it tells a different story ("won 10 of her last 15, and she has won the last 7 in a row").
-  - Rest: if daysSinceLastMatch is 30 or more, say how long she or he has been out. If it is 0 or 1, say they played yesterday or today.
-  - If last15GoesBackTo is more than 12 months, say that sample is old.
-  - Head to head only covers matches since h2h.onFileSince. With no meetings, say "no meetings since <onFileSince>", never that they have never played.
-  - Skip all of these when they do not matter to the question.
-- Pronouns: use player.pronouns and opponent.pronouns exactly. They come from the tour (ATP = men, WTA = women). Never guess gender from a first name or initial.
+- Old head to head: name the surface of a meeting if it differs from this match.
+- Pronouns: player.pronouns and opponent.pronouns come from the tour (ATP = men, WTA = women).`;
 
-Return JSON only:
-{"answer":"string","breakdown":["string","string"]}`;
+const SYSTEM_PROMPT = buildAskSystemPrompt({ subject: 'this tennis match', sportRules: TENNIS_RULES });
 
 function askedGamesLine(question: string): number | null {
   if (parseUserStatLine(question)) return null;
@@ -139,42 +95,6 @@ function namedSide(question: string, analysis: TennisMatchAnalysis): 'player' | 
 function pctLabel(value: number): string {
   const rounded = Math.round(value * 10) / 10;
   return Number.isInteger(rounded) ? `${rounded}%` : `${rounded.toFixed(1)}%`;
-}
-
-function lightClean(raw: string): string {
-  return String(raw || '')
-    .replace(/\*\*/g, '')
-    .replace(/^\s*[-*•]\s+/gm, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-}
-
-function parseAskReply(raw: string): { answer: string; breakdown: string[] } {
-  const trimmed = String(raw || '').trim();
-  const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]) as { answer?: unknown; breakdown?: unknown };
-      const answer = lightClean(String(parsed.answer || ''));
-      const breakdown = Array.isArray(parsed.breakdown)
-        ? parsed.breakdown
-            .map((row) => lightClean(String(row || '')))
-            .filter(Boolean)
-            .slice(0, 8)
-        : [];
-      if (answer) return { answer, breakdown };
-    } catch {
-      /* fall through */
-    }
-  }
-  const parts = trimmed
-    .split(/\n+/)
-    .map((row) => lightClean(row))
-    .filter(Boolean);
-  return {
-    answer: parts[0] || 'Not enough in the pack to price that cleanly.',
-    breakdown: parts.slice(1, 8),
-  };
 }
 
 type AskViewing = {
@@ -242,16 +162,6 @@ function buildAskPack(
     },
     userLine: evaluateUserStatLine(analysis, EMPTY_BRIEF, question, ctx),
   };
-}
-
-function soundsLikeModelPitch(text: string): boolean {
-  return /\b(the model|our model|model has|model chance|model edge|model projection|positive edge|%\s*edge|\bEV\b|no-vig|kelly)\b/i.test(
-    text
-  );
-}
-
-function soundsLikePackLeak(text: string): boolean {
-  return /\b(stat pack|the pack|userLine|user line|graded|hit-rate call|side lean)\b/i.test(text);
 }
 
 function formatSample(bestOf: 3 | 5): string {
@@ -451,7 +361,7 @@ function askUserContent(
   question: string,
   analysis: TennisMatchAnalysis,
   viewing?: AskViewing
-): string {
+): { content: string; pack: ReturnType<typeof buildAskPack> } {
   const pack = buildAskPack(analysis, question, viewing);
   const userLine = parseUserStatLine(question, viewingContext(analysis, viewing));
   const line = askedGamesLine(question);
@@ -478,70 +388,10 @@ function askUserContent(
         : 'No specific user number was locked.';
   const identity = tourPlayers(analysis);
   const pronounLock = `${tourIsWta(analysis) ? 'WTA' : 'ATP'} match: ${analysis.player.last} and ${analysis.opponent.last} are each a ${identity.gender}. Refer to them as ${identity.pronouns}.`;
-  return `${formatLock}\n${lock}\n${pronounLock}\nThis time lean on: ${lens}.\n\nSTAT PACK:\n${JSON.stringify(pack)}\n\nQUESTION:\n${question}`;
-}
-
-async function openaiReasoning(
-  key: string,
-  model: string,
-  turns: TennisAskMessage[],
-  timeoutMs: number
-): Promise<string> {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-    },
-    signal: AbortSignal.timeout(timeoutMs),
-    body: JSON.stringify({
-      model,
-      max_completion_tokens: 700,
-      reasoning_effort: 'low',
-      response_format: { type: 'json_object' },
-      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...turns],
-    }),
-  });
-  const json = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-    error?: { message?: string };
+  return {
+    content: buildAskUserContent({ locks: [formatLock, lock, pronounLock], lens, pack, question }),
+    pack,
   };
-  if (!res.ok) throw new Error(json?.error?.message || `OpenAI ${res.status}`);
-  const text = json.choices?.[0]?.message?.content?.trim();
-  if (!text) throw new Error('Empty model response');
-  return text;
-}
-
-async function anthropicReasoning(
-  key: string,
-  model: string,
-  turns: TennisAskMessage[],
-  timeoutMs: number
-): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'Content-Type': 'application/json',
-    },
-    signal: AbortSignal.timeout(timeoutMs),
-    body: JSON.stringify({
-      model,
-      max_tokens: 700,
-      temperature: 0.8,
-      system: SYSTEM_PROMPT,
-      messages: turns,
-    }),
-  });
-  const json = (await res.json()) as { content?: Array<{ text?: string }>; error?: { message?: string } };
-  if (!res.ok) throw new Error(json?.error?.message || `Anthropic ${res.status}`);
-  const text = json.content
-    ?.map((part) => part.text || '')
-    .join('')
-    .trim();
-  if (!text) throw new Error('Empty model response');
-  return text;
 }
 
 export async function answerTennisAsk(opts: {
@@ -556,7 +406,6 @@ export async function answerTennisAsk(opts: {
   /** When the request arrived, so data loading counts against the panel's timeout. */
   startedAt?: number;
 }): Promise<TennisAskReply> {
-  const started = opts.startedAt ?? Date.now();
   const viewing: AskViewing = {
     stat: opts.viewingStat || null,
     line: opts.viewingLine ?? null,
@@ -564,56 +413,24 @@ export async function answerTennisAsk(opts: {
     opponentRows: opts.opponentRows,
   };
   const local = buildLocalAskReply(opts.analysis, opts.question, viewing);
-  if (opts.allowLlm === false) return { ...local, source: 'stats' };
-  const cfg = llmConfigured();
-  if (!cfg) return { ...local, source: 'stats' };
-  const turns: TennisAskMessage[] = [
-    ...(opts.history || []).slice(-6).map((msg) => ({ role: msg.role, content: msg.content })),
-    { role: 'user', content: askUserContent(opts.question, opts.analysis, viewing) },
-  ];
-  const run = (messages: TennisAskMessage[], timeoutMs: number) =>
-    cfg.provider === 'openai'
-      ? openaiReasoning(cfg.key, cfg.model, messages, timeoutMs)
-      : anthropicReasoning(cfg.key, cfg.model, messages, timeoutMs);
-  const firstMs = Math.min(OPENAI_TIMEOUT_MS, ASK_BUDGET_MS - (Date.now() - started));
-  if (firstMs < MIN_REWRITE_MS) return { ...local, source: 'stats' };
-  try {
-    const raw = await run(turns, firstMs);
-    let parsed = parseAskReply(raw);
-    if (!parsed.answer) return { ...local, source: 'stats' };
-    const tour = opts.analysis.tour;
-    const replyText = (reply: { answer: string; breakdown: string[] }) =>
-      `${reply.answer}\n${reply.breakdown.join('\n')}`;
-    const retryMs = ASK_BUDGET_MS - (Date.now() - started);
-    if (tennisReplyMisgenders(replyText(parsed), tour) && retryMs >= MIN_REWRITE_MS) {
-      const identity = tourPlayers(opts.analysis);
-      try {
-        const rewritten = parseAskReply(
-          await run(
-            [
-              ...turns,
-              { role: 'assistant', content: raw },
-              {
-                role: 'user',
-                content: `You misgendered the players. This is a ${tour} match: ${opts.analysis.player.last} and ${opts.analysis.opponent.last} are each a ${identity.gender}, so use ${identity.pronouns}. Rewrite the same reply with the correct pronouns. Keep every stat and the pick the same. Return the same JSON shape.`,
-              },
-            ],
-            retryMs
-          )
-        );
-        if (rewritten.answer) parsed = rewritten;
-      } catch {
-        /* keep the first AI reply */
-      }
-    }
-    const blob = replyText(parsed);
-    if (soundsLikeModelPitch(blob) || soundsLikePackLeak(blob)) return { ...local, source: 'stats' };
-    return {
-      answer: parsed.answer,
-      breakdown: parsed.breakdown.length ? parsed.breakdown : local.breakdown,
-      source: 'model',
-    };
-  } catch {
-    return { ...local, source: 'stats' };
-  }
+  const { content, pack } = askUserContent(opts.question, opts.analysis, viewing);
+  const { tour } = opts.analysis;
+  const identity = tourPlayers(opts.analysis);
+  return runAskAi({
+    sportModel: process.env.TENNIS_ASK_MODEL,
+    system: SYSTEM_PROMPT,
+    userContent: content,
+    history: opts.history,
+    question: opts.question,
+    pack,
+    local,
+    allowLlm: opts.allowLlm,
+    startedAt: opts.startedAt,
+    checks: [
+      (reply) =>
+        tennisReplyMisgenders(askReplyText(reply), tour)
+          ? `You misgendered the players. This is a ${tour} match: ${opts.analysis.player.last} and ${opts.analysis.opponent.last} are each a ${identity.gender}, so use ${identity.pronouns}.`
+          : null,
+    ],
+  });
 }

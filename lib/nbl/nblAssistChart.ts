@@ -145,8 +145,9 @@ function isSkippable(ev: PbpEvent): boolean {
 }
 
 export function flattenPbpEvents(json: unknown): PbpEvent[] {
-  const data = (json as { data?: { pbp?: unknown } } | null)?.data;
-  const pbp = data?.pbp;
+  const data = (json as { data?: { pbp?: unknown; periodData?: unknown } } | null)?.data;
+  // SportRadar moved events from `pbp` (keyed by period) to `periodData` (array of periods) in Oct 2026.
+  const pbp = data?.pbp ?? data?.periodData;
   if (!pbp || typeof pbp !== 'object') return [];
   const keys = Object.keys(pbp as Record<string, unknown>).sort((a, b) => {
     const na = Number(a);
@@ -542,12 +543,14 @@ export async function warmSeasonAssistCharts(options?: {
 }): Promise<{ playersWritten: number; withAssists: number; located: number; assistCount: number }> {
   const year = options?.year ?? NBL_SHOT_CHART_SEASON_YEAR;
   for (const fixtureId of listAssistChartFixtures(year)) {
-    if (!options?.force && readFixtureAssistShots(fixtureId)) continue;
+    // Every finished game has assists, so a zero-assist file means the feed was unreadable; retry it.
+    if (!options?.force && (readFixtureAssistShots(fixtureId)?.assistCount ?? 0) > 0) continue;
     const chart = readCachedShotChart(fixtureId);
     if (!chart) continue;
     const json = await fetchNblMatchPbpJson(fixtureId);
     if (!json) continue;
-    writeFixtureAssistShots(locateFixtureAssists(chart, json, year));
+    const located = locateFixtureAssists(chart, json, year);
+    if (located.assistCount > 0) writeFixtureAssistShots(located);
   }
   return rebuildPlayerAssistCharts({ rosterNames: options?.rosterNames, year });
 }

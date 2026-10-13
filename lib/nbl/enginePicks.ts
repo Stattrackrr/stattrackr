@@ -68,7 +68,7 @@ export function loadNblEngineDays(dir = NBL_ENGINE_PICKS_DIR): NblEnginePublishF
   return out;
 }
 
-function clubCodeFor(input: string | null | undefined): string | null {
+export function nblClubCodeFor(input: string | null | undefined): string | null {
   if (!input) return null;
   const direct = getNblClubByCode(input);
   if (direct) return direct.code;
@@ -211,7 +211,7 @@ function resolveNblEngineGame(lookup: NblEngineLookup): {
 
   const wantId = String(lookup.playerId || '').trim();
   const wantName = lookup.playerName ? normPlayerName(lookup.playerName) : '';
-  const wantOpp = clubCodeFor(lookup.opponent);
+  const wantOpp = nblClubCodeFor(lookup.opponent);
   const nowMs = (lookup.now ?? new Date()).getTime();
 
   const latest = days[days.length - 1];

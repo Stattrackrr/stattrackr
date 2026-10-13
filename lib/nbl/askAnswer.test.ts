@@ -12,7 +12,10 @@ assert.equal(
   ),
   'take'
 );
-assert.equal(nblQuestionIntent("What's the best line on Waardenburg?"), 'best_line');
+assert.equal(nblQuestionIntent("What's the best line for Waardenburg?"), 'take');
+assert.equal(nblQuestionIntent("What's the best line on Waardenburg?"), 'take');
+assert.equal(nblQuestionIntent("What's the best points line for Waardenburg?"), 'best_line');
+assert.equal(nblQuestionIntent("What's the best price on Waardenburg?"), 'best_line');
 assert.equal(nblQuestionIntent("What's the model on Waardenburg vs Cairns?"), 'model');
 assert.equal(nblQuestionIntent('How do you see Waardenburg vs Cairns?'), 'model');
 assert.equal(
@@ -53,19 +56,31 @@ async function main() {
     allowLlm: false,
   });
   assert.match(quick.answer, /I'd take /i);
-  assert.match(quick.answer, /\bPRA\b|\bPA\b|\bPR\b|\bPTS\b|\bREB\b|\bAST\b|\b3PM\b/i);
+  assert.match(quick.answer, /\bpoints\b|\brebounds\b|\bassists\b|\bthrees made\b/i);
+  assert.doesNotMatch(quick.answer, /\bPRA\b|\bPTS\b|\bREB\b|\bAST\b|\b3PM\b/);
   assert.doesNotMatch(quick.answer, /^\s*Best over is \d/i);
   assert.doesNotMatch(quick.answer, /^\s*AVOID/i);
 
-  const books = await answerNblAsk({
-    question: "What's the best line on Waardenburg?",
+  const bestLine = await answerNblAsk({
+    question: "What's the best line for Waardenburg?",
     playerName: 'Sam Waardenburg',
     opponent: 'Cairns',
     stat: 'points',
     allowLlm: false,
   });
-  assert.match(books.answer, /Best over PTS is/i);
-  assert.equal(books.breakdown.length, 0);
+  assert.match(bestLine.answer, /I'd take |I'd be on |No .+ price/i);
+  assert.match(bestLine.answer, /I also like /i);
+  for (const m of bestLine.answer.matchAll(/\bat (\d+\.\d+)/g)) assert.ok(Number(m[1]) >= 1.5, `short price: ${bestLine.answer}`);
+
+  const books = await answerNblAsk({
+    question: "What's the best points line on Waardenburg?",
+    playerName: 'Sam Waardenburg',
+    opponent: 'Cairns',
+    stat: 'points',
+    allowLlm: false,
+  });
+  assert.match(books.answer, /Best over price for .+ points is/i);
+  assert.match(books.answer, /i'?d |wouldn't /i);
 
   const others = await answerNblAsk({
     question: 'what other markets would u look into?',
@@ -77,7 +92,7 @@ async function main() {
   assert.match(others.answer, /I'd look at /i);
   assert.doesNotMatch(others.answer, /^\s*(Model:\s*)?AVOID/i);
   assert.doesNotMatch(others.answer, /wouldn'?t force another market/i);
-  assert.match(others.answer, /\bPRA\b|\bPA\b|\bPR\b|\bREB\b|\bAST\b|\b3PM\b/i);
+  assert.match(others.answer, /\brebounds\b|\bassists\b|\bthrees made\b|points \+/i);
   assert.ok(others.breakdown.length > 0, 'other markets need a list');
 
   const modelQ = await answerNblAsk({
@@ -109,6 +124,7 @@ async function main() {
   console.log('model:', modelQ.answer);
   console.log('take:', screenshot.answer);
   console.log('why:', screenshot.breakdown.join(' | '));
+  console.log('best line:', bestLine.answer);
   console.log('books:', books.answer);
   console.log('others:', others.answer);
   console.log('other why:', others.breakdown.join(' | '));
