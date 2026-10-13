@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-12T21:44:07.149Z",
+  "generatedAt": "2026-10-13T19:52:29.575Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 159,
+  "playerCount": 160,
   "gameRows": 584,
   "players": [
     {
@@ -941,6 +941,14 @@
       "teamCode": "SEM",
       "gameCount": 4,
       "cacheFile": "nbl-model/cache/player-logs/7f6e18b2-6494-41c7-9791-d72c632317d5-2026.json"
+    },
+    {
+      "playerId": "5694f763-4380-4def-ab19-18793d2888c2",
+      "name": "Nelson Weidemann",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/5694f763-4380-4def-ab19-18793d2888c2-2026.json"
     },
     {
       "playerId": "20791487-46a5-4d75-a6a1-17d8013c251f",
