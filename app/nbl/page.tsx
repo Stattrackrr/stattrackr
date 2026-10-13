@@ -33,7 +33,6 @@ import { NblSimilarPlayersCard } from '@/app/nbl/components/NblSimilarPlayersCar
 import { NblPlayerVsTeamPanel } from '@/app/nbl/components/NblPlayerVsTeamPanel';
 import { NBL_DASH_CARD_GLOW } from '@/app/nbl/components/nblDashCardGlow';
 import { NblScoringMixPie } from '@/app/nbl/components/NblScoringMixPie';
-import { NBL_AI_UNDER_MAINTENANCE } from '@/lib/nbl/constants';
 import {
   FreePlayerLimitPrompt,
   ProFeatureLock,
@@ -2281,7 +2280,6 @@ export default function NblDashboardPage() {
                     <div className="flex gap-1.5 mb-2">
                       <button
                         type="button"
-                        title={NBL_AI_UNDER_MAINTENANCE ? 'Model is under maintenance' : undefined}
                         onClick={() => {
                           if (aiLocked) {
                             openProUpgrade();
@@ -2297,11 +2295,6 @@ export default function NblDashboardPage() {
                       >
                         Model
                         {aiLocked ? <ProLockMark /> : null}
-                        {!aiLocked && NBL_AI_UNDER_MAINTENANCE ? (
-                          <span className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
-                            MAINTENANCE
-                          </span>
-                        ) : null}
                       </button>
                       <button
                         type="button"
@@ -2721,7 +2714,6 @@ export default function NblDashboardPage() {
                     <div className="flex gap-1 xl:gap-1.5 mb-2">
                       <button
                         type="button"
-                        title={NBL_AI_UNDER_MAINTENANCE ? 'Model is under maintenance' : undefined}
                         onClick={() => {
                           if (aiLocked) {
                             openProUpgrade();
@@ -2737,11 +2729,6 @@ export default function NblDashboardPage() {
                       >
                         Model
                         {aiLocked ? <ProLockMark /> : null}
-                        {!aiLocked && NBL_AI_UNDER_MAINTENANCE ? (
-                          <span className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
-                            MAINTENANCE
-                          </span>
-                        ) : null}
                       </button>
                       <button
                         type="button"

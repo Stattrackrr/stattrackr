@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Send, Wrench } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import { nblPunterQuestions } from '@/lib/nbl/askSuggestions';
-import { NBL_AI_UNDER_MAINTENANCE } from '@/lib/nbl/constants';
 import { supabase } from '@/lib/supabaseClient';
 
 type ChatMsg = { role: 'user' | 'assistant'; content: string; breakdown?: string[] };
@@ -109,7 +108,7 @@ export function NblModelPanel({
 
   async function ask(text: string) {
     const next = text.trim();
-    if (previewLocked || NBL_AI_UNDER_MAINTENANCE || !next || (!playerId && !player) || !opponent || loading) return;
+    if (previewLocked || !next || (!playerId && !player) || !opponent || loading) return;
     setQuestion('');
     setError(null);
     setMessages((prev) => [...prev, { role: 'user', content: next }]);
@@ -153,30 +152,7 @@ export function NblModelPanel({
   }
 
   const shownSuggestions =
-    previewLocked || NBL_AI_UNDER_MAINTENANCE || !player || !opponent ? [] : nblPunterQuestions(player, opponent);
-
-  if (NBL_AI_UNDER_MAINTENANCE && !previewLocked) {
-    return (
-      <div className={`w-full flex flex-col ${compact ? 'min-h-[300px]' : 'min-h-[380px]'}`}>
-        <div className="flex-1 flex flex-col items-center justify-center px-1 py-8 text-center">
-          <BrandLockup isDark={isDark} />
-          <div
-            className={`mt-4 inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-bold tracking-wide ${
-              isDark
-                ? 'border-amber-500/80 bg-amber-700 text-white'
-                : 'border-amber-600 bg-amber-600 text-white'
-            }`}
-          >
-            <Wrench className="h-3 w-3" />
-            MAINTENANCE
-          </div>
-          <div className={`mt-3 text-[13px] ${muted}`}>
-            Model is temporarily unavailable.
-          </div>
-        </div>
-      </div>
-    );
-  }
+    previewLocked || !player || !opponent ? [] : nblPunterQuestions(player, opponent);
 
   return (
     <div className={`w-full flex flex-col ${compact ? 'min-h-[300px]' : 'min-h-[380px]'}`}>

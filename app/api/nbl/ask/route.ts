@@ -1,22 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { answerNblAsk, loadNblAskPanel, nblAskSuggestions } from '@/lib/nbl/askAnswer';
-import { NBL_AI_UNDER_MAINTENANCE } from '@/lib/nbl/constants';
 import { proRequiredResponse, requestIsPro } from '@/lib/server/proRouteAuth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-
-function maintenanceResponse() {
-  return NextResponse.json(
-    {
-      success: false,
-      maintenance: true,
-      error: 'Model is under maintenance.',
-      suggestions: [],
-    },
-    { status: 503 }
-  );
-}
 
 /**
  * GET /api/nbl/ask?playerId=&player=&opponent=&stat=
@@ -26,7 +13,6 @@ function maintenanceResponse() {
  * OpenAI write-up of the NBL props engine pack (same gpt-5.6-luna path as tennis).
  */
 export async function GET(request: NextRequest) {
-  if (NBL_AI_UNDER_MAINTENANCE) return maintenanceResponse();
   const sp = request.nextUrl.searchParams;
   const playerId = String(sp.get('playerId') || '').trim();
   const playerName = String(sp.get('player') || sp.get('playerName') || '').trim();
@@ -50,7 +36,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (NBL_AI_UNDER_MAINTENANCE) return maintenanceResponse();
   if (!(await requestIsPro(request))) return proRequiredResponse('The NBL model');
   const body = (await request.json().catch(() => null)) as {
     question?: unknown;
