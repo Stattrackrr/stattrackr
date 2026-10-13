@@ -59,6 +59,7 @@ const PCT_KINDS = new Set<SupportingStatKind>(['firstServePct']);
 
 function supportingOptionsForMain(main?: string): { value: SupportingStatKind; label: string }[] {
   const mainKey = String(main || '');
+  const isGameLengthMain = mainKey === 'gamesWon' || mainKey === 'gamesLost' || mainKey === 'totalGames';
   const preferred: SupportingStatKind[] =
     mainKey === 'aces'
       ? ['totalAces', 'opponentAces', 'doubleFaults', 'firstServePct']
@@ -72,8 +73,8 @@ function supportingOptionsForMain(main?: string): { value: SupportingStatKind; l
             ? ['returnPointsWon', 'firstServePct', 'totalAces', 'totalSets']
           : mainKey === 'doubleFaults'
         ? ['totalAces', 'firstServePct', 'gamesWon']
-        : mainKey === 'gamesWon' || mainKey === 'gamesLost' || mainKey === 'totalGames'
-          ? ['totalAces', 'pointsWon', 'totalSets', 'spread']
+        : isGameLengthMain
+          ? ['totalSets', 'totalAces', 'pointsWon', 'spread']
           : mainKey === 'moneyline' || mainKey === 'spread'
             ? ['totalGames', 'gamesWon', 'gamesLost', 'totalAces']
             : ['totalAces', 'doubleFaults', 'gamesWon', 'firstServePct', 'pointsWon'];
@@ -85,7 +86,9 @@ function supportingOptionsForMain(main?: string): { value: SupportingStatKind; l
     seen.add(key);
     ordered.push(key);
   }
-  return ALL_TOGGLE_OPTIONS.filter((o) => ordered.includes(o.value));
+  const options = ALL_TOGGLE_OPTIONS.filter((o) => ordered.includes(o.value));
+  if (!isGameLengthMain) return options;
+  return [...options.filter((o) => o.value === 'totalSets'), ...options.filter((o) => o.value !== 'totalSets')];
 }
 
 export function defaultSupportingStatForMain(mainChartStat?: string): SupportingStatKind {
