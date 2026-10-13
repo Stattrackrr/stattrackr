@@ -21,6 +21,7 @@ import { TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
 import { tennisIocFromStoredOrRoster } from '@/lib/tennis/resolveIoc';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { mergeCareerH2h } from '@/lib/tennis/h2hHistory';
+import { sortTennisMatchesOldestFirst } from '@/lib/tennis/chartStats';
 
 type TennisRosterStandings = {
   ATP?: TennisRankingRow[];
@@ -221,7 +222,7 @@ export async function loadPlayerMatchesCached(opts: {
         const live = loadPlayerMatches({ ...opts, playerId: playerId || opts.playerId });
         if (live.length) games = mergeMatchRows(games, live);
       }
-      return (
+      return sortTennisMatchesOldestFirst(
         await mergeCareerH2h(games, playerId, opts.opponentId, opts.opponentName, opts.tour)
       ).map(withMatchCountry);
     }
@@ -239,12 +240,14 @@ export async function loadPlayerMatchesCached(opts: {
         },
       ]).catch((err) => console.warn('[tennis logs] overlay upsert skipped', err));
     }
-    return (
+    return sortTennisMatchesOldestFirst(
       await mergeCareerH2h(live, playerId, opts.opponentId, opts.opponentName, opts.tour)
     ).map(withMatchCountry);
   }
   if (!playerId) return [];
-  return mergeCareerH2h([], playerId, opts.opponentId, opts.opponentName, opts.tour);
+  return sortTennisMatchesOldestFirst(
+    await mergeCareerH2h([], playerId, opts.opponentId, opts.opponentName, opts.tour)
+  );
 }
 
 /** Merge compiled disk history into every Redis player log. Never removes a stored game. */

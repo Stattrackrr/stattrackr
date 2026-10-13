@@ -64,6 +64,8 @@ export type TennisLiveEventIndex = {
   playerIdsByKey: Map<string, string[]>;
   playerIdsByName: Map<string, string[]>;
   events: TennisLiveEvent[];
+  /** Event id (`tour|key`) of each player's next unplayed match. Event player lists also hold finished events. */
+  nextEventByPlayer?: Map<string, string>;
 };
 
 type UpcomingWindow = {
@@ -781,6 +783,7 @@ function indexLiveEvents(
       qIds: Set<string>;
     }
   >();
+  const nextEventByPlayer = new Map<string, string>();
   const add = (map: Map<string, Set<string>>, bucket: string, playerId: string) => {
     let set = map.get(bucket);
     if (!set) {
@@ -803,6 +806,7 @@ function indexLiveEvents(
     }
     const eventId = `${tour}|${key || place || 'unknown'}`;
     if (!key && !place) continue;
+    nextEventByPlayer.set(playerId, eventId);
     let event = events.get(eventId);
     if (!event) {
       event = {
@@ -860,6 +864,7 @@ function indexLiveEvents(
       playerIds: [...event.ids],
       qualifyingPlayerIds: [...event.qIds],
     })),
+    nextEventByPlayer,
   };
 }
 
@@ -890,23 +895,34 @@ export function tennisEventIsLive(
   return false;
 }
 
+/** "shanghai" names the same event as "shanghai masters"; "jinan" never matches "jingshan". */
+function placeWordsContain(a: string, b: string): boolean {
+  const aw = new Set(a.split(' ').filter(Boolean));
+  const bw = b.split(' ').filter(Boolean);
+  return bw.length > 0 && bw.every((word) => aw.has(word));
+}
+
 export function findLiveTennisEvent(
   live: TennisLiveEventIndex,
   tournamentKey?: string | null,
-  tournamentName?: string | null
+  tournamentName?: string | null,
+  tour?: TennisTour | null
 ): TennisLiveEvent | null {
   const key = String(tournamentKey || '').trim();
   const place = liveEventPlace(tournamentName);
+  const pool = tour ? live.events.filter((event) => event.tour === tour) : live.events;
   if (key) {
-    const byKey = live.events.find((event) => event.tournamentKey === key);
+    const byKey = pool.find((event) => event.tournamentKey === key);
     if (byKey) return byKey;
   }
   if (place) {
-    const byName = live.events.find((event) => {
-      const eventPlace = liveEventPlace(event.tournamentName);
-      return eventPlace === place;
-    });
+    const byName = pool.find((event) => liveEventPlace(event.tournamentName) === place);
     if (byName) return byName;
+    const loose = pool.filter((event) => {
+      const eventPlace = liveEventPlace(event.tournamentName);
+      return eventPlace && (placeWordsContain(eventPlace, place) || placeWordsContain(place, eventPlace));
+    });
+    if (loose.length === 1) return loose[0];
   }
   return null;
 }
@@ -929,6 +945,11 @@ export function tennisLiveEventStage(
   return 'main';
 }
 
+/**
+ * The event this match is at. A named tournament is never swapped for a different one, and
+ * player ids resolve through each player's next unplayed match, because event player lists
+ * also include events they already finished (a Shanghai loser now playing Jinan is in both).
+ */
 export function findLiveTennisEventForPlayers(
   live: TennisLiveEventIndex,
   opts: {
@@ -936,19 +957,25 @@ export function findLiveTennisEventForPlayers(
     opponentId?: string | null;
     tournamentKey?: string | null;
     tournamentName?: string | null;
+    tour?: TennisTour | null;
   }
 ): TennisLiveEvent | null {
-  const direct = findLiveTennisEvent(live, opts.tournamentKey, opts.tournamentName);
-  if (direct) return direct;
+  const named = Boolean(String(opts.tournamentKey || '').trim() || liveEventPlace(opts.tournamentName));
+  if (named) return findLiveTennisEvent(live, opts.tournamentKey, opts.tournamentName, opts.tour);
   const wanted = [opts.playerId, opts.opponentId]
     .map((id) => String(id || '').trim())
     .filter(Boolean);
   if (!wanted.length) return null;
-  for (const event of live.events) {
-    const pool = new Set([...event.playerIds, ...event.qualifyingPlayerIds]);
-    if (wanted.some((id) => pool.has(id))) return event;
-  }
-  return null;
+  const pool = opts.tour ? live.events.filter((event) => event.tour === opts.tour) : live.events;
+  const inEvent = (event: TennisLiveEvent, id: string) =>
+    event.playerIds.includes(id) || event.qualifyingPlayerIds.includes(id);
+  const byId = new Map(pool.map((event) => [liveEventId(event), event]));
+  const next = wanted
+    .map((id) => byId.get(live.nextEventByPlayer?.get(id) || ''))
+    .filter((event): event is TennisLiveEvent => Boolean(event));
+  if (next.length) return next.find((event) => wanted.every((id) => inEvent(event, id))) || next[0];
+  const shared = pool.filter((event) => wanted.every((id) => inEvent(event, id)));
+  return shared.length === 1 ? shared[0] : null;
 }
 
 export function tennisLiveEventPlayerIds(

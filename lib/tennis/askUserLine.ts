@@ -2,7 +2,7 @@
  * User-named numbers ("11+ aces", "over 8.5") — evaluate from match logs, not a book line.
  */
 
-import { tennisRowsForBestOf } from '@/lib/tennis/chartStats';
+import { sortTennisMatchesOldestFirst, tennisRowsForBestOf } from '@/lib/tennis/chartStats';
 import { loadPlayerMatches } from '@/lib/tennis/data';
 import type { TennisMatchAnalysis } from '@/lib/tennis/matchAnalystShared';
 import type { TennisAskBrief } from '@/lib/tennis/askBrief';
@@ -92,6 +92,9 @@ export type UserLineContext = {
   opponentLast?: string | null;
   playerName?: string | null;
   opponentName?: string | null;
+  /** The same match logs the dashboard chart and the analysis use, so hit rates agree with the chart. */
+  playerRows?: TennisMatchRow[] | null;
+  opponentRows?: TennisMatchRow[] | null;
 };
 
 function overUnderRule(under: boolean, threshold: number): UserLineRule {
@@ -408,11 +411,14 @@ export function evaluateUserStatLine(
   const tour = analysis.tour as TennisTour;
   const format = analysis.bestOf === 5 ? 5 : 3;
   const boTag = `BO${format}`;
+  const storedRows = side === 'opponent' ? ctx?.opponentRows : ctx?.playerRows;
   const rows = tennisRowsForBestOf(
-    loadPlayerMatches({
-      playerName: subject.name,
-      tour,
-    }),
+    storedRows?.length
+      ? sortTennisMatchesOldestFirst(storedRows)
+      : loadPlayerMatches({
+          playerName: subject.name,
+          tour,
+        }),
     format
   );
   const vsOpp = rows.filter((row) => sameName(row.opponent, other.name));

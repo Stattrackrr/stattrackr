@@ -41,7 +41,6 @@ import {
   tennisUpcomingTipoffFor,
   tennisLiveEventPlayerIds,
   tennisLiveEventStage,
-  findLiveTennisEvent,
   findLiveTennisEventForPlayers,
   peekLiveTennisEventIndex,
   listUpcomingTennisByPlayer,
@@ -1001,6 +1000,18 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
       awayMeta = lookup.find(snapshot.awayName, matchTour) || awayMeta;
     }
     const game = snapshotToGame(snapshot, matchTour, indexById.get(snapshot.matchId));
+    const liveEvent = findLiveTennisEventForPlayers(liveEvents, {
+      playerId: homeMeta?.playerId || null,
+      opponentId: awayMeta?.playerId || null,
+      tournamentName: game.tournamentName,
+      tour: matchTour,
+    });
+    if (liveEvent?.tournamentName && game.tournamentName !== liveEvent.tournamentName) {
+      game.tournamentName = liveEvent.tournamentName;
+      game.surface = lookupTennisSurface(liveEvent.tournamentName, liveEvent.tournamentKey);
+    }
+    const liveTournamentName = game.tournamentName || null;
+    const liveTournamentKey = liveEvent?.tournamentKey || null;
     if (!seenGames.has(game.gameId)) {
       seenGames.add(game.gameId);
       games.push(game);
@@ -1023,20 +1034,6 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
         playerId,
         resolveTennisHeadshotUrl(playerId, meta?.imageUrl || null)
       );
-      const liveEvent =
-        (playerId &&
-          liveEvents.events.find(
-            (event) =>
-              event.playerIds.includes(playerId) || event.qualifyingPlayerIds.includes(playerId)
-          )) ||
-        findLiveTennisEvent(liveEvents, null, game.tournamentName || snapshot.tournamentName || null);
-      const liveTournamentName =
-        liveEvent?.tournamentName || game.tournamentName || snapshot.tournamentName || null;
-      const liveTournamentKey = liveEvent?.tournamentKey || null;
-      if (liveEvent?.tournamentName && game.tournamentName !== liveEvent.tournamentName) {
-        game.tournamentName = liveEvent.tournamentName;
-        game.surface = lookupTennisSurface(liveEvent.tournamentName, liveEvent.tournamentKey);
-      }
       const dvpProfile = dvpForOpponent(
         tour,
         opponent,
@@ -1170,9 +1167,9 @@ export async function overlayLiveTennisDvp(
     const event = findLiveTennisEventForPlayers(live, {
       playerId,
       opponentId,
-      tournamentKey: null,
       tournamentName: row.tournamentName || null,
-    }) || findLiveTennisEvent(live, null, row.tournamentName || null);
+      tour,
+    });
     const patchedName = event?.tournamentName || row.tournamentName;
     const tournamentName = event?.tournamentName || row.tournamentName || null;
     const tournamentKey = event?.tournamentKey || null;
@@ -1183,11 +1180,17 @@ export async function overlayLiveTennisDvp(
       tournamentName,
     });
     const board = boardFor(event?.tour || tour, tournamentName, tournamentKey, stage);
-    const opp = findDvpPlayer(dvpPlayersFromBoard(board), opponentName, opponentId);
+    const boardPlayers = dvpPlayersFromBoard(board);
+    const opp = findDvpPlayer(boardPlayers, opponentName, opponentId);
+    const self = findDvpPlayer(boardPlayers, String(row.playerName || ''), playerId);
     const withIoc = {
       ...row,
       opponentIoc: row.opponentIoc || opp?.ioc || null,
       tournamentName: patchedName,
+      playerSeed: row.playerSeed ?? self?.seed ?? null,
+      opponentSeed: row.opponentSeed ?? opp?.seed ?? null,
+      playerDrawRank: row.playerDrawRank ?? self?.drawRank ?? null,
+      opponentDrawRank: row.opponentDrawRank ?? opp?.drawRank ?? null,
     };
     const stat = asTennisPropStat(row.statType);
     if (!stat) return withIoc;
@@ -1401,9 +1404,32 @@ function overlayUpcomingOpponentMeta(
     if (next.opponentIoc) patched = { ...patched, opponentIoc: next.opponentIoc };
     if (next.opponentRank != null) patched = { ...patched, opponentRank: next.opponentRank };
     if (next.opponentId) patched = { ...patched, opponentId: next.opponentId };
+    if (opponent && next.tournamentName && next.tournamentName !== row.tournamentName) {
+      patched = {
+        ...patched,
+        tournamentName: next.tournamentName,
+        surface: next.surface || lookupTennisSurface(next.tournamentName, next.tournamentKey) || patched.surface,
+        // Ranks were taken from the wrong tournament's field; the live DvP overlay refills them.
+        dvpRating: null,
+        dvpStatValue: null,
+        dvpFieldSize: null,
+        playerSeed: null,
+        opponentSeed: null,
+        playerDrawRank: null,
+        opponentDrawRank: null,
+      };
+    }
     return patched;
   });
-  return data === payload.data ? payload : { ...payload, data: fillMissingTennisOpponentIoc(data) };
+  if (data === payload.data) return payload;
+  const nameByGame = new Map(data.map((row) => [row.gameId, row.tournamentName] as const));
+  const games = payload.games.map((game) => {
+    const name = nameByGame.get(game.gameId);
+    return name && name !== game.tournamentName
+      ? { ...game, tournamentName: name, surface: lookupTennisSurface(name) || game.surface }
+      : game;
+  });
+  return { ...payload, data: fillMissingTennisOpponentIoc(data), games };
 }
 
 function overlayRosterOpponentMeta(

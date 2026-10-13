@@ -1,5 +1,10 @@
 import { tennisBestOf } from '@/lib/tennis/apiTennis';
-import { resolveTennisMatchBestOf, tennisLastName, tennisRowsForBestOf } from '@/lib/tennis/chartStats';
+import {
+  resolveTennisMatchBestOf,
+  sortTennisMatchesOldestFirst,
+  tennisLastName,
+  tennisRowsForBestOf,
+} from '@/lib/tennis/chartStats';
 import { tennisHandForName } from '@/lib/tennis/hands';
 import { tennisRankOnDate } from '@/lib/tennis/rankHistory';
 import {
@@ -399,14 +404,14 @@ export function buildTennisMatchAnalysis(opts: {
   const oppRes = resolvePlayer(opponentName, playerRes.tour);
   const tour = playerRes.tour;
   const playerRows = opts.playerRows?.length
-    ? opts.playerRows
+    ? sortTennisMatchesOldestFirst(opts.playerRows)
     : loadPlayerMatches({
         playerId: playerRes.id,
         playerName: playerRes.id ? null : playerName,
         tour,
       });
   const oppRows = opts.oppRows?.length
-    ? opts.oppRows
+    ? sortTennisMatchesOldestFirst(opts.oppRows)
     : loadPlayerMatches({
         playerId: oppRes.id,
         playerName: oppRes.id ? null : opponentName,

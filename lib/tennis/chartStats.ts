@@ -405,6 +405,13 @@ export function compareTennisMatchesNewestFirst(
   return tennisRoundOrder(b.round) - tennisRoundOrder(a.round);
 }
 
+/** Oldest first, so `slice(-n)` is the last n matches. Stored logs are not guaranteed to be in date order. */
+export function sortTennisMatchesOldestFirst<T extends Parameters<typeof compareTennisMatchesNewestFirst>[0]>(
+  rows: readonly T[]
+): T[] {
+  return [...rows].sort((a, b) => compareTennisMatchesNewestFirst(b, a));
+}
+
 /** Return points won % / serve points lost %. Both inputs are 0–100. */
 export function tennisDominanceRatio(
   returnPointsWonPct: number | null | undefined,

@@ -5,6 +5,7 @@ import {
   type TennisMatchAnalysis,
 } from '@/lib/tennis/matchAnalyst';
 import type { TennisAskBrief } from '@/lib/tennis/askBrief';
+import type { TennisMatchRow } from '@/lib/tennis/types';
 import {
   evaluateUserStatLine,
   formatUserLineWindow,
@@ -16,6 +17,9 @@ import {
 
 const EMPTY_BRIEF = { similarVsOpponent: [] } as Pick<TennisAskBrief, 'similarVsOpponent'> as TennisAskBrief;
 const OPENAI_TIMEOUT_MS = 15_000;
+/** The ask panel aborts at 22s; AI calls must finish inside this, measured from the request arriving. */
+const ASK_BUDGET_MS = 19_000;
+const MIN_REWRITE_MS = 4_000;
 
 export type TennisAskMessage = { role: 'user' | 'assistant'; content: string };
 export type TennisAskReply = { answer: string; breakdown: string[]; source: 'model' | 'stats' };
@@ -79,6 +83,8 @@ How to write:
 - Never write pack, STAT PACK, userLine, user line, graded, hit-rate call, or side lean. The punter cannot see those.
 - Last-5 / last-10 form is wins out of matches, like 2/5 or 11/15. Never write 2-3 or 1-4 for a last-N sample. Head-to-head can stay 4-2.
 - Last-5 is player.last5 over player.last5Sample, not the unfiltered L5 moneyline chart. If last5Sample is "last 5 hard best-of-3 matches", say that. Do not count slams or clay in that number. last5Matches are those matches in order.
+- Win records come only from last5 / last10 / last15.record / surface.record. A handicap or over/under hit rate (like covered 13 of 15) is not a win record. Never write "X is 15/15" from a cover or over hit rate.
+- Pronouns: use player.pronouns and opponent.pronouns exactly. They come from the tour (ATP = men, WTA = women). Never guess gender from a first name or initial.
 
 Return JSON only:
 {"answer":"string","breakdown":["string","string"]}`;
@@ -161,10 +167,14 @@ function parseAskReply(raw: string): { answer: string; breakdown: string[] } {
   };
 }
 
-function viewingContext(
-  analysis: TennisMatchAnalysis,
-  viewing?: { stat?: string | null; line?: number | null }
-): UserLineContext {
+type AskViewing = {
+  stat?: string | null;
+  line?: number | null;
+  playerRows?: TennisMatchRow[] | null;
+  opponentRows?: TennisMatchRow[] | null;
+};
+
+function viewingContext(analysis: TennisMatchAnalysis, viewing?: AskViewing): UserLineContext {
   return {
     viewingStat: viewing?.stat || null,
     viewingLine: viewing?.line ?? null,
@@ -174,18 +184,21 @@ function viewingContext(
     opponentLast: analysis.opponent.last,
     playerName: analysis.player.name,
     opponentName: analysis.opponent.name,
+    playerRows: viewing?.playerRows ?? null,
+    opponentRows: viewing?.opponentRows ?? null,
   };
 }
 
 function punterStats(analysis: TennisMatchAnalysis) {
   const compact = compactTennisAnalysis(analysis);
+  const identity = tourPlayers(analysis);
   return {
     match: compact.match,
     tour: compact.tour,
     surface: compact.surface,
     format: compact.format,
-    player: compact.player,
-    opponent: compact.opponent,
+    player: { ...identity, ...compact.player },
+    opponent: { ...identity, ...compact.opponent },
     h2h: compact.h2h,
     books: {
       listedTotalLine: compact.totals.listedBookLine,
@@ -203,7 +216,7 @@ function punterStats(analysis: TennisMatchAnalysis) {
 function buildAskPack(
   analysis: TennisMatchAnalysis,
   question: string,
-  viewing?: { stat?: string | null; line?: number | null }
+  viewing?: AskViewing
 ) {
   const ctx = viewingContext(analysis, viewing);
   return {
@@ -234,13 +247,31 @@ function formatSample(bestOf: 3 | 5): string {
   return bestOf === 5 ? 'best-of-5' : 'best-of-3';
 }
 
+function tourIsWta(analysis: Pick<TennisMatchAnalysis, 'tour'>): boolean {
+  return String(analysis.tour || '').toUpperCase() === 'WTA';
+}
+
+function tourPlayers(analysis: Pick<TennisMatchAnalysis, 'tour'>) {
+  return tourIsWta(analysis)
+    ? { gender: 'woman', pronouns: 'she / her / hers / herself' }
+    : { gender: 'man', pronouns: 'he / him / his / himself' };
+}
+
+/** True when the reply misgenders the players for their tour, so the AI is asked to rewrite it. */
+export function tennisReplyMisgenders(text: string, tour: string | null | undefined): boolean {
+  return String(tour || '').toUpperCase() === 'WTA'
+    ? /\b(he|him|his|himself)\b/i.test(text)
+    : /\b(she|her|hers|herself)\b/i.test(text);
+}
+
 function localBreakdown(analysis: TennisMatchAnalysis): string[] {
   const { player, opponent, h2h } = analysis;
   const sample = formatSample(analysis.bestOf === 5 ? 5 : 3);
+  const their = tourIsWta(analysis) ? 'her' : 'his';
   const lines: string[] = [];
   if (player.l15.aces != null && opponent.l15.acesAllowed != null) {
     lines.push(
-      `${player.last} is averaging ${player.l15.aces} aces over his last 15 ${sample} matches. ${opponent.last} has been allowing ${opponent.l15.acesAllowed}.`
+      `${player.last} is averaging ${player.l15.aces} aces over ${their} last 15 ${sample} matches. ${opponent.last} has been allowing ${opponent.l15.acesAllowed}.`
     );
   }
   if (player.l15.holdPct != null && opponent.l15.breakPct != null) {
@@ -328,7 +359,7 @@ function buildLocalUserLineReply(
 function buildLocalAskReply(
   analysis: TennisMatchAnalysis,
   question: string,
-  viewing?: { stat?: string | null; line?: number | null }
+  viewing?: AskViewing
 ): { answer: string; breakdown: string[] } {
   const q = String(question || '').toLowerCase();
   const { player, opponent, model } = analysis;
@@ -405,7 +436,7 @@ function buildLocalAskReply(
 function askUserContent(
   question: string,
   analysis: TennisMatchAnalysis,
-  viewing?: { stat?: string | null; line?: number | null }
+  viewing?: AskViewing
 ): string {
   const pack = buildAskPack(analysis, question, viewing);
   const userLine = parseUserStatLine(question, viewingContext(analysis, viewing));
@@ -431,16 +462,16 @@ function askUserContent(
       : line != null
         ? `The user asked about a ${line} game handicap${side ? ` for ${side === 'player' ? analysis.player.last : analysis.opponent.last}` : ''}. Say whether they cover that spread. Never mention the pack.`
         : 'No specific user number was locked.';
-  return `${formatLock}\n${lock}\nThis time lean on: ${lens}.\n\nSTAT PACK:\n${JSON.stringify(pack)}\n\nQUESTION:\n${question}`;
+  const identity = tourPlayers(analysis);
+  const pronounLock = `${tourIsWta(analysis) ? 'WTA' : 'ATP'} match: ${analysis.player.last} and ${analysis.opponent.last} are each a ${identity.gender}. Refer to them as ${identity.pronouns}.`;
+  return `${formatLock}\n${lock}\n${pronounLock}\nThis time lean on: ${lens}.\n\nSTAT PACK:\n${JSON.stringify(pack)}\n\nQUESTION:\n${question}`;
 }
 
 async function openaiReasoning(
   key: string,
   model: string,
-  question: string,
-  analysis: TennisMatchAnalysis,
-  history: TennisAskMessage[],
-  viewing?: { stat?: string | null; line?: number | null }
+  turns: TennisAskMessage[],
+  timeoutMs: number
 ): Promise<string> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -448,17 +479,13 @@ async function openaiReasoning(
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
     },
-    signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
     body: JSON.stringify({
       model,
       max_completion_tokens: 700,
       reasoning_effort: 'low',
       response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...history.slice(-6).map((msg) => ({ role: msg.role, content: msg.content })),
-        { role: 'user', content: askUserContent(question, analysis, viewing) },
-      ],
+      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...turns],
     }),
   });
   const json = (await res.json()) as {
@@ -474,10 +501,8 @@ async function openaiReasoning(
 async function anthropicReasoning(
   key: string,
   model: string,
-  question: string,
-  analysis: TennisMatchAnalysis,
-  history: TennisAskMessage[],
-  viewing?: { stat?: string | null; line?: number | null }
+  turns: TennisAskMessage[],
+  timeoutMs: number
 ): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -486,16 +511,13 @@ async function anthropicReasoning(
       'anthropic-version': '2023-06-01',
       'Content-Type': 'application/json',
     },
-    signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
     body: JSON.stringify({
       model,
       max_tokens: 700,
       temperature: 0.8,
       system: SYSTEM_PROMPT,
-      messages: [
-        ...history.slice(-6).map((msg) => ({ role: msg.role, content: msg.content })),
-        { role: 'user', content: askUserContent(question, analysis, viewing) },
-      ],
+      messages: turns,
     }),
   });
   const json = (await res.json()) as { content?: Array<{ text?: string }>; error?: { message?: string } };
@@ -515,21 +537,62 @@ export async function answerTennisAsk(opts: {
   allowLlm?: boolean;
   viewingStat?: string | null;
   viewingLine?: number | null;
+  playerRows?: TennisMatchRow[] | null;
+  opponentRows?: TennisMatchRow[] | null;
+  /** When the request arrived, so data loading counts against the panel's timeout. */
+  startedAt?: number;
 }): Promise<TennisAskReply> {
-  const viewing = { stat: opts.viewingStat || null, line: opts.viewingLine ?? null };
+  const started = opts.startedAt ?? Date.now();
+  const viewing: AskViewing = {
+    stat: opts.viewingStat || null,
+    line: opts.viewingLine ?? null,
+    playerRows: opts.playerRows,
+    opponentRows: opts.opponentRows,
+  };
   const local = buildLocalAskReply(opts.analysis, opts.question, viewing);
   if (opts.allowLlm === false) return { ...local, source: 'stats' };
   const cfg = llmConfigured();
   if (!cfg) return { ...local, source: 'stats' };
-  const history = opts.history || [];
+  const turns: TennisAskMessage[] = [
+    ...(opts.history || []).slice(-6).map((msg) => ({ role: msg.role, content: msg.content })),
+    { role: 'user', content: askUserContent(opts.question, opts.analysis, viewing) },
+  ];
+  const run = (messages: TennisAskMessage[], timeoutMs: number) =>
+    cfg.provider === 'openai'
+      ? openaiReasoning(cfg.key, cfg.model, messages, timeoutMs)
+      : anthropicReasoning(cfg.key, cfg.model, messages, timeoutMs);
+  const firstMs = Math.min(OPENAI_TIMEOUT_MS, ASK_BUDGET_MS - (Date.now() - started));
+  if (firstMs < MIN_REWRITE_MS) return { ...local, source: 'stats' };
   try {
-    const raw =
-      cfg.provider === 'openai'
-        ? await openaiReasoning(cfg.key, cfg.model, opts.question, opts.analysis, history, viewing)
-        : await anthropicReasoning(cfg.key, cfg.model, opts.question, opts.analysis, history, viewing);
-    const parsed = parseAskReply(raw);
+    const raw = await run(turns, firstMs);
+    let parsed = parseAskReply(raw);
     if (!parsed.answer) return { ...local, source: 'stats' };
-    const blob = `${parsed.answer}\n${parsed.breakdown.join('\n')}`;
+    const tour = opts.analysis.tour;
+    const replyText = (reply: { answer: string; breakdown: string[] }) =>
+      `${reply.answer}\n${reply.breakdown.join('\n')}`;
+    const retryMs = ASK_BUDGET_MS - (Date.now() - started);
+    if (tennisReplyMisgenders(replyText(parsed), tour) && retryMs >= MIN_REWRITE_MS) {
+      const identity = tourPlayers(opts.analysis);
+      try {
+        const rewritten = parseAskReply(
+          await run(
+            [
+              ...turns,
+              { role: 'assistant', content: raw },
+              {
+                role: 'user',
+                content: `You misgendered the players. This is a ${tour} match: ${opts.analysis.player.last} and ${opts.analysis.opponent.last} are each a ${identity.gender}, so use ${identity.pronouns}. Rewrite the same reply with the correct pronouns. Keep every stat and the pick the same. Return the same JSON shape.`,
+              },
+            ],
+            retryMs
+          )
+        );
+        if (rewritten.answer) parsed = rewritten;
+      } catch {
+        /* keep the first AI reply */
+      }
+    }
+    const blob = replyText(parsed);
     if (soundsLikeModelPitch(blob) || soundsLikePackLeak(blob)) return { ...local, source: 'stats' };
     return {
       answer: parsed.answer,

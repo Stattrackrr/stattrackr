@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   if (TENNIS_AI_UNDER_MAINTENANCE) return maintenanceResponse();
   const body = (await request.json().catch(() => null)) as {
     question?: unknown;
@@ -145,6 +146,9 @@ export async function POST(request: NextRequest) {
         history,
         viewingStat,
         viewingLine,
+        playerRows,
+        opponentRows: oppRows,
+        startedAt,
       });
       return NextResponse.json({
         success: true,
