@@ -6,6 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import { decimalToAmerican } from '@/lib/currencyUtils';
+import { recordNblLineMoves } from '@/lib/nbl/lineMovement';
 import { appendNblPlayerPropHistory } from '@/lib/nbl/oddsHistory';
 import {
   classifyPulseNblMarket,
@@ -86,7 +87,7 @@ function stripPlayerLabel(raw: string): string {
     .trim();
 }
 
-function playerKeyOf(s: string): string {
+export function playerKeyOf(s: string): string {
   return stripPlayerLabel(s)
     .toLowerCase()
     .normalize('NFD')
@@ -345,6 +346,13 @@ export async function persistNblPlayerPropSnapshots(
         if (appendNblPlayerPropHistory(incoming, nowIso)) historyWrites += 1;
       } catch {
         /* Vercel FS is read-only */
+      }
+    }
+    if (incoming && !started) {
+      try {
+        await recordNblLineMoves(incoming, nowIso, { seedFromDisk: writeDisk });
+      } catch {
+        /* line movement is best-effort; never block the snapshot write */
       }
     }
 

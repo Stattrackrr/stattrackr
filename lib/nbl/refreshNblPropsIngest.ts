@@ -7,7 +7,29 @@ import { upsertCombinedSnapshotNblFromList } from '@/lib/combinedPropsSnapshotPa
 import { persistNblPlayerPropSnapshots } from '@/lib/nbl/playerPropSnapshots';
 import { getNblPlayerPropsList } from '@/lib/nbl/playerPropsList';
 import { getNblPulseScoreBoard } from '@/lib/nbl/pulseScore';
-import { refreshNblOddsData } from '@/lib/nbl/refreshNblOdds';
+import { getNblOddsCache, refreshNblOddsData } from '@/lib/nbl/refreshNblOdds';
+
+/**
+ * Player props (odds-api.net, 50k credits/month) refresh every cron tick; game lines come from
+ * The Odds API key shared with AFL and tennis (3 credits a pull), so live runs reuse them for this long.
+ */
+const NBL_GAME_ODDS_MIN_AGE_MS = 25 * 60 * 1000;
+
+async function gameOddsForIngest(writeDisk: boolean): Promise<Awaited<ReturnType<typeof refreshNblOddsData>>> {
+  if (!writeDisk) {
+    const cached = await getNblOddsCache();
+    const age = cached?.lastUpdated ? Date.now() - Date.parse(cached.lastUpdated) : Infinity;
+    if (cached?.games.length && age < NBL_GAME_ODDS_MIN_AGE_MS) {
+      return {
+        success: true,
+        gamesCount: cached.games.length,
+        lastUpdated: cached.lastUpdated,
+        nextUpdate: cached.nextUpdate,
+      };
+    }
+  }
+  return refreshNblOddsData({ disk: writeDisk });
+}
 
 export type NblOddsAndPropsIngestResult = {
   success: boolean;
@@ -32,7 +54,7 @@ export async function refreshNblOddsAndPropsIngest(options?: {
   const pulseGames = await getNblPulseScoreBoard({ force: true });
   const writeDisk = options?.disk !== false;
   const snapshots = await persistNblPlayerPropSnapshots(pulseGames, { disk: writeDisk });
-  const gameOdds = await refreshNblOddsData({ disk: writeDisk });
+  const gameOdds = await gameOddsForIngest(writeDisk);
   const list = await getNblPlayerPropsList({ refresh: true });
 
   let combinedNbl = 0;

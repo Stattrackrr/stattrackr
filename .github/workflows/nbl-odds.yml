@@ -1,13 +1,10 @@
-# Hourly NBL live odds ingest. Separate from nightly NBL Process Stats.
+# Manual NBL live odds ingest. The Vercel cron (/api/cron/refresh-nbl-odds,
+# every 10 minutes) is the scheduled path; run this by hand to force a refresh.
 # Pulls odds-api.net player lines + The Odds API game lines into production
 # Redis so /props stays current as books move.
 name: NBL Odds Ingest
 
 on:
-  schedule:
-    # Every hour at :10 UTC — staggered from the 2h snapshot job (:20) and
-    # the Vercel cron (:50).
-    - cron: '10 * * * *'
   workflow_dispatch:
 
 concurrency:

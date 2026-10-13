@@ -30,6 +30,7 @@ import { NblInjuriesCard } from '@/app/nbl/components/NblInjuriesCard';
 import { NblLadderCard } from '@/app/nbl/components/NblLadderCard';
 import { NblModelPanel } from '@/app/nbl/components/NblModelPanel';
 import { NblSimilarPlayersCard } from '@/app/nbl/components/NblSimilarPlayersCard';
+import { NblLineMovementCard } from '@/app/nbl/components/NblLineMovementCard';
 import { NblPlayerVsTeamPanel } from '@/app/nbl/components/NblPlayerVsTeamPanel';
 import { NBL_DASH_CARD_GLOW } from '@/app/nbl/components/nblDashCardGlow';
 import { NblScoringMixPie } from '@/app/nbl/components/NblScoringMixPie';
@@ -2376,6 +2377,19 @@ export default function NblDashboardPage() {
                   </div>
                 )}
 
+                {/* 4.53 Line movement — mobile (player mode, sits right after the AI container) */}
+                {nblPropsMode === 'player' && (
+                  <div className={`order-8 lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4`}>
+                    <NblLineMovementCard
+                      isDark={!!mounted && isDark}
+                      playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                      playerTeam={selectedPlayer?.team || null}
+                      opponentName={displayOpponent}
+                      stat={mainChartStat}
+                    />
+                  </div>
+                )}
+
                 {/* 4.55 Lineups — mobile */}
                 <div
                   className={`order-9 lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4`}
@@ -2807,6 +2821,19 @@ export default function NblDashboardPage() {
                         gameLogs={selectedPlayerGameLogs as unknown as Array<Record<string, unknown>>}
                       />
                     )}
+                  </div>
+                )}
+
+                {/* Line movement — desktop (player mode) */}
+                {nblPropsMode === 'player' && (
+                  <div className={`hidden lg:block rounded-lg ${NBL_DASH_CARD_GLOW} p-2 xl:p-3 w-full min-w-0`}>
+                    <NblLineMovementCard
+                      isDark={!!mounted && isDark}
+                      playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                      playerTeam={selectedPlayer?.team || null}
+                      opponentName={displayOpponent}
+                      stat={mainChartStat}
+                    />
                   </div>
                 )}
 
