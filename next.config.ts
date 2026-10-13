@@ -13,6 +13,16 @@ const TENNIS_RUNTIME_DATA = [
   './data/tennis/headshots.json',
 ] as const;
 
+/** build-afl-dvp.js is spawned via process.cwd(), so tracing pulls in the whole repo unless trimmed. */
+const AFL_ODDS_REFRESH_TRACE = [
+  './scripts/build-afl-dvp.js',
+  './data/afl-league-player-stats-*.json',
+  './data/afl-team-rankings-*.json',
+  './data/afl-dfs-role-map-latest.json',
+] as const;
+/** The combined-props warm in this route reads tennis and NBL data, so only drop what it never touches. */
+const AFL_ODDS_REFRESH_EXCLUDES = ['./data/nbl-model/cache/engine-picks/**/*'] as const;
+
 const NBL_SCHEDULE_TRACE = ['./data/nbl-schedule-*.json', './data/nbl-roster-*.json'] as const;
 const NBL_LINEUP_TRACE = [
   ...NBL_SCHEDULE_TRACE,
@@ -131,6 +141,8 @@ const nextConfig: NextConfig = {
     '/api/tennis/player-props/list/route': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/headshot/[id]': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/headshot/[id]/route': [...TENNIS_RUNTIME_DATA],
+    '/api/afl/odds/refresh': [...AFL_ODDS_REFRESH_TRACE],
+    '/api/afl/odds/refresh/route': [...AFL_ODDS_REFRESH_TRACE],
     '/api/afl/cron/league-player-stats': [
       './data/afl-league-player-stats-2026.json',
       './data/afl-league-player-stats-2025.json',
@@ -167,7 +179,15 @@ const nextConfig: NextConfig = {
       './data/afl-model/projections/**/*',
       './data/afl-team-selections-snapshot.html',
       './scripts/afl_model/__pycache__/**/*',
+      // Served by the CDN. Routes that build paths from process.cwd() would otherwise bundle all of it;
+      // tennis headshots fall back to data/tennis/headshots.json and a redirect to the static file.
+      './public/**/*',
+      './data/sportsline-*.html',
+      './nbl-engine/**/*',
+      './tsconfig.tsbuildinfo',
     ],
+    '/api/afl/odds/refresh': [...AFL_ODDS_REFRESH_EXCLUDES],
+    '/api/afl/odds/refresh/route': [...AFL_ODDS_REFRESH_EXCLUDES],
   },
   // Only suppress known Supabase auth errors during build phase (not runtime)
   // These are expected errors when Supabase client initializes during static generation
