@@ -9,6 +9,7 @@ import {
 } from '@/lib/combinedPropsSnapshotPaint';
 import type { CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
 import { getNblPlayerPropsList } from '@/lib/nbl/playerPropsList';
+import { applyTennisListLiveOverlay, type TennisPlayerPropsListPayload } from '@/lib/tennis/playerPropsList';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -79,6 +80,33 @@ async function attachCachedNblList(
 }
 
 /**
+ * The stored slice keeps whatever tournament it was built with. Apply the same read overlay as the
+ * tennis list so a player shows their next unplayed match, not an event they already left.
+ */
+async function withLiveTennisOverlay(snapshot: CombinedPropsSnapshot): Promise<CombinedPropsSnapshot> {
+  const tennis = snapshot.tennis;
+  if (!tennis?.props?.length) return snapshot;
+  try {
+    const healed = await applyTennisListLiveOverlay({
+      ...(tennis as unknown as TennisPlayerPropsListPayload),
+      data: tennis.props as unknown as TennisPlayerPropsListPayload['data'],
+      games: (tennis.games || []) as unknown as TennisPlayerPropsListPayload['games'],
+    });
+    return {
+      ...snapshot,
+      tennis: {
+        ...tennis,
+        props: healed.data as unknown as typeof tennis.props,
+        games: healed.games as unknown as typeof tennis.games,
+        noTennisOdds: healed.data.length === 0 ? true : tennis.noTennisOdds,
+      },
+    };
+  } catch {
+    return snapshot;
+  }
+}
+
+/**
  * Cache-only. Crons write Redis; this route never rebuilds from Odds/API-Tennis.
  */
 export async function GET(request: NextRequest) {
@@ -96,7 +124,7 @@ export async function GET(request: NextRequest) {
           paintSnapshot || slimCombinedPropsSnapshotForClient(source)
         );
     const [withTennis, withNbl] = await Promise.all([
-      attachCachedTennisSlice(painted),
+      attachCachedTennisSlice(painted).then(withLiveTennisOverlay),
       attachCachedNblList(painted),
     ]);
     const merged: CombinedPropsSnapshot = {
