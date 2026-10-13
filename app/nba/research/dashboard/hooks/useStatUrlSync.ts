@@ -9,8 +9,6 @@ export interface UseStatUrlSyncParams {
   selectedStat: string;
   setSelectedStat: (stat: string) => void;
   propsMode: 'player' | 'team';
-  isPro: boolean;
-  setPropsMode: (mode: 'player' | 'team') => void;
   setOpponentTeam: (team: string) => void;
   statFromUrlRef: React.MutableRefObject<boolean>;
   userSelectedStatRef: React.MutableRefObject<boolean>;
@@ -20,8 +18,6 @@ export function useStatUrlSync({
   selectedStat,
   setSelectedStat,
   propsMode,
-  isPro,
-  setPropsMode,
   setOpponentTeam,
   statFromUrlRef,
   userSelectedStatRef,
@@ -174,13 +170,6 @@ export function useStatUrlSync({
     }
     
     if (propsMode === 'player') {
-      // Force non-Pro users back to Game Props mode
-      if (!isPro) {
-        setPropsMode('team');
-        setSelectedStat('total_pts');
-        return;
-      }
-      
       // Clear opponent when switching to player mode (player props don't have opponents)
       setOpponentTeam('');
       
@@ -197,7 +186,7 @@ export function useStatUrlSync({
         setSelectedStat('total_pts');
       }
     }
-  }, [propsMode, isPro, selectedStat, setSelectedStat, setPropsMode, setOpponentTeam, statFromUrlRef, userSelectedStatRef]);
+  }, [propsMode, selectedStat, setSelectedStat, setOpponentTeam, statFromUrlRef, userSelectedStatRef]);
 
   // Wrapper for setSelectedStat that marks it as a user selection and updates URL immediately
   const handleStatSelect = useCallback((stat: string) => {

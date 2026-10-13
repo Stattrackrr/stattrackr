@@ -10,7 +10,9 @@ function normalizeTennisStat(stat: string): string {
     value === 'totalGames' ||
     value === 'gamesWon' ||
     value === 'gamesLost' ||
-    value === 'totalSets'
+    value === 'totalSets' ||
+    value === 'setsWon' ||
+    value === 'setsLost'
   ) {
     return value;
   }
@@ -19,6 +21,8 @@ function normalizeTennisStat(stat: string): string {
   if (n === 'gameswon') return 'gamesWon';
   if (n === 'gameslost' || n === 'oppgameswon') return 'gamesLost';
   if (n === 'totalsets') return 'totalSets';
+  if (n === 'setswon') return 'setsWon';
+  if (n === 'setslost') return 'setsLost';
   return 'moneyline';
 }
 

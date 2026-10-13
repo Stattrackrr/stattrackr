@@ -126,6 +126,28 @@ function emptyStats(): TennisAnalystStats {
     totalGames: null,
     over215: null,
     over225: null,
+    wonASet: null,
+    straightSetWins: null,
+    straightSetLosses: null,
+    decidingSet: null,
+  };
+}
+
+/** Set-market records over matches with a finished set score. Retirements before two sets are left out. */
+function setRecords(rows: TennisMatchRow[]): Pick<
+  TennisAnalystStats,
+  'wonASet' | 'straightSetWins' | 'straightSetLosses' | 'decidingSet'
+> {
+  const scored = rows
+    .map((row) => ({ won: num(row.setsWon), lost: num(row.setsLost) }))
+    .filter((row): row is { won: number; lost: number } => row.won != null && row.lost != null && Math.max(row.won, row.lost) >= 2);
+  if (!scored.length) return { wonASet: null, straightSetWins: null, straightSetLosses: null, decidingSet: null };
+  const of = (hits: number) => `${hits}/${scored.length}`;
+  return {
+    wonASet: of(scored.filter((row) => row.won >= 1).length),
+    straightSetWins: of(scored.filter((row) => row.won > row.lost && row.lost === 0).length),
+    straightSetLosses: of(scored.filter((row) => row.lost > row.won && row.won === 0).length),
+    decidingSet: of(scored.filter((row) => Math.min(row.won, row.lost) === Math.max(row.won, row.lost) - 1).length),
   };
 }
 
@@ -173,6 +195,7 @@ function summarize(rows: TennisMatchRow[]): TennisAnalystStats {
     totalGames: roundMaybe(totalGames, 1),
     over215: withGames.length ? round((withGames.filter((n) => n >= 22).length / withGames.length) * 100, 0) : null,
     over225: withGames.length ? round((withGames.filter((n) => n >= 23).length / withGames.length) * 100, 0) : null,
+    ...setRecords(rows),
   };
 }
 
@@ -710,6 +733,10 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
       gamesLost: side.l15.gamesLost,
       over215: side.l15.over215,
       over225: side.l15.over225,
+      wonASet: side.l15.wonASet,
+      straightSetWins: side.l15.straightSetWins,
+      straightSetLosses: side.l15.straightSetLosses,
+      decidingSet: side.l15.decidingSet,
     },
     surface: side.surface
       ? {
@@ -802,6 +829,7 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
       moneyline: analysis.marketOdds?.moneyline ?? [],
       totals: analysis.marketOdds?.totals ?? [],
       totalsAtListed: analysis.marketOdds?.totalsAtListed ?? [],
+      sets: analysis.marketOdds?.sets ?? [],
     },
     value: buildTennisAskEdge(analysis.marketOdds, {
       playerWinPct: analysis.model.playerWinPct,

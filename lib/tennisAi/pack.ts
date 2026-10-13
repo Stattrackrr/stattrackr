@@ -41,6 +41,21 @@ function formWinProb(features: MatchupFeatures, selection: string): number | nul
   return a / (a + b);
 }
 
+/** Set scores are keyed player-opponent, e.g. "2-1". */
+export function winASetProb(sim: Pick<SimSummary, 'setScores'>, selection: string): number | null {
+  const scores = Object.entries(sim.setScores).map(([key, prob]) => {
+    const [a, b] = key.split('-').map(Number);
+    return { a, b, prob };
+  });
+  const sum = (hit: (row: { a: number; b: number }) => boolean) =>
+    scores.filter((row) => Number.isFinite(row.a) && Number.isFinite(row.b) && hit(row)).reduce((total, row) => total + row.prob, 0);
+  if (selection === 'PLAYER') return sum((row) => row.a >= 1);
+  if (selection === 'OPPONENT') return sum((row) => row.b >= 1);
+  if (selection === 'PLAYER_STRAIGHT_SETS') return sum((row) => row.b === 0);
+  if (selection === 'OPPONENT_STRAIGHT_SETS') return sum((row) => row.a === 0);
+  return null;
+}
+
 function sideProb(
   market: AvailableMarket,
   sim: SimSummary,
@@ -87,6 +102,12 @@ function sideProb(
     const prob = market.selection === 'OVER' ? side.over : side.under;
     const [low, high] = interval(prob, width);
     return { prob, low, high, pushProb: side.push };
+  }
+  if (market.key === 'WIN_A_SET') {
+    const prob = winASetProb(sim, market.selection);
+    if (prob == null) return null;
+    const [low, high] = interval(prob, width);
+    return { prob, low, high, pushProb: 0 };
   }
   if (market.key === 'PLAYER_ACES' || market.key === 'TOTAL_ACES' || market.key === 'PLAYER_DOUBLE_FAULTS') {
     const games = meanOfHist(market.selection === 'OPPONENT' ? sim.serviceGamesB : sim.serviceGamesA);

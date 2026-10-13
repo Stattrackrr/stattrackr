@@ -89,6 +89,7 @@ import {
   tennisDashboardHref,
   nblDashboardHref,
 } from '@/lib/propsDashboardLinks';
+import { saveFreePlayerPicks } from '@/lib/freePlayers';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { tennisEventPlaceLabel, tennisTourLabel } from '@/lib/tennis/chartStats';
@@ -256,6 +257,7 @@ function formatPropsRowStatLine(
   opts?: { milestone?: boolean }
 ): string {
   if (statType === 'moneyline') return label;
+  if (statType === 'setsWon' && line === 0.5) return 'To Win a Set';
   if (statType === 'spread') {
     if (!Number.isFinite(line)) return label;
     const signed = line > 0 ? `+${line}` : String(line);
@@ -268,7 +270,14 @@ function formatPropsRowStatLine(
   return `${label} ${line > 0 ? 'Over' : 'Under'} ${Math.abs(line)}`;
 }
 
-type TennisPropsMarketKey = 'moneyline' | 'spread' | 'totalGames' | 'gamesWon' | 'gamesLost' | 'totalSets';
+type TennisPropsMarketKey =
+  | 'moneyline'
+  | 'spread'
+  | 'totalGames'
+  | 'gamesWon'
+  | 'gamesLost'
+  | 'totalSets'
+  | 'setsWon';
 
 const TENNIS_PROPS_MARKET_TONE: Record<
   TennisPropsMarketKey,
@@ -298,6 +307,10 @@ const TENNIS_PROPS_MARKET_TONE: Record<
     dark: 'text-pink-300',
     light: 'text-pink-700',
   },
+  setsWon: {
+    dark: 'text-cyan-300',
+    light: 'text-cyan-700',
+  },
 };
 
 function tennisPropsMarketKey(statType: string): TennisPropsMarketKey | null {
@@ -308,7 +321,8 @@ function tennisPropsMarketKey(statType: string): TennisPropsMarketKey | null {
     value === 'totalGames' ||
     value === 'gamesWon' ||
     value === 'gamesLost' ||
-    value === 'totalSets'
+    value === 'totalSets' ||
+    value === 'setsWon'
   ) {
     return value;
   }
@@ -319,6 +333,7 @@ function tennisPropsMarketKey(statType: string): TennisPropsMarketKey | null {
   if (n === 'gameswon') return 'gamesWon';
   if (n === 'gameslost' || n === 'oppgameswon') return 'gamesLost';
   if (n === 'totalsets') return 'totalSets';
+  if (n === 'setswon') return 'setsWon';
   return null;
 }
 
@@ -532,7 +547,8 @@ function combinedMarketPriority(prop: CombinedPlayerPropRow): number {
       totalSets: 2,
       spread: 3,
       gamesLost: 4,
-      moneyline: 5,
+      setsWon: 5,
+      moneyline: 6,
     };
     return tennisKey ? order[tennisKey] : 9;
   }
@@ -1638,7 +1654,8 @@ function isTennisPropStatType(statType: string): boolean {
     n === 'totalgames' ||
     n === 'gameswon' ||
     n === 'gameslost' ||
-    n === 'totalsets'
+    n === 'totalsets' ||
+    n === 'setswon'
   );
 }
 
@@ -5066,6 +5083,7 @@ export default function NBALandingPage() {
       gamesWon: 'Games Won',
       gamesLost: 'Opp Games Won',
       totalSets: 'Total Sets',
+      setsWon: 'Sets Won',
     };
     return labels[statType] || statType;
   }, []);
@@ -5375,7 +5393,7 @@ export default function NBALandingPage() {
     const types = new Set<string>();
     activeSecondaryProps.forEach((p) => p.statType && types.add(p.statType));
     const order = isTennisPropsSport(propsSport)
-        ? ['moneyline', 'spread', 'totalGames', 'gamesWon', 'gamesLost', 'totalSets']
+        ? ['moneyline', 'spread', 'totalGames', 'gamesWon', 'gamesLost', 'totalSets', 'setsWon']
         : isNblPropsSport(propsSport)
           ? ['points', 'rebounds', 'assists', 'threeMade']
         : ['disposals', 'disposals_over', 'anytime_goal_scorer', 'goals_over'];
@@ -7190,6 +7208,34 @@ export default function NBALandingPage() {
     freeNbaPicksRef.current = next;
     return next;
   }, [displaySortedProps, freePropsPreview]);
+
+  useEffect(() => {
+    if (!freePropsPreview) return;
+    const visible =
+      propsSport === 'combined' ? rankedCombinedProps : propsSport === 'nba' ? rankedNbaProps : rankedAflProps;
+    saveFreePlayerPicks(
+      visible.map((prop) => {
+        const sport = resolvePropsRowSport(prop, propsSport);
+        return {
+          sport,
+          name: prop.playerName,
+          id: prop.playerId ? String(prop.playerId) : null,
+          href: propsDashboardHref({
+            sport,
+            playerName: prop.playerName,
+            playerId: prop.playerId,
+            team: prop.team,
+            opponent: prop.opponent,
+            opponentIoc: prop.opponentIoc,
+            opponentId: prop.opponentId,
+            statType: prop.statType,
+            line: Number.isFinite(prop.line) ? prop.line : null,
+            bookmaker: prop.bookmaker,
+          }),
+        };
+      })
+    );
+  }, [freePropsPreview, propsSport, rankedCombinedProps, rankedNbaProps, rankedAflProps]);
 
   // Pagination
   const pageSize = 20;

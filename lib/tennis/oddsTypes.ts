@@ -24,6 +24,12 @@ export interface TennisBookRow {
   GamesWonLines: TennisOuLine[];
   GamesLostLines: TennisOuLine[];
   TotalSetsLines: TennisOuLine[];
+  /** Home player's sets won. Over 0.5 is "to win a set". */
+  SetsWon?: TennisOuLine;
+  /** Away player's sets won. */
+  SetsLost?: TennisOuLine;
+  SetsWonLines?: TennisOuLine[];
+  SetsLostLines?: TennisOuLine[];
 }
 
 export interface TennisMatchOdds {
@@ -35,13 +41,16 @@ export interface TennisMatchOdds {
   fetchedAt?: string | null;
 }
 
-export const TENNIS_OU_STATS = ['spread', 'totalGames', 'gamesWon', 'gamesLost', 'totalSets'] as const;
+export const TENNIS_OU_STATS = ['spread', 'totalGames', 'gamesWon', 'gamesLost', 'totalSets', 'setsWon', 'setsLost'] as const;
+
+/** Set markets are lopsided by nature, so they use the moneyline floor instead of the 1.65–2.50 band. */
+const TENNIS_SET_MARKET_STATS = new Set(['totalSets', 'setsWon', 'setsLost']);
 
 export function isTennisOuStat(stat: string | null | undefined): boolean {
   return TENNIS_OU_STATS.includes(stat as (typeof TENNIS_OU_STATS)[number]);
 }
 
-function hasOu(line: TennisOuLine | undefined): boolean {
+function hasOu(line: TennisOuLine | undefined): line is TennisOuLine {
   return Boolean(line && line.line !== 'N/A' && (line.over !== 'N/A' || line.under !== 'N/A'));
 }
 
@@ -122,6 +131,7 @@ export function tennisOuLinePlausible(stat: string, line: string | number | null
   if (stat === 'gamesWon' || stat === 'gamesLost') return n >= 5.5 && n <= 45.5;
   // Match set totals are 2.5 (BO3) or 3.5/4.5 (BO5). 1.5 is player sets won O/U.
   if (stat === 'totalSets') return n >= 2.5 && n <= 4.5;
+  if (stat === 'setsWon' || stat === 'setsLost') return n >= 0.5 && n <= 2.5;
   if (stat === 'spread') return Math.abs(n) >= 0.5 && Math.abs(n) <= 20;
   return true;
 }
@@ -168,13 +178,31 @@ function rawLinesForStat(book: TennisBookRow, stat: string): TennisOuLine[] {
   if (stat === 'gamesWon') return book.GamesWonLines?.length ? book.GamesWonLines : hasOu(book.GamesWon) ? [book.GamesWon] : [];
   if (stat === 'gamesLost') return book.GamesLostLines?.length ? book.GamesLostLines : hasOu(book.GamesLost) ? [book.GamesLost] : [];
   if (stat === 'totalSets') return book.TotalSetsLines?.length ? book.TotalSetsLines : hasOu(book.TotalSets) ? [book.TotalSets] : [];
+  if (stat === 'setsWon') return book.SetsWonLines?.length ? book.SetsWonLines : hasOu(book.SetsWon) ? [book.SetsWon] : [];
+  if (stat === 'setsLost') return book.SetsLostLines?.length ? book.SetsLostLines : hasOu(book.SetsLost) ? [book.SetsLost] : [];
   return [];
+}
+
+/** Blank any side priced under the moneyline floor; drop the line when no side is left. */
+function setMarketLineAboveFloor(line: TennisOuLine): TennisOuLine | null {
+  if (!lineIsHalfPoint(line.line)) return null;
+  const keep = (price: string) => {
+    const dec = decimalFromAmericanStr(price);
+    return dec != null && dec >= TENNIS_MONEYLINE_MIN_DECIMAL ? price : 'N/A';
+  };
+  const over = keep(line.over);
+  const under = keep(line.under);
+  if (over === 'N/A' && under === 'N/A') return null;
+  return { line: line.line, over, under };
 }
 
 export function tennisOuLinesForStat(book: TennisBookRow | undefined, stat: string): TennisOuLine[] {
   if (!book) return [];
-  const posted = filterTennisOuLines(stat, rawLinesForStat(book, stat)).filter(tennisOuLineInSelectorBand);
-  return dropMisleadingPlayerTotalAlts(stat, posted, book);
+  const plausible = filterTennisOuLines(stat, rawLinesForStat(book, stat));
+  if (TENNIS_SET_MARKET_STATS.has(stat)) {
+    return plausible.map(setMarketLineAboveFloor).filter((line): line is TennisOuLine => line != null);
+  }
+  return dropMisleadingPlayerTotalAlts(stat, plausible.filter(tennisOuLineInSelectorBand), book);
 }
 
 function ouLineNumber(line: TennisOuLine): number {

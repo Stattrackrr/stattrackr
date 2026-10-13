@@ -189,6 +189,13 @@ function sidePhrase(payload: AnswerPayload, player: string, opponent: string): s
   if (market.key === 'PLAYER_TOTAL_GAMES' && line != null) {
     return `${player} ${String(market.selection).toLowerCase()} ${line} games`;
   }
+  if (market.key === 'WIN_A_SET') {
+    if (market.selection === 'OPPONENT') return `${opponent} to win a set`;
+    if (market.selection === 'PLAYER_STRAIGHT_SETS') return `${player} in straight sets`;
+    if (market.selection === 'OPPONENT_STRAIGHT_SETS') return `${opponent} in straight sets`;
+    return `${player} to win a set`;
+  }
+  if (market.key === 'TOTAL_SETS' && line != null) return `${String(market.selection).toLowerCase()} ${line} sets`;
   if (line != null) return `${String(market.selection).toLowerCase()} ${line}`;
   return player;
 }

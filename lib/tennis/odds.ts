@@ -253,6 +253,90 @@ function nestedMarket(
   return { over, under };
 }
 
+function marketKeys(raw: Record<string, unknown>, name: string): string[] {
+  const block = market(raw, name);
+  return block && typeof block === 'object' ? Object.keys(block as Record<string, unknown>) : [];
+}
+
+/** Set handicaps and "Number of sets" only translate to win-a-set / over 2.5 in best of 3. */
+function setMarketsAreBestOfThree(raw: Record<string, unknown>): boolean {
+  const scores = marketKeys(raw, 'Set Betting');
+  if (!scores.length) return false;
+  return scores.every((key) => /^[0-2]:[0-2]$/.test(key.trim()));
+}
+
+/**
+ * API-Tennis labels the away set handicap backwards on some feeds. Within one side and book,
+ * +1.5 (win a set) is always shorter than -1.5 (win in straight sets), so order by price.
+ */
+export function tennisSetHandicapSide(
+  block: Record<string, unknown> | undefined,
+  side: 'Home' | 'Away'
+): { winASet: DecimalByBook; straightSets: DecimalByBook } {
+  const winASet: DecimalByBook = {};
+  const straightSets: DecimalByBook = {};
+  const lines = asNestedByLine(block?.[`Asian Handicap (Sets) ${side}`] ?? block?.[side]);
+  const plus = lines?.['+1.5'] ?? lines?.['1.5'];
+  const minus = lines?.['-1.5'];
+  if (!plus || !minus) return { winASet, straightSets };
+  for (const book of Object.keys(plus)) {
+    const a = Number.parseFloat(String(plus[book]).replace(',', '.'));
+    const b = Number.parseFloat(String(minus[book] ?? '').replace(',', '.'));
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 1 || b <= 1 || a === b) continue;
+    winASet[book] = String(Math.min(a, b));
+    straightSets[book] = String(Math.max(a, b));
+  }
+  return { winASet, straightSets };
+}
+
+/** Over/under 0.5 sets won for one player. Direct "Win at least one set" first, set handicaps fill other books. */
+export function tennisWinASetMarket(
+  raw: Record<string, unknown>,
+  side: 'Home' | 'Away'
+): { over: NestedByLine | null; under: NestedByLine | null } {
+  const direct = market(raw, `Win at least one set (Player ${side === 'Home' ? 1 : 2})`) as
+    | Record<string, unknown>
+    | undefined;
+  const over: DecimalByBook = { ...(asDecimalByBook(direct?.Yes) ?? {}) };
+  const under: DecimalByBook = { ...(asDecimalByBook(direct?.No) ?? {}) };
+  // "Opponent wins in straight sets: No" is exactly "this player wins a set", in any format.
+  const otherStraight = market(raw, `Win In Straigh Sets (Player ${side === 'Home' ? 2 : 1})`) as
+    | Record<string, unknown>
+    | undefined;
+  for (const [book, price] of Object.entries(asDecimalByBook(otherStraight?.No) ?? {})) {
+    if (over[book] == null) over[book] = price;
+  }
+  for (const [book, price] of Object.entries(asDecimalByBook(otherStraight?.Yes) ?? {})) {
+    if (under[book] == null) under[book] = price;
+  }
+  if (setMarketsAreBestOfThree(raw)) {
+    const handicap = market(raw, 'Asian Handicap (Sets)') as Record<string, unknown> | undefined;
+    const own = tennisSetHandicapSide(handicap, side);
+    const other = tennisSetHandicapSide(handicap, side === 'Home' ? 'Away' : 'Home');
+    for (const [book, price] of Object.entries(own.winASet)) {
+      if (over[book] == null) over[book] = price;
+    }
+    for (const [book, price] of Object.entries(other.straightSets)) {
+      if (under[book] == null) under[book] = price;
+    }
+  }
+  return {
+    over: Object.keys(over).length ? { '0.5': over } : null,
+    under: Object.keys(under).length ? { '0.5': under } : null,
+  };
+}
+
+/** "Number of sets" in best of 3: "3" is over 2.5, the other key (2, or "Away" on this feed) is under. */
+function numberOfSetsMarket(raw: Record<string, unknown>): { over: NestedByLine | null; under: NestedByLine | null } {
+  if (!setMarketsAreBestOfThree(raw)) return { over: null, under: null };
+  const block = market(raw, 'Number of sets') as Record<string, unknown> | undefined;
+  const keys = block ? Object.keys(block) : [];
+  if (keys.length !== 2 || !keys.includes('3')) return { over: null, under: null };
+  const over = asDecimalByBook(block?.['3']);
+  const under = asDecimalByBook(block?.[keys.find((key) => key !== '3')!]);
+  return { over: over ? { '2.5': over } : null, under: under ? { '2.5': under } : null };
+}
+
 function parseMatchMarkets(raw: Record<string, unknown>): TennisBookRow[] {
   const h2h = market(raw, 'Home/Away') as Record<string, unknown> | undefined;
   const homeH2H = asDecimalByBook(h2h?.Home);
@@ -273,8 +357,17 @@ function parseMatchMarkets(raw: Record<string, unknown>): TennisBookRow[] {
   const homeGames = nestedMarket(raw, 'Total - Home', ['Total Over', 'Over'], ['Total Under', 'Under']);
   const awayGames = nestedMarket(raw, 'Total - Away', ['Total Over', 'Over'], ['Total Under', 'Under']);
   const setTotals = nestedMarket(raw, 'Over/Under', ['Over/Under Over', 'Over'], ['Over/Under Under', 'Under']);
+  const numberOfSets = numberOfSetsMarket(raw);
+  const homeWinASet = tennisWinASetMarket(raw, 'Home');
+  const awayWinASet = tennisWinASetMarket(raw, 'Away');
 
   const names = new Set<string>([
+    ...bookNamesFromNested(numberOfSets.over),
+    ...bookNamesFromNested(numberOfSets.under),
+    ...bookNamesFromNested(homeWinASet.over),
+    ...bookNamesFromNested(homeWinASet.under),
+    ...bookNamesFromNested(awayWinASet.over),
+    ...bookNamesFromNested(awayWinASet.under),
     ...bookNamesFromMap(homeH2H),
     ...bookNamesFromMap(awayH2H),
     ...bookNamesFromNested(gamesAh.over),
@@ -300,9 +393,12 @@ function parseMatchMarkets(raw: Record<string, unknown>): TennisBookRow[] {
       'totalSets',
       [
         ...collectAllLines(setTotals.over, setTotals.under, name),
+        ...collectAllLines(numberOfSets.over, numberOfSets.under, name),
         ...filterTennisOuLines('totalSets', rawMatchTotals),
       ]
     );
+    const setsWonLines = filterTennisOuLines('setsWon', collectAllLines(homeWinASet.over, homeWinASet.under, name));
+    const setsLostLines = filterTennisOuLines('setsWon', collectAllLines(awayWinASet.over, awayWinASet.under, name));
     rows.push({
       name,
       region: getBookmakerRegion(name),
@@ -320,6 +416,10 @@ function parseMatchMarkets(raw: Record<string, unknown>): TennisBookRow[] {
       GamesWonLines: gamesWonLines,
       GamesLostLines: gamesLostLines,
       TotalSetsLines: totalSetsLines,
+      SetsWon: setsWonLines[0] ?? emptyOu(),
+      SetsLost: setsLostLines[0] ?? emptyOu(),
+      SetsWonLines: setsWonLines,
+      SetsLostLines: setsLostLines,
     });
   }
 
@@ -344,6 +444,10 @@ function orientBooksForPlayer(books: TennisBookRow[], playerIsHome: boolean): Te
     GamesLostLines: [...book.GamesWonLines],
     TotalSets: { ...book.TotalSets },
     TotalSetsLines: [...book.TotalSetsLines],
+    SetsWon: book.SetsLost ? { ...book.SetsLost } : undefined,
+    SetsLost: book.SetsWon ? { ...book.SetsWon } : undefined,
+    SetsWonLines: [...(book.SetsLostLines ?? [])],
+    SetsLostLines: [...(book.SetsWonLines ?? [])],
   }));
 }
 
@@ -415,6 +519,14 @@ function mergeBookRows(primary: TennisBookRow[], extra: TennisBookRow[]): Tennis
     const gamesWonLines = filterTennisOuLines('gamesWon', mergeOuLineLists(prev.GamesWonLines, row.GamesWonLines));
     const gamesLostLines = filterTennisOuLines('gamesLost', mergeOuLineLists(prev.GamesLostLines, row.GamesLostLines));
     const totalSetsLines = filterTennisOuLines('totalSets', mergeOuLineLists(prev.TotalSetsLines, row.TotalSetsLines));
+    const setsWonLines = filterTennisOuLines(
+      'setsWon',
+      mergeOuLineLists(prev.SetsWonLines ?? [], row.SetsWonLines ?? [])
+    );
+    const setsLostLines = filterTennisOuLines(
+      'setsWon',
+      mergeOuLineLists(prev.SetsLostLines ?? [], row.SetsLostLines ?? [])
+    );
     byKey.set(key, {
       name: prev.name,
       region: prev.region ?? regionOf(row),
@@ -432,6 +544,10 @@ function mergeBookRows(primary: TennisBookRow[], extra: TennisBookRow[]): Tennis
       GamesWonLines: gamesWonLines,
       GamesLostLines: gamesLostLines,
       TotalSetsLines: totalSetsLines,
+      SetsWon: setsWonLines[0] ?? emptyOu(),
+      SetsLost: setsLostLines[0] ?? emptyOu(),
+      SetsWonLines: setsWonLines,
+      SetsLostLines: setsLostLines,
     });
   }
   return [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name));

@@ -18,7 +18,6 @@ const PlayTypeAnalysis = lazy(() => import('@/components/PlayTypeAnalysis').then
 interface DashboardRightPanelProps {
   sidebarOpen: boolean;
   isDark: boolean;
-  hasPremium: boolean;
   propsMode: 'player' | 'team';
   setPropsMode: (mode: 'player' | 'team') => void;
   setSelectedStat: (stat: string) => void;
@@ -70,7 +69,6 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
   const {
     sidebarOpen,
     isDark,
-    hasPremium,
     propsMode,
     setPropsMode,
     setSelectedStat,
@@ -129,10 +127,6 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
     <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
       <button
         onClick={() => {
-          if (!hasPremium) {
-            router.push('/subscription');
-            return;
-          }
           setPropsMode('player');
           // Always set PTS (points) as default for Player Props
           setSelectedStat('pts');
@@ -160,22 +154,14 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
             router.replace(url.pathname + url.search, { scroll: false });
           }
         }}
-        disabled={!hasPremium}
         className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
           propsMode === 'player'
             ? "bg-purple-600 text-white border-purple-500"
-            : !hasPremium
-            ? "bg-gray-200 dark:bg-[#0a1929] text-gray-400 dark:text-gray-500 cursor-not-allowed border-gray-200 dark:border-gray-600"
             : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600"
         }`}
       >
         <span className="flex items-center gap-2">
           Player Props
-          {!hasPremium && (
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-            </svg>
-          )}
         </span>
       </button>
       <button

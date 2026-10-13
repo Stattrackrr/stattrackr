@@ -7,6 +7,7 @@ import { loadPlayerMatchesCached } from '@/lib/tennis/loadCached';
 import { buildTennisMatchAnalysis } from '@/lib/tennis/matchAnalyst';
 import { getTennisMatchOddsForPlayer } from '@/lib/tennis/odds';
 import { runTennisAi } from '@/lib/tennisAi/live';
+import { proRequiredResponse, requestIsPro } from '@/lib/server/proRouteAuth';
 import type { TennisTour } from '@/lib/tennis/types';
 
 export const dynamic = 'force-dynamic';
@@ -75,6 +76,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
   if (TENNIS_AI_UNDER_MAINTENANCE) return maintenanceResponse();
+  if (!(await requestIsPro(request))) return proRequiredResponse('AI Overview');
   const body = (await request.json().catch(() => null)) as {
     question?: unknown;
     player?: unknown;

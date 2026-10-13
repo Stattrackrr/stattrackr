@@ -21,6 +21,11 @@ export type TennisAnalystStats = {
   totalGames: number | null;
   over215: number | null;
   over225: number | null;
+  /** Counts over finished matches, written as hits/sample (e.g. "12/15"). */
+  wonASet: string | null;
+  straightSetWins: string | null;
+  straightSetLosses: string | null;
+  decidingSet: string | null;
 };
 
 export type TennisAnalystForm = {
@@ -113,5 +118,15 @@ export type TennisMatchAnalysis = {
     totals: Array<{ book: string; line: number | null; over: number | null; under: number | null }>;
     totalsAtListed: Array<{ book: string; line: number | null; over: number | null; under: number | null }>;
     moneyline: Array<{ book: string; player: number | null; opponent: number | null }>;
+    sets?: Array<{
+      book: string;
+      playerToWinASet: number | null;
+      opponentToWinASet: number | null;
+      playerStraightSets: number | null;
+      opponentStraightSets: number | null;
+      totalSetsLine: number | null;
+      totalSetsOver: number | null;
+      totalSetsUnder: number | null;
+    }>;
   } | null;
 };

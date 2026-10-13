@@ -272,8 +272,8 @@ test('questions use the chart main line, not an alt', () => {
           { line: '-4.5', over: '+105', under: '-143' },
           { line: '-8.5', over: '-110', under: '-110' },
         ],
-        TotalSets: { line: '2.5', over: '-200', under: '+150' },
-        TotalSetsLines: [{ line: '2.5', over: '-200', under: '+150' }],
+        TotalSets: { line: '2.5', over: '-400', under: '+275' },
+        TotalSetsLines: [{ line: '2.5', over: '-400', under: '+275' }],
       }),
     ])
   );
@@ -291,7 +291,9 @@ test('questions use the chart main line, not an alt', () => {
   assert.match(text, /4\.5/);
   assert.equal(/8\.5/.test(text), false);
   assert.equal(/\b21 games\b/.test(text), false);
-  assert.equal(/2\.5 sets/.test(text), false);
+  assert.equal(/over 2\.5 sets/.test(text), false);
+  const sets = markets.filter((market) => market.key === 'TOTAL_SETS').map((market) => market.selection);
+  assert.deepEqual(sets, ['UNDER']);
 });
 
 test('plus handicap questions do not say too many', () => {

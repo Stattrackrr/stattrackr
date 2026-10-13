@@ -66,7 +66,7 @@ function supportingOptionsForMain(main?: string): { value: SupportingStatKind; l
         ? ['totalAces', 'aces', 'doubleFaults', 'gamesLost']
         : mainKey === 'totalAces'
           ? ['aces', 'opponentAces', 'doubleFaults', 'gamesWon']
-          : mainKey === 'totalSets'
+          : mainKey === 'totalSets' || mainKey === 'setsWon' || mainKey === 'setsLost'
             ? ['totalGames', 'spread', 'gamesWon', 'totalAces']
           : mainKey === 'dominanceRatio'
             ? ['returnPointsWon', 'firstServePct', 'totalAces', 'totalSets']

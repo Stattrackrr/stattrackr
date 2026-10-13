@@ -5,7 +5,9 @@ import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/compon
 import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { AflStatsChart, type AflChartTimeframe } from '@/app/afl/components/AflStatsChart';
-import { ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
+import { FreePlayerLimitPrompt, ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
+import { useFreePlayerLock } from '@/hooks/useFreePlayerLock';
+import type { PropsDashboardSport } from '@/lib/propsDashboardLinks';
 import { AflInjuriesCard } from '@/app/afl/components/AflInjuriesCard';
 import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownCard';
 import AflTeamMatchupCard from '@/app/afl/components/AflTeamMatchupCard';
@@ -73,6 +75,7 @@ const AFL_DASH_CARD_GLOW =
   'border border-gray-200 dark:border-[#463e6b] bg-white dark:bg-[#0a1929] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_0_20px_rgba(124,58,237,0.1)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.22),0_0_36px_rgba(124,58,237,0.22)]';
 
 type AflPlayerRecord = Record<string, string | number>;
+const AFL_FREE_PLAYER_SPORTS: readonly PropsDashboardSport[] = ['afl'];
 type AflGameLogRecord = Record<string, unknown>;
 type TeamRankStatKey =
   | 'disposals'
@@ -1301,17 +1304,22 @@ export default function AFLPage() {
   const [aflChartTimeframe, setAflChartTimeframe] = useState<AflChartTimeframe>('last10');
   const [mainChartStat, setMainChartStat] = useState<string>('');
   const [lockedPropsStat, setLockedPropsStat] = useState<string | null>(null);
-  const freeTier = subscriptionChecked && !isPro;
+  const aiLocked = subscriptionChecked && !isPro;
+  const { locked: freeTier, freePicks } = useFreePlayerLock({
+    freeAccount: aiLocked,
+    sports: AFL_FREE_PLAYER_SPORTS,
+    player: aflPropsMode === 'player' && selectedPlayer ? { name: String(selectedPlayer.name ?? '') } : null,
+  });
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('tog');
   const [playerVsRankScope, setPlayerVsRankScope] = useState<'team' | 'league'>('team');
   const [playerVsContainerTab, setPlayerVsContainerTab] = useState<'comparison' | 'prediction' | 'role'>('comparison');
   const showAflPredictionPanel =
     !AFL_PREDICTION_MODEL_UNDER_MAINTENANCE && playerVsContainerTab === 'prediction';
   useEffect(() => {
-    if (AFL_PREDICTION_MODEL_UNDER_MAINTENANCE && playerVsContainerTab === 'prediction') {
+    if ((AFL_PREDICTION_MODEL_UNDER_MAINTENANCE || aiLocked) && playerVsContainerTab === 'prediction') {
       setPlayerVsContainerTab('comparison');
     }
-  }, [playerVsContainerTab]);
+  }, [aiLocked, playerVsContainerTab]);
   useEffect(() => {
     if (!freeTier) return;
     if (aflRightTab === 'dvp') setAflRightTab('breakdown');
@@ -5419,14 +5427,14 @@ export default function AFLPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={!freeTier && AFL_PREDICTION_MODEL_UNDER_MAINTENANCE}
+                        disabled={!aiLocked && AFL_PREDICTION_MODEL_UNDER_MAINTENANCE}
                         title={
                           AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
                             ? 'Prediction model is under maintenance'
                             : undefined
                         }
                         onClick={() => {
-                          if (freeTier) {
+                          if (aiLocked) {
                             openProUpgrade();
                             return;
                           }
@@ -5438,7 +5446,7 @@ export default function AFLPage() {
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
                         } ${
-                          freeTier
+                          aiLocked
                             ? 'cursor-pointer grayscale opacity-60'
                             : AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
                               ? 'cursor-not-allowed opacity-65'
@@ -5446,7 +5454,7 @@ export default function AFLPage() {
                         }`}
                       >
                         Prediction Model
-                        {freeTier ? <ProLockMark /> : null}
+                        {aiLocked ? <ProLockMark /> : null}
                         {AFL_PREDICTION_MODEL_UNDER_MAINTENANCE ? (
                           <span
                             className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700"
@@ -5941,14 +5949,14 @@ export default function AFLPage() {
                     </button>
                     <button
                       type="button"
-                      disabled={!freeTier && AFL_PREDICTION_MODEL_UNDER_MAINTENANCE}
+                      disabled={!aiLocked && AFL_PREDICTION_MODEL_UNDER_MAINTENANCE}
                       title={
                         AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
                           ? 'Prediction model is under maintenance'
                           : undefined
                       }
                       onClick={() => {
-                        if (freeTier) {
+                        if (aiLocked) {
                           openProUpgrade();
                           return;
                         }
@@ -5960,7 +5968,7 @@ export default function AFLPage() {
                           ? 'bg-purple-600 text-white border-purple-600'
                           : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
                       } ${
-                        freeTier
+                        aiLocked
                           ? 'cursor-pointer grayscale opacity-60'
                           : AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
                             ? 'cursor-not-allowed opacity-65'
@@ -5968,7 +5976,7 @@ export default function AFLPage() {
                       }`}
                     >
                       Prediction Model
-                      {freeTier ? <ProLockMark /> : null}
+                      {aiLocked ? <ProLockMark /> : null}
                       {AFL_PREDICTION_MODEL_UNDER_MAINTENANCE ? (
                         <span
                           className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700"
@@ -6322,6 +6330,13 @@ export default function AFLPage() {
         setOddsFormat={(fmt) => { setOddsFormat(fmt); try { localStorage.setItem('oddsFormat', fmt); } catch { /* ignore */ } }}
       />
       <ProUpgradeHost />
+      <FreePlayerLimitPrompt
+        locked={freeTier}
+        playerName={selectedPlayer ? String(selectedPlayer.name ?? '') : null}
+        sportLabel="AFL"
+        freePicks={freePicks}
+        alternateAction={{ label: 'View game props instead', onClick: () => setAflPropsMode('team') }}
+      />
     </div>
   );
 }

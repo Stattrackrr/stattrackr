@@ -12,6 +12,9 @@ import {
   PieChart, Pie
 } from 'recharts';
 import { getPlayerById, formatHeight, NBAPlayer, SAMPLE_PLAYERS } from '@/lib/nbaPlayers';
+import { FreePlayerLimitPrompt } from '@/components/ProFeatureLock';
+import { useFreePlayerLock } from '@/hooks/useFreePlayerLock';
+import type { PropsDashboardSport } from '@/lib/propsDashboardLinks';
 import { BallDontLieAPI } from './api';
 import { 
   AdvancedStats, 
@@ -168,6 +171,8 @@ import NotificationSystem from '@/components/NotificationSystem';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
 import Image from 'next/image';
 
+const NBA_FREE_PLAYER_SPORTS: readonly PropsDashboardSport[] = ['nba'];
+
 export function NBADashboardContent() {
   const router = useRouter();
   const { isDark, theme, setTheme } = useTheme();
@@ -216,11 +221,13 @@ export function NBADashboardContent() {
   // Get user info and subscription status on mount
   // Cache subscription status to avoid frequent checks
   // Subscription check - extracted to useSubscriptionCheck hook
+  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
   useSubscriptionCheck({
     setUserEmail,
     setUsername,
     setAvatarUrl,
     setIsPro,
+    setSubscriptionChecked,
   });
 
   // Profile menu close - extracted to useProfileMenuClose hook
@@ -425,8 +432,6 @@ export function NBADashboardContent() {
     selectedStat,
     setSelectedStat,
     propsMode,
-    isPro,
-    setPropsMode,
     setOpponentTeam,
     statFromUrlRef,
     userSelectedStatRef,
@@ -478,6 +483,13 @@ export function NBADashboardContent() {
     subscription,
     loading: subscriptionLoading
   } = useSubscription();
+  // Free accounts get every stat; FreePlayerLimitPrompt limits them to their one free player.
+  const advancedStatsAccess = true;
+  const { locked: freePlayerLocked, freePicks } = useFreePlayerLock({
+    freeAccount: subscriptionChecked && !isPro,
+    sports: NBA_FREE_PLAYER_SPORTS,
+    player: propsMode === 'player' && selectedPlayer ? { name: selectedPlayer.full } : null,
+  });
   
   // Countdown timer - extracted to useCountdownTimer hook
   useCountdownTimer({
@@ -714,7 +726,7 @@ export function NBADashboardContent() {
   
   // Premium stats fetching - extracted to usePremiumStats hook
   const { fetchAdvancedStats, fetchShotDistanceStats } = usePremiumStats({
-    hasPremium,
+    hasPremium: advancedStatsAccess,
     setAdvancedStats,
     setAdvancedStatsLoading,
     setAdvancedStatsError,
@@ -725,7 +737,7 @@ export function NBADashboardContent() {
   // Premium stats restoration - extracted to usePremiumStatsRestoration hook
   usePremiumStatsRestoration({
     resolvedPlayerId,
-    hasPremium,
+    hasPremium: advancedStatsAccess,
     advancedStats,
     shotDistanceData,
     setAdvancedStats,
@@ -883,7 +895,7 @@ export function NBADashboardContent() {
     setSearchQuery,
     setSearchResults,
     isLoading,
-    hasPremium,
+    hasPremium: advancedStatsAccess,
     selectedStat,
     todaysGames,
     playerTeamRoster,
@@ -1118,7 +1130,6 @@ export function NBADashboardContent() {
             {/* 1. Filter By Container (Mobile Only) - Extracted to DashboardModeToggle component */}
             <DashboardModeToggle
               propsMode={propsMode}
-              isPro={isPro}
               isDark={isDark}
               gamePropsTeam={gamePropsTeam}
               selectedTeam={selectedTeam}
@@ -1340,7 +1351,6 @@ export function NBADashboardContent() {
           <DashboardRightPanel
             sidebarOpen={sidebarOpen}
             isDark={isDark}
-            hasPremium={hasPremium}
             propsMode={propsMode}
             setPropsMode={setPropsMode}
             setSelectedStat={setSelectedStat}
@@ -1437,6 +1447,12 @@ export function NBADashboardContent() {
         setShowJournalDropdown={setShowJournalDropdown}
         setShowProfileDropdown={setShowProfileDropdown}
         setShowSettingsDropdown={setShowSettingsDropdown}
+      />
+      <FreePlayerLimitPrompt
+        locked={freePlayerLocked}
+        playerName={selectedPlayer?.full}
+        sportLabel="NBA"
+        freePicks={freePicks}
       />
     </div>
   );

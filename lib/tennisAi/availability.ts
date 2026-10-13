@@ -1,7 +1,13 @@
 import { americanToDecimal } from '@/lib/currencyUtils';
 import { MARKET_REGISTRY } from '@/lib/tennisAi/registry';
 import type { AvailableMarket, BookQuote, MarketKey, SelectionSide } from '@/lib/tennisAi/types';
-import { tennisOuLinePlausible, type TennisBookRow, type TennisMatchOdds, type TennisOuLine } from '@/lib/tennis/oddsTypes';
+import {
+  TENNIS_MONEYLINE_MIN_DECIMAL,
+  tennisOuLinePlausible,
+  type TennisBookRow,
+  type TennisMatchOdds,
+  type TennisOuLine,
+} from '@/lib/tennis/oddsTypes';
 
 export const DEFAULT_STALE_MS = 10 * 60 * 1000;
 /**
@@ -203,8 +209,91 @@ export function resolveAvailableMarkets(
   pushOu(out, books, 'TOTAL_GAMES', 'totalGames', 'OVER', 'UNDER', fetchedAt, stale, false);
   pushOu(out, books, 'GAME_HANDICAP', 'spread', 'PLAYER', 'OPPONENT', fetchedAt, stale, true);
   pushOu(out, books, 'PLAYER_TOTAL_GAMES', 'gamesWon', 'OVER', 'UNDER', fetchedAt, stale, false);
-  pushOu(out, books, 'TOTAL_SETS', 'totalSets', 'OVER', 'UNDER', fetchedAt, stale, false);
+  pushSetMarket(out, books, 'TOTAL_SETS', 'totalSets', 'OVER', 'UNDER', fetchedAt, stale);
+  pushSetMarket(out, books, 'WIN_A_SET', 'setsWon', 'PLAYER', 'OPPONENT_STRAIGHT_SETS', fetchedAt, stale);
+  pushSetMarket(out, books, 'WIN_A_SET', 'setsLost', 'OPPONENT', 'PLAYER_STRAIGHT_SETS', fetchedAt, stale);
   return out;
+}
+
+type SetMarketStat = 'totalSets' | 'setsWon' | 'setsLost';
+
+/** Raw set lines, both sides kept so the pair can still be de-vigged when one side is short. */
+function setMarketLines(book: TennisBookRow, stat: SetMarketStat): TennisOuLine[] {
+  const raw =
+    stat === 'totalSets'
+      ? book.TotalSetsLines?.length
+        ? book.TotalSetsLines
+        : [book.TotalSets]
+      : stat === 'setsWon'
+        ? book.SetsWonLines?.length
+          ? book.SetsWonLines
+          : [book.SetsWon]
+        : book.SetsLostLines?.length
+          ? book.SetsLostLines
+          : [book.SetsLost];
+  return raw.filter((row): row is TennisOuLine => {
+    if (!row || !tennisOuLinePlausible(stat, row.line)) return false;
+    const line = lineNumber(row.line);
+    return line != null && halfPoint(line);
+  });
+}
+
+/**
+ * Set markets skip the 1.65–2.50 band. A side is offered only when its best price
+ * clears the moneyline floor; win-a-set markets are keyed by selection, not line.
+ */
+function pushSetMarket(
+  out: AvailableMarket[],
+  books: TennisBookRow[],
+  key: MarketKey,
+  stat: SetMarketStat,
+  overSide: SelectionSide,
+  underSide: SelectionSide,
+  fetchedAt: string | null,
+  stale: boolean
+) {
+  const byLine = new Map<number, { over: BookQuote[]; under: BookQuote[] }>();
+  for (const book of books) {
+    for (const row of setMarketLines(book, stat)) {
+      const line = lineNumber(row.line);
+      if (line == null) continue;
+      const bucket = byLine.get(line) || { over: [], under: [] };
+      const over = quote(book.name, decimalFromBook(row.over), fetchedAt);
+      const under = quote(book.name, decimalFromBook(row.under), fetchedAt);
+      if (over) bucket.over.push(over);
+      if (under) bucket.under.push(under);
+      byLine.set(line, bucket);
+    }
+  }
+  const gap = (bucket: { over: BookQuote[]; under: BookQuote[] }) => {
+    const over = bestQuote(bucket.over)?.decimalOdds;
+    const under = bestQuote(bucket.under)?.decimalOdds;
+    return over != null && under != null ? Math.abs(over - under) : Number.POSITIVE_INFINITY;
+  };
+  const main = [...byLine.entries()].sort((a, b) => gap(a[1]) - gap(b[1]))[0]?.[0] ?? null;
+  const keepLine = key !== 'WIN_A_SET';
+  for (const [line, bucket] of byLine) {
+    if (!bucket.over.length && !bucket.under.length) continue;
+    const featured = main != null && Math.abs(line - main) < 0.01;
+    const side = (selection: SelectionSide, opposite: SelectionSide, quotes: BookQuote[], oppositeQuotes: BookQuote[]) => {
+      const best = bestQuote(quotes);
+      if (best && best.decimalOdds < TENNIS_MONEYLINE_MIN_DECIMAL) return;
+      out.push(
+        pairMarket({
+          key,
+          selection,
+          opposite,
+          line: keepLine ? line : null,
+          quotes,
+          oppositeQuotes,
+          stale,
+          featured,
+        })
+      );
+    };
+    side(overSide, underSide, bucket.over, bucket.under);
+    side(underSide, overSide, bucket.under, bucket.over);
+  }
 }
 
 function pushOu(

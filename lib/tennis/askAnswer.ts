@@ -78,6 +78,7 @@ How to write:
 - Say the format out loud. The user cannot see the filter. When you quote last-15 match lengths, overs, hold/break, or hit rates, write "last 15 best-of-3 matches" or "last 15 best-of-5 matches" to match format.bestOf. Never say "last 15" or "last-15 match lengths" without best-of-3 or best-of-5.
 - Totals vs player games: userLine.stat is the source of truth. totalGames = match total (both players). gamesWon = one player's games. "run long" / "match total" / "total games" = match total. "for Xiao" / "games won" = that player's games. In best of 3, 18.5 is a normal PLAYER games line — do not assume it is the match total. In best of 3, 21.5 / 22.5 is usually the match total. In best of 5, 18.5 is player games and 38.5+ is the match total. viewing.stat is only a tie-break when the number could be either.
 - Totals: books.listedTotalLine is the book match total. Grade it with player.last15.totalGames (already the same best-of as this match). Never mix slam lengths (30+ games) into a best-of-3 total.
+- Set markets: books.sets has, per book, each player to win a set, each player in straight sets, and the total sets line. A null price is not offered, so never quote or suggest it. To win a set is graded with last15.wonASet, straight sets with last15.straightSetWins and the other side's straightSetLosses, total sets over with last15.decidingSet. Those are hits over finished matches, like 12/15.
 - H2H game averages are often from BO3 meetings. Do not compare h2h.avgGames to a BO5 38.5–43.5 total.
 - User-named numbers: grade with userLine. Do not say there is no line. Never say pack field names.
 - Never write pack, STAT PACK, userLine, user line, graded, hit-rate call, or side lean. The punter cannot see those.
@@ -205,6 +206,7 @@ function punterStats(analysis: TennisMatchAnalysis) {
       totals: compact.marketOdds.totals,
       totalsAtListed: compact.marketOdds.totalsAtListed,
       moneyline: compact.marketOdds.moneyline,
+      sets: compact.marketOdds.sets,
     },
     aces: {
       playerL15Aces: compact.aces.playerL15Aces,

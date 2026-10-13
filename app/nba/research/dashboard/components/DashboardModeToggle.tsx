@@ -5,7 +5,6 @@ import NotificationSystem from '@/components/NotificationSystem';
 
 interface DashboardModeToggleProps {
   propsMode: 'player' | 'team';
-  isPro: boolean;
   isDark: boolean;
   gamePropsTeam: string;
   selectedTeam: string;
@@ -21,7 +20,6 @@ interface DashboardModeToggleProps {
 
 export function DashboardModeToggle({
   propsMode,
-  isPro,
   isDark,
   gamePropsTeam,
   selectedTeam,
@@ -44,18 +42,7 @@ export function DashboardModeToggle({
       </div>
       <div className="flex gap-3 md:gap-4 flex-wrap mb-3">
         <button
-          disabled={!isPro}
-          onClick={(e) => {
-            // Prevent click if not Pro
-            if (!isPro) {
-              e.preventDefault();
-              e.stopPropagation();
-              if (window.confirm('Player Props is a Pro feature. Would you like to upgrade?')) {
-                router.push('/subscription');
-              }
-              return;
-            }
-            
+          onClick={() => {
             setPropsMode('player');
             // Always set PTS (points) as default for Player Props
             setSelectedStat('pts');
@@ -84,20 +71,13 @@ export function DashboardModeToggle({
             }
           }}
           className={`relative px-6 sm:px-8 md:px-10 py-3 sm:py-3 md:py-2 rounded-lg text-base sm:text-base md:text-base font-semibold transition-all border ${
-            !isPro
-              ? "bg-gray-300 dark:bg-[#0a1929] text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60 border-gray-200 dark:border-gray-600"
-              : propsMode === 'player'
+            propsMode === 'player'
               ? "bg-purple-600 text-white border-purple-500"
               : "bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600"
           }`}
         >
           <span className="flex items-center gap-1 sm:gap-2">
             Player Props
-            {!isPro && (
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            )}
           </span>
         </button>
         <button

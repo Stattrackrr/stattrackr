@@ -5,6 +5,7 @@ import { Loader2, Send, Wrench } from 'lucide-react';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import { nblPunterQuestions } from '@/lib/nbl/askSuggestions';
 import { NBL_AI_UNDER_MAINTENANCE } from '@/lib/nbl/constants';
+import { supabase } from '@/lib/supabaseClient';
 
 type ChatMsg = { role: 'user' | 'assistant'; content: string; breakdown?: string[] };
 
@@ -114,9 +115,15 @@ export function NblModelPanel({
     setMessages((prev) => [...prev, { role: 'user', content: next }]);
     setLoading(true);
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const res = await fetch('/api/nbl/ask', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({
           question: next,
           playerId,

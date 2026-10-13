@@ -3,8 +3,13 @@
  */
 
 import { americanToDecimal } from '@/lib/currencyUtils';
-import type { TennisMatchOdds, TennisOuLine } from '@/lib/tennis/oddsTypes';
-import { tennisParseLineNumber } from '@/lib/tennis/oddsTypes';
+import type { TennisBookRow, TennisMatchOdds, TennisOuLine } from '@/lib/tennis/oddsTypes';
+import {
+  TENNIS_MONEYLINE_MIN_DECIMAL,
+  tennisMainLineForStat,
+  tennisOuLinesForStat,
+  tennisParseLineNumber,
+} from '@/lib/tennis/oddsTypes';
 
 export type TennisAskPrice = {
   book: string;
@@ -19,6 +24,18 @@ export type TennisAskMoneyline = {
   opponent: number | null;
 };
 
+/** Sides under the moneyline floor are null so they are never offered. */
+export type TennisAskSetPrices = {
+  book: string;
+  playerToWinASet: number | null;
+  opponentToWinASet: number | null;
+  playerStraightSets: number | null;
+  opponentStraightSets: number | null;
+  totalSetsLine: number | null;
+  totalSetsOver: number | null;
+  totalSetsUnder: number | null;
+};
+
 export type TennisAskMarketOdds = {
   listedTotalLine: number | null;
   pickemTotalLine: number | null;
@@ -27,6 +44,7 @@ export type TennisAskMarketOdds = {
   totals: TennisAskPrice[];
   totalsAtListed: TennisAskPrice[];
   moneyline: TennisAskMoneyline[];
+  sets?: TennisAskSetPrices[];
 };
 
 function pct1(value: number): number {
@@ -284,7 +302,39 @@ export function summarizeTennisAskOdds(
     totals,
     totalsAtListed,
     moneyline,
+    sets: books.map(setPrices).filter((row): row is TennisAskSetPrices => row != null),
   };
+}
+
+function setPrices(book: TennisBookRow): TennisAskSetPrices | null {
+  const shown = (raw: string | null | undefined) => {
+    const dec = toDecimal(raw);
+    return dec != null && dec >= TENNIS_MONEYLINE_MIN_DECIMAL ? dec : null;
+  };
+  const winASet = (stat: 'setsWon' | 'setsLost') =>
+    tennisOuLinesForStat(book, stat).find((row) => tennisParseLineNumber(row.line) === 0.5) ?? null;
+  const mine = winASet('setsWon');
+  const theirs = winASet('setsLost');
+  const total = tennisMainLineForStat(book, 'totalSets') ?? null;
+  const row: TennisAskSetPrices = {
+    book: book.name,
+    playerToWinASet: shown(mine?.over),
+    opponentToWinASet: shown(theirs?.over),
+    opponentStraightSets: shown(mine?.under),
+    playerStraightSets: shown(theirs?.under),
+    totalSetsLine: total ? tennisParseLineNumber(total.line) : null,
+    totalSetsOver: shown(total?.over),
+    totalSetsUnder: shown(total?.under),
+  };
+  const anyPrice = [
+    row.playerToWinASet,
+    row.opponentToWinASet,
+    row.playerStraightSets,
+    row.opponentStraightSets,
+    row.totalSetsOver,
+    row.totalSetsUnder,
+  ].some((value) => value != null);
+  return anyPrice ? row : null;
 }
 
 export function defaultTennisTotalsLine(tour: 'ATP' | 'WTA', bestOf: 3 | 5): number {

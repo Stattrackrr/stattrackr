@@ -6,6 +6,7 @@ import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import { tennisLastName } from '@/lib/tennis/chartStats';
 import { TENNIS_AI_UNDER_MAINTENANCE } from '@/lib/tennis/constants';
 import { tennisDashboardFetch } from '@/lib/tennisDashboardFetch';
+import { supabase } from '@/lib/supabaseClient';
 
 type ChatMsg = { role: 'user' | 'assistant'; content: string; breakdown?: string[] };
 
@@ -143,9 +144,15 @@ export function TennisAskPanel({
     setMessages((prev) => [...prev, { role: 'user', content: next }]);
     setLoading(true);
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const res = await fetch('/api/tennis/ask', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         cache: 'no-store',
         signal: AbortSignal.timeout(22000),
         body: JSON.stringify({

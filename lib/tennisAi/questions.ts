@@ -28,6 +28,10 @@ const TEMPLATES: Record<string, string[]> = {
   'PLAYER_TOTAL_GAMES|UNDER': ['Is under {line} games for {player} the lean here?'],
   'TOTAL_SETS|OVER': ['Is over {line} sets worth a look in this one?'],
   'TOTAL_SETS|UNDER': ['Do we get a short match under {line} sets?'],
+  'WIN_A_SET|PLAYER': ['Can {player} at least take a set off {opponent} at {odds}?'],
+  'WIN_A_SET|OPPONENT': ['Does {opponent} nick a set off {player} at {odds}?'],
+  'WIN_A_SET|PLAYER_STRAIGHT_SETS': ['Is {player} in straight sets worth it at {odds}?'],
+  'WIN_A_SET|OPPONENT_STRAIGHT_SETS': ['Can {opponent} win this in straight sets at {odds}?'],
   'PLAYER_ACES|OVER': ['Does {player} go over {line} aces here?'],
   'TIEBREAK_IN_MATCH|YES': ['Two strong holders, is there a tiebreak in this?'],
   'FIRST_SET_WINNER|PLAYER': ['Should I be looking at {player} to take the first set?'],
@@ -193,6 +197,23 @@ export function matchQuestion(
   if (dfs) return dfs;
   const tie = wants(/tiebreak/, 'TIEBREAK_IN_MATCH', 'tiebreak');
   if (tie) return tie;
+  const straight = /straight sets/.test(q);
+  if (straight || /\b(win|take|nick|steal|grab)s?\s+(at least\s+)?(a|one)\s+set\b/.test(q)) {
+    if (!hasKey(markets, 'WIN_A_SET')) return { missing: straight ? 'straight sets' : 'to win a set' };
+    const oppNamed = oppLast.length >= 3 && q.includes(oppLast) && !(playerLast.length >= 3 && q.includes(playerLast));
+    const selection = straight
+      ? oppNamed
+        ? 'OPPONENT_STRAIGHT_SETS'
+        : 'PLAYER_STRAIGHT_SETS'
+      : oppNamed
+        ? 'OPPONENT'
+        : 'PLAYER';
+    return (
+      priced.find((market) => market.key === 'WIN_A_SET' && market.selection === selection) || {
+        missing: straight ? 'straight sets' : 'to win a set',
+      }
+    );
+  }
   const sets = wants(/\bsets?\b/, 'TOTAL_SETS', 'sets');
   if (sets && !/\bfirst set\b/.test(q)) return sets;
   const spread = wants(/cover|handicap|spread/, 'GAME_HANDICAP', 'game handicap');

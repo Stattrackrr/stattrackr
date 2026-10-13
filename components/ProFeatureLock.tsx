@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Check, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PRICE_IDS, type BillingCycle } from '@/lib/stripe';
+import type { FreePlayerPick } from '@/lib/freePlayers';
 
 const PLANS: { cycle: BillingCycle; label: string; price: string; cadence: string; note: string }[] = [
   { cycle: 'monthly', label: 'Monthly', price: '$20', cadence: '/month', note: 'Billed monthly' },
@@ -48,6 +49,106 @@ export function ProUpgradeHost() {
   }, []);
   if (!open) return null;
   return <UpgradePrompt onClose={() => setOpen(false)} />;
+}
+
+/**
+ * Free accounts get one player per sport. Blocks the dashboard while a free account has any
+ * other player open; the way out is their free player, the props page, an alternate view, or Pro.
+ */
+export function FreePlayerLimitPrompt({
+  locked,
+  playerName,
+  sportLabel,
+  freePicks,
+  alternateAction,
+}: {
+  locked: boolean;
+  playerName: string | null | undefined;
+  sportLabel: string;
+  freePicks: FreePlayerPick[];
+  alternateAction?: { label: string; onClick: () => void };
+}) {
+  const router = useRouter();
+  const [upgrading, setUpgrading] = useState(false);
+  useEffect(() => {
+    if (!locked) setUpgrading(false);
+  }, [locked]);
+  if (!locked) return null;
+  if (upgrading) return <UpgradePrompt onClose={() => setUpgrading(false)} />;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="free-player-limit-title"
+        className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0c1730] p-5 text-white shadow-2xl shadow-black/50"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-purple-300">Free account</p>
+            <h2 id="free-player-limit-title" className="mt-1 text-xl font-bold">
+              1 free {sportLabel} player
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push('/props')}
+            className="rounded-lg px-2 py-1 text-sm text-gray-400 hover:bg-white/10 hover:text-white"
+          >
+            Back to props
+          </button>
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-gray-300">
+          {freePicks.length
+            ? `Free accounts get every stat for the top ${sportLabel} prop on the props page. ${playerName || 'This player'} is a Pro player.`
+            : `Free accounts get every stat for the top ${sportLabel} prop on the props page. Open the props page to get yours.`}
+        </p>
+        <div className="mt-4 space-y-2">
+          {freePicks.map((pick) => (
+            <button
+              key={`${pick.sport}:${pick.name}`}
+              type="button"
+              onClick={() => router.push(pick.href)}
+              className="flex w-full items-center justify-between rounded-lg border border-purple-500/40 bg-purple-600/10 px-3 py-2.5 text-left text-sm font-semibold text-white hover:bg-purple-600/20"
+            >
+              <span>View {pick.name}</span>
+              <span className="text-xs font-medium uppercase text-purple-300">Free</span>
+            </button>
+          ))}
+          {!freePicks.length ? (
+            <button
+              type="button"
+              onClick={() => router.push('/props')}
+              className="w-full rounded-lg border border-purple-500/40 bg-purple-600/10 px-3 py-2.5 text-sm font-semibold text-white hover:bg-purple-600/20"
+            >
+              Go to props
+            </button>
+          ) : null}
+          {alternateAction ? (
+            <button
+              type="button"
+              onClick={alternateAction.onClick}
+              className="w-full rounded-lg border border-white/10 px-3 py-2.5 text-sm font-semibold text-gray-200 hover:bg-white/10"
+            >
+              {alternateAction.label}
+            </button>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={() => setUpgrading(true)}
+          className="mt-4 w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
+        >
+          Upgrade to Pro for every player
+        </button>
+      </div>
+    </div>,
+    document.body,
+  );
 }
 
 /** Greyed preview. Figures inside should already read TBD for free accounts. */

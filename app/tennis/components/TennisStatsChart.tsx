@@ -75,7 +75,7 @@ const CHART_STAT_TO_ADVANCED_OPPONENT_FILTER: Record<
 
 const STAT_PRIORITY = [...TENNIS_PLAYER_STAT_PRIORITY];
 const META_SKIP = new Set(['season', 'game_number', 'matchId', 'date', 'game_date', 'tourneyDate', 'matchDate', 'opponent', 'opponentId', 'opponentCode', 'opponentIoc', 'isHome', 'team', 'teamCode', 'result', 'venue', 'round', 'tour', 'tourneyId', 'tourneyName', 'tourneyLevel', 'surface', 'score', 'hand', 'ioc', 'playerId', 'playerName', 'isGrandSlam', 'isWin', 'bestOf', 'opponentRank', 'playerRank', 'opponentRankPoints', 'rankPoints', 'seed', 'entry', 'height', 'age', 'drawSize', '__nblGameIndex']);
-const STATS_HIDDEN = new Set<string>(['minutes', 'setsLost', 'breakPointsFaced', 'servePointsWon', 'totalPoints', 'secondServeAttempts', 'firstServesIn', 'secondServesWon', 'setsWon', 'servePoints', 'serveGames']);
+const STATS_HIDDEN = new Set<string>(['minutes', 'breakPointsFaced', 'servePointsWon', 'totalPoints', 'secondServeAttempts', 'firstServesIn', 'secondServesWon', 'servePoints', 'serveGames']);
 const PCT_STATS = new Set(['firstServePct', 'firstServeWonPct', 'secondServeWonPct', 'servicePointsWonPct', 'returnPointsWonPct', 'breakPointsSavedPct', 'breakPointsConvertedPct']);
 const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024'] as const;
 

@@ -15,6 +15,8 @@ export interface UseSubscriptionCheckParams {
   setUsername: (username: string | null) => void;
   setAvatarUrl: (avatarUrl: string | null) => void;
   setIsPro: (isPro: boolean) => void;
+  /** Set once isPro reflects a cached or fresh profile, never on a failed lookup. */
+  setSubscriptionChecked?: (checked: boolean) => void;
 }
 
 export function useSubscriptionCheck({
@@ -22,6 +24,7 @@ export function useSubscriptionCheck({
   setUsername,
   setAvatarUrl,
   setIsPro,
+  setSubscriptionChecked,
 }: UseSubscriptionCheckParams) {
   const router = useRouter();
 
@@ -53,6 +56,7 @@ export function useSubscriptionCheck({
           setUsername(cached.username);
           setAvatarUrl(cached.avatarUrl);
           setIsPro(cached.isPro);
+          setSubscriptionChecked?.(true);
         }
       }
 
@@ -81,6 +85,7 @@ export function useSubscriptionCheck({
             lastSubscriptionStatus = { isActive: true, isPro: true };
           }
         }
+        if (isMounted) setSubscriptionChecked?.(true);
       } catch (error) {
         console.error('Error checking subscription:', error);
         if (lastSubscriptionStatus?.isActive && isMounted) {
@@ -92,6 +97,7 @@ export function useSubscriptionCheck({
             setUsername(cached.username);
             setAvatarUrl(cached.avatarUrl);
             setIsPro(cached.isPro);
+            setSubscriptionChecked?.(true);
           } else {
             setUserEmail(user.email || null);
             setUsername(displayNameFromProfile(null, user));
@@ -133,6 +139,6 @@ export function useSubscriptionCheck({
       }
       subscription?.unsubscribe();
     };
-  }, [router, setUserEmail, setUsername, setAvatarUrl, setIsPro]);
+  }, [router, setUserEmail, setUsername, setAvatarUrl, setIsPro, setSubscriptionChecked]);
 }
 

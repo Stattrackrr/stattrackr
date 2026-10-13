@@ -100,6 +100,7 @@ export const TENNIS_PROP_STATS = [
   'gamesWon',
   'gamesLost',
   'totalSets',
+  'setsWon',
 ] as const;
 
 export type TennisPropStat = (typeof TENNIS_PROP_STATS)[number];
@@ -260,6 +261,7 @@ function statValue(row: TennisMatchRow, stat: TennisPropStat): number | null {
   if (stat === 'gamesWon') return row.gamesWon;
   if (stat === 'gamesLost') return row.gamesLost;
   if (stat === 'totalSets') return row.totalSets;
+  if (stat === 'setsWon') return row.setsWon;
   return null;
 }
 
@@ -406,6 +408,10 @@ function orientBooks(books: TennisBookRow[], playerIsHome: boolean): TennisBookR
     SpreadLines: (book.SpreadLines || []).map(flipOu),
     GamesWonLines: book.GamesLostLines || [],
     GamesLostLines: book.GamesWonLines || [],
+    SetsWon: book.SetsLost,
+    SetsLost: book.SetsWon,
+    SetsWonLines: book.SetsLostLines || [],
+    SetsLostLines: book.SetsWonLines || [],
   }));
 }
 
@@ -564,6 +570,7 @@ function rowsForBook(opts: {
   pushOu('gamesWon', tennisMainLineForStat(book, 'gamesWon'));
   pushOu('gamesLost', tennisMainLineForStat(book, 'gamesLost'));
   pushOu('totalSets', tennisMainLineForStat(book, 'totalSets'));
+  pushOu('setsWon', tennisMainLineForStat(book, 'setsWon'));
   return out;
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { answerNblAsk, loadNblAskPanel, nblAskSuggestions } from '@/lib/nbl/askAnswer';
 import { NBL_AI_UNDER_MAINTENANCE } from '@/lib/nbl/constants';
+import { proRequiredResponse, requestIsPro } from '@/lib/server/proRouteAuth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   if (NBL_AI_UNDER_MAINTENANCE) return maintenanceResponse();
+  if (!(await requestIsPro(request))) return proRequiredResponse('The NBL model');
   const body = (await request.json().catch(() => null)) as {
     question?: unknown;
     playerId?: unknown;

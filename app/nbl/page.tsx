@@ -34,7 +34,15 @@ import { NblPlayerVsTeamPanel } from '@/app/nbl/components/NblPlayerVsTeamPanel'
 import { NBL_DASH_CARD_GLOW } from '@/app/nbl/components/nblDashCardGlow';
 import { NblScoringMixPie } from '@/app/nbl/components/NblScoringMixPie';
 import { NBL_AI_UNDER_MAINTENANCE } from '@/lib/nbl/constants';
-import { ProFeatureLock, ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
+import {
+  FreePlayerLimitPrompt,
+  ProFeatureLock,
+  ProLockMark,
+  ProUpgradeHost,
+  openProUpgrade,
+} from '@/components/ProFeatureLock';
+import { useFreePlayerLock } from '@/hooks/useFreePlayerLock';
+import type { PropsDashboardSport } from '@/lib/propsDashboardLinks';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
@@ -116,6 +124,7 @@ function getNblTeamAbbrev(teamName: string): string {
 }
 
 const NBL_TEAM_FILTER_OPTIONS = ['All', ...NBL_CLUBS.map((c) => c.name)];
+const NBL_FREE_PLAYER_SPORTS: readonly PropsDashboardSport[] = ['nbl'];
 const NBL_PAGE_STATE_KEY = 'nblPageState:v1';
 const NBL_PLAYER_LOGS_CACHE_PREFIX = 'nblPlayerLogsCache:v4';
 const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
@@ -401,7 +410,6 @@ export default function NblDashboardPage() {
   const [oddsFormat, setOddsFormat] = useState(DEFAULT_ODDS_FORMAT);
   const [isPro, setIsPro] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
-  const freeTier = profileReady && !isPro;
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -420,6 +428,15 @@ export default function NblDashboardPage() {
   const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
   const [selectedPlayer, setSelectedPlayer] = useState<NblRosterPlayer | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const aiLocked = profileReady && !isPro;
+  const { locked: freeTier, freePicks } = useFreePlayerLock({
+    freeAccount: aiLocked,
+    sports: NBL_FREE_PLAYER_SPORTS,
+    player:
+      nblPropsMode === 'player' && selectedPlayer
+        ? { name: selectedPlayer.name, id: selectedPlayer.playerId }
+        : null,
+  });
   const [selectedPlayerGameLogs, setSelectedPlayerGameLogs] = useState<NblGameLogRow[]>([]);
   const [playerPlayTypeLabel, setPlayerPlayTypeLabel] = useState<string | null>(null);
   const [selectedTeamGameLogs, setSelectedTeamGameLogs] = useState<Array<Record<string, unknown>>>([]);
@@ -2266,7 +2283,7 @@ export default function NblDashboardPage() {
                         type="button"
                         title={NBL_AI_UNDER_MAINTENANCE ? 'Model is under maintenance' : undefined}
                         onClick={() => {
-                          if (freeTier) {
+                          if (aiLocked) {
                             openProUpgrade();
                             return;
                           }
@@ -2276,11 +2293,11 @@ export default function NblDashboardPage() {
                           playerVsContainerTab === 'model'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
+                        } ${aiLocked ? 'cursor-pointer opacity-65' : ''}`}
                       >
                         Model
-                        {freeTier ? <ProLockMark /> : null}
-                        {!freeTier && NBL_AI_UNDER_MAINTENANCE ? (
+                        {aiLocked ? <ProLockMark /> : null}
+                        {!aiLocked && NBL_AI_UNDER_MAINTENANCE ? (
                           <span className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
                             MAINTENANCE
                           </span>
@@ -2317,7 +2334,7 @@ export default function NblDashboardPage() {
                       </button>
                     </div>
                     {playerVsContainerTab === 'model' ? (
-                      <ProFeatureLock locked={freeTier}>
+                      <ProFeatureLock locked={aiLocked}>
                         <NblModelPanel
                           isDark={!!mounted && isDark}
                           layout="mobile"
@@ -2331,7 +2348,7 @@ export default function NblDashboardPage() {
                           selectedStat={mainChartStat}
                           selectedLine={nblGameLineValue}
                           onSelectStat={setMainChartStatAndResetLine}
-                          previewLocked={freeTier}
+                          previewLocked={aiLocked}
                         />
                       </ProFeatureLock>
                     ) : playerVsContainerTab === 'similar' ? (
@@ -2706,7 +2723,7 @@ export default function NblDashboardPage() {
                         type="button"
                         title={NBL_AI_UNDER_MAINTENANCE ? 'Model is under maintenance' : undefined}
                         onClick={() => {
-                          if (freeTier) {
+                          if (aiLocked) {
                             openProUpgrade();
                             return;
                           }
@@ -2716,11 +2733,11 @@ export default function NblDashboardPage() {
                           playerVsContainerTab === 'model'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
+                        } ${aiLocked ? 'cursor-pointer opacity-65' : ''}`}
                       >
                         Model
-                        {freeTier ? <ProLockMark /> : null}
-                        {!freeTier && NBL_AI_UNDER_MAINTENANCE ? (
+                        {aiLocked ? <ProLockMark /> : null}
+                        {!aiLocked && NBL_AI_UNDER_MAINTENANCE ? (
                           <span className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
                             MAINTENANCE
                           </span>
@@ -2757,7 +2774,7 @@ export default function NblDashboardPage() {
                       </button>
                     </div>
                     {playerVsContainerTab === 'model' ? (
-                      <ProFeatureLock locked={freeTier}>
+                      <ProFeatureLock locked={aiLocked}>
                         <NblModelPanel
                           isDark={!!mounted && isDark}
                           layout="desktop"
@@ -2771,7 +2788,7 @@ export default function NblDashboardPage() {
                           selectedStat={mainChartStat}
                           selectedLine={nblGameLineValue}
                           onSelectStat={setMainChartStatAndResetLine}
-                          previewLocked={freeTier}
+                          previewLocked={aiLocked}
                         />
                       </ProFeatureLock>
                     ) : playerVsContainerTab === 'similar' ? (
@@ -2884,6 +2901,20 @@ export default function NblDashboardPage() {
         }}
       />
       <ProUpgradeHost />
+      <FreePlayerLimitPrompt
+        locked={freeTier}
+        playerName={selectedPlayer?.name}
+        sportLabel="NBL"
+        freePicks={freePicks}
+        alternateAction={{
+          label: 'View game props instead',
+          onClick: () => {
+            setNblPropsMode('team');
+            setMainChartStatAndResetLine((prev) => defaultNblTeamStat(prev));
+            if (!selectedTeam && selectedPlayer?.team) setSelectedTeam(selectedPlayer.team);
+          },
+        }}
+      />
     </div>
   );
 }
