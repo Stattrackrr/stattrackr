@@ -196,12 +196,22 @@ function setMarketLineAboveFloor(line: TennisOuLine): TennisOuLine | null {
   return { line: line.line, over, under };
 }
 
+/** Set-market lines with each side floored, including under-only (straight-sets) prices. */
+export function tennisSetMarketPriceLines(book: TennisBookRow | undefined, stat: string): TennisOuLine[] {
+  if (!book || !TENNIS_SET_MARKET_STATS.has(stat)) return [];
+  return filterTennisOuLines(stat, rawLinesForStat(book, stat))
+    .map(setMarketLineAboveFloor)
+    .filter((line): line is TennisOuLine => line != null);
+}
+
 export function tennisOuLinesForStat(book: TennisBookRow | undefined, stat: string): TennisOuLine[] {
   if (!book) return [];
-  const plausible = filterTennisOuLines(stat, rawLinesForStat(book, stat));
   if (TENNIS_SET_MARKET_STATS.has(stat)) {
-    return plausible.map(setMarketLineAboveFloor).filter((line): line is TennisOuLine => line != null);
+    const lines = tennisSetMarketPriceLines(book, stat);
+    // Sets won/lost read as "to win a set"; an under-only line would show the straight-sets price instead.
+    return stat === 'totalSets' ? lines : lines.filter((line) => line.over !== 'N/A');
   }
+  const plausible = filterTennisOuLines(stat, rawLinesForStat(book, stat));
   return dropMisleadingPlayerTotalAlts(stat, plausible.filter(tennisOuLineInSelectorBand), book);
 }
 

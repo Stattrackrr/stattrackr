@@ -9,6 +9,7 @@ import {
   tennisMainLineForStat,
   tennisOuLinesForStat,
   tennisParseLineNumber,
+  tennisSetMarketPriceLines,
 } from '@/lib/tennis/oddsTypes';
 
 export type TennisAskPrice = {
@@ -312,7 +313,7 @@ function setPrices(book: TennisBookRow): TennisAskSetPrices | null {
     return dec != null && dec >= TENNIS_MONEYLINE_MIN_DECIMAL ? dec : null;
   };
   const winASet = (stat: 'setsWon' | 'setsLost') =>
-    tennisOuLinesForStat(book, stat).find((row) => tennisParseLineNumber(row.line) === 0.5) ?? null;
+    tennisSetMarketPriceLines(book, stat).find((row) => tennisParseLineNumber(row.line) === 0.5) ?? null;
   const mine = winASet('setsWon');
   const theirs = winASet('setsLost');
   const total = tennisMainLineForStat(book, 'totalSets') ?? null;

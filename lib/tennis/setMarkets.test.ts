@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { summarizeTennisAskOdds } from './askOdds';
 import { tennisSetHandicapSide, tennisWinASetMarket } from './odds';
-import { isTennisOuStat, tennisOuLinesForStat, type TennisBookRow } from './oddsTypes';
+import { isTennisOuStat, tennisMainLineForStat, tennisOuLinesForStat, type TennisBookRow } from './oddsTypes';
 import { resolveAvailableMarkets } from '../tennisAi/availability';
 import { winASetProb } from '../tennisAi/pack';
 
@@ -77,14 +77,23 @@ test('set handicaps are ignored outside best of 3', () => {
 
 test('set lines blank sides under 1.30 and skip the 1.65-2.50 band', () => {
   const row = book({
-    SetsWon: { line: '0.5', over: '-400', under: '+275' },
-    SetsWonLines: [{ line: '0.5', over: '-400', under: '+275' }],
+    SetsWonLines: [{ line: '0.5', over: '+130', under: '-600' }],
     TotalSetsLines: [{ line: '2.5', over: '+180', under: '-250' }],
   });
-  const won = tennisOuLinesForStat(row, 'setsWon');
-  assert.deepEqual(won, [{ line: '0.5', over: 'N/A', under: '+275' }]);
+  assert.deepEqual(tennisOuLinesForStat(row, 'setsWon'), [{ line: '0.5', over: '+130', under: 'N/A' }]);
   const total = tennisOuLinesForStat(row, 'totalSets');
   assert.deepEqual(total, [{ line: '2.5', over: '+180', under: '-250' }]);
+});
+
+test('a short-priced favourite has no win-a-set line rather than only the straight-sets side', () => {
+  const row = book({
+    SetsWon: { line: '0.5', over: '-2500', under: '+435' },
+    SetsWonLines: [{ line: '0.5', over: '-2500', under: '+435' }],
+    SetsLostLines: [{ line: '0.5', over: '+140', under: '-180' }],
+  });
+  assert.deepEqual(tennisOuLinesForStat(row, 'setsWon'), []);
+  assert.equal(tennisMainLineForStat(row, 'setsWon'), undefined);
+  assert.deepEqual(tennisOuLinesForStat(row, 'setsLost'), [{ line: '0.5', over: '+140', under: '-180' }]);
 });
 
 test('sets lost carries the opponent win-a-set price for the viewed player', () => {
