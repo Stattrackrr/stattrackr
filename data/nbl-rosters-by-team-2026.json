@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-13T19:52:11.028Z",
+  "generatedAt": "2026-10-14T17:58:21.141Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -1349,7 +1349,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "G",
           "jersey": "17",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72042e59bf6c47869e49eb60dbc08b99?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/19b6cc3853574bef94f662efb473226d?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Mets de Guaynabo - Puerto Rico",
           "idSource": "rosetta"
