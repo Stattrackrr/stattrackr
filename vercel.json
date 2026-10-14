@@ -135,13 +135,16 @@
       "maxDuration": 180
     },
     "app/api/cron/ai-picks-grade/route.ts": {
-      "maxDuration": 120
+      "maxDuration": 120,
+      "regions": ["syd1"]
     },
     "app/api/cron/ai-picks-run/route.ts": {
-      "maxDuration": 300
+      "maxDuration": 300,
+      "regions": ["syd1"]
     },
     "app/api/cron/ai-picks-learn/route.ts": {
-      "maxDuration": 120
+      "maxDuration": 120,
+      "regions": ["syd1"]
     },
     "app/api/props/combined/route.ts": {
       "maxDuration": 180

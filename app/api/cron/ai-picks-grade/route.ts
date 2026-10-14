@@ -4,9 +4,6 @@ import { gradeAiPicks } from '@/lib/aiPicks/grade';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-// Redis and Supabase are in Sydney; grading makes many round trips.
-export const preferredRegion = 'syd1';
-
 /** Grade started AI pick legs from stored results, settle finished picks, capture closing lines. */
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);
