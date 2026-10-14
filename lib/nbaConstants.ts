@@ -76,6 +76,7 @@ export function getTeamAbbr(id: number): string | null {
   return TEAM_ID_TO_ABBR[id] ?? null;
 }
 
+/** NBA hidden (props page, sidebar, home) while the dashboard rebuild is finished. Set true to reopen. */
 const NBA_PUBLIC_ENABLED_DEFAULT = false;
 
 export const NBA_PUBLIC_ENABLED =
@@ -84,6 +85,7 @@ export const NBA_PUBLIC_ENABLED =
   (process.env.NEXT_PUBLIC_NBA_ENABLED == null && NBA_PUBLIC_ENABLED_DEFAULT);
 
 export const NBA_OFFSEASON_SIDEBAR_LABEL = 'Off-season';
+export const NBA_SIDEBAR_CLOSED_LABEL = 'Coming soon';
 
 /** AFL season is finished. Set true to put AFL back on the props page and sidebar. */
 const AFL_PUBLIC_ENABLED_DEFAULT = false;

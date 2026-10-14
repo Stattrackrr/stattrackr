@@ -7,11 +7,12 @@ import { TEAM_FULL_NAMES, getEspnLogoUrl, getEspnLogoCandidates } from '../utils
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { getOpponentTeam } from '../utils/teamAnalysisUtils';
 import { HeaderInfo } from '../utils/headerInfoUtils';
-import { BallDontLieGame } from '../types';
+import { BallDontLieGame, BdlSearchResult } from '../types';
 import { NBAPlayer } from '../types';
 import { JOURNAL_ENABLED } from '@/lib/nbaConstants';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { ImpliedOddsWheel } from './odds/ImpliedOddsWheel';
+import { DashboardSearch } from './DashboardSearch';
 
 interface DashboardHeaderProps {
   // Props mode
@@ -64,6 +65,14 @@ interface DashboardHeaderProps {
   
   // Navigation callback
   onNavigateBackToProps?: () => void;
+
+  // Search
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  searchResults: BdlSearchResult[];
+  searchBusy: boolean;
+  searchError: string | null;
+  handlePlayerSelectFromSearch: (player: BdlSearchResult) => Promise<void>;
 }
 
 export function DashboardHeader({
@@ -95,6 +104,12 @@ export function DashboardHeader({
   todaysGames,
   calculatedImpliedOdds,
   onNavigateBackToProps,
+  searchQuery,
+  setSearchQuery,
+  searchResults,
+  searchBusy,
+  searchError,
+  handlePlayerSelectFromSearch,
 }: DashboardHeaderProps) {
   const router = useRouter();
   const navigateBackToProps = () => {
@@ -109,8 +124,23 @@ export function DashboardHeader({
   };
 
   return (
-    <div className="relative z-[60] bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-hidden">
+    <div className="relative z-[60] bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-visible">
       <div className="flex flex-col gap-2 lg:gap-3">
+        <DashboardSearch
+          propsMode={propsMode}
+          isPro={isPro}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          searchResults={searchResults}
+          searchBusy={searchBusy}
+          searchError={searchError}
+          onSelectPlayer={handlePlayerSelectFromSearch}
+          onSelectTeam={(team) => {
+            setGamePropsTeam(team);
+            setSelectedStat('total_pts');
+            setOpponentTeam(normalizeAbbr(getOpponentTeam(team, todaysGames)));
+          }}
+        />
         {/* Desktop: Original layout - Player info, Search, Team vs Team all in one row */}
         <div className="hidden lg:flex items-center justify-between flex-1">
           <div className="flex-shrink-0">

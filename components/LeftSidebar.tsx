@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
-import { AFL_PUBLIC_ENABLED, CHAT_UNDER_MAINTENANCE, JOURNAL_ENABLED, NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
+import { AFL_PUBLIC_ENABLED, CHAT_UNDER_MAINTENANCE, JOURNAL_ENABLED, NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, NBA_SIDEBAR_CLOSED_LABEL, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
@@ -306,7 +306,7 @@ export default function LeftSidebar({
             href: "/props?sport=all",
             logo: <SportLogo sport="nba" />,
             comingSoon: true,
-            comingSoonText: NBA_OFFSEASON_SIDEBAR_LABEL,
+            comingSoonText: NBA_SIDEBAR_CLOSED_LABEL,
           },
         ]),
     ...(AFL_PUBLIC_ENABLED

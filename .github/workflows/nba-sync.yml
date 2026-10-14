@@ -1,0 +1,70 @@
+# NBA dashboard data: BallDontLie (GOAT) -> Supabase nba_* tables.
+# Writes to the database only (no Redis, no repo commits).
+#   - Every 3 hours: injuries, schedule/results, standings, players.
+#   - Daily after US games finish: box scores (+ quarters), advanced, lineups,
+#     play-by-play/shots and season averages for the current season.
+#   - Manual: any jobs/seasons, e.g. a full backfill.
+name: NBA Sync
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+    # 09:30 UTC (~8:30pm AEDT): all US games are final
+    - cron: '30 9 * * *'
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: 'Comma-separated jobs (blank = all)'
+        required: false
+        default: ''
+      seasons:
+        description: 'Comma-separated season start years (blank = current)'
+        required: false
+        default: ''
+      full:
+        description: 'Whole seasons instead of the last few days'
+        required: false
+        type: boolean
+        default: false
+      max_games:
+        description: 'Play-by-play games per run'
+        required: false
+        default: '1500'
+
+concurrency:
+  group: nba-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync from BallDontLie
+        env:
+          BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          ARGS=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            [ -n "${{ inputs.jobs }}" ] && ARGS="$ARGS --jobs=${{ inputs.jobs }}"
+            [ -n "${{ inputs.seasons }}" ] && ARGS="$ARGS --seasons=${{ inputs.seasons }}"
+            [ "${{ inputs.full }}" = "true" ] && ARGS="$ARGS --full"
+            ARGS="$ARGS --max-games=${{ inputs.max_games }}"
+          elif [ "${{ github.event.schedule }}" = "0 */3 * * *" ]; then
+            ARGS="--jobs=injuries,players,games,standings"
+          fi
+          npx tsx scripts/sync-nba-bdl.ts $ARGS

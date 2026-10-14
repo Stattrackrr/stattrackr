@@ -1,15 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-
-/**
- * Legacy route: /nba now redirects to /props (main props page).
- */
-export default function NbaRedirectPage() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace('/props');
-  }, [router]);
-  return null;
+/** proxy.ts sends /nba to the NBA research dashboard (keeping the query); this is the fallback. */
+export default function NbaPage() {
+  redirect('/nba/research/dashboard');
 }

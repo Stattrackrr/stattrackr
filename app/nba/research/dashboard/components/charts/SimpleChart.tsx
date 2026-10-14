@@ -99,6 +99,8 @@ interface SimpleChartProps {
   chartAnimationKey?: string;
   /** Minimum pixel height for zero-value bars (tennis 0/1 moneyline losses). */
   minBarSize?: number;
+  /** Draw `stats[totalKey]` as a grey bar behind `stats[madeKey]` (3PA behind 3PM). Defaults to 3PM for `fg3m`. */
+  attemptsOverlay?: { madeKey: string; totalKey: string } | null;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -152,7 +154,14 @@ const SimpleChart = memo(function SimpleChart({
   chartAnimationKey = '',
   forceGreyBars = false,
   minBarSize = 0,
+  attemptsOverlay,
 }: SimpleChartProps) {
+  const overlay =
+    attemptsOverlay !== undefined
+      ? attemptsOverlay
+      : selectedStat === 'fg3m'
+        ? { madeKey: 'fg3m', totalKey: 'fg3a' }
+        : null;
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
   const [mobileTooltipActive, setMobileTooltipActive] = useState(false);
@@ -853,7 +862,7 @@ const SimpleChart = memo(function SimpleChart({
     if (['moneyline', 'spread', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat)) return null;
     const validEntries = chartData
       .map((d: any) => {
-        const v = selectedStat === 'fg3m' && d?.stats ? Number((d.stats as any).fg3m) : (Number.isFinite(d.value) ? d.value : null);
+        const v = overlay && d?.stats ? Number((d.stats as any)[overlay.madeKey]) : (Number.isFinite(d.value) ? d.value : null);
         return v != null ? { value: v } : null;
       })
       .filter((x): x is { value: number } => x != null);
@@ -883,7 +892,7 @@ const SimpleChart = memo(function SimpleChart({
       hitRate = Math.round((overCount / validEntries.length) * 100);
     }
     return { formatted, tfLabel, hitRate, hitCount, totalGames };
-  }, [chartData, selectedStat, selectedTimeframe, bettingLine, isSpreadLikeStat]);
+  }, [chartData, selectedStat, selectedTimeframe, bettingLine, isSpreadLikeStat, overlay?.madeKey]);
 
   // Loading state
   // Chart is independent - only depends on its own data, not global isLoading
@@ -1236,7 +1245,7 @@ const SimpleChart = memo(function SimpleChart({
             {/* Bar chart - invisible hover rect covers full width and top 2/3 of bar slot */}
             <Bar
               key={`bar-${animationKeySuffix}${selectedStat}-${mergedChartData.length}`}
-              dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"}
+              dataKey={overlay ? `stats.${overlay.totalKey}` : "value"}
               minPointSize={minBarSize || 0}
               isAnimationActive={!disableBarAnimation}
               animationDuration={disableBarAnimation ? 0 : barAnimationDuration}
@@ -1366,10 +1375,10 @@ const SimpleChart = memo(function SimpleChart({
                     </text>
                   </g>
                 );
-              } : selectedStat === 'fg3m' ? (props: any) => {
+              } : overlay ? (props: any) => {
                 const { x, y, width, height, payload } = props;
-                const attempts = payload?.stats?.fg3a || 0;
-                const makes = payload?.stats?.fg3m || 0;
+                const attempts = payload?.stats?.[overlay.totalKey] || 0;
+                const makes = payload?.stats?.[overlay.madeKey] || 0;
                 const makesHeight = attempts > 0 ? (makes / attempts) * height : 0;
                 const isLive = (payload as any)?.isLive;
                 const barIndex = props.index ?? -1;
@@ -1483,11 +1492,11 @@ const SimpleChart = memo(function SimpleChart({
                 );
               }}
             >
-              {selectedStat !== 'fg3m' && barCells}
+              {!overlay && barCells}
             
               {/* Labels on top of bars - memoized to prevent re-renders when betting line changes */}
-              {/* Don't show default labels for fg3m since we handle them in the custom shape */}
-              {selectedStat !== 'fg3m' && !hideBarValueLabels && memoizedLabelList}
+              {/* Overlay stats (3PM etc.) draw their own labels in the custom shape */}
+              {!overlay && !hideBarValueLabels && memoizedLabelList}
             </Bar>
             {hasSecondAxis && (
               <Line
@@ -1529,7 +1538,8 @@ const SimpleChart = memo(function SimpleChart({
     prevProps.excludeBackToBack !== nextProps.excludeBackToBack ||
     prevProps.chartAnimationKey !== nextProps.chartAnimationKey ||
     prevProps.disableBarAnimation !== nextProps.disableBarAnimation ||
-    prevProps.forceGreyBars !== nextProps.forceGreyBars;
+    prevProps.forceGreyBars !== nextProps.forceGreyBars ||
+    prevProps.attemptsOverlay?.totalKey !== nextProps.attemptsOverlay?.totalKey;
   
   // If stat/data/config/other props changed, allow re-render
   if (statChanged || dataChanged || configChanged || otherPropsChanged) {

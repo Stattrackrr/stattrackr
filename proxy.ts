@@ -7,6 +7,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (request.nextUrl.pathname === '/nba' || request.nextUrl.pathname === '/nba/') {
+    const destination = request.nextUrl.clone();
+    destination.pathname = '/nba/research/dashboard';
+    return NextResponse.redirect(destination);
+  }
+
   if (request.nextUrl.pathname.startsWith('/world-cup')) {
     const destination = request.nextUrl.clone();
     destination.pathname = '/props';

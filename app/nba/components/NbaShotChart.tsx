@@ -1,0 +1,1631 @@
+'use client';
+
+import React, { useEffect, useId, useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import type { NbaShotZoneId, NbaZoneStat } from '@/lib/nba/dash/shotZonesShared';
+import { NBA_SHOT_ZONE_IDS } from '@/lib/nba/dash/shotZonesShared';
+import {
+  NBA_SHOT_CHART_CACHE_YEARS,
+  NBA_SHOT_CHART_SEASON_YEAR,
+  nbaSeasonLabel,
+} from '@/lib/nba/dash/teams';
+import { NbaShotHeatMap, type NbaHeatPoint } from '@/app/nba/components/NbaShotHeatMap';
+
+const DEFAULT_SHOT_CHART_SEASON_LABEL = nbaSeasonLabel(NBA_SHOT_CHART_SEASON_YEAR);
+
+type ZoneRank = NbaZoneStat & { rank: number | null; teamsCompared: number; astPerGame?: number };
+type ScoringRank = NbaZoneStat & { rank: number | null; playersCompared: number; pts?: number };
+
+type PlayerPayload = {
+  success: boolean;
+  mode: 'player';
+  years?: number[];
+  playerName: string;
+  shotCount: number;
+  gamesUsed: number;
+  zones: NbaZoneStat[];
+  ranks?: ScoringRank[];
+  ftScoring?: {
+    ftm: number;
+    fta: number;
+    ftPct: number;
+    games: number;
+    rank: number | null;
+    playersCompared: number;
+  };
+  assistCount?: number;
+  assistGamesUsed?: number;
+  assistZones?: NbaZoneStat[];
+  points?: NbaHeatPoint[];
+};
+
+const NO_HEAT_POINTS: NbaHeatPoint[] = [];
+
+type DefensePayload = {
+  success: boolean;
+  mode: 'defense';
+  years?: number[];
+  team: string;
+  shotCount: number;
+  gamesUsed: number;
+  zones: NbaZoneStat[];
+  ranks: ZoneRank[];
+  pointsAllowed?: number;
+  assistRanks?: ZoneRank[];
+  assistDefenseGames?: number;
+  assistAllowed?: number;
+  ftDefense?: {
+    ftm: number;
+    fta: number;
+    ftPct: number;
+    games: number;
+    rank: number | null;
+    teamsCompared: number;
+  };
+};
+
+/** Player self-ranks spread their own zones over 1–10. */
+const NBA_RANK_SCALE = 10;
+const NBA_TEAM_RANK_SCALE = 30;
+
+type NbaShotChartProps = {
+  isDark?: boolean;
+  playerName?: string | null;
+  playerTeam?: string | null;
+  opponentTeam?: string | null;
+  /** Free accounts see the chart layout with figures replaced by TBD. */
+  valuesLocked?: boolean;
+};
+
+const scale = 10;
+const courtWidth = 50 * scale; // 500
+const courtHeight = 38 * scale; // 380
+const paintWidth = 16 * scale; // 160
+const centerX = courtWidth / 2;
+const baseline = courtHeight;
+const paintLeft = centerX - paintWidth / 2;
+const paintRight = centerX + paintWidth / 2;
+const freeThrowLine = baseline - 21 * scale;
+const midRangeWidth = 80;
+/** Inside edge of the 3pt line — also the corner/mid-range hard boundary. */
+const midRangeLeft = paintLeft - midRangeWidth; // 90
+const midRangeRight = paintRight + midRangeWidth; // 410
+/**
+ * Mid-range = inside 3pt arc, paint notched out, down to baseline.
+ * Shared edge with corners is exactly midRangeLeft / midRangeRight.
+ */
+const midRangeZonePath = [
+  `M ${midRangeLeft} ${baseline}`,
+  `L ${midRangeLeft} ${freeThrowLine - 50}`,
+  `Q ${centerX} ${freeThrowLine - 120} ${midRangeRight} ${freeThrowLine - 50}`,
+  `L ${midRangeRight} ${baseline}`,
+  `L ${paintRight} ${baseline}`,
+  `L ${paintRight} ${freeThrowLine}`,
+  `L ${paintLeft} ${freeThrowLine}`,
+  `L ${paintLeft} ${baseline}`,
+  'Z',
+].join(' ');
+/** Corners sit outside the 3pt line only (never into mid-range). */
+const leftCornerZonePath = `M 0 270 L ${midRangeLeft} 270 L ${midRangeLeft} ${baseline} L 15 ${baseline} Q 0 ${baseline} 0 ${baseline - 15} Z`;
+const rightCornerZonePath = `M ${midRangeRight} 270 L ${courtWidth} 270 L ${courtWidth} ${baseline - 15} Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} L ${midRangeRight} ${baseline} Z`;
+const aboveBreakZonePath = [
+  `M 15 0`,
+  `L ${courtWidth - 15} 0`,
+  `Q ${courtWidth} 0 ${courtWidth} 15`,
+  `L ${courtWidth} 270`,
+  `L ${midRangeRight} 270`,
+  `L ${midRangeRight} ${freeThrowLine - 50}`,
+  `Q ${centerX} ${freeThrowLine - 120} ${midRangeLeft} ${freeThrowLine - 50}`,
+  `L ${midRangeLeft} 270`,
+  `L 0 270`,
+  `L 0 15`,
+  `Q 0 0 15 0`,
+  'Z',
+].join(' ');
+
+const EMPTY_ZONE_FILL = '#6b7280';
+const EMPTY_LABEL_FILL = '#9ca3af';
+
+function getColorForDistribution(pct: number): string {
+  if (pct >= 30) return '#10b981';
+  if (pct >= 25) return '#22c55e';
+  if (pct >= 10) return '#f97316';
+  return '#ef4444';
+}
+
+function CourtLabel({
+  x,
+  y,
+  fontSize,
+  value,
+  empty,
+}: {
+  x: number;
+  y: number;
+  fontSize: number;
+  value: string;
+  empty: boolean;
+}) {
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      fill={value === 'TBD' || !empty ? '#fff' : EMPTY_LABEL_FILL}
+      fontSize={fontSize}
+      fontWeight="bold"
+      stroke={empty ? 'none' : '#000'}
+      strokeWidth={empty ? 0 : 0.5}
+    >
+      {value === 'TBD' ? 'TBD' : empty ? '-' : value}
+    </text>
+  );
+}
+
+function getColorForRank(rank: number, fgPct?: number): string {
+  if (rank > 0) {
+    if (rank <= 6) return '#ef4444';
+    if (rank <= 12) return '#f97316';
+    if (rank <= 21) return '#fbbf24';
+    return '#10b981';
+  }
+  if (fgPct !== undefined) {
+    if (fgPct < 50) return '#ef4444';
+    if (fgPct < 55) return '#f97316';
+    if (fgPct < 60) return '#fbbf24';
+    return '#10b981';
+  }
+  return '#6b7280';
+}
+
+function defenseRankPillClass(rank: number): string {
+  if (rank <= 6) return 'bg-rose-500/15 text-rose-500 dark:text-rose-400';
+  if (rank <= 12) return 'bg-orange-500/15 text-orange-500 dark:text-orange-400';
+  if (rank <= 21) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+  return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+}
+
+function scoringRankPillClass(rank: number): string {
+  if (rank <= 2) return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+  if (rank <= 4) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+  if (rank <= 7) return 'bg-orange-500/15 text-orange-500 dark:text-orange-400';
+  return 'bg-rose-500/15 text-rose-500 dark:text-rose-400';
+}
+
+function getColorForScoringRank(rank: number): string {
+  if (rank <= 2) return '#10b981';
+  if (rank <= 4) return '#fbbf24';
+  if (rank <= 7) return '#f97316';
+  return '#ef4444';
+}
+
+/** Rank a player's own zones 1–10: most volume = #1, least = #10. Zero volume is unranked. */
+function selfRanksToTen(volumes: number[]): number[] {
+  const n = volumes.length;
+  const out = new Array<number>(n).fill(0);
+  const scored = volumes
+    .map((v, i) => ({ v, i }))
+    .filter((x) => x.v > 0)
+    .sort((a, b) => b.v - a.v);
+  const counted = scored.length;
+  if (counted === 0) return out;
+  let pos = 0;
+  while (pos < scored.length) {
+    let end = pos;
+    while (end + 1 < scored.length && scored[end + 1].v === scored[pos].v) end += 1;
+    const ten = counted === 1 ? 1 : Math.round(1 + (pos / (counted - 1)) * 9);
+    for (let k = pos; k <= end; k += 1) {
+      out[scored[k].i] = Math.min(NBA_RANK_SCALE, Math.max(1, ten));
+    }
+    pos = end + 1;
+  }
+  return out;
+}
+
+type BreakdownRow = {
+  id: string;
+  label: string;
+  rankPills: { rank: number; label: string }[];
+  rank: number;
+  compared: number;
+  ptsPerGame: string;
+  /** Replaces the default "pts/g" suffix. */
+  valueUnit?: string;
+  rateLabel: string;
+};
+
+const THREE_ZONES = new Set<NbaShotZoneId>(['leftCorner3', 'rightCorner3', 'aboveBreak3']);
+
+const BREAKDOWN_GROUPS: ReadonlyArray<{
+  id: string;
+  label: string;
+  zones: readonly NbaShotZoneId[];
+}> = [
+  { id: 'restricted', label: 'Restricted', zones: ['restricted'] },
+  { id: 'paint', label: 'Paint', zones: ['paint'] },
+  { id: 'midRange', label: 'Mid-Range', zones: ['midRange'] },
+  { id: 'leftCorner3', label: 'Left Corner 3', zones: ['leftCorner3'] },
+  { id: 'rightCorner3', label: 'Right Corner 3', zones: ['rightCorner3'] },
+  { id: 'aboveBreak3', label: 'Beyond the Arc', zones: ['aboveBreak3'] },
+];
+
+function zonePointValue(zone: NbaShotZoneId): 2 | 3 {
+  return THREE_ZONES.has(zone) ? 3 : 2;
+}
+
+function redactBreakdownRows(rows: BreakdownRow[]): BreakdownRow[] {
+  return rows.map((row) => ({
+    ...row,
+    ptsPerGame: 'TBD',
+    rateLabel: 'TBD',
+    rankPills: row.rankPills.map((pill) => ({ ...pill, label: 'TBD' })),
+  }));
+}
+
+function formatPerGame(total: number, games: number): string {
+  if (!games || !Number.isFinite(total) || total === 0) return '—';
+  const per = total / games;
+  return Number.isInteger(per) ? String(per) : per.toFixed(1);
+}
+
+function formatPct(fgm: number, fga: number): string {
+  if (!fga) return '—';
+  return `${((fgm / fga) * 100).toFixed(0)}%`;
+}
+
+function zoneLookup(zones: NbaZoneStat[]): Record<NbaShotZoneId, NbaZoneStat> {
+  const out = {} as Record<NbaShotZoneId, NbaZoneStat>;
+  for (const id of NBA_SHOT_ZONE_IDS) {
+    out[id] =
+      zones.find((z) => z.zone === id) ||
+      ({
+        zone: id,
+        label: id,
+        fga: 0,
+        fgm: 0,
+        fgPct: 0,
+        share: 0,
+      } as NbaZoneStat);
+  }
+  return out;
+}
+
+function RateChips({ label, isDark }: { label: string; isDark: boolean }) {
+  if (!label || label === '—') return null;
+  const parts = label
+    .split(' · ')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (!parts.length) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {parts.map((part) => {
+        const match = part.match(/^(\S+)\s+(.+)$/);
+        const value = match?.[1] || part;
+        const unit = match?.[2] || '';
+        return (
+          <span
+            key={part}
+            className={`inline-flex items-baseline gap-0.5 rounded-md px-1.5 py-0.5 tabular-nums ${
+              isDark ? 'bg-white/10' : 'bg-gray-200/90'
+            }`}
+          >
+            <span
+              className={`text-[11px] font-bold leading-none ${
+                value === '—' || value === '-'
+                  ? 'text-gray-400 dark:text-gray-500'
+                  : isDark
+                    ? 'text-white'
+                    : 'text-gray-900'
+              }`}
+            >
+              {value}
+            </span>
+            {unit ? (
+              <span
+                className={`text-[9px] font-semibold leading-none ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}
+              >
+                {unit}
+              </span>
+            ) : null}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function AnalysisAccordion({
+  title,
+  open,
+  onToggle,
+  isDark,
+  loading,
+  rows,
+  invert,
+  valuesLocked = false,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  isDark: boolean;
+  loading: boolean;
+  rows: BreakdownRow[];
+  invert: boolean;
+  valuesLocked?: boolean;
+}) {
+  return (
+    <div className="w-full">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
+          open
+            ? 'bg-purple-600 text-white border-purple-600'
+            : isDark
+              ? 'bg-[#0a1929] text-gray-100 border-gray-600 hover:bg-gray-800'
+              : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
+        }`}
+      >
+        <span>{title}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 transition-transform ${
+            open ? 'rotate-180' : isDark ? 'text-gray-300' : 'text-gray-500'
+          }`}
+        />
+      </button>
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
+          open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        }`}
+      >
+        <div className="overflow-hidden">
+          {loading ? (
+            <div className="mt-1 h-28 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />
+          ) : (
+            <div className="mt-1.5 space-y-1.5 pb-0.5">
+              {rows.map((row) => {
+                const rank = row.rank > 0 ? row.rank : 0;
+                const compared = row.compared > 0 ? row.compared : invert ? 0 : NBA_TEAM_RANK_SCALE;
+                const barPct = valuesLocked
+                  ? 42
+                  : rank > 0 && compared > 0
+                    ? invert
+                      ? ((compared - rank + 1) / compared) * 100
+                      : (rank / compared) * 100
+                    : 0;
+                const barColor = valuesLocked
+                  ? '#6b7280'
+                  : rank > 0
+                    ? invert
+                      ? getColorForScoringRank(rank)
+                      : getColorForRank(rank)
+                    : '#6b7280';
+                const pillClass = invert ? scoringRankPillClass : defenseRankPillClass;
+                const isEmpty = row.ptsPerGame === '—' && row.rank <= 0;
+                return (
+                  <div
+                    key={row.id}
+                    className="rounded-xl border border-gray-200/80 bg-gray-50/80 px-2.5 py-2 dark:border-gray-700/60 dark:bg-white/[0.03]"
+                  >
+                    <div className={`flex items-start justify-between gap-2 ${isEmpty ? '' : 'mb-1'}`}>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                          {row.label}
+                        </div>
+                        {isEmpty ? (
+                          <div className="mt-0.5 text-lg font-bold leading-none text-gray-400 dark:text-gray-500">
+                            -
+                          </div>
+                        ) : (
+                          <div className="mt-0.5 flex items-baseline gap-1">
+                            <span className="text-lg font-bold tabular-nums leading-none text-gray-900 dark:text-white">
+                              {row.ptsPerGame}
+                            </span>
+                            <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+                              {row.valueUnit || 'pts/g'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                        {isEmpty ? (
+                          <span className="text-sm font-bold leading-none text-gray-400 dark:text-gray-500">
+                            -
+                          </span>
+                        ) : (
+                          row.rankPills.map((pill, pillIndex) => (
+                            <span
+                              key={`${row.id}-${pillIndex}`}
+                              className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${
+                                valuesLocked
+                                  ? 'bg-gray-500/15 text-gray-500 dark:text-gray-400'
+                                  : pillClass(pill.rank)
+                              }`}
+                            >
+                              {pill.label}
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    {isEmpty ? null : (
+                      <>
+                        <div className="relative mb-1.5 h-1.5 overflow-hidden rounded-full bg-gray-200/80 dark:bg-gray-800">
+                          <div
+                            className="absolute inset-y-0 left-0 rounded-full"
+                            style={{ width: `${barPct}%`, backgroundColor: barColor }}
+                          />
+                        </div>
+                        {row.rateLabel !== '—' ? (
+                          <RateChips label={row.rateLabel} isDark={isDark} />
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type CourtView = 'attempts' | 'makes' | 'oppDef' | 'assists' | 'assistDef';
+
+const VIEW_ACTIVE_CLASS: Record<CourtView, string> = {
+  attempts: 'bg-blue-600 text-white shadow-sm',
+  makes: 'bg-green-600 text-white shadow-sm',
+  oppDef: 'bg-purple-600 text-white shadow-sm',
+  assists: 'bg-teal-600 text-white shadow-sm',
+  assistDef: 'bg-purple-600 text-white shadow-sm',
+};
+
+function ViewGroup({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div
+      className={`flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1 dark:border-gray-700/70 dark:bg-[#071321] ${className ?? ''}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ViewButton({
+  view,
+  active,
+  onSelect,
+  title,
+  disabled,
+  children,
+}: {
+  view: CourtView;
+  active: boolean;
+  onSelect: (view: CourtView) => void;
+  title?: string;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-pressed={active}
+      disabled={disabled}
+      onClick={() => onSelect(view)}
+      className={`flex-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+        active
+          ? VIEW_ACTIVE_CLASS[view]
+          : disabled
+            ? 'cursor-not-allowed text-gray-400 dark:text-gray-600'
+            : 'text-gray-600 hover:bg-white hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FlameIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
+      <path d="M8.6 1c.3 2.2-.9 3.4-2 4.6C5.5 6.8 4.5 8 4.5 9.9 4.5 12.7 6.1 15 8.4 15c2.4 0 3.9-2 3.9-4.6 0-1.5-.6-2.8-1.4-3.7-.1 1-.6 1.8-1.4 2.2.4-2.8-.4-5.6-.9-7.9Z" />
+    </svg>
+  );
+}
+
+function HeatToggle({
+  heat,
+  disabled,
+  onChange,
+}: {
+  heat: boolean;
+  disabled: boolean;
+  onChange: (heat: boolean) => void;
+}) {
+  const on = heat && !disabled;
+  const option = (value: boolean, label: string, icon?: React.ReactNode) => (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={on === value}
+      disabled={disabled}
+      onClick={() => onChange(value)}
+      className={`relative z-10 flex w-[70px] items-center justify-center gap-1 rounded-full py-1.5 text-[11px] font-semibold transition-colors ${
+        on === value
+          ? value
+            ? 'text-white'
+            : 'text-gray-900 dark:text-white'
+          : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+      } ${disabled ? 'cursor-not-allowed' : ''}`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Chart style"
+      title={disabled ? 'Heat view is available on Attempts and Makes' : undefined}
+      className={`relative ml-auto inline-flex shrink-0 rounded-full border border-gray-200 bg-gray-100 p-0.5 transition-opacity dark:border-gray-700/70 dark:bg-[#071321] ${
+        disabled ? 'opacity-40' : ''
+      }`}
+    >
+      <span
+        aria-hidden
+        className={`absolute inset-y-0.5 left-0.5 w-[70px] rounded-full shadow transition-all duration-300 ease-out ${
+          on
+            ? 'translate-x-[70px] bg-gradient-to-r from-orange-500 to-rose-500 shadow-orange-500/30'
+            : 'translate-x-0 bg-white dark:bg-[#1c2f4a]'
+        }`}
+      />
+      {option(false, 'Standard')}
+      {option(true, 'Heat', <FlameIcon />)}
+    </div>
+  );
+}
+
+export function NbaShotChart({
+  isDark = true,
+  playerName,
+  playerTeam,
+  opponentTeam,
+  valuesLocked = false,
+}: NbaShotChartProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [showMakes, setShowMakes] = useState(false);
+  const [heatView, setHeatView] = useState(false);
+  const [showAssists, setShowAssists] = useState(false);
+  const [showOppDef, setShowOppDef] = useState(false);
+  const [showAssistDef, setShowAssistDef] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [playerData, setPlayerData] = useState<PlayerPayload | null>(null);
+  const [defenseData, setDefenseData] = useState<DefensePayload | null>(null);
+  const [defenseLoading, setDefenseLoading] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const loadedYears = playerData?.years?.length ? playerData.years : defenseData?.years;
+  const SHOT_CHART_SEASON_LABEL = loadedYears?.length
+    ? [...loadedYears].sort((a, b) => a - b).map(nbaSeasonLabel).join(' + ')
+    : DEFAULT_SHOT_CHART_SEASON_LABEL;
+  const clipId = `nbaRoundedCourt-${useId().replace(/:/g, '')}`;
+  const hasOpponent = Boolean(opponentTeam && opponentTeam !== 'N/A');
+  const activeView: CourtView = showAssistDef
+    ? 'assistDef'
+    : showOppDef
+      ? 'oppDef'
+      : showAssists
+        ? 'assists'
+        : showMakes
+          ? 'makes'
+          : 'attempts';
+  const selectView = (view: CourtView) => {
+    setShowMakes(view === 'makes');
+    setShowOppDef(view === 'oppDef');
+    setShowAssists(view === 'assists');
+    setShowAssistDef(view === 'assistDef');
+  };
+  useEffect(() => {
+    if (hasOpponent) return;
+    setShowOppDef(false);
+    setShowAssistDef(false);
+  }, [hasOpponent]);
+  const canShowHeat = !showAssists && !showOppDef && !showAssistDef;
+  const showHeat = heatView && canShowHeat;
+  const allHeatPoints = playerData?.points ?? NO_HEAT_POINTS;
+  const heatPoints = useMemo(
+    () => (showMakes ? allHeatPoints.filter((p) => p[2] === 1) : allHeatPoints),
+    [allHeatPoints, showMakes]
+  );
+
+  useEffect(() => {
+    if (!playerName) {
+      setPlayerData(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      setPlayerData(null);
+      try {
+        const params = new URLSearchParams({
+          mode: 'player',
+          playerName,
+          years: NBA_SHOT_CHART_CACHE_YEARS.join(','),
+        });
+        if (playerTeam) params.set('team', playerTeam);
+        const res = await fetch(`/api/nba/dash/shot-chart?${params.toString()}`);
+        const json = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setError("Couldn't load shot chart. Try again.");
+          setPlayerData(null);
+          return;
+        }
+        if (!json?.success || json.empty || !json.shotCount) {
+          setError(null);
+          setPlayerData({
+            success: true,
+            mode: 'player',
+            playerName,
+            shotCount: 0,
+            gamesUsed: Number(json?.gamesUsed || 0),
+            zones: Array.isArray(json?.zones) ? json.zones : [],
+            ranks: Array.isArray(json?.ranks) ? json.ranks : [],
+            ftScoring: json?.ftScoring,
+            assistCount: Number(json?.assistCount || 0),
+            assistGamesUsed: Number(json?.assistGamesUsed || 0),
+            assistZones: Array.isArray(json?.assistZones) ? json.assistZones : [],
+          });
+          return;
+        }
+        setPlayerData(json as PlayerPayload);
+      } catch {
+        if (!cancelled) {
+          setError("Couldn't load shot chart. Try again.");
+          setPlayerData(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [playerName, playerTeam]);
+
+  useEffect(() => {
+    if (!opponentTeam || opponentTeam === 'N/A') {
+      setShowOppDef(false);
+      setShowAssistDef(false);
+    }
+  }, [opponentTeam]);
+
+  useEffect(() => {
+    if (!opponentTeam || opponentTeam === 'N/A') {
+      setDefenseData(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setDefenseLoading(true);
+      try {
+        const params = new URLSearchParams({
+          mode: 'defense',
+          team: opponentTeam,
+          years: NBA_SHOT_CHART_CACHE_YEARS.join(','),
+          ranks: '1',
+        });
+        const res = await fetch(`/api/nba/dash/shot-chart?${params.toString()}`);
+        const json = await res.json();
+        if (cancelled) return;
+        if (!res.ok || !json?.success) {
+          setDefenseData(null);
+          return;
+        }
+        setDefenseData(json as DefensePayload);
+      } catch {
+        if (!cancelled) setDefenseData(null);
+      } finally {
+        if (!cancelled) setDefenseLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [opponentTeam]);
+
+  const z = useMemo(() => zoneLookup(playerData?.zones || []), [playerData]);
+  const az = useMemo(() => zoneLookup(playerData?.assistZones || []), [playerData]);
+  const assistCount = Math.max(0, Number(playerData?.assistCount || 0));
+  const assistGames = Math.max(0, Number(playerData?.assistGamesUsed || 0));
+
+  /** Distribution % keyed by zone id (avoids index mix-ups). */
+  const distByZone = useMemo(() => {
+    const source = showAssists ? az : z;
+    const totalFga = NBA_SHOT_ZONE_IDS.reduce((s, id) => s + source[id].fga, 0);
+    const totalFgm = NBA_SHOT_ZONE_IDS.reduce((s, id) => s + source[id].fgm, 0);
+    const out = {} as Record<NbaShotZoneId, number>;
+    for (const id of NBA_SHOT_ZONE_IDS) {
+      if (showAssists || !showMakes) out[id] = totalFga > 0 ? (source[id].fga / totalFga) * 100 : 0;
+      else out[id] = totalFgm > 0 ? (source[id].fgm / totalFgm) * 100 : 0;
+    }
+    return out;
+  }, [z, az, showMakes, showAssists]);
+
+  const rankings = useMemo(() => {
+    const map = {} as Partial<Record<NbaShotZoneId, ZoneRank>>;
+    for (const row of defenseData?.ranks || []) map[row.zone] = row;
+    return map;
+  }, [defenseData]);
+
+  const assistRankings = useMemo(() => {
+    const map = {} as Partial<Record<NbaShotZoneId, ZoneRank>>;
+    for (const row of defenseData?.assistRanks || []) map[row.zone] = row;
+    return map;
+  }, [defenseData]);
+
+  const hasOppRanks = Boolean(defenseData?.ranks?.some((r) => r.rank != null));
+  const hasAssistRanks = Boolean(defenseData?.assistRanks?.some((r) => r.rank != null));
+  const rankMap = showAssistDef ? assistRankings : rankings;
+  const showRankView = showAssistDef ? hasAssistRanks : Boolean(showOppDef && hasOppRanks);
+  const assistDefenseGames = Math.max(0, Number(defenseData?.assistDefenseGames || 0));
+  const canShowPlayerBreakdown = Boolean(playerName);
+  const canShowBreakdown = Boolean(opponentTeam && opponentTeam !== 'N/A');
+  const defenseZones = useMemo(() => zoneLookup(defenseData?.zones || []), [defenseData]);
+  const defenseGames = Math.max(0, Number(defenseData?.gamesUsed || 0));
+  const ftDefense = defenseData?.ftDefense;
+  const playerGames = Math.max(0, Number(playerData?.gamesUsed || 0));
+  const ftScoring = playerData?.ftScoring;
+
+  const breakdownRows = useMemo(() => {
+    const rows: BreakdownRow[] = BREAKDOWN_GROUPS.map((group) => {
+      let fga = 0;
+      let fgm = 0;
+      let pts = 0;
+      const ranks: number[] = [];
+      for (const zone of group.zones) {
+        const row = defenseZones[zone];
+        fga += row.fga;
+        fgm += row.fgm;
+        pts += row.fgm * zonePointValue(zone);
+        const rank = rankings[zone]?.rank;
+        if (rank != null && rank > 0) ranks.push(rank);
+      }
+      const rankPills = group.zones
+        .map((zone) => {
+          const rank = rankings[zone]?.rank;
+          if (rank == null || rank <= 0) return null;
+          const side = zone === 'leftCorner3' ? 'L' : zone === 'rightCorner3' ? 'R' : '';
+          return {
+            rank,
+            label: group.zones.length > 1 && side ? `${side}#${rank}` : `#${rank}`,
+          };
+        })
+        .filter((p): p is { rank: number; label: string } => Boolean(p));
+      const empty = fga <= 0 && ranks.length === 0;
+      return {
+        id: group.id,
+        label: group.label,
+        rankPills,
+        rank: ranks.length ? Math.min(...ranks) : 0,
+        compared: NBA_TEAM_RANK_SCALE,
+        ptsPerGame: empty ? '—' : formatPerGame(pts, defenseGames),
+        rateLabel: empty ? '—' : `${formatPct(fgm, fga)} FG · ${formatPerGame(fga, defenseGames)} FGA/g`,
+      };
+    });
+    const ftGames = Math.max(0, Number(ftDefense?.games || defenseGames));
+    const ftRank = Number(ftDefense?.rank || 0);
+    const ftm = Number(ftDefense?.ftm || 0);
+    const fta = Number(ftDefense?.fta || 0);
+    const ftEmpty = fta <= 0 && ftRank <= 0;
+    rows.push({
+      id: 'freeThrows',
+      label: 'Free Throws',
+      rankPills: ftRank > 0 ? [{ rank: ftRank, label: `#${ftRank}` }] : [],
+      rank: ftRank > 0 ? ftRank : 0,
+      compared: NBA_TEAM_RANK_SCALE,
+      ptsPerGame: ftEmpty ? '—' : formatPerGame(ftm, ftGames || defenseGames),
+      rateLabel: ftEmpty
+        ? '—'
+        : `${fta > 0 ? `${ftDefense?.ftPct.toFixed(0)}%` : '—'} FT · ${formatPerGame(fta, ftGames || defenseGames)} FTA/g`,
+    });
+    return rows;
+  }, [defenseZones, rankings, defenseGames, ftDefense]);
+
+  const assistDefenseRows = useMemo(() => {
+    return BREAKDOWN_GROUPS.map((group) => {
+      let count = 0;
+      const ranks: number[] = [];
+      const rankPills: { rank: number; label: string }[] = [];
+      for (const zone of group.zones) {
+        const row = assistRankings[zone];
+        count += row?.fga || 0;
+        const rank = row?.rank;
+        if (rank != null && rank > 0) {
+          ranks.push(rank);
+          const side = zone === 'leftCorner3' ? 'L' : zone === 'rightCorner3' ? 'R' : '';
+          rankPills.push({
+            rank,
+            label: group.zones.length > 1 && side ? `${side}#${rank}` : `#${rank}`,
+          });
+        }
+      }
+      const empty = assistDefenseGames <= 0 && ranks.length === 0;
+      return {
+        id: group.id,
+        label: group.label,
+        rankPills,
+        rank: ranks.length ? Math.min(...ranks) : 0,
+        compared: NBA_TEAM_RANK_SCALE,
+        ptsPerGame: empty ? '—' : formatPerGame(count, assistDefenseGames),
+        valueUnit: 'ast/g',
+        rateLabel: empty ? '—' : `${count} AST allowed`,
+      };
+    });
+  }, [assistRankings, assistDefenseGames]);
+
+  const playerBreakdownRows = useMemo(() => {
+    if (showAssists) {
+      const groups = BREAKDOWN_GROUPS.map((group) => {
+        let count = 0;
+        for (const zone of group.zones) count += az[zone].fga;
+        return { group, count };
+      });
+      const selfRanks = selfRanksToTen(groups.map((row) => row.count));
+      return groups.map((row, idx) => {
+        const empty = row.count <= 0;
+        const rank = empty ? 0 : selfRanks[idx] || 0;
+        const share = assistCount > 0 ? (row.count / assistCount) * 100 : 0;
+        return {
+          id: row.group.id,
+          label: row.group.label,
+          rankPills: rank > 0 ? [{ rank, label: `#${rank}` }] : [],
+          rank,
+          compared: NBA_RANK_SCALE,
+          ptsPerGame: empty ? '—' : `${share.toFixed(0)}%`,
+          valueUnit: 'of assists',
+          rateLabel: empty
+            ? '—'
+            : assistGames > 0
+              ? `${row.count} AST · ${formatPerGame(row.count, assistGames)}/g`
+              : `${row.count} AST`,
+        };
+      });
+    }
+    const byMakes = showMakes;
+    const ftGames = Math.max(0, Number(ftScoring?.games || playerGames));
+    const ftm = Number(ftScoring?.ftm || 0);
+    const fta = Number(ftScoring?.fta || 0);
+    const zoneRows = BREAKDOWN_GROUPS.map((group) => {
+      let fga = 0;
+      let fgm = 0;
+      let pts = 0;
+      for (const zone of group.zones) {
+        const row = z[zone];
+        fga += row.fga;
+        fgm += row.fgm;
+        pts += row.fgm * zonePointValue(zone);
+      }
+      return { group, fga, fgm, pts };
+    });
+    const volumes = [
+      ...zoneRows.map((row) => (byMakes ? row.fgm : row.fga)),
+      byMakes ? ftm : fta,
+    ];
+    const selfRanks = selfRanksToTen(volumes);
+    const rows: BreakdownRow[] = zoneRows.map((row, idx) => {
+      const volume = byMakes ? row.fgm : row.fga;
+      const empty = volume <= 0;
+      const rank = empty ? 0 : selfRanks[idx] || 0;
+      return {
+        id: row.group.id,
+        label: row.group.label,
+        rankPills: rank > 0 ? [{ rank, label: `#${rank}` }] : [],
+        rank,
+        compared: NBA_RANK_SCALE,
+        ptsPerGame: empty ? '—' : formatPerGame(row.pts, playerGames),
+        rateLabel: empty
+          ? '—'
+          : byMakes
+            ? `${formatPct(row.fgm, row.fga)} FG · ${formatPerGame(row.fgm, playerGames)} FGM/g`
+            : `${formatPct(row.fgm, row.fga)} FG · ${formatPerGame(row.fga, playerGames)} FGA/g`,
+      };
+    });
+    const ftVolume = byMakes ? ftm : fta;
+    const ftEmpty = ftVolume <= 0;
+    const ftRank = ftEmpty ? 0 : selfRanks[selfRanks.length - 1] || 0;
+    rows.push({
+      id: 'freeThrows',
+      label: 'Free Throws',
+      rankPills: ftRank > 0 ? [{ rank: ftRank, label: `#${ftRank}` }] : [],
+      rank: ftRank,
+      compared: NBA_RANK_SCALE,
+      ptsPerGame: ftEmpty ? '—' : formatPerGame(ftm, ftGames || playerGames),
+      rateLabel: ftEmpty
+        ? '—'
+        : byMakes
+          ? `${fta > 0 ? `${ftScoring?.ftPct.toFixed(0)}%` : '—'} FT · ${formatPerGame(ftm, ftGames || playerGames)} FTM/g`
+          : `${fta > 0 ? `${ftScoring?.ftPct.toFixed(0)}%` : '—'} FT · ${formatPerGame(fta, ftGames || playerGames)} FTA/g`,
+    });
+    return rows;
+  }, [z, az, playerGames, ftScoring, showMakes, showAssists, assistCount, assistGames]);
+  const showSkeleton = Boolean(playerName) && loading;
+  const showEmpty = Boolean(playerName) && !loading && !error && playerData && playerData.shotCount <= 0;
+
+  const zoneHasVolume = (zone: NbaShotZoneId) =>
+    showAssists ? az[zone].fga > 0 : showMakes ? z[zone].fgm > 0 : z[zone].fga > 0;
+
+  const distLabel = (zone: NbaShotZoneId) => {
+    if (valuesLocked) return 'TBD';
+    if (!zoneHasVolume(zone)) return '-';
+    const val = distByZone[zone];
+    return `${(Number.isFinite(val) ? val : 0).toFixed(0)}%`;
+  };
+
+  const rankLabel = (zone: NbaShotZoneId) => {
+    if (valuesLocked) return 'TBD';
+    const r = rankMap[zone]?.rank;
+    return r != null && r > 0 ? `#${r}` : '-';
+  };
+
+  const rankEmpty = (zone: NbaShotZoneId) => {
+    const r = rankMap[zone]?.rank;
+    return r == null || r <= 0;
+  };
+
+  const fillDist = (zone: NbaShotZoneId) => {
+    if (valuesLocked) return EMPTY_ZONE_FILL;
+    return zoneHasVolume(zone) ? getColorForDistribution(distByZone[zone] || 0) : EMPTY_ZONE_FILL;
+  };
+  const fillRank = (zone: NbaShotZoneId) => {
+    if (valuesLocked) return EMPTY_ZONE_FILL;
+    const r = rankMap[zone];
+    if (r?.rank == null || r.rank <= 0) return EMPTY_ZONE_FILL;
+    return getColorForRank(r.rank, r.fgPct);
+  };
+
+  const renderSkeleton = () => (
+    <>
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2 relative">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Court Breakdown</h2>
+          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
+          <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-7 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        </div>
+      </div>
+
+      <svg
+          viewBox="0 0 500 380"
+          className="w-full"
+          style={{ height: 'auto', width: '100%' }}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <defs>
+            <clipPath id={`${clipId}-skel`}>
+              <rect x="0" y="0" width="500" height="380" rx="15" ry="15" />
+            </clipPath>
+          </defs>
+          <rect
+            x="0"
+            y="0"
+            width="500"
+            height="380"
+            rx="15"
+            ry="15"
+            fill={isDark ? '#1e293b' : '#d4a574'}
+          />
+          <g clipPath={`url(#${clipId}-skel)`}>
+            <path
+              d={aboveBreakZonePath}
+              fill="#d1d5db"
+              className="dark:fill-gray-700 animate-pulse"
+              opacity="0.6"
+            />
+            <path
+              d={leftCornerZonePath}
+              fill="#d1d5db"
+              className="dark:fill-gray-700 animate-pulse"
+              opacity="0.6"
+            />
+            <path
+              d={rightCornerZonePath}
+              fill="#d1d5db"
+              className="dark:fill-gray-700 animate-pulse"
+              opacity="0.6"
+            />
+            <path
+              d={midRangeZonePath}
+              fill="#d1d5db"
+              className="dark:fill-gray-700 animate-pulse"
+              opacity="0.6"
+            />
+            <rect
+              x={paintLeft}
+              y={freeThrowLine}
+              width={paintWidth}
+              height={baseline - freeThrowLine}
+              fill="#d1d5db"
+              className="dark:fill-gray-700 animate-pulse"
+              opacity="0.6"
+            />
+            <path
+              d={`M ${centerX - 60} ${baseline} L ${centerX - 60} ${baseline - 60} Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} L ${centerX + 60} ${baseline} Z`}
+              fill="#d1d5db"
+              className="dark:fill-gray-700 animate-pulse"
+              opacity="0.6"
+              stroke="#000"
+              strokeWidth="3"
+            />
+            <rect
+              x="0"
+              y="0"
+              width={courtWidth}
+              height={courtHeight}
+              rx="15"
+              ry="15"
+              fill="none"
+              stroke="#000"
+              strokeWidth="3"
+            />
+            <rect
+              x={paintLeft}
+              y={freeThrowLine}
+              width={paintWidth}
+              height={baseline - freeThrowLine}
+              fill="none"
+              stroke="#000"
+              strokeWidth="3"
+            />
+            <path
+              d={`M ${midRangeLeft} ${baseline} L ${midRangeLeft} ${freeThrowLine - 50} Q ${centerX} ${freeThrowLine - 120} ${midRangeRight} ${freeThrowLine - 50} L ${midRangeRight} ${baseline}`}
+              fill="none"
+              stroke="#000"
+              strokeWidth="3"
+            />
+            <circle cx={centerX} cy={freeThrowLine} r="3" fill="#000" />
+            <line x1="0" y1="270" x2={midRangeLeft} y2="270" stroke="#000" strokeWidth="3" />
+            <line
+              x1={midRangeRight}
+              y1="270"
+              x2={courtWidth}
+              y2="270"
+              stroke="#000"
+              strokeWidth="3"
+            />
+            <text
+              x={centerX}
+              y="60"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="32"
+              fontWeight="bold"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.5"
+            >
+              <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.5s" repeatCount="indefinite" />
+              --
+            </text>
+            <text
+              x={centerX}
+              y={freeThrowLine - 30}
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="28"
+              fontWeight="bold"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.5"
+            >
+              <animate
+                attributeName="opacity"
+                values="0.3;0.6;0.3"
+                dur="1.5s"
+                begin="0.2s"
+                repeatCount="indefinite"
+              />
+              --
+            </text>
+            <text
+              x={centerX}
+              y={baseline - 25}
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="28"
+              fontWeight="bold"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.5"
+            >
+              <animate
+                attributeName="opacity"
+                values="0.3;0.6;0.3"
+                dur="1.5s"
+                begin="0.4s"
+                repeatCount="indefinite"
+              />
+              --
+            </text>
+            <text
+              x={centerX}
+              y={freeThrowLine + (baseline - freeThrowLine) / 2}
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="28"
+              fontWeight="bold"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.5"
+            >
+              <animate
+                attributeName="opacity"
+                values="0.3;0.6;0.3"
+                dur="1.5s"
+                begin="0.6s"
+                repeatCount="indefinite"
+              />
+              --
+            </text>
+            <text
+              x="45"
+              y="330"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="24"
+              fontWeight="bold"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.5"
+            >
+              <animate
+                attributeName="opacity"
+                values="0.3;0.6;0.3"
+                dur="1.5s"
+                begin="0.8s"
+                repeatCount="indefinite"
+              />
+              --
+            </text>
+            <text
+              x="455"
+              y="330"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="24"
+              fontWeight="bold"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.5"
+            >
+              <animate
+                attributeName="opacity"
+                values="0.3;0.6;0.3"
+                dur="1.5s"
+                begin="1s"
+                repeatCount="indefinite"
+              />
+              --
+            </text>
+          </g>
+        </svg>
+
+      <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
+        <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        <div className="flex items-center gap-1">
+          <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        </div>
+      </div>
+    </>
+  );
+
+  const renderMessage = (message: string, isError = false) => (
+    <>
+      <div className="flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Court Breakdown</h2>
+        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
+      </div>
+      <div className="w-full flex items-center justify-center p-6" style={{ minHeight: '280px' }}>
+        <p
+          className={`text-sm text-center max-w-sm ${
+            isError
+              ? 'text-red-500 dark:text-red-400'
+              : isDark
+                ? 'text-gray-400'
+                : 'text-gray-500'
+          }`}
+        >
+          {message}
+        </p>
+      </div>
+    </>
+  );
+
+  if (!playerName) {
+    return (
+      <div className="w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-3 border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Court Breakdown</h2>
+          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Select a player to load shot locations.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-3 border border-gray-200 dark:border-gray-700">
+      {showSkeleton ? (
+        renderSkeleton()
+      ) : error ? (
+        renderMessage(error, true)
+      ) : showEmpty ? (
+        renderMessage('No shot chart available for this player.')
+      ) : (
+        <>
+          <div className="flex items-center justify-between w-full gap-2 flex-wrap">
+            <div className="flex items-center gap-2 relative">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Court Breakdown</h2>
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{SHOT_CHART_SEASON_LABEL}</span>
+              <button
+                type="button"
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+                className="w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+              >
+                ?
+              </button>
+              {showTooltip && (
+                <div className="absolute z-50 left-0 top-8 w-64 px-3 py-2 text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-[#0a1929] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
+                  <strong>Court Breakdown Views</strong>
+                  <br />
+                  Current season ({SHOT_CHART_SEASON_LABEL}).
+                  <br />
+                  <span className="text-blue-600 dark:text-blue-400">Attempts</span> - Player&apos;s
+                  shot distribution
+                  <br />
+                  <span className="text-green-600 dark:text-green-400">Makes</span> - Player&apos;s
+                  make distribution
+                  <br />
+                  <span className="text-orange-500 dark:text-orange-400">Standard / Heat</span> - On
+                  Attempts or Makes, Heat shows frequency from the exact spot of every shot. Brighter = more often.
+                  <br />
+                  <span className="text-purple-600 dark:text-purple-400">Opp Def</span> - Team
+                  defense rankings by zone (lower % = better rank). Zones with no stats show a grey dash.
+                  <br />
+                  <span className="text-teal-600 dark:text-teal-400">Assists</span> - Where his
+                  assists finish this season. Same court locations as the shot chart.
+                  <br />
+                  <span className="text-purple-600 dark:text-purple-400">Opp Ast</span> - Where
+                  this opponent allows the fewest assists. #1 restricts that zone the most.
+                </div>
+              )}
+            </div>
+            <HeatToggle heat={heatView} disabled={!canShowHeat} onChange={setHeatView} />
+          </div>
+
+          <div className="flex flex-wrap gap-x-3 gap-y-2">
+            <ViewGroup className="min-w-[230px] flex-[3]">
+              <ViewButton view="attempts" active={activeView === 'attempts'} onSelect={selectView}>
+                Attempts
+              </ViewButton>
+              <ViewButton view="makes" active={activeView === 'makes'} onSelect={selectView}>
+                Makes
+              </ViewButton>
+              <ViewButton
+                view="oppDef"
+                active={activeView === 'oppDef'}
+                onSelect={selectView}
+                disabled={!hasOpponent}
+                title={hasOpponent ? 'Opponent defense rank by zone' : 'Available once the next opponent is known'}
+              >
+                {defenseLoading ? 'Opp Def…' : 'Opp Def'}
+              </ViewButton>
+            </ViewGroup>
+            <ViewGroup className="min-w-[160px] flex-[2]">
+              <ViewButton view="assists" active={activeView === 'assists'} onSelect={selectView}>
+                Assists
+              </ViewButton>
+              <ViewButton
+                view="assistDef"
+                active={activeView === 'assistDef'}
+                onSelect={selectView}
+                disabled={!hasOpponent}
+                title={hasOpponent ? 'Opponent assist defense rank by zone' : 'Available once the next opponent is known'}
+              >
+                {defenseLoading ? 'Opp Ast…' : 'Opp Ast'}
+              </ViewButton>
+            </ViewGroup>
+          </div>
+
+          {showAssists && assistCount <= 0 ? (
+            <p className="text-xs text-gray-500 dark:text-gray-400">No assist locations this season.</p>
+          ) : null}
+
+          {showHeat ? (
+            <>
+              {!valuesLocked && !loading && heatPoints.length === 0 ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {showMakes ? 'No made shot locations this season.' : 'No shot locations this season.'}
+                </p>
+              ) : null}
+              <NbaShotHeatMap
+                points={heatPoints}
+                isDark={isDark}
+                locked={valuesLocked}
+                clipId={clipId}
+                label={showMakes ? 'Make frequency' : 'Shot frequency'}
+                countLabel={showMakes ? 'makes' : 'shots'}
+              />
+            </>
+          ) : (
+          <>
+          <svg
+            viewBox="0 0 500 380"
+            className="w-full"
+            style={{ height: 'auto', width: '100%' }}
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <defs>
+              <clipPath id={clipId}>
+                <rect x="0" y="0" width="500" height="380" rx="15" ry="15" />
+              </clipPath>
+            </defs>
+
+            <rect
+              x="0"
+              y="0"
+              width="500"
+              height="380"
+              rx="15"
+              ry="15"
+              fill={isDark ? '#1e293b' : '#d4a574'}
+            />
+
+            <g clipPath={`url(#${clipId})`}>
+              {/* Zone fills — crispEdges kills subpixel green/red fringe at seams */}
+              <g style={{ shapeRendering: 'crispEdges' }}>
+                <path
+                  d={aboveBreakZonePath}
+                  fill={
+                    showRankView ? fillRank('aboveBreak3') : fillDist('aboveBreak3')
+                  }
+                />
+                {/* Corners first — clipped to outside the 3pt line only */}
+                <path
+                  d={leftCornerZonePath}
+                  fill={
+                    showRankView ? fillRank('leftCorner3') : fillDist('leftCorner3')
+                  }
+                  stroke="none"
+                />
+                <path
+                  d={rightCornerZonePath}
+                  fill={
+                    showRankView ? fillRank('rightCorner3') : fillDist('rightCorner3')
+                  }
+                  stroke="none"
+                />
+                {/* Mid-range last among wings — owns everything inside the 3pt line */}
+                <path
+                  d={midRangeZonePath}
+                  fill={
+                    showRankView ? fillRank('midRange') : fillDist('midRange')
+                  }
+                  stroke="none"
+                />
+                <rect
+                  x={paintLeft}
+                  y={freeThrowLine}
+                  width={paintWidth}
+                  height={baseline - freeThrowLine}
+                  fill={showRankView ? fillRank('paint') : fillDist('paint')}
+                  stroke="none"
+                />
+                <path
+                  d={`M ${centerX - 60} ${baseline} L ${centerX - 60} ${baseline - 60} Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} L ${centerX + 60} ${baseline} Z`}
+                  fill={
+                    showRankView ? fillRank('restricted') : fillDist('restricted')
+                  }
+                  stroke="none"
+                />
+              </g>
+
+              {/* Restricted outline + court lines (smooth strokes) */}
+              <path
+                d={`M ${centerX - 60} ${baseline} L ${centerX - 60} ${baseline - 60} Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} L ${centerX + 60} ${baseline} Z`}
+                fill="none"
+                stroke="#000"
+                strokeWidth="3"
+              />
+              <rect
+                x="0"
+                y="0"
+                width={courtWidth}
+                height={courtHeight}
+                rx="15"
+                ry="15"
+                fill="none"
+                stroke="#000"
+                strokeWidth="3"
+              />
+              <rect
+                x={paintLeft}
+                y={freeThrowLine}
+                width={paintWidth}
+                height={baseline - freeThrowLine}
+                fill="none"
+                stroke="#000"
+                strokeWidth="3"
+              />
+              <path
+                d={`M ${midRangeLeft} ${baseline} L ${midRangeLeft} ${freeThrowLine - 50} Q ${centerX} ${freeThrowLine - 120} ${midRangeRight} ${freeThrowLine - 50} L ${midRangeRight} ${baseline}`}
+                fill="none"
+                stroke="#000"
+                strokeWidth="3"
+              />
+              <circle cx={centerX} cy={freeThrowLine} r="3" fill="#000" />
+              <line x1="0" y1="270" x2={midRangeLeft} y2="270" stroke="#000" strokeWidth="3" />
+              <line
+                x1={midRangeRight}
+                y1="270"
+                x2={courtWidth}
+                y2="270"
+                stroke="#000"
+                strokeWidth="3"
+              />
+
+              {showRankView ? (
+                <>
+                  <CourtLabel x={centerX} y={60} fontSize={32} value={rankLabel('aboveBreak3')} empty={rankEmpty('aboveBreak3')} />
+                  <CourtLabel x={centerX} y={freeThrowLine - 30} fontSize={28} value={rankLabel('midRange')} empty={rankEmpty('midRange')} />
+                  <CourtLabel x={centerX} y={baseline - 25} fontSize={28} value={rankLabel('restricted')} empty={rankEmpty('restricted')} />
+                  <CourtLabel
+                    x={centerX}
+                    y={freeThrowLine + (baseline - freeThrowLine) / 2}
+                    fontSize={28}
+                    value={rankLabel('paint')}
+                    empty={rankEmpty('paint')}
+                  />
+                  <CourtLabel x={45} y={330} fontSize={24} value={rankLabel('leftCorner3')} empty={rankEmpty('leftCorner3')} />
+                  <CourtLabel x={455} y={330} fontSize={24} value={rankLabel('rightCorner3')} empty={rankEmpty('rightCorner3')} />
+                </>
+              ) : (
+                <>
+                  <CourtLabel x={centerX} y={60} fontSize={32} value={distLabel('aboveBreak3')} empty={!zoneHasVolume('aboveBreak3')} />
+                  <CourtLabel x={centerX} y={freeThrowLine - 30} fontSize={28} value={distLabel('midRange')} empty={!zoneHasVolume('midRange')} />
+                  <CourtLabel x={centerX} y={baseline - 25} fontSize={28} value={distLabel('restricted')} empty={!zoneHasVolume('restricted')} />
+                  <CourtLabel
+                    x={centerX}
+                    y={freeThrowLine + (baseline - freeThrowLine) / 2}
+                    fontSize={28}
+                    value={distLabel('paint')}
+                    empty={!zoneHasVolume('paint')}
+                  />
+                  <CourtLabel x={45} y={330} fontSize={24} value={distLabel('leftCorner3')} empty={!zoneHasVolume('leftCorner3')} />
+                  <CourtLabel x={455} y={330} fontSize={24} value={distLabel('rightCorner3')} empty={!zoneHasVolume('rightCorner3')} />
+                </>
+              )}
+            </g>
+          </svg>
+
+          {showRankView ? (
+            <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
+              <span className="text-gray-700 dark:text-gray-300">
+                {showAssistDef ? 'Assist Defense:' : 'Defense Ranking:'}
+              </span>
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-5 rounded" style={{ backgroundColor: '#ef4444' }} />
+                <span className="text-gray-600 dark:text-gray-400">#1-2 (Elite)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-5 rounded" style={{ backgroundColor: '#f97316' }} />
+                <span className="text-gray-600 dark:text-gray-400">#3-4 (Good)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-5 rounded" style={{ backgroundColor: '#fbbf24' }} />
+                <span className="text-gray-600 dark:text-gray-400">#5-7 (Avg)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-5 rounded" style={{ backgroundColor: '#10b981' }} />
+                <span className="text-gray-600 dark:text-gray-400">#8-10 (Weak)</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
+              <span className="text-gray-700 dark:text-gray-300">
+                {showAssists ? 'Assist Distribution:' : showMakes ? 'Make Distribution (% of makes):' : 'Shot Distribution:'}
+              </span>
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-5 rounded" style={{ backgroundColor: '#10b981' }} />
+                <span className="text-gray-600 dark:text-gray-400">≥30%</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-5 rounded" style={{ backgroundColor: '#22c55e' }} />
+                <span className="text-gray-600 dark:text-gray-400">25-29%</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-5 rounded" style={{ backgroundColor: '#f97316' }} />
+                <span className="text-gray-600 dark:text-gray-400">10-24%</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-5 rounded" style={{ backgroundColor: '#ef4444' }} />
+                <span className="text-gray-600 dark:text-gray-400">&lt;10%</span>
+              </div>
+            </div>
+          )}
+          </>
+          )}
+
+          {(!showOppDef && !showAssistDef && canShowPlayerBreakdown) ||
+          ((showOppDef || showAssistDef) && canShowBreakdown) ? (
+            <div className="w-full space-y-2 border-t border-gray-200 dark:border-[#463e6b]/70 pt-2">
+              <AnalysisAccordion
+                title={
+                  showAssistDef
+                    ? 'Assist Defense'
+                    : showOppDef
+                      ? 'Defensive Analysis'
+                      : showAssists
+                        ? 'Assist Analysis'
+                        : showMakes
+                          ? 'Make Analysis'
+                          : 'Attempt Analysis'
+                }
+                open={analysisOpen}
+                onToggle={() => setAnalysisOpen((open) => !open)}
+                isDark={isDark}
+                loading={
+                  showOppDef || showAssistDef ? defenseLoading && !defenseData : loading && !playerData
+                }
+                rows={
+                  valuesLocked
+                    ? redactBreakdownRows(
+                        showAssistDef
+                          ? assistDefenseRows
+                          : showOppDef
+                            ? breakdownRows
+                            : playerBreakdownRows
+                      )
+                    : showAssistDef
+                      ? assistDefenseRows
+                      : showOppDef
+                        ? breakdownRows
+                        : playerBreakdownRows
+                }
+                invert={!showOppDef && !showAssistDef}
+                valuesLocked={valuesLocked}
+              />
+            </div>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}

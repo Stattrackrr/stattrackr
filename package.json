@@ -26,6 +26,7 @@
     "fetch:footyinfo-league-player-stats": "npx tsx scripts/fetch-footyinfo-league-player-stats.ts",
     "fetch:footyinfo-ladder": "npx tsx scripts/fetch-footyinfo-ladder.ts",
     "fetch:footyinfo-team-rankings": "npx tsx scripts/fetch-footyinfo-team-rankings.ts",
+    "sync:nba": "npx tsx scripts/sync-nba-bdl.ts",
     "fetch:nbl:ladder": "npx tsx scripts/fetch-nbl-ladder.ts",
     "fetch:nbl:schedule": "npx tsx scripts/fetch-nbl-schedule.ts",
     "fetch:nbl:next-matches": "npx tsx scripts/fetch-nbl-next-matches.ts",
