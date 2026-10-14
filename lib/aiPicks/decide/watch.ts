@@ -16,6 +16,23 @@ export function parseHistory(raw: unknown): WatchPoint[] {
   );
 }
 
+/**
+ * A bulk upsert sends every column any row has, and rows missing one get NULL (which would wipe
+ * first_seen_at on existing rows and break its NOT NULL). Rows are grouped by their exact columns.
+ */
+export function watchBatches(rows: WatchRow[], size = 200): WatchRow[][] {
+  const groups = new Map<string, WatchRow[]>();
+  for (const row of rows) {
+    const shape = Object.keys(row).sort().join(',');
+    groups.set(shape, [...(groups.get(shape) ?? []), row]);
+  }
+  const out: WatchRow[][] = [];
+  for (const group of groups.values()) {
+    for (let i = 0; i < group.length; i += size) out.push(group.slice(i, i + size));
+  }
+  return out;
+}
+
 /** Rows the AI will never post again: already posted, or turned down on review. */
 export function isClosedRow(row: Pick<WatchRow, 'status' | 'reason'> | undefined): boolean {
   if (!row) return false;

@@ -6,7 +6,7 @@ import { DEFAULT_AI_PICKS_PARAMS as P } from '../params';
 import type { AiPick } from '../types';
 import { aiDayKey, gameIdentity, readiness, type WatchPoint } from './timing';
 import { chooseMulti, chooseSingles, multiKey, qualifiesSingle, subjectId, type PostedState, type Watched } from './select';
-import { isClosedRow, nextWatchRow, postedState } from './watch';
+import { isClosedRow, nextWatchRow, postedState, watchBatches } from './watch';
 import { parseReview } from './review';
 import { pickTitle } from '../format';
 
@@ -163,6 +163,17 @@ test('one pick per subject: a tennis match, an NBL player in a game, an NBL game
   assert.ok(chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set() }));
   assert.equal(chooseMulti(w, P, used, NOW, { keys: new Set(), rejected: new Set() }), null);
   assert.equal(chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set(), subjects: new Set([subjectId(handicap)]) }), null);
+});
+
+test('watchlist saves: new and existing rows never share a batch', () => {
+  const fresh = nextWatchRow(cand({ eventKey: 'm1' }), undefined, iso(NOW))!.row;
+  const old = nextWatchRow(cand({ eventKey: 'm2' }), { ...fresh, candidate_key: 'x' }, iso(NOW))!.row;
+  assert.ok('first_seen_at' in fresh);
+  assert.ok(!('first_seen_at' in old));
+  const batches = watchBatches([fresh, old, fresh, old, fresh], 2);
+  for (const b of batches) assert.equal(new Set(b.map((r) => Object.keys(r).sort().join(','))).size, 1);
+  assert.equal(batches.flat().length, 5);
+  assert.ok(batches.every((b) => b.length <= 2));
 });
 
 test('watchlist: history grows, posted and review-rejected rows stay closed', () => {

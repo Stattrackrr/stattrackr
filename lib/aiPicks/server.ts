@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { aiPickFromRow, aiPickLegFromRow, type AiPickLegRow, type AiPickRow } from '@/lib/aiPicks/rows';
 import type { AiPick, AiPickLeg, AiPickStatus } from '@/lib/aiPicks/types';
+import { watchBatches } from '@/lib/aiPicks/decide/watch';
 
 // AI picks tables are not in the generated Supabase schema.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -270,10 +271,9 @@ export async function listClosedMultiKeys(sinceIso: string): Promise<string[]> {
 const CONTEXT_COLUMNS = /base_model_prob|full_model_prob/;
 
 export async function upsertWatchRows(rows: WatchRow[]): Promise<void> {
-  for (let i = 0; i < rows.length; i += 200) {
-    const batch = rows.slice(i, i + 200);
-    const res = await db().from('ai_pick_watchlist').upsert(batch, { onConflict: 'candidate_key' });
+  for (const batch of watchBatches(rows)) {
     // Before migrations/ai_picks_context_learning.sql is run the columns do not exist; keep scanning without them.
+    const res = await db().from('ai_pick_watchlist').upsert(batch, { onConflict: 'candidate_key' });
     if (res.error && CONTEXT_COLUMNS.test(res.error.message)) {
       const stripped = batch.map(({ base_model_prob: _b, full_model_prob: _f, ...rest }) => rest);
       check(await db().from('ai_pick_watchlist').upsert(stripped, { onConflict: 'candidate_key' }), 'watchlist upsert');

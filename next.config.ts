@@ -167,7 +167,9 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   experimental: {
-    // Experimental features disabled to avoid build errors
+    // Keep compiled routes on disk between dev server restarts. Without it every restart compiles
+    // each page from scratch on first visit (minutes for /tennis and /props). Dev only.
+    turbopackFileSystemCacheForDev: true,
   },
   outputFileTracingExcludes: {
     '/*': [

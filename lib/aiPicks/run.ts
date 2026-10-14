@@ -58,6 +58,8 @@ const RECENT_PICKS_MS = 48 * 60 * 60 * 1000;
 const MAX_WATCHED_LEGS = 80;
 /** Review budget: stop proposing once this many upcoming plays have been turned down. */
 const MAX_OPEN_REJECTIONS = 12;
+/** The cron is killed at 300s; past this a run skips review and posting rather than die mid-post. */
+const REVIEW_CUTOFF_MS = 200_000;
 
 export type AiPicksRunSummary = {
   scannedAt: string;
@@ -71,6 +73,8 @@ export type AiPicksRunSummary = {
   paused: boolean;
   skipped: string[];
   review: { model: string | null; tokensIn: number; tokensOut: number; error: string | null } | null;
+  /** Seconds spent in each step, to spot a slow source. */
+  timings?: Record<string, number>;
   errors: string[];
 };
 
@@ -236,6 +240,14 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
     review: null,
     errors: [],
   };
+  const startedAt = Date.now();
+  let markAt = startedAt;
+  const timings: Record<string, number> = {};
+  const mark = (step: string) => {
+    const now = Date.now();
+    timings[step] = Math.round((now - markAt) / 100) / 10;
+    markAt = now;
+  };
   const runId = await startRun('scan');
   let review: ReviewResult | null = null;
   try {
@@ -243,15 +255,18 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
     summary.modelVersion = modelVersion(params, ['nbl', 'tennis']);
     const settings = await readAiPicksSettings();
     summary.paused = settings.paused;
+    mark('setup');
     const scan = await scanAiCandidates({ nowMs, horizonMs: POST_HORIZON_MS, params });
     summary.errors.push(...scan.errors);
     summary.candidates = scan.candidates.length;
+    mark('scan');
 
     try {
       summary.closingCaptured = await captureClosing(scan.candidates, nowMs);
     } catch (e) {
       summary.errors.push(`closing: ${(e as Error).message}`);
     }
+    mark('closing');
 
     const short = shortlist(scan, params, nowMs, summary.skipped);
     summary.shortlisted = short.length;
@@ -274,10 +289,13 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
       'dropped',
       'No longer qualifies'
     );
+    mark('watchlist');
 
     const openRejections = settings.paused ? 0 : await countOpenReviewRejections(nowIso);
     if (settings.paused) {
       summary.skipped.push('Posting is paused');
+    } else if (Date.now() - startedAt > REVIEW_CUTOFF_MS) {
+      summary.skipped.push(`Scan took ${Math.round((Date.now() - startedAt) / 1000)}s; review and posting wait for the next run`);
     } else if (openRejections >= MAX_OPEN_REJECTIONS) {
       summary.skipped.push(`${openRejections} upcoming plays already turned down on review; waiting for those games to start`);
     } else {
@@ -308,7 +326,9 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
 
       if (proposals.length) {
         const records = trackRecords(await listSettledPickStats(new Date(nowMs - TRACK_RECORD_MS).toISOString()), nowMs);
+        mark('select');
         review = await reviewProposals(proposals);
+        mark('review');
         summary.review = { model: review.model, tokensIn: review.tokensIn, tokensOut: review.tokensOut, error: review.error };
         for (const [i, p] of proposals.entries()) {
           const verdict = review.verdicts.get(`P${i + 1}`);
@@ -327,11 +347,14 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
             summary.errors.push(`post ${title}: ${(e as Error).message}`);
           }
         }
+        mark('post');
       }
     }
   } catch (e) {
     summary.errors.push((e as Error).message);
   }
+  timings.total = Math.round((Date.now() - startedAt) / 100) / 10;
+  summary.timings = timings;
   await finishRun(runId, {
     considered: summary.shortlisted,
     posted: summary.posted.length,
