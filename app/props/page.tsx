@@ -53,6 +53,7 @@ import { parseBallDontLieTipoff } from '@/app/nba/research/dashboard/utils';
 import { americanToDecimal, DEFAULT_ODDS_FORMAT, formatOdds, readOddsFormatPreference } from '@/lib/currencyUtils';
 import { cachedFetch } from '@/lib/requestCache';
 import { prefetchAflDashboardFromProps } from '@/lib/aflPropsNavigationPrefetch';
+import { prefetchNbaDashboardFromProps } from '@/lib/nbaPropsNavigationPrefetch';
 import { prefetchNblDashboardFromProps } from '@/lib/nblPropsNavigationPrefetch';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
@@ -10076,6 +10077,8 @@ export default function NBALandingPage() {
                                   sport: 'nba',
                                   playerName: prop.playerName,
                                   playerId: prop.playerId,
+                                  team: prop.team,
+                                  opponent: prop.opponent,
                                   statType: prop.statType,
                                   line:
                                     typeof lineValue === 'number' && Number.isFinite(lineValue)
@@ -10084,6 +10087,12 @@ export default function NBALandingPage() {
                                         ? prop.line
                                         : null,
                                   bookmaker: bookmakerName || prop.bookmaker,
+                                });
+                                prefetchNbaDashboardFromProps({
+                                  playerName: prop.playerName,
+                                  playerId: prop.playerId,
+                                  team: prop.team,
+                                  opponent: prop.opponent,
                                 });
                                 try {
                                   sessionStorage.removeItem('nba_dashboard_session_v1');
@@ -10257,6 +10266,12 @@ export default function NBALandingPage() {
                                     safeSetSessionStorage('last_prop_click', JSON.stringify(clickData));
                                   }
                                   const finalUrl = dashboardHref;
+                                  prefetchNbaDashboardFromProps({
+                                    playerName: prop.playerName,
+                                    playerId: prop.playerId,
+                                    team: prop.team,
+                                    opponent: prop.opponent,
+                                  });
                                   if (typeof window !== 'undefined') {
                                     safeSetSessionStorage('last_prop_url', finalUrl);
                                   }
@@ -10298,6 +10313,12 @@ export default function NBALandingPage() {
                                         navigateToSecondaryDashboard();
                                         return;
                                       }
+                                      prefetchNbaDashboardFromProps({
+                                        playerName: prop.playerName,
+                                        playerId: prop.playerId,
+                                        team: prop.team,
+                                        opponent: prop.opponent,
+                                      });
                                       try {
                                         sessionStorage.removeItem('nba_dashboard_session_v1');
                                         sessionStorage.setItem('from_props_page', 'true');
@@ -11774,6 +11795,12 @@ export default function NBALandingPage() {
                                   setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
                                   return;
                                 }
+                                prefetchNbaDashboardFromProps({
+                                  playerName: prop.playerName,
+                                  playerId: prop.playerId,
+                                  team: prop.team,
+                                  opponent: prop.opponent,
+                                });
                                 try {
                                   sessionStorage.removeItem('nba_dashboard_session_v1');
                                   sessionStorage.setItem('from_props_page', 'true');
@@ -11861,6 +11888,14 @@ export default function NBALandingPage() {
                                               snapshotPropsPageBeforeLeave();
                                               router.push(dashboardHref);
                                             } else {
+                                              if (rowSport === 'nba') {
+                                                prefetchNbaDashboardFromProps({
+                                                  playerName: prop.playerName,
+                                                  playerId: prop.playerId,
+                                                  team: prop.team,
+                                                  opponent: prop.opponent,
+                                                });
+                                              }
                                               try {
                                                 sessionStorage.removeItem('nba_dashboard_session_v1');
                                                 sessionStorage.setItem('from_props_page', 'true');

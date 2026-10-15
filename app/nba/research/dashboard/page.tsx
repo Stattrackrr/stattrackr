@@ -271,7 +271,8 @@ function readInitialNbaSelection(): {
   const url = new URL(window.location.href);
   const playerParam = url.searchParams.get('player')?.trim() || '';
   const nameParam = url.searchParams.get('name')?.trim() || '';
-  const teamParam = url.searchParams.get('team')?.trim() || '';
+  const teamRaw = url.searchParams.get('team')?.trim() || '';
+  const teamParam = teamRaw ? resolveNbaClubName(teamRaw) || teamRaw : '';
   const targetName = playerParam || nameParam;
   const persisted = readPersistedNbaPageState();
 
@@ -290,7 +291,7 @@ function readInitialNbaSelection(): {
       : {
           playerId: null,
           name: targetName,
-          team: teamParam || persistedPlayer?.team || '',
+          team: teamParam,
           teamCode: sameName ? persistedPlayer!.teamCode : null,
           teamId: sameName ? persistedPlayer!.teamId : null,
           position: sameName ? persistedPlayer!.position : null,
@@ -670,13 +671,16 @@ export default function NbaDashboardPage() {
       if (loadingPlayerFromUrl) setLoadingPlayerFromUrl(false);
       return;
     }
-    if (selectedPlayer.playerId) {
+    if (selectedPlayer.playerId && selectedPlayer.team && selectedPlayer.teamCode) {
       if (loadingPlayerFromUrl) setLoadingPlayerFromUrl(false);
       return;
     }
     const want = normalizeNbaPlayerNameForMatch(selectedPlayer.name);
     const teamWant = selectedPlayer.team ? normalizeTeamKey(selectedPlayer.team) : '';
     const match =
+      (selectedPlayer.playerId
+        ? rosterPlayers.find((p) => String(p.playerId) === String(selectedPlayer.playerId))
+        : undefined) ||
       rosterPlayers.find((p) => {
         if (normalizeNbaPlayerNameForMatch(p.name) !== want) return false;
         if (!teamWant) return true;

@@ -110,12 +110,16 @@ export function aflDashboardHref(opts: {
 export function nbaDashboardHref(opts: {
   playerName: string;
   playerId?: string | null;
+  team?: string | null;
+  opponent?: string | null;
   statType?: string | null;
   line?: number | null;
   bookmaker?: string | null;
 }): string {
   const q = new URLSearchParams();
   q.set('player', opts.playerName);
+  if (opts.team) q.set('team', opts.team);
+  if (opts.opponent) q.set('opponent', opts.opponent);
   const pid = String(opts.playerId || '').trim();
   if (/^\d+$/.test(pid)) q.set('pid', pid);
   q.set('stat', normalizeNbaStat(String(opts.statType || '')));
