@@ -2,6 +2,8 @@
 
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
 import {
+  CHAT_IMAGE_MAX_BYTES,
+  CHAT_IMAGE_TYPES,
   CHAT_MAX_MESSAGE_LENGTH,
   CHAT_REACTION_OPTIONS,
   ChatMessage,
@@ -15,17 +17,18 @@ import {
   sendChatMessage,
   toggleChatMessagePin,
   toggleChatReaction,
+  uploadChatImage,
 } from '@/lib/chat';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
-import { ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AI_PICKS_AVATAR, AI_PICKS_NAME, AiPicksFeed } from '@/components/chat/AiPicksFeed';
 import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
 import { aiPicksAsRecordBets, fetchAiPicks, fetchAiPicksPublic } from '@/lib/aiPicks/client';
 import { openProUpgrade } from '@/components/ProFeatureLock';
 import { useTheme } from '@/contexts/ThemeContext';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
-import { ArrowLeft, BarChart3, CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Sparkles, Trash2, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, CornerUpLeft, ImagePlus, Loader2, MessageSquareText, Pin, Plus, Send, Sparkles, Trash2, X } from 'lucide-react';
 
 type OddsFormat = 'american' | 'decimal';
 const CHAT_ADMIN_EMAIL = 'admin@stattrackr.co';
@@ -303,11 +306,13 @@ export default function ChatPageClient() {
   const [composerError, setComposerError] = useState<string | null>(null);
   const [messageCooldownUntil, setMessageCooldownUntil] = useState<number | null>(null);
   const [composerValue, setComposerValue] = useState('');
+  const [composerImage, setComposerImage] = useState<{ file: File; preview: string } | null>(null);
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const mobileComposerRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const messageCooldownTimeoutRef = useRef<number | null>(null);
   const isMessageListNearBottomRef = useRef(true);
   const shouldScrollToBottomRef = useRef(true);
@@ -926,7 +931,8 @@ export default function ChatPageClient() {
     }
 
     const trimmedMessage = composerValue.trim();
-    if (!trimmedMessage) {
+    const image = viewer.isAdmin ? composerImage : null;
+    if (!trimmedMessage && !image) {
       return;
     }
 
@@ -939,7 +945,12 @@ export default function ChatPageClient() {
     setComposerError(null);
 
     try {
-      const createdMessage = await sendChatMessage(selectedRoomId, trimmedMessage, replyTargetId);
+      const imageUrl = image && viewer.userId ? await uploadChatImage(image.file, viewer.userId) : null;
+      const createdMessage = await sendChatMessage(selectedRoomId, trimmedMessage, replyTargetId, imageUrl);
+      if (image) {
+        URL.revokeObjectURL(image.preview);
+        setComposerImage(null);
+      }
       shouldScrollToBottomRef.current = true;
       setMessages((current) => {
         if (current.some((message) => message.id === createdMessage.id)) {
@@ -970,6 +981,7 @@ export default function ChatPageClient() {
     }
   }, [
     canSendInSelectedRoom,
+    composerImage,
     composerValue,
     loadMessages,
     messageCooldownUntil,
@@ -978,7 +990,37 @@ export default function ChatPageClient() {
     sendingMessage,
     startMessageCooldown,
     viewer.hasPremium,
+    viewer.isAdmin,
+    viewer.userId,
   ]);
+
+  const handlePickImage = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) {
+      return;
+    }
+    if (!(CHAT_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+      setComposerError('Photos must be PNG, JPG, WebP or GIF.');
+      return;
+    }
+    if (file.size > CHAT_IMAGE_MAX_BYTES) {
+      setComposerError('Photos must be 5MB or smaller.');
+      return;
+    }
+    setComposerError(null);
+    setComposerImage((current) => {
+      if (current) URL.revokeObjectURL(current.preview);
+      return { file, preview: URL.createObjectURL(file) };
+    });
+  }, []);
+
+  const clearComposerImage = useCallback(() => {
+    setComposerImage((current) => {
+      if (current) URL.revokeObjectURL(current.preview);
+      return null;
+    });
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1484,7 +1526,7 @@ export default function ChatPageClient() {
                                     {formatMessageTime(message.created_at)}
                                   </span>
                                 </div>
-                                <p className="mt-1 line-clamp-2 text-xs text-gray-700 dark:text-gray-200">{message.body}</p>
+                                <p className="mt-1 line-clamp-2 text-xs text-gray-700 dark:text-gray-200">{message.body || (message.image_url ? 'Photo' : '')}</p>
                               </button>
                             ))}
                           </div>
@@ -1543,7 +1585,7 @@ export default function ChatPageClient() {
                                       Replying to {repliedToMessage.display_name || 'Member'}
                                     </div>
                                     <p className={`mt-0.5 line-clamp-2 text-xs ${isOwnMessage ? 'text-slate-200' : 'text-gray-600 dark:text-gray-300'}`}>
-                                      {repliedToMessage.body}
+                                      {repliedToMessage.body || (repliedToMessage.image_url ? 'Photo' : '')}
                                     </p>
                                   </div>
                                 ) : null}
@@ -1610,9 +1652,21 @@ export default function ChatPageClient() {
                                   </div>
                                 ) : (
                                   <>
-                                    <p className={`mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-snug ${isOwnMessage ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
-                                      {message.body}
-                                    </p>
+                                    {message.image_url ? (
+                                      <a href={message.image_url} target="_blank" rel="noopener noreferrer" className="mt-1.5 block">
+                                        <img
+                                          src={message.image_url}
+                                          alt="Photo"
+                                          loading="lazy"
+                                          className="max-h-80 w-auto max-w-full rounded-xl object-contain"
+                                        />
+                                      </a>
+                                    ) : null}
+                                    {message.body ? (
+                                      <p className={`mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-snug ${isOwnMessage ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
+                                        {message.body}
+                                      </p>
+                                    ) : null}
                                     {isEditedMessage ? (
                                       <span className={`mt-1 block text-[10px] ${isOwnMessage ? 'text-purple-100/80' : 'text-gray-400 dark:text-gray-500'}`}>
                                         Edited
@@ -1876,7 +1930,7 @@ export default function ChatPageClient() {
                             Replying to {replyTarget.display_name || 'Member'}
                           </div>
                           <p className="mt-0.5 truncate text-xs text-gray-600 dark:text-gray-300">
-                            {replyTarget.body}
+                            {replyTarget.body || (replyTarget.image_url ? 'Photo' : '')}
                           </p>
                         </div>
                         <button
@@ -1886,6 +1940,24 @@ export default function ChatPageClient() {
                           aria-label="Cancel reply"
                         >
                           <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : null}
+                    {viewer.isAdmin && composerImage ? (
+                      <div className="relative inline-block">
+                        <img
+                          src={composerImage.preview}
+                          alt="Photo to send"
+                          className="max-h-32 rounded-xl border border-gray-200 object-contain dark:border-gray-700"
+                        />
+                        <button
+                          type="button"
+                          onClick={clearComposerImage}
+                          disabled={sendingMessage}
+                          className="absolute -right-2 -top-2 rounded-full bg-gray-900/80 p-1 text-white transition-colors hover:bg-gray-900 disabled:opacity-60"
+                          aria-label="Remove photo"
+                        >
+                          <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ) : null}
@@ -1923,7 +1995,7 @@ export default function ChatPageClient() {
                       />
                       <button
                         type="submit"
-                        disabled={!selectedRoomId || !composerValue.trim() || sendingMessage || isMessageCooldownActive}
+                        disabled={!selectedRoomId || (!composerValue.trim() && !composerImage) || sendingMessage || isMessageCooldownActive}
                         className="absolute bottom-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400 sm:hidden"
                         aria-label="Send message"
                       >
@@ -1938,9 +2010,30 @@ export default function ChatPageClient() {
                         {composerError ? (
                           <span className="text-xs text-red-600 dark:text-red-300">{composerError}</span>
                         ) : null}
+                        {viewer.isAdmin ? (
+                          <>
+                            <input
+                              ref={imageInputRef}
+                              type="file"
+                              accept={CHAT_IMAGE_TYPES.join(',')}
+                              onChange={handlePickImage}
+                              className="hidden"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => imageInputRef.current?.click()}
+                              disabled={sendingMessage}
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-[#162338] sm:py-2.5 sm:text-sm"
+                              aria-label="Add photo"
+                            >
+                              <ImagePlus className="h-4 w-4" />
+                              Photo
+                            </button>
+                          </>
+                        ) : null}
                         <button
                           type="submit"
-                          disabled={!selectedRoomId || !composerValue.trim() || sendingMessage || isMessageCooldownActive}
+                          disabled={!selectedRoomId || (!composerValue.trim() && !composerImage) || sendingMessage || isMessageCooldownActive}
                           className="hidden items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400 sm:inline-flex"
                         >
                           {sendingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

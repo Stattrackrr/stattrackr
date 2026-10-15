@@ -31,7 +31,13 @@ export type ChatMessage = {
   updated_at: string;
   deleted_at: string | null;
   deleted_by: string | null;
+  /** Admin-only photo in the public chat-images bucket. */
+  image_url: string | null;
 };
+
+export const CHAT_IMAGE_BUCKET = 'chat-images';
+export const CHAT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export const CHAT_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'] as const;
 
 export type ChatMessageReaction = {
   id: string;
@@ -45,6 +51,9 @@ const CHAT_MESSAGE_BASE_SELECT =
   'id, room_id, user_id, body, display_name, avatar_url, reply_to_message_id, created_at, updated_at, deleted_at, deleted_by';
 const CHAT_MESSAGE_PIN_SELECT =
   'id, room_id, user_id, body, display_name, avatar_url, reply_to_message_id, pinned_at, pinned_by, edited_at, created_at, updated_at, deleted_at, deleted_by';
+const CHAT_MESSAGE_IMAGE_SELECT = `${CHAT_MESSAGE_PIN_SELECT}, image_url`;
+/** Newest schema first; each step drops columns a database without the later migrations lacks. */
+const CHAT_MESSAGE_SELECTS = [CHAT_MESSAGE_IMAGE_SELECT, CHAT_MESSAGE_PIN_SELECT, CHAT_MESSAGE_BASE_SELECT];
 
 function isMissingPinnedColumnError(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
@@ -61,8 +70,22 @@ function isMissingPinnedColumnError(error: unknown): boolean {
     combinedText.includes('pinned_at') ||
     combinedText.includes('pinned_by') ||
     combinedText.includes('edited_at') ||
+    combinedText.includes('image_url') ||
     combinedText.includes('schema cache')
   );
+}
+
+async function selectWithFallback(
+  run: (select: string) => PromiseLike<{ data: unknown; error: unknown }>
+): Promise<{ data: unknown; select: string }> {
+  let lastError: unknown = null;
+  for (const select of CHAT_MESSAGE_SELECTS) {
+    const { data, error } = await run(select);
+    if (!error) return { data, select };
+    if (!isMissingPinnedColumnError(error)) throw error;
+    lastError = error;
+  }
+  throw lastError;
 }
 
 function normalizeChatMessages(messages: ChatMessage[]): ChatMessage[] {
@@ -71,6 +94,7 @@ function normalizeChatMessages(messages: ChatMessage[]): ChatMessage[] {
     pinned_at: message.pinned_at ?? null,
     pinned_by: message.pinned_by ?? null,
     edited_at: message.edited_at ?? null,
+    image_url: message.image_url ?? null,
   }));
 }
 
@@ -88,37 +112,22 @@ export async function fetchChatRooms(): Promise<ChatRoom[]> {
 }
 
 export async function fetchChatMessages(roomId: string, limit = CHAT_MESSAGE_LIMIT): Promise<ChatMessage[]> {
-  const { data, error } = await (supabase
-    .from('chat_messages') as any)
-    .select(CHAT_MESSAGE_PIN_SELECT)
-    .eq('room_id', roomId)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  const { data, select } = await selectWithFallback((columns) =>
+    (supabase.from('chat_messages') as any)
+      .select(columns)
+      .eq('room_id', roomId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+  );
 
-  if (error) {
-    if (isMissingPinnedColumnError(error)) {
-      const { data: fallbackData, error: fallbackError } = await (supabase
-        .from('chat_messages') as any)
-        .select(CHAT_MESSAGE_BASE_SELECT)
-        .eq('room_id', roomId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (fallbackError) {
-        throw fallbackError;
-      }
-
-      return normalizeChatMessages((fallbackData ?? []) as ChatMessage[]).reverse();
-    }
-
-    throw error;
+  if (select === CHAT_MESSAGE_BASE_SELECT) {
+    return normalizeChatMessages(((data ?? []) as ChatMessage[]).reverse());
   }
 
   const { data: pinnedData, error: pinnedError } = await (supabase
     .from('chat_messages') as any)
-    .select(CHAT_MESSAGE_PIN_SELECT)
+    .select(select)
     .eq('room_id', roomId)
     .is('deleted_at', null)
     .not('pinned_at', 'is', null)
@@ -150,43 +159,36 @@ export async function fetchChatMessages(roomId: string, limit = CHAT_MESSAGE_LIM
 export async function sendChatMessage(
   roomId: string,
   body: string,
-  replyToMessageId?: string | null
+  replyToMessageId?: string | null,
+  imageUrl?: string | null
 ): Promise<ChatMessage> {
-  const trimmedBody = body.trim();
-  const query = (supabase
-    .from('chat_messages') as any)
-    .insert({
-      room_id: roomId,
-      body: trimmedBody,
-      reply_to_message_id: replyToMessageId ?? null,
-    })
-    .select(CHAT_MESSAGE_PIN_SELECT)
-    .single();
-  const { data, error } = await query;
-
-  if (error) {
-    if (isMissingPinnedColumnError(error)) {
-      const { data: fallbackData, error: fallbackError } = await (supabase
-        .from('chat_messages') as any)
-        .insert({
-          room_id: roomId,
-          body: trimmedBody,
-          reply_to_message_id: replyToMessageId ?? null,
-        })
-        .select(CHAT_MESSAGE_BASE_SELECT)
-        .single();
-
-      if (fallbackError) {
-        throw fallbackError;
-      }
-
-      return normalizeChatMessages([fallbackData as ChatMessage])[0];
-    }
-
-    throw error;
-  }
-
+  const row: Record<string, unknown> = {
+    room_id: roomId,
+    body: body.trim(),
+    reply_to_message_id: replyToMessageId ?? null,
+  };
+  if (imageUrl) row.image_url = imageUrl;
+  const { data } = await selectWithFallback((columns) =>
+    (supabase.from('chat_messages') as any).insert(row).select(columns).single()
+  );
   return normalizeChatMessages([data as ChatMessage])[0];
+}
+
+/** Admin only: storage policies reject anyone else. Returns the public URL to send with the message. */
+export async function uploadChatImage(file: File, userId: string): Promise<string> {
+  if (!(CHAT_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+    throw new Error('Photos must be PNG, JPG, WebP or GIF.');
+  }
+  if (file.size > CHAT_IMAGE_MAX_BYTES) {
+    throw new Error('Photos must be 5MB or smaller.');
+  }
+  const ext = file.type.split('/')[1].replace('jpeg', 'jpg');
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+  const { error } = await supabase.storage
+    .from(CHAT_IMAGE_BUCKET)
+    .upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: false });
+  if (error) throw error;
+  return supabase.storage.from(CHAT_IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 export async function deleteChatMessage(messageId: string): Promise<ChatMessage> {
