@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T17:58:54.507Z",
+  "generatedAt": "2026-10-15T17:46:28.419Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
@@ -47,6 +47,15 @@
       "injury": "Lower Limb",
       "returning": "Round 4-6",
       "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "Brisbane Bullets",
+      "player": "Arnas Velicka",
+      "injury": "Lower limb",
+      "returning": "Early December",
+      "status": "Out",
+      "note": "Brisbane confirmed on Monday 12 October 2026 that Velicka has been ruled out with a lower limb injury and is expected to return at the start of December; the NBL’s list of 13 October has him back in Rounds 11 to 12. He was hurt in the Bullets’ game against the Cairns Taipans on Thursday 8 October. Brisbane have signed Raul Neto as his injury replacement player, the NBL announced on 13 October. Olgun Uluc of ESPN had reported on 10 October, citing sources, a quad injury of about eight weeks. Velicka was averaging 13.8 points and a league-leading 10.2 assists in NBL27.",
       "listedByNbl": true
     },
     {
@@ -146,14 +155,6 @@
       "returning": "Season",
       "status": "Out for the season",
       "note": "Perth have confirmed a successful reconstruction of a torn ACL in his right knee and say he is expected to miss the entirety of the 2026-27 season. He is a development player, announced by the club on 9 June 2026, and is not in our 12-man projected Perth depth chart. The NBL added him to its own list in the 21 September 2026 refresh.",
-      "listedByNbl": true
-    },
-    {
-      "team": "South East Melbourne Phoenix",
-      "player": "Daniel Foster",
-      "injury": "Back",
-      "returning": "TBC",
-      "status": "Out",
       "listedByNbl": true
     },
     {

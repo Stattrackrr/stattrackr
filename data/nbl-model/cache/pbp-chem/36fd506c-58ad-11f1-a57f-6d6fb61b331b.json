@@ -1,0 +1,642 @@
+{
+  "fixtureId": "36fd506c-58ad-11f1-a57f-6d6fb61b331b",
+  "homeTeam": "Brisbane Bullets",
+  "awayTeam": "South East Melbourne Phoenix",
+  "homeTeamCode": "BRI",
+  "awayTeamCode": "SEM",
+  "lineupValid": false,
+  "players": [
+    {
+      "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+      "name": "Akech Aliir",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5ec9c9d2-410d-11f0-a085-9dbbf7342624",
+          "name": "Patrick Ryan",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+      "name": "Angus Glover",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 9,
+      "assistedMakes": 3,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+      "name": "D'Shawn Schwartz",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+      "name": "Dash Daniels",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 5,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5ec9c9d2-410d-11f0-a085-9dbbf7342624",
+          "name": "Patrick Ryan",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "1cea90ee-4809-11f0-b563-ed9943899ab6",
+      "name": "Jacob Holt",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 4,
+      "assistedMakes": 3,
+      "assists": 1,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+          "name": "Max Mackinnon",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+          "name": "Mitch Norton",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+      "name": "Jaylin Williams",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 8,
+      "assistedMakes": 7,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+          "name": "Max Mackinnon",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+          "name": "Max Mackinnon",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+          "name": "Mitch Norton",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
+          "name": "Tyrell Harrison",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "506a8485-410d-11f0-8bae-9dbbf7342624",
+      "name": "Lat Mayen",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+          "name": "Max Mackinnon",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
+          "name": "Tyrell Harrison",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+          "name": "Max Mackinnon",
+          "count": 2,
+          "pts": 5
+        }
+      ]
+    },
+    {
+      "personId": "3d90487d-78c8-11f0-97f8-a75e0a32dc9a",
+      "name": "Mawot Mag",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+          "name": "Mitch Norton",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+      "name": "Max Mackinnon",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 9,
+      "assistedMakes": 6,
+      "assists": 8,
+      "ptsCreated": 17,
+      "finds": [
+        {
+          "personId": "1cea90ee-4809-11f0-b563-ed9943899ab6",
+          "name": "Jacob Holt",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "506a8485-410d-11f0-8bae-9dbbf7342624",
+          "name": "Lat Mayen",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+          "name": "Mitch Norton",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "506a8485-410d-11f0-8bae-9dbbf7342624",
+          "name": "Lat Mayen",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
+          "name": "Tyrell Harrison",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+      "name": "Mitch Norton",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 4,
+      "assistedMakes": 1,
+      "assists": 9,
+      "ptsCreated": 18,
+      "finds": [
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+          "name": "Max Mackinnon",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
+          "name": "Tyrell Harrison",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "1cea90ee-4809-11f0-b563-ed9943899ab6",
+          "name": "Jacob Holt",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "3d90487d-78c8-11f0-97f8-a75e0a32dc9a",
+          "name": "Mawot Mag",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+      "name": "Nate Hinton",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 7,
+      "assistedMakes": 2,
+      "assists": 5,
+      "ptsCreated": 11,
+      "finds": [
+        {
+          "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
+          "name": "Tyrell Harrison",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+          "name": "Mitch Norton",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+          "name": "Max Mackinnon",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+          "name": "Max Mackinnon",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "2c0893be-410d-11f0-87e6-975350631782",
+      "name": "Nathan Sobey",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 4,
+      "assistedMakes": 1,
+      "assists": 3,
+      "ptsCreated": 7,
+      "finds": [
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "5ec9c9d2-410d-11f0-a085-9dbbf7342624",
+      "name": "Patrick Ryan",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+      "name": "Skylar Mays",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 6,
+      "assistedMakes": 2,
+      "assists": 6,
+      "ptsCreated": 14,
+      "finds": [
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+      "name": "Tanner Krebs",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 5,
+      "assistedMakes": 3,
+      "assists": 2,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
+      "name": "Tyrell Harrison",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 7,
+      "assistedMakes": 5,
+      "assists": 4,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "6b64f080-410d-11f0-84d8-9dbbf7342624",
+          "name": "Max Mackinnon",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+          "name": "Mitch Norton",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "506a8485-410d-11f0-8bae-9dbbf7342624",
+          "name": "Lat Mayen",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+      "name": "Yannis Morin",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    }
+  ],
+  "onOff": [],
+  "fetchedAt": "2026-10-15T17:46:32.608Z"
+}

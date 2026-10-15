@@ -1,17 +1,17 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-14T17:58:43.670Z",
+  "generatedAt": "2026-10-15T17:46:20.613Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 160,
-  "gameRows": 602,
+  "playerCount": 161,
+  "gameRows": 622,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
       "name": "Akech Aliir",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/92012cd9-65dd-47f1-a51e-a6b5169bf359-2026.json"
     },
     {
@@ -51,7 +51,7 @@
       "name": "Angus Glover",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/79fe0730-aca0-4167-97cc-1ef09514cc66-2026.json"
     },
     {
@@ -275,7 +275,7 @@
       "name": "D'Shawn Schwartz",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/6c3024b9-ffb8-4a9d-bb23-1e99191f98b9-2026.json"
     },
     {
@@ -291,7 +291,7 @@
       "name": "Daniel Foster",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 3,
+      "gameCount": 4,
       "cacheFile": "nbl-model/cache/player-logs/b151cb86-4bf1-4b47-8b0c-14c0b9f51604-2026.json"
     },
     {
@@ -315,7 +315,7 @@
       "name": "Dash Daniels",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/d92ec6d5-b731-476a-b4a4-10cc36211bf5-2026.json"
     },
     {
@@ -403,7 +403,7 @@
       "name": "Harry Rouhliadeff",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/2d1e9f7f-e241-4797-8b2f-70472f07f4c8-2026.json"
     },
     {
@@ -467,7 +467,7 @@
       "name": "Jacob Holt",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/00e61e90-d1f1-4ec8-8a72-e7b04c0e5c0b-2026.json"
     },
     {
@@ -523,7 +523,7 @@
       "name": "Jaylin Williams",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/a13a2ea7-3918-4cd3-93d2-a33703ce234d-2026.json"
     },
     {
@@ -635,7 +635,7 @@
       "name": "Joshua Duach",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/a63a2562-0d24-4d73-8e3c-51fc9830134b-2026.json"
     },
     {
@@ -779,7 +779,7 @@
       "name": "Lat Mayen",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/2337cf0e-9ee7-439d-8aec-770b3876368c-2026.json"
     },
     {
@@ -891,7 +891,7 @@
       "name": "Mawot Mag",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/b3b5ecb0-ba46-4821-9e2b-6e4180a30f95-2026.json"
     },
     {
@@ -899,7 +899,7 @@
       "name": "Max Mackinnon",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/9b04b8b2-c234-4c8e-8653-d896d66267a9-2026.json"
     },
     {
@@ -915,7 +915,7 @@
       "name": "Mitch Norton",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/2e2291aa-36b6-4928-b348-0f5951fbc3b4-2026.json"
     },
     {
@@ -931,7 +931,7 @@
       "name": "Nate Hinton",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/aeb4d203-4032-44a5-a412-584f007d6dfb-2026.json"
     },
     {
@@ -939,7 +939,7 @@
       "name": "Nathan Sobey",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 4,
+      "gameCount": 5,
       "cacheFile": "nbl-model/cache/player-logs/7f6e18b2-6494-41c7-9791-d72c632317d5-2026.json"
     },
     {
@@ -987,7 +987,7 @@
       "name": "Patrick Ryan",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 3,
+      "gameCount": 4,
       "cacheFile": "nbl-model/cache/player-logs/9b71131b-787a-475d-aa1b-00dc4394f5e2-2026.json"
     },
     {
@@ -1013,6 +1013,14 @@
       "teamCode": "ADL",
       "gameCount": 0,
       "cacheFile": "nbl-model/cache/player-logs/ae8a3211-24db-4a85-8f0f-73e2082f5aa3-2026.json"
+    },
+    {
+      "playerId": "006371b2-9a3f-4d04-8057-723db3ee6042",
+      "name": "Raul Neto",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "gameCount": 0,
+      "cacheFile": "nbl-model/cache/player-logs/006371b2-9a3f-4d04-8057-723db3ee6042-2026.json"
     },
     {
       "playerId": "95352144-95bb-4154-963a-b3b90dd915a4",
@@ -1115,7 +1123,7 @@
       "name": "Skylar Mays",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/05e12749-7b66-44f8-84f7-f437fc90dfb6-2026.json"
     },
     {
@@ -1147,7 +1155,7 @@
       "name": "Tanner Krebs",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/a793b9cb-fb83-4554-8672-f35ccd77d6b1-2026.json"
     },
     {
@@ -1211,7 +1219,7 @@
       "name": "Tyrell Harrison",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/fb85d99d-86ac-46f7-b60d-ea33ae00a9fd-2026.json"
     },
     {
@@ -1275,7 +1283,7 @@
       "name": "Yannis Morin",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/5f85917c-1552-4800-b64a-48cf1023c60c-2026.json"
     },
     {
