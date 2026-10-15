@@ -307,6 +307,7 @@ export default function ChatPageClient() {
   const [messageCooldownUntil, setMessageCooldownUntil] = useState<number | null>(null);
   const [composerValue, setComposerValue] = useState('');
   const [composerImage, setComposerImage] = useState<{ file: File; preview: string } | null>(null);
+  const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
 
@@ -1015,6 +1016,17 @@ export default function ChatPageClient() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!expandedImageUrl) {
+      return;
+    }
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') setExpandedImageUrl(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [expandedImageUrl]);
+
   const clearComposerImage = useCallback(() => {
     setComposerImage((current) => {
       if (current) URL.revokeObjectURL(current.preview);
@@ -1653,14 +1665,19 @@ export default function ChatPageClient() {
                                 ) : (
                                   <>
                                     {message.image_url ? (
-                                      <a href={message.image_url} target="_blank" rel="noopener noreferrer" className="mt-1.5 block">
+                                      <button
+                                        type="button"
+                                        onClick={() => setExpandedImageUrl(message.image_url)}
+                                        className="mt-1.5 block cursor-zoom-in"
+                                        aria-label="Expand photo"
+                                      >
                                         <img
                                           src={message.image_url}
                                           alt="Photo"
                                           loading="lazy"
                                           className="max-h-80 w-auto max-w-full rounded-xl object-contain"
                                         />
-                                      </a>
+                                      </button>
                                     ) : null}
                                     {message.body ? (
                                       <p className={`mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-snug ${isOwnMessage ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
@@ -2059,6 +2076,30 @@ export default function ChatPageClient() {
         loadBets={loadAiRecordBets}
         subtitle="Stattrackr AI units performance. Every pick is graded automatically."
       />
+      {expandedImageUrl ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo"
+          onClick={() => setExpandedImageUrl(null)}
+          className="fixed inset-0 z-[100] flex cursor-zoom-out items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+        >
+          <button
+            type="button"
+            onClick={() => setExpandedImageUrl(null)}
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+            aria-label="Close photo"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <img
+            src={expandedImageUrl}
+            alt="Photo"
+            onClick={(event) => event.stopPropagation()}
+            className="max-h-[90vh] max-w-[95vw] cursor-default rounded-xl object-contain shadow-2xl"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
