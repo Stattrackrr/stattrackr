@@ -360,9 +360,10 @@ export const sharedCache = {
     }
     memory.delete(key);
   },
-  async setJSON(key: string, value: any, ttlSeconds: number): Promise<void> {
+  /** `skipMemory`: with Redis configured, don't also keep the value in this process (caller caches it). */
+  async setJSON(key: string, value: any, ttlSeconds: number, opts?: { skipMemory?: boolean }): Promise<void> {
     const exp = ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : 0;
-    memory.set(key, { v: value, exp });
+    if (!(opts?.skipMemory && HAS_UPSTASH)) memory.set(key, { v: value, exp });
     if (!HAS_UPSTASH) return;
     try {
       const { body, skipped } = encodeUpstashValue(value);

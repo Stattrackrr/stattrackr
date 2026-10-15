@@ -5,6 +5,7 @@
  */
 import { createHash } from 'crypto';
 import { sharedCache } from '@/lib/sharedCache';
+import { nbaDashCached } from './responseCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getNbaClubByCode, getNbaClubById, NBA_CURRENT_SEASON_YEAR } from './teams';
 import type { NbaGameLogRow, NbaLeaguePlayerStatRow } from './types';
@@ -488,7 +489,9 @@ async function writeSeasonSnapshot(season: number, rows: SeasonRows, builtAt: nu
   const packed = packNbaSeasonRows(rows, builtAt);
   const writes: Array<Promise<void>> = [];
   for (const table of SNAPSHOT_TABLES) {
-    packed[table].forEach((part, idx) => writes.push(sharedCache.setJSON(snapshotPartKey(season, table, idx), part, ttl)));
+    packed[table].forEach((part, idx) =>
+      writes.push(sharedCache.setJSON(snapshotPartKey(season, table, idx), part, ttl, { skipMemory: true }))
+    );
   }
   await Promise.all(writes);
   const meta: SnapshotMeta = {
@@ -614,21 +617,17 @@ export function getNbaSeasonDataset(season: number): Promise<NbaSeasonDataset> {
   return promise;
 }
 
-const seasonHasGamesCache = new Map<number, { at: number; value: boolean }>();
-
 async function seasonHasGames(season: number): Promise<boolean> {
-  const hit = seasonHasGamesCache.get(season);
-  if (hit && Date.now() - hit.at < CURRENT_TTL_MS) return hit.value;
-  const { data, error } = await supabaseAdmin
-    .from('nba_games')
-    .select('id')
-    .eq('season', season)
-    .eq('status_state', 'final')
-    .limit(1);
-  if (error) throw new Error(error.message);
-  const value = (data?.length ?? 0) > 0;
-  seasonHasGamesCache.set(season, { at: Date.now(), value });
-  return value;
+  return nbaDashCached('season-has-games', [season], { freshSeconds: 10 * 60, maxAgeSeconds: 60 * 60 }, async () => {
+    const { data, error } = await supabaseAdmin
+      .from('nba_games')
+      .select('id')
+      .eq('season', season)
+      .eq('status_state', 'final')
+      .limit(1);
+    if (error) throw new Error(error.message);
+    return (data?.length ?? 0) > 0;
+  });
 }
 
 /**

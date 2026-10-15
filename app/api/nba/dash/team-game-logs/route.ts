@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { NBA_DASH_CACHE, nbaDashCached } from '@/lib/nba/dash/responseCache';
 import { loadNbaTeamGameLogs } from '@/lib/nba/dash/server';
 import { NBA_CHART_HISTORY_YEARS, resolveNbaClubName } from '@/lib/nba/dash/teams';
 
@@ -14,7 +15,9 @@ export async function GET(request: NextRequest) {
     ? yearsParam.split(',').map(Number).filter((y) => Number.isFinite(y))
     : [...NBA_CHART_HISTORY_YEARS];
   try {
-    const games = await loadNbaTeamGameLogs(team, years);
+    const games = await nbaDashCached('team-game-logs', [team.toLowerCase(), years], NBA_DASH_CACHE.teamLogs, () =>
+      loadNbaTeamGameLogs(team, years)
+    );
     return NextResponse.json(
       { team, years, gameCount: games.length, games },
       { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=1800' } }

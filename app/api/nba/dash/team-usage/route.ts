@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadNbaTeamUsage } from '@/lib/nba/dash/leagueCards';
+import { NBA_DASH_CACHE, nbaDashCached } from '@/lib/nba/dash/responseCache';
 import { resolveNbaDataSeason } from '@/lib/nba/dash/season';
 
 export const dynamic = 'force-dynamic';
@@ -22,15 +23,21 @@ export async function GET(request: NextRequest) {
   const ww = String(sp.get('ww') || '').trim().toLowerCase();
   try {
     const year = await resolveNbaDataSeason(tf.year ?? (Number.isFinite(yearParam) && yearParam > 0 ? yearParam : null));
-    const { players, sampleGames } = await loadNbaTeamUsage({
+    const opts = {
       team,
       year,
       lastN: tf.lastN,
       includePlayerId: String(sp.get('playerId') || '').trim() || null,
       teammatePlayerId: String(sp.get('teammateId') || '').trim() || null,
       teammateName: String(sp.get('teammateName') || '').trim() || null,
-      teammateMode: ww === 'without' ? 'without' : ww === 'with' ? 'with' : null,
-    });
+      teammateMode: ww === 'without' ? ('without' as const) : ww === 'with' ? ('with' as const) : null,
+    };
+    const { players, sampleGames } = await nbaDashCached(
+      'team-usage',
+      [{ ...opts, team: team.toLowerCase(), teammateName: opts.teammateName?.toLowerCase() ?? null }],
+      NBA_DASH_CACHE.league,
+      () => loadNbaTeamUsage(opts)
+    );
     return NextResponse.json({ team, year, lastN: tf.lastN, sampleGames, players });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message, players: [] }, { status: 500 });

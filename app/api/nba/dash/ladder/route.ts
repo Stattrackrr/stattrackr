@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { NBA_DASH_CACHE, nbaDashCached } from '@/lib/nba/dash/responseCache';
 import { loadNbaLadder } from '@/lib/nba/dash/server';
 import { NBA_CURRENT_SEASON_YEAR, nbaSeasonLabel } from '@/lib/nba/dash/teams';
 
@@ -10,12 +11,20 @@ export async function GET(request: NextRequest) {
   const requested = raw == null ? NaN : Number(raw);
   try {
     const year = Number.isFinite(requested) ? requested : NBA_CURRENT_SEASON_YEAR;
-    let ladder = await loadNbaLadder(year);
-    let shown = year;
-    if (!ladder.played && !Number.isFinite(requested)) {
-      shown = year - 1;
-      ladder = await loadNbaLadder(shown);
-    }
+    const { ladder, shown } = await nbaDashCached(
+      'ladder',
+      [Number.isFinite(requested) ? requested : null],
+      NBA_DASH_CACHE.ladder,
+      async () => {
+        let ladder = await loadNbaLadder(year);
+        let shown = year;
+        if (!ladder.played && !Number.isFinite(requested)) {
+          shown = year - 1;
+          ladder = await loadNbaLadder(shown);
+        }
+        return { ladder, shown };
+      }
+    );
     if (!ladder.played) {
       return NextResponse.json({ error: 'NBA ladder unavailable', year, teams: [] }, { status: 404 });
     }

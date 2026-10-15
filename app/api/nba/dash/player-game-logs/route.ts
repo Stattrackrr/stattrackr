@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { NBA_DASH_CACHE, nbaDashCached } from '@/lib/nba/dash/responseCache';
 import { loadNbaPlayerGameLogs, loadNbaPlayerMeta } from '@/lib/nba/dash/server';
 import { getNbaClubById, NBA_CHART_HISTORY_YEARS, NBA_CURRENT_SEASON_YEAR, nbaSeasonLabel } from '@/lib/nba/dash/teams';
 
@@ -28,9 +29,9 @@ export async function GET(request: NextRequest) {
   }
   const years = parseYears(request);
   try {
-    const [games, meta] = await Promise.all([loadNbaPlayerGameLogs(playerId, years), loadNbaPlayerMeta(playerId)]);
-    return NextResponse.json(
-      {
+    const payload = await nbaDashCached('player-game-logs', [playerId, years], NBA_DASH_CACHE.playerLogs, async () => {
+      const [games, meta] = await Promise.all([loadNbaPlayerGameLogs(playerId, years), loadNbaPlayerMeta(playerId)]);
+      return {
         playerId,
         name: meta?.full_name ?? null,
         team: getNbaClubById(meta?.team_id)?.name ?? null,
@@ -41,9 +42,11 @@ export async function GET(request: NextRequest) {
         source: 'supabase',
         gameCount: games.length,
         games,
-      },
-      { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=1800' } }
-    );
+      };
+    });
+    return NextResponse.json(payload, {
+      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=1800' },
+    });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message, games: [] }, { status: 500 });
   }

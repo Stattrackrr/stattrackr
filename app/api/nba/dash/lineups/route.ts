@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { NBA_DASH_CACHE, nbaDashCached } from '@/lib/nba/dash/responseCache';
 import { loadNbaLineups } from '@/lib/nba/dash/server';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +9,9 @@ export async function GET(request: NextRequest) {
   const team = request.nextUrl.searchParams.get('team')?.trim() || '';
   if (!team) return NextResponse.json({ error: 'Missing team' }, { status: 400 });
   try {
-    const result = await loadNbaLineups(team);
+    const result = await nbaDashCached('lineups', [team.toLowerCase()], NBA_DASH_CACHE.lineups, () =>
+      loadNbaLineups(team)
+    );
     if (!result) {
       return NextResponse.json({ error: `No completed-game lineup found for "${team}"` }, { status: 404 });
     }

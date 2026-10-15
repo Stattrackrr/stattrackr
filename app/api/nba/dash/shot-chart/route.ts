@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { NBA_DASH_CACHE, nbaDashCached } from '@/lib/nba/dash/responseCache';
 import { emptyZoneStats, loadNbaDefenseShotChart, loadNbaPlayerShotChart } from '@/lib/nba/dash/shotChart';
 import { NBA_SHOT_CHART_CACHE_YEARS, NBA_SHOT_CHART_SEASON_YEAR } from '@/lib/nba/dash/teams';
 
@@ -30,7 +31,9 @@ export async function GET(request: NextRequest) {
     if (mode === 'defense') {
       const team = String(sp.get('team') || '').trim();
       if (!team) return NextResponse.json({ error: 'team is required for defense mode' }, { status: 400 });
-      const data = await loadNbaDefenseShotChart(team, years);
+      const data = await nbaDashCached('shot-chart-defense', [team.toLowerCase(), years], NBA_DASH_CACHE.league, () =>
+        loadNbaDefenseShotChart(team, years)
+      );
       if (!data || data.shotCount <= 0) {
         return NextResponse.json({
           ...base,
@@ -50,7 +53,12 @@ export async function GET(request: NextRequest) {
     const playerName = String(sp.get('playerName') || sp.get('player') || '').trim();
     if (!playerName) return NextResponse.json({ error: 'playerName is required' }, { status: 400 });
     const team = String(sp.get('team') || '').trim() || null;
-    const data = await loadNbaPlayerShotChart(playerName, team, years);
+    const data = await nbaDashCached(
+      'shot-chart-player',
+      [playerName.toLowerCase(), team?.toLowerCase() ?? null, years],
+      NBA_DASH_CACHE.league,
+      () => loadNbaPlayerShotChart(playerName, team, years)
+    );
     if (!data || data.shotCount <= 0) {
       return NextResponse.json({
         ...base,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { NBA_DASH_CACHE, nbaDashCached } from '@/lib/nba/dash/responseCache';
 import { loadNbaNextGame } from '@/lib/nba/dash/server';
 import { NBA_CURRENT_SEASON_YEAR, nbaSeasonLabel } from '@/lib/nba/dash/teams';
 
@@ -9,7 +10,9 @@ export async function GET(request: NextRequest) {
   const team = String(request.nextUrl.searchParams.get('team') || '').trim();
   if (!team) return NextResponse.json({ error: 'team query param is required' }, { status: 400 });
   try {
-    const next = await loadNbaNextGame(team);
+    const next = await nbaDashCached('next-game', [team.toLowerCase()], NBA_DASH_CACHE.nextGame, () =>
+      loadNbaNextGame(team)
+    );
     const year = next?.year ?? NBA_CURRENT_SEASON_YEAR;
     return NextResponse.json(
       {

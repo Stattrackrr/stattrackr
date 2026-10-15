@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { NBA_DASH_CACHE, nbaDashCached } from '@/lib/nba/dash/responseCache';
 import { loadNbaRoster } from '@/lib/nba/dash/server';
 import { NBA_CURRENT_SEASON_YEAR, nbaSeasonLabel } from '@/lib/nba/dash/teams';
 
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
 /** GET /api/nba/dash/players — active NBA players with their current team (search roster). */
 export async function GET() {
   try {
-    const players = await loadNbaRoster();
+    const players = await nbaDashCached('players', [], NBA_DASH_CACHE.roster, () => loadNbaRoster());
     return NextResponse.json(
       {
         year: NBA_CURRENT_SEASON_YEAR,
