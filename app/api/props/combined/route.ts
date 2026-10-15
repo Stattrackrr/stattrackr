@@ -8,6 +8,8 @@ import {
   slimCombinedPropsSnapshotForClient,
 } from '@/lib/combinedPropsSnapshotPaint';
 import type { CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
+import { getNbaPlayerPropsList } from '@/lib/nba/dash/playerPropsList';
+import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { getNblPlayerPropsList } from '@/lib/nbl/playerPropsList';
 import { applyTennisListLiveOverlay, type TennisPlayerPropsListPayload } from '@/lib/tennis/playerPropsList';
 
@@ -79,6 +81,43 @@ async function attachCachedNblList(
   };
 }
 
+/** NBA rows come only from the cron-built list (tagged); legacy-pipeline rows are dropped. */
+async function attachCachedNbaList(
+  snapshot: CombinedPropsSnapshot
+): Promise<CombinedPropsSnapshot> {
+  const empty: CombinedPropsSnapshot['nba'] = {
+    ok: false,
+    status: 204,
+    cached: true,
+    lastUpdated: null,
+    gameDate: null,
+    props: [],
+    noNbaOdds: true,
+    games: [],
+  };
+  if (!NBA_PUBLIC_ENABLED) return { ...snapshot, nba: empty };
+  const payload = await getNbaPlayerPropsList();
+  if (payload.data.length) {
+    return {
+      ...snapshot,
+      nba: {
+        ok: true,
+        status: 200,
+        cached: true,
+        lastUpdated: payload.lastUpdated ?? null,
+        gameDate: payload.games[0]?.commenceTime ?? null,
+        nextUpdate: payload.nextUpdate ?? null,
+        ingestMessage: payload.ingestMessage ?? null,
+        noNbaOdds: false,
+        games: payload.games,
+        props: payload.data,
+      },
+    };
+  }
+  const tagged = (snapshot.nba?.props || []).filter((p) => p.sportSource === 'nba');
+  return { ...snapshot, nba: tagged.length ? { ...snapshot.nba, props: tagged } : empty };
+}
+
 /**
  * The stored slice keeps whatever tournament it was built with. Apply the same read overlay as the
  * tennis list so a player shows their next unplayed match, not an event they already left.
@@ -123,12 +162,14 @@ export async function GET(request: NextRequest) {
       : filterCombinedSnapshotAflEligibility(
           paintSnapshot || slimCombinedPropsSnapshotForClient(source)
         );
-    const [withTennis, withNbl] = await Promise.all([
+    const [withTennis, withNbl, withNba] = await Promise.all([
       attachCachedTennisSlice(painted).then(withLiveTennisOverlay),
       attachCachedNblList(painted),
+      attachCachedNbaList(painted),
     ]);
     const merged: CombinedPropsSnapshot = {
       ...painted,
+      nba: withNba.nba,
       tennis: withTennis.tennis,
       nbl: withNbl.nbl,
     };

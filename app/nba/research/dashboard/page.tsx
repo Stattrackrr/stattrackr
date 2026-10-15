@@ -78,10 +78,6 @@ import { countPostedOddsLines } from '@/lib/dashboardStatLineCounts';
 import { normalizeNbaDashStat as normalizeNbaStat } from '@/lib/nba/dash/stats';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { readNbaNextGamePrefetch, writeNbaNextGamePrefetch } from '@/lib/nba/dash/nextGamePrefetch';
-import {
-  NBA_PLAY_TYPE_FULL_LABELS,
-  type NbaPlayTypeId,
-} from '@/lib/nba/dash/playTypesShared';
 
 /** Basketball tipoff LIVE window (~2.5h). */
 const NBA_MATCH_DURATION_MS = 2.5 * 60 * 60 * 1000;
@@ -455,7 +451,6 @@ export default function NbaDashboardPage() {
         : null,
   });
   const [selectedPlayerGameLogs, setSelectedPlayerGameLogs] = useState<NbaGameLogRow[]>([]);
-  const [playerPlayTypeLabel, setPlayerPlayTypeLabel] = useState<string | null>(null);
   const [selectedTeamGameLogs, setSelectedTeamGameLogs] = useState<Array<Record<string, unknown>>>([]);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [statsLoadingForTeam, setStatsLoadingForTeam] = useState(false);
@@ -936,32 +931,6 @@ export default function NbaDashboardPage() {
       cancelled = true;
     };
   }, [selectedPlayer?.playerId, loadingPlayerFromUrl]);
-
-  useEffect(() => {
-    if (nbaPropsMode !== 'player' || !selectedPlayer?.playerId) {
-      setPlayerPlayTypeLabel(null);
-      return;
-    }
-    const playerId = selectedPlayer.playerId;
-    let cancelled = false;
-    fetch(`/api/nba/dash/play-types?playerId=${encodeURIComponent(playerId)}&stat=points`)
-      .then(async (r) => {
-        const json = await r.json();
-        if (!r.ok) throw new Error(json?.error || 'Failed to load play type');
-        return json;
-      })
-      .then((data) => {
-        if (cancelled) return;
-        const type = data?.player?.type as NbaPlayTypeId | undefined;
-        setPlayerPlayTypeLabel(type ? NBA_PLAY_TYPE_FULL_LABELS[type] ?? null : null);
-      })
-      .catch(() => {
-        if (!cancelled) setPlayerPlayTypeLabel(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [nbaPropsMode, selectedPlayer?.playerId]);
 
   // DvP position: ESPN depth chart slot, else the roster position.
   const [dvpPosition, setDvpPosition] = useState<NbaDvpPosition | null>(null);
@@ -1502,7 +1471,6 @@ export default function NbaDashboardPage() {
       : loadingPlayerFromUrl ||
         (!!selectedPlayer && (statsLoadingForPlayer || !chartDelayElapsed));
   const pulse = isDark ? 'bg-gray-800' : 'bg-gray-200';
-
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
       <LoadingBar isLoading={navigatingToProps} isDark={isDark} showImmediately={navigatingToProps} mobileOffset={0} />
@@ -1636,11 +1604,6 @@ export default function NbaDashboardPage() {
                                 Position: {selectedPlayer.position}
                               </div>
                             ) : null}
-                            {nbaPropsMode === 'player' && playerPlayTypeLabel ? (
-                              <div className="text-xs text-gray-600 dark:text-gray-400">
-                                {playerPlayTypeLabel}
-                              </div>
-                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -1756,12 +1719,9 @@ export default function NbaDashboardPage() {
                                   {headerSubtitle || '—'}
                                 </div>
                               ) : null}
-                              {nbaPropsMode === 'player' &&
-                              (selectedPlayer?.position || playerPlayTypeLabel) ? (
+                              {nbaPropsMode === 'player' && selectedPlayer?.position ? (
                                 <div className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                                  {[selectedPlayer?.position, playerPlayTypeLabel]
-                                    .filter(Boolean)
-                                    .join(' - ')}
+                                  {selectedPlayer.position}
                                 </div>
                               ) : null}
                             </div>
@@ -1822,8 +1782,7 @@ export default function NbaDashboardPage() {
                               </span>
                             </div>
                           )}
-                        </div>
-                      </div>
+                        </div>                      </div>
                     </div>
                   </div>
                 </div>

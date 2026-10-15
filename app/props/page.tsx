@@ -1062,6 +1062,55 @@ function TipoffCountdown({
   );
 }
 
+function nbaTeamCode(team: string | null | undefined): string {
+  const t = String(team || '').trim();
+  if (!t) return '';
+  if (t.length <= 3) return t.toUpperCase();
+  return TEAM_FULL_TO_ABBR[t] || t.toUpperCase();
+}
+
+/** NBA card matchup: AWAY @ HOME (home arena last), falling back to team vs opponent. */
+function NbaMatchupLine({
+  prop,
+  isDark,
+  compact = false,
+}: {
+  prop: PlayerProp;
+  isDark: boolean;
+  /** Mobile card header: logos only so the player name keeps its room. */
+  compact?: boolean;
+}) {
+  const home = nbaTeamCode(prop.homeTeamCode || '');
+  const away = nbaTeamCode(prop.awayTeamCode || '');
+  const hasVenue = Boolean(home && away);
+  const left = hasVenue ? away : nbaTeamCode(prop.team);
+  const right = hasVenue ? home : nbaTeamCode(prop.opponent);
+  const textClass = `text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
+  const team = (code: string) =>
+    code ? (
+      <span className="inline-flex items-center gap-1 flex-shrink-0">
+        <img
+          src={getEspnLogoUrl(code)}
+          alt={code}
+          className="w-5 h-5 object-contain"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+        {!compact && <span className={textClass}>{code}</span>}
+      </span>
+    ) : null;
+  return (
+    <span className="inline-flex items-center gap-1.5 min-w-0">
+      {team(left)}
+      <span className={`${compact ? 'text-[10px] leading-none' : 'text-xs'} flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+        {hasVenue ? '@' : 'vs'}
+      </span>
+      {team(right)}
+    </span>
+  );
+}
+
 function SportMark({
   sport,
   tour,
@@ -1084,9 +1133,11 @@ function SportMark({
       ? (tiny
           ? 'h-5 w-8 object-contain'
           : compact ? TENNIS_LOGO_MARK_COMPACT_CLASS : TENNIS_LOGO_MARK_CLASS)
-      : (tiny
+      : `${tiny
           ? 'w-5 h-5 object-contain'
-          : compact ? 'w-6 h-6 object-contain' : 'w-8 h-8 object-contain');
+          : compact ? 'w-6 h-6 object-contain' : 'w-8 h-8 object-contain'}${
+          sport === 'nba' ? ' scale-[1.35]' : ''
+        }`;
   const fallbackClass = compact
     ? `inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold border ${
         isAfl
@@ -1773,7 +1824,13 @@ function isNblPropsPlayerName(name: string | null | undefined): boolean {
 }
 
 function isNblListProp(row: PlayerProp): boolean {
+  if ((row as CombinedPlayerPropRow).sportSource === 'nba') return false;
   return isNblListPropStatType(row.statType) && isNblPropsPlayerName(row.playerName);
+}
+
+/** NBA rows from /api/nba/player-props/list carry server-computed stats; never backfill them. */
+function isServerBuiltNbaProp(row: PlayerProp): boolean {
+  return (row as CombinedPlayerPropRow).sportSource === 'nba';
 }
 
 function nblLineHasUnibet(prop: PlayerProp): boolean {
@@ -3420,6 +3477,7 @@ export default function NBALandingPage() {
     setPropsWithCalculatedStats(mergedNba.calculatedMap);
     setPropsLoading(false);
     setPropsProcessing(false);
+    setShowNoPropsMessage(Array.isArray(combinedSnapshot?.nba?.props) && mergedNba.props.length === 0);
 
     if (!keepSecondaryList) {
       setAflGames((prev) => {
@@ -5869,7 +5927,7 @@ export default function NBALandingPage() {
 
     const launchNbaProgressiveFetch = () => {
       if (NBA_PUBLIC_ENABLED && playerPropsRef.current.length === 0) {
-        void fetch('/api/nba/player-props', { cache: 'default' })
+        void fetch('/api/nba/player-props/list', { cache: 'no-store' })
           .then(async (nbaResponse) => {
             const nbaPayload = await nbaResponse.json().catch(() => null);
             if (!nbaResponse.ok || !Array.isArray(nbaPayload?.data) || nbaPayload.data.length === 0) return;
@@ -6296,7 +6354,7 @@ export default function NBALandingPage() {
         try {
           const [nbaResponse, aflResponse, tennisResponse, nblResponse] = await Promise.all([
             NBA_PUBLIC_ENABLED
-              ? fetch('/api/nba/player-props', { cache: forceRefresh ? 'no-store' : 'default' })
+              ? fetch('/api/nba/player-props/list', { cache: 'no-store' })
               : Promise.resolve(
                   new Response(JSON.stringify({ success: true, data: [] }), {
                     status: 200,
@@ -7293,6 +7351,7 @@ export default function NBALandingPage() {
     
     const calculateMissingStats = async () => {
       const propsToCalculate = paginatedPlayerProps.filter(prop => {
+        if (isServerBuiltNbaProp(prop)) return false;
         const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
         const needsCalculation = (prop.h2hAvg === null || prop.h2hAvg === undefined || prop.seasonAvg === null || prop.seasonAvg === undefined) &&
           prop.playerName && prop.statType && prop.opponent && prop.line !== undefined;
@@ -7446,6 +7505,15 @@ export default function NBALandingPage() {
         : propsSport === 'combined'
           ? combinedPaintUnlocked && activeFilteredCount > 0
           : activeFilteredCount > 0;
+
+  useEffect(() => {
+    if (propsSport !== 'nba' || playerProps.length > 0) {
+      if (playerProps.length > 0) setShowNoPropsMessage(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowNoPropsMessage(true), 8000);
+    return () => clearTimeout(timer);
+  }, [propsSport, playerProps.length]);
 
   const isPropsLoadingSkeleton = useMemo(() => {
     if (propsSport === 'combined') {
@@ -7717,9 +7785,13 @@ export default function NBALandingPage() {
           ? ((prop as CombinedPlayerPropRow).sportSource ?? 'nba')
           : propsSport;
       if (rowSport === 'nba') {
-        const bdlId = getPlayerIdFromName(prop.playerName);
-        const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null;
-        if (nbaId) warmImage(getPlayerHeadshotUrl(nbaId));
+        if (prop.headshotUrl) {
+          warmImage(prop.headshotUrl);
+        } else {
+          const bdlId = getPlayerIdFromName(prop.playerName);
+          const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null;
+          if (nbaId) warmImage(getPlayerHeadshotUrl(nbaId));
+        }
         const teamAbbr = (() => {
           if (!prop.team) return '';
           if (prop.team.length <= 3) return prop.team.toUpperCase();
@@ -8581,7 +8653,7 @@ export default function NBALandingPage() {
                   <img
                     src="/images/nba-logo.png"
                     alt=""
-                    className={sportSelectorLogoClass('nba')}
+                    className={sportSelectorLogoClass('nba', 'w-10 h-10 lg:w-12 lg:h-12 object-contain scale-[1.35]')}
                     loading="eager"
                     fetchPriority="high"
                     decoding="async"
@@ -9952,9 +10024,14 @@ export default function NBALandingPage() {
                               line: Number.isFinite(prop.line) ? prop.line : null,
                               bookmaker: prop.bookmaker,
                             });
-                            const bdlId = rowSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
+                            const bdlId = rowSport === 'nba' && !prop.headshotUrl ? getPlayerIdFromName(prop.playerName) : null;
                             const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null; // NBA Stats ID for headshot
-                            const headshotUrl = nbaId ? getPlayerHeadshotUrl(nbaId) : null;
+                            const headshotUrl =
+                              rowSport === 'nba' && prop.headshotUrl
+                                ? prop.headshotUrl
+                                : nbaId
+                                  ? getPlayerHeadshotUrl(nbaId)
+                                  : null;
                             const aflHeadshotUrl =
                               rowSport === 'afl'
                                 ? getAflPlayerHeadshotUrl(prop.playerName) ?? aflPortraitExtras[prop.playerName] ?? null
@@ -9974,21 +10051,6 @@ export default function NBALandingPage() {
                               if (team.length <= 3) return team.toUpperCase();
                               // Try to find abbreviation from full name
                               return TEAM_FULL_TO_ABBR[team] || team.toUpperCase();
-                            };
-                            // Normalize stat for dashboard URL so it lands on the right tab (e.g., steals -> stl)
-                            const normalizeStatForDashboard = (stat: string): string => {
-                              const upper = (stat || '').toUpperCase().trim();
-                              if (upper === 'THREES' || upper === '3PM' || upper === '3PM/A' || upper === 'FG3M') return 'fg3m';
-                              if (upper === 'PTS' || upper === 'POINTS') return 'pts';
-                              if (upper === 'REB' || upper === 'REBOUNDS') return 'reb';
-                              if (upper === 'AST' || upper === 'ASSISTS') return 'ast';
-                              if (upper === 'PRA') return 'pra';
-                              if (upper === 'PR') return 'pr';
-                              if (upper === 'PA') return 'pa';
-                              if (upper === 'RA') return 'ra';
-                              if (upper === 'STL' || upper === 'STEALS') return 'stl';
-                              if (upper === 'BLK' || upper === 'BLOCKS') return 'blk';
-                              return upper.toLowerCase();
                             };
                             const teamAbbr = normalizeTeam(prop.team);
                             const opponentAbbr = normalizeTeam(prop.opponent);
@@ -10013,6 +10075,7 @@ export default function NBALandingPage() {
                                 const href = propsDashboardHref({
                                   sport: 'nba',
                                   playerName: prop.playerName,
+                                  playerId: prop.playerId,
                                   statType: prop.statType,
                                   line:
                                     typeof lineValue === 'number' && Number.isFinite(lineValue)
@@ -10020,6 +10083,7 @@ export default function NBALandingPage() {
                                       : Number.isFinite(prop.line)
                                         ? prop.line
                                         : null,
+                                  bookmaker: bookmakerName || prop.bookmaker,
                                 });
                                 try {
                                   sessionStorage.removeItem('nba_dashboard_session_v1');
@@ -10192,8 +10256,7 @@ export default function NBALandingPage() {
                                   if (typeof window !== 'undefined') {
                                     safeSetSessionStorage('last_prop_click', JSON.stringify(clickData));
                                   }
-                                  const normalizedStat = normalizeStatForDashboard(prop.statType);
-                                  const finalUrl = `/nba/research/dashboard?player=${encodeURIComponent(prop.playerName)}&stat=${normalizedStat}&line=${prop.line.toString()}&tf=last10`;
+                                  const finalUrl = dashboardHref;
                                   if (typeof window !== 'undefined') {
                                     safeSetSessionStorage('last_prop_url', finalUrl);
                                   }
@@ -10433,10 +10496,7 @@ export default function NBALandingPage() {
                                             </div>
                                           );
                                         })() : (
-                                          <>
-                                            <img src={teamLogoUrl} alt={prop.team} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                            <img src={opponentLogoUrl} alt={prop.opponent} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                          </>
+                                          <NbaMatchupLine prop={prop} isDark={!!(mounted && isDark)} />
                                         )}
                                       </div>
                                     </div>
@@ -11494,9 +11554,14 @@ export default function NBALandingPage() {
                             line: Number.isFinite(prop.line) ? prop.line : null,
                             bookmaker: prop.bookmaker,
                           });
-                          const bdlId = rowSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
+                          const bdlId = rowSport === 'nba' && !prop.headshotUrl ? getPlayerIdFromName(prop.playerName) : null;
                           const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null;
-                          const headshotUrl = nbaId ? getPlayerHeadshotUrl(nbaId) : null;
+                          const headshotUrl =
+                            rowSport === 'nba' && prop.headshotUrl
+                              ? prop.headshotUrl
+                              : nbaId
+                                ? getPlayerHeadshotUrl(nbaId)
+                                : null;
                           const aflHeadshotUrl =
                             rowSport === 'afl'
                               ? getAflPlayerHeadshotUrl(prop.playerName) ?? aflPortraitExtras[prop.playerName] ?? null
@@ -11713,13 +11778,8 @@ export default function NBALandingPage() {
                                   sessionStorage.removeItem('nba_dashboard_session_v1');
                                   sessionStorage.setItem('from_props_page', 'true');
                                 } catch {}
-                                const params = new URLSearchParams();
-                                params.set('player', prop.playerName);
-                                params.set('stat', (prop.statType || '').toLowerCase());
-                                params.set('line', prop.line.toString());
-                                params.set('tf', 'last10');
                                 snapshotPropsPageBeforeLeave();
-                                router.push(`/nba/research/dashboard?${params.toString()}`);
+                                router.push(dashboardHref);
                                 setTimeout(() => {
                                   navigatingRef.current = false;
                                   setNavigatingToPlayer(false);
@@ -11903,28 +11963,7 @@ export default function NBALandingPage() {
                                             </>
                                           );
                                         })() : (
-                                          <>
-                                            {teamLogoUrl && (
-                                              <img
-                                                src={teamLogoUrl}
-                                                alt={prop.team}
-                                                className="w-5 h-5 object-contain"
-                                                onError={(e) => {
-                                                  (e.target as HTMLImageElement).style.display = 'none';
-                                                }}
-                                              />
-                                            )}
-                                            {opponentLogoUrl && (
-                                              <img
-                                                src={opponentLogoUrl}
-                                                alt={prop.opponent}
-                                                className="w-5 h-5 object-contain"
-                                                onError={(e) => {
-                                                  (e.target as HTMLImageElement).style.display = 'none';
-                                                }}
-                                              />
-                                            )}
-                                          </>
+                                          <NbaMatchupLine prop={prop} isDark={!!(mounted && isDark)} compact />
                                         )}
                                       </div>
                                     </div>

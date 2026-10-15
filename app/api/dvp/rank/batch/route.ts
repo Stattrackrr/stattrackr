@@ -73,13 +73,6 @@ export async function GET(request: NextRequest) {
             );
           
           if (hasValidMetrics) {
-            console.log(`[DVP Rank Batch] ✅ Supabase cache HIT for ${cacheKey}`, {
-              metricKeys: Object.keys(supabaseHit.metrics),
-              sampleMetric: supabaseHit.metrics.pts ? {
-                teamCount: Object.keys(supabaseHit.metrics.pts).length,
-                sampleTeams: Object.keys(supabaseHit.metrics.pts).slice(0, 5)
-              } : null
-            });
             cache.set(cacheKey, supabaseHit, CACHE_TTL.ADVANCED_STATS);
             return NextResponse.json(supabaseHit, {
               headers: {
@@ -155,31 +148,9 @@ export async function GET(request: NextRequest) {
           
           // The individual rank endpoint returns { success: true, ranks: {...} }
           const ranks = data.ranks || {};
-          
-          // Debug logging - always log to see what we're getting
-          console.log(`[DVP Rank Batch] Response for ${metric} (${pos}):`, {
-            success: data.success,
-            hasRanks: !!ranks,
-            rankCount: Object.keys(ranks).length,
-            sampleKeys: Object.keys(ranks).slice(0, 10),
-            sampleRanks: Object.fromEntries(Object.entries(ranks).slice(0, 5)),
-            // Log all team keys to see normalization
-            allTeamKeys: Object.keys(ranks).sort(),
-            // Verify ranks are numbers
-            sampleRankValues: Object.fromEntries(
-              Object.entries(ranks).slice(0, 5).map(([team, rank]) => [team, { rank, type: typeof rank }])
-            ),
-            fullResponse: data // Log full response to debug
-          });
-          
+
           if (!ranks || Object.keys(ranks).length === 0) {
-            console.error(`[DVP Rank Batch] ⚠️ No ranks returned for ${metric} (${pos}):`, {
-              success: data.success,
-              hasRanks: !!ranks,
-              rankCount: Object.keys(ranks).length,
-              error: data.error,
-              fullData: data
-            });
+            console.error(`[DVP Rank Batch] ⚠️ No ranks returned for ${metric} (${pos}):`, data.error ?? 'empty ranks');
           }
           
           return {
@@ -219,36 +190,11 @@ export async function GET(request: NextRequest) {
       }
       response.metrics[result.metric] = result.ranks;
     }
-    
-    // Debug: log final response structure
-    console.log(`[DVP Rank Batch] Final response structure:`, {
-      pos: response.pos,
-      games: response.games,
-      metricKeys: Object.keys(response.metrics),
-      totalMetrics: Object.keys(response.metrics).length,
-      sampleMetric: response.metrics.pts ? {
-        teamCount: Object.keys(response.metrics.pts).length,
-        sampleTeams: Object.keys(response.metrics.pts).slice(0, 5)
-      } : null
-    });
 
     // Cache the response
     cache.set(cacheKey, response, CACHE_TTL.ADVANCED_STATS);
     setNBACache(cacheKey, 'dvp_rank_batch', response, CACHE_TTL.ADVANCED_STATS, true).catch(err => {
       console.warn('[DVP Rank Batch] Failed to store in Supabase cache:', err);
-    });
-
-    // Final debug log before returning
-    console.log(`[DVP Rank Batch] ✅ Returning final response for ${pos}:`, {
-      pos: response.pos,
-      games: response.games,
-      metricsCount: Object.keys(response.metrics).length,
-      metricKeys: Object.keys(response.metrics),
-      sampleMetricData: response.metrics.pts ? {
-        teamCount: Object.keys(response.metrics.pts).length,
-        sampleTeams: Object.keys(response.metrics.pts).slice(0, 5),
-        sampleRanks: Object.fromEntries(Object.entries(response.metrics.pts).slice(0, 5))
-      } : 'pts not found'
     });
 
     return NextResponse.json(response, {

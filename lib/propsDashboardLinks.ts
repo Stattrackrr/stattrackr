@@ -109,13 +109,19 @@ export function aflDashboardHref(opts: {
 
 export function nbaDashboardHref(opts: {
   playerName: string;
+  playerId?: string | null;
   statType?: string | null;
   line?: number | null;
+  bookmaker?: string | null;
 }): string {
   const q = new URLSearchParams();
   q.set('player', opts.playerName);
+  const pid = String(opts.playerId || '').trim();
+  if (/^\d+$/.test(pid)) q.set('pid', pid);
   q.set('stat', normalizeNbaStat(String(opts.statType || '')));
   if (opts.line != null && Number.isFinite(opts.line)) q.set('line', String(opts.line));
+  const bookmaker = String(opts.bookmaker || '').trim();
+  if (bookmaker) q.set('bookmaker', bookmaker);
   q.set('tf', 'last10');
   return `/nba/research/dashboard?${q.toString()}`;
 }

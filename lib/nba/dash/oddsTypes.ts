@@ -16,18 +16,33 @@ export interface NbaPropLine {
   label: string;
 }
 
+/** One posted player line. Milestones (10+, 20+) carry only an over price. */
+export interface NbaPropEntry {
+  line: string;
+  over: string;
+  under: string;
+  milestone?: boolean;
+}
+
+/** book → player name → prop key (PTS, REB, PRA, PTS_1Q…) → lines */
+export type NbaPlayerPropsByBook = Record<string, Record<string, Record<string, NbaPropEntry[]>>>;
+
 export interface NbaGameOdds {
   gameId: string;
   homeTeam: string;
   awayTeam: string;
   commenceTime: string;
+  /** Spread line is the home side's (negative = home favoured); over = home price, under = away. */
   bookmakers: NbaBookRow[];
+  playerProps?: NbaPlayerPropsByBook;
 }
 
 export interface NbaOddsCache {
   games: NbaGameOdds[];
   lastUpdated: string;
   nextUpdate: string;
+  /** Last odds-api.net pull; it runs less often than the BallDontLie refresh. */
+  oddsNetFetchedAt?: string;
 }
 
 export type NbaOddsMarket = 'h2h' | 'spread' | 'total';

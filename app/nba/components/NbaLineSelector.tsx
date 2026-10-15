@@ -32,7 +32,7 @@ function fmtOdds(americanStr: string, format: 'american' | 'decimal'): string {
   return am > 0 ? `+${am}` : String(am);
 }
 
-const REGION_ORDER: BookmakerRegion[] = ['us', 'au', 'uk', 'other'];
+const REGION_ORDER: BookmakerRegion[] = ['au', 'us', 'uk', 'other'];
 const REGION_LABEL: Record<BookmakerRegion, string> = {
   us: 'United States',
   au: 'Australia',

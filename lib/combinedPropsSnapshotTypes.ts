@@ -68,6 +68,10 @@ export type CombinedPlayerProp = {
   nblPosition?: string | null;
   /** NBL play type id (primary_bh, three_shooter, …). */
   nblPlayType?: string | null;
+  /** NBA roster slot (G / F / C / G-F / F-C). */
+  nbaPosition?: string | null;
+  /** Set on server-built lists whose stat keys overlap another sport (NBA vs NBL). */
+  sportSource?: 'nba';
 };
 
 export type CombinedAflGame = {
@@ -89,6 +93,10 @@ export type CombinedPropsSnapshot = {
     lastUpdated: string | null;
     gameDate: string | null;
     props: CombinedPlayerProp[];
+    nextUpdate?: string | null;
+    ingestMessage?: string | null;
+    noNbaOdds?: boolean;
+    games?: CombinedAflGame[];
   };
   afl: {
     ok: boolean;

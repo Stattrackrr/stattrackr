@@ -1,12 +1,12 @@
 import { aflEnrichedPayloadHasUsableStats } from '@/lib/aflPlayerPropsCache';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import sharedCache from '@/lib/sharedCache';
 import type { CombinedAflGame, CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
 import { AFL_USER_NO_ODDS } from '@/lib/combinedPropsSnapshotTypes';
 import { AFL_PUBLIC_ENABLED, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
-import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
+import { getNbaPlayerPropsList } from '@/lib/nba/dash/playerPropsList';
 import { getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
 import { getNblPlayerPropsList } from '@/lib/nbl/playerPropsList';
 import { attachTennisHeadshots } from '@/lib/tennis/headshots';
@@ -410,12 +410,10 @@ export async function buildCombinedPropsSnapshot(
   options: BuildCombinedPropsSnapshotOptions
 ): Promise<CombinedPropsSnapshot> {
   const { origin, refresh = false, debugStats = false, cronSecret, writeCache = true } = options;
-  const nbaUrl = new URL('/api/nba/player-props', origin);
   const aflUrl = new URL('/api/afl/player-props/list', origin);
   aflUrl.searchParams.set('enrich', 'true');
 
   if (refresh) {
-    nbaUrl.searchParams.set('refresh', '1');
     aflUrl.searchParams.set('refresh', '1');
   }
   if (debugStats) {
@@ -423,11 +421,10 @@ export async function buildCombinedPropsSnapshot(
   }
 
   const headers = createHeaders(cronSecret);
+  // The NBA odds cron bakes this list; the builder only reads it.
   const nbaPromise = NBA_PUBLIC_ENABLED
-    ? getNbaPlayerProps(new NextRequest(nbaUrl))
-    : Promise.resolve(
-        NextResponse.json({ success: true, data: [], cached: false, lastUpdated: null, gameDate: null })
-      );
+    ? getNbaPlayerPropsList().catch(() => null)
+    : Promise.resolve(null);
   const previousSnapshot = await getCombinedPropsSnapshot();
   const tennisWork = TENNIS_PUBLIC_ENABLED
     ? getTennisPlayerPropsList({ refresh }).catch(() => null)
@@ -439,7 +436,7 @@ export async function buildCombinedPropsSnapshot(
     : Promise.resolve(
         NextResponse.json({ success: true, data: [], games: [], cached: false })
       );
-  const [nbaResponse, aflResponse, tennisFresh, nblFresh] = await Promise.all([
+  const [nbaList, aflResponse, tennisFresh, nblFresh] = await Promise.all([
     nbaPromise,
     aflPromise,
     haveTennis && !refresh
@@ -459,10 +456,8 @@ export async function buildCombinedPropsSnapshot(
       ? nblFresh
       : nblListFromSnapshot(previousSnapshot);
 
-  const [nbaPayload, aflPayload] = await Promise.all([
-    nbaResponse.json().catch(() => null),
-    aflResponse.json().catch(() => null),
-  ]);
+  const aflPayload = await aflResponse.json().catch(() => null);
+  const nbaProps = nbaList?.data ?? [];
 
   const aflAggregated = aggregateAflProps(aflPayload);
   const tennisAggregated = aggregateAflProps(tennisPayload);
@@ -471,17 +466,21 @@ export async function buildCombinedPropsSnapshot(
   // sport responded. A sport that's out of season (e.g. NBA odds cache empty →
   // 503) should not blank out the other sport's props.
   const snapshot: CombinedPropsSnapshot = {
-    success: nbaResponse.ok || aflResponse.ok || Boolean(tennisPayload?.success) || Boolean(nblPayload?.success),
+    success: nbaProps.length > 0 || aflResponse.ok || Boolean(tennisPayload?.success) || Boolean(nblPayload?.success),
     snapshotVersion: 1,
     generatedAt: new Date(now).toISOString(),
     staleAt: new Date(now + COMBINED_PROPS_SNAPSHOT_STALE_MS).toISOString(),
     nba: {
-      ok: nbaResponse.ok,
-      status: nbaResponse.status,
-      cached: normalizeBool(nbaPayload?.cached),
-      lastUpdated: normalizeString(nbaPayload?.lastUpdated),
-      gameDate: normalizeString(nbaPayload?.gameDate),
-      props: Array.isArray(nbaPayload?.data) ? nbaPayload.data : [],
+      ok: nbaProps.length > 0,
+      status: nbaProps.length > 0 ? 200 : 204,
+      cached: true,
+      lastUpdated: nbaList?.lastUpdated ?? null,
+      gameDate: nbaList?.games[0]?.commenceTime ?? null,
+      nextUpdate: nbaList?.nextUpdate ?? null,
+      ingestMessage: nbaList?.ingestMessage ?? null,
+      noNbaOdds: nbaProps.length === 0,
+      games: nbaList?.games ?? [],
+      props: nbaProps,
     },
     afl: {
       ok: aflResponse.ok,

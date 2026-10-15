@@ -31,6 +31,10 @@
       "schedule": "*/10 * * * *"
     },
     {
+      "path": "/api/cron/refresh-nba-odds",
+      "schedule": "5,15,25,35,45,55 * * * *"
+    },
+    {
       "path": "/api/cron/refresh-combined-props",
       "schedule": "*/20 * * * *"
     },
@@ -106,6 +110,9 @@
       "maxDuration": 300
     },
     "app/api/cron/refresh-nbl-odds/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/cron/refresh-nba-odds/route.ts": {
       "maxDuration": 300
     },
     "app/api/afl/player-props/refresh/route.ts": {

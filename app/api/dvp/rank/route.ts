@@ -57,12 +57,7 @@ export async function GET(req: NextRequest) {
       if (supabaseCache) {
         // Validate that cached data has ranks
         const hasRanks = supabaseCache.ranks && Object.keys(supabaseCache.ranks).length > 0;
-        console.log(`[DVP Rank API] ✅ Supabase cache HIT for ${cacheKey}`, {
-          hasRanks,
-          rankCount: supabaseCache.ranks ? Object.keys(supabaseCache.ranks).length : 0,
-          sampleTeams: supabaseCache.ranks ? Object.keys(supabaseCache.ranks).slice(0, 5) : []
-        });
-        
+
         // If cached data has empty ranks, force refresh to recalculate
         if (!hasRanks) {
           console.warn(`[DVP Rank API] ⚠️ Cached data has empty ranks, forcing refresh for ${cacheKey}`);
@@ -79,7 +74,6 @@ export async function GET(req: NextRequest) {
     if (!forceRefresh) {
       const hit = cache.get<any>(cacheKey);
       if (hit) {
-        console.log(`[DVP Rank API] ✅ In-memory cache HIT for ${cacheKey}`);
         return NextResponse.json(hit);
       }
     }
@@ -100,8 +94,7 @@ export async function GET(req: NextRequest) {
     if (isCombinedStat) {
       // For combined stats, sum the component stat values
       const componentMetrics = isCombinedStat;
-      console.log(`[DVP Rank API] Calculating combined stat ${metric} from components: ${componentMetrics.join(', ')}`);
-      
+
       results = teams.map((t) => {
         try {
           const teamAbbr = normalizeAbbr(t);
@@ -190,9 +183,6 @@ export async function GET(req: NextRequest) {
       const normalizedTeam = normalizeAbbr(r.team);
       ranks[normalizedTeam] = 0;
     });
-    
-    // Debug: log a few ranks to verify they're being created
-    console.log(`[DVP Rank] Created ranks for ${metric} vs ${pos}:`, Object.keys(ranks).slice(0, 5).map(k => `${k}:${ranks[k]}`).join(', '), '...');
 
     const payload = {
       success: true,
@@ -239,8 +229,6 @@ export async function GET(req: NextRequest) {
         if (snapshotError) {
           console.error('[DVP Rank API] Error creating snapshot:', snapshotError);
           // Don't fail the request if snapshot fails
-        } else {
-          console.log(`[DVP Rank API] ✅ Created snapshot for ${snapshots.length} teams (${metric}/${pos}/${today})`);
         }
       }
     } catch (snapshotErr: any) {

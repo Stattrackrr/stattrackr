@@ -424,6 +424,48 @@ export async function upsertCombinedSnapshotNblFromList(payload: {
   return stored.nbl?.props?.length || 0;
 }
 
+/** Cron-only: write the NBA slice onto combined Redis keys without a full rebuild. */
+export async function upsertCombinedSnapshotNbaFromList(payload: {
+  data?: unknown[];
+  games?: CombinedAflGame[];
+  lastUpdated?: string | null;
+  nextUpdate?: string | null;
+  ingestMessage?: string | null;
+  noNbaOdds?: boolean;
+}): Promise<number> {
+  const props = (Array.isArray(payload.data) ? payload.data : []) as CombinedPlayerProp[];
+  if (!props.length) {
+    const existing = (await getCombinedPropsSnapshot()) || (await getCombinedPropsPaintSnapshot());
+    return existing?.nba?.props?.length || 0;
+  }
+  const now = Date.now();
+  const existing =
+    (await getCombinedPropsSnapshot()) ||
+    (await getCombinedPropsPaintSnapshot()) ||
+    emptyCombinedSnapshot(now);
+  const games = payload.games || [];
+  const next: CombinedPropsSnapshot = {
+    ...existing,
+    success: true,
+    generatedAt: new Date(now).toISOString(),
+    staleAt: new Date(now + 15 * 60 * 1000).toISOString(),
+    nba: {
+      ok: true,
+      status: 200,
+      cached: true,
+      lastUpdated: payload.lastUpdated ?? null,
+      gameDate: games[0]?.commenceTime ?? props[0]?.gameDate ?? null,
+      nextUpdate: payload.nextUpdate ?? null,
+      ingestMessage: payload.ingestMessage ?? null,
+      noNbaOdds: false,
+      games,
+      props,
+    },
+  };
+  const stored = await persistCombinedPropsSnapshot(next);
+  return stored.nba?.props?.length || 0;
+}
+
 export function filterCombinedSnapshotAflEligibility(
   snapshot: CombinedPropsSnapshot,
   nowMs = Date.now()
