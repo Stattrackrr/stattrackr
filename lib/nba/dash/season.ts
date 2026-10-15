@@ -3,6 +3,8 @@
  * per-game team box totals, and league per-player averages. Feeds the league-wide
  * dashboard cards (opponent breakdown, play types, similar players, usage, ratings).
  */
+import { createHash } from 'crypto';
+import { sharedCache } from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getNbaClubByCode, getNbaClubById, NBA_CURRENT_SEASON_YEAR } from './teams';
 import type { NbaGameLogRow, NbaLeaguePlayerStatRow } from './types';
@@ -220,7 +222,16 @@ export type NbaSeasonDataset = {
   players: Map<string, NbaPlayerInfo>;
 };
 
-const datasetCache = new Map<number, { at: number; promise: Promise<NbaSeasonDataset> }>();
+/** Process-wide so every route bundle shares one in-flight season load instead of each building its own. */
+type SeasonGlobals = {
+  datasetCache: Map<number, { at: number; promise: Promise<NbaSeasonDataset> }>;
+  playersCache: { at: number; promise: Promise<Map<string, NbaPlayerInfo>> } | null;
+};
+const seasonGlobals: SeasonGlobals = ((globalThis as { __nbaSeasonGlobals?: SeasonGlobals }).__nbaSeasonGlobals ??= {
+  datasetCache: new Map(),
+  playersCache: null,
+});
+const datasetCache = seasonGlobals.datasetCache;
 
 export function nbaTeamGameKey(matchId: string, teamCode: string | null | undefined): string | null {
   if (!matchId || !teamCode) return null;
@@ -251,17 +262,15 @@ async function loadPlayersInfo(): Promise<Map<string, NbaPlayerInfo>> {
   return out;
 }
 
-let playersCache: { at: number; promise: Promise<Map<string, NbaPlayerInfo>> } | null = null;
-
 export function getNbaPlayersInfo(): Promise<Map<string, NbaPlayerInfo>> {
-  if (!playersCache || Date.now() - playersCache.at > CURRENT_TTL_MS) {
-    const promise = loadPlayersInfo();
-    playersCache = { at: Date.now(), promise };
-    promise.catch(() => {
-      if (playersCache?.promise === promise) playersCache = null;
-    });
-  }
-  return playersCache.promise;
+  const hit = seasonGlobals.playersCache;
+  if (hit && Date.now() - hit.at <= CURRENT_TTL_MS) return hit.promise;
+  const promise = loadPlayersInfo();
+  seasonGlobals.playersCache = { at: Date.now(), promise };
+  promise.catch(() => {
+    if (seasonGlobals.playersCache?.promise === promise) seasonGlobals.playersCache = null;
+  });
+  return promise;
 }
 
 function round1(v: number): number {
@@ -358,13 +367,12 @@ export async function selectByGameIds(
   return out;
 }
 
-async function buildDataset(season: number): Promise<NbaSeasonDataset> {
-  const [gameRows, players] = await Promise.all([
-    selectAllParallel(() =>
-      supabaseAdmin.from('nba_games').select(GAME_COLUMNS).eq('season', season).order('id')
-    ),
-    getNbaPlayersInfo(),
-  ]);
+type SeasonRows = { gameRows: Row[]; boxRows: Row[]; advRows: Row[] };
+
+async function fetchSeasonRowsFromDb(season: number): Promise<SeasonRows> {
+  const gameRows = await selectAllParallel(() =>
+    supabaseAdmin.from('nba_games').select(GAME_COLUMNS).eq('season', season).order('id')
+  );
   const gameIds = gameRows.filter((g) => g.status_state === 'final').map((g) => Number(g.id));
   const [boxRows, advRows] = await Promise.all([
     selectByGameIds(
@@ -389,6 +397,147 @@ async function buildDataset(season: number): Promise<NbaSeasonDataset> {
       gameIds
     ),
   ]);
+  return { gameRows, boxRows, advRows };
+}
+
+// ---------------------------------------------------------------------------
+// Redis season snapshot: cold instances read ~2 MB from Redis instead of paging
+// ~80k rows out of Supabase (~10 s). The NBA odds cron keeps it fresh.
+// ---------------------------------------------------------------------------
+
+const SNAPSHOT_TABLES = ['gameRows', 'boxRows', 'advRows'] as const;
+type SnapshotTable = (typeof SNAPSHOT_TABLES)[number];
+const SNAPSHOT_SCHEMA = createHash('sha1').update(`${GAME_COLUMNS}|${BOX_COLUMNS}|${ADV_COLUMNS}`).digest('hex').slice(0, 8);
+const SNAPSHOT_PREFIX = `nba_season_rows_v1:${SNAPSHOT_SCHEMA}`;
+/** Rows per Redis value; keeps each GET well under the shared cache's 2 s timeout. */
+const SNAPSHOT_PART_ROWS = 12_000;
+const SNAPSHOT_CURRENT_TTL_S = 6 * 60 * 60;
+const SNAPSHOT_PAST_TTL_S = 7 * 24 * 60 * 60;
+const SNAPSHOT_CURRENT_MAX_AGE_MS = 30 * 60 * 1000;
+const SNAPSHOT_PAST_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+type SnapshotMeta = { builtAt: number; parts: Record<SnapshotTable, number> };
+type SnapshotPart = { builtAt: number; keys: string[]; rows: unknown[][] };
+
+const snapshotMetaKey = (season: number) => `${SNAPSHOT_PREFIX}:${season}:meta`;
+const snapshotPartKey = (season: number, table: SnapshotTable, idx: number) =>
+  `${SNAPSHOT_PREFIX}:${season}:${table}:${idx}`;
+const isCurrentSeason = (season: number) => season >= NBA_CURRENT_SEASON_YEAR;
+
+/** Columnar parts (column names once, then value arrays) per table. */
+export function packNbaSeasonRows(rows: SeasonRows, builtAt: number): Record<SnapshotTable, SnapshotPart[]> {
+  const out = {} as Record<SnapshotTable, SnapshotPart[]>;
+  for (const table of SNAPSHOT_TABLES) {
+    const list = rows[table];
+    const keys = [...new Set(list.flatMap((r, i) => (i < 50 ? Object.keys(r) : [])))];
+    const parts: SnapshotPart[] = [];
+    for (let i = 0; i < list.length || i === 0; i += SNAPSHOT_PART_ROWS) {
+      parts.push({
+        builtAt,
+        keys,
+        rows: list.slice(i, i + SNAPSHOT_PART_ROWS).map((r) => keys.map((k) => r[k] ?? null)),
+      });
+    }
+    out[table] = parts;
+  }
+  return out;
+}
+
+export function unpackNbaSeasonRows(parts: Record<SnapshotTable, SnapshotPart[]>): SeasonRows {
+  const out = {} as SeasonRows;
+  for (const table of SNAPSHOT_TABLES) {
+    const rows: Row[] = [];
+    for (const part of parts[table]) {
+      for (const values of part.rows) {
+        const row: Row = {};
+        part.keys.forEach((k, i) => {
+          row[k] = values[i];
+        });
+        rows.push(row);
+      }
+    }
+    out[table] = rows;
+  }
+  return out;
+}
+
+async function readSeasonSnapshot(season: number): Promise<SeasonRows | null> {
+  const meta = await sharedCache.getJSON<SnapshotMeta>(snapshotMetaKey(season));
+  if (!meta?.builtAt || !meta.parts) return null;
+  if (SNAPSHOT_TABLES.some((t) => !(Number(meta.parts[t]) >= 1))) return null;
+  const entries = SNAPSHOT_TABLES.flatMap((table) =>
+    Array.from({ length: Number(meta.parts[table]) || 0 }, (_, idx) => ({ table, idx }))
+  );
+  const fetched = await Promise.all(
+    entries.map((e) => sharedCache.getJSON<SnapshotPart>(snapshotPartKey(season, e.table, e.idx)))
+  );
+  const parts = Object.fromEntries(SNAPSHOT_TABLES.map((t) => [t, [] as SnapshotPart[]])) as Record<
+    SnapshotTable,
+    SnapshotPart[]
+  >;
+  for (let i = 0; i < entries.length; i += 1) {
+    const part = fetched[i];
+    if (!part || part.builtAt !== meta.builtAt || !Array.isArray(part.keys) || !Array.isArray(part.rows)) return null;
+    parts[entries[i]!.table].push(part);
+  }
+  return unpackNbaSeasonRows(parts);
+}
+
+async function writeSeasonSnapshot(season: number, rows: SeasonRows, builtAt: number): Promise<void> {
+  const ttl = isCurrentSeason(season) ? SNAPSHOT_CURRENT_TTL_S : SNAPSHOT_PAST_TTL_S;
+  const packed = packNbaSeasonRows(rows, builtAt);
+  const writes: Array<Promise<void>> = [];
+  for (const table of SNAPSHOT_TABLES) {
+    packed[table].forEach((part, idx) => writes.push(sharedCache.setJSON(snapshotPartKey(season, table, idx), part, ttl)));
+  }
+  await Promise.all(writes);
+  const meta: SnapshotMeta = {
+    builtAt,
+    parts: Object.fromEntries(SNAPSHOT_TABLES.map((t) => [t, packed[t].length])) as Record<SnapshotTable, number>,
+  };
+  await sharedCache.setJSON(snapshotMetaKey(season), meta, ttl);
+}
+
+async function loadSeasonRows(season: number): Promise<SeasonRows> {
+  const snap = await readSeasonSnapshot(season).catch(() => null);
+  if (snap) return snap;
+  const rows = await fetchSeasonRowsFromDb(season);
+  await writeSeasonSnapshot(season, rows, Date.now()).catch((err) =>
+    console.warn('[nba season] snapshot write failed', err instanceof Error ? err.message : err)
+  );
+  return rows;
+}
+
+/**
+ * Rebuild season snapshots that are missing or older than their max age (30 min for the
+ * current season, 24 h for past ones). Called from the NBA odds cron.
+ */
+export async function refreshNbaSeasonSnapshots(
+  seasons: number[]
+): Promise<Array<{ season: number; rebuilt: boolean; ageMin: number | null; error?: string }>> {
+  const out: Array<{ season: number; rebuilt: boolean; ageMin: number | null; error?: string }> = [];
+  for (const season of [...new Set(seasons)]) {
+    const meta = await sharedCache.getJSON<SnapshotMeta>(snapshotMetaKey(season)).catch(() => null);
+    const age = meta?.builtAt ? Date.now() - meta.builtAt : null;
+    const maxAge = isCurrentSeason(season) ? SNAPSHOT_CURRENT_MAX_AGE_MS : SNAPSHOT_PAST_MAX_AGE_MS;
+    const ageMin = age != null ? Math.round(age / 60000) : null;
+    if (age != null && age < maxAge) {
+      out.push({ season, rebuilt: false, ageMin });
+      continue;
+    }
+    try {
+      const rows = await fetchSeasonRowsFromDb(season);
+      await writeSeasonSnapshot(season, rows, Date.now());
+      out.push({ season, rebuilt: true, ageMin });
+    } catch (err) {
+      out.push({ season, rebuilt: false, ageMin, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  return out;
+}
+
+async function buildDataset(season: number): Promise<NbaSeasonDataset> {
+  const [{ gameRows, boxRows, advRows }, players] = await Promise.all([loadSeasonRows(season), getNbaPlayersInfo()]);
 
   const games = new Map<number, Row>(gameRows.map((g) => [Number(g.id), g]));
   const adv = new Map<string, Row>(advRows.map((a) => [`${a.game_id}:${a.player_id}`, a]));
