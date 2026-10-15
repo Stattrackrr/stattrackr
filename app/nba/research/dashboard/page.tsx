@@ -21,6 +21,7 @@ import {
 } from '@/app/nba/components/NbaGameFilters';
 import { NbaBoxScore } from '@/app/nba/components/NbaBoxScore';
 import { NbaShotChart } from '@/app/nba/components/NbaShotChart';
+import NbaPlayTypeMatchupCard from '@/app/nba/components/NbaPlayTypeMatchupCard';
 import { PositionDefenseCard } from '@/app/nba/research/dashboard/components/dvp';
 import { fetchTeamDepthChart } from '@/app/nba/research/dashboard/utils/depthChartUtils';
 import { calculateSelectedPosition } from '@/app/nba/research/dashboard/utils/positionUtils';
@@ -2455,7 +2456,7 @@ export default function NbaDashboardPage() {
 
                 {/* 5. Shot chart — mobile (desktop lives in right panel, same as NBA) */}
                 {nbaPropsMode === 'player' ? (
-                  <div className="order-7 lg:hidden w-full min-w-0">
+                  <div className="order-7 lg:hidden w-full min-w-0 flex flex-col gap-2 sm:gap-3">
                     <ProFeatureLock locked={freeTier}>
                     <NbaShotChart
                       isDark={!!mounted && isDark}
@@ -2465,6 +2466,16 @@ export default function NbaDashboardPage() {
                       valuesLocked={freeTier}
                     />
                     </ProFeatureLock>
+                    <div className={`rounded-lg ${NBA_DASH_CARD_GLOW}`}>
+                      <ProFeatureLock locked={freeTier}>
+                        <NbaPlayTypeMatchupCard
+                          isDark={!!mounted && isDark}
+                          playerId={selectedPlayer?.playerId ? String(selectedPlayer.playerId) : null}
+                          playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                          opponentTeam={displayOpponent}
+                        />
+                      </ProFeatureLock>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -2704,6 +2715,20 @@ export default function NbaDashboardPage() {
                       />
                       </ProFeatureLock>
                     )}
+                  </div>
+                ) : null}
+
+                {/* Play Type Matchup — desktop (below shot chart) */}
+                {nbaPropsMode === 'player' && !showEmptyShell && !showStatsLoadingShell ? (
+                  <div className={`hidden lg:block rounded-lg ${NBA_DASH_CARD_GLOW} w-full min-w-0`}>
+                    <ProFeatureLock locked={freeTier}>
+                      <NbaPlayTypeMatchupCard
+                        isDark={!!mounted && isDark}
+                        playerId={selectedPlayer?.playerId ? String(selectedPlayer.playerId) : null}
+                        playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                        opponentTeam={displayOpponent}
+                      />
+                    </ProFeatureLock>
                   </div>
                 ) : null}
 

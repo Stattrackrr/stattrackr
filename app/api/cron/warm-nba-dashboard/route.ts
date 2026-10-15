@@ -15,6 +15,7 @@ import { GET as lineupsGET } from '@/app/api/nba/dash/lineups/route';
 import { GET as nextGameGET } from '@/app/api/nba/dash/next-game/route';
 import { GET as playerGameLogsGET } from '@/app/api/nba/dash/player-game-logs/route';
 import { GET as playerRatingsGET } from '@/app/api/nba/dash/player-ratings/route';
+import { GET as playTypeMatchupGET } from '@/app/api/nba/dash/play-type-matchup/route';
 import { GET as playersGET } from '@/app/api/nba/dash/players/route';
 import { GET as shotChartGET } from '@/app/api/nba/dash/shot-chart/route';
 import { GET as teamSteStatsGET } from '@/app/api/nba/dash/team-ste-stats/route';
@@ -65,14 +66,16 @@ export async function GET(request: NextRequest) {
   const rows = list?.data ?? [];
 
   const teams = new Set<string>();
-  const players = new Map<string, { name: string; team: string }>();
+  const players = new Map<string, { name: string; team: string; opponent: string | null }>();
   for (const row of rows) {
     const team = resolveNbaClubName(row.playerTeam ?? row.team);
     const opponent = resolveNbaClubName(row.opponent);
     if (team) teams.add(team);
     if (opponent) teams.add(opponent);
     const id = String(row.playerId ?? '');
-    if (team && /^\d+$/.test(id) && !players.has(id)) players.set(id, { name: String(row.playerName), team });
+    if (team && /^\d+$/.test(id) && !players.has(id)) {
+      players.set(id, { name: String(row.playerName), team, opponent: opponent || null });
+    }
   }
 
   const year = String(NBA_CURRENT_SEASON_YEAR);
@@ -84,6 +87,11 @@ export async function GET(request: NextRequest) {
     { label: 'player-ratings', run: () => playerRatingsGET(req('/api/nba/dash/player-ratings', { year })) },
     { label: 'league-player-stats', run: () => leaguePlayerStatsGET(req('/api/nba/dash/league-player-stats', { year })) },
     { label: 'team-ste-stats', run: () => teamSteStatsGET(req('/api/nba/dash/team-ste-stats', { year, window: '0' })) },
+    // Every player's matchup reads one league table; any playerId builds it.
+    {
+      label: 'play-type-matchup',
+      run: () => playTypeMatchupGET(req('/api/nba/dash/play-type-matchup', { playerId: '0' })),
+    },
   ];
   const perTeam: Task[] = [...teams].flatMap((team) => [
     { label: `next-game ${team}`, run: () => nextGameGET(req('/api/nba/dash/next-game', { team, year })) },
@@ -107,6 +115,13 @@ export async function GET(request: NextRequest) {
     {
       label: `usage ${p.name}`,
       run: () => teamUsageGET(req('/api/nba/dash/team-usage', { team: p.team, year, tf: 'last10', playerId })),
+    },
+    {
+      label: `play-types ${p.name}`,
+      run: () =>
+        playTypeMatchupGET(
+          req('/api/nba/dash/play-type-matchup', p.opponent ? { playerId, opponent: p.opponent } : { playerId })
+        ),
     },
   ]);
 
