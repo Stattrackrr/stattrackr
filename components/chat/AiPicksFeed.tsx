@@ -1,19 +1,46 @@
 'use client';
 
 import { Check, Clock, Loader2, Minus, Sparkles, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { supabase } from '@/lib/supabaseClient';
 import { aiPicksAsRecordBets, fetchAiPicks } from '@/lib/aiPicks/client';
-import { legSelection } from '@/lib/aiPicks/format';
+import { legBet, legSubject } from '@/lib/aiPicks/format';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import type { AiPick, AiPickLeg, AiPickStatus } from '@/lib/aiPicks/types';
+import type { TennisTour } from '@/lib/tennis/types';
 import { computePickRecordStats, formatUnits } from '@/lib/officialPicksRecordStats';
 
 export const AI_PICKS_NAME = 'Stattrackr AI';
 export const AI_PICKS_AVATAR = '/images/stattrackr-icon-192.png';
 
 const SPORT_LABELS: Record<string, string> = { nbl: 'NBL', tennis: 'Tennis', nba: 'NBA', afl: 'AFL', mixed: 'Mixed' };
+const SPORT_LOGOS: Record<string, string> = { nbl: '/images/nbl-logo.png', nba: '/images/nba-logo.png', afl: '/images/afl-logo.png' };
+const TOUR_LOGOS: Record<TennisTour, string> = { ATP: '/images/atp-logo.webp', WTA: '/images/wta-logo.png' };
+
+/** Tennis shows the ATP/WTA logo of its legs; the ball is only a fallback until the tour is known. */
+function SportLogo({ sport, tours = [], className = 'h-3.5 w-3.5' }: { sport: string; tours?: TennisTour[]; className?: string }) {
+  if (sport === 'tennis' && tours.length) {
+    return (
+      <>
+        {tours.map((t) => (
+          <img key={t} src={TOUR_LOGOS[t]} alt={t} className={`${className} flex-shrink-0 object-contain`} />
+        ))}
+      </>
+    );
+  }
+  if (sport === 'tennis') {
+    return (
+      <svg viewBox="0 0 24 24" className={`${className} flex-shrink-0`} aria-hidden>
+        <circle cx="12" cy="12" r="10.5" fill="#d4e83a" stroke="#a3b52a" strokeWidth="1" />
+        <path d="M4.2 5.2a10 10 0 0 1 0 13.6M19.8 5.2a10 10 0 0 0 0 13.6" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  const src = SPORT_LOGOS[sport];
+  if (!src) return null;
+  return <img src={src} alt="" aria-hidden className={`${className} flex-shrink-0 object-contain`} />;
+}
 
 const STATUS_META: Record<AiPickStatus, { label: string; pill: string; accent: string; Icon: typeof Clock }> = {
   pending: {
@@ -84,18 +111,183 @@ function Stat({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function legMeta(leg: AiPickLeg): string {
-  const parts = [leg.eventLabel, fmtStart(leg.startsAt)];
-  if (leg.resultValue != null) parts.push(`Result ${leg.resultValue}`);
-  return parts.filter(Boolean).join(' · ');
+type TennisInfo = {
+  tours: Record<string, TennisTour>;
+  events: Record<string, { tour: TennisTour | null; names: Record<string, string> }>;
+};
+
+/** Swap api-tennis short names ("M. Karol") for full names, longest first so overlapping names don't clash. */
+function withFullNames(text: string | null, names: Record<string, string> | undefined): string | null {
+  if (!text || !names) return text;
+  return Object.keys(names)
+    .sort((a, b) => b.length - a.length)
+    .reduce((out, short) => out.split(short).join(names[short]), text);
 }
 
-function PickCard({ pick }: { pick: AiPick }) {
+function displayLeg(leg: AiPickLeg, info: TennisInfo): AiPickLeg {
+  if (leg.sport !== 'tennis') return leg;
+  const names = info.events[leg.eventKey]?.names;
+  return {
+    ...leg,
+    player: withFullNames(leg.player, names),
+    team: withFullNames(leg.team, names),
+    eventLabel: withFullNames(leg.eventLabel, names) ?? leg.eventLabel,
+  };
+}
+
+/** Settled outcome for legs without a progress bar. A winner market's 1/0 is already in the status. */
+function legOutcome(leg: AiPickLeg): string | null {
+  if (leg.resultValue == null) return null;
+  if (leg.market === 'spread' || leg.market === 'game_handicap') {
+    return `Margin ${leg.resultValue > 0 ? '+' : ''}${leg.resultValue}`;
+  }
+  return null;
+}
+
+function LegBody({ leg, large = false }: { leg: AiPickLeg; large?: boolean }) {
+  const who = legSubject(leg);
+  const bet = legBet(leg);
+  const outcome = legOutcome(leg);
+  return (
+    <>
+      <div className={`font-semibold leading-snug text-gray-900 dark:text-white ${large ? 'text-base' : 'text-[15px]'}`}>
+        {who || bet}
+      </div>
+      {who && <div className="mt-0.5 text-sm font-medium text-purple-600 dark:text-purple-300">{bet}</div>}
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+        <span>{leg.eventLabel}</span>
+        <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-500">
+          <Clock className="h-3 w-3" />
+          {fmtStart(leg.startsAt)}
+        </span>
+        {outcome && <span className="font-semibold text-gray-700 dark:text-gray-300">{outcome}</span>}
+      </div>
+      <LegProgress leg={leg} />
+    </>
+  );
+}
+
+const PROGRESS_TONE: Record<AiPickStatus, string> = {
+  pending: 'bg-purple-500',
+  win: 'bg-emerald-500',
+  loss: 'bg-rose-500',
+  push: 'bg-amber-500',
+  void: 'bg-amber-500',
+};
+
+/** Sportsbet-style bar for over/under legs: fill to the result, tick at the line. */
+function LegProgress({ leg }: { leg: AiPickLeg }) {
+  if ((leg.side !== 'over' && leg.side !== 'under') || leg.line == null || leg.status === 'void') return null;
+  const line = leg.line;
+  const value = leg.resultValue;
+  const max = Math.max(line, value ?? 0) * 1.25 || 1;
+  const pct = (v: number) => Math.min(100, Math.max(0, (v / max) * 100));
+  const tone = PROGRESS_TONE[leg.status];
+  return (
+    <div className="mt-3">
+      {value == null && (
+        <div className="mb-2 flex justify-end text-[11px] text-gray-500 dark:text-gray-400">Awaiting result</div>
+      )}
+      <div className="relative mb-1 h-2 rounded-full bg-gray-200 dark:bg-white/10">
+        {value != null && (
+          <div className={`absolute inset-y-0 left-0 rounded-full ${tone}`} style={{ width: `${pct(value)}%` }} />
+        )}
+        <div
+          className="absolute -bottom-1 -top-1 w-0.5 -translate-x-1/2 rounded bg-gray-500 dark:bg-gray-300"
+          style={{ left: `${pct(line)}%` }}
+          title={`Line ${line}`}
+        />
+        {value != null && (
+          <span
+            className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full px-2 py-px text-[11px] font-bold tabular-nums text-white ${tone}`}
+            style={{ left: `${Math.min(94, Math.max(6, pct(value)))}%` }}
+          >
+            {value}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const LEG_MARKER: Record<AiPickStatus, string> = {
+  pending: 'bg-white text-gray-600 ring-1 ring-inset ring-gray-300 dark:bg-[#0f1a2b] dark:text-gray-300 dark:ring-white/20',
+  win: 'bg-emerald-500 text-white',
+  loss: 'bg-rose-500 text-white',
+  push: 'bg-amber-500 text-white',
+  void: 'bg-amber-500 text-white',
+};
+
+const SEGMENT_TONE: Record<AiPickStatus, string> = {
+  pending: 'bg-gray-200 dark:bg-white/10',
+  win: 'bg-emerald-500',
+  loss: 'bg-rose-500',
+  push: 'bg-amber-500',
+  void: 'bg-amber-500',
+};
+
+function multiProgress(legs: AiPickLeg[]): string {
+  const won = legs.filter((l) => l.status === 'win').length;
+  const settled = legs.filter((l) => l.status !== 'pending').length;
+  if (legs.some((l) => l.status === 'loss')) return 'Leg lost';
+  if (settled === legs.length) return 'All legs settled';
+  if (!settled) return `0 of ${legs.length} legs settled`;
+  return `${won} of ${legs.length} legs won`;
+}
+
+/** Bet-slip view of a multi: one box, a segment per leg, and each leg's own status. */
+function MultiSlip({ legs }: { legs: AiPickLeg[] }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200/80 dark:border-white/[0.07]">
+      <div className="flex items-center justify-between gap-3 bg-gray-50 px-3 py-2 dark:bg-white/[0.03]">
+        <div className="flex flex-1 gap-1">
+          {legs.map((l) => (
+            <span key={l.id} className={`h-1.5 flex-1 rounded-full ${SEGMENT_TONE[l.status]}`} />
+          ))}
+        </div>
+        <span className="shrink-0 text-[11px] font-semibold text-gray-600 dark:text-gray-300">{multiProgress(legs)}</span>
+      </div>
+      <ol className="divide-y divide-gray-200/80 dark:divide-white/[0.06]">
+        {legs.map((leg, i) => {
+          const { Icon } = STATUS_META[leg.status];
+          return (
+            <li key={leg.id} className="flex items-start gap-3 px-3 py-3">
+              <span
+                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${LEG_MARKER[leg.status]}`}
+              >
+                {leg.status === 'pending' ? i + 1 : <Icon className="h-3.5 w-3.5" strokeWidth={3} />}
+              </span>
+              <div className="min-w-0 flex-1">
+                <LegBody leg={leg} />
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-gray-700 dark:bg-white/5 dark:text-gray-200">
+                  @ {leg.price.toFixed(2)}
+                </span>
+                <StatusPill status={leg.status} />
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+function pickTours(pick: AiPick, info: TennisInfo): TennisTour[] {
+  const found = pick.legs
+    .filter((l) => l.sport === 'tennis')
+    .map((l) => info.events[l.eventKey]?.tour ?? (l.playerId ? info.tours[l.playerId] : undefined));
+  return (['ATP', 'WTA'] as const).filter((t) => found.includes(t));
+}
+
+function PickCard({ pick, info }: { pick: AiPick; info: TennisInfo }) {
   const settled = pick.status !== 'pending';
   const profit = pick.profitUnits ?? 0;
   const isMulti = pick.kind === 'multi';
   const book = getBookmakerInfo(pick.bookmaker).name;
-  const single = pick.legs[0];
+  const legs = pick.legs.map((l) => displayLeg(l, info));
+  const single = legs[0];
 
   return (
     <article className="relative overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm dark:border-white/[0.07] dark:bg-[#0f1a2b]">
@@ -115,32 +307,16 @@ function PickCard({ pick }: { pick: AiPick }) {
 
       <div className="px-4 pb-3 pt-3">
         <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-300">
+          <SportLogo sport={pick.sport} tours={pickTours(pick, info)} />
           {SPORT_LABELS[pick.sport] ?? pick.sport}
           <span className="text-gray-300 dark:text-gray-600">/</span>
           <span className="text-gray-500 dark:text-gray-400">{isMulti ? `${pick.legs.length}-leg multi` : 'Single'}</span>
         </div>
 
         {!isMulti && single ? (
-          <>
-            <h4 className="text-base font-semibold leading-snug text-gray-900 dark:text-white">{legSelection(single)}</h4>
-            <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{legMeta(single)}</p>
-          </>
+          <LegBody leg={single} large />
         ) : (
-          <ol className="space-y-2">
-            {pick.legs.map((leg, i) => (
-              <li key={leg.id} className="flex items-start gap-2.5">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-purple-500/10 text-[10px] font-bold text-purple-600 dark:text-purple-300">
-                  {i + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold leading-snug text-gray-900 dark:text-white">{legSelection(leg)}</div>
-                  <div className="truncate text-xs text-gray-500 dark:text-gray-400">{legMeta(leg)}</div>
-                </div>
-                <span className="mt-0.5 text-xs font-semibold tabular-nums text-gray-600 dark:text-gray-300">{leg.price.toFixed(2)}</span>
-                {leg.status !== 'pending' && <StatusPill status={leg.status} compact />}
-              </li>
-            ))}
-          </ol>
+          <MultiSlip legs={legs} />
         )}
       </div>
 
@@ -199,6 +375,32 @@ function RecordStrip({ picks }: { picks: AiPick[] }) {
 
 type Filter = 'all' | 'pending' | 'settled';
 
+const time = (iso: string | null | undefined): number => {
+  const t = Date.parse(String(iso || ''));
+  return Number.isFinite(t) ? t : 0;
+};
+
+/** When the bet was decided: the last leg's start (a multi settles on its final leg). */
+const playedAt = (pick: AiPick): number =>
+  pick.legs.length ? Math.max(...pick.legs.map((l) => time(l.startsAt))) : time(pick.postedAt);
+
+/** Chat order, newest at the bottom: settled picks by when they played, then pending by when posted. */
+function feedOrder(picks: AiPick[]): AiPick[] {
+  const settled = picks.filter((p) => p.status !== 'pending').sort((a, b) => playedAt(a) - playedAt(b));
+  const pending = picks.filter((p) => p.status === 'pending').sort((a, b) => time(a.postedAt) - time(b.postedAt));
+  return [...settled, ...pending];
+}
+
+function scrollParent(el: HTMLElement | null): HTMLElement | null {
+  for (let node = el?.parentElement ?? null; node; node = node.parentElement) {
+    const { overflowY } = window.getComputedStyle(node);
+    if (overflowY === 'auto' || overflowY === 'scroll') return node;
+  }
+  return null;
+}
+
+const NEAR_BOTTOM_PX = 160;
+
 export function AiPicksFeed() {
   const [picks, setPicks] = useState<AiPick[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,12 +430,65 @@ export function AiPicksFeed() {
     };
   }, [load]);
 
+  const [tennisInfo, setTennisInfo] = useState<TennisInfo>({ tours: {}, events: {} });
+  const tennisQuery = useMemo(() => {
+    const legs = picks.flatMap((p) => p.legs).filter((l) => l.sport === 'tennis');
+    if (!legs.length) return '';
+    const ids = [...new Set(legs.map((l) => l.playerId).filter(Boolean))].sort().join(',');
+    const events = [...new Set(legs.map((l) => `${l.eventKey}@${l.startsAt.slice(0, 10)}`))].sort().join(',');
+    return `ids=${encodeURIComponent(ids)}&events=${encodeURIComponent(events)}`;
+  }, [picks]);
+  useEffect(() => {
+    if (!tennisQuery) return;
+    let cancelled = false;
+    fetch(`/api/ai-picks/tennis-players?${tennisQuery}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body: Partial<TennisInfo> | null) => {
+        if (!cancelled && body) setTennisInfo({ tours: body.tours ?? {}, events: body.events ?? {} });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [tennisQuery]);
+
   const sports = useMemo(() => [...new Set(picks.map((p) => p.sport))].sort(), [picks]);
-  const shown = picks.filter(
-    (p) =>
-      (sport === 'all' || p.sport === sport) &&
-      (filter === 'all' || (filter === 'pending' ? p.status === 'pending' : p.status !== 'pending'))
+  const shown = useMemo(
+    () =>
+      feedOrder(
+        picks.filter(
+          (p) =>
+            (sport === 'all' || p.sport === sport) &&
+            (filter === 'all' || (filter === 'pending' ? p.status === 'pending' : p.status !== 'pending'))
+        )
+      ),
+    [picks, sport, filter]
   );
+
+  /** Only the unfiltered feed is chat-style (newest at the bottom); filtered views read top-down from the oldest. */
+  const topDown = filter !== 'all' || sport !== 'all';
+  const endRef = useRef<HTMLDivElement>(null);
+  const jumpRef = useRef(true);
+
+  useEffect(() => {
+    jumpRef.current = true;
+  }, [filter, sport]);
+
+  useLayoutEffect(() => {
+    if (loading) return;
+    const container = scrollParent(endRef.current);
+    if (!container) return;
+    if (topDown) {
+      if (jumpRef.current) container.scrollTop = 0;
+      jumpRef.current = false;
+      return;
+    }
+    const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < NEAR_BOTTOM_PX;
+    if (jumpRef.current || nearBottom) {
+      container.scrollTop = container.scrollHeight;
+      jumpRef.current = false;
+    }
+  }, [shown, loading, topDown]);
 
   if (loading) {
     return (
@@ -260,23 +515,29 @@ export function AiPicksFeed() {
     }`;
 
   return (
-    <div className="space-y-3">
-      <RecordStrip picks={picks} />
+    <div className="flex min-h-full flex-col gap-3">
+      <div className="sticky -top-4 z-10 -mx-5 -mt-4 space-y-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur dark:bg-[#0f1a2b]/95">
+        <RecordStrip picks={picks} />
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        {(['all', 'pending', 'settled'] as Filter[]).map((f) => (
-          <button key={f} type="button" onClick={() => setFilter(f)} className={chip(filter === f)}>
-            {f === 'all' ? 'All' : f === 'pending' ? 'Pending' : 'Settled'}
-          </button>
-        ))}
-        {sports.length > 1 && <span className="mx-1 h-4 w-px bg-gray-300 dark:bg-gray-700" />}
-        {sports.length > 1 &&
-          ['all', ...sports].map((s) => (
-            <button key={s} type="button" onClick={() => setSport(s)} className={chip(sport === s)}>
-              {s === 'all' ? 'All sports' : SPORT_LABELS[s] ?? s}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(['all', 'pending', 'settled'] as Filter[]).map((f) => (
+            <button key={f} type="button" onClick={() => setFilter(f)} className={chip(filter === f)}>
+              {f === 'all' ? 'All' : f === 'pending' ? 'Pending' : 'Settled'}
             </button>
           ))}
+          {sports.length > 1 && <span className="mx-1 h-4 w-px bg-gray-300 dark:bg-gray-700" />}
+          {sports.length > 1 &&
+            ['all', ...sports].map((s) => (
+              <button key={s} type="button" onClick={() => setSport(s)} className={`${chip(sport === s)} inline-flex items-center gap-1`}>
+                {s !== 'all' && <SportLogo sport={s} tours={s === 'tennis' ? ['ATP', 'WTA'] : []} className="h-3 w-3" />}
+                {s === 'all' ? 'All sports' : SPORT_LABELS[s] ?? s}
+              </button>
+            ))}
+        </div>
       </div>
+
+      {/* Chat-style: cards sit at the bottom when there are only a few. */}
+      {!topDown && <div className="flex-1" aria-hidden />}
 
       {shown.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 px-6 py-12 text-center dark:border-gray-700">
@@ -292,8 +553,9 @@ export function AiPicksFeed() {
           </p>
         </div>
       ) : (
-        shown.map((pick) => <PickCard key={pick.id} pick={pick} />)
+        shown.map((pick) => <PickCard key={pick.id} pick={pick} info={tennisInfo} />)
       )}
+      <div ref={endRef} aria-hidden />
     </div>
   );
 }

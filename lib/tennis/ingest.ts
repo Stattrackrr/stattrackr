@@ -567,6 +567,116 @@ export async function seedTennisLogsFromFixtures(
   };
 }
 
+/** Two batches at most, so a slow API stays inside the 120s grade cron. */
+const MATCH_REFRESH_MAX = 16;
+const MATCH_REFRESH_CONCURRENCY = 8;
+
+function ymdOffset(iso: string, days: number): string | null {
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? ymdUtc(new Date(t + days * 86_400_000)) : null;
+}
+
+/**
+ * Pull specific matches by api-tennis match key and append the finished ones onto both players'
+ * Redis logs. One API call per match, so graders can settle a few pending legs without waiting
+ * on the full 8-hourly ingest.
+ */
+export async function refreshTennisLogsForMatches(
+  targets: Array<{ matchKey: string; startsAt: string }>
+): Promise<{ checked: number; finished: number; added: number; updated: number }> {
+  const out = { checked: 0, finished: 0, added: 0, updated: 0 };
+  if (!apiKey()) return out;
+  const byKey = new Map<string, string>();
+  for (const t of targets) {
+    const key = String(t.matchKey || '').trim();
+    if (/^\d+$/.test(key) && !byKey.has(key)) byKey.set(key, t.startsAt);
+  }
+  const queue = [...byKey].slice(0, MATCH_REFRESH_MAX);
+  const finished: ApiTennisFixture[] = [];
+  for (let i = 0; i < queue.length; i += MATCH_REFRESH_CONCURRENCY) {
+    const batch = queue.slice(i, i + MATCH_REFRESH_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map(([matchKey, startsAt]) => {
+        const start = ymdOffset(startsAt, -1);
+        const stop = ymdOffset(startsAt, 1);
+        if (!start || !stop) return Promise.resolve(null);
+        return apiTennisCall({ method: 'get_fixtures', match_key: matchKey, date_start: start, date_stop: stop });
+      })
+    );
+    out.checked += batch.length;
+    for (const json of results) {
+      const rows = (Array.isArray(json?.result) ? json.result : []) as ApiTennisFixture[];
+      for (const fx of rows) {
+        const status = String(fx.event_status || '').toLowerCase();
+        if (status === 'finished' || /retir/.test(status) || /player/i.test(String(fx.event_winner || ''))) {
+          finished.push(fx);
+        }
+      }
+    }
+  }
+  if (!finished.length) return out;
+
+  const players = new Map<string, ApiPlayerInfo>();
+  const seen = new Set<string>();
+  const matches: TennisMatchRow[] = [];
+  for (const tour of ['ATP', 'WTA'] as const) {
+    const batch = finished.filter((fx) => tourFromEventType(fx.event_type_type) === tour);
+    if (batch.length) matches.push(...ingestApiFixtures(batch, players, tour, seen));
+  }
+  out.finished = finished.length;
+  if (!matches.length) return out;
+  const { mergeTennisPlayerLogsIncremental } = await import('@/lib/tennis/dashboardCache');
+  const merged = await mergeTennisPlayerLogsIncremental(
+    {
+      fetchedAt: new Date().toISOString(),
+      matches,
+      players: [...players.values()].map((p) => ({
+        playerId: p.playerId,
+        name: p.name,
+        tour: p.tour,
+        ioc: p.ioc,
+        hand: null,
+        height: null,
+        rank: p.rank,
+        rankPoints: p.rankPoints,
+        imageUrl: p.imageUrl,
+      })),
+    },
+    { onlyPriority: false }
+  );
+  out.added = merged.added;
+  out.updated = merged.updated;
+  return out;
+}
+
+export type TennisMatchPlayers = {
+  tour: TennisTour | null;
+  players: Array<{ playerId: string; name: string }>;
+};
+
+/** Both players of one api-tennis match, as named on the fixture (usually "F. Last"). */
+export async function fetchTennisMatchPlayers(matchKey: string, startsAt: string): Promise<TennisMatchPlayers | null> {
+  const start = ymdOffset(startsAt, -1);
+  const stop = ymdOffset(startsAt, 1);
+  if (!/^\d+$/.test(matchKey) || !start || !stop) return null;
+  const json = await apiTennisCall({ method: 'get_fixtures', match_key: matchKey, date_start: start, date_stop: stop });
+  const fx = (Array.isArray(json?.result) ? json.result : [])[0] as ApiTennisFixture | undefined;
+  if (!fx) return null;
+  const players = [
+    { playerId: String(fx.first_player_key ?? '').trim(), name: String(fx.event_first_player ?? '').trim() },
+    { playerId: String(fx.second_player_key ?? '').trim(), name: String(fx.event_second_player ?? '').trim() },
+  ].filter((p) => p.playerId && p.name);
+  return { tour: tourFromEventType(fx.event_type_type), players };
+}
+
+/** api-tennis `player_full_name`; null when the API has none (it is blank for some lower-ranked players). */
+export async function fetchTennisPlayerFullName(playerId: string): Promise<string | null> {
+  if (!/^\d+$/.test(playerId)) return null;
+  const json = await apiTennisCall({ method: 'get_players', player_key: playerId });
+  const full = String((Array.isArray(json?.result) ? json.result : [])[0]?.player_full_name ?? '').trim();
+  return full || null;
+}
+
 export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promise<boolean> {
   rememberOverlay(overlay);
   const packed = packTennisOverlay(overlay);

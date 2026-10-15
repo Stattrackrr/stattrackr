@@ -1,7 +1,7 @@
 import { nblClosingLine } from '@/lib/aiPicks/grade/closing';
 import { gradeNblLeg, NblResultsSource } from '@/lib/aiPicks/grade/nbl';
 import type { LegGrade } from '@/lib/aiPicks/grade/rules';
-import { gradeTennisLeg, loadTennisLogs } from '@/lib/aiPicks/grade/tennis';
+import { gradeTennisLeg, loadTennisLogs, loadTennisLogsWithFreshResults } from '@/lib/aiPicks/grade/tennis';
 import {
   finishRun,
   listLegsMissingClosing,
@@ -124,7 +124,7 @@ export async function gradeAiPicks(nowMs = Date.now()): Promise<GradeRunSummary>
     summary.legsChecked = legs.length;
     const ctx = {
       nbl: new NblResultsSource(),
-      tennisLogs: await loadTennisLogs(legs.filter((l) => l.sport === 'tennis')),
+      tennisLogs: await loadTennisLogsWithFreshResults(legs, nowMs),
       nowMs,
     };
     for (const leg of legs) {

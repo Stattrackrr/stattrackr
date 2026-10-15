@@ -8,6 +8,7 @@ import {
   withRepairedTennisTotals,
 } from '@/lib/tennis/chartStats';
 import { readTennisPlayerLogsCacheMany } from '@/lib/tennis/dashboardCache';
+import { refreshTennisLogsForMatches } from '@/lib/tennis/ingest';
 import { tennisNamesMatch } from '@/lib/tennis/oddsApi';
 import type { TennisMatchRow } from '@/lib/tennis/types';
 
@@ -15,10 +16,38 @@ const MATCH_WINDOW_MS = 48 * 60 * 60 * 1000;
 /** Player logs refresh every 8 hours; after this long a missing match is treated as not played. */
 const GIVE_UP_MS = 4 * 24 * 60 * 60 * 1000;
 
+/** Only chase a result directly for this long after the start; older legs wait on the 8-hourly ingest. */
+const DIRECT_REFRESH_MS = 2 * 24 * 60 * 60 * 1000;
+
 /** Loads every needed player's logs in one Redis round trip. */
 export async function loadTennisLogs(legs: AiPickLeg[]): Promise<Map<string, TennisMatchRow[]>> {
   const ids = legs.map((l) => l.playerId).filter((id): id is string => Boolean(id));
   return readTennisPlayerLogsCacheMany(ids);
+}
+
+/**
+ * Logs for posted legs, fetching just those matches from api-tennis when the result isn't in the
+ * logs yet. One API call per unresolved match per grade run.
+ */
+export async function loadTennisLogsWithFreshResults(
+  legs: AiPickLeg[],
+  nowMs: number
+): Promise<Map<string, TennisMatchRow[]>> {
+  const tennis = legs.filter((l) => l.sport === 'tennis' && l.playerId);
+  const logs = await loadTennisLogs(tennis);
+  const missing = tennis.filter((leg) => {
+    const age = nowMs - Date.parse(leg.startsAt);
+    return age >= 0 && age <= DIRECT_REFRESH_MS && !findTennisRow(leg, logs.get(leg.playerId!) ?? []);
+  });
+  if (!missing.length) return logs;
+  const refreshed = await refreshTennisLogsForMatches(
+    missing.map((leg) => ({ matchKey: leg.eventKey, startsAt: leg.startsAt }))
+  ).catch((e) => {
+    console.warn('[ai-picks grade] tennis match refresh failed', e);
+    return null;
+  });
+  if (!refreshed || refreshed.added + refreshed.updated === 0) return logs;
+  return loadTennisLogs(tennis);
 }
 
 export function findTennisRow(leg: AiPickLeg, rows: TennisMatchRow[]): TennisMatchRow | null {

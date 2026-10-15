@@ -42,6 +42,26 @@ export function legSelection(leg: LegLike): string {
   return `${who} ${market}`.trim();
 }
 
+/** The bet without who it is on, e.g. "Over 9.5 games won", "+6.5 games handicap", "To win". */
+export function legBet(leg: LegLike): string {
+  const market = AI_MARKET_LABELS[leg.market] ?? leg.market;
+  let bet: string;
+  if (leg.side === 'over' || leg.side === 'under') {
+    bet =
+      leg.marketKind === 'milestone' && leg.line != null
+        ? `${Math.ceil(leg.line)}+ ${market}`
+        : `${leg.side} ${leg.line ?? ''} ${market}`;
+  } else if (leg.line != null && (leg.market === 'spread' || leg.market === 'game_handicap')) {
+    bet = `${leg.line > 0 ? '+' : ''}${leg.line} ${market}`;
+  } else if (leg.side === 'no') {
+    bet = `not ${market}`;
+  } else {
+    bet = market;
+  }
+  bet = bet.replace(/\s+/g, ' ').trim();
+  return bet.charAt(0).toUpperCase() + bet.slice(1);
+}
+
 /** Selection with the match named when the bet is on the match itself (totals). */
 export function legTitle(leg: LegLike & Pick<AiPickLeg, 'eventLabel'>): string {
   const sel = legSelection(leg);
