@@ -373,7 +373,7 @@ function RecordStrip({ picks }: { picks: AiPick[] }) {
   );
 }
 
-type Filter = 'all' | 'pending' | 'settled';
+type Tab = 'pending' | 'resulted';
 
 const time = (iso: string | null | undefined): number => {
   const t = Date.parse(String(iso || ''));
@@ -384,11 +384,11 @@ const time = (iso: string | null | undefined): number => {
 const playedAt = (pick: AiPick): number =>
   pick.legs.length ? Math.max(...pick.legs.map((l) => time(l.startsAt))) : time(pick.postedAt);
 
-/** Chat order, newest at the bottom: settled picks by when they played, then pending by when posted. */
-function feedOrder(picks: AiPick[]): AiPick[] {
-  const settled = picks.filter((p) => p.status !== 'pending').sort((a, b) => playedAt(a) - playedAt(b));
-  const pending = picks.filter((p) => p.status === 'pending').sort((a, b) => time(a.postedAt) - time(b.postedAt));
-  return [...settled, ...pending];
+/** Pending oldest-posted first; resulted in the order they were played. */
+function tabOrder(picks: AiPick[], tab: Tab): AiPick[] {
+  return tab === 'pending'
+    ? picks.filter((p) => p.status === 'pending').sort((a, b) => time(a.postedAt) - time(b.postedAt))
+    : picks.filter((p) => p.status !== 'pending').sort((a, b) => playedAt(a) - playedAt(b));
 }
 
 function scrollParent(el: HTMLElement | null): HTMLElement | null {
@@ -399,13 +399,11 @@ function scrollParent(el: HTMLElement | null): HTMLElement | null {
   return null;
 }
 
-const NEAR_BOTTOM_PX = 160;
-
 export function AiPicksFeed() {
   const [picks, setPicks] = useState<AiPick[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [tab, setTab] = useState<Tab>('pending');
   const [sport, setSport] = useState<string>('all');
 
   const load = useCallback(async () => {
@@ -453,42 +451,17 @@ export function AiPicksFeed() {
   }, [tennisQuery]);
 
   const sports = useMemo(() => [...new Set(picks.map((p) => p.sport))].sort(), [picks]);
-  const shown = useMemo(
-    () =>
-      feedOrder(
-        picks.filter(
-          (p) =>
-            (sport === 'all' || p.sport === sport) &&
-            (filter === 'all' || (filter === 'pending' ? p.status === 'pending' : p.status !== 'pending'))
-        )
-      ),
-    [picks, sport, filter]
-  );
+  const inSport = useMemo(() => picks.filter((p) => sport === 'all' || p.sport === sport), [picks, sport]);
+  const pendingCount = inSport.filter((p) => p.status === 'pending').length;
+  const resultedCount = inSport.length - pendingCount;
+  const shown = useMemo(() => tabOrder(inSport, tab), [inSport, tab]);
 
-  /** Only the unfiltered feed is chat-style (newest at the bottom); filtered views read top-down from the oldest. */
-  const topDown = filter !== 'all' || sport !== 'all';
-  const endRef = useRef<HTMLDivElement>(null);
-  const jumpRef = useRef(true);
-
-  useEffect(() => {
-    jumpRef.current = true;
-  }, [filter, sport]);
-
+  const topRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (loading) return;
-    const container = scrollParent(endRef.current);
-    if (!container) return;
-    if (topDown) {
-      if (jumpRef.current) container.scrollTop = 0;
-      jumpRef.current = false;
-      return;
-    }
-    const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < NEAR_BOTTOM_PX;
-    if (jumpRef.current || nearBottom) {
-      container.scrollTop = container.scrollHeight;
-      jumpRef.current = false;
-    }
-  }, [shown, loading, topDown]);
+    const container = scrollParent(topRef.current);
+    if (container) container.scrollTop = 0;
+  }, [tab, sport, loading]);
 
   if (loading) {
     return (
@@ -514,30 +487,56 @@ export function AiPicksFeed() {
         : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338]'
     }`;
 
+  const tabs: Array<{ id: Tab; label: string; count: number }> = [
+    { id: 'pending', label: 'Pending', count: pendingCount },
+    { id: 'resulted', label: 'Resulted', count: resultedCount },
+  ];
+
   return (
-    <div className="flex min-h-full flex-col gap-3">
-      <div className="sticky -top-4 z-10 -mx-5 -mt-4 space-y-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur dark:bg-[#0f1a2b]/95">
+    <div ref={topRef} className="flex min-h-full flex-col gap-3">
+      <div className="-mx-5 -mt-4 space-y-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur dark:bg-[#0f1a2b]/95 sm:sticky sm:-top-4 sm:z-10">
         <RecordStrip picks={picks} />
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          {(['all', 'pending', 'settled'] as Filter[]).map((f) => (
-            <button key={f} type="button" onClick={() => setFilter(f)} className={chip(filter === f)}>
-              {f === 'all' ? 'All' : f === 'pending' ? 'Pending' : 'Settled'}
-            </button>
-          ))}
-          {sports.length > 1 && <span className="mx-1 h-4 w-px bg-gray-300 dark:bg-gray-700" />}
-          {sports.length > 1 &&
-            ['all', ...sports].map((s) => (
+        <div role="tablist" aria-label="Picks" className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1 dark:bg-white/[0.04]">
+          {tabs.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(t.id)}
+                className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition-colors ${
+                  active
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-[#1a2740] dark:text-white'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                {t.label}
+                <span
+                  className={`min-w-[1.25rem] rounded-full px-1.5 py-px text-[11px] font-bold tabular-nums ${
+                    active ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600 dark:bg-white/10 dark:text-gray-300'
+                  }`}
+                >
+                  {t.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {sports.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {['all', ...sports].map((s) => (
               <button key={s} type="button" onClick={() => setSport(s)} className={`${chip(sport === s)} inline-flex items-center gap-1`}>
                 {s !== 'all' && <SportLogo sport={s} tours={s === 'tennis' ? ['ATP', 'WTA'] : []} className="h-3 w-3" />}
                 {s === 'all' ? 'All sports' : SPORT_LABELS[s] ?? s}
               </button>
             ))}
-        </div>
+          </div>
+        )}
       </div>
-
-      {/* Chat-style: cards sit at the bottom when there are only a few. */}
-      {!topDown && <div className="flex-1" aria-hidden />}
 
       {shown.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 px-6 py-12 text-center dark:border-gray-700">
@@ -549,13 +548,14 @@ export function AiPicksFeed() {
           <p className="mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
             {picks.length === 0
               ? "No picks yet. Stattrackr AI watches NBL and tennis lines through the day and only posts when it finds a play worth taking."
-              : 'No picks match this filter.'}
+              : tab === 'pending'
+                ? 'No pending picks right now. New plays show up here as soon as they are posted.'
+                : 'No resulted picks yet.'}
           </p>
         </div>
       ) : (
         shown.map((pick) => <PickCard key={pick.id} pick={pick} info={tennisInfo} />)
       )}
-      <div ref={endRef} aria-hidden />
     </div>
   );
 }
