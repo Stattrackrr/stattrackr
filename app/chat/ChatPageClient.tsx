@@ -20,6 +20,7 @@ import {
   uploadChatImage,
 } from '@/lib/chat';
 import { supabase } from '@/lib/supabaseClient';
+import { useSiteOnlineCount } from '@/lib/sitePresence';
 import { useRouter } from 'next/navigation';
 import { ChangeEvent, ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AI_PICKS_AVATAR, AI_PICKS_NAME, AiPicksFeed } from '@/components/chat/AiPicksFeed';
@@ -308,6 +309,7 @@ export default function ChatPageClient() {
   const [composerValue, setComposerValue] = useState('');
   const [composerImage, setComposerImage] = useState<{ file: File; preview: string } | null>(null);
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
+  const onlineCount = useSiteOnlineCount();
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
 
@@ -1373,9 +1375,23 @@ export default function ChatPageClient() {
                         </div>
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                              {isPicksRoom ? 'Picks' : 'Community Chat'}
-                            </h2>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                {isPicksRoom ? 'Picks' : 'Community Chat'}
+                              </h2>
+                              {onlineCount ? (
+                                <span
+                                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300"
+                                  title="People on StatTrackr right now"
+                                >
+                                  <span className="relative flex h-2 w-2">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                                  </span>
+                                  {onlineCount} online
+                                </span>
+                              ) : null}
+                            </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             {isPicksRoom
                               ? 'Picks from Stattrackr AI, posted, tracked and graded automatically.'

@@ -9,6 +9,7 @@ import NavigationLoader from "@/components/NavigationLoader";
 import SignedOutGate from "@/components/SignedOutGate";
 import '@/lib/disableConsoleInProduction';
 import { trackMetaEvent, trackMetaPageView } from '@/lib/metaPixel';
+import { joinSitePresence } from '@/lib/sitePresence';
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -49,6 +50,8 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
     };
   }, []);
   
+  useEffect(() => joinSitePresence(), []);
+
   // Fire Meta PageView on client-side route changes.
   useEffect(() => {
     if (!pathname) return;
