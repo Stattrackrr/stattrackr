@@ -708,6 +708,8 @@ export default function TennisDashboardPage() {
   });
   const [chartTimeframe, setChartTimeframe] = useState<NblChartTimeframe>('last10');
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('totalAces');
+  /** Main-chart games in display order (oldest → newest) for supporting-stats sync. */
+  const [chartVisibleGameLogs, setChartVisibleGameLogs] = useState<Array<Record<string, unknown>>>([]);
   const [nblGameFilters, setNblGameFilters] = useState<NblGameFiltersState>(() => ({
     ...DEFAULT_NBL_GAME_FILTERS,
   }));
@@ -1152,10 +1154,12 @@ export default function TennisDashboardPage() {
     if (!playerId && !playerName) {
       if (!loadingPlayerFromUrl) {
         setSelectedPlayerGameLogs([]);
+        setChartVisibleGameLogs([]);
         setStatsLoadingForPlayer(false);
       }
       return;
     }
+    setChartVisibleGameLogs([]);
     const cacheKey = nblPlayerLogsCacheKey(playerId || `name:${playerName.toLowerCase()}`);
     let cachedLogs: CachedNblPlayerLogs | null = null;
     try {
@@ -1935,6 +1939,7 @@ export default function TennisDashboardPage() {
                     lockOtherStats={freeTier && !!lockedPropsStat}
                     selectedTimeframe={chartTimeframe}
                     onTimeframeChange={setChartTimeframe}
+                    onChartGameLogsChange={setChartVisibleGameLogs}
                     nblGameFilters={nblPropsMode === 'player' ? nblGameFilters : undefined}
                     setNblGameFilters={nblPropsMode === 'player' ? setNblGameFilters : undefined}
                     perGameFilterData={null}
@@ -2023,7 +2028,11 @@ export default function TennisDashboardPage() {
                           Supporting stats
                         </h3>
                         <TennisSupportingStats
-                          gameLogs={chartGameLogsForPlayer as unknown as Array<Record<string, unknown>>}
+                          gameLogs={
+                            (chartVisibleGameLogs.length
+                              ? chartVisibleGameLogs
+                              : chartGameLogsForPlayer) as unknown as Array<Record<string, unknown>>
+                          }
                           timeframe={chartTimeframe}
                           season={TENNIS_CURRENT_YEAR}
                           nextOpponent={statsOpponent}
@@ -2032,6 +2041,7 @@ export default function TennisDashboardPage() {
                           supportingStatKind={supportingStatKind}
                           onSupportingStatKindChange={setSupportingStatKind}
                           isDark={!!mounted && isDark}
+                          preserveInputOrder={chartVisibleGameLogs.length > 0}
                         />
                       </>
                     )}
