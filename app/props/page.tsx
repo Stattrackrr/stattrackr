@@ -2244,11 +2244,19 @@ function propsRowShowsUnderOdds(
   rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta',
   underOdds?: string | null
 ): boolean {
-  if (rowSport === 'nbl') {
+  if (rowSport === 'nbl' || rowSport === 'nba') {
     const u = String(underOdds || '').trim();
     return u !== '' && u !== 'N/A';
   }
   return true;
+}
+
+/** NBA/NBL over-only lines are milestones (e.g. 20+), not an over/under. */
+function propsRowIsMilestone(
+  rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta',
+  underOdds?: string | null
+): boolean {
+  return (rowSport === 'nbl' || rowSport === 'nba') && !propsRowShowsUnderOdds(rowSport, underOdds);
 }
 
 const NBL_OU_ONLY_STORAGE_KEY = 'nbl_props_ou_only_v1';
@@ -5282,10 +5290,36 @@ export default function NBALandingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propsSport, availablePropTypes]);
 
+  // NBA games come from the props rows (team codes + tipoff), so the Games filter needs no schedule fetch.
+  const nbaGames = useMemo((): Game[] => {
+    const byKey = new Map<string, Game>();
+    for (const prop of playerProps) {
+      const home = normalizeNbaTeam(prop.homeTeamCode || prop.homeTeam || '');
+      const away = normalizeNbaTeam(prop.awayTeamCode || prop.awayTeam || '');
+      if (!home || !away) continue;
+      const dateKey = getEasternDateKey(prop.gameDate);
+      const key = `${away}@${home}:${dateKey}`;
+      if (byKey.has(key)) continue;
+      const numericId = Number(prop.gameId);
+      byKey.set(key, {
+        id: Number.isSafeInteger(numericId) && numericId > 0 ? numericId : byKey.size + 1,
+        date: dateKey,
+        status: prop.gameDate || dateKey,
+        datetime: prop.gameDate || undefined,
+        home_team: { id: 0, abbreviation: home },
+        visitor_team: { id: 0, abbreviation: away },
+      });
+    }
+    if (byKey.size === 0) return todaysGames;
+    return Array.from(byKey.values()).sort((a, b) =>
+      String(a.datetime || a.date).localeCompare(String(b.datetime || b.date))
+    );
+  }, [playerProps, todaysGames]);
+
   // Helper to match a prop to a game based on team/opponent
   // OPTIMIZATION: useCallback to prevent unnecessary re-creation on every render
   const getGameForProp = useCallback((prop: PlayerProp): Game | null => {
-    if (todaysGames.length === 0) {
+    if (nbaGames.length === 0) {
       return null;
     }
 
@@ -5300,7 +5334,7 @@ export default function NBALandingPage() {
       )
     );
 
-    const exactMatchWithDate = todaysGames.find((game) => {
+    const exactMatchWithDate = nbaGames.find((game) => {
       const homeTeam = normalizeNbaTeam(game.home_team?.abbreviation || '');
       const awayTeam = normalizeNbaTeam(game.visitor_team?.abbreviation || '');
       if (!homeTeam || !awayTeam || !propTeam || !propOpponent) return false;
@@ -5318,7 +5352,7 @@ export default function NBALandingPage() {
       return exactMatchWithDate;
     }
 
-    const exactMatch = todaysGames.find((game) => {
+    const exactMatch = nbaGames.find((game) => {
       const homeTeam = normalizeNbaTeam(game.home_team?.abbreviation || '');
       const awayTeam = normalizeNbaTeam(game.visitor_team?.abbreviation || '');
       if (!homeTeam || !awayTeam || !propTeam || !propOpponent) return false;
@@ -5332,7 +5366,7 @@ export default function NBALandingPage() {
       return exactMatch;
     }
 
-    const datedSingleTeamMatch = todaysGames.filter((game) => {
+    const datedSingleTeamMatch = nbaGames.filter((game) => {
       const homeTeam = normalizeNbaTeam(game.home_team?.abbreviation || '');
       const awayTeam = normalizeNbaTeam(game.visitor_team?.abbreviation || '');
       if (!homeTeam || !awayTeam || propTeams.length === 0 || !propDateKey) return false;
@@ -5357,7 +5391,7 @@ export default function NBALandingPage() {
     }
     
     return matchedGame || null;
-  }, [todaysGames]); // OPTIMIZATION: Only recreate when todaysGames changes
+  }, [nbaGames]);
 
   const getTipoffGameForRow = useCallback((prop: PlayerProp, rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta'): Game | null => {
     const tipoffAt =
@@ -5402,7 +5436,7 @@ export default function NBALandingPage() {
 
   // Only show games that have at least one player prop
   const gamesWithProps = useMemo(() => {
-    if (playerProps.length === 0 || todaysGames.length === 0) return [];
+    if (playerProps.length === 0 || nbaGames.length === 0) return [];
     const idsWithProps = new Set<number>();
     playerProps.forEach((prop) => {
       const game = getGameForProp(prop);
@@ -5410,8 +5444,8 @@ export default function NBALandingPage() {
         idsWithProps.add(game.id);
       }
     });
-    return todaysGames.filter((game) => idsWithProps.has(game.id));
-  }, [playerProps, todaysGames, getGameForProp]);
+    return nbaGames.filter((game) => idsWithProps.has(game.id));
+  }, [playerProps, nbaGames, getGameForProp]);
   const shouldApplyNbaGameFilter = selectedGames.size > 0 && gamesWithProps.length > 0;
 
   const activeSecondaryProps = useMemo(() => {
@@ -10439,7 +10473,7 @@ export default function NBALandingPage() {
                                         })}
                                       >
                                         {formatPropsRowStatLine(prop.statType, prop.line, getStatLabel(prop.statType), {
-                                          milestone: rowSport === 'nbl' && (!prop.underOdds || prop.underOdds === 'N/A'),
+                                          milestone: propsRowIsMilestone(rowSport, prop.underOdds),
                                         })}
                                       </div>
                                       <div className="flex items-center gap-2 mt-1">
@@ -12051,7 +12085,7 @@ export default function NBALandingPage() {
                                       })}
                                     >
                                       {formatPropsRowStatLine(prop.statType, prop.line, getStatLabel(prop.statType), {
-                                        milestone: rowSport === 'nbl' && (!prop.underOdds || prop.underOdds === 'N/A'),
+                                        milestone: propsRowIsMilestone(rowSport, prop.underOdds),
                                       })}
                                     </div>
                                   </div>

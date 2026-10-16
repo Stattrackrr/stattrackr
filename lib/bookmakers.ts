@@ -448,7 +448,7 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'betgoodwin': {
     name: 'BetGoodwin',
     logo: 'BG',
-    logoUrl: getLogoUrl('betgoodwin.com.au'),
+    logoUrl: getLogoUrl('betgoodwin.co.uk'),
     color: '#0F766E',
   },
   'cloudbet': {
@@ -670,6 +670,7 @@ const LOCAL_BOOKMAKER_LOGO_SLUGS: Record<string, string> = {
   bet365au: 'bet365',
   bet365nl: 'bet365',
   betfair: 'betfair',
+  betgoodwin: 'betgoodwin',
   betmgm: 'betmgm',
   betvictor: 'betvictor',
   bv: 'betvictor',
@@ -728,7 +729,7 @@ const BOOK_DOMAINS: Record<string, string> = {
   betvictor: 'betvictor.com',
   betway: 'betway.com',
   bet365nl: 'bet365.com',
-  betgoodwin: 'betgoodwin.com.au',
+  betgoodwin: 'betgoodwin.co.uk',
   bovada: 'bovada.lv',
   boylesports: 'boylesports.com',
   bwin: 'bwin.com',
