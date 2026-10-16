@@ -4,7 +4,7 @@
   "homeTeam": "South East Melbourne Phoenix",
   "awayTeam": "Cairns Taipans",
   "commenceTime": "2026-10-17T06:30:00.000Z",
-  "capturedAt": "2026-10-16T13:22:03.443Z",
+  "capturedAt": "2026-10-16T17:21:58.916Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -20,7 +20,7 @@
     "BetMGM",
     "Bwin"
   ],
-  "lineCount": 2112,
+  "lineCount": 2114,
   "lines": [
     {
       "player": "Angus Glover",
@@ -27476,6 +27476,32 @@
       "over": "-1000",
       "under": "N/A",
       "overDecimal": 1.1,
+      "underDecimal": null
+    },
+    {
+      "player": "Dash Daniels",
+      "playerKey": "dash daniels",
+      "book": "Picklebet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "+333",
+      "under": "N/A",
+      "overDecimal": 4.33,
+      "underDecimal": null
+    },
+    {
+      "player": "Skylar Mays",
+      "playerKey": "skylar mays",
+      "book": "Picklebet",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 39.5,
+      "label": "40+",
+      "over": "+700",
+      "under": "N/A",
+      "overDecimal": 8,
       "underDecimal": null
     }
   ]

@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-15T17:45:44.422Z",
+  "generatedAt": "2026-10-16T17:21:06.593Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-      "name": "Tasmania JackJumpers",
-      "team_code": "TAS",
-      "nextMatches": [
-        {
-          "id": "a40d1c6a-784a-471d-825b-875c7088462e",
-          "match_slug": "tasmania-jackjumpers-v-adelaide-36ers-men-16-10-2026",
-          "match_title": "Tasmania JackJumpers v Adelaide 36ers men 16-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=JACKJUMP27",
-          "external_id": "3700bf63-58ad-11f1-89a0-03625b994063",
-          "start_time_datetime": "2026-10-16T08:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-          "opponent_name": "Adelaide 36ers",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-          "venue": "MyState Bank Arena",
-          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
-        }
-      ]
-    },
-    {
-      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-      "name": "Adelaide 36ers",
-      "team_code": "ADL",
-      "nextMatches": [
-        {
-          "id": "a40d1c6a-784a-471d-825b-875c7088462e",
-          "match_slug": "tasmania-jackjumpers-v-adelaide-36ers-men-16-10-2026",
-          "match_title": "Tasmania JackJumpers v Adelaide 36ers men 16-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
-          "external_id": "3700bf63-58ad-11f1-89a0-03625b994063",
-          "start_time_datetime": "2026-10-16T08:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-          "opponent_name": "Tasmania JackJumpers",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-          "venue": "MyState Bank Arena",
-          "opponent_logo_blurhash": "L25$batj01ah1hWW^Moe00V[.kSz"
-        }
-      ]
-    },
     {
       "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "name": "South East Melbourne Phoenix",
@@ -132,6 +90,27 @@
       ]
     },
     {
+      "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+      "name": "Tasmania JackJumpers",
+      "team_code": "TAS",
+      "nextMatches": [
+        {
+          "id": "529e1fb8-ac98-4150-be4d-3b5fe3c17291",
+          "match_slug": "tasmania-jackjumpers-v-nz-breakers-men-18-10-2026",
+          "match_title": "Tasmania JackJumpers v NZ Breakers men 18-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=JACKJUMP27",
+          "external_id": "37085418-58ad-11f1-9e12-411a11259918",
+          "start_time_datetime": "2026-10-18T04:00:00.000Z",
+          "is_home": true,
+          "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "opponent_name": "NZ Breakers",
+          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
+          "venue": "MyState Bank Arena",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
       "id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "name": "NZ Breakers",
       "team_code": "NZL",
@@ -212,6 +191,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/TAS.png",
           "venue": "MyState Bank Arena",
           "opponent_logo_blurhash": "L25$batj01ah1hWW^Moe00V[.kSz"
+        }
+      ]
+    },
+    {
+      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "name": "Adelaide 36ers",
+      "team_code": "ADL",
+      "nextMatches": [
+        {
+          "id": "a96e0fda-a53d-48b2-9b36-db4a97cd70dd",
+          "match_slug": "south-east-melbourne-phoenix-v-adelaide-36ers-men-24-10-2026",
+          "match_title": "South East Melbourne Phoenix v Adelaide 36ers men 24-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
+          "external_id": "3711a017-58ad-11f1-b649-93b9302663c0",
+          "start_time_datetime": "2026-10-24T08:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "opponent_name": "South East Melbourne Phoenix",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
         }
       ]
     }

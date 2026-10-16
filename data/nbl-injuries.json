@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-15T17:46:28.419Z",
+  "generatedAt": "2026-10-16T17:21:46.189Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
-  "sourceUpdatedText": "Wednesday, October 7, 7:00pm AEDT",
-  "injuryCount": 22,
+  "sourceUpdatedText": "Tuesday, October 13, 6:00pm AEDT",
+  "injuryCount": 24,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -36,16 +36,16 @@
       "team": "Brisbane Bullets",
       "player": "Sam McDaniel",
       "injury": "Lower leg",
-      "returning": "Round 8",
+      "returning": "Round 10",
       "status": "Out",
-      "note": "Will miss at least six weeks with a lower leg injury, the NBL reported on 9 October 2026 in announcing that Brisbane have signed Mawot Mag as his injury replacement player. He was hurt in Brisbane’s home game against Tasmania on Saturday 3 October, the night he returned from a hand injury, and Brisbane’s update of 7 October ruled him out for about six weeks, with Josh Duach suiting up in his absence. The NBL’s list of 7 October has him back in Round 8.",
+      "note": "Will miss at least six weeks with a lower leg injury, the NBL reported on 9 October 2026 in announcing that Brisbane have signed Mawot Mag as his injury replacement player. He was hurt in Brisbane’s home game against Tasmania on Saturday 3 October, the night he returned from a hand injury, and Brisbane’s update of 7 October ruled him out for about six weeks, with Josh Duach suiting up in his absence. The NBL’s list of 13 October has him back in Round 10.",
       "listedByNbl": true
     },
     {
       "team": "Brisbane Bullets",
       "player": "Taine Murray",
       "injury": "Lower Limb",
-      "returning": "Round 4-6",
+      "returning": "Round 5-6",
       "status": "Out",
       "listedByNbl": true
     },
@@ -100,7 +100,7 @@
       "injury": "Calf",
       "returning": "Round 5",
       "status": "Out",
-      "note": "Goulding will miss Melbourne United’s game against Cairns at John Cain Arena on Saturday 3 October with a calf strain, according to the Taipans’ game preview of 3 October 2026. United have not given a return date.",
+      "note": "Goulding missed Melbourne United’s game against Cairns at John Cain Arena on Saturday 3 October with a calf strain, according to the Taipans’ game preview of 3 October 2026. United have not given a return date; the NBL’s list of 13 October has him back in Round 5.",
       "listedByNbl": true
     },
     {
@@ -140,6 +140,14 @@
       "listedByNbl": true
     },
     {
+      "team": "New Zealand Breakers",
+      "player": "Nelson Weidemann",
+      "injury": "Unavailable",
+      "returning": "TBC",
+      "status": "Out",
+      "listedByNbl": true
+    },
+    {
       "team": "Perth Wildcats",
       "player": "Jo Lual-Acuil Jr",
       "injury": "Calf",
@@ -163,6 +171,15 @@
       "injury": "Knee",
       "returning": "TBC",
       "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "Sydney Kings",
+      "player": "Matthew Dellavedova",
+      "injury": "Calf",
+      "returning": "Re-evaluated next week",
+      "status": "Out",
+      "note": "The Sydney Kings said on Tuesday 13 October 2026 that Dellavedova will miss both Round 5 games, against the New Zealand Breakers on Wednesday 14 October and the Perth Wildcats on Sunday 18 October, with a calf injury, and will be re-evaluated next week. Lachlan Bofinger replaces him in the squad. The NBL’s list of 13 October has him back in Round 7.",
       "listedByNbl": true
     },
     {

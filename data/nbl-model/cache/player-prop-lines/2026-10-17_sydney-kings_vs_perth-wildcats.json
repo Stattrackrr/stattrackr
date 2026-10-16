@@ -4,7 +4,7 @@
   "homeTeam": "Sydney Kings",
   "awayTeam": "Perth Wildcats",
   "commenceTime": "2026-10-17T08:30:00.000Z",
-  "capturedAt": "2026-10-16T13:22:03.443Z",
+  "capturedAt": "2026-10-16T17:21:58.916Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -29,7 +29,7 @@
     "BetMGM",
     "Bwin"
   ],
-  "lineCount": 2990,
+  "lineCount": 2991,
   "lines": [
     {
       "player": "Andrew Carr",
@@ -38899,6 +38899,19 @@
       "over": "+650",
       "under": "N/A",
       "overDecimal": 7.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Xavier Cooks",
+      "playerKey": "xavier cooks",
+      "book": "Picklebet",
+      "stat": "pa",
+      "kind": "milestone",
+      "line": 23.5,
+      "label": "24+",
+      "over": "+230",
+      "under": "N/A",
+      "overDecimal": 3.3,
       "underDecimal": null
     }
   ]
