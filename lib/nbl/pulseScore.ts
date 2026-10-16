@@ -96,7 +96,25 @@ function teamsMatch(a: string | undefined, b: string | undefined): boolean {
 }
 
 async function refreshBoard(): Promise<PulseNblBoard> {
-  const games = (await fetchOddsApiNetNblGames()) as PulseNblGame[];
+  let games: PulseNblGame[] = [];
+  if (oddsApiNetKey()) {
+    try {
+      games = (await fetchOddsApiNetNblGames()) as PulseNblGame[];
+    } catch (err) {
+      console.warn('[odds-api.net NBL] board fetch failed', err instanceof Error ? err.message : err);
+    }
+  }
+  // odds-api.net periodically omits same-day fixtures that already have AU lines
+  // on The Odds API (seen with Tasmania vs Adelaide). Fill those gaps.
+  try {
+    const { fillMissingNblPlayerPropsFromTheOddsApi } = await import('@/lib/nbl/theOddsApiPlayerProps');
+    games = await fillMissingNblPlayerPropsFromTheOddsApi(games);
+  } catch (err) {
+    console.warn(
+      '[The Odds API NBL props] fallback failed',
+      err instanceof Error ? err.message : err
+    );
+  }
   const board: PulseNblBoard = { lastUpdated: new Date().toISOString(), games };
   // Always write — including empty — so force refresh cannot stick on last week's board.
   memoryBoard = games;
@@ -135,7 +153,8 @@ export async function getNblPulseScoreBoard(options?: { force?: boolean }): Prom
     return memoryBoard;
   }
 
-  if (!oddsApiNetKey()) return cached?.games?.length ? cached.games : memoryBoard ?? [];
+  const canRefresh = Boolean(oddsApiNetKey() || String(process.env.ODDS_API_KEY || '').trim());
+  if (!canRefresh) return cached?.games?.length ? cached.games : memoryBoard ?? [];
   if (!inflight) {
     inflight = refreshBoard().finally(() => {
       inflight = null;

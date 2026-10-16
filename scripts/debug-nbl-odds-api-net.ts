@@ -53,11 +53,32 @@ async function main() {
   const key = apiKey();
   if (!key) throw new Error('ODDS_API_NET_KEY is not set');
 
-  const eventsPage = await fetchJson(`${BASE}/events?sport=basketball&league=NBL&limit=50`);
-  const events = eventsFrom(eventsPage);
-  console.log(`[debug] events=${events.length}`);
+  const startFrom = Math.floor(Date.now() / 1000) - 6 * 60 * 60;
+  const startTo = Math.floor(Date.now() / 1000) + 14 * 24 * 60 * 60;
+  const events: Array<Record<string, unknown>> = [];
+  let cursor = '';
+  for (let page = 0; page < 20; page += 1) {
+    const qs = new URLSearchParams({
+      sport: 'basketball',
+      league: 'NBL',
+      limit: '100',
+      start_from: String(startFrom),
+      start_to: String(startTo),
+    });
+    if (cursor) qs.set('cursor', cursor);
+    const eventsPage = await fetchJson(`${BASE}/events?${qs}`);
+    const batch = eventsFrom(eventsPage);
+    events.push(...batch);
+    const next =
+      eventsPage && typeof eventsPage === 'object'
+        ? String((eventsPage as { next_cursor?: string | null }).next_cursor || '').trim()
+        : '';
+    if (!next || !batch.length) break;
+    cursor = next;
+  }
+  console.log(`[debug] events=${events.length} start_from=${startFrom} start_to=${startTo}`);
 
-  for (const ev of events.slice(0, 15)) {
+  for (const ev of events.slice(0, 20)) {
     const id = ev.event_id ?? ev.id;
     const homeRaw = String(ev.home_team || ev.home || '');
     const awayRaw = String(ev.away_team || ev.away || '');
@@ -66,6 +87,28 @@ async function main() {
     console.log(
       `[debug] event ${id} raw="${homeRaw}" vs "${awayRaw}" → official=${home || 'NULL'} vs ${away || 'NULL'} state=${ev.event_state || ''}`
     );
+  }
+
+  // Compare against The Odds API event list when available (spot same-day gaps).
+  const oddsApiKey = String(process.env.ODDS_API_KEY || '').trim();
+  if (oddsApiKey) {
+    try {
+      const res = await fetch(
+        `https://api.the-odds-api.com/v4/sports/basketball_nbl/events?apiKey=${encodeURIComponent(oddsApiKey)}`,
+        { cache: 'no-store', signal: AbortSignal.timeout(20_000) }
+      );
+      const payload = (await res.json()) as Array<Record<string, unknown>>;
+      if (Array.isArray(payload)) {
+        console.log(`[debug] the-odds-api events=${payload.length}`);
+        for (const ev of payload.slice(0, 12)) {
+          console.log(
+            `[debug] the-odds-api ${ev.id} ${ev.home_team} vs ${ev.away_team} tip=${ev.commence_time}`
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('[debug] the-odds-api events failed', err instanceof Error ? err.message : err);
+    }
   }
 
   // Sample odds from first official NBL event (or first event if none map).

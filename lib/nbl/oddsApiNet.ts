@@ -344,11 +344,39 @@ function milestoneThreshold(value: number): number {
   return Math.abs(value - Math.round(value)) < 1e-6 ? value : Math.round(value + 0.5);
 }
 
+async function fetchNblEvents(): Promise<OddsApiEvent[]> {
+  // Docs: without start_from the window starts at "now". Page with cursor until exhausted
+  // and look back a few hours so same-day tips near the cutoff are not dropped.
+  const startFrom = Math.floor(Date.now() / 1000) - 6 * 60 * 60;
+  const startTo = Math.floor(Date.now() / 1000) + 14 * 24 * 60 * 60;
+  const events: OddsApiEvent[] = [];
+  let cursor = '';
+  for (let page = 0; page < 20; page += 1) {
+    const qs = new URLSearchParams({
+      sport: 'basketball',
+      league: 'NBL',
+      limit: '100',
+      start_from: String(startFrom),
+      start_to: String(startTo),
+    });
+    if (cursor) qs.set('cursor', cursor);
+    const pagePayload = await fetchJson(`${BASE}/events?${qs}`);
+    const batch = eventsFrom(pagePayload);
+    events.push(...batch);
+    const next =
+      pagePayload && typeof pagePayload === 'object'
+        ? String((pagePayload as { next_cursor?: string | null }).next_cursor || '').trim()
+        : '';
+    if (!next || !batch.length) break;
+    cursor = next;
+  }
+  return events;
+}
+
 export async function fetchOddsApiNetNblGames(): Promise<OddsNetGame[]> {
   if (!apiKey()) return [];
   const bookmakerParam = await playerPropBookmakers();
-  const eventsPage = await fetchJson(`${BASE}/events?sport=basketball&league=NBL&limit=50`);
-  const events = eventsFrom(eventsPage);
+  const events = await fetchNblEvents();
   console.warn(`[odds-api.net NBL] events=${events.length} books=${bookmakerParam.split(',').filter(Boolean).length}`);
   const games: OddsNetGame[] = [];
 
