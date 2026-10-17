@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-16T17:21:46.189Z",
+  "generatedAt": "2026-10-17T16:20:47.887Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Tuesday, October 13, 6:00pm AEDT",
-  "injuryCount": 24,
+  "injuryCount": 25,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -91,7 +91,7 @@
       "injury": "Foot",
       "returning": "Season",
       "status": "Out for the season",
-      "note": "Out for the remainder of the NBL27 season. The Illawarra Hawks announced on Friday 9 October 2026, as reported by NBL.com.au, that Peatling will undergo season-ending foot surgery following recommendations from specialists. A club spokesperson: “While the procedure will rule Mason out for the remainder of the NBL27 season, it is expected to provide the best outcome for his long-term health and a full recovery.” He made two appearances this season. On Monday 28 September Illawarra head coach Justin Tatum had said, as reported by basketball.com.au: “Mason will get a scan tomorrow, and hopefully his foot isn’t broken.” Peatling had earlier left Illawarra’s NBL27 Round 1 game against the New Zealand Breakers at Spark Arena on Sunday 20 September with a back issue; Tatum cleared him the same day, saying “He’s fine. He just got hit on a check-down. He bounced right back and said he’s fine.” That was a back complaint; this one is his foot.",
+      "note": "Illawarra announced on 9 October 2026 that he will have season-ending foot surgery, NBL.com.au reported.",
       "listedByNbl": true
     },
     {
@@ -171,6 +171,15 @@
       "injury": "Knee",
       "returning": "TBC",
       "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "South East Melbourne Phoenix",
+      "player": "Tanner Krebs",
+      "injury": "Not disclosed",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Failed a fitness test and misses the home game against the Cairns Taipans on 17 October 2026, Michael Randall reported. He played 27 minutes at Brisbane on 15 October.",
       "listedByNbl": true
     },
     {

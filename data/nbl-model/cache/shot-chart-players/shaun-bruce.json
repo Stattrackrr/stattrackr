@@ -5,10 +5,10 @@
   "years": [
     2026
   ],
-  "gamesUsed": 6,
+  "gamesUsed": 7,
   "fixturesFetched": 0,
-  "fixturesCached": 6,
-  "shotCount": 20,
+  "fixturesCached": 7,
+  "shotCount": 26,
   "zones": [
     {
       "zone": "restricted",
@@ -16,7 +16,7 @@
       "fga": 3,
       "fgm": 2,
       "fgPct": 66.66666666666666,
-      "share": 15
+      "share": 11.538461538461538
     },
     {
       "zone": "paint",
@@ -24,39 +24,39 @@
       "fga": 2,
       "fgm": 1,
       "fgPct": 50,
-      "share": 10
+      "share": 7.6923076923076925
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 2,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 10
+      "fga": 4,
+      "fgm": 1,
+      "fgPct": 25,
+      "share": 15.384615384615385
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 2,
+      "fga": 3,
       "fgm": 1,
-      "fgPct": 50,
-      "share": 10
+      "fgPct": 33.33333333333333,
+      "share": 11.538461538461538
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 6,
+      "fga": 7,
       "fgm": 2,
-      "fgPct": 33.33333333333333,
-      "share": 30
+      "fgPct": 28.57142857142857,
+      "share": 26.923076923076923
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 5,
+      "fga": 7,
       "fgm": 2,
-      "fgPct": 40,
-      "share": 25
+      "fgPct": 28.57142857142857,
+      "share": 26.923076923076923
     }
   ],
   "points": [
@@ -179,7 +179,43 @@
       9.09,
       0,
       1
+    ],
+    [
+      4.32,
+      8.52,
+      0,
+      1
+    ],
+    [
+      1.45,
+      5.26,
+      0,
+      1
+    ],
+    [
+      2.1,
+      1.59,
+      1,
+      0
+    ],
+    [
+      2.06,
+      3.15,
+      0,
+      0
+    ],
+    [
+      14.52,
+      2.04,
+      0,
+      1
+    ],
+    [
+      6.79,
+      9.41,
+      0,
+      1
     ]
   ],
-  "generatedAt": "2026-10-16T17:21:47.954Z"
+  "generatedAt": "2026-10-17T16:20:50.080Z"
 }

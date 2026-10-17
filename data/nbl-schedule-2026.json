@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-16T17:21:05.342Z",
+  "generatedAt": "2026-10-17T16:20:04.041Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2499,7 +2499,7 @@
       "externalId": "3707e960-58ad-11f1-a8d4-819ec06531e4",
       "startTime": "2026-10-17T08:30:00.000Z",
       "round": "5",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Sydney Kings",
       "homeTeamCode": "SYD",
       "homeTeamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
@@ -2508,8 +2508,8 @@
       "awayTeamCode": "PER",
       "awayTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "awayLogo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 102,
+      "awayScore": 81,
       "venue": "Afterpay Arena",
       "matchSlug": "sydney-kings-v-perth-wildcats-men-17-10-2026"
     },
@@ -2518,7 +2518,7 @@
       "externalId": "37082c14-58ad-11f1-8882-9bf90a853321",
       "startTime": "2026-10-17T06:30:00.000Z",
       "round": "5",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
       "homeTeamCode": "SEM",
       "homeTeamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
@@ -2527,8 +2527,8 @@
       "awayTeamCode": "CNS",
       "awayTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 115,
+      "awayScore": 83,
       "venue": "John Cain Arena",
       "matchSlug": "south-east-melbourne-phoenix-v-cairns-taipans-men-17-10-2026"
     },

@@ -1,0 +1,220 @@
+{
+  "fixtureId": "37082c14-58ad-11f1-8882-9bf90a853321",
+  "homeTeam": "South East Melbourne Phoenix",
+  "awayTeam": "Cairns Taipans",
+  "homeScore": "115",
+  "awayScore": "83",
+  "tipoff": "2026-10-17T06:30:00",
+  "teams": [
+    {
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "isHome": true,
+      "starters": [
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "jersey": "20",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/31618183c5ce46ff8fbd140b934485cd?size=400",
+          "starter": true
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "jersey": "5",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/45a8b8db005c4463bd960096521125c4?size=400",
+          "starter": true
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "jersey": "12",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c5f1c5b857c14249ae62db4f296172da?size=400",
+          "starter": true
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "jersey": "99",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aa5b390825814a8b86d89f739fa47383?size=400",
+          "starter": true
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "jersey": "4",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/456410246a4747979cf1d8030b76c67d?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "483bc2c6-7197-11f0-9d6a-376164d66ee2",
+          "name": "Ellis Biggar",
+          "jersey": "8",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/34321c69dec24791ba68dcc0e932c5af?size=400",
+          "starter": false
+        },
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "jersey": "1",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/02596ca88608482698479a4bdebd02b2?size=400",
+          "starter": false
+        },
+        {
+          "personId": "51da7e91-530d-11f0-9ca1-f7426b1db1b4",
+          "name": "Daniel Foster",
+          "jersey": "11",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e8df9b6d9e64950aac3a41a1b3f8043?size=400",
+          "starter": false
+        },
+        {
+          "personId": "5296e41e-8ba9-11f1-86e5-771ad4e24a07",
+          "name": "Skylar Mays",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8fab66501a7641c48f5e2d29302800ab?size=400",
+          "starter": false
+        },
+        {
+          "personId": "5ec9c9d2-410d-11f0-a085-9dbbf7342624",
+          "name": "Patrick Ryan",
+          "jersey": "2",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cc13e0adf30e4b2f8879ca0fa64acd46?size=400",
+          "starter": false
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "jersey": "7",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d3e6511d611241c1a1332ac76cdf7f4a?size=400",
+          "starter": false
+        },
+        {
+          "personId": "b41a16c8-8c4f-11f0-81af-012b0061dfcc",
+          "name": "Sam Davidson",
+          "jersey": "3",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a5ce8c9efc5445a6a0caf61770e0384e?size=400",
+          "starter": false
+        }
+      ]
+    },
+    {
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "isHome": false,
+      "starters": [
+        {
+          "personId": "51471f03-410d-11f0-9410-9dbbf7342624",
+          "name": "Keanu Pinder",
+          "jersey": "25",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9c0648c3679b4d97b8408ef7646d9fe8?size=400",
+          "starter": true
+        },
+        {
+          "personId": "5ce00e55-410d-11f0-b02a-9dbbf7342624",
+          "name": "Jack McVeigh",
+          "jersey": "9",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0733c20b27bc49f191514921b9ae511d?size=400",
+          "starter": true
+        },
+        {
+          "personId": "69e61df5-95e3-11f1-ab9f-79709ac321d1",
+          "name": "Jaylon Brown",
+          "jersey": "3",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9aea2db4259e4d469951ee235da6e94d?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6a60beba-410d-11f0-b594-9dbbf7342624",
+          "name": "Reyne Smith",
+          "jersey": "2",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72d73d1677c246359d60c6a58a0e2c3c?size=400",
+          "starter": true
+        },
+        {
+          "personId": "7647d951-410d-11f0-9f65-2902fc2f936f",
+          "name": "Malique Lewis",
+          "jersey": "33",
+          "position": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6d522db6a7a748f18947f33fd6cb13e4?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "2bcb7b76-410d-11f0-afff-975350631782",
+          "name": "Shaun Bruce",
+          "jersey": "7",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7c5bf9472853498ebb87af0fc928d815?size=400",
+          "starter": false
+        },
+        {
+          "personId": "330a0499-654d-11f1-9ce8-699a8ab9b4d3",
+          "name": "Luke Paul",
+          "jersey": "10",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/826398d759634fdfa99316a60adb2136?size=400",
+          "starter": false
+        },
+        {
+          "personId": "5142ca74-410d-11f0-95fe-9dbbf7342624",
+          "name": "Kyrin Galloway",
+          "jersey": "14",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c6565be393224e388d7fa91c4c5810a3?size=400",
+          "starter": false
+        },
+        {
+          "personId": "69a189c4-7bfb-11f0-ba24-a338a0968f69",
+          "name": "Lloyd McVeigh",
+          "jersey": "1",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2279edc447f54e6194f6bc4c29b02309?size=400",
+          "starter": false
+        },
+        {
+          "personId": "6becc941-410d-11f0-bb2d-9dbbf7342624",
+          "name": "Walter Brown",
+          "jersey": "22",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f9ba66350c474d3dabb0881acc922016?size=400",
+          "starter": false
+        },
+        {
+          "personId": "757b5f07-410d-11f0-a0f1-2902fc2f936f",
+          "name": "Jonah Bolden",
+          "jersey": "43",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e6cd334efc104d7a94b5c6e54ca1de1f?size=400",
+          "starter": false
+        },
+        {
+          "personId": "75a36ee2-410d-11f0-b3af-2902fc2f936f",
+          "name": "Luca Yates",
+          "jersey": "48",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e3753c3dd3e14e42aaf004c765d85d8c?size=400",
+          "starter": false
+        }
+      ]
+    }
+  ]
+}
