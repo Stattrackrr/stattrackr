@@ -1,3 +1,5 @@
+import { tennisBookIsAustralian } from '@/lib/tennis/oddsTypes';
+
 export type TennisPaintBookmakerLine = {
   bookmaker: string;
   line: number;
@@ -103,10 +105,14 @@ export function bookmakerLinesFromTennisRow(row: TennisPaintRow): TennisPaintBoo
   };
   const winASet = row.statType === 'setsWon' || row.statType === 'setsLost';
   if (Array.isArray(row.bookmakerLines) && row.bookmakerLines.length > 0) {
-    return row.bookmakerLines
+    const lines = row.bookmakerLines
       .map((line) => normalizeBookmakerLine(line, fallback))
       .filter((line): line is TennisPaintBookmakerLine => Boolean(line))
       .filter((line) => !winASet || hasPrice(line.overOdds));
+    return [
+      ...lines.filter((line) => tennisBookIsAustralian(line.bookmaker)),
+      ...lines.filter((line) => !tennisBookIsAustralian(line.bookmaker)),
+    ];
   }
   const single = normalizeBookmakerLine(fallback, fallback);
   if (!single || (winASet && !hasPrice(single.overOdds))) return [];

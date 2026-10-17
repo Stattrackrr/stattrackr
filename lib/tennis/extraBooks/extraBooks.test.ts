@@ -5,6 +5,25 @@ import { entainCardToSource } from './entain';
 import { pointsbetEventToSource } from './pointsbet';
 import { sourceMatchToBookRow } from './shared';
 import { tennisOddsApiNetSourceFromItems } from '../oddsApiNet';
+import { bookmakerLinesFromTennisRow } from '../aggregatePropsForPaint';
+import { australianBooksFirst } from '../oddsTypes';
+
+test('props rows list Australian books first and keep every other book after them', () => {
+  const line = (bookmaker: string) => ({ bookmaker, line: 21.5, overOdds: '-110', underOdds: '-110' });
+  const row = {
+    statType: 'totalGames',
+    line: 21.5,
+    bookmakerLines: [line('bet365'), line('Pinnacle'), line('Ladbrokes'), line('1xBet'), line('bet365 au'), line('BetRight')],
+  };
+  assert.deepEqual(
+    bookmakerLinesFromTennisRow(row).map((l) => l.bookmaker),
+    ['Ladbrokes', 'bet365 au', 'BetRight', 'bet365', 'Pinnacle', '1xBet']
+  );
+  assert.deepEqual(
+    australianBooksFirst([{ name: 'Pinnacle' }, { name: 'Betfair', region: 'au' as const }, { name: 'PointsBet' }]).map((b) => b.name),
+    ['Betfair', 'PointsBet', 'Pinnacle']
+  );
+});
 
 const names = { home: 'Juan Manuel La Serna', away: 'Hugo Dellien' };
 

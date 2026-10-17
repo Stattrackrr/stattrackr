@@ -577,7 +577,10 @@ function presentSnapshot(snapshot: TennisOddsSnapshot, next: TennisNextGame): Te
     matchId: snapshot.matchId,
     homeTeam: playerIsHome ? next.homeName : next.awayName,
     awayTeam: playerIsHome ? next.awayName : next.homeName,
-    bookmakers: orientBooksForPlayer(snapshot.bookmakers, playerIsHome),
+    bookmakers: orientBooksForPlayer(
+      snapshot.bet365Au ? [...snapshot.bookmakers, snapshot.bet365Au] : snapshot.bookmakers,
+      playerIsHome
+    ),
     fetchedAt: snapshot.fetchedAt,
   };
 }

@@ -1,5 +1,5 @@
 import { americanToDecimal } from '@/lib/currencyUtils';
-import type { BookmakerRegion } from '@/lib/bookmakers';
+import { getBookmakerRegion, type BookmakerRegion } from '@/lib/bookmakers';
 
 export type TennisOuLine = { line: string; over: string; under: string };
 export type TennisBookRegion = BookmakerRegion;
@@ -99,19 +99,41 @@ function preferredBookRank(name: string | undefined): number {
   return hit >= 0 ? hit : 99;
 }
 
+export function tennisBookIsAustralian(name: string | null | undefined, region?: TennisBookRegion): boolean {
+  return (region ?? getBookmakerRegion(String(name || ''))) === 'au';
+}
+
+/** Stable: Australian books first, everything else keeps its order. */
+export function australianBooksFirst<T extends { name: string; region?: TennisBookRegion }>(books: T[]): T[] {
+  return [
+    ...books.filter((book) => tennisBookIsAustralian(book.name, book.region)),
+    ...books.filter((book) => !tennisBookIsAustralian(book.name, book.region)),
+  ];
+}
+
+/** Dashboard default: an Australian book wins whenever one prices the market. */
+function australianRank(book: TennisBookRow): number {
+  return tennisBookIsAustralian(book.name, book.region) ? 0 : 1;
+}
+
 export function tennisBestMoneylinePick(books: TennisBookRow[] | undefined): number | undefined {
   if (!books?.length) return undefined;
-  let best: { bookIndex: number; even: number; preferred: number } | undefined;
+  let best: { bookIndex: number; au: number; even: number; preferred: number } | undefined;
   books.forEach((book, bookIndex) => {
     if (!tennisH2hMeetsMinOdds(book.H2H)) return;
+    const au = australianRank(book);
     const even = tennisH2hEvenness(book.H2H);
     const preferred = preferredBookRank(book.name);
+    if (best && au !== best.au) {
+      if (au < best.au) best = { bookIndex, au, even, preferred };
+      return;
+    }
     if (
       !best ||
       even < best.even - 0.001 ||
       (Math.abs(even - best.even) < 0.001 && preferred < best.preferred)
     ) {
-      best = { bookIndex, even, preferred };
+      best = { bookIndex, au, even, preferred };
     }
   });
   return best?.bookIndex;
@@ -394,16 +416,22 @@ export function tennisBestOuPick(
   if (!books?.length) return undefined;
   const winASetFirst = dashboardWinASetFirst(stat, opts);
   let best:
-    | { bookIndex: number; line: TennisOuLine; even: number; preferred: number; winASet: boolean }
+    | { bookIndex: number; line: TennisOuLine; au: number; even: number; preferred: number; winASet: boolean }
     | undefined;
   books.forEach((book, bookIndex) => {
     const line = tennisMainLineForStat(book, stat, opts);
     if (!line) return;
     const prefRank = preferredBookRank(book.name);
+    const au = australianRank(book);
     const even = tennisOuEvenness(line);
     const winASet = winASetFirst && ouLineNumber(line) === 0.5;
+    const candidate = { bookIndex, line, au, even, preferred: prefRank, winASet };
     if (best && winASet !== best.winASet) {
-      if (winASet) best = { bookIndex, line, even, preferred: prefRank, winASet };
+      if (winASet) best = candidate;
+      return;
+    }
+    if (best && au !== best.au) {
+      if (au < best.au) best = candidate;
       return;
     }
     if (
@@ -411,7 +439,7 @@ export function tennisBestOuPick(
       even < best.even - 0.001 ||
       (Math.abs(even - best.even) < 0.001 && prefRank < best.preferred)
     ) {
-      best = { bookIndex, line, even, preferred: prefRank, winASet };
+      best = candidate;
     }
   });
   return best ? { bookIndex: best.bookIndex, line: best.line } : undefined;

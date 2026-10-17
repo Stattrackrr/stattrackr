@@ -57,6 +57,7 @@ import { tennisIsH2hMatch } from '@/lib/tennis/h2hMatch';
 import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { resolveTennisIoc } from '@/lib/tennis/resolveIoc';
 import {
+  australianBooksFirst,
   tennisMainLineForStat,
   tennisMoneylinePriceMeetsMin,
   tennisValueHitsOver,
@@ -1068,7 +1069,9 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
           (row) => row.name.toLowerCase() === playerName.trim().toLowerCase()
         ) ||
         null;
-      const books = orientBooks(snapshot.bookmakers, side.isHome);
+      const books = australianBooksFirst(
+        orientBooks(snapshot.bet365Au ? [...snapshot.bookmakers, snapshot.bet365Au] : snapshot.bookmakers, side.isHome)
+      );
       for (const book of books) {
         data.push(
           ...rowsForBook({

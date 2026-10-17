@@ -150,7 +150,7 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     color: '#1C6E38',
   },
   'bet365 au': {
-    name: 'Bet365',
+    name: 'Bet365 AU',
     logo: '365',
     logoUrl: getLogoUrl('bet365.com'),
     color: '#1C6E38',

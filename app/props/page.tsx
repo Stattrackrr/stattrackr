@@ -47,7 +47,7 @@ import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';
 import { currentNbaSeason, TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from '@/lib/nbaConstants';
-import { getBookmakerInfo } from '@/lib/bookmakers';
+import { getBookmakerInfo, getBookmakerRegion } from '@/lib/bookmakers';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import { parseBallDontLieTipoff } from '@/app/nba/research/dashboard/utils';
 import { americanToDecimal, DEFAULT_ODDS_FORMAT, formatOdds, readOddsFormatPreference } from '@/lib/currencyUtils';
@@ -1881,6 +1881,25 @@ function tennisBookmakerLineCount(prop: PlayerProp | null | undefined): number {
 
 function tennisDisplayBookmakerLines(prop: PlayerProp) {
   return bookmakerLinesFromTennisRow(prop);
+}
+
+/** Stable: Australian books first, every other book keeps its order after them. */
+function australianLinesFirst<T extends { bookmaker?: string | null }>(lines: T[]): T[] {
+  const isAu = (line: T) => getBookmakerRegion(String(line.bookmaker || '')) === 'au';
+  return [...lines.filter(isAu), ...lines.filter((line) => !isAu(line))];
+}
+
+function propsPaintBookmakerLines(prop: PlayerProp, rowSport: string) {
+  if (isTennisPropsSport(rowSport)) return tennisDisplayBookmakerLines(prop);
+  const lines = [...(prop.bookmakerLines || [])];
+  if (rowSport === 'nbl') {
+    lines.sort((a, b) => {
+      const aOu = a.underOdds && a.underOdds !== 'N/A' ? 1 : 0;
+      const bOu = b.underOdds && b.underOdds !== 'N/A' ? 1 : 0;
+      return bOu - aOu;
+    });
+  }
+  return australianLinesFirst(lines);
 }
 
 function tennisPropsForPaint(rows: PlayerProp[]): PlayerProp[] {
@@ -10570,15 +10589,7 @@ export default function NBALandingPage() {
                                   style={PROPS_DESKTOP_ODDS_COL_STYLE}
                                 >
                                     {(() => {
-                                      const paintLines = isTennisPropsSport(rowSport)
-                                        ? tennisDisplayBookmakerLines(prop)
-                                        : rowSport === 'nbl'
-                                          ? [...(prop.bookmakerLines || [])].sort((a, b) => {
-                                              const aOu = a.underOdds && a.underOdds !== 'N/A' ? 1 : 0;
-                                              const bOu = b.underOdds && b.underOdds !== 'N/A' ? 1 : 0;
-                                              return bOu - aOu;
-                                            })
-                                          : (prop.bookmakerLines || []);
+                                      const paintLines = propsPaintBookmakerLines(prop, rowSport);
                                       return paintLines.length > 0 ? (
                                       (() => {
                                         // Filter bookmakerLines by selected bookmakers (if any are selected)
@@ -12227,15 +12238,7 @@ export default function NBALandingPage() {
                               
                               {/* Bookmaker Odds Section - Horizontally Scrollable */}
                               {(() => {
-                                const paintLines = isTennisPropsSport(rowSport)
-                                  ? tennisDisplayBookmakerLines(prop)
-                                  : rowSport === 'nbl'
-                                    ? [...(prop.bookmakerLines || [])].sort((a, b) => {
-                                        const aOu = a.underOdds && a.underOdds !== 'N/A' ? 1 : 0;
-                                        const bOu = b.underOdds && b.underOdds !== 'N/A' ? 1 : 0;
-                                        return bOu - aOu;
-                                      })
-                                    : (prop.bookmakerLines || []);
+                                const paintLines = propsPaintBookmakerLines(prop, rowSport);
                                 if (!paintLines.length) return null;
                                 const linesByValue = new Map<number, typeof paintLines>();
                                 paintLines.forEach(line => {
@@ -12259,7 +12262,7 @@ export default function NBALandingPage() {
                                 });
                                 
                                 // Mobile: Show first 2 bookmakers + "+ X" button
-                                const allBookmakers = Array.from(linesByValue.values()).flat();
+                                const allBookmakers = australianLinesFirst(Array.from(linesByValue.values()).flat());
                                 const firstTwoBookmakers = allBookmakers.slice(0, 2);
                                 const remainingCount = allBookmakers.length - 2;
                                 const expandKey = `${prop.playerName}|${prop.statType}|mobile-all`;

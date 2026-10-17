@@ -5,6 +5,7 @@ import { tennisSetHandicapSide, tennisWinASetMarket } from './odds';
 import {
   isTennisOuStat,
   TENNIS_DASHBOARD_LINES,
+  tennisBestMoneylinePick,
   tennisBestOuPick,
   tennisMainLineForStat,
   tennisOuLineIsMain,
@@ -144,6 +145,23 @@ test('dashboard opens sets won on the win-a-set line even when another book only
   assert.equal(pick?.line.line, '0.5');
   assert.equal(tennisOuLineIsMain(matchOnly, 'setsWon', '1.5', TENNIS_DASHBOARD_LINES), false);
   assert.equal(tennisOuLineIsMain(withWinASet, 'setsWon', '0.5', TENNIS_DASHBOARD_LINES), true);
+});
+
+test('dashboard defaults to an Australian book whenever one prices the market', () => {
+  const pinnacle = book({
+    name: 'Pinnacle',
+    H2H: { home: '-105', away: '-105' },
+    TotalLines: [{ line: '21.5', over: '-110', under: '-110' }],
+  });
+  const ladbrokes = book({
+    name: 'Ladbrokes',
+    region: 'au',
+    H2H: { home: '-130', away: '+105' },
+    TotalLines: [{ line: '21.5', over: '-125', under: '+100' }],
+  });
+  assert.equal(tennisBestMoneylinePick([pinnacle, ladbrokes]), 1);
+  assert.equal(tennisBestOuPick([pinnacle, ladbrokes], 'totalGames', TENNIS_DASHBOARD_LINES)?.bookIndex, 1);
+  assert.equal(tennisBestOuPick([pinnacle], 'totalGames', TENNIS_DASHBOARD_LINES)?.bookIndex, 0);
 });
 
 test('sets lost carries the opponent win-a-set price for the viewed player', () => {
