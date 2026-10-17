@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { tennisIdentityMatch, tennisNamesMatch } from './oddsApi';
+import { tennisIdentityIndex, tennisIdentityMatch, tennisNamesMatch } from './oddsApi';
 
 test('cached identity matches give the same answer in both directions and on repeat', () => {
   const cases: Array<[string, string, boolean]> = [
@@ -36,4 +36,35 @@ test('props-list scale name matching stays fast (it used to block the server for
   const elapsed = Date.now() - started;
   assert.ok(hits > 0);
   assert.ok(elapsed < 3000, `450k comparisons took ${elapsed}ms`);
+});
+
+test('identity index returns the same players, in roster order, as a full identity scan', () => {
+  const players = [
+    { name: 'Alexander Zverev' },
+    { name: 'Mischa Zverev' },
+    { name: 'Brandon Nakashima' },
+    { name: 'Bryce Nakashima' },
+    { name: 'Felix Auger Aliassime' },
+    { name: 'Joao Reis da Silva' },
+    { name: 'Bu Yunchaokete' },
+    { name: 'Yunchaokete Bu' },
+    { name: 'Jannik Sinner' },
+  ];
+  const lookup = tennisIdentityIndex(players);
+  const queries = [
+    'A. Zverev',
+    'Zverev Alexander',
+    'M. Zverev',
+    'B. Nakashima',
+    'Félix Auger-Aliassime',
+    'J. Reis Da Silva',
+    'Yunchaokete Bu',
+    'J. Sinner',
+    'Nobody Here',
+    '',
+  ];
+  for (const query of queries) {
+    const scan = query.trim() ? players.filter((p) => tennisIdentityMatch(p.name, query)) : [];
+    assert.deepEqual(lookup(query), scan, query);
+  }
 });

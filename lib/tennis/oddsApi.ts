@@ -234,6 +234,37 @@ export function tennisIdentityMatch(a: string | null | undefined, b: string | nu
   return boundedSet(identityPairs, pairKey, computeIdentityMatch(left, right));
 }
 
+/**
+ * `players.filter((p) => tennisIdentityMatch(p.name, name))` without scanning every player.
+ * Every identity match shares the normalized name or a significant token, so only those buckets are checked.
+ */
+export function tennisIdentityIndex<T extends { name: string }>(players: T[]): (name: string) => T[] {
+  const buckets = new Map<string, number[]>();
+  const add = (key: string, index: number) => {
+    const list = buckets.get(key);
+    if (!list) buckets.set(key, [index]);
+    else if (list[list.length - 1] !== index) list.push(index);
+  };
+  players.forEach((player, index) => {
+    const prepared = preparedName(String(player.name || '').trim());
+    if (prepared.norm) add(`n:${prepared.norm}`, index);
+    for (const token of prepared.significant) add(`t:${token}`, index);
+  });
+  return (name) => {
+    const query = String(name || '').trim();
+    if (!query) return [];
+    const prepared = preparedName(query);
+    const candidates = new Set<number>(buckets.get(`n:${prepared.norm}`) ?? []);
+    for (const token of prepared.significant) {
+      for (const index of buckets.get(`t:${token}`) ?? []) candidates.add(index);
+    }
+    return [...candidates]
+      .sort((a, b) => a - b)
+      .map((index) => players[index])
+      .filter((player) => tennisIdentityMatch(player.name, query));
+  };
+}
+
 function computeIdentityMatch(left: string, right: string): boolean {
   const na = preparedName(left).norm;
   const nb = preparedName(right).norm;

@@ -4,7 +4,7 @@ import { API_TENNIS_SINGLES_EVENTS, isApiGrandSlam, parseApiRound, tourFromEvent
 import { loadTennisPlayers, loadTennisRankings } from '@/lib/tennis/data';
 import { isTennisQualifyingLabel, type TennisDvpStage } from '@/lib/tennis/dvpShared';
 import { tennisAssignDrawRanks } from '@/lib/tennis/seeds';
-import { tennisIdentityMatch, tennisSamePersonRecords } from '@/lib/tennis/oddsApi';
+import { tennisIdentityIndex, tennisIdentityMatch, tennisSamePersonRecords } from '@/lib/tennis/oddsApi';
 import { canonicalTennisIoc } from '@/lib/tennis/nationality';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import {
@@ -172,22 +172,51 @@ async function apiTennisCall(params: Record<string, string>): Promise<any> {
   return null;
 }
 
-function officialPlayer(playerId: string | null, fallback: string): {
+type OfficialPlayer = {
   playerId: string | null;
   name: string;
   ioc: string | null;
   rank: number | null;
   imageUrl: string | null;
-} {
+};
+type TennisRosterPlayer = ReturnType<typeof loadTennisPlayers>[number];
+
+/** Fixture indexing resolves ~16k names per refresh; scanning ~10k players each time blocked the cron for minutes. */
+const OFFICIAL_PLAYER_MEMO_MAX = 20_000;
+let officialPlayerLookup: {
+  players: TennisRosterPlayer[];
+  byId: Map<string, TennisRosterPlayer>;
+  byLowerName: Map<string, TennisRosterPlayer[]>;
+  identity: (name: string) => TennisRosterPlayer[];
+  memo: Map<string, OfficialPlayer>;
+} | null = null;
+
+function officialPlayerIndex() {
+  const players = loadTennisPlayers();
+  if (officialPlayerLookup?.players === players) return officialPlayerLookup;
+  const byId = new Map<string, TennisRosterPlayer>();
+  const byLowerName = new Map<string, TennisRosterPlayer[]>();
+  for (const p of players) {
+    if (p.playerId && !byId.has(p.playerId)) byId.set(p.playerId, p);
+    const lower = p.name.toLowerCase();
+    const list = byLowerName.get(lower);
+    if (list) list.push(p);
+    else byLowerName.set(lower, [p]);
+  }
+  officialPlayerLookup = { players, byId, byLowerName, identity: tennisIdentityIndex(players), memo: new Map() };
+  return officialPlayerLookup;
+}
+
+function officialPlayer(playerId: string | null, fallback: string): OfficialPlayer {
   const id = String(playerId || '').trim();
   const name = fallback.trim();
-  const players = loadTennisPlayers();
-  const hit = id ? players.find((p) => p.playerId === id) : null;
-  const exact = name
-    ? players.filter((p) => p.name.toLowerCase() === name.toLowerCase())
-    : [];
-  const identity = name ? players.filter((p) => tennisIdentityMatch(p.name, name)) : [];
-  const cluster = tennisSamePersonRecords(identity);
+  const index = officialPlayerIndex();
+  const memoKey = `${id}\u0000${name}`;
+  const memoized = index.memo.get(memoKey);
+  if (memoized) return memoized;
+  const hit = id ? index.byId.get(id) ?? null : null;
+  const exact = name ? index.byLowerName.get(name.toLowerCase()) ?? [] : [];
+  const cluster = name && exact.length !== 1 ? tennisSamePersonRecords(index.identity(name)) : null;
   const byName =
     exact.length === 1
       ? exact[0]
@@ -200,7 +229,7 @@ function officialPlayer(playerId: string | null, fallback: string): {
       tennisIdentityMatch(hit!.name, name) ||
       hit!.name.toLowerCase() === name.toLowerCase());
   const player = (idAgrees ? hit : null) || byName || (!name ? hit : null);
-  return {
+  const resolved: OfficialPlayer = {
     playerId: player?.playerId || (idAgrees ? id : null) || null,
     name: player?.name || name,
     ioc: canonicalTennisIoc({
@@ -211,6 +240,9 @@ function officialPlayer(playerId: string | null, fallback: string): {
     rank: player?.rank ?? null,
     imageUrl: player?.imageUrl ?? null,
   };
+  if (index.memo.size >= OFFICIAL_PLAYER_MEMO_MAX) index.memo.clear();
+  index.memo.set(memoKey, resolved);
+  return resolved;
 }
 
 function withOfficialOpponent(next: TennisNextGame): TennisNextGame {
@@ -259,9 +291,6 @@ function toNextGame(
   const opponentLogo = playerIsFirst
     ? fx.event_second_player_logo || null
     : fx.event_first_player_logo || null;
-  const first = officialPlayer(firstId || null, firstName);
-  const second = officialPlayer(secondId || null, secondName);
-  const resolved = officialPlayer(opponentId, opponentRaw);
   const tipoff = parseTipoff(fx.event_date, fx.event_time);
   let phase = fixturePhase(String(fx.event_status || ''), tipoff);
   if (phase === 'scheduled' && hasPlayedScore(fx)) phase = 'live';
@@ -283,6 +312,9 @@ function toNextGame(
   if (phase === 'scheduled' && !tennisScheduledTipoffStillCurrent(tipoff?.getTime() ?? null)) {
     return null;
   }
+  const first = officialPlayer(firstId || null, firstName);
+  const second = officialPlayer(secondId || null, secondName);
+  const resolved = officialPlayer(opponentId, opponentRaw);
   const tournamentName = String(fx.tournament_name || '').trim() || null;
   const tournamentKey = fx.tournament_key != null ? String(fx.tournament_key) : null;
   const round = parseApiRound(fx.tournament_round) || null;
