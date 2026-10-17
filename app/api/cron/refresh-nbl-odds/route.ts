@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 /**
- * Pull odds-api.net player lines + The Odds API game lines, then bake the
+ * Pull odds-api.net player lines and game lines, then bake the
  * props-page list and combined NBL slice. Page/Ask reads stay cache-only.
  */
 export async function GET(request: NextRequest) {

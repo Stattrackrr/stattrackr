@@ -1,9 +1,10 @@
 /**
- * NBL player markets from odds-api.net (Sportsbet / TAB / Bet365 / Unibet).
- * Game moneyline/spread/total stay on The Odds API.
+ * NBL markets from odds-api.net: player lines (Sportsbet / TAB / Bet365 / Unibet) and the
+ * Australian books' game head to head, line and total.
  */
 
 import { officialNblClubName } from '@/lib/nblTeamCanonical';
+import type { NblBookRow, NblGameOdds } from '@/lib/nbl/oddsTypes';
 
 type OddsNetMarket = {
   canonicalMarket?: string;
@@ -110,6 +111,7 @@ type OddsApiEvent = {
 
 type OddsApiItem = {
   bookmaker?: string;
+  bet_type?: string;
   player_name?: string;
   selection_name?: string;
   metric?: string;
@@ -119,8 +121,32 @@ type OddsApiItem = {
   side?: string;
   odds?: number;
   is_available?: boolean;
+  main_line_eligible?: boolean;
   period?: string;
   period_str?: string;
+};
+
+/**
+ * Game-line books, named as The Odds API titled them so stored history and line movement carry on.
+ * TABtouch and PlayUp stay out, as they did on The Odds API.
+ */
+const GAME_LINE_BOOKS: Record<string, string> = {
+  sportsbet: 'SportsBet',
+  tab: 'TAB',
+  unibet: 'Unibet',
+  bet365: 'Bet365 AU',
+  pointsbet: 'PointsBet (AU)',
+  ladbrokes: 'Ladbrokes',
+  neds: 'Neds',
+  betr: 'Betr',
+  betright: 'Bet Right',
+  dabble: 'Dabble AU',
+  betfair: 'Betfair',
+  palmerbet: 'Palmerbet',
+  betgoodwin: 'BetGoodwin',
+  betnation: 'BetNation',
+  picklebet: 'Picklebet',
+  betdeluxe: 'BetDeluxe',
 };
 
 function eventsFrom(payload: unknown): OddsApiEvent[] {
@@ -485,5 +511,127 @@ export async function fetchOddsApiNetNblGames(): Promise<OddsNetGame[]> {
     });
   }
 
+  return games;
+}
+
+function americanFromDecimal(decimal: number): string {
+  if (decimal >= 2) return `+${Math.round((decimal - 1) * 100)}`;
+  return String(-Math.round(100 / (decimal - 1)));
+}
+
+type GamePair = { a?: OddsApiItem; b?: OddsApiItem; main: boolean };
+
+function numberIn(raw: string | number | undefined): number | null {
+  const m = String(raw ?? '').match(/[+-]?\d+(?:\.\d+)?/);
+  return m ? Number(m[0]) : null;
+}
+
+/** The book's flagged main line, else the most even pair. */
+function mainPair(pairs: Map<number, GamePair>): [number, Required<Pick<GamePair, 'a' | 'b'>>] | null {
+  let best: { line: number; pair: GamePair; score: number } | null = null;
+  for (const [line, pair] of pairs) {
+    if (!pair.a?.odds || !pair.b?.odds) continue;
+    const score = (pair.main ? 0 : 100) + Math.abs(pair.a.odds - pair.b.odds);
+    if (!best || score < best.score) best = { line, pair, score };
+  }
+  return best ? [best.line, { a: best.pair.a!, b: best.pair.b! }] : null;
+}
+
+/** Full-game head to head, line and total per book, home team's side first (The Odds API row shape). */
+export function nblGameBookRowsFromItems(items: OddsApiItem[]): NblBookRow[] {
+  type Book = { home?: OddsApiItem; away?: OddsApiItem; spreads: Map<number, GamePair>; totals: Map<number, GamePair> };
+  const books = new Map<string, Book>();
+  for (const item of items) {
+    const name = GAME_LINE_BOOKS[String(item.bookmaker || '').trim().toLowerCase()];
+    if (!name || item.is_available === false) continue;
+    if (itemPeriod(item).toLowerCase() !== 'full time') continue;
+    if (!(typeof item.odds === 'number' && item.odds > 1)) continue;
+    const book: Book = books.get(name) ?? { spreads: new Map(), totals: new Map() };
+    books.set(name, book);
+    const side = String(item.side || '').trim().toLowerCase();
+    if (item.bet_type === 'moneyline') {
+      if (side === 'home') book.home = item;
+      else if (side === 'away') book.away = item;
+    } else if (item.bet_type === 'handicap') {
+      const n = numberIn(item.line);
+      if (n == null || (side !== 'home' && side !== 'away')) continue;
+      const homeLine = side === 'home' ? n : -n;
+      const pair = book.spreads.get(homeLine) ?? { main: false };
+      if (side === 'home') pair.a = item;
+      else pair.b = item;
+      pair.main ||= item.main_line_eligible === true;
+      book.spreads.set(homeLine, pair);
+    } else if (item.bet_type === 'total') {
+      const raw = String(item.line || '').toLowerCase();
+      const ou = side === 'over' || side === 'under' ? side : raw.includes('under') ? 'under' : raw.includes('over') ? 'over' : null;
+      const n = numberIn(item.line);
+      if (!ou || n == null) continue;
+      const pair = book.totals.get(n) ?? { main: false };
+      if (ou === 'over') pair.a = item;
+      else pair.b = item;
+      pair.main ||= item.main_line_eligible === true;
+      book.totals.set(n, pair);
+    }
+  }
+
+  const rows: NblBookRow[] = [];
+  for (const [name, book] of books) {
+    const spread = mainPair(book.spreads);
+    const total = mainPair(book.totals);
+    const row: NblBookRow = {
+      name,
+      H2H: {
+        home: book.home?.odds ? americanFromDecimal(book.home.odds) : 'N/A',
+        away: book.away?.odds ? americanFromDecimal(book.away.odds) : 'N/A',
+      },
+      Spread: spread
+        ? { line: String(spread[0]), over: americanFromDecimal(spread[1].a.odds!), under: americanFromDecimal(spread[1].b.odds!) }
+        : { line: 'N/A', over: 'N/A', under: 'N/A' },
+      Total: total
+        ? { line: String(total[0]), over: americanFromDecimal(total[1].a.odds!), under: americanFromDecimal(total[1].b.odds!) }
+        : { line: 'N/A', over: 'N/A', under: 'N/A' },
+    };
+    if (row.H2H.home === 'N/A' && row.H2H.away === 'N/A' && !spread && !total) continue;
+    rows.push(row);
+  }
+  return rows;
+}
+
+/** Upcoming NBL games with Australian game lines; null when odds-api.net could not be read. */
+export async function fetchOddsApiNetNblGameLines(): Promise<NblGameOdds[] | null> {
+  if (!apiKey()) return null;
+  const eventsPage = await fetchJson(`${BASE}/events?sport=basketball&league=NBL&limit=50`);
+  if (!eventsPage) return null;
+  const books = Object.keys(GAME_LINE_BOOKS).join(',');
+  const games: NblGameOdds[] = [];
+  for (const ev of eventsFrom(eventsPage)) {
+    if (/final|closed|ended|cancel/i.test(String(ev.event_state || ''))) continue;
+    const eventId = ev.event_id ?? ev.id;
+    const home = officialNblClubName(ev.home_team || ev.home);
+    const away = officialNblClubName(ev.away_team || ev.away);
+    if (eventId == null || !home || !away) continue;
+    const items: OddsApiItem[] = [];
+    let cursor = '';
+    for (let page = 0; page < 4; page += 1) {
+      const qs = new URLSearchParams({ types: 'moneyline,handicap,total', bookmakers: books, limit: '500' });
+      if (cursor) qs.set('cursor', cursor);
+      const snap = (await fetchJson(`${BASE}/events/${encodeURIComponent(String(eventId))}/odds/snapshot?${qs}`)) as {
+        items?: OddsApiItem[];
+        next_cursor?: string;
+        complete?: boolean;
+      } | null;
+      if (!snap) break;
+      items.push(...(snap.items ?? []));
+      if (!snap.next_cursor || snap.complete === true) break;
+      cursor = snap.next_cursor;
+    }
+    games.push({
+      gameId: String(eventId),
+      homeTeam: home,
+      awayTeam: away,
+      commenceTime: commenceIso(ev),
+      bookmakers: nblGameBookRowsFromItems(items),
+    });
+  }
   return games;
 }

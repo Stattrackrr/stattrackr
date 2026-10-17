@@ -1,5 +1,5 @@
 /**
- * Cron-only NBL ingest: odds-api.net player lines + The Odds API game lines,
+ * Cron-only NBL ingest: odds-api.net player lines and game lines,
  * then bake the props-page list and combined NBL slice into Redis.
  */
 
@@ -10,8 +10,8 @@ import { getNblPulseScoreBoard } from '@/lib/nbl/pulseScore';
 import { getNblOddsCache, refreshNblOddsData } from '@/lib/nbl/refreshNblOdds';
 
 /**
- * Player props (odds-api.net, 50k credits/month) refresh every cron tick; game lines come from
- * The Odds API key shared with AFL and tennis (3 credits a pull), so live runs reuse them for this long.
+ * Player props refresh every cron tick; game lines cost a credit per game on the same
+ * odds-api.net plan (50k/month, shared with NBA), so live runs reuse them for this long.
  */
 const NBL_GAME_ODDS_MIN_AGE_MS = 25 * 60 * 1000;
 

@@ -7,7 +7,6 @@ import { readTennisPlayerLogsCacheMany } from '@/lib/tennis/dashboardCache';
 import { readUpcomingTennisByPlayerCache, type TennisNextGame } from '@/lib/tennis/nextGame';
 import { listTennisOddsIndex, readTennisOddsSnapshot, type TennisOddsSnapshot } from '@/lib/tennis/odds';
 import { tennisNamesMatch } from '@/lib/tennis/oddsApi';
-import { tennisBooksWithBet365Au } from '@/lib/tennis/oddsApiNet';
 import { tennisFixtureStatusIsTerminal } from '@/lib/tennis/oddsBoard';
 import type { TennisTour } from '@/lib/tennis/types';
 import { historyFromRows } from '@/lib/tennisAi/live';
@@ -135,7 +134,7 @@ export async function scanTennisCandidates(opts: { nowMs?: number; horizonMs?: n
       bestOf,
       tournament: fx.next.tournamentName,
     };
-    const books = tennisBooksWithBet365Au(snap.bookmakers, snap.bet365Au);
+    const books = snap.bookmakers;
     const built = buildTennisCandidates({
       match,
       books,

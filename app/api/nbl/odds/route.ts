@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 /**
  * GET /api/nbl/odds?team=...&opponent=...
- * Reads the stored odds snapshot. The Odds API is refreshed on cron, not per request.
+ * Reads the stored odds snapshot. odds-api.net is refreshed on cron, not per request.
  */
 export async function GET(request: NextRequest) {
   try {

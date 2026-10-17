@@ -1,6 +1,6 @@
 /**
  * NBL player markets from odds-api.net (Sportsbet / TAB / Bet365 / Unibet).
- * Game moneyline/spread/total stay on The Odds API.
+ * Game moneyline/spread/total come from odds-api.net's game lines (refreshNblOdds).
  */
 
 import { decimalToAmerican } from '@/lib/currencyUtils';

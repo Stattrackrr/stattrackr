@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { TennisBookRow } from './oddsTypes';
-import { tennisBet365AuRowFromItems, tennisBooksWithBet365Au } from './oddsApiNet';
+import { tennisBet365AuRowFromItems } from './oddsApiNet';
 
 const item = (bet_type: string, line: string, odds: number, extra: Record<string, unknown> = {}) => ({
   bookmaker: 'bet365',
@@ -52,39 +51,3 @@ test('no full-match bet365 prices gives no row', () => {
   assert.equal(tennisBet365AuRowFromItems(items.filter((i) => i.period !== 'full time'), true), null);
 });
 
-test('AI books swap every international bet365 row for the AU one', () => {
-  const book = (name: string) => ({ name }) as TennisBookRow;
-  const au = book('bet365 au');
-  const names = (rows: TennisBookRow[]) => rows.map((r) => r.name);
-  assert.deepEqual(names(tennisBooksWithBet365Au([book('bet365'), book('Bet365'), book('Pinnacle')], au)), ['Pinnacle', 'bet365 au']);
-  assert.deepEqual(names(tennisBooksWithBet365Au([book('bet365'), book('Sportsbet')], null)), ['Sportsbet']);
-});
-
-test('AI keeps the international bet365 set prices on the AU row, and no game lines from it', () => {
-  const intl = {
-    name: 'bet365',
-    SetsWonLines: [
-      { line: '0.5', over: '-1000', under: '+550' },
-      { line: '1.5', over: '-250', under: '+180' },
-    ],
-    SetsLostLines: [{ line: '0.5', over: '+150', under: '-200' }],
-    TotalSets: { line: '2.5', over: '+150', under: '-200' },
-    TotalSetsLines: [{ line: '2.5', over: '+150', under: '-200' }],
-    SpreadLines: [{ line: '-6.5', over: '+100', under: '-137' }],
-    GamesWonLines: [{ line: '12.5', over: '-110', under: '-110' }],
-  } as unknown as TennisBookRow;
-  const au = tennisBet365AuRowFromItems(items, true)!;
-  const [row] = tennisBooksWithBet365Au([intl], au);
-  assert.equal(row.name, 'bet365 au');
-  assert.deepEqual(row.SpreadLines, [{ line: '-2.5', over: '-125', under: '-110' }]);
-  assert.deepEqual(row.GamesWonLines, []);
-  assert.equal(row.SetsWonLines?.length, 2);
-  assert.deepEqual(row.SetsLostLines, [{ line: '0.5', over: '+150', under: '-200' }]);
-  assert.deepEqual(row.TotalSetsLines, [{ line: '2.5', over: '+150', under: '-200' }]);
-
-  const [onlySets] = tennisBooksWithBet365Au([intl], null);
-  assert.equal(onlySets.name, 'bet365 au');
-  assert.deepEqual(onlySets.SpreadLines, []);
-  assert.deepEqual(onlySets.H2H, { home: 'N/A', away: 'N/A' });
-  assert.equal(onlySets.SetsLostLines?.length, 1);
-});
