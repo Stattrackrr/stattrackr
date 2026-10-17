@@ -28,6 +28,7 @@ import {
   tennisOddsMatchStillOnBoard,
   tennisPairingMatches,
 } from '@/lib/tennis/oddsBoard';
+import { fetchExtraTennisBooks, type ExtraTennisBooks } from '@/lib/tennis/extraBooks';
 import { deleteTennisPlayerPropsListCache } from '@/lib/tennis/playerPropsListCache';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import {
@@ -53,6 +54,8 @@ export type TennisOddsSnapshot = {
   homeName: string;
   awayName: string;
   bookmakers: TennisBookRow[];
+  /** bet365 AU (odds-api.net), home-oriented like `bookmakers`. The AI uses it in place of API-Tennis's bet365. */
+  bet365Au?: TennisBookRow | null;
   fetchedAt: string;
   oddsApiEventId?: string;
   commenceTime?: string | null;
@@ -79,6 +82,8 @@ type TennisOddsRefreshMeta = {
   oddsApiSports: number;
   oddsApiEvents: number;
   matchIds?: string[];
+  /** Matches priced by each extra bookmaker feed. */
+  extraBooks?: Record<string, number>;
 };
 
 export type TennisOddsRefreshResult = TennisOddsRefreshMeta & {
@@ -580,13 +585,14 @@ function presentSnapshot(snapshot: TennisOddsSnapshot, next: TennisNextGame): Te
 async function writeSnapshot(
   next: TennisNextGame,
   books: TennisBookRow[],
-  extra?: { oddsApiEventId?: string; sportKey?: string | null }
+  extra?: { oddsApiEventId?: string; sportKey?: string | null; bet365Au?: TennisBookRow | null }
 ): Promise<TennisOddsSnapshot> {
   const snapshot: TennisOddsSnapshot = {
     matchId: String(next.matchId),
     homeName: next.homeName,
     awayName: next.awayName,
     bookmakers: books,
+    bet365Au: extra?.bet365Au ?? null,
     fetchedAt: new Date().toISOString(),
     oddsApiEventId: extra?.oddsApiEventId,
     commenceTime: next.tipoff,
@@ -766,6 +772,11 @@ export async function refreshTennisOddsSnapshots(opts?: {
     }
     const catalog = await refreshOddsApiTennisCatalog({ upcoming, force: true });
     const targets = pickRefreshTargets(upcoming);
+    const extra: ExtraTennisBooks = await fetchExtraTennisBooks(targets).catch(() => ({
+      bet365Au: new Map(),
+      rows: new Map(),
+      counts: {},
+    }));
     let snapshots = 0;
     for (let i = 0; i < targets.length; i += 4) {
       const batch = targets.slice(i, i + 4);
@@ -777,11 +788,14 @@ export async function refreshTennisOddsSnapshots(opts?: {
             fetchRawOdds(matchId, { force: true }),
             getOddsApiTennisMatch({ homeName: game.homeName, awayName: game.awayName }),
           ]);
-          const books = mergeSources(raw, oddsApi, game);
+          let books = mergeSources(raw, oddsApi, game);
+          const extraRows = extra.rows.get(matchId);
+          if (extraRows?.length) books = mergeBookRows(books, extraRows);
           if (!books.length) return;
           await writeSnapshot(game, books, {
             oddsApiEventId: oddsApi?.eventId,
             sportKey: oddsApi?.sportKey,
+            bet365Au: extra.bet365Au.get(matchId) ?? null,
           });
           snapshots += 1;
         })
@@ -861,6 +875,7 @@ export async function refreshTennisOddsSnapshots(opts?: {
       oddsApiSports: catalog?.sports.length ?? 0,
       oddsApiEvents: catalog?.matches.length ?? 0,
       matchIds: indexMatches.map((row) => row.matchId),
+      extraBooks: extra.counts,
     };
     await sharedCache.setJSON(REFRESH_META_KEY, meta, SNAPSHOT_TTL_SECONDS);
     return { ...meta, skipped: false };
