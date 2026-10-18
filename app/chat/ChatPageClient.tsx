@@ -335,6 +335,15 @@ export default function ChatPageClient() {
   );
   const selectedRoomSlug = selectedRoom?.slug ?? 'general';
   const isPicksRoom = selectedRoomSlug === 'picks';
+
+  // Keep the open room in the URL so a refresh lands back on it.
+  useEffect(() => {
+    if (!selectedRoom) return;
+    const url = new URL(window.location.href);
+    if (selectedRoom.slug === 'general') url.searchParams.delete('room');
+    else url.searchParams.set('room', selectedRoom.slug);
+    if (url.href !== window.location.href) window.history.replaceState(window.history.state, '', url.href);
+  }, [selectedRoom]);
   const canSendInSelectedRoom = !isPicksRoom || viewer.isAdmin;
   const pinnedMessages = useMemo(
     () =>
@@ -541,7 +550,8 @@ export default function ChatPageClient() {
           if (currentRoomId && currentRoom) {
             return currentRoomId;
           }
-          return generalRoomId;
+          const urlRoomSlug = new URLSearchParams(window.location.search).get('room');
+          return loadedRooms.find((room) => room.slug === urlRoomSlug)?.id ?? generalRoomId;
         });
       })
       .catch((error: unknown) => {
