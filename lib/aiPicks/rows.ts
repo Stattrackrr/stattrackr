@@ -1,3 +1,5 @@
+import { alternateBooks, type AltBook } from '@/lib/aiPicks/books';
+import type { CandidateQuote } from '@/lib/aiPicks/candidates/types';
 import type { AiPick, AiPickLeg, AiPickStatus } from '@/lib/aiPicks/types';
 
 export type AiPickLegRow = {
@@ -43,10 +45,30 @@ export type AiPickRow = {
   posted_at: string;
   settled_at: string | null;
   model_version: string | null;
+  context?: { altBooks?: unknown; legs?: Array<{ quotes?: unknown }> } | null;
   ai_pick_legs: AiPickLegRow[] | null;
 };
 
 const num = (v: number | string | null): number | null => (v == null ? null : Number(v));
+
+const isQuote = (q: unknown): q is CandidateQuote =>
+  !!q && typeof (q as CandidateQuote).book === 'string' && typeof (q as CandidateQuote).price === 'number';
+
+/** Stored list when the pick has one; older picks rebuild it from the top quotes saved per leg. */
+function altBooksFromRow(row: AiPickRow, legCount: number): AltBook[] {
+  const stored = row.context?.altBooks;
+  if (Array.isArray(stored)) {
+    return stored.filter(
+      (a): a is AltBook => isQuote(a) && Array.isArray((a as AltBook).legs) && (a as AltBook).legs.every((p) => typeof p === 'number')
+    );
+  }
+  const legs = row.context?.legs;
+  if (!Array.isArray(legs) || !legs.length || legs.length !== legCount) return [];
+  return alternateBooks(
+    legs.map((l) => (Array.isArray(l?.quotes) ? l.quotes.filter(isQuote) : [])),
+    row.bookmaker
+  );
+}
 
 export function aiPickLegFromRow(row: AiPickLegRow): AiPickLeg {
   return {
@@ -95,5 +117,6 @@ export function aiPickFromRow(row: AiPickRow): AiPick {
     settledAt: row.settled_at,
     modelVersion: row.model_version,
     legs: (row.ai_pick_legs ?? []).map(aiPickLegFromRow).sort((a, b) => a.legIndex - b.legIndex),
+    altBooks: altBooksFromRow(row, (row.ai_pick_legs ?? []).length),
   };
 }

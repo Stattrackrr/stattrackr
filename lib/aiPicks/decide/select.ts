@@ -4,8 +4,8 @@
  * what is already posted.
  */
 
+import { bookPrices } from '@/lib/aiPicks/books';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
-import { distinctPrices } from '@/lib/aiPicks/candidates/types';
 import { isNblPropMarket } from '@/lib/aiPicks/markets';
 import { round } from '@/lib/aiPicks/model/math';
 import type { AiPicksParams, AiSportParams } from '@/lib/aiPicks/params';
@@ -154,27 +154,6 @@ export function chooseSingles(watched: Watched[], params: AiPicksParams, state: 
   return out;
 }
 
-const BOOK_ALIASES: Record<string, string> = { pncl: 'pinnacle', betonlineag: 'betonline' };
-
-export function bookKey(book: string): string {
-  const k = book.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return BOOK_ALIASES[k] ?? k;
-}
-
-/** Each book's price for the leg, minus prices far above the rest (stale or mislabeled). */
-function bookPrices(c: AiCandidate): Map<string, { book: string; price: number }> {
-  const prices = distinctPrices(c.quotes).sort((a, b) => a - b);
-  const mid = prices[Math.floor(prices.length / 2)] ?? 0;
-  const out = new Map<string, { book: string; price: number }>();
-  for (const q of c.quotes) {
-    if (prices.length >= 3 && q.price > mid * 1.15) continue;
-    const k = bookKey(q.book);
-    const prev = out.get(k);
-    if (!prev || q.price > prev.price) out.set(k, { book: q.book, price: q.price });
-  }
-  return out;
-}
-
 export function multiKey(keys: string[]): string {
   return `multi|${[...keys].sort().join('||')}`;
 }
@@ -207,8 +186,8 @@ export function chooseMulti(
       const first = sportParams(params, a.c.sport);
       const r = readiness(a.c, a.history, { nowMs, postWindowHours: first.postWindowHours, minEv: first.minEvLeg });
       if (!r.ready) continue;
-      const pa = bookPrices(a.c);
-      const pb = bookPrices(b.c);
+      const pa = bookPrices(a.c.quotes);
+      const pb = bookPrices(b.c.quotes);
       let pick: { qa: { book: string; price: number }; qb: { book: string; price: number }; price: number } | null = null;
       for (const [k, qa] of pa) {
         const qb = pb.get(k);

@@ -51,6 +51,8 @@ export type AiPick = {
   settledAt: string | null;
   modelVersion: string | null;
   legs: AiPickLeg[];
+  /** Other books that priced every leg when posted, best combined price first. */
+  altBooks: Array<{ book: string; price: number; legs: number[] }>;
 };
 
 /** Settled profit in units. Push and void return the stake (0). */

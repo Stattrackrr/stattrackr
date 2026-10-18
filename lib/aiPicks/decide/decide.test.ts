@@ -233,6 +233,7 @@ test('posted state counts today in Sydney and remembers used selections', () => 
     settledAt: null,
     modelVersion: 'v1',
     legs: [leg],
+    altBooks: [],
   });
   const s = postedState([pick(iso(NOW), 'single'), pick(iso(NOW - 30 * H), 'single'), pick(iso(NOW), 'multi')], NOW);
   assert.equal(s.singlesToday.tennis, 1);

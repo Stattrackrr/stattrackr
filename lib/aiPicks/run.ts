@@ -4,6 +4,7 @@
  * and post what it approves, staked from the edge and the AI's own track record.
  */
 
+import { alternateBooks, bookKey } from '@/lib/aiPicks/books';
 import { scanAiCandidates, type CandidateScan } from '@/lib/aiPicks/candidates';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
 import { candidateKey } from '@/lib/aiPicks/candidates/types';
@@ -15,7 +16,6 @@ import {
   qualifiesLeg,
   qualifiesSingle,
   subjectId,
-  bookKey,
   type Proposal,
   type Watched,
 } from '@/lib/aiPicks/decide/select';
@@ -123,6 +123,7 @@ function pickContext(p: Proposal, review: string, scannedAt: string, staking: st
     whyNow: p.reason,
     review,
     staking,
+    altBooks: alternateBooks(p.legs.map((l) => l.c.quotes), p.book),
     legs: p.legs.map((l) => ({
       key: l.c.key,
       prob: l.c.prob,

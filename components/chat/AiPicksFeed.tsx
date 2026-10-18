@@ -274,6 +274,45 @@ function MultiSlip({ legs }: { legs: AiPickLeg[] }) {
   );
 }
 
+const ALT_BOOKS_SHOWN = 6;
+
+/** Other books that priced every leg when the pick was posted, so users don't have to hunt for it. */
+function AltBooks({ books, isMulti }: { books: AiPick['altBooks']; isMulti: boolean }) {
+  const [open, setOpen] = useState(false);
+  if (!books.length) return null;
+  const shown = open ? books : books.slice(0, ALT_BOOKS_SHOWN);
+  const hidden = books.length - shown.length;
+  return (
+    <div className="mx-4 -mt-2 mb-4 rounded-xl bg-gray-50 px-3 py-2 dark:bg-white/[0.03]">
+      <div className="text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+        {isMulti ? 'Multi also available at' : 'Also available at'}
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {shown.map((b) => (
+          <span
+            key={b.book}
+            title={isMulti ? `Legs @ ${b.legs.map((p) => p.toFixed(2)).join(' x ')}` : undefined}
+            className="inline-flex items-center gap-1.5 rounded-md bg-white px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-200 dark:bg-white/5 dark:text-gray-200 dark:ring-white/10"
+          >
+            <BookmakerLogo bookKey={b.book} className="h-3.5 w-3.5 shrink-0 rounded object-contain" />
+            {getBookmakerInfo(b.book).name}
+            <span className="font-semibold tabular-nums text-gray-900 dark:text-white">{b.price.toFixed(2)}</span>
+          </span>
+        ))}
+        {books.length > ALT_BOOKS_SHOWN && (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="rounded-md px-2 py-1 text-xs font-semibold text-purple-600 hover:bg-purple-50 dark:text-purple-300 dark:hover:bg-white/5"
+          >
+            {open ? 'Show less' : `+${hidden} more`}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function pickTours(pick: AiPick, info: TennisInfo): TennisTour[] {
   const found = pick.legs
     .filter((l) => l.sport === 'tennis')
@@ -338,6 +377,7 @@ function PickCard({ pick, info }: { pick: AiPick; info: TennisInfo }) {
           </span>
         </Stat>
       </div>
+      <AltBooks books={pick.altBooks} isMulti={isMulti} />
     </article>
   );
 }
