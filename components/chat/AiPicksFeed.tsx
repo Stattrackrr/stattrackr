@@ -413,6 +413,45 @@ function RecordStrip({ picks }: { picks: AiPick[] }) {
   );
 }
 
+/** Shown to everyone but the admin until AI picks are made public. */
+export function AiPicksLearningPanel() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center">
+      <div className="w-full max-w-md rounded-2xl border border-purple-300/60 bg-white p-6 shadow-sm dark:border-purple-500/30 dark:bg-[#111c2d]">
+        <div className="flex items-center justify-center gap-2">
+          <img src={AI_PICKS_AVATAR} alt="" className="h-10 w-10 rounded-full object-cover" />
+          <span className="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">
+            {AI_PICKS_NAME}
+            <Sparkles className="h-4 w-4 text-purple-500" aria-label="AI" />
+          </span>
+        </div>
+        <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Learning phase
+        </span>
+        <h3 className="mt-3 text-lg font-semibold text-gray-900 dark:text-white">Stattrackr AI is still learning</h3>
+        <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+          It is posting and grading picks behind the scenes while it learns from every result. Picks will open here once it has built a proven track record.
+        </p>
+        <ul className="mt-4 space-y-2 text-left text-sm text-gray-700 dark:text-gray-300">
+          <li className="flex gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
+            Scans NBL and tennis lines across every bookmaker
+          </li>
+          <li className="flex gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
+            Only posts when it finds a play worth taking
+          </li>
+          <li className="flex gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
+            Grades every pick and learns from the results
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 type Tab = 'pending' | 'resulted';
 
 const time = (iso: string | null | undefined): number => {

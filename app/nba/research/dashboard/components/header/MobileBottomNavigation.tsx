@@ -79,6 +79,7 @@ export function MobileBottomNavigation({
 
   const isPropsActive = pathname?.startsWith('/props');
   const isChatActive = pathname?.startsWith('/chat');
+  const isPicksActive = pathname?.startsWith('/picks');
   const isProfileActive = showProfileDropdown;
   const isSettingsActive = showSettingsDropdown;
 
@@ -188,6 +189,33 @@ export function MobileBottomNavigation({
             )}
           </span>
           <span className="text-[10px] font-semibold tracking-[0.01em]">Chat</span>
+        </button>
+
+        {/* Picks */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!hasPremium) {
+              openProUpgrade();
+              return;
+            }
+            router.push('/picks');
+          }}
+          className={navButtonClass(!!isPicksActive, !hasPremium)}
+        >
+          <span className={iconChipClass(!!isPicksActive, !hasPremium)}>
+            {!hasPremium ? (
+              <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16z" />
+              </svg>
+            )}
+          </span>
+          <span className="text-[10px] font-semibold tracking-[0.01em]">Picks</span>
         </button>
         
         {/* Profile */}

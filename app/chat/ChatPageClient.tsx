@@ -23,37 +23,13 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSiteOnlineCount } from '@/lib/sitePresence';
 import { useRouter } from 'next/navigation';
 import { ChangeEvent, ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AI_PICKS_AVATAR, AI_PICKS_NAME, AiPicksFeed } from '@/components/chat/AiPicksFeed';
-import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
-import { aiPicksAsRecordBets, fetchAiPicks, fetchAiPicksPublic } from '@/lib/aiPicks/client';
+import { useChatViewer } from '@/components/chat/useChatViewer';
 import { openProUpgrade } from '@/components/ProFeatureLock';
-import { useTheme } from '@/contexts/ThemeContext';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
-import { ArrowLeft, BarChart3, CornerUpLeft, ImagePlus, Loader2, MessageSquareText, Pin, Plus, Send, Sparkles, Trash2, X } from 'lucide-react';
+import { ArrowLeft, CornerUpLeft, ImagePlus, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
 
 type OddsFormat = 'american' | 'decimal';
-const CHAT_ADMIN_EMAIL = 'admin@stattrackr.co';
 const CHAT_ROOM_LAST_READ_PREFIX = 'chat:room-last-read:';
-
-type ViewerState = {
-  userId: string | null;
-  username: string | null;
-  userEmail: string | null;
-  avatarUrl: string | null;
-  hasPremium: boolean;
-  isAdmin: boolean;
-  loading: boolean;
-};
-
-const DEFAULT_VIEWER: ViewerState = {
-  userId: null,
-  username: null,
-  userEmail: null,
-  avatarUrl: null,
-  hasPremium: false,
-  isAdmin: false,
-  loading: true,
-};
 
 type ChatTimelineItem =
   | { type: 'divider'; key: string; label: string }
@@ -268,23 +244,11 @@ function markChatRoomAsRead(userId: string, roomId: string, timestamp = new Date
 
 export default function ChatPageClient() {
   const router = useRouter();
-  const { isDark } = useTheme();
-
-  const [viewer, setViewer] = useState<ViewerState>(DEFAULT_VIEWER);
-  const [showPicksRecordModal, setShowPicksRecordModal] = useState(false);
-  const [aiPicksPublic, setAiPicksPublic] = useState(false);
-  const picksRoomLocked = !viewer.isAdmin && !aiPicksPublic;
+  const [viewer, setViewer] = useChatViewer('Chat page');
 
   useEffect(() => {
-    if (!viewer.userId) return;
-    let cancelled = false;
-    void fetchAiPicksPublic().then((isPublic) => {
-      if (!cancelled) setAiPicksPublic(isPublic);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [viewer.userId]);
+    if (new URLSearchParams(window.location.search).get('room') === 'picks') router.replace('/picks');
+  }, [router]);
   const [oddsFormat, setOddsFormat] = useState<OddsFormat>(DEFAULT_ODDS_FORMAT);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -333,9 +297,6 @@ export default function ChatPageClient() {
     () => rooms.find((room) => room.id === selectedRoomId) ?? null,
     [rooms, selectedRoomId]
   );
-  const selectedRoomSlug = selectedRoom?.slug ?? 'general';
-  const isPicksRoom = selectedRoomSlug === 'picks';
-
   // Keep the open room in the URL so a refresh lands back on it.
   useEffect(() => {
     if (!selectedRoom) return;
@@ -344,7 +305,6 @@ export default function ChatPageClient() {
     else url.searchParams.set('room', selectedRoom.slug);
     if (url.href !== window.location.href) window.history.replaceState(window.history.state, '', url.href);
   }, [selectedRoom]);
-  const canSendInSelectedRoom = !isPicksRoom || viewer.isAdmin;
   const pinnedMessages = useMemo(
     () =>
       messages
@@ -437,103 +397,6 @@ export default function ChatPageClient() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadViewer = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.user) {
-        router.replace('/home');
-        return;
-      }
-
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, username, avatar_url, subscription_status, subscription_tier')
-          .eq('id', session.user.id)
-          .single();
-
-        if (!isMounted) return;
-
-        const profileData = profile as {
-          full_name?: string | null;
-          username?: string | null;
-          avatar_url?: string | null;
-          subscription_status?: string | null;
-          subscription_tier?: string | null;
-        } | null;
-
-        const isActive =
-          profileData?.subscription_status === 'active' || profileData?.subscription_status === 'trialing';
-        const premiumTier =
-          profileData?.subscription_tier === 'premium' || profileData?.subscription_tier === 'pro';
-        const isAdmin = (session.user.email ?? '').toLowerCase() === CHAT_ADMIN_EMAIL;
-
-        setViewer({
-          userId: session.user.id,
-          userEmail: session.user.email ?? null,
-          username:
-            profileData?.username ||
-            profileData?.full_name ||
-            session.user.user_metadata?.username ||
-            session.user.user_metadata?.full_name ||
-            null,
-          avatarUrl:
-            profileData?.avatar_url ??
-            session.user.user_metadata?.avatar_url ??
-            session.user.user_metadata?.picture ??
-            null,
-          hasPremium: Boolean((isActive && premiumTier) || isAdmin),
-          isAdmin,
-          loading: false,
-        });
-      } catch (error) {
-        if (!isMounted) return;
-        console.error('Chat page: failed to load viewer profile', error);
-        setViewer({
-          userId: session.user.id,
-          userEmail: session.user.email ?? null,
-          username:
-            session.user.user_metadata?.username ||
-            session.user.user_metadata?.full_name ||
-            session.user.email ||
-            null,
-          avatarUrl:
-            session.user.user_metadata?.avatar_url ??
-            session.user.user_metadata?.picture ??
-            null,
-          hasPremium: (session.user.email ?? '').toLowerCase() === CHAT_ADMIN_EMAIL,
-          isAdmin: (session.user.email ?? '').toLowerCase() === CHAT_ADMIN_EMAIL,
-          loading: false,
-        });
-      }
-    };
-
-    void loadViewer();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        setViewer(DEFAULT_VIEWER);
-        router.replace('/home');
-      }
-
-      if (event === 'SIGNED_IN' && session?.user) {
-        void loadViewer();
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [router]);
-
-  useEffect(() => {
     if (viewer.loading || !viewer.hasPremium) return;
 
     let isMounted = true;
@@ -541,8 +404,9 @@ export default function ChatPageClient() {
     setRoomError(null);
 
     fetchChatRooms()
-      .then((loadedRooms) => {
+      .then((allRooms) => {
         if (!isMounted) return;
+        const loadedRooms = allRooms.filter((room) => room.slug !== 'picks');
         setRooms(loadedRooms);
         setSelectedRoomId((currentRoomId) => {
           const generalRoomId = loadedRooms.find((room) => room.slug === 'general')?.id ?? loadedRooms[0]?.id ?? null;
@@ -929,11 +793,6 @@ export default function ChatPageClient() {
       return;
     }
 
-    if (!canSendInSelectedRoom) {
-      setComposerError('Only StatTrackr can post in Picks.');
-      return;
-    }
-
     if (messageCooldownUntil && messageCooldownUntil > Date.now()) {
       setComposerError(MESSAGE_COOLDOWN_TEXT);
       return;
@@ -993,7 +852,6 @@ export default function ChatPageClient() {
       setSendingMessage(false);
     }
   }, [
-    canSendInSelectedRoom,
     composerImage,
     composerValue,
     loadMessages,
@@ -1330,7 +1188,7 @@ export default function ChatPageClient() {
                   Chat is available to premium members.
                 </h2>
                 <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-                  Upgrade to unlock the live community feed, picks room, and in-app conversation from both desktop and mobile nav.
+                  Upgrade to unlock the live community feed and in-app conversation from both desktop and mobile nav.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
@@ -1387,7 +1245,7 @@ export default function ChatPageClient() {
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                {isPicksRoom ? 'Picks' : 'Community Chat'}
+                                Community Chat
                               </h2>
                               {onlineCount ? (
                                 <span
@@ -1403,22 +1261,10 @@ export default function ChatPageClient() {
                               ) : null}
                             </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {isPicksRoom
-                              ? 'Picks from Stattrackr AI, posted, tracked and graded automatically.'
-                              : 'Discuss bets, share slips, talk through plays, and hang out with the community.'}
+                            Discuss bets, share slips, talk through plays, and hang out with the community.
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
-                          {isPicksRoom && !picksRoomLocked ? (
-                            <button
-                              type="button"
-                              onClick={() => setShowPicksRecordModal(true)}
-                              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/50 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-500/25 dark:text-emerald-200"
-                            >
-                              <BarChart3 className="h-3.5 w-3.5" />
-                              View record
-                            </button>
-                          ) : null}
                           {pinnedMessages.length > 0 ? (
                             <button
                               type="button"
@@ -1437,7 +1283,6 @@ export default function ChatPageClient() {
                         <div className="flex rounded-2xl border border-gray-200 bg-gray-100 p-1 dark:border-gray-700 dark:bg-[#111827]">
                           {rooms.map((room) => {
                             const isSelected = room.id === selectedRoomId;
-                            const isPicksTab = room.slug === 'picks';
                             const label = room.slug === 'general' ? 'Community' : room.name;
                             const unreadCount = roomUnreadCounts[room.id] ?? 0;
                             const unreadLabel = unreadCount > 9 ? '9+' : unreadCount.toString();
@@ -1446,7 +1291,6 @@ export default function ChatPageClient() {
                               <button
                                 key={room.id}
                                 type="button"
-                                title={picksRoomLocked && isPicksTab ? 'Stattrackr AI is in its learning phase' : undefined}
                                 onClick={() => handleSelectRoom(room.id)}
                                 className={`relative flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                                   isSelected
@@ -1455,11 +1299,7 @@ export default function ChatPageClient() {
                                 }`}
                               >
                                 {label}
-                                {isPicksTab && picksRoomLocked ? (
-                                  <span className="absolute -right-1 -top-2 inline-flex items-center rounded-md border border-amber-600 bg-amber-600 px-1.5 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
-                                    LEARNING
-                                  </span>
-                                ) : unreadCount > 0 ? (
+                                {unreadCount > 0 ? (
                                   <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white ring-2 ring-white dark:ring-[#111827]">
                                     {unreadLabel}
                                   </span>
@@ -1478,47 +1318,7 @@ export default function ChatPageClient() {
                   onScroll={handleMessageListScroll}
                   className="chat-scrollbar relative z-0 min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain px-5 py-4"
                 >
-                  {isPicksRoom ? (
-                    picksRoomLocked ? (
-                      <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center">
-                        <div className="w-full max-w-md rounded-2xl border border-purple-300/60 bg-white p-6 shadow-sm dark:border-purple-500/30 dark:bg-[#111c2d]">
-                          <div className="flex items-center justify-center gap-2">
-                            <img src={AI_PICKS_AVATAR} alt="" className="h-10 w-10 rounded-full object-cover" />
-                            <span className="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">
-                              {AI_PICKS_NAME}
-                              <Sparkles className="h-4 w-4 text-purple-500" aria-label="AI" />
-                            </span>
-                          </div>
-                          <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Learning phase
-                          </span>
-                          <h3 className="mt-3 text-lg font-semibold text-gray-900 dark:text-white">
-                            Stattrackr AI is still learning
-                          </h3>
-                          <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-                            It is posting and grading picks behind the scenes while it learns from every result. Picks will open here once it has built a proven track record.
-                          </p>
-                          <ul className="mt-4 space-y-2 text-left text-sm text-gray-700 dark:text-gray-300">
-                            <li className="flex gap-2">
-                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
-                              Scans NBL and tennis lines across every bookmaker
-                            </li>
-                            <li className="flex gap-2">
-                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
-                              Only posts when it finds a play worth taking
-                            </li>
-                            <li className="flex gap-2">
-                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
-                              Grades every pick and learns from the results
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                    ) : (
-                      <AiPicksFeed />
-                    )
-                  ) : loadingMessages ? (
+                  {loadingMessages ? (
                     <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Loading messages...
@@ -1786,17 +1586,15 @@ export default function ChatPageClient() {
                                     >
                                       <Plus className="h-3.5 w-3.5" />
                                     </button>
-                                    {canSendInSelectedRoom ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => setReplyTargetId(message.id)}
-                                        className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
-                                      >
-                                        <CornerUpLeft className="h-3 w-3" />
-                                        Reply
-                                      </button>
-                                    ) : null}
-                                    {isOwnMessage && canSendInSelectedRoom ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setReplyTargetId(message.id)}
+                                      className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                    >
+                                      <CornerUpLeft className="h-3 w-3" />
+                                      Reply
+                                    </button>
+                                    {isOwnMessage ? (
                                       <button
                                         type="button"
                                         onClick={() => startEditingMessage(message)}
@@ -1897,21 +1695,19 @@ export default function ChatPageClient() {
                                         <Plus className="h-3 w-3" />
                                         React
                                       </button>
-                                      {canSendInSelectedRoom ? (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setReactionPickerMessageId(null);
-                                            setConfirmDeleteMessageId(null);
-                                            setReplyTargetId(message.id);
-                                          }}
-                                          className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
-                                        >
-                                          <CornerUpLeft className="h-3 w-3" />
-                                          Reply
-                                        </button>
-                                      ) : null}
-                                      {isOwnMessage && canSendInSelectedRoom ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setReactionPickerMessageId(null);
+                                          setConfirmDeleteMessageId(null);
+                                          setReplyTargetId(message.id);
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                      >
+                                        <CornerUpLeft className="h-3 w-3" />
+                                        Reply
+                                      </button>
+                                      {isOwnMessage ? (
                                         <button
                                           type="button"
                                           onClick={() => startEditingMessage(message)}
@@ -1958,13 +1754,7 @@ export default function ChatPageClient() {
                   )}
                 </div>
 
-                {isPicksRoom ? null : (
                 <div className="shrink-0 border-t border-gray-200 px-5 pb-3 pt-1 dark:border-gray-700 sm:py-4">
-                  {!canSendInSelectedRoom ? (
-                    <div className="rounded-2xl border border-purple-400/40 bg-purple-500/10 px-4 py-3 text-xs text-purple-100">
-                      Read only.
-                    </div>
-                  ) : (
                   <form onSubmit={handleSubmit} className="space-y-1 sm:space-y-3">
                     {replyTarget ? (
                       <div className="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-[#111c2d]">
@@ -2019,7 +1809,7 @@ export default function ChatPageClient() {
                       />
                       {!composerValue ? (
                         <span className="pointer-events-none absolute left-4 top-2.5 text-sm text-gray-500 dark:text-gray-400 sm:hidden">
-                          {isPicksRoom ? 'Post a pick...' : 'Message...'}
+                          Message...
                         </span>
                       ) : null}
                       <textarea
@@ -2031,7 +1821,7 @@ export default function ChatPageClient() {
                           }
                         }}
                         onKeyDown={handleComposerKeyDown}
-                        placeholder={isPicksRoom ? 'Post a pick...' : 'Message...'}
+                        placeholder="Message..."
                         maxLength={CHAT_MAX_MESSAGE_LENGTH}
                         rows={3}
                         className="hidden h-16 w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-2.5 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:block sm:h-auto sm:py-3 sm:pr-4"
@@ -2085,23 +1875,13 @@ export default function ChatPageClient() {
                       </div>
                     </div>
                   </form>
-                  )}
                 </div>
-                )}
               </div>
             </section>
           )}
           </div>
         </div>
       </main>
-      <OfficialPicksRecordModal
-        isOpen={showPicksRecordModal}
-        onClose={() => setShowPicksRecordModal(false)}
-        isAdmin={viewer.isAdmin}
-        isDark={isDark}
-        loadBets={loadAiRecordBets}
-        subtitle="Stattrackr AI units performance. Every pick is graded automatically."
-      />
       {expandedImageUrl ? (
         <div
           role="dialog"
@@ -2128,8 +1908,4 @@ export default function ChatPageClient() {
       ) : null}
     </div>
   );
-}
-
-async function loadAiRecordBets() {
-  return aiPicksAsRecordBets(await fetchAiPicks(1000));
 }

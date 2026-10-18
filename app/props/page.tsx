@@ -1937,8 +1937,10 @@ function mergeTennisPropForPaint(previous: PlayerProp | undefined, next: PlayerP
   if (!previous) return next;
   const nextBooks = tennisBookmakerLineCount(next);
   const prevBooks = tennisBookmakerLineCount(previous);
+  // A single-book row is a thin fallback; 2+ books is a real board, so books that pulled the market drop off.
+  const takeNext = nextBooks > 1 || nextBooks >= prevBooks;
   const bookmakerLines =
-    nextBooks >= prevBooks && Array.isArray(next.bookmakerLines) && next.bookmakerLines.length > 0
+    takeNext && Array.isArray(next.bookmakerLines) && next.bookmakerLines.length > 0
       ? next.bookmakerLines
       : previous.bookmakerLines?.length
         ? previous.bookmakerLines
@@ -1954,7 +1956,7 @@ function mergeTennisPropForPaint(previous: PlayerProp | undefined, next: PlayerP
     ...next,
     gameDate,
     bookmakerLines,
-    bookmaker: nextBooks >= prevBooks ? next.bookmaker || previous.bookmaker : previous.bookmaker || next.bookmaker,
+    bookmaker: takeNext ? next.bookmaker || previous.bookmaker : previous.bookmaker || next.bookmaker,
     overOdds: primary?.overOdds || next.overOdds || previous.overOdds,
     underOdds: primary?.underOdds || next.underOdds || previous.underOdds,
     dvpRating: keepPrevDvp ? previous.dvpRating : next.dvpRating ?? previous.dvpRating,

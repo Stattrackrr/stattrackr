@@ -497,6 +497,29 @@ export default function LeftSidebar({
                 </span>
               </Link>
               )}
+              {!hasPremium ? (
+                <button
+                  type="button"
+                  onClick={() => openProUpgrade()}
+                  className="mt-1 flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-400 opacity-65 dark:text-gray-500"
+                >
+                  <span className="inline-flex items-center">
+                    Picks
+                    <ProLockMark />
+                  </span>
+                </button>
+              ) : (
+                <Link
+                  href="/picks"
+                  className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    pathname === "/picks"
+                      ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
+                      : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
+                  }`}
+                >
+                  <span>Picks</span>
+                </Link>
+              )}
             </div>
           </div>
         ) : null}
