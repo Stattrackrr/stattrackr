@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
 import { BackToPropsButton } from '@/components/BackToPropsButton';
+import { PickAlertsButton } from '@/components/picks/PickAlertsButton';
 import { AiPicksFeed, AiPicksLearningPanel } from '@/components/chat/AiPicksFeed';
 import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
 import { useChatViewer } from '@/components/chat/useChatViewer';
@@ -211,16 +212,19 @@ export default function PicksPageClient() {
                             Picks from Stattrackr AI, posted, tracked and graded automatically.
                           </p>
                         </div>
-                        {!locked ? (
-                          <button
-                            type="button"
-                            onClick={() => setShowRecordModal(true)}
-                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/50 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-500/25 dark:text-emerald-200"
-                          >
-                            <BarChart3 className="h-3.5 w-3.5" />
-                            View record
-                          </button>
-                        ) : null}
+                        <div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center">
+                          <PickAlertsButton />
+                          {!locked ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowRecordModal(true)}
+                              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/50 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-500/25 dark:text-emerald-200"
+                            >
+                              <BarChart3 className="h-3.5 w-3.5" />
+                              View record
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { clearAppBadge } from '@/lib/push/client';
 import { supabase } from '@/lib/supabaseClient';
 
 const PICKS_LAST_READ_PREFIX = 'picks:last-read:';
@@ -26,6 +27,7 @@ export function markPicksAsRead(userId: string, timestamp = new Date().toISOStri
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(lastReadKey(userId), timestamp);
+    clearAppBadge();
     window.dispatchEvent(new CustomEvent(PICKS_UNREAD_SYNC_EVENT, { detail: { userId } }));
   } catch {
     // Ignore storage access failures on restricted browsers.

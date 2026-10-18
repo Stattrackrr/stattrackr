@@ -27,6 +27,7 @@ import { round } from '@/lib/aiPicks/model/math';
 import { loadActiveParams } from '@/lib/aiPicks/learn/state';
 import { modelVersion, type AiPicksParams } from '@/lib/aiPicks/params';
 import { sizeUnits, trackRecords, type TrackRecord } from '@/lib/aiPicks/units';
+import { sendNewPicksPush } from '@/lib/push/send';
 import {
   claimWatch,
   countOpenReviewRejections,
@@ -75,6 +76,8 @@ export type AiPicksRunSummary = {
   review: { model: string | null; tokensIn: number; tokensOut: number; error: string | null } | null;
   /** Seconds spent in each step, to spot a slow source. */
   timings?: Record<string, number>;
+  /** New-pick web push sent after posting. */
+  push?: { sent: number; removed: number; error?: string };
   errors: string[];
 };
 
@@ -349,6 +352,10 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
           }
         }
         mark('post');
+        if (summary.posted.length) {
+          summary.push = await sendNewPicksPush(summary.posted.map((p) => p.title));
+          mark('push');
+        }
       }
     }
   } catch (e) {
