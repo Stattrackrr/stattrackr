@@ -52,6 +52,17 @@ export function candidateKey(c: Pick<AiCandidate, 'eventKey' | 'market' | 'playe
   return [c.sport, c.eventKey, c.market, who, c.side, c.line ?? ''].join('|');
 }
 
+/**
+ * The key the scan gave a stored leg. Tennis match-level markets (totals) have no player and
+ * store the away player as `team`, but the scan keys them under the home player.
+ */
+export function legCandidateKey(
+  leg: Pick<AiCandidate, 'eventKey' | 'eventLabel' | 'market' | 'player' | 'team' | 'side' | 'line'> & { sport: string }
+): string {
+  const home = leg.sport === 'tennis' && !leg.player ? leg.eventLabel.split(' vs ')[0]?.trim() : null;
+  return candidateKey(home ? { ...leg, player: home } : leg);
+}
+
 /** Several books run the same feed and post identical prices; each distinct price counts once. */
 export function distinctPrices(quotes: CandidateQuote[]): number[] {
   return [...new Set(quotes.map((q) => q.price))];

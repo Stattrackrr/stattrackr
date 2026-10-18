@@ -13,7 +13,20 @@ import { AI_PICK_MIN_PRICE } from '@/lib/aiPicks/types';
 import { gameIdentity, heldUp, MIN_LEAD_MS, readiness, type WatchPoint } from '@/lib/aiPicks/decide/timing';
 
 export const POST_HORIZON_MS = 24 * 60 * 60 * 1000;
-export const MAX_MULTIS_PER_DAY = 2;
+/**
+ * Caps run over any rolling 24 hours, not the Sydney calendar day, so picks spread through the day
+ * instead of all landing just after midnight.
+ */
+export const PICK_WINDOW_MS = 24 * 60 * 60 * 1000;
+/** Same-sport singles are spaced out; a standout edge only needs the shorter gap. */
+export const SINGLE_GAP_MS = 3 * 60 * 60 * 1000;
+export const STANDOUT_SINGLE_GAP_MS = 60 * 60 * 1000;
+/** A single whose edge is at least this multiple of the sport's minimum is a standout. */
+export const STANDOUT_EV_MULTIPLE = 2;
+/** Hard ceiling per sport per window; only standouts go past maxSinglesPerDay toward it. */
+export const MAX_SINGLES_CEILING = 5;
+export const MAX_MULTIS_PER_WINDOW = 3;
+export const MULTI_GAP_MS = 3 * 60 * 60 * 1000;
 /** Multis are two likely outcomes, not two long shots. */
 const MAX_MULTI_PRICE = 3.5;
 const MIN_LEG_PROB = 0.55;
@@ -39,17 +52,18 @@ export type Proposal = {
   reason: string;
 };
 
-/** What is already posted (or ruled out) that limits today's choices. */
+/** What is already posted (or ruled out) that limits the next choices. "Recent" is the last PICK_WINDOW_MS. */
 export type PostedState = {
-  /** Singles posted per sport on the current Sydney day. */
-  singlesToday: Record<string, number>;
-  multisToday: number;
+  /** Posting times (ms) of recent singles, per sport. */
+  singlesRecent: Record<string, number[]>;
+  /** Posting times (ms) of recent multis. */
+  multisRecent: number[];
   /** Candidate keys already in a posted pick. */
   usedKeys: Set<string>;
-  /** Games that already have a single today. */
-  singleGamesToday: Set<string>;
-  /** `sport|player` with a single today. */
-  playersToday: Set<string>;
+  /** Games that had a recent single. */
+  singleGamesRecent: Set<string>;
+  /** `sport|player` with a recent single. */
+  playersRecent: Set<string>;
   /** Selections (`game|market|who`) already backed, to stop over and under on the same thing. */
   selectionsBacked: Set<string>;
   /** Subjects (see subjectId) already in any posted pick, single or multi leg. */
@@ -121,7 +135,21 @@ function conflicts(c: AiCandidate, state: PostedState): boolean {
   return state.usedKeys.has(c.key) || state.selectionsBacked.has(selectionId(c)) || state.subjectsUsed.has(subjectId(c));
 }
 
-/** Ready singles in posting order, within today's caps: one per sport per run, one per game and player per day. */
+export function isStandoutSingle(c: Pick<AiCandidate, 'ev'>, p: AiSportParams): boolean {
+  return c.ev >= p.minEvSingle * STANDOUT_EV_MULTIPLE;
+}
+
+/** Room for another single in this sport: under the cap (standouts up to the ceiling) and spaced from the last one. */
+export function singleSlotOpen(c: AiCandidate, p: AiSportParams, state: PostedState, nowMs: number): boolean {
+  const times = state.singlesRecent[c.sport] ?? [];
+  const standout = isStandoutSingle(c, p);
+  if (times.length >= MAX_SINGLES_CEILING) return false;
+  if (times.length >= p.maxSinglesPerDay && !standout) return false;
+  if (!times.length) return true;
+  return nowMs - Math.max(...times) >= (standout ? STANDOUT_SINGLE_GAP_MS : SINGLE_GAP_MS);
+}
+
+/** Ready singles in posting order: one per sport per run, spaced and capped per sport, one per game and player. */
 export function chooseSingles(watched: Watched[], params: AiPicksParams, state: PostedState, nowMs: number): Proposal[] {
   const out: Proposal[] = [];
   const takenSports = new Set<string>();
@@ -134,10 +162,10 @@ export function chooseSingles(watched: Watched[], params: AiPicksParams, state: 
     const c = w.c;
     const p = sportParams(params, c.sport);
     if (takenSports.has(c.sport)) continue;
-    if ((state.singlesToday[c.sport] ?? 0) >= p.maxSinglesPerDay) continue;
+    if (!singleSlotOpen(c, p, state, nowMs)) continue;
     if (conflicts(c, state)) continue;
-    if (state.singleGamesToday.has(gameIdentity(c))) continue;
-    if (c.player && state.playersToday.has(`${c.sport}|${c.player.toLowerCase()}`)) continue;
+    if (state.singleGamesRecent.has(gameIdentity(c))) continue;
+    if (c.player && state.playersRecent.has(`${c.sport}|${c.player.toLowerCase()}`)) continue;
     takenSports.add(c.sport);
     out.push({
       kind: 'single',
@@ -169,7 +197,8 @@ export function chooseMulti(
   nowMs: number,
   exclude: { keys: Set<string>; rejected: Set<string>; subjects?: Set<string> }
 ): Proposal | null {
-  if (state.multisToday >= MAX_MULTIS_PER_DAY) return null;
+  if (state.multisRecent.length >= MAX_MULTIS_PER_WINDOW) return null;
+  if (state.multisRecent.length && nowMs - Math.max(...state.multisRecent) < MULTI_GAP_MS) return null;
   const pool = watched
     .filter((w) => w.c.prob >= MIN_LEG_PROB && (w.c.supportScore == null || w.c.supportScore >= MIN_LEG_SUPPORT))
     .filter((w) => qualifiesLeg(w.c, params, nowMs).ok && heldUp(w.history, nowMs))

@@ -32,6 +32,8 @@ export type TennisContext = {
   winProb: number;
   /** The same at strength 1, whatever strength is in use. */
   fullWinProb: number;
+  /** Serve rates and simulation at strength 1 (the same objects as above when strength is 1). */
+  full: { pA: number; pB: number; sim: SimSummary };
   parts: TennisWinParts;
   notes: string[];
   serve: { home: { serve: number; returns: number }; away: { serve: number; returns: number } };
@@ -161,6 +163,7 @@ export function tennisContext(input: {
     sim,
     winProb: round(winProb, 4),
     fullWinProb: round(full.winProb, 4),
+    full: { pA: round(full.pA, 4), pB: round(full.pB, 4), sim: full.sim },
     parts: {
       sim: round(parts.sim),
       elo: parts.elo == null ? null : round(parts.elo),

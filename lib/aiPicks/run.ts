@@ -4,10 +4,10 @@
  * and post what it approves, staked from the edge and the AI's own track record.
  */
 
-import { alternateBooks, bookKey } from '@/lib/aiPicks/books';
+import { alternateBooks } from '@/lib/aiPicks/books';
 import { scanAiCandidates, type CandidateScan } from '@/lib/aiPicks/candidates';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
-import { candidateKey } from '@/lib/aiPicks/candidates/types';
+import { closingIndex, closingPrice } from '@/lib/aiPicks/closing';
 import { reviewProposals, type ReviewResult } from '@/lib/aiPicks/decide/review';
 import {
   chooseMulti,
@@ -53,7 +53,10 @@ import {
 const TRACK_RECORD_MS = 365 * 86_400_000;
 /** An NBL props board older than this is not trusted for posting. */
 const MAX_BOARD_AGE_MS = 45 * 60 * 1000;
-const CLOSING_WINDOW_MS = 45 * 60 * 1000;
+/** Leg prices are recorded from this long before the start; each scan overwrites, so the last one is the close. */
+const CLOSING_WINDOW_MS = 3 * 60 * 60 * 1000;
+/** A match running late is still unstarted (and in the scan) after its stored start. */
+const CLOSING_LATE_MS = 6 * 60 * 60 * 1000;
 const RECENT_PICKS_MS = 48 * 60 * 60 * 1000;
 /** Multi legs kept on the watchlist per run, best EV first. */
 const MAX_WATCHED_LEGS = 80;
@@ -148,15 +151,17 @@ function pickContext(p: Proposal, review: string, scannedAt: string, staking: st
 
 /** Latest pre-start price for legs about to start; the last write before the start is the close. */
 async function captureClosing(candidates: AiCandidate[], nowMs: number): Promise<number> {
-  const legs = await listPendingLegsStartingBetween(new Date(nowMs).toISOString(), new Date(nowMs + CLOSING_WINDOW_MS).toISOString());
+  const legs = await listPendingLegsStartingBetween(
+    new Date(nowMs - CLOSING_LATE_MS).toISOString(),
+    new Date(nowMs + CLOSING_WINDOW_MS).toISOString()
+  );
   if (!legs.length) return 0;
-  const byKey = new Map(candidates.map((c) => [c.key, c]));
+  const index = closingIndex(candidates, nowMs);
   let saved = 0;
   for (const leg of legs) {
-    const c = byKey.get(candidateKey(leg));
-    if (!c) continue;
-    const sameBook = c.quotes.find((q) => bookKey(q.book) === bookKey(leg.bookmaker));
-    await saveLegClosing(leg.id, leg.line, sameBook?.price ?? c.bestPrice);
+    const price = closingPrice(leg, index);
+    if (price == null) continue;
+    await saveLegClosing(leg.id, leg.line, price);
     saved += 1;
   }
   return saved;

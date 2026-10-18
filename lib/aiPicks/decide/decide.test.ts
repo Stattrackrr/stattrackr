@@ -57,11 +57,11 @@ const held = (price = 1.95, ev = 0.07): WatchPoint[] => [
 ];
 
 const empty = (): PostedState => ({
-  singlesToday: {},
-  multisToday: 0,
+  singlesRecent: {},
+  multisRecent: [],
   usedKeys: new Set(),
-  singleGamesToday: new Set(),
-  playersToday: new Set(),
+  singleGamesRecent: new Set(),
+  playersRecent: new Set(),
   selectionsBacked: new Set(),
   subjectsUsed: new Set(),
 });
@@ -100,23 +100,49 @@ test('singles: NBL props wait for over/under lines; two books needed', () => {
   assert.equal(qualifiesSingle(cand({ startsAt: iso(NOW + 30 * H) }), P, NOW).ok, false);
 });
 
-test('singles: one per sport per run, daily cap, one per game, no opposite side', () => {
+test('singles: one per sport per run, one per game, no opposite side', () => {
   const near = iso(NOW + 2 * H);
   const a = cand({ eventKey: 'm1', startsAt: near, ev: 0.08 });
   const b = cand({ eventKey: 'm2', startsAt: near, ev: 0.06 });
   const w: Watched[] = [a, b].map((c) => ({ c, history: held() }));
   assert.deepEqual(chooseSingles(w, P, empty(), NOW).map((p) => p.key), [a.key]);
 
-  const capped = { ...empty(), singlesToday: { tennis: 3 } };
-  assert.equal(chooseSingles(w, P, capped, NOW).length, 0);
-
-  const sameGame = { ...empty(), singleGamesToday: new Set([gameIdentity(a)]) };
+  const sameGame = { ...empty(), singleGamesRecent: new Set([gameIdentity(a)]) };
   assert.deepEqual(chooseSingles(w, P, sameGame, NOW).map((p) => p.key), [b.key]);
 
   const under = cand({ eventKey: 'm1', startsAt: near, side: 'under' });
   const backed = { ...empty(), selectionsBacked: new Set<string>() };
   backed.selectionsBacked.add(`${gameIdentity(under)}|total_games|`);
   assert.deepEqual(chooseSingles(w, P, backed, NOW).map((p) => p.key), [b.key]);
+});
+
+test('singles: spaced through the day, capped per 24h, standouts get the shorter gap and the ceiling', () => {
+  const near = iso(NOW + 2 * H);
+  const normal = cand({ eventKey: 'm1', startsAt: near, ev: 0.05 });
+  const standout = cand({ eventKey: 'm2', startsAt: near, ev: 0.07 });
+  const pick = (cs: AiCandidate[], singlesRecent: Record<string, number[]>) =>
+    chooseSingles(cs.map((c) => ({ c, history: held() })), P, { ...empty(), singlesRecent }, NOW).map((p) => p.key);
+
+  assert.deepEqual(pick([normal], { tennis: [NOW - 2 * H] }), [], 'normal single waits 3h after the last');
+  assert.deepEqual(pick([normal], { tennis: [NOW - 3 * H] }), [normal.key]);
+  assert.deepEqual(pick([normal, standout], { tennis: [NOW - 90 * 60_000] }), [standout.key], 'standout only needs 1h');
+  assert.deepEqual(pick([standout], { tennis: [NOW - 30 * 60_000] }), []);
+
+  const three = [NOW - 20 * H, NOW - 12 * H, NOW - 4 * H];
+  assert.deepEqual(pick([normal], { tennis: three }), [], 'normal cap of 3 in 24h');
+  assert.deepEqual(pick([standout], { tennis: three }), [standout.key], 'standout may go past the cap');
+  assert.deepEqual(pick([standout], { tennis: [NOW - 22 * H, NOW - 18 * H, ...three] }), [], 'hard ceiling of 5');
+  assert.deepEqual(pick([normal], { nbl: three }), [normal.key], 'caps are per sport');
+});
+
+test('multis: capped per 24h and spaced', () => {
+  const a = cand({ eventKey: 'm1', startsAt: iso(NOW + 2 * H), bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
+  const b = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'bet365', price: 1.38 }] });
+  const w: Watched[] = [a, b].map((c) => ({ c, history: held() }));
+  const multi = (multisRecent: number[]) => chooseMulti(w, P, { ...empty(), multisRecent }, NOW, { keys: new Set(), rejected: new Set() });
+  assert.ok(multi([NOW - 4 * H]));
+  assert.equal(multi([NOW - 2 * H]), null);
+  assert.equal(multi([NOW - 20 * H, NOW - 12 * H, NOW - 4 * H]), null);
 });
 
 test('multi: separate games, priced at one book, at least 1.65', () => {
@@ -133,7 +159,7 @@ test('multi: separate games, priced at one book, at least 1.65', () => {
   assert.equal(m.key, multiKey(m.legs.map((l) => l.c.key)));
 
   assert.equal(chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set([m.key]) })?.key === m.key, false);
-  assert.equal(chooseMulti(w, P, { ...empty(), multisToday: 2 }, NOW, { keys: new Set(), rejected: new Set() }), null);
+  assert.equal(chooseMulti(w, P, { ...empty(), multisRecent: [NOW - 20 * H, NOW - 12 * H, NOW - 4 * H] }, NOW, { keys: new Set(), rejected: new Set() }), null);
 
   const short = [a, cand({ ...b, key: undefined, eventKey: 'm3', bestPrice: 1.1, prob: 0.95, ev: 0.045, quotes: [{ book: 'TAB', price: 1.1 }, { book: 'Bet365', price: 1.1 }] })];
   assert.equal(chooseMulti(short.map((c) => ({ c, history: held() })), P, empty(), NOW, { keys: new Set(), rejected: new Set() }), null);
@@ -189,7 +215,7 @@ test('watchlist: history grows, posted and review-rejected rows stay closed', ()
   assert.equal(isClosedRow({ status: 'dropped', reason: 'No longer qualifies' }), false);
 });
 
-test('posted state counts today in Sydney and remembers used selections', () => {
+test('posted state counts the last 24 hours and remembers used selections', () => {
   const leg = {
     id: 'l',
     pickId: 'p',
@@ -235,11 +261,14 @@ test('posted state counts today in Sydney and remembers used selections', () => 
     legs: [leg],
     altBooks: [],
   });
-  const s = postedState([pick(iso(NOW), 'single'), pick(iso(NOW - 30 * H), 'single'), pick(iso(NOW), 'multi')], NOW);
-  assert.equal(s.singlesToday.tennis, 1);
-  assert.equal(s.multisToday, 1);
+  const s = postedState(
+    [pick(iso(NOW), 'single'), pick(iso(NOW - 23 * H), 'single'), pick(iso(NOW - 30 * H), 'single'), pick(iso(NOW), 'multi')],
+    NOW
+  );
+  assert.deepEqual(s.singlesRecent.tennis, [NOW, NOW - 23 * H]);
+  assert.deepEqual(s.multisRecent, [NOW]);
   assert.ok(s.usedKeys.has(candidateKey(leg)));
-  assert.ok(s.playersToday.has('tennis|a. one'));
+  assert.ok(s.playersRecent.has('tennis|a. one'));
   assert.ok(s.subjectsUsed.has(subjectId(leg)));
 });
 

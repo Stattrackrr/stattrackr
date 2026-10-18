@@ -13,10 +13,15 @@ import {
 } from './math';
 import { anchorSimulation } from './tennisAnchor';
 import { effectiveModelWeight } from '../params';
+import { DEFAULT_AI_PICKS_PARAMS } from '../params';
 import { bestQuote, eligibility } from '../candidates/types';
-import { tennisSelections } from '../candidates/tennis';
+import { buildTennisCandidates, tennisSelections } from '../candidates/tennis';
+import { tennisContext } from './tennisContext';
 import { probOverHist } from '@/lib/tennisAi/simulate';
+import { historyFromRows } from '@/lib/tennisAi/live';
+import { buildMatchPack } from '@/lib/tennisAi/pack';
 import type { TennisBookRow } from '@/lib/tennis/oddsTypes';
+import type { TennisMatchRow } from '@/lib/tennis/types';
 
 const near = (a: number, b: number, tol: number) => assert.ok(Math.abs(a - b) <= tol, `${a} not within ${tol} of ${b}`);
 
@@ -150,4 +155,56 @@ test('tennis selections orient the handicap and drop mislabeled pairs', () => {
   assert.deepEqual(no.quotes.map((q) => q.book), ['A']);
   assert.equal(pairs.get('win_a_set|away')!.size, 1);
   assert.equal(pairs.get('match_winner')!.size, 2);
+});
+
+test('tennis context numbers on every market: context off at strength 0, the model itself at strength 1', () => {
+  const played = (id: string, serve: number, returns: number, surface: string, minutes: number) =>
+    Array.from({ length: 16 }, (_, i) => ({
+      date: `2026-09-${String(i + 1).padStart(2, '0')}`,
+      tour: 'ATP',
+      surface,
+      playerId: id,
+      opponentId: `${id}-opp${i}`,
+      isWin: i % 3 !== 0,
+      servicePointsWonPct: serve,
+      returnPointsWonPct: returns,
+      serviceGamesWon: 10,
+      serveGames: 12,
+      minutes,
+      totalSets: 2,
+      score: '6-4 6-4',
+      playerRank: id === 'h' ? 30 : 120,
+      opponentRank: id === 'h' ? 300 : 15,
+    })) as unknown as TennisMatchRow[];
+  const history = historyFromRows([...played('h', 0.7, 0.42, 'Clay', 95), ...played('a', 0.6, 0.35, 'Hard', 200)], 'ATP');
+  const pack = buildMatchPack({ asOf: '2026-09-20T00:00:00Z', tour: 'ATP', surface: 'Hard', bestOf: 3, playerId: 'h', opponentId: 'a', history, markets: [], sims: 2000, seed: 7 });
+  const books = [
+    book('A', {
+      H2H: { home: '-200', away: '+165' },
+      SpreadLines: [ou('-3.5', '-110', '-110')],
+      TotalLines: [ou('21.5', '-115', '-105')],
+      GamesWonLines: [ou('12.5', '-110', '-110')],
+      TotalSetsLines: [ou('2.5', '+150', '-180')],
+      SetsLostLines: [ou('0.5', '+140', '-170')],
+    }),
+  ];
+  const build = (strength: number) =>
+    buildTennisCandidates({
+      match: { matchId: 'm', homeId: 'h', awayId: 'a', homeName: 'H. Home', awayName: 'A. Away', startsAt: '2026-10-01T05:00:00Z', surface: 'Hard', bestOf: 3, tournament: null },
+      books,
+      sim: pack.sim,
+      features: pack.features,
+      logs: { home: [], away: [] },
+      params: DEFAULT_AI_PICKS_PARAMS.tennis,
+      anchor: { sims: 2000, seed: 7 },
+      context: tennisContext({ history, features: pack.features, homeId: 'h', awayId: 'a', baseSim: pack.sim, strength, sims: 2000, seed: 7 }),
+    });
+  const full = build(1);
+  const off = build(0);
+  assert.deepEqual([...new Set(full.map((c) => c.market))].sort(), ['game_handicap', 'match_winner', 'player_games', 'total_games', 'total_sets', 'win_a_set']);
+  for (const c of [...full, ...off]) assert.ok(c.contextProbs, `${c.key} has no context numbers`);
+  for (const c of full) near(c.contextProbs!.full, c.modelProb!, 0.0015);
+  // The context model rounds serve rates to 4 places, so strength 0 re-simulates from marginally different inputs.
+  for (const c of off.filter((x) => x.market !== 'match_winner')) near(c.contextProbs!.base, c.modelProb!, 0.01);
+  assert.ok(full.some((c) => c.market !== 'match_winner' && Math.abs(c.contextProbs!.full - c.contextProbs!.base) >= 0.005));
 });

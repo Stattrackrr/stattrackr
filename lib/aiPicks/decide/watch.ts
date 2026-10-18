@@ -1,10 +1,10 @@
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
-import { candidateKey } from '@/lib/aiPicks/candidates/types';
+import { legCandidateKey } from '@/lib/aiPicks/candidates/types';
 import { round } from '@/lib/aiPicks/model/math';
 import type { WatchRow } from '@/lib/aiPicks/server';
 import type { AiPick } from '@/lib/aiPicks/types';
-import { aiDayKey, gameIdentity, type WatchPoint } from '@/lib/aiPicks/decide/timing';
-import { selectionId, subjectId, type PostedState } from '@/lib/aiPicks/decide/select';
+import { gameIdentity, type WatchPoint } from '@/lib/aiPicks/decide/timing';
+import { PICK_WINDOW_MS, selectionId, subjectId, type PostedState } from '@/lib/aiPicks/decide/select';
 
 const MAX_HISTORY = 24;
 export const REVIEW_REJECTED = 'AI review:';
@@ -80,27 +80,28 @@ export function nextWatchRow(c: AiCandidate, existing: WatchRow | undefined, now
 }
 
 export function postedState(picks: AiPick[], nowMs: number): PostedState {
-  const today = aiDayKey(nowMs);
+  const windowStart = nowMs - PICK_WINDOW_MS;
   const state: PostedState = {
-    singlesToday: {},
-    multisToday: 0,
+    singlesRecent: {},
+    multisRecent: [],
     usedKeys: new Set(),
-    singleGamesToday: new Set(),
-    playersToday: new Set(),
+    singleGamesRecent: new Set(),
+    playersRecent: new Set(),
     selectionsBacked: new Set(),
     subjectsUsed: new Set(),
   };
   for (const pick of picks) {
-    const isToday = aiDayKey(pick.postedAt) === today;
-    if (isToday && pick.kind === 'multi') state.multisToday += 1;
-    if (isToday && pick.kind === 'single') state.singlesToday[pick.sport] = (state.singlesToday[pick.sport] ?? 0) + 1;
+    const postedMs = Date.parse(pick.postedAt);
+    const recent = postedMs > windowStart;
+    if (recent && pick.kind === 'multi') state.multisRecent.push(postedMs);
+    if (recent && pick.kind === 'single') (state.singlesRecent[pick.sport] ??= []).push(postedMs);
     for (const leg of pick.legs) {
-      state.usedKeys.add(candidateKey(leg));
+      state.usedKeys.add(legCandidateKey(leg));
       state.subjectsUsed.add(subjectId(leg));
       if (leg.status === 'pending') state.selectionsBacked.add(selectionId(leg));
-      if (isToday && pick.kind === 'single') {
-        state.singleGamesToday.add(gameIdentity(leg));
-        if (leg.player) state.playersToday.add(`${leg.sport}|${leg.player.toLowerCase()}`);
+      if (recent && pick.kind === 'single') {
+        state.singleGamesRecent.add(gameIdentity(leg));
+        if (leg.player) state.playersRecent.add(`${leg.sport}|${leg.player.toLowerCase()}`);
       }
     }
   }

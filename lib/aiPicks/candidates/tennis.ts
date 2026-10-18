@@ -344,19 +344,37 @@ export function buildTennisCandidates(input: {
   const baseHome = tc ? (tennisModelProb({ market: 'match_winner', who: 'home', side: 'yes', line: null }, input.sim, features)?.prob ?? null) : null;
   const modelHome = tc?.winProb ?? tennisModelProb({ market: 'match_winner', who: 'home', side: 'yes', line: null }, sim, features)?.prob ?? null;
   const wWin = effectiveModelWeight(params.modelWeight.match_winner ?? 0.3, sample, params.sampleHalfLife);
-  const anchored =
-    input.anchor && fairHome != null && modelHome != null
+  const anchorAt = (pA: number, pB: number, winHome: number | null) =>
+    input.anchor && fairHome != null && winHome != null
       ? anchorSimulation(
-          {
-            pA: tc?.pA ?? features.pServePlayer,
-            pB: tc?.pB ?? features.pServeOpponent,
-            bestOf: match.bestOf,
-            uncertainty: Math.hypot(features.serveUncertainty, params.dayForm),
-          },
-          wWin * modelHome + (1 - wWin) * fairHome,
+          { pA, pB, bestOf: match.bestOf, uncertainty: Math.hypot(features.serveUncertainty, params.dayForm) },
+          wWin * winHome + (1 - wWin) * fairHome,
           input.anchor
         )
       : null;
+  const anchored = anchorAt(tc?.pA ?? features.pServePlayer, tc?.pB ?? features.pServeOpponent, modelHome);
+  // The other markets priced with context off and at full strength, so context learning covers them too.
+  const contextSims = (() => {
+    if (!tc) return null;
+    if (!anchored) return { base: input.sim, full: tc.full.sim };
+    const base = anchorAt(features.pServePlayer, features.pServeOpponent, baseHome);
+    const full = tc.full.sim === tc.sim ? anchored : anchorAt(tc.full.pA, tc.full.pB, tc.fullWinProb);
+    return base && full ? { base: base.sim, full: full.sim } : null;
+  })();
+  const contextProbsFor = (sel: TennisSelection): AiCandidate['contextProbs'] => {
+    if (!tc) return null;
+    if (sel.market === 'match_winner') {
+      if (baseHome == null) return null;
+      return {
+        base: round(sel.who === 'home' ? baseHome : 1 - baseHome),
+        full: round(sel.who === 'home' ? tc.fullWinProb : 1 - tc.fullWinProb),
+      };
+    }
+    if (!contextSims) return null;
+    const base = tennisModelProb(sel, contextSims.base, features);
+    const full = tennisModelProb(sel, contextSims.full, features);
+    return base && full ? { base: round(base.prob), full: round(full.prob) } : null;
+  };
   const baseFlags: string[] = [];
   if (features.insufficient) baseFlags.push('Not enough match history for the model');
   if (features.player.retiredRecent) baseFlags.push(`${match.homeName} retired in their last match`);
@@ -406,13 +424,7 @@ export function buildTennisCandidates(input: {
       quotes: sel.quotes.sort((a, b) => b.price - a.price),
       modelProb: round(model.prob),
       marketProb: fair == null ? null : round(fair),
-      contextProbs:
-        sel.market === 'match_winner' && tc && baseHome != null
-          ? {
-              base: round(sel.who === 'home' ? baseHome : 1 - baseHome),
-              full: round(sel.who === 'home' ? tc.fullWinProb : 1 - tc.fullWinProb),
-            }
-          : null,
+      contextProbs: contextProbsFor(sel),
       prob: round(prob),
       pushProb: round(model.push),
       ev: round(ev),

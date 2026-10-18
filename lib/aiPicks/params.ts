@@ -30,7 +30,10 @@ export type AiSportParams = {
   oneWayMarginPower: number;
   /** A play that keeps qualifying is posted once its game is this close (earlier if the price starts shortening). */
   postWindowHours: number;
-  /** Upper end of the 2-3 singles a day guide. Fewer is fine; nothing is forced. */
+  /**
+   * Normal singles per sport in any rolling 24 hours (name kept for stored learning state).
+   * Standout edges may go past it up to MAX_SINGLES_CEILING. Fewer is fine; nothing is forced.
+   */
   maxSinglesPerDay: number;
   /** Learned stake multiplier per market group (see modelGroup); missing means 1. */
   stakeScale: Record<string, number>;
