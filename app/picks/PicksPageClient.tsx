@@ -1,9 +1,10 @@
 'use client';
 
-import { ArrowLeft, BarChart3, Loader2 } from 'lucide-react';
+import { BarChart3, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
+import { BackToPropsButton } from '@/components/BackToPropsButton';
 import { AiPicksFeed, AiPicksLearningPanel } from '@/components/chat/AiPicksFeed';
 import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
 import { useChatViewer } from '@/components/chat/useChatViewer';
@@ -188,20 +189,7 @@ export default function PicksPageClient() {
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent dark:bg-transparent lg:h-full lg:rounded-3xl lg:border lg:border-gray-200 lg:bg-white lg:shadow-sm dark:lg:border-gray-700 dark:lg:bg-[#0f1a2b]">
                   <div className="border-b border-gray-200 px-2 py-3 dark:border-gray-700 sm:px-5 sm:py-4">
                     <div className="flex flex-col gap-1.5">
-                      <div className="lg:hidden">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.history.length > 1) router.back();
-                            else router.push('/props');
-                          }}
-                          aria-label="Return to previous page"
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200 dark:border-gray-600 dark:bg-[#111c2d] dark:text-gray-200 dark:hover:bg-[#162338]"
-                        >
-                          <ArrowLeft className="h-4 w-4" />
-                          Return
-                        </button>
-                      </div>
+                      <BackToPropsButton className="mb-1" />
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="flex flex-wrap items-center gap-2">

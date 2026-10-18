@@ -8,6 +8,7 @@ import { StatTrackrLogoWithText } from "./StatTrackrLogo";
 import { AFL_PUBLIC_ENABLED, CHAT_UNDER_MAINTENANCE, JOURNAL_ENABLED, NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, NBA_SIDEBAR_CLOSED_LABEL, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
+import { usePicksUnread } from "@/lib/aiPicks/unread";
 import { supabase } from "@/lib/supabaseClient";
 import { invalidateViewerProfileCache } from '@/lib/profileSubscriptionGate';
 import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
@@ -55,8 +56,10 @@ export default function LeftSidebar({
   showDashboardNavLinks = false,
 }: LeftSidebarProps) {
   const pathname = usePathname();
-  const unreadChatCount = useChatUnread(hasPremium);
+  const unreadChatCount = useChatUnread();
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
+  const unreadPicksCount = usePicksUnread(hasPremium);
+  const unreadPicksLabel = unreadPicksCount > 9 ? '9+' : unreadPicksCount.toString();
   const [showSettings, setShowSettings] = useState(false);
   const [showSportsDropdown, setShowSportsDropdown] = useState(true);
   // Dropdown below profile card (name click toggles this)
@@ -457,18 +460,7 @@ export default function LeftSidebar({
             </div>
 
             <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
-              {!hasPremium ? (
-                <button
-                  type="button"
-                  onClick={() => openProUpgrade()}
-                  className="mt-1 flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-400 opacity-65 dark:text-gray-500"
-                >
-                  <span className="inline-flex items-center">
-                    Chat
-                    <ProLockMark />
-                  </span>
-                </button>
-              ) : CHAT_UNDER_MAINTENANCE ? (
+              {CHAT_UNDER_MAINTENANCE ? (
                 <div
                   className="mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed"
                   title="Chat is under maintenance"
@@ -517,7 +509,14 @@ export default function LeftSidebar({
                       : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
                   }`}
                 >
-                  <span>Picks</span>
+                  <span className="flex items-center gap-2">
+                    <span>Picks</span>
+                    {unreadPicksCount > 0 ? (
+                      <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                        {unreadPicksLabel}
+                      </span>
+                    ) : null}
+                  </span>
                 </Link>
               )}
             </div>

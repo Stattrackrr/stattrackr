@@ -24,9 +24,9 @@ import { useSiteOnlineCount } from '@/lib/sitePresence';
 import { useRouter } from 'next/navigation';
 import { ChangeEvent, ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChatViewer } from '@/components/chat/useChatViewer';
-import { openProUpgrade } from '@/components/ProFeatureLock';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
-import { ArrowLeft, CornerUpLeft, ImagePlus, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
+import { CornerUpLeft, ImagePlus, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
+import { BackToPropsButton } from '@/components/BackToPropsButton';
 
 type OddsFormat = 'american' | 'decimal';
 const CHAT_ROOM_LAST_READ_PREFIX = 'chat:room-last-read:';
@@ -245,6 +245,7 @@ function markChatRoomAsRead(userId: string, roomId: string, timestamp = new Date
 export default function ChatPageClient() {
   const router = useRouter();
   const [viewer, setViewer] = useChatViewer('Chat page');
+  const canChat = Boolean(viewer.userId);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('room') === 'picks') router.replace('/picks');
@@ -397,7 +398,7 @@ export default function ChatPageClient() {
   }, []);
 
   useEffect(() => {
-    if (viewer.loading || !viewer.hasPremium) return;
+    if (viewer.loading || !canChat) return;
 
     let isMounted = true;
     setLoadingRooms(true);
@@ -432,10 +433,10 @@ export default function ChatPageClient() {
     return () => {
       isMounted = false;
     };
-  }, [viewer.hasPremium, viewer.loading]);
+  }, [canChat, viewer.loading]);
 
   useEffect(() => {
-    if (!viewer.hasPremium || !selectedRoomId) {
+    if (!canChat || !selectedRoomId) {
       setMessages([]);
       setReactions([]);
       setReplyTargetId(null);
@@ -461,10 +462,10 @@ export default function ChatPageClient() {
     return () => {
       isMounted = false;
     };
-  }, [loadMessages, selectedRoomId, viewer.hasPremium, viewer.userId]);
+  }, [loadMessages, selectedRoomId, canChat, viewer.userId]);
 
   useEffect(() => {
-    if (!viewer.hasPremium || !viewer.userId || !selectedRoomId || rooms.length === 0) return;
+    if (!canChat || !viewer.userId || !selectedRoomId || rooms.length === 0) return;
 
     let isMounted = true;
 
@@ -509,10 +510,10 @@ export default function ChatPageClient() {
     return () => {
       isMounted = false;
     };
-  }, [rooms, selectedRoomId, viewer.hasPremium, viewer.userId]);
+  }, [rooms, selectedRoomId, canChat, viewer.userId]);
 
   useEffect(() => {
-    if (!viewer.hasPremium || rooms.length === 0) return;
+    if (!canChat || rooms.length === 0) return;
 
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
@@ -562,7 +563,7 @@ export default function ChatPageClient() {
         void supabase.removeChannel(channel);
       }
     };
-  }, [rooms, selectedRoomId, viewer.hasPremium]);
+  }, [rooms, selectedRoomId, canChat]);
 
   useEffect(() => {
     if (!reactionPickerMessageId) return;
@@ -599,7 +600,7 @@ export default function ChatPageClient() {
   }, [composerValue]);
 
   useEffect(() => {
-    if (!viewer.hasPremium || !selectedRoomId) return;
+    if (!canChat || !selectedRoomId) return;
 
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
@@ -667,10 +668,10 @@ export default function ChatPageClient() {
         void supabase.removeChannel(channel);
       }
     };
-  }, [selectedRoomId, viewer.hasPremium]);
+  }, [selectedRoomId, canChat]);
 
   useEffect(() => {
-    if (!viewer.hasPremium || !selectedRoomId) return;
+    if (!canChat || !selectedRoomId) return;
 
     const intervalId = window.setInterval(() => {
       if (document.visibilityState === 'hidden') return;
@@ -696,7 +697,7 @@ export default function ChatPageClient() {
       window.removeEventListener('focus', syncMessages);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [loadMessages, selectedRoomId, viewer.hasPremium]);
+  }, [loadMessages, selectedRoomId, canChat]);
 
   useEffect(() => {
     const container = messageListRef.current;
@@ -789,7 +790,7 @@ export default function ChatPageClient() {
   }, []);
 
   const submitMessage = useCallback(async () => {
-    if (!selectedRoomId || !viewer.hasPremium || sendingMessage) {
+    if (!selectedRoomId || !canChat || sendingMessage) {
       return;
     }
 
@@ -860,7 +861,7 @@ export default function ChatPageClient() {
     selectedRoomId,
     sendingMessage,
     startMessageCooldown,
-    viewer.hasPremium,
+    canChat,
     viewer.isAdmin,
     viewer.userId,
   ]);
@@ -958,7 +959,7 @@ export default function ChatPageClient() {
 
   const handleToggleReaction = useCallback(
     async (messageId: string, emoji: string) => {
-      if (!viewer.userId || !viewer.hasPremium || togglingReactionKey) {
+      if (!viewer.userId || !canChat || togglingReactionKey) {
         return;
       }
 
@@ -985,7 +986,7 @@ export default function ChatPageClient() {
         setTogglingReactionKey(null);
       }
     },
-    [messages, refreshReactions, togglingReactionKey, viewer.hasPremium, viewer.userId]
+    [messages, refreshReactions, togglingReactionKey, canChat, viewer.userId]
   );
 
   const handleDeleteMessage = useCallback(
@@ -1171,41 +1172,11 @@ export default function ChatPageClient() {
           <div
             className="dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-2 sm:px-3 sm:pt-4 lg:px-3 lg:pb-4"
           >
-          {viewer.loading ? (
+          {viewer.loading || !canChat ? (
             <div className="flex flex-1 items-center justify-center">
               <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-gray-600 shadow-sm dark:border-gray-700 dark:bg-[#0f1a2b] dark:text-gray-300">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading your chat access...
-              </div>
-            </div>
-          ) : !viewer.hasPremium ? (
-            <div className="rounded-3xl border border-purple-200 bg-gradient-to-br from-purple-50 to-white p-6 shadow-sm dark:border-purple-800/60 dark:from-purple-950/30 dark:to-[#0f1a2b]">
-              <div className="max-w-2xl">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-purple-500 dark:text-purple-300">
-                  Upgrade required
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
-                  Chat is available to premium members.
-                </h2>
-                <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-                  Upgrade to unlock the live community feed and in-app conversation from both desktop and mobile nav.
-                </p>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => openProUpgrade()}
-                    className="rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-700"
-                  >
-                    View plans
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => router.push('/props')}
-                    className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
-                  >
-                    Back to props
-                  </button>
-                </div>
               </div>
             </div>
           ) : (
@@ -1224,23 +1195,7 @@ export default function ChatPageClient() {
                   ) : (
                     <div className="flex flex-col gap-4">
                       <div className="flex flex-col gap-1.5">
-                        <div className="lg:hidden">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (typeof window !== 'undefined' && window.history.length > 1) {
-                                router.back();
-                              } else {
-                                router.push('/props');
-                              }
-                            }}
-                            aria-label="Return to previous page"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200 dark:border-gray-600 dark:bg-[#111c2d] dark:text-gray-200 dark:hover:bg-[#162338]"
-                          >
-                            <ArrowLeft className="h-4 w-4" />
-                            Return
-                          </button>
-                        </div>
+                        <BackToPropsButton className="mb-1" />
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <div className="flex flex-wrap items-center gap-2">

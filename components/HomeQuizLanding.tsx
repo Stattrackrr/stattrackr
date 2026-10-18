@@ -201,7 +201,7 @@ const COMPARE_ROWS: { icon: typeof Medal; feature: string; pro: string; free: st
   { icon: LineChart, feature: 'Advanced stats for every sport', pro: 'Included', free: 'Locked' },
   { icon: Trophy, feature: 'AFL prediction model', pro: 'Included', free: 'Locked' },
   { icon: Megaphone, feature: 'Admin picks', pro: 'Included', free: 'Locked' },
-  { icon: MessageCircle, feature: 'Chat', pro: 'Included', free: 'Locked' },
+  { icon: MessageCircle, feature: 'Chat', pro: 'Included', free: 'Included', freeOk: true },
   { icon: DollarSign, feature: 'Price', pro: 'From $20/month', free: 'Free', freeOk: true },
 ];
 

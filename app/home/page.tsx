@@ -1100,7 +1100,7 @@ export default function HomePage() {
               { icon: LineChart, feature: 'Advanced stats for every sport', pro: 'Included', free: 'Locked' },
               { icon: Trophy, feature: 'AFL prediction model', pro: 'Included', free: 'Locked' },
               { icon: Megaphone, feature: 'Admin picks', pro: 'Included', free: 'Locked' },
-              { icon: MessageCircle, feature: 'Chat', pro: 'Included', free: 'Locked' },
+              { icon: MessageCircle, feature: 'Chat', pro: 'Included', free: 'Included', freeOk: true },
               { icon: DollarSign, feature: 'Price', pro: 'From $20/month', free: 'Free', freeOk: true },
             ].map((row) => (
               <div key={row.feature} className="overflow-hidden rounded-2xl border border-gray-800 bg-[#071422]">
@@ -1145,7 +1145,7 @@ export default function HomePage() {
                   { icon: LineChart, feature: 'Advanced stats for every sport', pro: 'Included', free: 'Locked' },
                   { icon: Trophy, feature: 'AFL prediction model', pro: 'Included', free: 'Locked' },
                   { icon: Megaphone, feature: 'Admin picks', pro: 'Included', free: 'Locked' },
-                  { icon: MessageCircle, feature: 'Chat', pro: 'Included', free: 'Locked' },
+                  { icon: MessageCircle, feature: 'Chat', pro: 'Included', free: 'Included', freeOk: true },
                   { icon: DollarSign, feature: 'Price', pro: 'From $20/month', free: 'Free', freeOk: true },
                 ].map((row) => (
                   <React.Fragment key={row.feature}>

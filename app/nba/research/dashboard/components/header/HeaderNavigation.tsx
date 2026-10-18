@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useChatUnread } from '@/lib/chatUnread';
 import { CHAT_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
-import { openProUpgrade } from '@/components/ProFeatureLock';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { ProfileAvatar } from './ProfileAvatar';
 
@@ -37,7 +36,7 @@ export function HeaderNavigation({
   const router = useRouter();
   const pathname = usePathname();
   const isDesktop = variant === 'desktop';
-  const unreadChatCount = useChatUnread(hasPremium);
+  const unreadChatCount = useChatUnread();
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const prefetchProps = () => {
     router.prefetch('/props');
@@ -80,19 +79,15 @@ export function HeaderNavigation({
       
       <button
         type="button"
-        disabled={hasPremium && CHAT_UNDER_MAINTENANCE}
-        title={hasPremium && CHAT_UNDER_MAINTENANCE ? 'Chat is under maintenance' : undefined}
+        disabled={CHAT_UNDER_MAINTENANCE}
+        title={CHAT_UNDER_MAINTENANCE ? 'Chat is under maintenance' : undefined}
         onClick={() => {
-          if (!hasPremium) {
-            openProUpgrade();
-            return;
-          }
           if (CHAT_UNDER_MAINTENANCE) return;
           router.push('/chat');
         }}
-        className={`relative ${navButtonClass(!!isChatActive, (hasPremium && CHAT_UNDER_MAINTENANCE) || !hasPremium)}`}
+        className={`relative ${navButtonClass(!!isChatActive, CHAT_UNDER_MAINTENANCE)}`}
       >
-        {hasPremium && CHAT_UNDER_MAINTENANCE ? (
+        {CHAT_UNDER_MAINTENANCE ? (
           <span className="absolute -top-1.5 right-0.5 rounded-md bg-amber-600 px-1 py-0.5 text-[7px] font-bold leading-none tracking-wide text-white">
             MAINT
           </span>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useChatUnread } from '@/lib/chatUnread';
+import { usePicksUnread } from '@/lib/aiPicks/unread';
 import { usePathname, useRouter } from 'next/navigation';
 import { CHAT_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
 import { openProUpgrade } from '@/components/ProFeatureLock';
@@ -63,8 +64,10 @@ export function MobileBottomNavigation({
   const router = useRouter();
   const pathname = usePathname();
   const [showReadMeBadge, setShowReadMeBadge] = useState(false);
-  const unreadChatCount = useChatUnread(hasPremium);
+  const unreadChatCount = useChatUnread();
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
+  const unreadPicksCount = usePicksUnread(hasPremium);
+  const unreadPicksLabel = unreadPicksCount > 9 ? '9+' : unreadPicksCount.toString();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -156,20 +159,16 @@ export function MobileBottomNavigation({
         
         <button
           type="button"
-          disabled={hasPremium && CHAT_UNDER_MAINTENANCE}
-          title={hasPremium && CHAT_UNDER_MAINTENANCE ? 'Chat is under maintenance' : undefined}
+          disabled={CHAT_UNDER_MAINTENANCE}
+          title={CHAT_UNDER_MAINTENANCE ? 'Chat is under maintenance' : undefined}
           onClick={() => {
-            if (!hasPremium) {
-              openProUpgrade();
-              return;
-            }
             if (CHAT_UNDER_MAINTENANCE) return;
             router.push('/chat');
           }}
-          className={`relative ${navButtonClass(!!isChatActive, (hasPremium && CHAT_UNDER_MAINTENANCE) || !hasPremium)}`}
+          className={`relative ${navButtonClass(!!isChatActive, CHAT_UNDER_MAINTENANCE)}`}
         >
-          <span className={`${iconChipClass(!!isChatActive, (hasPremium && CHAT_UNDER_MAINTENANCE) || !hasPremium)} relative`}>
-            {hasPremium && CHAT_UNDER_MAINTENANCE ? (
+          <span className={`${iconChipClass(!!isChatActive, CHAT_UNDER_MAINTENANCE)} relative`}>
+            {CHAT_UNDER_MAINTENANCE ? (
               <span className="absolute -right-3 -top-1 z-10 rounded-md bg-amber-600 px-1 py-0.5 text-[6px] font-bold leading-none tracking-wide text-white">
                 MAINT
               </span>
@@ -178,15 +177,9 @@ export function MobileBottomNavigation({
                 {unreadChatLabel}
               </span>
             ) : null}
-            {!hasPremium ? (
-              <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8M8 14h5m-9 6l2.2-3.3A2 2 0 013 15V6a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2H7.8a2 2 0 00-1.664.89L4 20z" />
-              </svg>
-            )}
+            <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8M8 14h5m-9 6l2.2-3.3A2 2 0 013 15V6a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2H7.8a2 2 0 00-1.664.89L4 20z" />
+            </svg>
           </span>
           <span className="text-[10px] font-semibold tracking-[0.01em]">Chat</span>
         </button>
@@ -201,9 +194,14 @@ export function MobileBottomNavigation({
             }
             router.push('/picks');
           }}
-          className={navButtonClass(!!isPicksActive, !hasPremium)}
+          className={`relative ${navButtonClass(!!isPicksActive, !hasPremium)}`}
         >
-          <span className={iconChipClass(!!isPicksActive, !hasPremium)}>
+          <span className={`${iconChipClass(!!isPicksActive, !hasPremium)} relative`}>
+            {unreadPicksCount > 0 ? (
+              <span className="absolute -right-3 -top-1 inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white ring-2 ring-white/90 dark:ring-[#111827]">
+                {unreadPicksLabel}
+              </span>
+            ) : null}
             {!hasPremium ? (
               <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
