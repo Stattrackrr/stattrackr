@@ -714,6 +714,14 @@ export default function ChatPageClient() {
     shouldScrollToBottomRef.current = false;
   }, [messages, selectedRoomId]);
 
+  /** Images have no height until they load; re-pin so a late photo doesn't push the newest message out of view. */
+  const keepPinnedAfterImageLoad = useCallback(() => {
+    const container = messageListRef.current;
+    if (container && isMessageListNearBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, []);
+
   const handleMessageListScroll = useCallback((event: UIEvent<HTMLDivElement>) => {
     const container = event.currentTarget;
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
@@ -1455,7 +1463,7 @@ export default function ChatPageClient() {
                                         <img
                                           src={message.image_url}
                                           alt="Photo"
-                                          loading="lazy"
+                                          onLoad={keepPinnedAfterImageLoad}
                                           className="max-h-80 w-auto max-w-full rounded-xl object-contain"
                                         />
                                       </button>
