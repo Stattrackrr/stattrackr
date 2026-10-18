@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-17T16:20:47.887Z",
+  "generatedAt": "2026-10-18T16:29:24.263Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
@@ -140,11 +140,12 @@
       "listedByNbl": true
     },
     {
-      "team": "New Zealand Breakers",
-      "player": "Nelson Weidemann",
-      "injury": "Unavailable",
+      "team": "Perth Wildcats",
+      "player": "Kristian Doolittle",
+      "injury": "Foot",
       "returning": "TBC",
-      "status": "Out",
+      "status": "TBC",
+      "note": "Missed Perth’s loss at the Sydney Kings on 17 October 2026 with a foot injury, the NBL reported. No return date has been given.",
       "listedByNbl": true
     },
     {

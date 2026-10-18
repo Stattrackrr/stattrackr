@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-17T16:20:04.041Z",
+  "generatedAt": "2026-10-18T16:28:40.103Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2461,7 +2461,7 @@
       "externalId": "371032f3-58ad-11f1-a72d-69c2b72ae0a9",
       "startTime": "2026-10-18T06:00:00.000Z",
       "round": "5",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Melbourne United",
       "homeTeamCode": "MEL",
       "homeTeamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
@@ -2470,8 +2470,8 @@
       "awayTeamCode": "ILL",
       "awayTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 89,
+      "awayScore": 91,
       "venue": "John Cain Arena",
       "matchSlug": "melbourne-united-v-illawarra-hawks-men-18-10-2026"
     },
@@ -2480,7 +2480,7 @@
       "externalId": "37085418-58ad-11f1-9e12-411a11259918",
       "startTime": "2026-10-18T04:00:00.000Z",
       "round": "5",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
       "homeTeamCode": "TAS",
       "homeTeamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
@@ -2489,8 +2489,8 @@
       "awayTeamCode": "NZL",
       "awayTeamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "awayLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 98,
+      "awayScore": 92,
       "venue": "MyState Bank Arena",
       "matchSlug": "tasmania-jackjumpers-v-nz-breakers-men-18-10-2026"
     },

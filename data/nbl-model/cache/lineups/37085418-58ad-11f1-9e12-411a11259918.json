@@ -1,0 +1,220 @@
+{
+  "fixtureId": "37085418-58ad-11f1-9e12-411a11259918",
+  "homeTeam": "Tasmania JackJumpers",
+  "awayTeam": "NZ Breakers",
+  "homeScore": "98",
+  "awayScore": "92",
+  "tipoff": "2026-10-18T04:00:00",
+  "teams": [
+    {
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "isHome": true,
+      "starters": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "jersey": "31",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7a4e2b9b30b24c769a09b82d7acc8e95?size=400",
+          "starter": true
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "jersey": "22",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f2f0bd14e6b748ca9c639449a1cd3299?size=400",
+          "starter": true
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "jersey": "1",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f738f8a18950480f873f0617c8049bfd?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "jersey": "11",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1c82121e8ba249e79a1b832a711ffe08?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "jersey": "33",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5359c23ff63740f0b1bdc0c62fb37385?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1398b91444f8492db1105c27e2a2c520?size=400",
+          "starter": false
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "jersey": "6",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/554a21ad6c244f248c31a84d215ef6b9?size=400",
+          "starter": false
+        },
+        {
+          "personId": "77156fba-410d-11f0-bf4f-2902fc2f936f",
+          "name": "Biwali Bayles",
+          "jersey": "14",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0c886b1cba6640069b89abf929b044cc?size=400",
+          "starter": false
+        },
+        {
+          "personId": "8dba126b-7991-11f0-8dc5-3d951dd99a45",
+          "name": "Jed Richardson",
+          "jersey": "4",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6b374d71ea9d41c6ad3ae5250a46ec4d?size=400",
+          "starter": false
+        },
+        {
+          "personId": "aff70461-78ad-11f0-a0a5-b53d5691d7c3",
+          "name": "Ryley Haywood",
+          "jersey": "8",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d9a6ea1061014dc5a666bd94a0d2a0d9?size=400",
+          "starter": false
+        },
+        {
+          "personId": "d03ec058-530a-11f0-8dce-df8f30c19ba4",
+          "name": "David Johnson",
+          "jersey": "7",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/78b27ed7a0f14fe6adad856060e6037f?size=400",
+          "starter": false
+        },
+        {
+          "personId": "d802e793-5d66-11f1-bf06-3de9ffd90808",
+          "name": "Ben Gold",
+          "jersey": "12",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d103a6c035e44f9e83f6d31f908a8198?size=400",
+          "starter": false
+        }
+      ]
+    },
+    {
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "isHome": false,
+      "starters": [
+        {
+          "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+          "name": "Dejan Vasiljevic",
+          "jersey": "34",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/969ad384a82d4142aed6f4d3fda9586d?size=400",
+          "starter": true
+        },
+        {
+          "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
+          "name": "Mojave King",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/dfad776aae8946c487215d8c5cd97356?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "jersey": "3",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7576309c4c2a439f8744e4bf8883cefc?size=400",
+          "starter": true
+        },
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "jersey": "0",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/93737d3b649c4fe3913c09fff505d3a8?size=400",
+          "starter": true
+        },
+        {
+          "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+          "name": "Charles Bediako",
+          "jersey": "8",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5715bf12feec4bf383b5cec6c1827e40?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "1b45ef09-7194-11f0-9e53-47ec9c1bf3eb",
+          "name": "Tukaha Cooper",
+          "jersey": "4",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/17b57bc11d644fc9b5d8726e5c4435c4?size=400",
+          "starter": false
+        },
+        {
+          "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+          "name": "Reuben Te Rangi",
+          "jersey": "7",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/602dbd4828a34aa787af17c6579fe80d?size=400",
+          "starter": false
+        },
+        {
+          "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+          "name": "Nelson Weidemann",
+          "jersey": "11",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/71ed6d182d704ca2ba34e0223e0c192c?size=400",
+          "starter": false
+        },
+        {
+          "personId": "50cb4bdd-410d-11f0-aa4b-9dbbf7342624",
+          "name": "Kouat Noi",
+          "jersey": "12",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e5a621e25db4df18d3b45bc9361f7ba?size=400",
+          "starter": false
+        },
+        {
+          "personId": "5188b88d-410d-11f0-8e81-9dbbf7342624",
+          "name": "Izayah Le'Afa",
+          "jersey": "2",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b79d22fafeca4034b7cf0650ccc78628?size=400",
+          "starter": false
+        },
+        {
+          "personId": "6be49392-410d-11f0-b2dd-9dbbf7342624",
+          "name": "Anzac Rissetto",
+          "jersey": "13",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/90f51404bf8445fdbda40543291db231?size=400",
+          "starter": false
+        },
+        {
+          "personId": "bdb679d3-9b71-11f1-9cbe-9d02ec3c4610",
+          "name": "Kael Robinson",
+          "jersey": "21",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/944113c8aee54623801e282f9df998ef?size=400",
+          "starter": false
+        }
+      ]
+    }
+  ]
+}

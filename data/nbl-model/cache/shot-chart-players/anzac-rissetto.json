@@ -5,17 +5,17 @@
   "years": [
     2026
   ],
-  "gamesUsed": 3,
+  "gamesUsed": 4,
   "fixturesFetched": 0,
-  "fixturesCached": 3,
-  "shotCount": 4,
+  "fixturesCached": 4,
+  "shotCount": 5,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 4,
+      "fga": 5,
       "fgm": 2,
-      "fgPct": 50,
+      "fgPct": 40,
       "share": 100
     },
     {
@@ -83,7 +83,13 @@
       2.79,
       1,
       0
+    ],
+    [
+      7.5,
+      1.4,
+      0,
+      0
     ]
   ],
-  "generatedAt": "2026-10-17T16:20:50.080Z"
+  "generatedAt": "2026-10-18T16:29:26.092Z"
 }
