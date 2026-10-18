@@ -4,6 +4,7 @@ import { betrightEventsToSource } from './betright';
 import { entainCardToSource } from './entain';
 import { pointsbetEventToSource } from './pointsbet';
 import { sourceMatchToBookRow } from './shared';
+import { unibetOffersToSource } from './unibet';
 import { tennisOddsApiNetSourceFromItems } from '../oddsApiNet';
 import { bookmakerLinesFromTennisRow } from '../aggregatePropsForPaint';
 import { australianBooksFirst } from '../oddsTypes';
@@ -96,6 +97,63 @@ test('BetRight: lines come from outcome names, set markets skipped', () => {
   assert.deepEqual(src.handicaps, [{ homeLine: 4.5, home: 1.97, away: 1.74 }]);
   assert.deepEqual(src.totals, [{ line: 20.5, over: 1.85, under: 1.85 }]);
   assert.deepEqual(src.homeWinSet, { yes: 2.05, no: 1.7 });
+});
+
+test('BetRight: per-player games outcomes lead with the player name', () => {
+  const src = betrightEventsToSource(
+    [
+      { eventName: 'Hugo Dellien  Total Games Won Over/Under 12.5', outcomes: [{ outcomeName: 'Hugo Dellien Over 12.5', price: 1.8 }, { outcomeName: 'Hugo Dellien Under 12.5', price: 1.95 }] },
+      { eventName: 'Hugo Dellien  Total Games Won Over/Under 13.5', outcomes: [{ outcomeName: 'Hugo Dellien Over 13.5', price: 2.4 }, { outcomeName: 'Hugo Dellien Under 13.5', price: 1.55 }] },
+    ],
+    names
+  );
+  assert.deepEqual(src.awayGames, [
+    { line: 12.5, over: 1.8, under: 1.95 },
+    { line: 13.5, over: 2.4, under: 1.55 },
+  ]);
+  assert.deepEqual(src.homeGames, []);
+});
+
+test('Unibet (Kambi): one offer per line, thousandths, player-named outcomes', () => {
+  const p = (participant: string, line: number | undefined, odds: number) => ({ participant, englishLabel: participant, line, odds });
+  const ou = (line: number, over: number, under: number) => [
+    { englishLabel: 'Over', type: 'OT_OVER', line, odds: over },
+    { englishLabel: 'Under', type: 'OT_UNDER', line, odds: under },
+  ];
+  const yn = (yes: number, no: number) => [
+    { englishLabel: 'Yes', type: 'OT_YES', odds: yes },
+    { englishLabel: 'No', type: 'OT_NO', odds: no },
+  ];
+  const offer = (englishLabel: string, outcomes: object[]) => ({ criterion: { englishLabel }, outcomes });
+  const src = unibetOffersToSource(
+    [
+      offer('Match Odds', [p('Hugo Dellien', undefined, 1230), p('Juan Manuel La Serna', undefined, 3900)]),
+      offer('Game Handicap', [p('Juan Manuel La Serna', 4500, 1970), p('Hugo Dellien', -4500, 1740)]),
+      offer('Game Handicap', [p('Juan Manuel La Serna', 3500, 2300), p('Hugo Dellien', -3500, 1570)]),
+      offer('Total Games', ou(20500, 1850, 1850)),
+      offer('Total Games', ou(22500, 2400, 1520)),
+      offer('Total Games - Set 1', ou(9500, 1900, 1800)),
+      offer('Total games won by Hugo Dellien', ou(12500, 1800, 1950)),
+      offer('Juan Manuel La Serna to win at least one set', yn(2050, 1700)),
+      offer('Set Handicap', [p('Juan Manuel La Serna', 1500, 2050), { ...p('Hugo Dellien', -1500, 1650), status: 'SUSPENDED' }]),
+      offer('Total Sets', ou(2500, 2700, 1420)),
+    ],
+    names
+  );
+  assert.equal(src.region, 'au');
+  assert.deepEqual(src.h2h, { home: 3.9, away: 1.23 });
+  assert.deepEqual(src.handicaps, [
+    { homeLine: 4.5, home: 1.97, away: 1.74 },
+    { homeLine: 3.5, home: 2.3, away: 1.57 },
+  ]);
+  assert.deepEqual(src.totals, [
+    { line: 20.5, over: 1.85, under: 1.85 },
+    { line: 22.5, over: 2.4, under: 1.52 },
+  ]);
+  assert.deepEqual(src.awayGames, [{ line: 12.5, over: 1.8, under: 1.95 }]);
+  assert.deepEqual(src.homeWinSet, { yes: 2.05, no: 1.7 });
+  assert.deepEqual(src.setHandicaps, []);
+  assert.deepEqual(src.totalSets, [{ line: 2.5, over: 2.7, under: 1.42 }]);
 });
 
 test('PointsBet: several lines per market paired by side and points', () => {

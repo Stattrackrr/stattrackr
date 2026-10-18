@@ -1,12 +1,13 @@
 /**
  * Extra tennis bookmakers on top of API-Tennis and The Odds API: odds-api.net (all its books), Ladbrokes,
- * Neds, BetRight and PointsBet. Feeds run in parallel; a slow or blocked feed only drops its own rows.
+ * Neds, BetRight, PointsBet and Unibet. Feeds run in parallel; a slow or blocked feed only drops its own rows.
  */
 
 import { betrightTennisFeed } from '@/lib/tennis/extraBooks/betright';
 import { ladbrokesTennisFeed, nedsTennisFeed } from '@/lib/tennis/extraBooks/entain';
 import { pointsbetTennisFeed } from '@/lib/tennis/extraBooks/pointsbet';
 import { runExtraBookFeed } from '@/lib/tennis/extraBooks/shared';
+import { unibetTennisFeed } from '@/lib/tennis/extraBooks/unibet';
 import type { TennisNextGame } from '@/lib/tennis/nextGame';
 import { fetchTennisOddsApiNetBooks } from '@/lib/tennis/oddsApiNet';
 import type { TennisBookRow } from '@/lib/tennis/oddsTypes';
@@ -28,7 +29,7 @@ export type ExtraTennisBooks = {
 };
 
 export async function fetchExtraTennisBooks(games: TennisNextGame[]): Promise<ExtraTennisBooks> {
-  const feeds = [ladbrokesTennisFeed, nedsTennisFeed, betrightTennisFeed, pointsbetTennisFeed];
+  const feeds = [ladbrokesTennisFeed, nedsTennisFeed, betrightTennisFeed, pointsbetTennisFeed, unibetTennisFeed];
   const [net, ...siteRows] = await Promise.all([
     withBudget(fetchTennisOddsApiNetBooks(games), { bet365Au: new Map(), rows: new Map() }),
     ...feeds.map((feed) => withBudget(runExtraBookFeed(feed, games), new Map<string, TennisBookRow>())),

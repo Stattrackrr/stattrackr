@@ -53,9 +53,10 @@ function handicapPair(src: SourceMatch, outcomes: Outcome[]): { homeLine: number
   return homeLine != null && validPrice(home) && validPrice(away) ? { homeLine, home, away } : null;
 }
 
+/** "Over 21.5", or "Sara Bejlek Over 9.5" on the per-player games markets. */
 function overUnder(outcomes: Outcome[]): { line: number; over: number; under: number } | null {
-  const over = outcomes.find((o) => /^over/i.test(String(o.outcomeName)));
-  const under = outcomes.find((o) => /^under/i.test(String(o.outcomeName)));
+  const over = outcomes.find((o) => /(^|\s)over\s/i.test(String(o.outcomeName)));
+  const under = outcomes.find((o) => /(^|\s)under\s/i.test(String(o.outcomeName)));
   const line = parseNumber(over?.outcomeName) ?? parseNumber(under?.outcomeName);
   return line != null && validPrice(over?.price) && validPrice(under?.price) ? { line: Math.abs(line), over: over!.price!, under: under!.price! } : null;
 }
@@ -103,7 +104,7 @@ export function betrightEventsToSource(markets: Market[], names: { home: string;
         }
       } else if (games) {
         const ou = overUnder(outcomes);
-        const side = sideOf(games[1], src);
+        const side = sideOf(games[1].trim(), src);
         if (ou && side === 'home') src.homeGames.push(ou);
         else if (ou && side === 'away') src.awayGames.push(ou);
       }

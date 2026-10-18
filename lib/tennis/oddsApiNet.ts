@@ -283,7 +283,7 @@ export function tennisOddsApiNetSourceFromItems(items: NetItem[], book: string, 
 }
 
 export type TennisOddsApiNetBooks = {
-  /** bet365 AU, kept apart for the AI's bet365 swap. */
+  /** bet365 AU, kept apart so it shows next to the international bet365 row instead of merging into it. */
   bet365Au: Map<string, TennisBookRow>;
   /** Every other odds-api.net book per API-Tennis match id. */
   rows: Map<string, TennisBookRow[]>;
