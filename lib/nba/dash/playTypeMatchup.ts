@@ -52,8 +52,8 @@ async function buildLeagueTable(year: number): Promise<LeagueTable> {
         .eq('season_type', 'regular')
         .eq('category', 'playtype')
         .in('stat_type', [...NBA_SYNERGY_PLAY_TYPES])
-        .order('player_id')
         .order('stat_type')
+        .order('player_id')
     ),
     getNbaSeasonDataset(year),
   ]);

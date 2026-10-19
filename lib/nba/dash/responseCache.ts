@@ -31,15 +31,19 @@ export function runNbaDashWarm<T>(fn: () => Promise<T>): Promise<T> {
 
 export type NbaDashCachePolicy = { freshSeconds: number; maxAgeSeconds: number };
 
+/**
+ * Box scores and shots only change when the NBA sync runs (every 3 hours), and the next game's odds
+ * post hours after a game ends, so logs stay fresh for two hours.
+ */
 export const NBA_DASH_CACHE = {
-  playerLogs: { freshSeconds: 10 * 60, maxAgeSeconds: 6 * 60 * 60 },
-  teamLogs: { freshSeconds: 10 * 60, maxAgeSeconds: 6 * 60 * 60 },
+  playerLogs: { freshSeconds: 2 * 60 * 60, maxAgeSeconds: 6 * 60 * 60 },
+  teamLogs: { freshSeconds: 2 * 60 * 60, maxAgeSeconds: 6 * 60 * 60 },
   nextGame: { freshSeconds: 5 * 60, maxAgeSeconds: 60 * 60 },
   roster: { freshSeconds: 15 * 60, maxAgeSeconds: 24 * 60 * 60 },
   injuries: { freshSeconds: 5 * 60, maxAgeSeconds: 2 * 60 * 60 },
   lineups: { freshSeconds: 10 * 60, maxAgeSeconds: 12 * 60 * 60 },
   ladder: { freshSeconds: 10 * 60, maxAgeSeconds: 24 * 60 * 60 },
-  league: { freshSeconds: 30 * 60, maxAgeSeconds: 24 * 60 * 60 },
+  league: { freshSeconds: 2 * 60 * 60, maxAgeSeconds: 24 * 60 * 60 },
 } satisfies Record<string, NbaDashCachePolicy>;
 
 function cacheKey(name: string, parts: unknown[]): string {

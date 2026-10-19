@@ -17,18 +17,23 @@ const WAVE = 8;
 const CURRENT_TTL_MS = 30 * 60 * 1000;
 const PAST_TTL_MS = 12 * 60 * 60 * 1000;
 
-/** Pages a query in parallel waves; `build` must apply a stable order. */
+/**
+ * Pages a query; `build` must apply a stable order. Each page re-runs the whole filter and sort, so
+ * waves start at one page and double up to WAVE: most per-player reads fit in one or two pages.
+ */
 export async function selectAllParallel(build: () => any): Promise<Row[]> {
   const out: Row[] = [];
-  for (let wave = 0; ; wave += 1) {
+  let next = 0;
+  for (let size = 1; ; size = Math.min(size * 2, WAVE)) {
     const pages = await Promise.all(
-      Array.from({ length: WAVE }, async (_, i) => {
-        const from = (wave * WAVE + i) * PAGE;
+      Array.from({ length: size }, async (_, i) => {
+        const from = (next + i) * PAGE;
         const { data, error } = await build().range(from, from + PAGE - 1);
         if (error) throw new Error(error.message);
         return (data ?? []) as Row[];
       })
     );
+    next += size;
     for (const page of pages) out.push(...page);
     if (pages.some((p) => p.length < PAGE)) break;
   }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { runNbaDashWarm } from '@/lib/nba/dash/responseCache';
 import { readNbaPlayerPropsListCache } from '@/lib/nba/dash/playerPropsListCache';
+import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import {
   NBA_CHART_HISTORY_YEARS,
   NBA_CURRENT_SEASON_YEAR,
@@ -61,6 +62,7 @@ async function runAll(tasks: Task[], concurrency: number) {
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);
   if (!auth.authorized) return auth.response;
+  if (!NBA_PUBLIC_ENABLED) return NextResponse.json({ success: true, skipped: 'NBA is not public' });
   const started = Date.now();
   const list = await readNbaPlayerPropsListCache();
   const rows = list?.data ?? [];
