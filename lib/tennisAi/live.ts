@@ -29,7 +29,8 @@ export function historyFromRows(rows: TennisMatchRow[], tour: Tour): HistoryMatc
         playerId: row.playerId,
         opponentId: row.opponentId,
         isWin: Boolean(row.isWin),
-        retired: /ret|w\/o|walk/i.test(String(row.result || row.score || '')),
+        // The score carries RET / w/o for both players; only the loser retired.
+        retired: !row.isWin && /ret|w\/o|walk/i.test(String(row.result || row.score || '')),
         servicePointsWonPct: unitRate(row.servicePointsWonPct),
         returnPointsWonPct: unitRate(row.returnPointsWonPct),
         holdPct: hold,

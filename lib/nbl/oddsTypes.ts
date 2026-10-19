@@ -5,6 +5,10 @@ export interface NblBookRow {
   H2H: { home: string; away: string };
   Spread: { line: string; over: string; under: string };
   Total: { line: string; over: string; under: string };
+  /** Every spread the book prices (main and alternates), home line first; Spread is the main one. */
+  SpreadLines?: Array<{ line: string; over: string; under: string }>;
+  /** Every total the book prices (main and alternates); Total is the main one. */
+  TotalLines?: Array<{ line: string; over: string; under: string }>;
   lines?: NblPropLine[];
 }
 

@@ -14,8 +14,9 @@ import {
 import { anchorSimulation } from './tennisAnchor';
 import { effectiveModelWeight } from '../params';
 import { DEFAULT_AI_PICKS_PARAMS } from '../params';
-import { bestQuote, eligibility } from '../candidates/types';
+import { bestQuote, bettableQuote, eligibility, isAussieBook } from '../candidates/types';
 import { buildTennisCandidates, tennisSelections } from '../candidates/tennis';
+import { buildNblGameCandidates } from '../candidates/nbl';
 import { tennisContext } from './tennisContext';
 import { probOverHist } from '@/lib/tennisAi/simulate';
 import { historyFromRows } from '@/lib/tennisAi/live';
@@ -103,6 +104,59 @@ test('best price skips outliers and duplicate feeds count once', () => {
   assert.match(bestQuote([{ book: 'A', price: 2 }])!.flags[0]!, /Only one bookmaker/);
 });
 
+test('posted price: best Australian book, offshore books only inform the middle price', () => {
+  assert.ok(['Sportsbet', 'TABtouch', 'Bet Right', 'PointsBet (AU)', 'Bet365 AU', 'Dabble AU', 'bet365'].every(isAussieBook));
+  assert.ok(!['Pinnacle', 'Pncl', '1xBet', 'Betano', 'Marathon', 'Betfair', 'BetMGM', 'Betnation_nl'].some(isAussieBook));
+
+  const q = bettableQuote([
+    { book: 'Pinnacle', price: 2.05 },
+    { book: '1xBet', price: 2.1 },
+    { book: 'Sportsbet', price: 1.95 },
+    { book: 'TAB', price: 1.9 },
+  ])!;
+  assert.equal(q.best.book, 'Sportsbet');
+  assert.deepEqual(q.quotes.map((x) => x.book), ['Sportsbet', 'TAB']);
+
+  // A stale Australian price far above every book's middle price is not posted.
+  const stale = bettableQuote([
+    { book: 'Pinnacle', price: 1.9 },
+    { book: 'Betano', price: 1.92 },
+    { book: 'Ladbrokes', price: 1.88 },
+    { book: 'PlayUp', price: 2.4 },
+  ])!;
+  assert.equal(stale.best.book, 'Ladbrokes');
+  assert.match(stale.flags[0]!, /outlier price 2.4 at PlayUp/);
+  assert.match(stale.flags[1]!, /Only one Australian bookmaker/);
+
+  assert.equal(bettableQuote([{ book: 'Pinnacle', price: 2 }, { book: 'Betano', price: 2.02 }]), null);
+});
+
+test('NBL game lines: every alternate spread and total is priced; main line comes from each book main', () => {
+  const row = (name: string, spreads: Array<[string, string, string]>, totals: Array<[string, string, string]>, main: [number, number]) => ({
+    name,
+    H2H: { home: '-250', away: '+200' },
+    Spread: { line: spreads[main[0]]![0], over: spreads[main[0]]![1], under: spreads[main[0]]![2] },
+    Total: { line: totals[main[1]]![0], over: totals[main[1]]![1], under: totals[main[1]]![2] },
+    SpreadLines: spreads.map(([line, over, under]) => ({ line, over, under })),
+    TotalLines: totals.map(([line, over, under]) => ({ line, over, under })),
+  });
+  const spreads: Array<[string, string, string]> = [['-11.5', '+143', '-185'], ['-8.5', '-105', '-120'], ['-5.5', '-161', '+128']];
+  const totals: Array<[string, string, string]> = [['179.5', '-200', '+160'], ['185.5', '-114', '-109'], ['191.5', '+150', '-192']];
+  const odds = {
+    gameId: 'g',
+    homeTeam: 'Tasmania JackJumpers',
+    awayTeam: 'Brisbane Bullets',
+    commenceTime: '2026-10-21T08:30:00Z',
+    bookmakers: [row('Unibet', spreads, totals, [1, 1]), row('Sportsbet', spreads, totals, [1, 1]), row('TAB', [spreads[1]!], [totals[1]!], [0, 0])],
+  };
+  const out = buildNblGameCandidates({ odds, finals: [], params: DEFAULT_AI_PICKS_PARAMS.nbl, currentSeason: 2026 });
+  const lines = (market: string) => [...new Set(out.filter((c) => c.market === market && c.side !== 'away').map((c) => `${c.line}:${c.marketKind}`))];
+  assert.deepEqual(lines('spread'), ['-11.5:alternate', '-8.5:main', '-5.5:alternate']);
+  assert.deepEqual(lines('total'), ['179.5:alternate', '185.5:main', '191.5:alternate']);
+  const alt = out.find((c) => c.market === 'total' && c.line === 191.5 && c.side === 'over')!;
+  assert.deepEqual(alt.quotes.map((q) => q.book).sort(), ['Sportsbet', 'Unibet']);
+});
+
 test('single and multi eligibility price bands', () => {
   const caps = { maxPriceSingle: 3.5, maxPriceLeg: 2.6 };
   assert.deepEqual(eligibility(1.9, 'main', false, caps), { singleEligible: true, multiEligible: true });
@@ -179,7 +233,7 @@ test('tennis context numbers on every market: context off at strength 0, the mod
   const history = historyFromRows([...played('h', 0.7, 0.42, 'Clay', 95), ...played('a', 0.6, 0.35, 'Hard', 200)], 'ATP');
   const pack = buildMatchPack({ asOf: '2026-09-20T00:00:00Z', tour: 'ATP', surface: 'Hard', bestOf: 3, playerId: 'h', opponentId: 'a', history, markets: [], sims: 2000, seed: 7 });
   const books = [
-    book('A', {
+    book('Sportsbet', {
       H2H: { home: '-200', away: '+165' },
       SpreadLines: [ou('-3.5', '-110', '-110')],
       TotalLines: [ou('21.5', '-115', '-105')],

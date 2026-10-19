@@ -514,7 +514,7 @@ export async function fetchOddsApiNetNblGames(): Promise<OddsNetGame[]> {
   return games;
 }
 
-function americanFromDecimal(decimal: number): string {
+export function americanFromDecimal(decimal: number): string {
   if (decimal >= 2) return `+${Math.round((decimal - 1) * 100)}`;
   return String(-Math.round(100 / (decimal - 1)));
 }
@@ -574,11 +574,18 @@ export function nblGameBookRowsFromItems(items: OddsApiItem[]): NblBookRow[] {
     }
   }
 
+  const allPairs = (pairs: Map<number, GamePair>) =>
+    [...pairs]
+      .filter(([, p]) => p.a?.odds && p.b?.odds)
+      .sort(([x], [y]) => x - y)
+      .map(([line, p]) => ({ line: String(line), over: americanFromDecimal(p.a!.odds!), under: americanFromDecimal(p.b!.odds!) }));
   const rows: NblBookRow[] = [];
   for (const [name, book] of books) {
     const spread = mainPair(book.spreads);
     const total = mainPair(book.totals);
     const row: NblBookRow = {
+      SpreadLines: allPairs(book.spreads),
+      TotalLines: allPairs(book.totals),
       name,
       H2H: {
         home: book.home?.odds ? americanFromDecimal(book.home.odds) : 'N/A',

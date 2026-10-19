@@ -5,7 +5,7 @@
  */
 
 import { bookPrices } from '@/lib/aiPicks/books';
-import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
+import { distinctPrices, type AiCandidate } from '@/lib/aiPicks/candidates/types';
 import { isNblPropMarket } from '@/lib/aiPicks/markets';
 import { round } from '@/lib/aiPicks/model/math';
 import type { AiPicksParams, AiSportParams } from '@/lib/aiPicks/params';
@@ -100,7 +100,8 @@ type Check = { ok: true } | { ok: false; reason: string };
 function common(c: AiCandidate, p: AiSportParams, nowMs: number): Check {
   const toStart = Date.parse(c.startsAt) - nowMs;
   if (!(toStart > MIN_LEAD_MS) || toStart > POST_HORIZON_MS) return { ok: false, reason: 'Outside the posting window' };
-  if (c.quotes.length < MIN_BOOKS) return { ok: false, reason: 'Fewer than 2 books price it' };
+  // Books on a shared feed post identical prices, so a price only counts once.
+  if (distinctPrices(c.quotes).length < MIN_BOOKS) return { ok: false, reason: 'Fewer than 2 books price it' };
   if (c.supportScore != null && c.supportScore < p.minSupport) return { ok: false, reason: 'Support too thin' };
   // An edge that is only one book being generous, with our own numbers no better than the market, is not a play.
   if (c.modelProb != null && c.marketProb != null && c.modelProb < c.marketProb + MIN_MODEL_LEAN) {

@@ -95,7 +95,8 @@ export function projectNblGame(home: string, away: string, finals: NblFinal[], c
 export type NblGameContext = {
   home: NblTeamContext | null;
   away: NblTeamContext | null;
-  leaguePace: number | null;
+  /** Expected possessions per 40, for the review; the margin and total do not use it. */
+  pace?: { pace: number; notes: string[] } | null;
   /** Points each side loses to players on the injury list (already scaled for replacements). */
   homeOutPoints: number;
   awayOutPoints: number;
@@ -107,29 +108,18 @@ export type NblGameContext = {
   strength: number;
 };
 
-const RATINGS_WEIGHT = 0.5;
 const BACK_TO_BACK_POINTS = 1.5;
 
 /**
- * Points model with the margin blended toward a possessions model (expected pace x each side's
- * offence against the other's defence per 100), then injuries and short turnarounds taken off each
- * side. The possessions model reads relative strength well but runs a few points low on totals, so
- * totals stay on the points model.
+ * Points model, then injuries and short turnarounds taken off each side. A possessions model (expected
+ * pace x offence against defence per 100) was tested on three seasons and predicted both margin and
+ * total worse than the points model alone, at any blend, so pace is only reported.
  */
 export function adjustNblGame(p: NblGameProjection, ctx: NblGameContext): NblGameProjection & { notes: string[] } {
   let homePts = (p.total + p.homeMargin) / 2;
   let awayPts = (p.total - p.homeMargin) / 2;
   const notes: string[] = [];
-  const { home: h, away: a } = ctx;
-  const pace = h?.pace && a?.pace ? (h.pace + a.pace) / 2 : ctx.leaguePace;
-  if (h && a && pace && h.games >= 3 && a.games >= 3) {
-    const homeR = (pace * (h.offRtg + a.defRtg)) / 200 + NBL_HOME_COURT / 2;
-    const awayR = (pace * (a.offRtg + h.defRtg)) / 200 - NBL_HOME_COURT / 2;
-    const shift = (RATINGS_WEIGHT * (homeR - awayR - p.homeMargin)) / 2;
-    homePts += shift;
-    awayPts -= shift;
-    notes.push(`Ratings model: pace ${round(pace, 1)}, margin ${round(homeR - awayR, 1)}`);
-  }
+  if (ctx.pace) notes.push(`Expected pace ${round(ctx.pace.pace, 1)}: ${ctx.pace.notes.join('; ')}`);
   if (ctx.homeOutPoints > 0) {
     homePts -= ctx.homeOutPoints;
     notes.push(`Home missing ${ctx.homeOut.join(', ')} (-${round(ctx.homeOutPoints, 1)} pts)`);

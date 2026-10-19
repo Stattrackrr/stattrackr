@@ -281,7 +281,8 @@ export function buildMatchupFeatures(input: {
   const fittedOpp = fitServeProbability(past, input.asOf, oppServe, playerReturn);
   const h2h = past.filter((row) => row.playerId === input.playerId && row.opponentId === input.opponentId);
   const h2hWins = h2h.filter((row) => row.isWin).length;
-  const n = Math.min(player.n, opponent.n);
+  // Matches without serve stats (all of ITF) say nothing about serve and return, so they do not count.
+  const n = Math.min(player.serve.n, opponent.serve.n);
   const uncertainty = 0.035 * Math.sqrt(20 / (n + 1));
   return {
     asOf: input.asOf,
@@ -295,6 +296,6 @@ export function buildMatchupFeatures(input: {
     pServePlayer: fitted.p,
     pServeOpponent: fittedOpp.p,
     serveUncertainty: uncertainty,
-    insufficient: player.n < 8 || opponent.n < 8,
+    insufficient: n < 8,
   };
 }

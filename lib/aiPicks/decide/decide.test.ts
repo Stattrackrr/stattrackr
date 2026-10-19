@@ -96,6 +96,8 @@ test('singles: NBL props wait for over/under lines; two books needed', () => {
   assert.equal(qualifiesSingle(prop, P, NOW).ok, false);
   assert.equal(qualifiesSingle({ ...prop, context: { marketSource: 'main' } }, P, NOW).ok, true);
   assert.equal(qualifiesSingle(cand({ quotes: [{ book: 'A', price: 1.95 }] }), P, NOW).ok, false);
+  const copied = qualifiesSingle(cand({ quotes: [{ book: 'Sportsbet', price: 1.95 }, { book: 'Palmerbet', price: 1.95 }] }), P, NOW);
+  assert.deepEqual(copied, { ok: false, reason: 'Fewer than 2 books price it' }, 'two books on one feed are one price');
   assert.equal(qualifiesSingle(cand({ ev: 0.01 }), P, NOW).ok, false);
   assert.equal(qualifiesSingle(cand({ startsAt: iso(NOW + 30 * H) }), P, NOW).ok, false);
 });
@@ -149,7 +151,7 @@ test('multi: separate games, priced at one book, at least 1.65', () => {
   const near = iso(NOW + 2 * H);
   const a = cand({ eventKey: 'm1', startsAt: near, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
   const b = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'bet365', price: 1.38 }] });
-  const sameGame = cand({ eventKey: 'm1', market: 'player_games', player: 'A. One', startsAt: near, prob: 0.8, ev: 0.12, quotes: [{ book: 'Bet365', price: 1.4 }, { book: 'TAB', price: 1.4 }] });
+  const sameGame = cand({ eventKey: 'm1', market: 'player_games', player: 'A. One', startsAt: near, prob: 0.8, ev: 0.12, quotes: [{ book: 'Bet365', price: 1.4 }, { book: 'TAB', price: 1.38 }] });
   const w: Watched[] = [a, b, sameGame].map((c) => ({ c, history: held() }));
   const m = chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set() })!;
   assert.ok(m);
@@ -161,7 +163,7 @@ test('multi: separate games, priced at one book, at least 1.65', () => {
   assert.equal(chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set([m.key]) })?.key === m.key, false);
   assert.equal(chooseMulti(w, P, { ...empty(), multisRecent: [NOW - 20 * H, NOW - 12 * H, NOW - 4 * H] }, NOW, { keys: new Set(), rejected: new Set() }), null);
 
-  const short = [a, cand({ ...b, key: undefined, eventKey: 'm3', bestPrice: 1.1, prob: 0.95, ev: 0.045, quotes: [{ book: 'TAB', price: 1.1 }, { book: 'Bet365', price: 1.1 }] })];
+  const short = [a, cand({ ...b, key: undefined, eventKey: 'm3', bestPrice: 1.1, prob: 0.95, ev: 0.045, quotes: [{ book: 'TAB', price: 1.1 }, { book: 'Bet365', price: 1.09 }] })];
   assert.equal(chooseMulti(short.map((c) => ({ c, history: held() })), P, empty(), NOW, { keys: new Set(), rejected: new Set() }), null);
 });
 

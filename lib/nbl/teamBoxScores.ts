@@ -34,6 +34,10 @@ export type NblTeamBox = {
   stl: number;
   blk: number;
   pf: number;
+  /** From the player rows; absent on boxes built before these were kept. */
+  date?: string | null;
+  isHome?: boolean | null;
+  players?: number;
 };
 
 function num(v: unknown): number {
@@ -107,6 +111,9 @@ export function loadNblTeamBoxes(year: number): Map<string, NblTeamBox> {
       const opp = resolveNblSteTeamCode(g.opponentCode || g.opponent);
       const prev = boxes.get(key) ?? emptyBox(String(g.matchId), teamCode, opp);
       if (!prev.opponentCode && opp) prev.opponentCode = opp;
+      if (!prev.date && g.date) prev.date = String(g.date);
+      if (prev.isHome == null && typeof g.isHome === 'boolean') prev.isHome = g.isHome;
+      prev.players = (prev.players ?? 0) + 1;
       prev.minutes += num(g.minutes);
       prev.pts += num(g.points);
       prev.fgm += num(g.fgMade);

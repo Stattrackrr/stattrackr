@@ -1,11 +1,12 @@
 /**
- * NBL game odds (head to head, line, total) from odds-api.net's Australian books.
+ * NBL game odds (head to head, line, total) from odds-api.net's Australian books, plus Unibet direct.
  */
 
 import { resolveNblClubName } from '@/lib/nblTeamCanonical';
 import sharedCache from '@/lib/sharedCache';
 import { fetchOddsApiNetNblGameLines } from '@/lib/nbl/oddsApiNet';
 import { appendNblGameOddsHistory } from '@/lib/nbl/oddsHistory';
+import { withUnibetNblGameLines } from '@/lib/nbl/unibetGameLines';
 import type { NblBookRow, NblGameOdds, NblOddsCache } from '@/lib/nbl/oddsTypes';
 
 export type { NblBookRow, NblGameOdds, NblOddsCache };
@@ -38,10 +39,11 @@ export async function refreshNblOddsData(options?: {
   const now = new Date();
   const nextUpdate = new Date(now.getTime() + 30 * 60 * 1000);
   try {
-    const games = await fetchOddsApiNetNblGameLines();
-    if (!games) {
+    const apiGames = await fetchOddsApiNetNblGameLines();
+    if (!apiGames) {
       return { success: false, gamesCount: 0, lastUpdated: '', nextUpdate: '', error: 'odds-api.net NBL game lines unavailable' };
     }
+    const games = await withUnibetNblGameLines(apiGames).catch(() => apiGames);
 
     const cachePayload: NblOddsCache = {
       games,

@@ -39,7 +39,7 @@ import { nblPlayerEvidence, type NblInjuryContext, type NblPropContext } from '@
 import { effectiveModelWeight, type AiSportParams } from '@/lib/aiPicks/params';
 import {
   BLOCKING_FLAG,
-  bestQuote,
+  bettableQuote,
   candidateKey,
   distinctPrices,
   edgeFlag,
@@ -193,7 +193,7 @@ export function buildNblPropCandidates(input: {
     if (mkt.source === 'milestone') baseFlags.push('No over/under posted yet');
 
     for (const sel of propSelections(lines)) {
-      const picked = bestQuote(sel.quotes);
+      const picked = bettableQuote(sel.quotes);
       if (!picked) continue;
       const model = nblPropSideProbs(proj, sel.line);
       const market = marketProbsAt(sel, lines, mkt, proj, params.oneWayMarginPower);
@@ -234,7 +234,7 @@ export function buildNblPropCandidates(input: {
           line: sel.line,
           bestPrice: picked.best.price,
           bestBook: picked.best.book,
-          quotes: sel.quotes.sort((a, b) => b.price - a.price),
+          quotes: picked.quotes,
           modelProb: round(sideWin(model, sel.side)),
           marketProb: round(sideWin(market, sel.side)),
           contextProbs: input.context
@@ -280,8 +280,20 @@ type GameQuote = { book: string; price: number; otherPrice: number | null; line:
 function gameQuotes(odds: NblGameOdds) {
   const h2hHome: GameQuote[] = [];
   const h2hAway: GameQuote[] = [];
-  const spreads: Array<{ book: string; homeLine: number; home: number | null; away: number | null }> = [];
-  const totals: Array<{ book: string; line: number; over: number | null; under: number | null }> = [];
+  const spreads: Array<{ book: string; homeLine: number; home: number | null; away: number | null; main: boolean }> = [];
+  const totals: Array<{ book: string; line: number; over: number | null; under: number | null; main: boolean }> = [];
+  type Row = { line: string; over: string; under: string };
+  const pairs = (main: Row | undefined, all: Row[] | undefined) => {
+    const mainLine = Number.parseFloat(String(main?.line));
+    const out = new Map<number, { a: number | null; b: number | null; main: boolean }>();
+    for (const r of all?.length ? all : main ? [main] : []) {
+      const line = Number.parseFloat(String(r.line));
+      const a = decimalFromBook(r.over);
+      const b = decimalFromBook(r.under);
+      if (Number.isFinite(line) && coherentPair(a, b)) out.set(line, { a, b, main: line === mainLine });
+    }
+    return out;
+  };
   for (const b of odds.bookmakers) {
     const home = decimalFromBook(b.H2H?.home);
     const away = decimalFromBook(b.H2H?.away);
@@ -289,14 +301,8 @@ function gameQuotes(odds: NblGameOdds) {
       if (home) h2hHome.push({ book: b.name, price: home, otherPrice: away, line: null });
       if (away) h2hAway.push({ book: b.name, price: away, otherPrice: home, line: null });
     }
-    const sLine = Number.parseFloat(String(b.Spread?.line));
-    const sHome = decimalFromBook(b.Spread?.over);
-    const sAway = decimalFromBook(b.Spread?.under);
-    if (Number.isFinite(sLine) && coherentPair(sHome, sAway)) spreads.push({ book: b.name, homeLine: sLine, home: sHome, away: sAway });
-    const tLine = Number.parseFloat(String(b.Total?.line));
-    const tOver = decimalFromBook(b.Total?.over);
-    const tUnder = decimalFromBook(b.Total?.under);
-    if (Number.isFinite(tLine) && coherentPair(tOver, tUnder)) totals.push({ book: b.name, line: tLine, over: tOver, under: tUnder });
+    for (const [homeLine, p] of pairs(b.Spread, b.SpreadLines)) spreads.push({ book: b.name, homeLine, home: p.a, away: p.b, main: p.main });
+    for (const [line, p] of pairs(b.Total, b.TotalLines)) totals.push({ book: b.name, line, over: p.a, under: p.b, main: p.main });
   }
   return { h2hHome, h2hAway, spreads, totals };
 }
@@ -329,7 +335,7 @@ export function buildNblGameCandidates(input: {
     marketKind: AiPickMarketKind;
     projection: number;
   }) => {
-    const picked = bestQuote(args.quotes);
+    const picked = bettableQuote(args.quotes);
     if (!picked || !args.fair) return;
     const model = args.price(proj);
     const w = effectiveModelWeight(params.modelWeight[args.market as string] ?? 0.25, sample, params.sampleHalfLife);
@@ -359,7 +365,7 @@ export function buildNblGameCandidates(input: {
         line: args.line,
         bestPrice: picked.best.price,
         bestBook: picked.best.book,
-        quotes: args.quotes.sort((a, b) => b.price - a.price),
+        quotes: picked.quotes,
         modelProb: round(sideWin(model, args.side)),
         marketProb: round(sideWin(args.fair, args.side)),
         contextProbs: fullProj
@@ -395,7 +401,7 @@ export function buildNblGameCandidates(input: {
     push({ market: 'h2h', side: 'away', line: null, team: game.awayTeam, quotes: q.h2hAway.map(({ book, price }) => ({ book, price })), price, fair: asProbs(fairH2h), marketKind: 'main', projection: -proj.homeMargin });
   }
 
-  const mainSpread = consensusLine(q.spreads.map((s) => s.homeLine));
+  const mainSpread = consensusLine(q.spreads.filter((s) => s.main).map((s) => s.homeLine));
   for (const homeLine of new Set(q.spreads.map((s) => s.homeLine))) {
     const at = q.spreads.filter((s) => s.homeLine === homeLine);
     const fair = median(at.map((s) => (s.home && s.away ? fairTwoWay(s.home, s.away)?.[0] : null)).filter((p): p is number => p != null));
@@ -407,7 +413,7 @@ export function buildNblGameCandidates(input: {
     push({ market: 'spread', side: 'away', line: -homeLine, team: game.awayTeam, quotes: at.filter((s) => s.away).map((s) => ({ book: s.book, price: s.away! })), price, fair: market, marketKind: kind, projection: -proj.homeMargin });
   }
 
-  const mainTotal = consensusLine(q.totals.map((t) => t.line));
+  const mainTotal = consensusLine(q.totals.filter((t) => t.main).map((t) => t.line));
   for (const line of new Set(q.totals.map((t) => t.line))) {
     const at = q.totals.filter((t) => t.line === line);
     const fair = median(at.map((t) => (t.over && t.under ? fairTwoWay(t.over, t.under)?.[0] : null)).filter((p): p is number => p != null));

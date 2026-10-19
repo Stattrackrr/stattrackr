@@ -11,7 +11,7 @@ import type { TennisContext } from '@/lib/aiPicks/model/tennisContext';
 import { effectiveModelWeight, type AiTennisParams } from '@/lib/aiPicks/params';
 import {
   BLOCKING_FLAG,
-  bestQuote,
+  bettableQuote,
   candidateKey,
   edgeFlag,
   eligibility,
@@ -337,7 +337,7 @@ export function buildTennisCandidates(input: {
   const { selections, pairs } = tennisSelections(input.books);
   const mains = mainLines(selections, pairs);
   const names = { home: match.homeName, away: match.awayName };
-  const sample = Math.min(features.player.n, features.opponent.n);
+  const sample = Math.min(features.player.serve.n, features.opponent.serve.n);
 
   const winSel = selections.find((s) => s.market === 'match_winner' && s.who === 'home');
   const fairHome = winSel ? marketFair(winSel, pairs) : null;
@@ -382,7 +382,7 @@ export function buildTennisCandidates(input: {
   const out: AiCandidate[] = [];
 
   for (const sel of selections) {
-    const picked = bestQuote(sel.quotes);
+    const picked = bettableQuote(sel.quotes);
     const model =
       sel.market === 'match_winner' && tc
         ? { prob: sel.who === 'home' ? tc.winProb : 1 - tc.winProb, push: 0 }
@@ -421,7 +421,7 @@ export function buildTennisCandidates(input: {
       line: sel.line,
       bestPrice: picked.best.price,
       bestBook: picked.best.book,
-      quotes: sel.quotes.sort((a, b) => b.price - a.price),
+      quotes: picked.quotes,
       modelProb: round(model.prob),
       marketProb: fair == null ? null : round(fair),
       contextProbs: contextProbsFor(sel),

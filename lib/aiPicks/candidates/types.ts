@@ -114,3 +114,54 @@ export function bestQuote(quotes: CandidateQuote[]): { best: CandidateQuote; fla
   if (valid.length === 1) flags.push('Only one bookmaker prices this');
   return { best: valid[0]!, flags };
 }
+
+/** Bookmakers licensed in Australia, where our users can actually bet. */
+const AUSSIE_BOOKS = new Set([
+  'sportsbet',
+  'tab',
+  'tabtouch',
+  'ladbrokes',
+  'neds',
+  'bet365',
+  'unibet',
+  'pointsbet',
+  'betright',
+  'dabble',
+  'playup',
+  'betr',
+  'palmerbet',
+  'picklebet',
+  'bluebet',
+  'topsport',
+  'boombet',
+  'betdeluxe',
+]);
+
+export function isAussieBook(book: string): boolean {
+  const k = book.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return AUSSIE_BOOKS.has(k) || (k.endsWith('au') && AUSSIE_BOOKS.has(k.slice(0, -2)));
+}
+
+/**
+ * The price we post: the best Australian book's, ignoring one far above the middle of every
+ * book's prices (usually stale). Offshore books still count toward that middle and the fair price,
+ * but are never the price we post.
+ */
+export function bettableQuote(quotes: CandidateQuote[]): { best: CandidateQuote; quotes: CandidateQuote[]; flags: string[] } | null {
+  const all = quotes.filter((q) => q.price > 1 && Number.isFinite(q.price)).sort((a, b) => b.price - a.price);
+  const aussie = all.filter((q) => isAussieBook(q.book));
+  if (!aussie.length) return null;
+  if (all.length < 3) {
+    const small = bestQuote(aussie);
+    return small && { best: small.best, quotes: aussie, flags: [...(bestQuote(all)?.flags ?? [])] };
+  }
+  const prices = distinctPrices(all).sort((a, b) => a - b);
+  const mid = prices[Math.floor(prices.length / 2)]!;
+  const kept = aussie.filter((q) => q.price <= mid * 1.15);
+  if (!kept.length) return null;
+  const flags: string[] = [];
+  const dropped = aussie.length - kept.length;
+  if (dropped) flags.push(`Ignored outlier price ${aussie[0]!.price} at ${aussie[0]!.book}${dropped > 1 ? ` and ${dropped - 1} more` : ''}`);
+  if (kept.length === 1) flags.push('Only one Australian bookmaker prices this');
+  return { best: kept[0]!, quotes: aussie, flags };
+}

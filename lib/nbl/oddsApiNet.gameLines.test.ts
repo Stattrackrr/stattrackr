@@ -14,7 +14,7 @@ const item = (bookmaker: string, bet_type: string, side: string | undefined, lin
   ...extra,
 });
 
-test('game lines keep the main pair per book, home side first, with stored book names', () => {
+test('game lines keep the main pair and every alternate per book, home side first, with stored book names', () => {
   const rows = nblGameBookRowsFromItems([
     item('pointsbet', 'moneyline', 'home', undefined, 1.18),
     item('pointsbet', 'moneyline', 'away', undefined, 4.75),
@@ -37,12 +37,22 @@ test('game lines keep the main pair per book, home side first, with stored book 
       H2H: { home: '-556', away: '+375' },
       Spread: { line: '-9.5', over: '-111', under: '-111' },
       Total: { line: '199.5', over: '-111', under: '-111' },
+      SpreadLines: [
+        { line: '-12.5', over: '+130', under: '-167' },
+        { line: '-9.5', over: '-111', under: '-111' },
+      ],
+      TotalLines: [
+        { line: '199.5', over: '-111', under: '-111' },
+        { line: '205.5', over: '+140', under: '-182' },
+      ],
     },
     {
       name: 'Bet365 AU',
       H2H: { home: '-588', away: '+425' },
       Spread: { line: 'N/A', over: 'N/A', under: 'N/A' },
       Total: { line: 'N/A', over: 'N/A', under: 'N/A' },
+      SpreadLines: [],
+      TotalLines: [],
     },
   ]);
 });

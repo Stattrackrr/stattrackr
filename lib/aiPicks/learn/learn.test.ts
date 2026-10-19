@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
 import type { Proposal } from '@/lib/aiPicks/decide/select';
-import { bestStrength, bestWeight, learnSport, pickMetrics, shrinkStep, type LearnSample } from '@/lib/aiPicks/learn/learn';
+import { bestStrength, bestWeight, learnSport, perCluster, pickMetrics, shrinkStep, type LearnSample } from '@/lib/aiPicks/learn/learn';
 import { DEFAULT_AI_PICKS_PARAMS, modelGroup, modelVersion } from '@/lib/aiPicks/params';
 import type { AiPick, AiPickLeg } from '@/lib/aiPicks/types';
 import { kellyStake, sizeUnits, snapUnits, trackRecords } from '@/lib/aiPicks/units';
@@ -145,6 +145,30 @@ test('learning: model weight moves toward the better blend, one small step', () 
   const r = learnSport('tennis', P.tennis, rows, [], modelGroup);
   assert.equal(r.params.modelWeight.total_games, 0.45);
   assert.equal(r.metrics.groups.total_games!.bestWeight, 0.8);
+});
+
+test('learning: lines from the same match count once between them', () => {
+  const w = perCluster([{ cluster: 'a' }, { cluster: 'a' }, { cluster: 'b' }, {}]);
+  assert.deepEqual(w.items.map((s) => s.weight), [0.5, 0.5, 1, 1]);
+  assert.equal(w.clusters, 3);
+
+  const rows = [
+    ...outcomes(0.7, 50, 35).map((o) => sample({ model: 0.7, marketProb: 0.5, won: o.won })),
+    ...outcomes(0.3, 50, 15).map((o) => sample({ model: 0.3, marketProb: 0.5, won: o.won })),
+  ];
+  // The same 100 plays from only 10 matches are not enough evidence to move anything.
+  const fewMatches = learnSport('tennis', P.tennis, rows.map((s, i) => ({ ...s, cluster: `m${i % 10}` })), [], modelGroup);
+  assert.equal(fewMatches.params.modelWeight.total_games, P.tennis.modelWeight.total_games);
+  assert.equal(fewMatches.metrics.groups.total_games!.clusters, 10);
+  assert.equal(fewMatches.metrics.groups.total_games!.bestWeight, null);
+  const manyMatches = learnSport('tennis', P.tennis, rows.map((s, i) => ({ ...s, cluster: `m${i}` })), [], modelGroup);
+  assert.equal(manyMatches.params.modelWeight.total_games, 0.45);
+
+  const ctx = ctxBatch(300, 5).map((s, i) => ({ ...s, cluster: `m${i % 30}` }));
+  const thinCtx = learnSport('tennis', P.tennis, ctx, [], () => 'x');
+  assert.equal(thinCtx.params.contextStrength, 1);
+  assert.equal(thinCtx.metrics.context.n, 30);
+  assert.equal(thinCtx.metrics.context.plays, 300);
 });
 
 function ctxSample(base: number, full: number, won: 0 | 1): LearnSample {

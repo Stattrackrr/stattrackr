@@ -9,7 +9,8 @@
  *   - context strength: how hard matchups, pace, injuries, Elo, rankings and fatigue move the
  *     model, from whether the adjusted or unadjusted numbers called the results better.
  * Each change needs a minimum sample, moves a small step per night and stays inside hard bounds,
- * so a lucky or unlucky week cannot swing the system.
+ * so a lucky or unlucky week cannot swing the system. Samples are counted per game (see
+ * LearnSample.cluster), not per line, since a game's lines win and lose together.
  */
 
 import { clamp, round } from '@/lib/aiPicks/model/math';
@@ -29,10 +30,17 @@ export type LearnSample = {
   /** Model alone with game context off / at full strength, when stored. */
   contextBase?: number | null;
   contextFull?: number | null;
+  /**
+   * What the play rides on (a tennis match, an NBL player in a game, an NBL game's lines). Plays
+   * sharing one count as one between them. Missing means the play stands alone.
+   */
+  cluster?: string;
 };
 
 export type ContextMetrics = {
+  /** Distinct clusters behind the usable plays. */
   n: number;
+  plays: number;
   logLossOff: number | null;
   logLossFull: number | null;
   bestStrength: number | null;
@@ -40,6 +48,8 @@ export type ContextMetrics = {
 
 export type GroupMetrics = {
   n: number;
+  /** Distinct clusters behind the plays; minimum samples count these. */
+  clusters: number;
   hitRate: number;
   avgBlended: number;
   logLossModel: number | null;
@@ -61,13 +71,14 @@ export type LearnResult<T extends AiSportParams> = {
   };
 };
 
-const WEIGHT = { minN: 40, priorN: 150, step: 0.05, max: 0.8, grid: 0.05 };
+/** minN for weights and context strength is in games; fewer than ~100 just chases noise night to night. */
+const WEIGHT = { minN: 100, priorN: 150, step: 0.05, max: 0.8, grid: 0.05 };
 const DAY_FORM = { minN: 60, threshold: 0.03, step: 0.005, lo: 0.03, hi: 0.1 };
 const MILESTONE_POWER = { minN: 60, threshold: 0.02, step: 0.01, lo: 1, hi: 1.2 };
 const MIN_EV = { minN: 30, loseClv: -0.01, winClv: 0.02, step: 0.005, lo: 0.025, hi: 0.06, legGap: 0.01, legLo: 0.015 };
 const STAKE = { minN: 20, perClv: 3, lo: 0.6, hi: 1.25, step: 0.1 };
 /** Plays where context moved the model by less than this say nothing about its strength. */
-const CONTEXT = { minN: 60, priorN: 150, step: 0.1, lo: 0, hi: 1.5, grid: 0.05, minMove: 0.005 };
+const CONTEXT = { minN: 100, priorN: 150, step: 0.1, lo: 0, hi: 1.5, grid: 0.05, minMove: 0.005 };
 
 function logLoss(p: number, y: 0 | 1): number {
   const q = clamp(p, 0.01, 0.99);
@@ -76,18 +87,40 @@ function logLoss(p: number, y: 0 | 1): number {
 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN);
 
+type Weighted = { weight?: number };
+
+/** Mean with optional per-item weights (missing = 1). */
+function wmean<T extends Weighted>(items: T[], value: (x: T) => number): number {
+  let t = 0;
+  let w = 0;
+  for (const x of items) {
+    const wt = x.weight ?? 1;
+    t += wt * value(x);
+    w += wt;
+  }
+  return w > 0 ? t / w : NaN;
+}
+
+/** Each cluster's plays share one unit of weight; returns them weighted and the cluster count. */
+export function perCluster<T extends { cluster?: string }>(samples: T[]): { items: Array<T & { weight: number }>; clusters: number } {
+  const keys = samples.map((s, i) => s.cluster ?? `#${i}`);
+  const counts = new Map<string, number>();
+  for (const k of keys) counts.set(k, (counts.get(k) ?? 0) + 1);
+  return { items: samples.map((s, i) => ({ ...s, weight: 1 / counts.get(keys[i]!)! })), clusters: counts.size };
+}
+
 /** Base model weight in [0, max] whose blend with the market had the lowest log loss. */
-export function bestWeight(samples: Array<{ model: number; marketProb: number; won: 0 | 1 }>): number | null {
+export function bestWeight(samples: Array<{ model: number; marketProb: number; won: 0 | 1 } & Weighted>): number | null {
   if (!samples.length) return null;
   let best = { w: 0, loss: Infinity };
   for (let w = 0; w <= WEIGHT.max + 1e-9; w += WEIGHT.grid) {
-    const loss = mean(samples.map((s) => logLoss(w * s.model + (1 - w) * s.marketProb, s.won)));
+    const loss = wmean(samples, (s) => logLoss(w * s.model + (1 - w) * s.marketProb, s.won));
     if (loss < best.loss - 1e-12) best = { w: round(w, 2), loss };
   }
   return best.w;
 }
 
-type ContextSample = { base: number; full: number; won: 0 | 1 };
+type ContextSample = { base: number; full: number; won: 0 | 1 } & Weighted;
 
 const atStrength = (s: ContextSample, k: number) => s.base + k * (s.full - s.base);
 
@@ -96,22 +129,24 @@ export function bestStrength(samples: ContextSample[]): number | null {
   if (!samples.length) return null;
   let best = { k: 1, loss: Infinity };
   for (let k = CONTEXT.lo; k <= CONTEXT.hi + 1e-9; k += CONTEXT.grid) {
-    const loss = mean(samples.map((s) => logLoss(atStrength(s, k), s.won)));
+    const loss = wmean(samples, (s) => logLoss(atStrength(s, k), s.won));
     if (loss < best.loss - 1e-12) best = { k: round(k, 2), loss };
   }
   return best.k;
 }
 
 export function contextMetrics(samples: LearnSample[]): ContextMetrics & { usable: ContextSample[] } {
-  const usable = samples
-    .filter((s) => s.contextBase != null && s.contextFull != null && Math.abs(s.contextFull - s.contextBase) >= CONTEXT.minMove)
-    .map((s) => ({ base: s.contextBase!, full: s.contextFull!, won: s.won }));
+  const { items, clusters } = perCluster(
+    samples.filter((s) => s.contextBase != null && s.contextFull != null && Math.abs(s.contextFull - s.contextBase) >= CONTEXT.minMove)
+  );
+  const usable = items.map((s) => ({ base: s.contextBase!, full: s.contextFull!, won: s.won, weight: s.weight }));
   return {
     usable,
-    n: usable.length,
-    logLossOff: usable.length ? round(mean(usable.map((s) => logLoss(s.base, s.won))), 4) : null,
-    logLossFull: usable.length ? round(mean(usable.map((s) => logLoss(s.full, s.won))), 4) : null,
-    bestStrength: usable.length >= CONTEXT.minN ? bestStrength(usable) : null,
+    n: clusters,
+    plays: usable.length,
+    logLossOff: usable.length ? round(wmean(usable, (s) => logLoss(s.base, s.won)), 4) : null,
+    logLossFull: usable.length ? round(wmean(usable, (s) => logLoss(s.full, s.won)), 4) : null,
+    bestStrength: clusters >= CONTEXT.minN ? bestStrength(usable) : null,
   };
 }
 
@@ -121,15 +156,20 @@ export function shrinkStep(current: number, target: number, n: number, priorN: n
   return current + clamp(pulled - current, -step, step);
 }
 
-function groupMetrics(samples: LearnSample[]): GroupMetrics {
-  const both = samples.filter((s) => s.model != null && s.marketProb != null) as Array<LearnSample & { model: number; marketProb: number }>;
+function groupMetrics(samples: LearnSample[]): GroupMetrics & { bothClusters: number } {
+  const all = perCluster(samples);
+  const { items: both, clusters: bothClusters } = perCluster(
+    samples.filter((s) => s.model != null && s.marketProb != null) as Array<LearnSample & { model: number; marketProb: number }>
+  );
   return {
     n: samples.length,
-    hitRate: round(mean(samples.map((s) => s.won)), 4),
-    avgBlended: round(mean(samples.map((s) => s.blended)), 4),
-    logLossModel: both.length ? round(mean(both.map((s) => logLoss(s.model, s.won))), 4) : null,
-    logLossMarket: both.length ? round(mean(both.map((s) => logLoss(s.marketProb, s.won))), 4) : null,
-    bestWeight: both.length >= WEIGHT.minN ? bestWeight(both) : null,
+    clusters: all.clusters,
+    bothClusters,
+    hitRate: round(wmean(all.items, (s) => s.won), 4),
+    avgBlended: round(wmean(all.items, (s) => s.blended), 4),
+    logLossModel: both.length ? round(wmean(both, (s) => logLoss(s.model, s.won)), 4) : null,
+    logLossMarket: both.length ? round(wmean(both, (s) => logLoss(s.marketProb, s.won)), 4) : null,
+    bestWeight: bothClusters >= WEIGHT.minN ? bestWeight(both) : null,
   };
 }
 
@@ -171,21 +211,22 @@ export function learnSport<T extends AiSportParams>(
   for (const s of samples) byGroup.set(s.group, [...(byGroup.get(s.group) ?? []), s]);
   const groups: Record<string, GroupMetrics> = {};
   for (const [group, list] of byGroup) {
-    const m = groupMetrics(list);
+    const { bothClusters, ...m } = groupMetrics(list);
     groups[group] = m;
     const cur = params.modelWeight[group];
     if (cur == null || m.bestWeight == null) continue;
-    const n = list.filter((s) => s.model != null && s.marketProb != null).length;
-    set(`${group} model weight`, cur, shrinkStep(cur, m.bestWeight, n, WEIGHT.priorN, WEIGHT.step), (v) => (params.modelWeight[group] = v), 2);
+    set(`${group} model weight`, cur, shrinkStep(cur, m.bestWeight, bothClusters, WEIGHT.priorN, WEIGHT.step), (v) => (params.modelWeight[group] = v), 2);
   }
 
   if (sport === 'tennis' && 'dayForm' in params) {
     const tp = params as unknown as AiTennisParams;
-    const sets = samples
-      .filter((s) => s.market === 'total_sets' && s.line === 2.5 && s.model != null)
-      .map((s) => (s.side === 'over' ? { p: s.model!, y: s.won } : { p: 1 - s.model!, y: (1 - s.won) as 0 | 1 }));
-    if (sets.length >= DAY_FORM.minN) {
-      const bias = mean(sets.map((s) => s.p)) - mean(sets.map((s) => s.y));
+    const { items: sets, clusters } = perCluster(
+      samples
+        .filter((s) => s.market === 'total_sets' && s.line === 2.5 && s.model != null)
+        .map((s) => ({ cluster: s.cluster, ...(s.side === 'over' ? { p: s.model!, y: s.won } : { p: 1 - s.model!, y: (1 - s.won) as 0 | 1 }) }))
+    );
+    if (clusters >= DAY_FORM.minN) {
+      const bias = wmean(sets, (s) => s.p) - wmean(sets, (s) => s.y);
       // Model sees too many three-setters: players swing more day to day than it assumes.
       const dir = bias > DAY_FORM.threshold ? 1 : bias < -DAY_FORM.threshold ? -1 : 0;
       if (dir) set('day form', tp.dayForm, clamp(tp.dayForm + dir * DAY_FORM.step, DAY_FORM.lo, DAY_FORM.hi), (v) => (tp.dayForm = v));
@@ -193,9 +234,9 @@ export function learnSport<T extends AiSportParams>(
   }
 
   if (sport === 'nbl') {
-    const ms = samples.filter((s) => s.group === 'milestone' && s.side === 'over' && s.marketProb != null);
-    if (ms.length >= MILESTONE_POWER.minN) {
-      const bias = mean(ms.map((s) => s.marketProb!)) - mean(ms.map((s) => s.won));
+    const { items: ms, clusters } = perCluster(samples.filter((s) => s.group === 'milestone' && s.side === 'over' && s.marketProb != null));
+    if (clusters >= MILESTONE_POWER.minN) {
+      const bias = wmean(ms, (s) => s.marketProb!) - wmean(ms, (s) => s.won);
       // Fair milestone prices still land less often than they say: strip more margin.
       const dir = bias > MILESTONE_POWER.threshold ? 1 : bias < -MILESTONE_POWER.threshold ? -1 : 0;
       if (dir) {

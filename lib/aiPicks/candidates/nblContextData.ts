@@ -1,6 +1,6 @@
 /**
- * Loads everything game-specific for an NBL scan once: matchup ranks, team ratings (this season
- * blended with last by games played), the injury report, and each team's last game for rest.
+ * Loads everything game-specific for an NBL scan once: matchup ranks, team pace and ratings (every
+ * game this season and last, recent games weighted up), the injury report, and each team's last game for rest.
  * Each source fails closed to "no adjustment".
  */
 
@@ -11,12 +11,13 @@ import type { NblInjuryContext, NblTeamContext } from '@/lib/aiPicks/model/nblCo
 import { injuryPoints, MAX_INJURY_POINTS, nblTeamKey, type NblFinal } from '@/lib/aiPicks/model/nblGames';
 import { playedGames } from '@/lib/aiPicks/model/nblProps';
 import { round } from '@/lib/aiPicks/model/math';
+import { expectedNblGamePace, nblPaceTable, type NblExpectedPace, type NblPaceTable } from '@/lib/aiPicks/model/nblPace';
 import { buildNblPropDvpIndex, lookupNblPropDvp, type NblPropDvpIndex } from '@/lib/nbl/playerPropsDvp';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
-import { loadNblTeamRatings } from '@/lib/nbl/teamRatings';
+import { loadNblTeamGames } from '@/lib/nbl/teamGames';
 
-const INJURY_REPORT_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
-const PRIOR_SEASON_GAMES = 6;
+/** The page is updated about once a round, so a week-old report is still the current one. */
+const INJURY_REPORT_MAX_AGE_MS = 8 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type NblInjuryEntry = NblInjuryContext & { team: string; reportedAt: string };
@@ -24,6 +25,8 @@ export type NblInjuryEntry = NblInjuryContext & { team: string; reportedAt: stri
 export type NblContextData = {
   teams: Map<string, NblTeamContext>;
   league: { defRtg: number; pace: number } | null;
+  /** Every team's games this season and last, and the pace of each game. */
+  pace: NblPaceTable;
   injuries: NblInjuryEntry[];
   injuryReportAt: string | null;
   dvp: NblPropDvpIndex | null;
@@ -33,49 +36,51 @@ export type NblContextData = {
   errors: string[];
 };
 
-function blendRatings(season: number, errors: string[]): Map<string, NblTeamContext> {
-  const out = new Map<string, NblTeamContext>();
-  let cur: ReturnType<typeof loadNblTeamRatings>['teams'] = [];
-  let prev: ReturnType<typeof loadNblTeamRatings>['teams'] = [];
+function paceTable(season: number, nowMs: number, errors: string[]): NblPaceTable {
   try {
-    cur = loadNblTeamRatings(season).teams;
-    prev = loadNblTeamRatings(season - 1).teams;
+    return nblPaceTable(loadNblTeamGames([season - 1, season]), season, nowMs);
   } catch (e) {
-    errors.push(`team ratings: ${(e as Error).message}`);
+    errors.push(`team games: ${(e as Error).message}`);
+    return nblPaceTable([], season, nowMs);
   }
-  const prevBy = new Map(prev.map((t) => [nblTeamKey(t.team), t]));
-  const keys = new Set([...cur.map((t) => nblTeamKey(t.team)), ...prevBy.keys()]);
-  for (const key of keys) {
-    const c = cur.find((t) => nblTeamKey(t.team) === key && t.games > 0);
-    const p = prevBy.get(key);
-    const pOk = p && p.games > 0 ? p : null;
-    if (!c && !pOk) continue;
-    const w = c ? (pOk ? c.games / (c.games + PRIOR_SEASON_GAMES) : 1) : 0;
-    const mix = (a: number | null | undefined, b: number | null | undefined) =>
-      a != null && b != null ? w * a + (1 - w) * b : (a ?? b ?? null);
-    const offRtg = mix(c?.offRtg, pOk?.offRtg);
-    const defRtg = mix(c?.defRtg, pOk?.defRtg);
-    if (offRtg == null || defRtg == null) continue;
-    out.set(key, {
-      offRtg: round(offRtg, 1),
-      defRtg: round(defRtg, 1),
-      pace: (() => {
-        const v = mix(c?.pace, pOk?.pace);
-        return v == null ? null : round(v, 1);
-      })(),
-      games: (c?.games ?? 0) + (pOk?.games ?? 0),
-    });
+}
+
+function teamContexts(table: NblPaceTable): Map<string, NblTeamContext> {
+  const out = new Map<string, NblTeamContext>();
+  for (const [key, p] of table.teams) {
+    out.set(key, { offRtg: p.offRtg, defRtg: p.defRtg, pace: p.pace, paceLast5: p.last5, games: p.games });
   }
   return out;
+}
+
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+
+/**
+ * When the page itself was last updated ("Tuesday, October 13, 6:00pm AEDT"), which can be days before
+ * we scraped it. The text has no year: it is the latest one that is not after the scrape.
+ */
+export function injuryReportUpdatedAt(text: string | null | undefined, scrapedAt: string): string | null {
+  const m = String(text || '').match(/([a-z]+)\s+(\d{1,2}),?\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)\s*(AEDT|AEST)?/i);
+  const scraped = Date.parse(scrapedAt);
+  if (!m || !Number.isFinite(scraped)) return null;
+  const month = MONTHS.indexOf(m[1]!.toLowerCase());
+  if (month < 0) return null;
+  const hour = (Number(m[3]) % 12) + (m[5]!.toLowerCase() === 'pm' ? 12 : 0);
+  const offset = m[6]?.toUpperCase() === 'AEST' ? 10 : 11;
+  const at = (year: number) => Date.UTC(year, month, Number(m[2]), hour - offset, Number(m[4] ?? 0));
+  const year = new Date(scraped).getUTCFullYear();
+  const t = at(year) > scraped + DAY_MS ? at(year - 1) : at(year);
+  return new Date(t).toISOString();
 }
 
 function readInjuries(nowMs: number, errors: string[]): { rows: NblInjuryEntry[]; at: string | null } {
   try {
     const json = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'nbl-injuries.json'), 'utf8')) as {
       generatedAt?: string;
+      sourceUpdatedText?: string | null;
       injuries?: Array<{ team?: string; player?: string; status?: string; injury?: string; returning?: string }>;
     };
-    const at = json.generatedAt ?? null;
+    const at = (json.generatedAt && injuryReportUpdatedAt(json.sourceUpdatedText, json.generatedAt)) || json.generatedAt || null;
     const t = Date.parse(at ?? '');
     if (!Number.isFinite(t) || nowMs - t > INJURY_REPORT_MAX_AGE_MS) {
       errors.push(`injury report stale (${at ?? 'no date'})`);
@@ -93,12 +98,9 @@ function readInjuries(nowMs: number, errors: string[]): { rows: NblInjuryEntry[]
 
 export function loadNblContextData(opts: { season: number; finals: NblFinal[]; nowMs: number }): NblContextData {
   const errors: string[] = [];
-  const teams = blendRatings(opts.season, errors);
-  const list = [...teams.values()];
-  const paces = list.map((t) => t.pace).filter((p): p is number => p != null);
-  const league = list.length
-    ? { defRtg: list.reduce((a, t) => a + t.defRtg, 0) / list.length, pace: paces.length ? paces.reduce((a, b) => a + b, 0) / paces.length : 0 }
-    : null;
+  const pace = paceTable(opts.season, opts.nowMs, errors);
+  const teams = teamContexts(pace);
+  const league = pace.leagueRtg != null && pace.leaguePace != null ? { defRtg: pace.leagueRtg, pace: pace.leaguePace } : null;
   let dvp: NblPropDvpIndex | null = null;
   try {
     dvp = buildNblPropDvpIndex();
@@ -117,7 +119,11 @@ export function loadNblContextData(opts: { season: number; finals: NblFinal[]; n
     }
   }
   const injuries = readInjuries(opts.nowMs, errors);
-  return { teams, league, injuries: injuries.rows, injuryReportAt: injuries.at, dvp, lastGameByTeam, recentGamesByTeam, errors };
+  return { teams, league, pace, injuries: injuries.rows, injuryReportAt: injuries.at, dvp, lastGameByTeam, recentGamesByTeam, errors };
+}
+
+export function expectedPace(data: NblContextData, homeTeam: string, awayTeam: string): NblExpectedPace | null {
+  return expectedNblGamePace(data.pace, homeTeam, awayTeam);
 }
 
 export function teamContext(data: NblContextData, team: string): NblTeamContext | null {

@@ -3,6 +3,7 @@
  * adjustments and store a new active version only when something changed.
  */
 
+import { subjectId } from '@/lib/aiPicks/decide/select';
 import { learnSport, type LearnResult, type LearnSample } from '@/lib/aiPicks/learn/learn';
 import { loadActiveParams } from '@/lib/aiPicks/learn/state';
 import { modelGroup, type AiSportParams } from '@/lib/aiPicks/params';
@@ -33,6 +34,14 @@ export function watchSample(row: WatchRow): LearnSample | null {
     blended,
     contextBase: row.base_model_prob == null ? null : Number(row.base_model_prob),
     contextFull: row.full_model_prob == null ? null : Number(row.full_model_prob),
+    cluster: subjectId({
+      sport: row.sport,
+      eventKey: row.event_key,
+      eventLabel: row.event_label ?? row.event_key,
+      startsAt: row.starts_at,
+      market: row.market,
+      player: row.player,
+    }),
   };
 }
 

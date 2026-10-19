@@ -13,7 +13,7 @@ import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
 
 export type NblContextFactor = { key: string; factor: number; note: string };
 
-export type NblTeamContext = { offRtg: number; defRtg: number; pace: number | null; games: number };
+export type NblTeamContext = { offRtg: number; defRtg: number; pace: number | null; paceLast5?: number | null; games: number };
 
 export type NblInjuryContext = { player: string; status: string; injury?: string; returning?: string };
 
@@ -27,6 +27,10 @@ export type NblPropContextInput = {
   team: NblTeamContext | null;
   opponent: NblTeamContext | null;
   league: { defRtg: number; pace: number } | null;
+  /** Possessions per 40 expected in this game (both teams' pace against the league). */
+  expectedPace?: number | null;
+  /** Pace of past games by match id. */
+  gamePace?: Map<string, number>;
   /** Teammates on the injury list, with their game logs when they could be loaded. */
   teammatesOut: Array<NblInjuryContext & { games: NblGameLogRow[] | null }>;
   restDays: number | null;
@@ -88,16 +92,18 @@ export function defenceFactor(stat: NblPropMarket, opp: NblTeamContext | null, l
   return { key: 'defence', factor, note: `Opponent defensive rating ${opp.defRtg} vs league ${round(league.defRtg, 1)}` };
 }
 
-/** Expected game pace against the pace of the games behind his rate. */
-export function paceFactor(games: NblGameLogRow[], team: NblTeamContext | null, opp: NblTeamContext | null): NblContextFactor | null {
-  if (!team?.pace || !opp?.pace) return null;
+/**
+ * Pace expected in this game against the pace of the games behind his rate. Each game's pace comes
+ * from the team-game table (both teams' boxes), falling back to the pace on his own row.
+ */
+export function paceFactor(games: NblGameLogRow[], expected: number | null, gamePace?: Map<string, number>): NblContextFactor | null {
+  if (!expected) return null;
   const recent = playedGames(games)
     .slice(-10)
-    .map((g) => (g as NblGameLogRow & { pace?: number | null }).pace)
+    .map((g) => gamePace?.get(String(g.matchId)) ?? (g as NblGameLogRow & { pace?: number | null }).pace)
     .filter((p): p is number => typeof p === 'number' && p > 50 && p < 120);
   if (recent.length < 3) return null;
   const his = recent.reduce((a, b) => a + b, 0) / recent.length;
-  const expected = (team.pace + opp.pace) / 2;
   const factor = 1 + clamp(expected / his - 1, -0.05, 0.05);
   return { key: 'pace', factor, note: `Expected pace ${round(expected, 1)} vs ${round(his, 1)} in his last ${recent.length} games` };
 }
@@ -170,7 +176,7 @@ export function nblPropContext(input: NblPropContextInput): NblPropContext {
   const factors = [
     matchup,
     matchup ? null : defenceFactor(input.stat, input.opponent, input.league),
-    paceFactor(input.games, input.team, input.opponent),
+    paceFactor(input.games, input.expectedPace ?? null, input.gamePace),
     homeAwayFactor(input),
     ...input.teammatesOut.map((m) => teammateOutFactor(input.games, input.stat, m, input.currentSeason)),
     restFactor(input.restDays),

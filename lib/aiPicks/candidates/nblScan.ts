@@ -11,6 +11,7 @@ import {
   type NblResolvedPlayer,
 } from '@/lib/aiPicks/candidates/nbl';
 import {
+  expectedPace,
   injuriesFor,
   loadNblContextData,
   matchupFor,
@@ -27,6 +28,7 @@ import { NBL_ODDS_CACHE_KEY, type NblOddsCache } from '@/lib/nbl/refreshNblOdds'
 import { fetchNblSchedule } from '@/lib/nbl/rosettaLeague';
 import { fetchNormalizedPlayerGameLogs } from '@/lib/nbl/rosettaPlayer';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
+import { enrichNblGamesAdvancedRates } from '@/lib/nbl/teamBoxScores';
 import { NBL_CURRENT_SEASON_YEAR } from '@/lib/nblTeamCanonical';
 import { nblTeamKey } from '@/lib/aiPicks/model/nblGames';
 import sharedCache from '@/lib/sharedCache';
@@ -59,7 +61,8 @@ async function loadPlayerGames(playerId: string, season: number): Promise<NblGam
   const disk = loadNblPlayerGameLogs({ playerId, years: [season, season - 1, season - 2] })?.games ?? [];
   let live: NblGameLogRow[] = [];
   try {
-    live = await fetchNormalizedPlayerGameLogs(playerId, season, 'regular');
+    // Live rows lack the pace, usage and shooting rates the committed logs carry.
+    live = enrichNblGamesAdvancedRates(await fetchNormalizedPlayerGameLogs(playerId, season, 'regular'), season);
   } catch {
     live = [];
   }
@@ -142,7 +145,7 @@ export async function scanNblCandidates(opts: {
     return {
       home: teamContext(ctx, homeTeam),
       away: teamContext(ctx, awayTeam),
-      leaguePace: ctx.league?.pace || null,
+      pace: expectedPace(ctx, homeTeam, awayTeam),
       homeOutPoints: h.points,
       awayOutPoints: a.points,
       homeOut: h.names,
@@ -178,6 +181,7 @@ export async function scanNblCandidates(opts: {
       const teamCtx = teamContext(ctx, hit.team);
       const oppCtx = teamContext(ctx, opponent);
       const rest = restDays(ctx, hit.team, game.commenceTime);
+      const gamePace = expectedPace(ctx, game.homeTeam, game.awayTeam);
       const context: NblPropGameContext = {
         listed: self ? self.entry : null,
         forStat: (stat) =>
@@ -190,6 +194,8 @@ export async function scanNblCandidates(opts: {
             team: teamCtx,
             opponent: oppCtx,
             league: ctx.league,
+            expectedPace: gamePace?.pace ?? null,
+            gamePace: ctx.pace.byMatch,
             teammatesOut,
             restDays: rest,
             strength: params.contextStrength,
@@ -197,6 +203,7 @@ export async function scanNblCandidates(opts: {
         facts: {
           team: teamCtx,
           opponent: oppCtx,
+          expectedPace: gamePace,
           leagueDefRtg: ctx.league ? Math.round(ctx.league.defRtg * 10) / 10 : null,
           teammatesOut: teammatesOut.map((m) => `${m.player} (${m.status})`),
           opponentOut: (outByTeam.get(nblTeamKey(opponent)) ?? []).map((m) => `${m.entry.player} (${m.entry.status})`),
