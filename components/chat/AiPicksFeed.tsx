@@ -463,12 +463,16 @@ const time = (iso: string | null | undefined): number => {
 const playedAt = (pick: AiPick): number =>
   pick.legs.length ? Math.max(...pick.legs.map((l) => time(l.startsAt))) : time(pick.postedAt);
 
-/** Pending oldest-posted first; resulted in the order they were played. */
+/** Pending oldest-posted first; resulted most recently played first. */
 function tabOrder(picks: AiPick[], tab: Tab): AiPick[] {
   return tab === 'pending'
     ? picks.filter((p) => p.status === 'pending').sort((a, b) => time(a.postedAt) - time(b.postedAt))
-    : picks.filter((p) => p.status !== 'pending').sort((a, b) => playedAt(a) - playedAt(b));
+    : picks
+        .filter((p) => p.status !== 'pending')
+        .sort((a, b) => playedAt(b) - playedAt(a) || time(b.settledAt) - time(a.settledAt) || time(b.postedAt) - time(a.postedAt));
 }
+
+const RESULTED_PAGE = 10;
 
 function scrollParent(el: HTMLElement | null): HTMLElement | null {
   for (let node = el?.parentElement ?? null; node; node = node.parentElement) {
@@ -533,7 +537,10 @@ export function AiPicksFeed() {
   const inSport = useMemo(() => picks.filter((p) => sport === 'all' || p.sport === sport), [picks, sport]);
   const pendingCount = inSport.filter((p) => p.status === 'pending').length;
   const resultedCount = inSport.length - pendingCount;
-  const shown = useMemo(() => tabOrder(inSport, tab), [inSport, tab]);
+  const ordered = useMemo(() => tabOrder(inSport, tab), [inSport, tab]);
+  const [resultedLimit, setResultedLimit] = useState(RESULTED_PAGE);
+  const shown = tab === 'resulted' ? ordered.slice(0, resultedLimit) : ordered;
+  const hiddenCount = ordered.length - shown.length;
 
   const topRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -585,7 +592,10 @@ export function AiPicksFeed() {
                 type="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => setTab(t.id)}
+                onClick={() => {
+                  setTab(t.id);
+                  setResultedLimit(RESULTED_PAGE);
+                }}
                 className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition-colors ${
                   active
                     ? 'bg-white text-gray-900 shadow-sm dark:bg-[#1a2740] dark:text-white'
@@ -608,7 +618,10 @@ export function AiPicksFeed() {
         {sports.length > 1 && (
           <div className="flex flex-wrap items-center gap-1.5">
             {['all', ...sports].map((s) => (
-              <button key={s} type="button" onClick={() => setSport(s)} className={`${chip(sport === s)} inline-flex items-center gap-1`}>
+              <button key={s} type="button" onClick={() => {
+                  setSport(s);
+                  setResultedLimit(RESULTED_PAGE);
+                }} className={`${chip(sport === s)} inline-flex items-center gap-1`}>
                 {s !== 'all' && <SportLogo sport={s} tours={s === 'tennis' ? ['ATP', 'WTA'] : []} className="h-3 w-3" />}
                 {s === 'all' ? 'All sports' : SPORT_LABELS[s] ?? s}
               </button>
@@ -633,7 +646,21 @@ export function AiPicksFeed() {
           </p>
         </div>
       ) : (
-        shown.map((pick) => <PickCard key={pick.id} pick={pick} info={tennisInfo} />)
+        <>
+          {shown.map((pick) => (
+            <PickCard key={pick.id} pick={pick} info={tennisInfo} />
+          ))}
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setResultedLimit((n) => n + RESULTED_PAGE)}
+              className="mx-auto rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-200 dark:hover:bg-[#162338]"
+            >
+              Show {Math.min(RESULTED_PAGE, hiddenCount)} more
+              <span className="ml-1.5 font-normal text-gray-500 dark:text-gray-400">({hiddenCount} left)</span>
+            </button>
+          )}
+        </>
       )}
     </div>
   );
