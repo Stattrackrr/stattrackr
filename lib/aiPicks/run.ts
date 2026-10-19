@@ -27,6 +27,11 @@ import { round } from '@/lib/aiPicks/model/math';
 import { loadActiveParams } from '@/lib/aiPicks/learn/state';
 import { modelVersion, type AiPicksParams } from '@/lib/aiPicks/params';
 import { sizeUnits, trackRecords, type TrackRecord } from '@/lib/aiPicks/units';
+import { reschedules, type FixtureTimes } from '@/lib/aiPicks/reschedule';
+import { readNblPulseScoreBoardCache } from '@/lib/nbl/pulseScore';
+import { NBL_ODDS_CACHE_KEY, type NblOddsCache } from '@/lib/nbl/refreshNblOdds';
+import { readUpcomingTennisByPlayerCache } from '@/lib/tennis/nextGame';
+import sharedCache from '@/lib/sharedCache';
 import { sendNewPicksPush } from '@/lib/push/send';
 import {
   claimWatch,
@@ -35,6 +40,7 @@ import {
   insertPick,
   listClosedMultiKeys,
   listPendingLegsStartingBetween,
+  listPendingPicks,
   listPicksPostedSince,
   listSettledPickStats,
   listWatchingKeys,
@@ -42,6 +48,8 @@ import {
   readAiPicksSettings,
   releaseWatch,
   saveLegClosing,
+  saveLegStart,
+  savePickFirstStart,
   setWatchStatus,
   startRun,
   upsertWatchRows,
@@ -74,6 +82,8 @@ export type AiPicksRunSummary = {
   posted: Array<{ id: string; title: string }>;
   rejected: Array<{ title: string; reason: string }>;
   closingCaptured: number;
+  /** Pending legs moved to their match's new start this run. */
+  rescheduled?: Array<{ pickId: string; legId: string; from: string; to: string }>;
   paused: boolean;
   skipped: string[];
   review: { model: string | null; tokensIn: number; tokensOut: number; error: string | null } | null;
@@ -147,6 +157,34 @@ function pickContext(p: Proposal, review: string, scannedAt: string, staking: st
       context: l.c.context,
     })),
   };
+}
+
+async function fixtureTimes(): Promise<FixtureTimes> {
+  const [upcoming, odds, board] = await Promise.all([
+    readUpcomingTennisByPlayerCache(),
+    sharedCache.getJSON<NblOddsCache>(NBL_ODDS_CACHE_KEY),
+    readNblPulseScoreBoardCache(),
+  ]);
+  const tennis = new Map<string, string>();
+  for (const next of upcoming.byPlayerId.values()) {
+    if (next.matchId && next.tipoff) tennis.set(String(next.matchId), next.tipoff);
+  }
+  const nbl = [...(odds?.games ?? []), ...board.games].map((g) => ({ homeTeam: g.homeTeam, awayTeam: g.awayTeam, startsAt: g.commenceTime }));
+  return { tennis, nbl };
+}
+
+/** Moves pending legs whose match was rescheduled. */
+async function syncRescheduled(): Promise<NonNullable<AiPicksRunSummary['rescheduled']>> {
+  const moves = reschedules(await listPendingPicks(), await fixtureTimes());
+  const out: NonNullable<AiPicksRunSummary['rescheduled']> = [];
+  for (const m of moves) {
+    for (const leg of m.legs) {
+      await saveLegStart(leg.id, leg.to);
+      out.push({ pickId: m.pickId, legId: leg.id, from: leg.from, to: leg.to });
+    }
+    await savePickFirstStart(m.pickId, m.firstStartsAt);
+  }
+  return out;
 }
 
 /** Latest pre-start price for legs about to start; the last write before the start is the close. */
@@ -270,6 +308,11 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
     summary.candidates = scan.candidates.length;
     mark('scan');
 
+    try {
+      summary.rescheduled = await syncRescheduled();
+    } catch (e) {
+      summary.errors.push(`reschedule: ${(e as Error).message}`);
+    }
     try {
       summary.closingCaptured = await captureClosing(scan.candidates, nowMs);
     } catch (e) {

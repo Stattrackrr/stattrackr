@@ -62,6 +62,15 @@ export async function saveLegClosing(legId: string, line: number | null, price: 
   check(await db().from('ai_pick_legs').update({ closing_line: line, closing_price: price }).eq('id', legId), 'save closing');
 }
 
+/** A pending leg's match moved: its new start, and the pick's first start. */
+export async function saveLegStart(legId: string, startsAtIso: string): Promise<void> {
+  check(await db().from('ai_pick_legs').update({ starts_at: startsAtIso }).eq('id', legId).eq('status', 'pending'), 'save leg start');
+}
+
+export async function savePickFirstStart(pickId: string, firstStartsAtIso: string): Promise<void> {
+  check(await db().from('ai_picks').update({ first_starts_at: firstStartsAtIso }).eq('id', pickId).eq('status', 'pending'), 'save pick start');
+}
+
 export async function savePickSettlement(pickId: string, status: AiPickStatus, profitUnits: number | null, settledAtIso: string): Promise<void> {
   check(
     await db()
