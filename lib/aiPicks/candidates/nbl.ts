@@ -63,27 +63,35 @@ export function nblEventLabel(g: NblGameRef): string {
   return `${g.awayTeam} @ ${g.homeTeam}`;
 }
 
-function blend(model: SideProbs, market: SideProbs, w: number): SideProbs {
+export function blend(model: SideProbs, market: SideProbs, w: number): SideProbs {
   const mix = (a: number, b: number) => w * a + (1 - w) * b;
   return { over: mix(model.over, market.over), under: mix(model.under, market.under), push: mix(model.push, market.push) };
 }
 
-function sideWin(p: SideProbs, side: AiPickSide): number {
+export function sideWin(p: SideProbs, side: AiPickSide): number {
   return side === 'under' || side === 'away' ? p.under : p.over;
 }
 
-/** Fair P(over) at a line: median across books that price both sides there. */
-function marketOverAt(lines: NblSnapLine[], line: number): number | null {
-  const fairs = lines
+/** Each book's de-vigged P(over) at a line, for books pricing both sides there. */
+export function bookOversAt(lines: NblSnapLine[], line: number): Array<{ book: string; p: number }> {
+  return lines
     .filter((l) => l.kind === 'ou' && l.line === line && l.overDecimal && l.underDecimal && coherentPair(l.overDecimal, l.underDecimal))
-    .map((l) => fairTwoWay(l.overDecimal!, l.underDecimal!)?.[0])
-    .filter((p): p is number => p != null);
-  return median(fairs);
+    .map((l) => ({ book: l.book, p: fairTwoWay(l.overDecimal!, l.underDecimal!)?.[0] as number }))
+    .filter((f) => f.p != null);
 }
 
-type PropSelection = { line: number; kind: 'ou' | 'milestone'; side: 'over' | 'under'; quotes: CandidateQuote[] };
+/** How books' fair prices become one: the median, unless a sport weights some books (NBA). */
+export type FairCombine = (fairs: Array<{ book: string; p: number }>) => number | null;
+const medianFair: FairCombine = (fairs) => median(fairs.map((f) => f.p));
 
-function propSelections(lines: NblSnapLine[]): PropSelection[] {
+/** Fair P(over) at a line: median across books that price both sides there. */
+export function marketOverAt(lines: NblSnapLine[], line: number, combine: FairCombine = medianFair): number | null {
+  return combine(bookOversAt(lines, line));
+}
+
+export type PropSelection = { line: number; kind: 'ou' | 'milestone'; side: 'over' | 'under'; quotes: CandidateQuote[] };
+
+export function propSelections(lines: NblSnapLine[]): PropSelection[] {
   const map = new Map<string, PropSelection>();
   const add = (line: number, kind: 'ou' | 'milestone', side: 'over' | 'under', book: string, price: number | null) => {
     if (price == null || !(price > 1)) return;
@@ -104,15 +112,16 @@ function propSelections(lines: NblSnapLine[]): PropSelection[] {
  * Market mean for the stat (context and alternate lines with no two-way price). Two-way main line
  * first; with only milestones, the milestone nearest our projection.
  */
-function marketMean(
+export function marketMean(
   lines: NblSnapLine[],
   proj: NblPropProjection,
-  oneWayPower: number
+  oneWayPower: number,
+  combine?: FairCombine
 ): { mean: number; mainLine: number | null; source: 'main' | 'milestone' } | null {
   const twoWay = lines.filter((l) => l.kind === 'ou' && l.overDecimal && l.underDecimal);
   const mainLine = consensusLine(twoWay.map((l) => l.line));
   if (mainLine != null) {
-    const pOver = marketOverAt(lines, mainLine);
+    const pOver = marketOverAt(lines, mainLine, combine);
     if (pOver != null) return { mean: impliedCountMean(pOver, mainLine, proj.dispersion), mainLine, source: 'main' };
   }
   const milestones = lines.filter((l) => l.kind === 'milestone' && l.overDecimal);
@@ -128,19 +137,20 @@ function marketMean(
  * The market at this exact line: two-way price with the margin removed, or for a milestone its
  * own one-way price. Only an alternate line nobody prices both ways falls back to the fitted mean.
  */
-function marketProbsAt(
+export function marketProbsAt(
   sel: PropSelection,
   lines: NblSnapLine[],
   mkt: { mean: number; source: 'main' | 'milestone' },
   proj: NblPropProjection,
-  oneWayPower: number
+  oneWayPower: number,
+  combine?: FairCombine
 ): SideProbs | null {
   const fitted = countSideProbs(mkt.mean, mkt.mean * proj.dispersion, sel.line);
   if (sel.kind === 'milestone') {
     const over = median(sel.side === 'over' ? distinctPrices(sel.quotes).map((p) => fairOneWay(p, oneWayPower) ?? NaN) : []);
     return over == null ? null : { over, under: 1 - over, push: 0 };
   }
-  const pOver = marketOverAt(lines, sel.line);
+  const pOver = marketOverAt(lines, sel.line, combine);
   if (pOver != null) return { over: pOver * (1 - fitted.push), under: (1 - pOver) * (1 - fitted.push), push: fitted.push };
   return mkt.source === 'main' ? fitted : null;
 }
@@ -271,13 +281,13 @@ export function buildNblPropCandidates(input: {
   return out;
 }
 
-function withKey(c: AiCandidate): AiCandidate {
+export function withKey(c: AiCandidate): AiCandidate {
   return { ...c, key: candidateKey(c) };
 }
 
 type GameQuote = { book: string; price: number; otherPrice: number | null; line: number | null };
 
-function gameQuotes(odds: NblGameOdds) {
+export function gameQuotes(odds: NblGameOdds) {
   const h2hHome: GameQuote[] = [];
   const h2hAway: GameQuote[] = [];
   const spreads: Array<{ book: string; homeLine: number; home: number | null; away: number | null; main: boolean }> = [];

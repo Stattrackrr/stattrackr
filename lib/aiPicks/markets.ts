@@ -8,6 +8,10 @@
  *   spread: side home/away, line is the selected side's handicap (-4.5 = must win by 5+).
  *   total:  side over/under on combined points (overtime counts).
  *
+ * NBA (event_key = nba_games.id; player_id is the BallDontLie player id)
+ *   Same prop and game markets as NBL, plus
+ *   doubleDouble / tripleDouble: side over, line 0.5 (yes: 10+ in two / three of pts, reb, ast, stl, blk).
+ *
  * Tennis (event_key = API-Tennis event key; player_id is the player the bet is on, team is the opponent)
  *   match_winner:   side yes (player wins) / no.
  *   game_handicap:  side yes, line is the player's games handicap.
@@ -20,6 +24,7 @@
 
 export const NBL_PROP_MARKETS = ['points', 'rebounds', 'assists', 'threeMade', 'pra', 'pr', 'pa', 'ra'] as const;
 export const NBL_GAME_MARKETS = ['h2h', 'spread', 'total'] as const;
+export const NBA_ACHIEVEMENT_MARKETS = ['doubleDouble', 'tripleDouble'] as const;
 export const TENNIS_MARKETS = [
   'match_winner',
   'game_handicap',
@@ -33,9 +38,19 @@ export const TENNIS_MARKETS = [
 export type NblPropMarket = (typeof NBL_PROP_MARKETS)[number];
 export type NblGameMarket = (typeof NBL_GAME_MARKETS)[number];
 export type TennisMarket = (typeof TENNIS_MARKETS)[number];
+export type NbaAchievementMarket = (typeof NBA_ACHIEVEMENT_MARKETS)[number];
 
 export function isNblPropMarket(market: string): market is NblPropMarket {
   return (NBL_PROP_MARKETS as readonly string[]).includes(market);
+}
+
+export function isNbaAchievementMarket(market: string): market is NbaAchievementMarket {
+  return (NBA_ACHIEVEMENT_MARKETS as readonly string[]).includes(market);
+}
+
+/** Any market settled on one player's box score. */
+export function isPlayerPropMarket(market: string): boolean {
+  return isNblPropMarket(market) || isNbaAchievementMarket(market);
 }
 
 export function isNblGameMarket(market: string): market is NblGameMarket {

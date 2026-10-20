@@ -74,7 +74,10 @@ test('model groups and version labels', () => {
   assert.equal(modelGroup({ sport: 'nbl', market: 'points', marketKind: 'milestone' }), 'milestone');
   assert.equal(modelGroup({ sport: 'nbl', market: 'points', marketKind: 'main' }), 'prop');
   assert.equal(modelGroup({ sport: 'tennis', market: 'total_games', marketKind: 'main' }), 'total_games');
-  assert.equal(modelVersion({ ...P, versions: { nbl: 3, tennis: 0 } }, ['tennis', 'nbl', 'nbl']), 'nbl v3 / tennis v0');
+  assert.equal(modelVersion({ ...P, versions: { nbl: 3, nba: 1, tennis: 0 } }, ['tennis', 'nbl', 'nbl']), 'nbl v3 / tennis v0');
+  assert.equal(modelVersion({ ...P, versions: { nbl: 3, nba: 1, tennis: 0 } }, ['nba', 'nbl']), 'nba v1 / nbl v3');
+  assert.equal(modelGroup({ sport: 'nba', market: 'pra', marketKind: 'milestone' }), 'milestone');
+  assert.equal(modelGroup({ sport: 'nba', market: 'spread', marketKind: 'alternate' }), 'spread');
 });
 
 function outcomes(prob: number, n: number, wins: number) {

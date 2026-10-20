@@ -4,7 +4,7 @@ import { round } from '@/lib/aiPicks/model/math';
 import type { WatchRow } from '@/lib/aiPicks/server';
 import type { AiPick } from '@/lib/aiPicks/types';
 import { gameIdentity, type WatchPoint } from '@/lib/aiPicks/decide/timing';
-import { PICK_WINDOW_MS, selectionId, subjectId, type PostedState } from '@/lib/aiPicks/decide/select';
+import { LONG_MULTI_PRICE, PICK_WINDOW_MS, selectionId, singleSlotKind, subjectId, type PostedState } from '@/lib/aiPicks/decide/select';
 
 const MAX_HISTORY = 24;
 export const REVIEW_REJECTED = 'AI review:';
@@ -42,9 +42,11 @@ export function isClosedRow(row: Pick<WatchRow, 'status' | 'reason'> | undefined
 /** Watchlist row after this scan, or null to leave a closed row untouched. */
 export function nextWatchRow(c: AiCandidate, existing: WatchRow | undefined, nowIso: string): { row: WatchRow; history: WatchPoint[] } | null {
   if (isClosedRow(existing)) return null;
-  const history = [...parseHistory(existing?.history), { at: nowIso, price: c.bestPrice, prob: round(c.prob, 4), ev: round(c.ev, 4) }].slice(
-    -MAX_HISTORY
-  );
+  const point: WatchPoint = { at: nowIso, price: c.bestPrice, prob: round(c.prob, 4), ev: round(c.ev, 4) };
+  // NBA: the sharp books' and the other books' fair price apart, to check later whether the AU price follows the sharp one.
+  if (typeof c.context.sharpProb === 'number') point.sharp = c.context.sharpProb;
+  if (typeof c.context.restProb === 'number') point.rest = c.context.restProb;
+  const history = [...parseHistory(existing?.history), point].slice(-MAX_HISTORY);
   return {
     history,
     row: {
@@ -84,17 +86,26 @@ export function postedState(picks: AiPick[], nowMs: number): PostedState {
   const state: PostedState = {
     singlesRecent: {},
     multisRecent: [],
+    longMultisRecent: {},
     usedKeys: new Set(),
     singleGamesRecent: new Set(),
     playersRecent: new Set(),
     selectionsBacked: new Set(),
     subjectsUsed: new Set(),
+    singlesByGame: {},
   };
   for (const pick of picks) {
     const postedMs = Date.parse(pick.postedAt);
     const recent = postedMs > windowStart;
     if (recent && pick.kind === 'multi') state.multisRecent.push(postedMs);
+    if (recent && pick.kind === 'multi' && pick.price > LONG_MULTI_PRICE) {
+      for (const sport of new Set(pick.legs.map((l) => l.sport))) (state.longMultisRecent![sport] ??= []).push(postedMs);
+    }
     if (recent && pick.kind === 'single') (state.singlesRecent[pick.sport] ??= []).push(postedMs);
+    if (pick.kind === 'single' && pick.legs[0]) {
+      const slot = (state.singlesByGame![gameIdentity(pick.legs[0])] ??= { prop: 0, game: 0 });
+      slot[singleSlotKind(pick.legs[0])] += 1;
+    }
     for (const leg of pick.legs) {
       state.usedKeys.add(legCandidateKey(leg));
       state.subjectsUsed.add(subjectId(leg));

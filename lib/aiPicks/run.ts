@@ -6,6 +6,7 @@
 
 import { alternateBooks } from '@/lib/aiPicks/books';
 import { scanAiCandidates, type CandidateScan } from '@/lib/aiPicks/candidates';
+import { NBA_LIVE_INJURY_LEAD_MS } from '@/lib/aiPicks/candidates/nbaScan';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
 import { closingIndex, closingPrice } from '@/lib/aiPicks/closing';
 import { reviewProposals, type ReviewResult } from '@/lib/aiPicks/decide/review';
@@ -31,6 +32,7 @@ import { reschedules, type FixtureTimes } from '@/lib/aiPicks/reschedule';
 import { readNblPulseScoreBoardCache } from '@/lib/nbl/pulseScore';
 import { NBL_ODDS_CACHE_KEY, type NblOddsCache } from '@/lib/nbl/refreshNblOdds';
 import { readUpcomingTennisByPlayerCache } from '@/lib/tennis/nextGame';
+import { getNbaOddsCache } from '@/lib/nba/dash/odds';
 import sharedCache from '@/lib/sharedCache';
 import { sendNewPicksPush } from '@/lib/push/send';
 import {
@@ -59,8 +61,12 @@ import {
 
 /** How far back settled picks count toward a sport's track record. */
 const TRACK_RECORD_MS = 365 * 86_400_000;
-/** An NBL props board older than this is not trusted for posting. */
+/** An NBL props board (or the NBA odds board) older than this is not trusted for posting. */
 const MAX_BOARD_AGE_MS = 45 * 60 * 1000;
+/** NBA AU prices are pulled every 25 minutes; three missed pulls and they are stale. */
+const MAX_NBA_AU_AGE_MS = 75 * 60 * 1000;
+/** The scan pulls the injury report live within 3h of tip; older than this means that pull failed. */
+const MAX_NBA_INJURY_AGE_MS = 45 * 60 * 1000;
 /** Leg prices are recorded from this long before the start; each scan overwrites, so the last one is the close. */
 const CLOSING_WINDOW_MS = 3 * 60 * 60 * 1000;
 /** A match running late is still unstarted (and in the scan) after its stored start. */
@@ -101,7 +107,24 @@ export function shortlist(scan: CandidateScan, params: AiPicksParams, nowMs: num
   if (boardStale && scan.candidates.some((c) => c.sport === 'nbl' && isNblPropMarket(c.market))) {
     skipped.push(`NBL props board is stale (${scan.nbl?.boardUpdatedAt ?? 'never updated'})`);
   }
-  const usable = scan.candidates.filter((c) => !(boardStale && c.sport === 'nbl' && isNblPropMarket(c.market)));
+  const nbaBoardAt = scan.nba?.boardUpdatedAt ? Date.parse(scan.nba.boardUpdatedAt) : NaN;
+  const nbaAuAt = scan.nba?.auPricesAt ? Date.parse(scan.nba.auPricesAt) : NaN;
+  const nbaStale = !(nowMs - nbaBoardAt <= MAX_BOARD_AGE_MS) || !(nowMs - nbaAuAt <= MAX_NBA_AU_AGE_MS);
+  if (nbaStale && scan.candidates.some((c) => c.sport === 'nba')) {
+    skipped.push(`NBA odds are stale (board ${scan.nba?.boardUpdatedAt ?? 'never'}, AU prices ${scan.nba?.auPricesAt ?? 'never'})`);
+  }
+  // Close to tip the scan pulls the injury report live; if that failed, near games wait for the next scan.
+  const nbaInjuriesAt = scan.nba?.injuriesAt ? Date.parse(scan.nba.injuriesAt) : NaN;
+  const nbaInjuriesStale = !(nowMs - nbaInjuriesAt <= MAX_NBA_INJURY_AGE_MS);
+  const nearTip = (c: AiCandidate) => Date.parse(c.startsAt) - nowMs <= NBA_LIVE_INJURY_LEAD_MS;
+  if (nbaInjuriesStale && !nbaStale && scan.candidates.some((c) => c.sport === 'nba' && nearTip(c))) {
+    skipped.push(`NBA injury report is stale (${scan.nba?.injuriesAt ?? 'never'})`);
+  }
+  const usable = scan.candidates.filter(
+    (c) =>
+      !(boardStale && c.sport === 'nbl' && isNblPropMarket(c.market)) &&
+      !(c.sport === 'nba' && (nbaStale || (nbaInjuriesStale && nearTip(c))))
+  );
   const byKey = new Map<string, AiCandidate>();
   for (const c of usable) if (qualifiesSingle(c, params, nowMs).ok) byKey.set(c.key, c);
   const legs = usable
@@ -160,17 +183,19 @@ function pickContext(p: Proposal, review: string, scannedAt: string, staking: st
 }
 
 async function fixtureTimes(): Promise<FixtureTimes> {
-  const [upcoming, odds, board] = await Promise.all([
+  const [upcoming, odds, board, nbaBoard] = await Promise.all([
     readUpcomingTennisByPlayerCache(),
     sharedCache.getJSON<NblOddsCache>(NBL_ODDS_CACHE_KEY),
     readNblPulseScoreBoardCache(),
+    getNbaOddsCache(),
   ]);
   const tennis = new Map<string, string>();
   for (const next of upcoming.byPlayerId.values()) {
     if (next.matchId && next.tipoff) tennis.set(String(next.matchId), next.tipoff);
   }
   const nbl = [...(odds?.games ?? []), ...board.games].map((g) => ({ homeTeam: g.homeTeam, awayTeam: g.awayTeam, startsAt: g.commenceTime }));
-  return { tennis, nbl };
+  const nba = new Map((nbaBoard?.games ?? []).map((g) => [g.gameId, g.commenceTime]));
+  return { tennis, nbl, nba };
 }
 
 /** Moves pending legs whose match was rescheduled. */
@@ -299,7 +324,7 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
   let review: ReviewResult | null = null;
   try {
     const params = fixedParams ?? (await loadActiveParams(summary.errors));
-    summary.modelVersion = modelVersion(params, ['nbl', 'tennis']);
+    summary.modelVersion = modelVersion(params, ['nbl', 'nba', 'tennis']);
     const settings = await readAiPicksSettings();
     summary.paused = settings.paused;
     mark('setup');

@@ -17,7 +17,7 @@ const SHORTENING = 0.97;
 const STRONG_EV_MULTIPLE = 2;
 const STRONG_SCANS = 3;
 
-export type WatchPoint = { at: string; price: number; prob: number; ev: number };
+export type WatchPoint = { at: string; price: number; prob: number; ev: number; sharp?: number; rest?: number };
 
 export function aiDayKey(iso: string | number): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: AI_PICKS_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(

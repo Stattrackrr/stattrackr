@@ -7,7 +7,7 @@
 
 import type { Proposal } from '@/lib/aiPicks/decide/select';
 import { clamp } from '@/lib/aiPicks/model/math';
-import { modelGroup, type AiPicksParams } from '@/lib/aiPicks/params';
+import { modelGroup, paramsForSport, type AiPicksParams } from '@/lib/aiPicks/params';
 import { AI_PICK_UNITS } from '@/lib/aiPicks/types';
 
 export type TrackRecord = { settled: number; recentRoi: number | null; recentPicks: number };
@@ -50,10 +50,7 @@ export function sizeUnits(
   const push = p.kind === 'single' ? p.legs[0]!.c.pushProb : 0;
   const kelly = kellyStake(p.prob, p.price, push);
   const support = Math.min(...p.legs.map((l) => supportFactor(l.c.supportScore)));
-  const scales = p.legs.map((l) => {
-    const sp = l.c.sport === 'tennis' ? params.tennis : params.nbl;
-    return sp.stakeScale[modelGroup(l.c)] ?? 1;
-  });
+  const scales = p.legs.map((l) => paramsForSport(params, l.c.sport).stakeScale[modelGroup(l.c)] ?? 1);
   const scale = scales.reduce((a, b) => a + b, 0) / scales.length;
   const raw = (s.kellyFraction * kelly * support * scale) / s.unitShare;
 

@@ -11,6 +11,8 @@ export type FixtureTimes = {
   /** Tennis match id (the leg's event key) to its current start. */
   tennis: Map<string, string>;
   nbl: Array<{ homeTeam: string; awayTeam: string; startsAt: string }>;
+  /** NBA game id (the leg's event key) to its current tip-off. */
+  nba?: Map<string, string>;
 };
 
 /** Smaller differences are feed rounding, not a move. */
@@ -25,8 +27,8 @@ export function rescheduledStart(leg: Pick<AiPickLeg, 'sport' | 'eventKey' | 'ev
   const was = Date.parse(leg.startsAt);
   if (!Number.isFinite(was)) return null;
   let now: number | null = null;
-  if (leg.sport === 'tennis') {
-    const t = Date.parse(times.tennis.get(leg.eventKey) ?? '');
+  if (leg.sport === 'tennis' || leg.sport === 'nba') {
+    const t = Date.parse((leg.sport === 'tennis' ? times.tennis : times.nba)?.get(leg.eventKey) ?? '');
     now = Number.isFinite(t) ? t : null;
   } else if (leg.sport === 'nbl') {
     const [away, home] = leg.eventLabel.split(' @ ');

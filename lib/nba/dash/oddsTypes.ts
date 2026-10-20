@@ -5,6 +5,9 @@ export interface NbaBookRow {
   H2H: { home: string; away: string };
   Spread: { line: string; over: string; under: string };
   Total: { line: string; over: string; under: string };
+  /** Every spread / total the book offers (main included), home side first; odds-api.net AU books only. */
+  SpreadLines?: Array<{ line: string; over: string; under: string }>;
+  TotalLines?: Array<{ line: string; over: string; under: string }>;
   lines?: NbaPropLine[];
 }
 
@@ -43,6 +46,8 @@ export interface NbaOddsCache {
   nextUpdate: string;
   /** Last odds-api.net pull; it runs less often than the BallDontLie refresh. */
   oddsNetFetchedAt?: string;
+  /** Last odds-api.net pull of only the games close to tip (between full pulls). */
+  oddsNetNearFetchedAt?: string;
 }
 
 export type NbaOddsMarket = 'h2h' | 'spread' | 'total';

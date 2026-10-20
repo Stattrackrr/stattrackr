@@ -20,13 +20,19 @@ export async function listPendingLegsStartedBefore(iso: string, limit = 300): Pr
   return (rows ?? []).map(aiPickLegFromRow);
 }
 
-export async function listLegsMissingClosing(sport: string, startedAfterIso: string, startedBeforeIso: string): Promise<AiPickLeg[]> {
+/** `missing`: the column still empty (NBA head to head has no line, so NBA goes by the price). */
+export async function listLegsMissingClosing(
+  sport: string,
+  startedAfterIso: string,
+  startedBeforeIso: string,
+  missing: 'closing_line' | 'closing_price' = 'closing_line'
+): Promise<AiPickLeg[]> {
   const rows = check<AiPickLegRow[] | null>(
     await db()
       .from('ai_pick_legs')
       .select('*')
       .eq('sport', sport)
-      .is('closing_line', null)
+      .is(missing, null)
       .gt('starts_at', startedAfterIso)
       .lt('starts_at', startedBeforeIso)
       .limit(300),

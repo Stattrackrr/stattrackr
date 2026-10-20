@@ -1,5 +1,8 @@
 import { nblClosingLine } from '@/lib/aiPicks/grade/closing';
+import { nbaClosingFromBoard } from '@/lib/aiPicks/grade/nbaClosing';
+import { getNbaOddsCache } from '@/lib/nba/dash/odds';
 import { gradeNblLeg, NblResultsSource } from '@/lib/aiPicks/grade/nbl';
+import { gradeNbaLeg, NbaResultsSource } from '@/lib/aiPicks/grade/nba';
 import type { LegGrade } from '@/lib/aiPicks/grade/rules';
 import { gradeTennisLeg, loadTennisLogs, loadTennisLogsWithFreshResults } from '@/lib/aiPicks/grade/tennis';
 import {
@@ -22,6 +25,8 @@ import type { AiPickLeg } from '@/lib/aiPicks/types';
 /** Shortest a leg can be in play before results are worth checking. */
 const MIN_PLAY_MS = 75 * 60 * 1000;
 const CLOSING_LOOKBACK_MS = 3 * 24 * 60 * 60 * 1000;
+/** The NBA board drops a game 6 hours after tip. */
+const NBA_CLOSING_WINDOW_MS = 6 * 60 * 60 * 1000;
 
 export type GradeRunSummary = {
   legsChecked: number;
@@ -34,9 +39,10 @@ export type GradeRunSummary = {
 
 async function gradeLeg(
   leg: AiPickLeg,
-  ctx: { nbl: NblResultsSource; tennisLogs: Awaited<ReturnType<typeof loadTennisLogs>>; nowMs: number }
+  ctx: { nbl: NblResultsSource; nba: NbaResultsSource; tennisLogs: Awaited<ReturnType<typeof loadTennisLogs>>; nowMs: number }
 ): Promise<LegGrade | null> {
   if (leg.sport === 'nbl') return gradeNblLeg(leg, ctx.nbl, ctx.nowMs);
+  if (leg.sport === 'nba') return gradeNbaLeg(leg, ctx.nba, ctx.nowMs);
   if (leg.sport === 'tennis') return gradeTennisLeg(leg, ctx.tennisLogs, ctx.nowMs);
   return null;
 }
@@ -57,12 +63,34 @@ async function captureClosingLines(nowMs: number, summary: GradeRunSummary): Pro
       summary.errors.push(`closing ${leg.id}: ${(e as Error).message}`);
     }
   }
+
+  // NBA: the board holds a started game's last pre-tip prices for 6 hours.
+  const nbaLegs = await listLegsMissingClosing(
+    'nba',
+    new Date(nowMs - NBA_CLOSING_WINDOW_MS).toISOString(),
+    new Date(nowMs - 10 * 60 * 1000).toISOString(),
+    'closing_price'
+  );
+  if (!nbaLegs.length) return;
+  const board = await getNbaOddsCache();
+  const byId = new Map((board?.games ?? []).map((g) => [g.gameId, g]));
+  for (const leg of nbaLegs) {
+    try {
+      const game = byId.get(leg.eventKey);
+      const close = game ? nbaClosingFromBoard(leg, game) : null;
+      if (!close?.price) continue;
+      await saveLegClosing(leg.id, close.line, close.price);
+      summary.closingCaptured += 1;
+    } catch (e) {
+      summary.errors.push(`closing ${leg.id}: ${(e as Error).message}`);
+    }
+  }
 }
 
 /** A watched play in leg form, so the same graders score it. */
 export function watchAsLeg(row: WatchRow): AiPickLeg | null {
   if (!row.event_label) return null;
-  if (!row.player_id && !(row.sport === 'nbl' && isNblGameMarket(row.market))) return null;
+  if (!row.player_id && !((row.sport === 'nbl' || row.sport === 'nba') && isNblGameMarket(row.market))) return null;
   return {
     id: row.candidate_key,
     pickId: '',
@@ -91,7 +119,7 @@ export function watchAsLeg(row: WatchRow): AiPickLeg | null {
 }
 
 /** Grade watched plays (posted or not) so learning sees every result, not just the posted few. */
-async function gradeWatchlist(ctx: { nbl: NblResultsSource; nowMs: number }, summary: GradeRunSummary): Promise<void> {
+async function gradeWatchlist(ctx: { nbl: NblResultsSource; nba: NbaResultsSource; nowMs: number }, summary: GradeRunSummary): Promise<void> {
   const rows = await listWatchRowsToGrade(new Date(ctx.nowMs - MIN_PLAY_MS).toISOString());
   const nowIso = new Date(ctx.nowMs).toISOString();
   const legs: AiPickLeg[] = [];
@@ -104,7 +132,7 @@ async function gradeWatchlist(ctx: { nbl: NblResultsSource; nowMs: number }, sum
   const tennisLogs = await loadTennisLogs(legs.filter((l) => l.sport === 'tennis'));
   for (const leg of legs) {
     try {
-      const grade = await gradeLeg(leg, { nbl: ctx.nbl, tennisLogs, nowMs: ctx.nowMs });
+      const grade = await gradeLeg(leg, { nbl: ctx.nbl, nba: ctx.nba, tennisLogs, nowMs: ctx.nowMs });
       if (!grade) continue;
       await saveWatchGrade(leg.id, { status: grade.status, value: grade.value }, nowIso);
       summary.watchGraded += 1;
@@ -124,6 +152,7 @@ export async function gradeAiPicks(nowMs = Date.now()): Promise<GradeRunSummary>
     summary.legsChecked = legs.length;
     const ctx = {
       nbl: new NblResultsSource(),
+      nba: new NbaResultsSource(),
       tennisLogs: await loadTennisLogsWithFreshResults(legs, nowMs),
       nowMs,
     };
@@ -147,7 +176,7 @@ export async function gradeAiPicks(nowMs = Date.now()): Promise<GradeRunSummary>
 
     await captureClosingLines(nowMs, summary);
     try {
-      await gradeWatchlist({ nbl: ctx.nbl, nowMs }, summary);
+      await gradeWatchlist({ nbl: ctx.nbl, nba: ctx.nba, nowMs }, summary);
     } catch (e) {
       summary.errors.push(`watchlist: ${(e as Error).message}`);
     }

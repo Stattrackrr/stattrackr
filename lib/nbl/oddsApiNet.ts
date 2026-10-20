@@ -109,7 +109,7 @@ type OddsApiEvent = {
   event_state?: string;
 };
 
-type OddsApiItem = {
+export type OddsApiItem = {
   bookmaker?: string;
   bet_type?: string;
   player_name?: string;
@@ -130,7 +130,7 @@ type OddsApiItem = {
  * Game-line books, named as The Odds API titled them so stored history and line movement carry on.
  * TABtouch and PlayUp stay out, as they did on The Odds API.
  */
-const GAME_LINE_BOOKS: Record<string, string> = {
+export const GAME_LINE_BOOKS: Record<string, string> = {
   sportsbet: 'SportsBet',
   tab: 'TAB',
   unibet: 'Unibet',
@@ -538,11 +538,11 @@ function mainPair(pairs: Map<number, GamePair>): [number, Required<Pick<GamePair
 }
 
 /** Full-game head to head, line and total per book, home team's side first (The Odds API row shape). */
-export function nblGameBookRowsFromItems(items: OddsApiItem[]): NblBookRow[] {
+export function nblGameBookRowsFromItems(items: OddsApiItem[], bookNames: Record<string, string> = GAME_LINE_BOOKS): NblBookRow[] {
   type Book = { home?: OddsApiItem; away?: OddsApiItem; spreads: Map<number, GamePair>; totals: Map<number, GamePair> };
   const books = new Map<string, Book>();
   for (const item of items) {
-    const name = GAME_LINE_BOOKS[String(item.bookmaker || '').trim().toLowerCase()];
+    const name = bookNames[String(item.bookmaker || '').trim().toLowerCase()];
     if (!name || item.is_available === false) continue;
     if (itemPeriod(item).toLowerCase() !== 'full time') continue;
     if (!(typeof item.odds === 'number' && item.odds > 1)) continue;

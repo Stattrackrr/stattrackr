@@ -436,7 +436,7 @@ export function AiPicksLearningPanel() {
         <ul className="mt-4 space-y-2 text-left text-sm text-gray-700 dark:text-gray-300">
           <li className="flex gap-2">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
-            Scans NBL and tennis lines across every bookmaker
+            Scans NBL, NBA and tennis lines across every bookmaker
           </li>
           <li className="flex gap-2">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
@@ -639,7 +639,7 @@ export function AiPicksFeed() {
           </div>
           <p className="mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
             {picks.length === 0
-              ? "No picks yet. Stattrackr AI watches NBL and tennis lines through the day and only posts when it finds a play worth taking."
+              ? "No picks yet. Stattrackr AI watches NBL, NBA and tennis lines through the day and only posts when it finds a play worth taking."
               : tab === 'pending'
                 ? 'No pending picks right now. New plays show up here as soon as they are posted.'
                 : 'No resulted picks yet.'}

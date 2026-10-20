@@ -60,6 +60,7 @@ export async function runAiLearning(nowMs = Date.now()): Promise<AiLearnSummary>
     const [rows, picks] = await Promise.all([listGradedWatchRows(sinceIso), listPicksPostedSince(sinceIso, 3000)]);
     const sports = [
       ['nbl', params.nbl],
+      ['nba', params.nba],
       ['tennis', params.tennis],
     ] as const;
     for (const [sport, current] of sports) {

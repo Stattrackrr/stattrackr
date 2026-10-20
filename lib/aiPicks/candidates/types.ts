@@ -9,7 +9,7 @@ export type SupportRecord = { label: string; hits: number; games: number };
 export type AiCandidate = {
   /** sport|event|market|player-or-team|side|line */
   key: string;
-  sport: 'nbl' | 'tennis';
+  sport: 'nbl' | 'nba' | 'tennis';
   eventKey: string;
   eventLabel: string;
   startsAt: string;
@@ -17,7 +17,7 @@ export type AiCandidate = {
   marketKind: AiPickMarketKind;
   player: string | null;
   playerId: string | null;
-  /** NBL: player's team or the selected team. Tennis: the opponent. */
+  /** NBL / NBA: player's team or the selected team. Tennis: the opponent. */
   team: string | null;
   side: AiPickSide;
   line: number | null;

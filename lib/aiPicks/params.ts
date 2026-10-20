@@ -68,14 +68,15 @@ export type AiTennisParams = AiSportParams & {
 
 export type AiPicksParams = {
   /** Active ai_learning_state version per sport; 0 = these defaults. */
-  versions: { nbl: number; tennis: number };
+  versions: { nbl: number; nba: number; tennis: number };
   nbl: AiSportParams;
+  nba: AiSportParams;
   tennis: AiTennisParams;
   staking: AiStakingParams;
 };
 
 export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
-  versions: { nbl: 0, tennis: 0 },
+  versions: { nbl: 0, nba: 0, tennis: 0 },
   staking: {
     kellyFraction: 0.25,
     unitShare: 0.01,
@@ -93,6 +94,27 @@ export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
     maxModelMarketGap: 0.18,
     maxTrustedEv: 0.25,
     sampleHalfLife: 8,
+    maxPriceSingle: 3.5,
+    maxPriceLeg: 2.6,
+    oneWayMarginPower: 1.08,
+    postWindowHours: 6,
+    maxSinglesPerDay: 3,
+    stakeScale: {},
+    contextStrength: 1,
+  },
+  /**
+   * NBA markets are sharper than NBL's: lower model weights (game lines lowest; the ratings model
+   * misses the margin by 14 points against the market's ~13), a tighter gap and EV ceiling.
+   * Singles are limited per game (see MAX_NBA_SINGLES_PER_GAME), not per day.
+   */
+  nba: {
+    modelWeight: { prop: 0.35, milestone: 0.35, h2h: 0.15, spread: 0.15, total: 0.15, doubleDouble: 0.35, tripleDouble: 0.3 },
+    minEvSingle: 0.03,
+    minEvLeg: 0.02,
+    minSupport: 0.55,
+    maxModelMarketGap: 0.15,
+    maxTrustedEv: 0.2,
+    sampleHalfLife: 10,
     maxPriceSingle: 3.5,
     maxPriceLeg: 2.6,
     oneWayMarginPower: 1.08,
@@ -128,10 +150,15 @@ export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
   },
 };
 
-/** Key into modelWeight and stakeScale: NBL props split main vs milestone, everything else by market. */
+/** Key into modelWeight and stakeScale: basketball props split main vs milestone, everything else by market. */
 export function modelGroup(c: { sport: string; market: string; marketKind: string }): string {
-  if (c.sport === 'nbl' && isNblPropMarket(c.market)) return c.marketKind === 'milestone' ? 'milestone' : 'prop';
+  if ((c.sport === 'nbl' || c.sport === 'nba') && isNblPropMarket(c.market)) return c.marketKind === 'milestone' ? 'milestone' : 'prop';
   return c.market;
+}
+
+/** The sport's params block; anything that is not NBA or tennis is NBL. */
+export function paramsForSport(params: AiPicksParams, sport: string): AiSportParams {
+  return sport === 'tennis' ? params.tennis : sport === 'nba' ? params.nba : params.nbl;
 }
 
 export function modelVersion(params: AiPicksParams, sports: string[]): string {

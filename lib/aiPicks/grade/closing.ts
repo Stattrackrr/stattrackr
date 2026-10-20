@@ -2,7 +2,7 @@ import { isNblPropMarket } from '@/lib/aiPicks/markets';
 import type { AiPickLeg } from '@/lib/aiPicks/types';
 import { playerKeyOf, readNblPlayerPropSnapshotByKeyAsync, type NblSnapLine } from '@/lib/nbl/playerPropSnapshots';
 
-export type ClosingLine = { line: number; price: number | null };
+export type ClosingLine = { line: number | null; price: number | null };
 
 const bookKey = (s: string) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 

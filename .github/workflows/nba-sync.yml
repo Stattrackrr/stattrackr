@@ -1,6 +1,7 @@
 # NBA dashboard data: BallDontLie (GOAT) -> Supabase nba_* tables.
 # Writes to the database only (no Redis, no repo commits).
-#   - Every 3 hours: injuries, schedule/results, standings, players.
+#   - Every 3 hours: injuries, schedule/results, standings, players, and box scores
+#     for the last day (so AI picks grade soon after a game ends).
 #   - Daily after US games finish: box scores (+ quarters), advanced, lineups,
 #     play-by-play/shots and season averages for the current season.
 #   - Manual: any jobs/seasons, e.g. a full backfill.
@@ -65,6 +66,6 @@ jobs:
             [ "${{ inputs.full }}" = "true" ] && ARGS="$ARGS --full"
             ARGS="$ARGS --max-games=${{ inputs.max_games }}"
           elif [ "${{ github.event.schedule }}" = "0 */3 * * *" ]; then
-            ARGS="--jobs=injuries,players,games,standings"
+            ARGS="--jobs=injuries,players,games,standings,stats --days=1"
           fi
           npx tsx scripts/sync-nba-bdl.ts $ARGS

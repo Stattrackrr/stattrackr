@@ -1,10 +1,11 @@
 /**
- * NBA player props from odds-api.net: the Australian books (plus Pinnacle) BallDontLie doesn't carry.
- * Every request costs 1 credit on the 50k/month plan shared with NBL.
+ * NBA player props and game lines from odds-api.net: the Australian books (plus Pinnacle) BallDontLie
+ * doesn't carry. Every request costs 1 credit on the 50k/month plan shared with NBL; props and game
+ * lines come back in the same snapshot request.
  */
 
-import { parseNblOddsApiNetSideLine } from '@/lib/nbl/oddsApiNet';
-import type { NbaPlayerPropsByBook, NbaPropEntry } from './oddsTypes';
+import { GAME_LINE_BOOKS, nblGameBookRowsFromItems, parseNblOddsApiNetSideLine, type OddsApiItem } from '@/lib/nbl/oddsApiNet';
+import type { NbaBookRow, NbaPlayerPropsByBook, NbaPropEntry } from './oddsTypes';
 import { normalizeTeamKey, resolveNbaClubName } from './teams';
 
 const BASE = 'https://api.odds-api.net/v1';
@@ -46,6 +47,8 @@ const METRIC_TO_KEY: Record<string, string> = {
   'player pr': 'PR',
   'player pa': 'PA',
   'player ra': 'RA',
+  'player double doubles': 'DD',
+  'player triple doubles': 'TD',
 };
 
 /** odds-api.net tip times can be hours off BallDontLie's; teams never meet twice inside this. */
@@ -62,23 +65,15 @@ type OddsNetEvent = {
   commence_time?: number | string;
 };
 
-type OddsNetItem = {
-  bookmaker?: string;
-  player_name?: string;
-  selection_name?: string;
-  metric?: string;
-  line?: string | number;
-  side?: string;
-  odds?: number;
-  is_available?: boolean;
-  period?: string;
-};
+type OddsNetItem = OddsApiItem;
 
 export type NbaOddsNetTarget = { gameId: string; homeTeam: string; awayTeam: string; tipMs: number };
 
 export type NbaOddsNetResult = {
   /** Games fetched successfully (an empty board means no listed props yet). */
   props: Map<string, NbaPlayerPropsByBook>;
+  /** AU game-line rows per fetched game, oriented to the target's home team. */
+  gameLines: Map<string, NbaBookRow[]>;
   /** Games whose fetch failed; callers keep their previous lines. */
   failed: Set<string>;
   requests: number;
@@ -86,6 +81,31 @@ export type NbaOddsNetResult = {
 
 export function isNbaOddsNetBook(book: string): boolean {
   return STORED_BOOKS.has(book);
+}
+
+/** The AU game-line books plus Pinnacle, the sharpest line there is (a reference for the fair price, never bet). */
+const NBA_GAME_LINE_BOOKS: Record<string, string> = { ...GAME_LINE_BOOKS, pinnacle: 'Pinnacle' };
+const GAME_LINE_BOOK_NAMES = new Set(Object.values(NBA_GAME_LINE_BOOKS));
+
+/** Game-line rows that came from odds-api.net (BallDontLie's vendors are stored lowercase). */
+export function isNbaOddsNetGameBook(name: string): boolean {
+  return GAME_LINE_BOOK_NAMES.has(name);
+}
+
+function flipLine(raw: string): string {
+  const n = Number(raw);
+  return Number.isFinite(n) ? String(n === 0 ? 0 : -n) : raw;
+}
+
+/** The same rows from the other team's point of view (odds-api.net listed the game the other way round). */
+export function swapNbaBookRowSides(row: NbaBookRow): NbaBookRow {
+  const flipPair = (p: { line: string; over: string; under: string }) => ({ line: flipLine(p.line), over: p.under, under: p.over });
+  return {
+    ...row,
+    H2H: { home: row.H2H.away, away: row.H2H.home },
+    Spread: row.Spread.line === 'N/A' ? row.Spread : flipPair(row.Spread),
+    ...(row.SpreadLines ? { SpreadLines: row.SpreadLines.map(flipPair).sort((a, b) => Number(a.line) - Number(b.line)) } : {}),
+  };
 }
 
 function apiKey(): string {
@@ -158,7 +178,7 @@ export function nbaOddsNetEventProps(items: OddsNetItem[]): NbaPlayerPropsByBook
 }
 
 export async function fetchNbaOddsNetProps(targets: NbaOddsNetTarget[]): Promise<NbaOddsNetResult> {
-  const result: NbaOddsNetResult = { props: new Map(), failed: new Set(), requests: 0 };
+  const result: NbaOddsNetResult = { props: new Map(), gameLines: new Map(), failed: new Set(), requests: 0 };
   const key = apiKey();
   if (!key || !targets.length) {
     for (const t of targets) result.failed.add(t.gameId);
@@ -199,7 +219,7 @@ export async function fetchNbaOddsNetProps(targets: NbaOddsNetTarget[]): Promise
     ? eventsPayload
     : eventsPayload.items ?? eventsPayload.events ?? eventsPayload.data ?? [];
 
-  const books = NBA_ODDS_NET_BOOKS.join(',');
+  const books = [...new Set([...NBA_ODDS_NET_BOOKS, ...Object.keys(NBA_GAME_LINE_BOOKS)])].join(',');
   for (const target of targets) {
     const home = teamKey(target.homeTeam);
     const away = teamKey(target.awayTeam);
@@ -215,11 +235,12 @@ export async function fetchNbaOddsNetProps(targets: NbaOddsNetTarget[]): Promise
       result.props.set(target.gameId, {});
       continue;
     }
+    const swapped = teamKey(event!.home_team || event!.home) !== home;
     const items: OddsNetItem[] = [];
     let cursor = '';
     let ok = true;
     for (let page = 0; page < 4; page += 1) {
-      const qs = new URLSearchParams({ types: 'player prop', limit: '500', bookmakers: books });
+      const qs = new URLSearchParams({ types: 'player prop,moneyline,handicap,total', limit: '500', bookmakers: books });
       if (cursor) qs.set('cursor', cursor);
       const snap = (await getJson(`/events/${encodeURIComponent(String(eventId))}/odds/snapshot?${qs}`)) as {
         items?: OddsNetItem[];
@@ -239,6 +260,8 @@ export async function fetchNbaOddsNetProps(targets: NbaOddsNetTarget[]): Promise
       continue;
     }
     result.props.set(target.gameId, nbaOddsNetEventProps(items));
+    const lines = nblGameBookRowsFromItems(items, NBA_GAME_LINE_BOOKS) as NbaBookRow[];
+    result.gameLines.set(target.gameId, swapped ? lines.map(swapNbaBookRowSides) : lines);
   }
   return result;
 }

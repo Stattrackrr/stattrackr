@@ -9,6 +9,9 @@ export function paramsFromStates(rows: LearningStateRow[]): AiPicksParams {
     if (row.sport === 'nbl') {
       out.nbl = mergeSportParams(d.nbl, row.params);
       out.versions.nbl = row.version;
+    } else if (row.sport === 'nba') {
+      out.nba = mergeSportParams(d.nba, row.params);
+      out.versions.nba = row.version;
     } else if (row.sport === 'tennis') {
       out.tennis = mergeSportParams(d.tennis, row.params);
       out.versions.tennis = row.version;

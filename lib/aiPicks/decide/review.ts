@@ -7,6 +7,7 @@
 import { askLlmConfig, callLlm } from '@/lib/ai/ask/llm';
 import type { Proposal } from '@/lib/aiPicks/decide/select';
 import { legTitle } from '@/lib/aiPicks/format';
+import { isNbaAchievementMarket } from '@/lib/aiPicks/markets';
 import { round } from '@/lib/aiPicks/model/math';
 import { AI_PICKS_TZ } from '@/lib/aiPicks/decide/timing';
 
@@ -28,6 +29,9 @@ A pricing model has shortlisted the plays below. For each one, read the evidence
 Weigh all of the evidence, not just hit rates:
 - NBL props: the projection against the line and what moved it (adjustments), averages over the last 5 / last 10 / season, minutes and usage trend, the matchup rank and opponent defence, pace, home/away split, teammates and opponents out, rest.
 - NBL game lines: both teams' offensive and defensive ratings, pace, the points model, players out, rest.
+- NBA props: the projection against the line and what moved it (how the opponent defends his position, pace, teammates out), averages over the last 5 / last 10 / season, minutes, usage, shot attempts and the tracking numbers given (rebound chances, passes, touches), opponents out, rest. Early in the season the numbers lean on last season; weigh role and minutes changes carefully.
+- NBA double-double / triple-double (yes bets: 10+ in two / three of points, rebounds, assists, steals, blocks): his projected points, rebounds and assists and expected minutes, how often he got there over the last 5 / 10 / 15 / season, and the stat that usually falls short. These sit on minutes: a blowout risk or minutes cap is the main way they lose.
+- NBA game lines: both teams' offensive and defensive ratings per 100 possessions, expected pace, regulars out, back to backs. NBA markets are sharp: only back a side when the evidence clearly agrees.
 - Tennis: serve and return points won (surface weighted, adjusted for opponent strength), hold rate, break points saved and converted, first and second serve, Elo overall and on the surface, rankings, form, head to head, rest and recent workload.
 
 Reject a play when:
@@ -59,7 +63,15 @@ function legEvidence(leg: Proposal['legs'][number]) {
   const ctx = c.context as Record<string, unknown>;
   const proj = ctx.projection as Record<string, unknown> | undefined;
   const extra: Record<string, unknown> = {};
-  if (c.sport === 'nbl' && proj) {
+  if (c.sport === 'nba' && isNbaAchievementMarket(c.market)) {
+    extra.projected = ctx.projections;
+    extra.projectedBeforeAdjustments = ctx.baseProjections;
+    extra.expectedMinutes = ctx.expectedMinutes;
+    extra.minutesSwing = ctx.minutesSd;
+    extra.opponent = ctx.opponent;
+    extra.playerStats = ctx.evidence;
+    extra.gameFacts = ctx.facts;
+  } else if ((c.sport === 'nbl' || c.sport === 'nba') && proj) {
     extra.projectedStat = c.projection;
     extra.projectionBeforeAdjustments = ctx.baseProjection;
     extra.adjustments = (ctx.factors as Array<{ factor: number; note: string }> | undefined)?.map(
@@ -72,12 +84,16 @@ function legEvidence(leg: Proposal['legs'][number]) {
     extra.opponent = ctx.opponent;
     extra.playerStats = ctx.evidence;
     extra.gameFacts = ctx.facts;
-  } else if (c.sport === 'nbl') {
+  } else if (c.sport === 'nbl' || c.sport === 'nba') {
     extra.gameProjection = ctx.game;
     extra.projectionBeforeRatingsAndInjuries = ctx.baseGame;
     extra.teamRatings = ctx.teams;
     extra.homeOut = ctx.homeOut;
     extra.awayOut = ctx.awayOut;
+    if (c.sport === 'nba') {
+      extra.homeRestDays = ctx.homeRestDays;
+      extra.awayRestDays = ctx.awayRestDays;
+    }
   } else {
     extra.surface = ctx.surface;
     extra.tournament = ctx.tournament;

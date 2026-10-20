@@ -3,7 +3,7 @@
  * few bounded adjustments per sport:
  *   - model weight per market group: the blend of model and market that would have scored best,
  *   - tennis day-form swing: from how often three-set matches really happened vs the model,
- *   - NBL milestone margin: from how often milestones really landed vs the market's fair price,
+ *   - NBL / NBA milestone margin: from how often milestones really landed vs the market's fair price,
  *   - minimum edge: tighter when the posted picks lose to the closing price, looser when they beat it,
  *   - stake scale per market group: from closing-price value on posted picks,
  *   - context strength: how hard matchups, pace, injuries, Elo, rankings and fatigue move the
@@ -233,7 +233,7 @@ export function learnSport<T extends AiSportParams>(
     }
   }
 
-  if (sport === 'nbl') {
+  if (sport === 'nbl' || sport === 'nba') {
     const { items: ms, clusters } = perCluster(samples.filter((s) => s.group === 'milestone' && s.side === 'over' && s.marketProb != null));
     if (clusters >= MILESTONE_POWER.minN) {
       const bias = wmean(ms, (s) => s.marketProb!) - wmean(ms, (s) => s.won);

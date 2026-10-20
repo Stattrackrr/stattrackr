@@ -6,9 +6,9 @@
 
 import { bookPrices } from '@/lib/aiPicks/books';
 import { distinctPrices, type AiCandidate } from '@/lib/aiPicks/candidates/types';
-import { isNblPropMarket } from '@/lib/aiPicks/markets';
+import { isNblPropMarket, isPlayerPropMarket } from '@/lib/aiPicks/markets';
 import { round } from '@/lib/aiPicks/model/math';
-import type { AiPicksParams, AiSportParams } from '@/lib/aiPicks/params';
+import { paramsForSport, type AiPicksParams, type AiSportParams } from '@/lib/aiPicks/params';
 import { AI_PICK_MIN_PRICE } from '@/lib/aiPicks/types';
 import { gameIdentity, heldUp, MIN_LEAD_MS, readiness, type WatchPoint } from '@/lib/aiPicks/decide/timing';
 
@@ -29,6 +29,23 @@ export const MAX_MULTIS_PER_WINDOW = 3;
 export const MULTI_GAP_MS = 3 * 60 * 60 * 1000;
 /** Multis are two likely outcomes, not two long shots. */
 const MAX_MULTI_PRICE = 3.5;
+/** Multis priced above this are capped per sport per window (sports not listed are uncapped). */
+export const LONG_MULTI_PRICE = 2.5;
+export const MAX_LONG_MULTIS_PER_WINDOW: Record<string, number> = { tennis: 1 };
+/**
+ * NBA singles are limited per game, not per day or by a gap between posts: a slate can run to 10+
+ * games. Limits, not targets; a game can go without.
+ */
+export const MAX_NBA_SINGLES_PER_GAME = { prop: 2, game: 1 };
+/** NBA singles taken in one run, so one review never carries a whole slate. */
+export const MAX_NBA_SINGLES_PER_RUN = 3;
+/** NBA teams confirm game-time calls from about 90 minutes out; a prop on a questionable player waits until then. */
+export const NBA_HOLD_MS = 90 * 60 * 1000;
+
+/** Listed but not ruled out or cleared: questionable, day-to-day, doubtful, game-time decision. */
+export function isNbaGameTimeCall(status: unknown): boolean {
+  return /questionable|day.to.day|doubtful|game.?time/i.test(String(status ?? ''));
+}
 const MIN_LEG_PROB = 0.55;
 const MIN_LEG_SUPPORT = 0.6;
 const MIN_BOOKS = 2;
@@ -58,6 +75,8 @@ export type PostedState = {
   singlesRecent: Record<string, number[]>;
   /** Posting times (ms) of recent multis. */
   multisRecent: number[];
+  /** Posting times (ms) of recent multis priced above LONG_MULTI_PRICE, per sport of each leg. */
+  longMultisRecent?: Record<string, number[]>;
   /** Candidate keys already in a posted pick. */
   usedKeys: Set<string>;
   /** Games that had a recent single. */
@@ -68,10 +87,17 @@ export type PostedState = {
   selectionsBacked: Set<string>;
   /** Subjects (see subjectId) already in any posted pick, single or multi leg. */
   subjectsUsed: Set<string>;
+  /** Singles posted per game (gameIdentity), split player props / game lines; for per-game limits. */
+  singlesByGame?: Record<string, { prop: number; game: number }>;
 };
 
 export function sportParams(params: AiPicksParams, sport: string): AiSportParams {
-  return sport === 'tennis' ? params.tennis : params.nbl;
+  return paramsForSport(params, sport);
+}
+
+/** Which per-game allowance a single uses. */
+export function singleSlotKind(c: Pick<AiCandidate, 'market' | 'player'>): 'prop' | 'game' {
+  return isPlayerPropMarket(c.market) && c.player ? 'prop' : 'game';
 }
 
 export function selectionId(
@@ -83,15 +109,15 @@ export function selectionId(
 
 /**
  * What a bet is really about; only one pick may be on each. A tennis match is one subject (handicap,
- * games, sets and winner all ride on the same result), an NBL player in a game is one, and an NBL
- * game's own lines (head to head, line, total) are one.
+ * games, sets and winner all ride on the same result), a basketball player in a game is one, and a
+ * basketball game's own lines (head to head, line, total) are one.
  */
 export function subjectId(
   c: Pick<AiCandidate, 'eventKey' | 'eventLabel' | 'startsAt' | 'market' | 'player'> & { sport: string }
 ): string {
   const game = gameIdentity(c);
   if (c.sport === 'tennis') return game;
-  if (isNblPropMarket(c.market) && c.player) return `${game}|player|${c.player.toLowerCase()}`;
+  if (isPlayerPropMarket(c.market) && c.player) return `${game}|player|${c.player.toLowerCase()}`;
   return `${game}|game`;
 }
 
@@ -100,6 +126,13 @@ type Check = { ok: true } | { ok: false; reason: string };
 function common(c: AiCandidate, p: AiSportParams, nowMs: number): Check {
   const toStart = Date.parse(c.startsAt) - nowMs;
   if (!(toStart > MIN_LEAD_MS) || toStart > POST_HORIZON_MS) return { ok: false, reason: 'Outside the posting window' };
+  if (c.sport === 'nba' && toStart > NBA_HOLD_MS && isNbaGameTimeCall(c.context.listedStatus)) {
+    return { ok: false, reason: 'Questionable: waiting until 90 minutes before tip' };
+  }
+  const waitingOn = c.context.waitingOn;
+  if (c.sport === 'nba' && toStart > NBA_HOLD_MS && Array.isArray(waitingOn) && waitingOn.length) {
+    return { ok: false, reason: `Waiting on ${waitingOn.join(', ')}: holds until 90 minutes before tip` };
+  }
   // Books on a shared feed post identical prices, so a price only counts once.
   if (distinctPrices(c.quotes).length < MIN_BOOKS) return { ok: false, reason: 'Fewer than 2 books price it' };
   if (c.supportScore != null && c.supportScore < p.minSupport) return { ok: false, reason: 'Support too thin' };
@@ -107,8 +140,8 @@ function common(c: AiCandidate, p: AiSportParams, nowMs: number): Check {
   if (c.modelProb != null && c.marketProb != null && c.modelProb < c.marketProb + MIN_MODEL_LEAN) {
     return { ok: false, reason: 'Model does not back it' };
   }
-  // NBL props wait for the over/under board: milestones alone cannot be checked against a fair line.
-  if (c.sport === 'nbl' && isNblPropMarket(c.market) && c.context.marketSource !== 'main') {
+  // Basketball props wait for the over/under board: milestones alone cannot be checked against a fair line.
+  if ((c.sport === 'nbl' || c.sport === 'nba') && isNblPropMarket(c.market) && c.context.marketSource !== 'main') {
     return { ok: false, reason: 'Over/under lines not out yet' };
   }
   return { ok: true };
@@ -150,24 +183,46 @@ export function singleSlotOpen(c: AiCandidate, p: AiSportParams, state: PostedSt
   return nowMs - Math.max(...times) >= (standout ? STANDOUT_SINGLE_GAP_MS : SINGLE_GAP_MS);
 }
 
-/** Ready singles in posting order: one per sport per run, spaced and capped per sport, one per game and player. */
+/** Room for another NBA single in this game: up to 2 player props and 1 game line, counting this run's picks. */
+export function nbaGameSlotOpen(c: AiCandidate, state: PostedState, taken: Record<string, { prop: number; game: number }>): boolean {
+  const game = gameIdentity(c);
+  const kind = singleSlotKind(c);
+  const used = (state.singlesByGame?.[game]?.[kind] ?? 0) + (taken[game]?.[kind] ?? 0);
+  return used < MAX_NBA_SINGLES_PER_GAME[kind];
+}
+
+/**
+ * Ready singles in posting order, one per player. NBL and tennis: one per sport per run, spaced and
+ * capped per sport, one per game. NBA: per-game limits only (up to MAX_NBA_SINGLES_PER_RUN a run).
+ */
 export function chooseSingles(watched: Watched[], params: AiPicksParams, state: PostedState, nowMs: number): Proposal[] {
   const out: Proposal[] = [];
   const takenSports = new Set<string>();
+  const nbaTaken: Record<string, { prop: number; game: number }> = {};
+  let nbaCount = 0;
   const ready = watched
     .filter((w) => qualifiesSingle(w.c, params, nowMs).ok)
     .map((w) => ({ w, r: readiness(w.c, w.history, { nowMs, postWindowHours: sportParams(params, w.c.sport).postWindowHours, minEv: sportParams(params, w.c.sport).minEvSingle }) }))
     .filter((x) => x.r.ready)
     .sort((a, b) => rankScore(b.w.c) - rankScore(a.w.c));
+  const chosenSubjects = new Set<string>();
   for (const { w, r } of ready) {
     const c = w.c;
     const p = sportParams(params, c.sport);
-    if (takenSports.has(c.sport)) continue;
-    if (!singleSlotOpen(c, p, state, nowMs)) continue;
-    if (conflicts(c, state)) continue;
-    if (state.singleGamesRecent.has(gameIdentity(c))) continue;
+    if (conflicts(c, state) || chosenSubjects.has(subjectId(c))) continue;
     if (c.player && state.playersRecent.has(`${c.sport}|${c.player.toLowerCase()}`)) continue;
-    takenSports.add(c.sport);
+    if (c.sport === 'nba') {
+      if (nbaCount >= MAX_NBA_SINGLES_PER_RUN || !nbaGameSlotOpen(c, state, nbaTaken)) continue;
+      const slot = (nbaTaken[gameIdentity(c)] ??= { prop: 0, game: 0 });
+      slot[singleSlotKind(c)] += 1;
+      nbaCount += 1;
+    } else {
+      if (takenSports.has(c.sport)) continue;
+      if (!singleSlotOpen(c, p, state, nowMs)) continue;
+      if (state.singleGamesRecent.has(gameIdentity(c))) continue;
+      takenSports.add(c.sport);
+    }
+    chosenSubjects.add(subjectId(c));
     out.push({
       kind: 'single',
       key: c.key,
@@ -181,6 +236,14 @@ export function chooseSingles(watched: Watched[], params: AiPicksParams, state: 
     });
   }
   return out;
+}
+
+/** A leg's sport has used its allowance of long-priced multis this window. */
+function longMultiFull(state: PostedState, sports: string[]): boolean {
+  return sports.some((s) => {
+    const cap = MAX_LONG_MULTIS_PER_WINDOW[s];
+    return cap != null && (state.longMultisRecent?.[s]?.length ?? 0) >= cap;
+  });
 }
 
 export function multiKey(keys: string[]): string {
@@ -213,6 +276,7 @@ export function chooseMulti(
       if (gameIdentity(a.c) === gameIdentity(b.c)) continue;
       const key = multiKey([a.c.key, b.c.key]);
       if (exclude.rejected.has(key)) continue;
+      const maxPrice = longMultiFull(state, [a.c.sport, b.c.sport]) ? LONG_MULTI_PRICE : MAX_MULTI_PRICE;
       const first = sportParams(params, a.c.sport);
       const r = readiness(a.c, a.history, { nowMs, postWindowHours: first.postWindowHours, minEv: first.minEvLeg });
       if (!r.ready) continue;
@@ -223,7 +287,7 @@ export function chooseMulti(
         const qb = pb.get(k);
         if (!qb) continue;
         const price = qa.price * qb.price;
-        if (price < AI_PICK_MIN_PRICE || price > MAX_MULTI_PRICE) continue;
+        if (price < AI_PICK_MIN_PRICE || price > maxPrice) continue;
         if (!pick || price > pick.price) pick = { qa, qb, price };
       }
       if (!pick) continue;

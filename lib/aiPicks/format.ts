@@ -1,3 +1,4 @@
+import { isNbaAchievementMarket } from '@/lib/aiPicks/markets';
 import type { AiPickLeg } from '@/lib/aiPicks/types';
 
 export const AI_MARKET_LABELS: Record<string, string> = {
@@ -9,6 +10,8 @@ export const AI_MARKET_LABELS: Record<string, string> = {
   pr: 'pts + reb',
   pa: 'pts + ast',
   ra: 'reb + ast',
+  doubleDouble: 'double-double',
+  tripleDouble: 'triple-double',
   h2h: 'to win',
   spread: 'line',
   total: 'total points',
@@ -31,6 +34,7 @@ export function legSubject(leg: LegLike): string {
 export function legSelection(leg: LegLike): string {
   const market = AI_MARKET_LABELS[leg.market] ?? leg.market;
   const who = legSubject(leg);
+  if (isNbaAchievementMarket(leg.market)) return `${who} to record a ${market}`.trim();
   if (leg.side === 'over' || leg.side === 'under') {
     if (leg.marketKind === 'milestone' && leg.line != null) return `${who} ${Math.ceil(leg.line)}+ ${market}`.trim();
     return `${who} ${leg.side} ${leg.line ?? ''} ${market}`.replace(/\s+/g, ' ').trim();
@@ -46,7 +50,9 @@ export function legSelection(leg: LegLike): string {
 export function legBet(leg: LegLike): string {
   const market = AI_MARKET_LABELS[leg.market] ?? leg.market;
   let bet: string;
-  if (leg.side === 'over' || leg.side === 'under') {
+  if (isNbaAchievementMarket(leg.market)) {
+    bet = `to record a ${market}`;
+  } else if (leg.side === 'over' || leg.side === 'under') {
     bet =
       leg.marketKind === 'milestone' && leg.line != null
         ? `${Math.ceil(leg.line)}+ ${market}`

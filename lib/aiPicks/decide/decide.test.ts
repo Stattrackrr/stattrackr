@@ -147,6 +147,21 @@ test('multis: capped per 24h and spaced', () => {
   assert.equal(multi([NOW - 20 * H, NOW - 12 * H, NOW - 4 * H]), null);
 });
 
+test('multis: one tennis multi above 2.5 per 24h; after that only 2.5 or under', () => {
+  const quotes = (hi: number, lo: number) => [
+    { book: 'Bet365', price: hi },
+    { book: 'TAB', price: lo },
+  ];
+  const a = cand({ eventKey: 'm1', startsAt: iso(NOW + 2 * H), bestPrice: 1.75, prob: 0.66, ev: 0.1, quotes: quotes(1.75, 1.6) });
+  const b = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.7, prob: 0.66, ev: 0.1, quotes: quotes(1.7, 1.55) });
+  const w: Watched[] = [a, b].map((c) => ({ c, history: held() }));
+  const multi = (longMultisRecent: Record<string, number[]>) =>
+    chooseMulti(w, P, { ...empty(), multisRecent: [NOW - 10 * H], longMultisRecent }, NOW, { keys: new Set(), rejected: new Set() });
+  assert.equal(multi({})?.price, 2.975);
+  assert.equal(multi({ tennis: [NOW - 10 * H] })?.price, 2.48, 'falls back to the book pricing it at 2.5 or under');
+  assert.equal(multi({ nbl: [NOW - 10 * H] })?.price, 2.975, 'NBL is not capped');
+});
+
 test('multi: separate games, priced at one book, at least 1.65', () => {
   const near = iso(NOW + 2 * H);
   const a = cand({ eventKey: 'm1', startsAt: near, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
@@ -269,6 +284,9 @@ test('posted state counts the last 24 hours and remembers used selections', () =
   );
   assert.deepEqual(s.singlesRecent.tennis, [NOW, NOW - 23 * H]);
   assert.deepEqual(s.multisRecent, [NOW]);
+  assert.deepEqual(s.longMultisRecent, {}, 'a 1.8 multi is not long');
+  const long = postedState([{ ...pick(iso(NOW - 2 * H), 'multi'), price: 3.1 }], NOW);
+  assert.deepEqual(long.longMultisRecent, { tennis: [NOW - 2 * H] });
   assert.ok(s.usedKeys.has(candidateKey(leg)));
   assert.ok(s.playersRecent.has('tennis|a. one'));
   assert.ok(s.subjectsUsed.has(subjectId(leg)));

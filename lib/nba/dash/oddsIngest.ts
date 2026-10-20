@@ -1,6 +1,7 @@
 /**
  * Cron-only NBA odds ingest: BallDontLie v2 game lines and player props for the coming week, plus
- * odds-api.net player props from the AU books, stored as one board in Redis. Dashboard reads stay cache-only.
+ * odds-api.net player props and game lines (alternates included) from the AU books, stored as one
+ * board in Redis. Dashboard reads stay cache-only.
  *
  * Once a game tips, its last pre-game board is kept as-is so in-play prices never reach the dashboard.
  */
@@ -10,7 +11,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { BdlClient } from '@/lib/nba/bdl/client';
 import { NBA_DASH_ODDS_KEY, normalizeNbaPropPlayerName } from './odds';
 import { recordNbaLineMoves } from './lineMovement';
-import { fetchNbaOddsNetProps, isNbaOddsNetBook, type NbaOddsNetResult } from './oddsApiNet';
+import { fetchNbaOddsNetProps, isNbaOddsNetBook, isNbaOddsNetGameBook, type NbaOddsNetResult } from './oddsApiNet';
 import type { NbaBookRow, NbaGameOdds, NbaOddsCache, NbaPlayerPropsByBook } from './oddsTypes';
 import { getNbaClubById } from './teams';
 
@@ -23,6 +24,9 @@ const PROPS_WINDOW_MS = (DAYS_AHEAD + 1) * 24 * 60 * 60 * 1000;
  */
 const ODDS_NET_MAX_GAMES = 15;
 const ODDS_NET_MIN_INTERVAL_MS = 25 * 60 * 1000;
+/** Games inside this of tip are pulled every cron run (10 minutes; a little under so jitter never skips one). */
+const ODDS_NET_NEAR_TIP_MS = 2 * 60 * 60 * 1000;
+const ODDS_NET_NEAR_INTERVAL_MS = 9 * 60 * 1000;
 /** Matches findNbaOddsGame's 4h cutoff with some slack. */
 const KEEP_AFTER_TIP_MS = 6 * 60 * 60 * 1000;
 const BOARD_TTL_SECONDS = 3 * 24 * 60 * 60;
@@ -42,6 +46,8 @@ const PROP_TYPE_TO_KEY: Record<string, string> = {
   points_rebounds: 'PR',
   points_assists: 'PA',
   rebounds_assists: 'RA',
+  double_double: 'DD',
+  triple_double: 'TD',
   points_1q: 'PTS_1Q',
   rebounds_1q: 'REB_1Q',
   assists_1q: 'AST_1Q',
@@ -305,11 +311,16 @@ export async function refreshNbaDashOdds(options?: { dryRun?: boolean }): Promis
   for (const rows of propRows.values()) for (const r of rows) playerIds.add(Number(r.player_id));
   const names = await loadPlayerNames([...playerIds]);
 
-  const oddsNetTargets = [...propsTargets].sort((a, b) => a.tipMs - b.tipMs).slice(0, ODDS_NET_MAX_GAMES);
+  const allNetTargets = [...propsTargets].sort((a, b) => a.tipMs - b.tipMs).slice(0, ODDS_NET_MAX_GAMES);
   const lastOddsNetMs = Date.parse(previous?.oddsNetFetchedAt ?? '');
-  const oddsNetDue = !Number.isFinite(lastOddsNetMs) || nowMs - lastOddsNetMs >= ODDS_NET_MIN_INTERVAL_MS;
+  const lastNearMs = Math.max(lastOddsNetMs || 0, Date.parse(previous?.oddsNetNearFetchedAt ?? '') || 0);
+  const fullDue = !Number.isFinite(lastOddsNetMs) || nowMs - lastOddsNetMs >= ODDS_NET_MIN_INTERVAL_MS;
+  // Injury news lands in the last couple of hours: games that close get the AU prices more often.
+  const nearTargets = allNetTargets.filter((t) => t.tipMs - nowMs <= ODDS_NET_NEAR_TIP_MS);
+  const nearDue = !fullDue && nearTargets.length > 0 && nowMs - lastNearMs >= ODDS_NET_NEAR_INTERVAL_MS;
+  const oddsNetTargets = fullDue ? allNetTargets : nearDue ? nearTargets : [];
   let oddsNet: NbaOddsNetResult | null = null;
-  if (oddsNetDue && oddsNetTargets.length) {
+  if (oddsNetTargets.length) {
     try {
       oddsNet = await fetchNbaOddsNetProps(oddsNetTargets);
     } catch (err) {
@@ -317,6 +328,8 @@ export async function refreshNbaDashOdds(options?: { dryRun?: boolean }): Promis
     }
   }
   const oddsNetPulled = Boolean(oddsNet && oddsNet.props.size);
+  const fullPulled = fullDue && oddsNetPulled;
+  const nearPulled = nearDue && oddsNetPulled;
 
   let props = 0;
   let gamesWithProps = 0;
@@ -329,6 +342,10 @@ export async function refreshNbaDashOdds(options?: { dryRun?: boolean }): Promis
     const freshNet = oddsNet?.props.get(game.gameId);
     const netProps = freshNet ?? pickBooks(prevProps, true);
     game.playerProps = mergeProps(bdlProps, netProps);
+    const auLines =
+      oddsNet?.gameLines.get(game.gameId) ??
+      (previousById.get(game.gameId)?.bookmakers ?? []).filter((b) => isNbaOddsNetGameBook(b.name));
+    game.bookmakers = [...game.bookmakers.filter((b) => !isNbaOddsNetGameBook(b.name)), ...auLines];
   }
   for (const game of games) {
     const count = countProps(game.playerProps);
@@ -341,10 +358,15 @@ export async function refreshNbaDashOdds(options?: { dryRun?: boolean }): Promis
     games,
     lastUpdated: nowIso,
     nextUpdate: new Date(nowMs + CRON_INTERVAL_MS).toISOString(),
-    ...(oddsNetPulled
+    ...(fullPulled
       ? { oddsNetFetchedAt: nowIso }
       : previous?.oddsNetFetchedAt
         ? { oddsNetFetchedAt: previous.oddsNetFetchedAt }
+        : {}),
+    ...(nearPulled
+      ? { oddsNetNearFetchedAt: nowIso }
+      : previous?.oddsNetNearFetchedAt
+        ? { oddsNetNearFetchedAt: previous.oddsNetNearFetchedAt }
         : {}),
   };
 
