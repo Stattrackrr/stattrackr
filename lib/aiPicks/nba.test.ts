@@ -8,6 +8,7 @@ import {
   resolveNbaBoardName,
   saneSpreads,
 } from './candidates/nba';
+import { propSelections } from './candidates/nbl';
 import { sharpSplit } from './candidates/sharp';
 import type { AiCandidate } from './candidates/types';
 import { candidateKey } from './candidates/types';
@@ -261,6 +262,31 @@ test('NBA grading: waits for final and box scores, DNP voids, game lines from th
   assert.equal((await gradeNbaLeg(leg({ market: 'total', side: 'over', line: 215.5, playerId: null }), fakeResults({}, box), NOW))?.status, 'loss');
   assert.equal((await gradeNbaLeg(leg({ market: 'h2h', side: 'away', line: null, playerId: null }), fakeResults({}, box), NOW))?.status, 'loss');
   assert.equal((await gradeNbaLeg(leg({}), fakeResults({ status_state: 'scheduled', postponed: true }), start + 25 * H))?.status, 'void');
+});
+
+test('a "30+" milestone and over 29.5 are one bet: one selection carrying every book at its best price', () => {
+  const odds = {
+    playerProps: {
+      sportsbet: { 'Jalen Brunson': { PR: [{ line: '29.5', over: '-114', under: '-114' }] } },
+      ladbrokes: { 'Jalen Brunson': { PR: [{ line: '29.5', over: '-118', under: '-111' }, { line: '30', over: '-110', under: 'N/A', milestone: true }] } },
+      betright: { 'Jalen Brunson': { PR: [{ line: '30', over: '-118', under: 'N/A', milestone: true }] } },
+      picklebet: { 'Jalen Brunson': { PR: [{ line: '35', over: '+200', under: 'N/A', milestone: true }] } },
+    },
+  } as unknown as NbaGameOdds;
+  const sels = propSelections(nbaPlayerLines(odds, 'Jalen Brunson'));
+  const overs = sels.filter((s) => s.line === 29.5 && s.side === 'over');
+  assert.equal(overs.length, 1, 'no second "30+" selection under the same key');
+  assert.equal(overs[0]!.kind, 'ou');
+  assert.deepEqual(
+    [...overs[0]!.quotes].sort((a, b) => a.book.localeCompare(b.book)),
+    [
+      { book: 'betright', price: 1.85 },
+      { book: 'ladbrokes', price: 1.91 },
+      { book: 'sportsbet', price: 1.88 },
+    ],
+    "Ladbrokes' better 30+ price counts once"
+  );
+  assert.ok(sels.some((s) => s.kind === 'milestone' && s.line === 34.5), 'a milestone with no matching over/under stays');
 });
 
 test('a questionable player: his overs wait until 90 minutes before tip, his unders post early (sitting voids them)', () => {

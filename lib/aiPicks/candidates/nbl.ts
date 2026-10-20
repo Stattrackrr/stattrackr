@@ -105,6 +105,17 @@ export function propSelections(lines: NblSnapLine[]): PropSelection[] {
     add(l.line, l.kind, 'over', l.book, l.overDecimal);
     if (l.kind === 'ou') add(l.line, l.kind, 'under', l.book, l.underDecimal);
   }
+  // "30+" is the same bet as over 29.5: one selection with every book's best price, judged on the two-way line.
+  for (const [key, sel] of map) {
+    const over = sel.kind === 'milestone' ? map.get(`ou|${sel.line}|over`) : undefined;
+    if (!over) continue;
+    for (const q of sel.quotes) {
+      const mine = over.quotes.find((o) => o.book === q.book);
+      if (!mine) over.quotes.push(q);
+      else if (q.price > mine.price) mine.price = q.price;
+    }
+    map.delete(key);
+  }
   return [...map.values()];
 }
 
