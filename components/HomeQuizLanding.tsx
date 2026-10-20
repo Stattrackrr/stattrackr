@@ -570,33 +570,65 @@ function PageContinue({
   );
 }
 
-function CouponPhrase() {
+const HOME_PROMO = {
+  code: 'NBA27',
+  percentOff: 15,
+  /** The strip disappears once this passes. */
+  endsAt: Date.parse('2026-10-29T10:00:00+11:00'),
+};
+
+/** Milliseconds until the promo ends; null until mounted, so the server and first client render match. */
+function usePromoTimeLeft(endsAt: number): number | null {
+  const [left, setLeft] = useState<number | null>(null);
+  useEffect(() => {
+    const tick = () => setLeft(Math.max(0, endsAt - Date.now()));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [endsAt]);
+  return left;
+}
+
+function formatPromoTimeLeft(ms: number | null): string {
+  if (ms == null) return '--h --m --s';
+  const total = Math.floor(ms / 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${Math.floor(total / 3600)}h ${pad(Math.floor((total % 3600) / 60))}m ${pad(total % 60)}s`;
+}
+
+function CouponText({ timeLeft }: { timeLeft: string }) {
   return (
-    <span className="inline-flex shrink-0 items-center gap-2 pr-48 text-sm font-semibold text-white sm:pr-72 sm:text-base">
+    <>
       Use code
-      <span className="rounded-md bg-white/20 px-2 py-0.5 font-bold tracking-[0.14em]">NBL27</span>
-      for 10% off
-    </span>
+      <span className="rounded-md bg-white/20 px-2 py-0.5 font-bold tracking-[0.14em]">{HOME_PROMO.code}</span>
+      for {HOME_PROMO.percentOff}% off
+      <span className="text-white/60">·</span>
+      <span className="text-white/90">Ends in</span>
+      <span className="rounded-md bg-black/25 px-2 py-0.5 font-bold tabular-nums">{timeLeft}</span>
+    </>
   );
 }
 
 function HomeCouponStrip() {
+  const left = usePromoTimeLeft(HOME_PROMO.endsAt);
+  if (left === 0) return null;
+  const timeLeft = formatPromoTimeLeft(left);
   return (
     <div
       className="relative h-9 overflow-hidden bg-gradient-to-r from-violet-700 via-fuchsia-600 to-violet-700"
       role="region"
-      aria-label="Use code NBL27 for 10% off"
+      aria-label={`Use code ${HOME_PROMO.code} for ${HOME_PROMO.percentOff}% off`}
     >
       <p className="home-coupon-static hidden h-9 items-center justify-center gap-2 text-sm font-semibold text-white sm:text-base">
-        Use code
-        <span className="rounded-md bg-white/20 px-2 py-0.5 font-bold tracking-[0.14em]">NBL27</span>
-        for 10% off
+        <CouponText timeLeft={timeLeft} />
       </p>
       <div className="home-coupon-track flex h-9 w-max items-center" aria-hidden="true">
         {[0, 1].map((copy) => (
           <div key={copy} className="flex shrink-0 items-center">
             {Array.from({ length: 5 }, (_, index) => (
-              <CouponPhrase key={index} />
+              <span key={index} className="inline-flex shrink-0 items-center gap-2 pr-48 text-sm font-semibold text-white sm:pr-72 sm:text-base">
+                <CouponText timeLeft={timeLeft} />
+              </span>
             ))}
           </div>
         ))}
