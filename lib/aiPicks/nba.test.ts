@@ -263,7 +263,7 @@ test('NBA grading: waits for final and box scores, DNP voids, game lines from th
   assert.equal((await gradeNbaLeg(leg({}), fakeResults({ status_state: 'scheduled', postponed: true }), start + 25 * H))?.status, 'void');
 });
 
-test('questionable players wait until 90 minutes before tip; everyone else posts whenever it qualifies', () => {
+test('a questionable player: his overs wait until 90 minutes before tip, his unders post early (sitting voids them)', () => {
   assert.ok(isNbaGameTimeCall('Questionable'));
   assert.ok(isNbaGameTimeCall('Day-To-Day'));
   assert.ok(isNbaGameTimeCall('Doubtful'));
@@ -274,6 +274,8 @@ test('questionable players wait until 90 minutes before tip; everyone else posts
   assert.equal(res.ok, false);
   assert.match((res as { reason: string }).reason, /Questionable/);
   assert.equal(qualifiesSingle({ ...q, startsAt: iso(NOW + 80 * 60_000) }, P, NOW).ok, true, 'inside 90 minutes it can post');
+  assert.equal(qualifiesSingle({ ...q, side: 'under' }, P, NOW).ok, true, 'his under posts early');
+  assert.equal(qualifiesSingle({ ...q, market: 'doubleDouble' }, P, NOW).ok, false, 'a double-double is an over');
   assert.equal(qualifiesSingle(cand({ startsAt: iso(NOW + 10 * H) }), P, NOW).ok, true, 'not listed: no wait');
   assert.equal(qualifiesSingle({ ...q, sport: 'nbl', startsAt: iso(NOW + 10 * H) }, P, NOW).ok, true, 'NBL is unaffected');
 });
@@ -454,16 +456,29 @@ test('double-double legs: one per player per game, own model group, titled as a 
   assert.equal((await gradeNbaLeg(leg('doubleDouble', '10'), fakeResults({}, box), NOW))?.status, 'void', 'not in the box score');
 });
 
-test('a questionable big-minutes regular holds his teammates and the game lines until 90 minutes before tip', () => {
+test('a questionable big-minutes regular holds only the bets his call could hurt', () => {
   const waiting = { marketSource: 'main', waitingOn: ['Cade Cunningham (Questionable)'] };
-  const prop = cand({ context: waiting });
-  const res = qualifiesSingle(prop, P, NOW);
+  const over = cand({ context: waiting });
+  assert.equal(qualifiesSingle(over, P, NOW).ok, true, "a teammate's over only gains if he sits");
+  assert.equal(qualifiesSingle({ ...over, market: 'doubleDouble' }, P, NOW).ok, true);
+  const under = { ...over, side: 'under' as const };
+  const res = qualifiesSingle(under, P, NOW);
   assert.equal(res.ok, false);
-  assert.match((res as { reason: string }).reason, /Waiting on Cade Cunningham/);
-  assert.equal(qualifiesSingle({ ...prop, startsAt: iso(NOW + 80 * 60_000) }, P, NOW).ok, true);
-  const gameLine = line('total', 0.06);
-  assert.equal(qualifiesSingle({ ...gameLine, context: { waitingOn: ['Bam Adebayo (Day-To-Day)'] } }, P, NOW).ok, false);
-  assert.equal(qualifiesSingle({ ...gameLine, context: { waitingOn: [] } }, P, NOW).ok, true);
+  assert.match((res as { reason: string }).reason, /Waiting on Cade Cunningham \(Questionable\): unders/);
+  assert.equal(qualifiesSingle({ ...under, startsAt: iso(NOW + 80 * 60_000) }, P, NOW).ok, true, 'inside 90 minutes it can post');
+  assert.equal(
+    qualifiesSingle({ ...under, context: { ...waiting, listedStatus: 'Questionable' }, side: 'over' }, P, NOW).ok,
+    false,
+    'his own over still waits'
+  );
+
+  const homeQ = { waitingOnHome: ['Bam Adebayo (Day-To-Day)'], waitingOnAway: [] };
+  const spread = line('spread', 0.06);
+  assert.equal(qualifiesSingle({ ...spread, context: homeQ }, P, NOW).ok, false, 'backing his team waits');
+  assert.equal(qualifiesSingle({ ...spread, side: 'away', context: homeQ }, P, NOW).ok, true, 'backing the other team posts');
+  assert.equal(qualifiesSingle({ ...line('h2h', 0.06), side: 'away', context: homeQ }, P, NOW).ok, true);
+  assert.equal(qualifiesSingle({ ...line('total', 0.06), context: homeQ }, P, NOW).ok, false, 'totals wait either way');
+  assert.equal(qualifiesSingle({ ...line('total', 0.06), context: { waitingOnHome: [], waitingOnAway: [] } }, P, NOW).ok, true);
 });
 
 test('NBA closing price: the leg’s own book at the leg’s own line from the frozen board', () => {

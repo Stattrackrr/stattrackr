@@ -197,7 +197,7 @@ function sideSplit(split: ReturnType<typeof sharpSplit> | null, side: AiPickSide
 export type NbaPropGameContext = {
   forStat: (stat: NblPropMarket, proj: NblPropProjection) => NblPropContext;
   listed: NblInjuryContext | null;
-  /** Questionable big-minutes teammates ("Name (status)"); his numbers wait for their call. */
+  /** Questionable big-minutes teammates ("Name (status)"); his unders wait for their call. */
   waitingOn: string[];
   /** Non-blocking notes (early season, ...) and blocking ones (not playing lately). */
   flags: string[];
@@ -467,8 +467,8 @@ export function buildNbaGameCandidates(input: {
   /** Fewest games either team has behind its ratings (current season counts fully). */
   sample: number;
   flags?: string[];
-  /** Questionable big-minutes regulars on either team ("Name (status)"). */
-  waitingOn?: string[];
+  /** Questionable big-minutes regulars per team ("Name (status)"). */
+  waitingOn?: { home: string[]; away: string[] };
 }): AiCandidate[] {
   const { odds, params } = input;
   const game: NbaGameRef = { gameId: odds.gameId, homeTeam: odds.homeTeam, awayTeam: odds.awayTeam, commenceTime: odds.commenceTime };
@@ -540,7 +540,9 @@ export function buildNbaGameCandidates(input: {
           awayOut: input.context.awayMissing.players,
           homeRestDays: input.context.homeRestDays,
           awayRestDays: input.context.awayRestDays,
-          waitingOn: input.waitingOn ?? [],
+          waitingOn: [...(input.waitingOn?.home ?? []), ...(input.waitingOn?.away ?? [])],
+          waitingOnHome: input.waitingOn?.home ?? [],
+          waitingOnAway: input.waitingOn?.away ?? [],
           ...sideSplit(args.split, args.side),
         },
       })

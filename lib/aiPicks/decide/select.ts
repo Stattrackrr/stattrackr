@@ -39,12 +39,33 @@ export const MAX_LONG_MULTIS_PER_WINDOW: Record<string, number> = { tennis: 1 };
 export const MAX_NBA_SINGLES_PER_GAME = { prop: 2, game: 1 };
 /** NBA singles taken in one run, so one review never carries a whole slate. */
 export const MAX_NBA_SINGLES_PER_RUN = 3;
-/** NBA teams confirm game-time calls from about 90 minutes out; a prop on a questionable player waits until then. */
+/** NBA teams confirm game-time calls from about 90 minutes out; bets a pending call could hurt wait until then. */
 export const NBA_HOLD_MS = 90 * 60 * 1000;
 
 /** Listed but not ruled out or cleared: questionable, day-to-day, doubtful, game-time decision. */
 export function isNbaGameTimeCall(status: unknown): boolean {
   return /questionable|day.to.day|doubtful|game.?time/i.test(String(status ?? ''));
+}
+
+const names = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+
+/**
+ * A pending game-time call holds only the bets it could hurt; bets it can only help keep the early price.
+ * The model prices a questionable player at his normal role, so no bet comes from the status itself.
+ */
+export function nbaHoldReason(c: Pick<AiCandidate, 'market' | 'side' | 'context'>): string | null {
+  if (isPlayerPropMarket(c.market)) {
+    // Sitting voids his own props; only a limited return can cost, and that hurts overs.
+    if (c.side === 'over' && isNbaGameTimeCall(c.context.listedStatus)) return 'Questionable: his overs wait until 90 minutes before tip';
+    // A teammate sitting only adds to his minutes and shots.
+    const mates = names(c.context.waitingOn);
+    if (c.side === 'under' && mates.length) return `Waiting on ${mates.join(', ')}: unders hold until 90 minutes before tip`;
+    return null;
+  }
+  const home = names(c.context.waitingOnHome);
+  const away = names(c.context.waitingOnAway);
+  const hurt = c.market === 'total' ? [...home, ...away] : c.side === 'home' ? home : c.side === 'away' ? away : [];
+  return hurt.length ? `Waiting on ${hurt.join(', ')}: holds until 90 minutes before tip` : null;
 }
 const MIN_LEG_PROB = 0.55;
 const MIN_LEG_SUPPORT = 0.6;
@@ -126,12 +147,9 @@ type Check = { ok: true } | { ok: false; reason: string };
 function common(c: AiCandidate, p: AiSportParams, nowMs: number): Check {
   const toStart = Date.parse(c.startsAt) - nowMs;
   if (!(toStart > MIN_LEAD_MS) || toStart > POST_HORIZON_MS) return { ok: false, reason: 'Outside the posting window' };
-  if (c.sport === 'nba' && toStart > NBA_HOLD_MS && isNbaGameTimeCall(c.context.listedStatus)) {
-    return { ok: false, reason: 'Questionable: waiting until 90 minutes before tip' };
-  }
-  const waitingOn = c.context.waitingOn;
-  if (c.sport === 'nba' && toStart > NBA_HOLD_MS && Array.isArray(waitingOn) && waitingOn.length) {
-    return { ok: false, reason: `Waiting on ${waitingOn.join(', ')}: holds until 90 minutes before tip` };
+  if (c.sport === 'nba' && toStart > NBA_HOLD_MS) {
+    const hold = nbaHoldReason(c);
+    if (hold) return { ok: false, reason: hold };
   }
   // Books on a shared feed post identical prices, so a price only counts once.
   if (distinctPrices(c.quotes).length < MIN_BOOKS) return { ok: false, reason: 'Fewer than 2 books price it' };

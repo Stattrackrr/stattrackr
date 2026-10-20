@@ -38,6 +38,7 @@ Reject a play when:
 - the evidence points the other way (projection or averages on the wrong side of the line, a falling minutes or usage trend, a tough matchup, recent records mostly against it),
 - it leans on a tiny or stale sample (few games this season, long layoff),
 - the case is only that one bookmaker is out of line with the rest,
+- the case leans on someone being questionable or day-to-day: the numbers assume he plays his normal role, so never back an under (or a teammate's over) on the chance he sits or is limited, and never give it as a reason in the post,
 - for a multi, either leg would be rejected on its own.
 Approve only plays you would genuinely back. Rejecting is normal; never approve to fill a quota.
 

@@ -284,7 +284,7 @@ export async function scanNbaCandidates(opts: {
         context: gameCtx,
         sample: round1(sample),
         flags: gameFlags,
-        waitingOn: [...questionable.values()].flat(),
+        waitingOn: { home: questionable.get(homeClub.code) ?? [], away: questionable.get(awayClub.code) ?? [] },
       })
     );
 
