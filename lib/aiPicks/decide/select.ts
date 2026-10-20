@@ -33,12 +33,23 @@ const MAX_MULTI_PRICE = 3.5;
 export const LONG_MULTI_PRICE = 2.5;
 export const MAX_LONG_MULTIS_PER_WINDOW: Record<string, number> = { tennis: 1 };
 /**
- * NBA singles are limited per game, not per day or by a gap between posts: a slate can run to 10+
- * games. Limits, not targets; a game can go without.
+ * NBA volume follows the slate (its games in the rolling window): about one single per game, spread
+ * as the edges fall, so a game may take two and another none. Limits, not targets.
  */
-export const MAX_NBA_SINGLES_PER_GAME = { prop: 2, game: 1 };
+export const MAX_NBA_SINGLES_PER_GAME = { total: 2, game: 1 };
+export const NBA_MIN_SINGLES = 2;
+/** Once the slate's singles are used, only an edge this many times the minimum still posts. */
+export const NBA_BACKUP_EV_MULTIPLE = 3;
 /** NBA singles taken in one run, so one review never carries a whole slate. */
 export const MAX_NBA_SINGLES_PER_RUN = 3;
+/** NBA-only multis have their own allowance (see nbaMultiCap), spaced by this. */
+export const NBA_MULTI_GAP_MS = 60 * 60 * 1000;
+
+export const nbaSinglesCap = (slateGames: number) => Math.max(NBA_MIN_SINGLES, slateGames);
+/** Extra places for standout edges past the slate's singles: one per 5 games, at least one. */
+export const nbaBackupSingles = (slateGames: number) => Math.max(1, Math.round(slateGames / 5));
+/** About one NBA multi per 3 games, 1 to 4. */
+export const nbaMultiCap = (slateGames: number) => Math.min(4, Math.max(1, Math.ceil(slateGames / 3)));
 /** NBA teams confirm game-time calls from about 90 minutes out; bets a pending call could hurt wait until then. */
 export const NBA_HOLD_MS = 90 * 60 * 1000;
 
@@ -94,8 +105,14 @@ export type Proposal = {
 export type PostedState = {
   /** Posting times (ms) of recent singles, per sport. */
   singlesRecent: Record<string, number[]>;
-  /** Posting times (ms) of recent multis. */
+  /** Posting times (ms) of recent multis on the shared allowance (any with a non-NBA leg). */
   multisRecent: number[];
+  /** Posting times (ms) of recent all-NBA multis. */
+  nbaMultisRecent?: number[];
+  /** NBA games with a leg in a recent pick. */
+  nbaGamesRecent?: Set<string>;
+  /** NBA games in the window: upcoming ones plus those already picked (see nbaSlateGames). Unset: no slate limits. */
+  nbaSlateGames?: number;
   /** Posting times (ms) of recent multis priced above LONG_MULTI_PRICE, per sport of each leg. */
   longMultisRecent?: Record<string, number[]>;
   /** Candidate keys already in a posted pick. */
@@ -201,17 +218,36 @@ export function singleSlotOpen(c: AiCandidate, p: AiSportParams, state: PostedSt
   return nowMs - Math.max(...times) >= (standout ? STANDOUT_SINGLE_GAP_MS : SINGLE_GAP_MS);
 }
 
-/** Room for another NBA single in this game: up to 2 player props and 1 game line, counting this run's picks. */
+/** Room for another NBA single in this game: 2 at most, one of them a game line, counting this run's picks. */
 export function nbaGameSlotOpen(c: AiCandidate, state: PostedState, taken: Record<string, { prop: number; game: number }>): boolean {
   const game = gameIdentity(c);
-  const kind = singleSlotKind(c);
-  const used = (state.singlesByGame?.[game]?.[kind] ?? 0) + (taken[game]?.[kind] ?? 0);
-  return used < MAX_NBA_SINGLES_PER_GAME[kind];
+  const posted = state.singlesByGame?.[game];
+  const run = taken[game];
+  const games = (posted?.game ?? 0) + (run?.game ?? 0);
+  const total = (posted?.prop ?? 0) + (run?.prop ?? 0) + games;
+  if (total >= MAX_NBA_SINGLES_PER_GAME.total) return false;
+  return singleSlotKind(c) !== 'game' || games < MAX_NBA_SINGLES_PER_GAME.game;
+}
+
+/** Room for another NBA single on the slate: one per game, then a few more for standout edges. */
+export function nbaSlateOpen(c: AiCandidate, p: AiSportParams, state: PostedState, takenThisRun: number): boolean {
+  if (state.nbaSlateGames == null) return true;
+  const used = (state.singlesRecent.nba?.length ?? 0) + takenThisRun;
+  const cap = nbaSinglesCap(state.nbaSlateGames);
+  const backup = c.ev >= p.minEvSingle * NBA_BACKUP_EV_MULTIPLE ? nbaBackupSingles(state.nbaSlateGames) : 0;
+  return used < cap + backup;
+}
+
+/** NBA games in the window: those still to come (from the scan) and those already in a recent pick. */
+export function nbaSlateGames(state: PostedState, upcoming: Array<Pick<AiCandidate, 'sport' | 'eventKey' | 'eventLabel' | 'startsAt'>>): number {
+  const games = new Set(state.nbaGamesRecent ?? []);
+  for (const c of upcoming) if (c.sport === 'nba') games.add(gameIdentity(c));
+  return games.size;
 }
 
 /**
  * Ready singles in posting order, one per player. NBL and tennis: one per sport per run, spaced and
- * capped per sport, one per game. NBA: per-game limits only (up to MAX_NBA_SINGLES_PER_RUN a run).
+ * capped per sport, one per game. NBA: per-game and slate limits (up to MAX_NBA_SINGLES_PER_RUN a run).
  */
 export function chooseSingles(watched: Watched[], params: AiPicksParams, state: PostedState, nowMs: number): Proposal[] {
   const out: Proposal[] = [];
@@ -230,7 +266,7 @@ export function chooseSingles(watched: Watched[], params: AiPicksParams, state: 
     if (conflicts(c, state) || chosenSubjects.has(subjectId(c))) continue;
     if (c.player && state.playersRecent.has(`${c.sport}|${c.player.toLowerCase()}`)) continue;
     if (c.sport === 'nba') {
-      if (nbaCount >= MAX_NBA_SINGLES_PER_RUN || !nbaGameSlotOpen(c, state, nbaTaken)) continue;
+      if (nbaCount >= MAX_NBA_SINGLES_PER_RUN || !nbaGameSlotOpen(c, state, nbaTaken) || !nbaSlateOpen(c, p, state, nbaCount)) continue;
       const slot = (nbaTaken[gameIdentity(c)] ??= { prop: 0, game: 0 });
       slot[singleSlotKind(c)] += 1;
       nbaCount += 1;
@@ -268,9 +304,13 @@ export function multiKey(keys: string[]): string {
   return `multi|${[...keys].sort().join('||')}`;
 }
 
+const allowanceOpen = (times: number[], cap: number, gapMs: number, nowMs: number) =>
+  times.length < cap && !(times.length && nowMs - Math.max(...times) < gapMs);
+
 /**
  * Best ready 2-leg multi: legs from different games, both bettable at one book, combined price
- * at least 1.65, and positive EV after treating the legs as independent.
+ * at least 1.65, and positive EV after treating the legs as independent. All-NBA multis go on the
+ * NBA allowance (sized to the slate); any other on the shared one.
  */
 export function chooseMulti(
   watched: Watched[],
@@ -279,8 +319,9 @@ export function chooseMulti(
   nowMs: number,
   exclude: { keys: Set<string>; rejected: Set<string>; subjects?: Set<string> }
 ): Proposal | null {
-  if (state.multisRecent.length >= MAX_MULTIS_PER_WINDOW) return null;
-  if (state.multisRecent.length && nowMs - Math.max(...state.multisRecent) < MULTI_GAP_MS) return null;
+  const sharedOpen = allowanceOpen(state.multisRecent, MAX_MULTIS_PER_WINDOW, MULTI_GAP_MS, nowMs);
+  const nbaOpen = allowanceOpen(state.nbaMultisRecent ?? [], nbaMultiCap(state.nbaSlateGames ?? 0), NBA_MULTI_GAP_MS, nowMs);
+  if (!sharedOpen && !nbaOpen) return null;
   const pool = watched
     .filter((w) => w.c.prob >= MIN_LEG_PROB && (w.c.supportScore == null || w.c.supportScore >= MIN_LEG_SUPPORT))
     .filter((w) => qualifiesLeg(w.c, params, nowMs).ok && heldUp(w.history, nowMs))
@@ -292,6 +333,7 @@ export function chooseMulti(
     for (let j = i + 1; j < pool.length; j += 1) {
       const [a, b] = [pool[i]!, pool[j]!].sort((x, y) => Date.parse(x.c.startsAt) - Date.parse(y.c.startsAt));
       if (gameIdentity(a.c) === gameIdentity(b.c)) continue;
+      if (a.c.sport === 'nba' && b.c.sport === 'nba' ? !nbaOpen : !sharedOpen) continue;
       const key = multiKey([a.c.key, b.c.key]);
       if (exclude.rejected.has(key)) continue;
       const maxPrice = longMultiFull(state, [a.c.sport, b.c.sport]) ? LONG_MULTI_PRICE : MAX_MULTI_PRICE;

@@ -86,6 +86,8 @@ export function postedState(picks: AiPick[], nowMs: number): PostedState {
   const state: PostedState = {
     singlesRecent: {},
     multisRecent: [],
+    nbaMultisRecent: [],
+    nbaGamesRecent: new Set(),
     longMultisRecent: {},
     usedKeys: new Set(),
     singleGamesRecent: new Set(),
@@ -97,7 +99,11 @@ export function postedState(picks: AiPick[], nowMs: number): PostedState {
   for (const pick of picks) {
     const postedMs = Date.parse(pick.postedAt);
     const recent = postedMs > windowStart;
-    if (recent && pick.kind === 'multi') state.multisRecent.push(postedMs);
+    if (recent && pick.kind === 'multi') {
+      if (pick.legs.length && pick.legs.every((l) => l.sport === 'nba')) state.nbaMultisRecent!.push(postedMs);
+      else state.multisRecent.push(postedMs);
+    }
+    if (recent) for (const leg of pick.legs) if (leg.sport === 'nba') state.nbaGamesRecent!.add(gameIdentity(leg));
     if (recent && pick.kind === 'multi' && pick.price > LONG_MULTI_PRICE) {
       for (const sport of new Set(pick.legs.map((l) => l.sport))) (state.longMultisRecent![sport] ??= []).push(postedMs);
     }

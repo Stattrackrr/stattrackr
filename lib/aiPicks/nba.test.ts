@@ -8,11 +8,23 @@ import {
   resolveNbaBoardName,
   saneSpreads,
 } from './candidates/nba';
+import { liveNbaQuotes, repriceNbaCandidate, type NbaLiveGame } from './candidates/nbaLive';
 import { propSelections } from './candidates/nbl';
 import { sharpSplit } from './candidates/sharp';
 import type { AiCandidate } from './candidates/types';
 import { candidateKey } from './candidates/types';
-import { chooseSingles, isNbaGameTimeCall, qualifiesSingle, singleSlotKind, subjectId, type PostedState, type Watched } from './decide/select';
+import {
+  chooseMulti,
+  chooseSingles,
+  isNbaGameTimeCall,
+  nbaMultiCap,
+  nbaSlateGames,
+  qualifiesSingle,
+  singleSlotKind,
+  subjectId,
+  type PostedState,
+  type Watched,
+} from './decide/select';
 import { gameIdentity, type WatchPoint } from './decide/timing';
 import { nextWatchRow, postedState } from './decide/watch';
 import { legBet, legSelection } from './format';
@@ -92,29 +104,72 @@ const prop = (player: string, ev: number, eventKey = 'g1') => cand({ player, pla
 const line = (market: 'h2h' | 'spread' | 'total', ev: number, eventKey = 'g1') =>
   cand({ market, player: null, playerId: null, side: market === 'total' ? 'over' : 'home', line: market === 'h2h' ? null : -4.5, ev, eventKey, projection: null });
 
-test('NBA singles: up to 2 props and 1 game line per game; the limit is a ceiling, not a quota', () => {
+test('NBA singles: at most 2 in a game, one of them a game line; the limit is a ceiling, not a quota', () => {
   const a = prop('A', 0.09);
   const b = prop('B', 0.08);
   const c = prop('C', 0.075);
   const total = line('total', 0.05);
   const spread = line('spread', 0.04);
-  assert.deepEqual(pick([a, b, c, total, spread]), [a.key, b.key, total.key]);
+  assert.deepEqual(pick([a, b, c, total, spread]), [a.key, b.key]);
+  assert.deepEqual(pick([a, total, spread]), [a.key, total.key], 'one game line at most');
+  assert.deepEqual(pick([total, spread]), [total.key]);
   assert.deepEqual(pick([a]), [a.key], 'one good prop alone still posts');
   assert.deepEqual(pick([prop('A', 0.01)]), [], 'nothing posts without the edge');
 });
 
-test('NBA singles: at most 3 a run across games, and no daily cap or gap', () => {
+test('NBA singles: at most 3 a run across games', () => {
   const four = ['g1', 'g2', 'g3', 'g4'].map((g, i) => prop(`P${i}`, 0.09 - i * 0.01, g));
   assert.deepEqual(pick(four), four.slice(0, 3).map((c) => c.key));
-  const busy = { ...empty(), singlesRecent: { nba: [NOW - 10 * 60_000, NOW - H, NOW - 2 * H, NOW - 3 * H, NOW - 4 * H, NOW - 5 * H] } };
-  assert.deepEqual(pick([four[3]!], busy), [four[3]!.key], 'six NBA singles in the last 6h do not block a seventh');
+});
+
+test('NBA singles follow the slate: one per game (at least 2), then standout edges only, one extra per 5 games', () => {
+  const recent = (n: number) => Array.from({ length: n }, (_, i) => NOW - (i + 1) * 20 * 60_000);
+  const normal = prop('N', 0.07, 'g9');
+  const standout = prop('S', 0.09, 'g8');
+  const slate = (games: number, posted: number) => ({ ...empty(), nbaSlateGames: games, singlesRecent: { nba: recent(posted) } });
+  assert.deepEqual(pick([normal], slate(4, 3)), [normal.key], '3 of 4 used');
+  assert.deepEqual(pick([normal], slate(4, 4)), [], 'slate used: a normal edge waits');
+  assert.deepEqual(pick([standout], slate(4, 4)), [standout.key], 'a 9%+ edge still posts');
+  assert.deepEqual(pick([standout], slate(4, 5)), [], 'the standout place is used');
+  assert.deepEqual(pick([standout], slate(10, 11)), [standout.key], '10 games: two standout places');
+  assert.deepEqual(pick([standout], slate(10, 12)), []);
+  assert.deepEqual(pick([normal], slate(1, 1)), [normal.key], 'a one-game night still allows 2');
+  assert.deepEqual(pick([normal, standout], slate(4, 3)), [standout.key], 'the last place goes to the best play');
+  assert.deepEqual(pick([normal], { ...empty(), singlesRecent: { nba: recent(12) } }), [normal.key], 'no slate known: per-game limits only');
+});
+
+test('NBA multis have their own allowance sized to the slate, an hour apart', () => {
+  const leg = (player: string, eventKey: string) =>
+    cand({ player, playerId: player, eventKey, bestPrice: 1.5, quotes: [{ book: 'Bet365', price: 1.5 }, { book: 'Sportsbet', price: 1.48 }], prob: 0.75, ev: 0.125, supportScore: 0.7 });
+  const w = [leg('A', 'g1'), leg('B', 'g2')].map((c): Watched => ({ c, history: held }));
+  const multi = (state: Partial<PostedState>) => chooseMulti(w, P, { ...empty(), ...state }, NOW, { keys: new Set(), rejected: new Set() });
+  const full = [NOW - 20 * H, NOW - 12 * H, NOW - 5 * H];
+  assert.ok(multi({ multisRecent: full, nbaSlateGames: 3 }), 'NBL and tennis using the shared three does not block NBA');
+  assert.equal(multi({ nbaSlateGames: 3, nbaMultisRecent: [NOW - 5 * H] }), null, '3 games: one NBA multi');
+  assert.ok(multi({ nbaSlateGames: 6, nbaMultisRecent: [NOW - 5 * H] }), '6 games: two');
+  assert.equal(multi({ nbaSlateGames: 6, nbaMultisRecent: [NOW - 30 * 60_000] }), null, 'an hour apart');
+  assert.equal(multi({ nbaSlateGames: 12, nbaMultisRecent: [NOW - 8 * H, NOW - 6 * H, NOW - 4 * H, NOW - 2 * H] }), null, 'four at most');
+  assert.deepEqual([1, 3, 4, 6, 7, 9, 10, 15].map(nbaMultiCap), [1, 1, 2, 2, 3, 3, 4, 4]);
+});
+
+test('NBA slate: games still to come plus games already picked, each once', () => {
+  const state = { ...empty(), nbaGamesRecent: new Set(['nba|g1', 'nba|g0']) };
+  assert.equal(nbaSlateGames(state, [prop('A', 0.05, 'g1'), prop('B', 0.05, 'g2'), line('total', 0.05, 'g2'), cand({ sport: 'nbl', eventKey: 'n1' })]), 3);
+  const leg = (eventKey: string) =>
+    ({ sport: 'nba', eventKey, eventLabel: 'Boston Celtics @ Detroit Pistons', startsAt: iso(NOW + H), market: 'points', player: 'A', side: 'over', line: 20.5 }) as AiPickLeg;
+  const multi = { id: 'm', kind: 'multi', sport: 'nba', postedAt: iso(NOW - H), price: 1.95, legs: [leg('g3'), leg('g4')] } as unknown as AiPick;
+  const s = postedState([multi], NOW);
+  assert.deepEqual(s.nbaMultisRecent, [NOW - H]);
+  assert.deepEqual(s.multisRecent, [], 'an all-NBA multi is not on the shared allowance');
+  assert.deepEqual([...s.nbaGamesRecent!].sort(), ['nba|g3', 'nba|g4']);
 });
 
 test('NBA singles: earlier picks count against the game; NBL in the same run is unaffected', () => {
   const a = prop('A', 0.09);
   const total = line('total', 0.05);
-  const state = { ...empty(), singlesByGame: { [gameIdentity(a)]: { prop: 2, game: 0 } } };
-  assert.deepEqual(pick([a, total], state), [total.key]);
+  assert.deepEqual(pick([a, total], { ...empty(), singlesByGame: { [gameIdentity(a)]: { prop: 2, game: 0 } } }), [], 'the game has its two');
+  assert.deepEqual(pick([a, total], { ...empty(), singlesByGame: { [gameIdentity(a)]: { prop: 1, game: 0 } } }), [a.key]);
+  assert.deepEqual(pick([a, total], { ...empty(), singlesByGame: { [gameIdentity(a)]: { prop: 0, game: 1 } } }), [a.key]);
   const nbl = cand({ sport: 'nbl', eventKey: 'n1', eventLabel: 'Perth Wildcats @ Sydney Kings', player: 'Z', playerId: 'z', ev: 0.06 });
   assert.deepEqual(pick([a, nbl]).sort(), [a.key, nbl.key].sort());
   assert.deepEqual(pick([a, cand({ ...a, key: undefined, side: 'under', line: 22.5 })]), [a.key], 'one pick per player in a game');
@@ -544,4 +599,54 @@ test('NBA closing price: the leg’s own book at the leg’s own line from the f
   assert.deepEqual(nbaClosingFromBoard(g({ market: 'spread', side: 'away', line: 5.5 }), game), { line: 5.5, price: 1.71 });
   assert.deepEqual(nbaClosingFromBoard(g({ market: 'total', side: 'under', line: 221.5 }), game), { line: 221.5, price: 1.87 });
   assert.equal(nbaClosingFromBoard(g({ market: 'total', side: 'under', line: 225.5 }), game), null);
+});
+
+test('live price check: a soft price that moved is repriced from the fresh pull, and the edge goes with it', () => {
+  const white = cand({
+    player: 'Derrick White',
+    playerId: '473',
+    side: 'under',
+    line: 15.5,
+    bestBook: 'dabble',
+    bestPrice: 1.95,
+    quotes: [
+      { book: 'dabble', price: 1.95 },
+      { book: 'tab', price: 1.87 },
+      { book: 'sportsbet', price: 1.8 },
+    ],
+    prob: 0.532,
+    ev: 0.037,
+    context: { boardNames: ['Derrick White', 'D White'] },
+  });
+  const props = {
+    dabble: { 'Derrick White': { PTS: [{ line: '15.5', over: '-118', under: '-114' }, { line: '20', over: '+175', under: 'N/A', milestone: true }] } },
+    tab: { 'Derrick white': { PTS: [{ line: '15.5', over: '-110', under: '-115' }] } },
+    sportsbet: { 'D White': { PTS: [{ line: '15.5', over: '-110', under: '-120' }] } },
+    ladbrokes: { 'Derrick Jones': { PTS: [{ line: '15.5', over: '-110', under: '+150' }] } },
+  };
+  const live: NbaLiveGame = { props, lines: [] };
+  assert.deepEqual(liveNbaQuotes(white, live), [
+    { book: 'dabble', price: 1.88 },
+    { book: 'tab', price: 1.87 },
+    { book: 'sportsbet', price: 1.83 },
+  ]);
+  const next = repriceNbaCandidate(white, live, P.nba)!;
+  assert.equal(next.bestBook, 'dabble');
+  assert.equal(next.bestPrice, 1.88);
+  assert.ok(next.ev < 0.01, 'no edge left at 1.88');
+  assert.equal(chooseSingles([{ c: next, history: held }], P, empty(), NOW).length, 0);
+
+  const milestone = cand({ player: 'Derrick White', marketKind: 'milestone', line: 19.5, bestBook: 'dabble', bestPrice: 2.9, quotes: [{ book: 'dabble', price: 2.9 }], prob: 0.4, ev: 0.16, context: { boardNames: ['Derrick White'] } });
+  assert.equal(repriceNbaCandidate(milestone, live, P.nba)?.bestPrice, 2.75, '20+ checked against the fresh 20+');
+  assert.equal(repriceNbaCandidate({ ...white, line: 16.5 }, live, P.nba), null, 'a line no book offers any more is gone');
+  const offshore = { ...white, quotes: [...white.quotes, { book: 'draftkings', price: 2.2 }] };
+  assert.ok(!repriceNbaCandidate(offshore, live, P.nba)!.quotes.some((q) => q.book === 'draftkings'), 'only Australian books are posted');
+
+  const lines: NbaBookRow[] = [
+    { name: 'Sportsbet', H2H: { home: '-150', away: '+130' }, Spread: { line: '-3.5', over: '-110', under: '-110' }, Total: { line: '221.5', over: '-105', under: '-115' } } as NbaBookRow,
+  ];
+  const total = cand({ player: null, playerId: null, team: null, market: 'total', side: 'under', line: 221.5, bestBook: 'Sportsbet', bestPrice: 1.95, quotes: [{ book: 'Sportsbet', price: 1.95 }], context: {} });
+  assert.deepEqual(liveNbaQuotes(total, { props: {}, lines }), [{ book: 'Sportsbet', price: 1.87 }]);
+  const away = cand({ player: null, playerId: null, team: 'Boston Celtics', market: 'spread', side: 'away', line: 3.5, context: {} });
+  assert.deepEqual(liveNbaQuotes(away, { props: {}, lines }), [{ book: 'Sportsbet', price: 1.91 }]);
 });

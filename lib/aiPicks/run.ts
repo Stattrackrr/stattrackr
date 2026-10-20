@@ -6,6 +6,7 @@
 
 import { alternateBooks } from '@/lib/aiPicks/books';
 import { scanAiCandidates, type CandidateScan } from '@/lib/aiPicks/candidates';
+import { fetchLiveNbaGames, repriceNbaCandidate, type NbaLiveGame } from '@/lib/aiPicks/candidates/nbaLive';
 import { NBA_LIVE_INJURY_LEAD_MS } from '@/lib/aiPicks/candidates/nbaScan';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
 import { closingIndex, closingPrice } from '@/lib/aiPicks/closing';
@@ -13,10 +14,16 @@ import { reviewProposals, type ReviewResult } from '@/lib/aiPicks/decide/review'
 import {
   chooseMulti,
   chooseSingles,
+  nbaBackupSingles,
+  nbaMultiCap,
+  nbaSinglesCap,
+  nbaSlateGames,
   POST_HORIZON_MS,
   qualifiesLeg,
   qualifiesSingle,
+  sportParams,
   subjectId,
+  type PostedState,
   type Proposal,
   type Watched,
 } from '@/lib/aiPicks/decide/select';
@@ -88,6 +95,12 @@ export type AiPicksRunSummary = {
   posted: Array<{ id: string; title: string }>;
   rejected: Array<{ title: string; reason: string }>;
   closingCaptured: number;
+  /** NBA games in the window and what they allow, against what is already posted. */
+  nbaSlate?: { games: number; singles: string; multis: string };
+  /** Chosen NBA plays whose price had moved in the fresh pull before posting. */
+  priceMoves?: string[];
+  /** odds-api.net requests spent on those pulls. */
+  livePriceRequests?: number;
   /** Pending legs moved to their match's new start this run. */
   rescheduled?: Array<{ pickId: string; legId: string; from: string; to: string }>;
   paused: boolean;
@@ -273,6 +286,76 @@ async function postProposal(
   }
 }
 
+function choose(watched: Watched[], params: AiPicksParams, state: PostedState, nowMs: number, closedMultis: Set<string>) {
+  const singles = chooseSingles(watched, params, state, nowMs);
+  const multi = chooseMulti(watched, params, state, nowMs, {
+    keys: new Set(singles.map((s) => s.key)),
+    rejected: closedMultis,
+    subjects: new Set(singles.map((s) => subjectId(s.legs[0]!.c))),
+  });
+  return { singles, multi };
+}
+
+const LIVE_PRICE_ROUNDS = 3;
+
+/**
+ * Selection on live prices: NBA games behind the chosen picks are pulled fresh and their candidates
+ * repriced, then selection reruns, since a price that moved can change what posts. A game the pull
+ * couldn't find keeps the board's prices.
+ */
+async function chooseLivePriced(
+  watched: Watched[],
+  params: AiPicksParams,
+  state: PostedState,
+  nowMs: number,
+  closedMultis: Set<string>,
+  summary: AiPicksRunSummary
+): Promise<{ singles: Proposal[]; multi: Proposal | null }> {
+  const checked = new Set<string>();
+  let list = watched;
+  for (let pass = 1; ; pass += 1) {
+    const { singles, multi } = choose(list, params, state, nowMs, closedMultis);
+    const all = [...singles, ...(multi ? [multi] : [])];
+    const unchecked = (p: Proposal) => p.legs.some((l) => l.c.sport === 'nba' && !checked.has(l.c.eventKey));
+    const games = new Map<string, AiCandidate>();
+    for (const p of all) for (const l of p.legs) if (l.c.sport === 'nba' && !checked.has(l.c.eventKey)) games.set(l.c.eventKey, l.c);
+    if (!games.size) return { singles, multi };
+    if (pass > LIVE_PRICE_ROUNDS) {
+      return { singles: singles.filter((p) => !unchecked(p)), multi: multi && !unchecked(multi) ? multi : null };
+    }
+    const proposed = new Set(all.flatMap((p) => p.legs.map((l) => l.c.key)));
+    let live: Map<string, NbaLiveGame>;
+    try {
+      const res = await fetchLiveNbaGames(
+        [...games.values()].map((c) => {
+          const [awayTeam = '', homeTeam = ''] = c.eventLabel.split(' @ ');
+          return { gameId: c.eventKey, homeTeam, awayTeam, startsAt: c.startsAt };
+        })
+      );
+      live = res.live;
+      summary.livePriceRequests = (summary.livePriceRequests ?? 0) + res.requests;
+    } catch (e) {
+      summary.errors.push(`live prices: ${(e as Error).message}`);
+      live = new Map();
+    }
+    for (const id of games.keys()) checked.add(id);
+    list = list.flatMap((w) => {
+      const game = w.c.sport === 'nba' ? live.get(w.c.eventKey) : undefined;
+      if (!game) return [w];
+      const next = repriceNbaCandidate(w.c, game, sportParams(params, 'nba'));
+      if (proposed.has(w.c.key) && (!next || next.bestPrice !== w.c.bestPrice || next.bestBook !== w.c.bestBook)) {
+        const title = pickTitle([w.c]);
+        (summary.priceMoves ??= []).push(
+          next
+            ? `${title}: ${w.c.bestBook} ${w.c.bestPrice} -> ${next.bestBook} ${next.bestPrice} (EV ${round(w.c.ev * 100, 1)}% -> ${round(next.ev * 100, 1)}%)`
+            : `${title}: no longer offered`
+        );
+      }
+      return next ? [{ ...w, c: next }] : [];
+    });
+  }
+}
+
 function multiWatchRow(p: Proposal, nowIso: string): WatchRow {
   const first = p.legs[0]!.c;
   return {
@@ -377,14 +460,17 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
       summary.skipped.push(`${openRejections} upcoming plays already turned down on review; waiting for those games to start`);
     } else {
       const state = postedState(await listPicksPostedSince(new Date(nowMs - RECENT_PICKS_MS).toISOString()), nowMs);
-      const singles = chooseSingles(watched, params, state, nowMs);
-      const singleKeys = new Set(singles.map((s) => s.key));
+      const slate = (state.nbaSlateGames = nbaSlateGames(state, scan.candidates));
+      if (slate) {
+        summary.nbaSlate = {
+          games: slate,
+          singles: `${state.singlesRecent.nba?.length ?? 0}/${nbaSinglesCap(slate)} (+${nbaBackupSingles(slate)} standout)`,
+          multis: `${state.nbaMultisRecent?.length ?? 0}/${nbaMultiCap(slate)}`,
+        };
+      }
       const closedMultis = new Set(await listClosedMultiKeys(new Date(nowMs - RECENT_PICKS_MS).toISOString()));
-      const multi = chooseMulti(watched, params, state, nowMs, {
-        keys: singleKeys,
-        rejected: closedMultis,
-        subjects: new Set(singles.map((s) => subjectId(s.legs[0]!.c))),
-      });
+      const { singles, multi } = await chooseLivePriced(watched, params, state, nowMs, closedMultis, summary);
+      mark('price check');
       const proposals: Proposal[] = [...singles];
       if (multi) {
         const prior = (await listWatchRows([multi.key]))[0];

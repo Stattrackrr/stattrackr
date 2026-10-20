@@ -382,7 +382,7 @@ export async function scanNbaCandidates(opts: {
           home: isHome,
         },
       };
-      result.candidates.push(
+      const built = [
         ...buildNbaPropCandidates({
           game: { gameId: odds.gameId, homeTeam: odds.homeTeam, awayTeam: odds.awayTeam, commenceTime: odds.commenceTime },
           lines,
@@ -401,8 +401,11 @@ export async function scanNbaCandidates(opts: {
           params,
           currentSeason: season,
           context,
-        })
-      );
+        }),
+      ];
+      // The board spellings, so the pre-post price check finds the same player in a fresh pull.
+      for (const c of built) c.context.boardNames = names;
+      result.candidates.push(...built);
       resolvedCount += 1;
     }
     result.games.push({
