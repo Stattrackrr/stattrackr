@@ -455,6 +455,8 @@ export function AiPicksLearningPanel() {
 type Tab = 'pending' | 'resulted';
 type SortKey = 'units-desc' | 'units-asc' | 'placed-recent' | 'next-up';
 
+/** User-facing sort modes for the picks feed filter button. */
+
 const SORT_OPTIONS: Array<{ id: SortKey; label: string }> = [
   { id: 'units-desc', label: 'Units high to low' },
   { id: 'units-asc', label: 'Units low to high' },
