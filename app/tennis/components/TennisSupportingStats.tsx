@@ -4,8 +4,20 @@ import { useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { CHART_CONFIG } from '@/app/nba/research/dashboard/constants';
 import type { NblChartTimeframe } from '@/app/tennis/components/TennisStatsChart';
-import { TENNIS_STAT_LABELS, tennisDominanceRatio } from '@/lib/tennis/chartStats';
+import {
+  TENNIS_STAT_LABELS,
+  compareTennisMatchesNewestFirst,
+  tennisDominanceRatio,
+} from '@/lib/tennis/chartStats';
 import { tennisIsH2hMatch } from '@/lib/tennis/h2hMatch';
+
+/** Oldest → newest — same axis order as TennisStatsChart (newest on the right). */
+function compareTennisMatchesOldestFirst(
+  a: { date?: unknown; game_date?: unknown; tourneyDate?: unknown; season?: unknown; round?: unknown },
+  b: { date?: unknown; game_date?: unknown; tourneyDate?: unknown; season?: unknown; round?: unknown }
+): number {
+  return compareTennisMatchesNewestFirst(b, a);
+}
 
 function toNumericValue(v: unknown): number | null {
   if (v == null) return null;
@@ -102,6 +114,7 @@ type BaseRow = {
   key: string;
   tickLabel: string;
   round: string;
+  gameDate?: string;
   gameSeason?: number;
 };
 
@@ -129,7 +142,23 @@ function applyTimeframe<T extends BaseRow>(
     ) as T[];
   }
   const lastN = parseInt(timeframe.replace('last', ''), 10);
-  if (Number.isFinite(lastN) && lastN > 0) return baseData.slice(-lastN) as T[];
+  if (Number.isFinite(lastN) && lastN > 0) {
+    // Same as TennisStatsChart: take N most recent, then render oldest → newest (newest on right).
+    const newestFirst = [...baseData].sort((a, b) =>
+      compareTennisMatchesNewestFirst(
+        { date: a.gameDate, season: a.gameSeason, round: a.round },
+        { date: b.gameDate, season: b.gameSeason, round: b.round }
+      )
+    );
+    const windowed = newestFirst.slice(0, lastN);
+    windowed.sort((a, b) =>
+      compareTennisMatchesOldestFirst(
+        { date: a.gameDate, season: a.gameSeason, round: a.round },
+        { date: b.gameDate, season: b.gameSeason, round: b.round }
+      )
+    );
+    return windowed as T[];
+  }
   return baseData;
 }
 
@@ -183,6 +212,11 @@ interface TennisSupportingStatsProps {
   onSupportingStatKindChange: (kind: SupportingStatKind) => void;
   isDark: boolean;
   alignRightTight?: boolean;
+  /**
+   * When true, gameLogs are already the main-chart window in display order
+   * (oldest left → newest right). Do not re-sort or re-slice.
+   */
+  preserveInputOrder?: boolean;
 }
 
 export function TennisSupportingStats({
@@ -196,6 +230,7 @@ export function TennisSupportingStats({
   onSupportingStatKindChange,
   isDark,
   alignRightTight = false,
+  preserveInputOrder = false,
 }: TennisSupportingStatsProps) {
   const supportingOptions = useMemo(() => supportingOptionsForMain(mainChartStat), [mainChartStat]);
 
@@ -209,18 +244,31 @@ export function TennisSupportingStats({
 
   const baseData = useMemo(() => {
     if (!Array.isArray(gameLogs) || gameLogs.length === 0) return [];
-    const sorted = [...gameLogs].sort((a, b) => {
-      const aDate = new Date(String(a.date ?? a.game_date ?? '')).getTime();
-      const bDate = new Date(String(b.date ?? b.game_date ?? '')).getTime();
-      return (Number.isFinite(aDate) ? aDate : 0) - (Number.isFinite(bDate) ? bDate : 0);
-    });
-    return sorted.map((g, idx) => {
+    const ordered = preserveInputOrder
+      ? [...gameLogs]
+      : // Oldest → newest with round/season tie-breakers (tennis often shares one tourney date).
+        [...gameLogs].sort((a, b) =>
+          compareTennisMatchesOldestFirst(
+            {
+              date: a.date ?? a.game_date ?? a.tourneyDate,
+              season: a.season,
+              round: a.round,
+            },
+            {
+              date: b.date ?? b.game_date ?? b.tourneyDate,
+              season: b.season,
+              round: b.round,
+            }
+          )
+        );
+    return ordered.map((g, idx) => {
       const opponent = String(g.opponent ?? '-');
       const stats = readGameStats(g);
+      const gameDate = String(g.date ?? g.game_date ?? g.tourneyDate ?? '');
       const gameSeason =
         typeof g.season === 'number'
           ? g.season
-          : parseInt(String(g.date ?? '').slice(0, 4), 10) || season;
+          : parseInt(gameDate.slice(0, 4), 10) || season;
       return {
         key: `${idx}-${opponent}`,
         xKey: `${idx}-${opponent}`,
@@ -230,29 +278,33 @@ export function TennisSupportingStats({
         opponentId: String(g.opponentId ?? '').trim() || null,
         value: stats[supportingStatKind],
         isPercent: PCT_KINDS.has(supportingStatKind),
-        gameDate: String(g.date ?? ''),
+        gameDate,
         gameSeason,
         ...stats,
       };
     });
-  }, [gameLogs, supportingStatKind, season]);
+  }, [gameLogs, supportingStatKind, season, preserveInputOrder]);
 
   const chartData = useMemo(() => {
-    const data = applyTimeframe(baseData, timeframe, season, nextOpponent, nextOpponentId);
+    const data = preserveInputOrder
+      ? baseData
+      : applyTimeframe(baseData, timeframe, season, nextOpponent, nextOpponentId);
     return data.map((row, idx) => ({
       key: `supporting-${idx}`,
       xKey: `supporting-${idx}`,
       value: row.value,
       isPercent: row.isPercent,
     }));
-  }, [baseData, timeframe, season, nextOpponent, nextOpponentId]);
+  }, [baseData, timeframe, season, nextOpponent, nextOpponentId, preserveInputOrder]);
 
   const averagesByStat = useMemo(() => {
     const empty = Object.fromEntries(ALL_TOGGLE_OPTIONS.map((o) => [o.value, null])) as Record<
       SupportingStatKind,
       number | null
     >;
-    const windowed = applyTimeframe(baseData, timeframe, season, nextOpponent, nextOpponentId);
+    const windowed = preserveInputOrder
+      ? baseData
+      : applyTimeframe(baseData, timeframe, season, nextOpponent, nextOpponentId);
     if (!windowed.length) return empty;
     const avg = (key: SupportingStatKind) => {
       const values = windowed
@@ -267,7 +319,7 @@ export function TennisSupportingStats({
     const next = { ...empty };
     for (const opt of supportingOptions) next[opt.value] = avg(opt.value);
     return next;
-  }, [baseData, timeframe, season, nextOpponent, nextOpponentId, supportingOptions]);
+  }, [baseData, timeframe, season, nextOpponent, nextOpponentId, supportingOptions, preserveInputOrder]);
 
   const isPercent = PCT_KINDS.has(supportingStatKind);
   const yDomain = useMemo(() => {
