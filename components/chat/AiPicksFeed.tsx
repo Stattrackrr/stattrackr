@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Clock, Loader2, Minus, Sparkles, X } from 'lucide-react';
+import { ArrowUpDown, Check, Clock, Loader2, Minus, Sparkles, X } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { supabase } from '@/lib/supabaseClient';
@@ -453,23 +453,108 @@ export function AiPicksLearningPanel() {
 }
 
 type Tab = 'pending' | 'resulted';
+type SortKey = 'units-desc' | 'units-asc' | 'placed-recent' | 'next-up';
+
+const SORT_OPTIONS: Array<{ id: SortKey; label: string }> = [
+  { id: 'units-desc', label: 'Units high to low' },
+  { id: 'units-asc', label: 'Units low to high' },
+  { id: 'placed-recent', label: 'Placed most recently' },
+  { id: 'next-up', label: 'Next up' },
+];
 
 const time = (iso: string | null | undefined): number => {
   const t = Date.parse(String(iso || ''));
   return Number.isFinite(t) ? t : 0;
 };
 
-/** When the bet was decided: the last leg's start (a multi settles on its final leg). */
-const playedAt = (pick: AiPick): number =>
-  pick.legs.length ? Math.max(...pick.legs.map((l) => time(l.startsAt))) : time(pick.postedAt);
+/** Earliest leg start — used for "Next up" (closest bet time). */
+const nextUpAt = (pick: AiPick): number => {
+  const fromFirst = time(pick.firstStartsAt);
+  if (fromFirst) return fromFirst;
+  const legStarts = pick.legs.map((l) => time(l.startsAt)).filter((t) => t > 0);
+  if (legStarts.length) return Math.min(...legStarts);
+  return time(pick.postedAt);
+};
 
-/** Pending oldest-posted first; resulted most recently played first. */
-function tabOrder(picks: AiPick[], tab: Tab): AiPick[] {
-  return tab === 'pending'
-    ? picks.filter((p) => p.status === 'pending').sort((a, b) => time(a.postedAt) - time(b.postedAt))
-    : picks
-        .filter((p) => p.status !== 'pending')
-        .sort((a, b) => playedAt(b) - playedAt(a) || time(b.settledAt) - time(a.settledAt) || time(b.postedAt) - time(a.postedAt));
+function sortPicks(picks: AiPick[], sort: SortKey): AiPick[] {
+  const list = [...picks];
+  switch (sort) {
+    case 'units-desc':
+      return list.sort((a, b) => b.units - a.units || time(b.postedAt) - time(a.postedAt));
+    case 'units-asc':
+      return list.sort((a, b) => a.units - b.units || time(b.postedAt) - time(a.postedAt));
+    case 'placed-recent':
+      return list.sort((a, b) => time(b.postedAt) - time(a.postedAt));
+    case 'next-up':
+      return list.sort((a, b) => nextUpAt(a) - nextUpAt(b) || time(b.postedAt) - time(a.postedAt));
+  }
+}
+
+function tabOrder(picks: AiPick[], tab: Tab, sort: SortKey): AiPick[] {
+  const filtered =
+    tab === 'pending' ? picks.filter((p) => p.status === 'pending') : picks.filter((p) => p.status !== 'pending');
+  return sortPicks(filtered, sort);
+}
+
+function PicksSortButton({ sort, onChange }: { sort: SortKey; onChange: (next: SortKey) => void }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const active = SORT_OPTIONS.find((o) => o.id === sort)?.label ?? 'Sort';
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  return (
+    <div ref={menuRef} className="relative shrink-0">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338]"
+        title="Sort picks"
+      >
+        <ArrowUpDown className="h-3.5 w-3.5" />
+        <span className="max-w-[9.5rem] truncate">{active}</span>
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute right-0 z-20 mt-1.5 w-52 overflow-hidden rounded-xl border border-gray-200 bg-white text-sm shadow-lg dark:border-gray-700 dark:bg-[#0f1a2b]"
+        >
+          {SORT_OPTIONS.map((option) => {
+            const selected = option.id === sort;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={selected}
+                onClick={() => {
+                  onChange(option.id);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                  selected
+                    ? 'font-semibold text-purple-700 dark:text-purple-300'
+                    : 'text-gray-700 dark:text-gray-200'
+                }`}
+              >
+                {option.label}
+                {selected ? <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} /> : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 const RESULTED_PAGE = 10;
@@ -488,6 +573,7 @@ export function AiPicksFeed() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('pending');
   const [sport, setSport] = useState<string>('all');
+  const [sort, setSort] = useState<SortKey>('next-up');
 
   const load = useCallback(async () => {
     try {
@@ -537,7 +623,7 @@ export function AiPicksFeed() {
   const inSport = useMemo(() => picks.filter((p) => sport === 'all' || p.sport === sport), [picks, sport]);
   const pendingCount = inSport.filter((p) => p.status === 'pending').length;
   const resultedCount = inSport.length - pendingCount;
-  const ordered = useMemo(() => tabOrder(inSport, tab), [inSport, tab]);
+  const ordered = useMemo(() => tabOrder(inSport, tab, sort), [inSport, tab, sort]);
   const [resultedLimit, setResultedLimit] = useState(RESULTED_PAGE);
   const shown = tab === 'resulted' ? ordered.slice(0, resultedLimit) : ordered;
   const hiddenCount = ordered.length - shown.length;
@@ -547,7 +633,7 @@ export function AiPicksFeed() {
     if (loading) return;
     const container = scrollParent(topRef.current);
     if (container) container.scrollTop = 0;
-  }, [tab, sport, loading]);
+  }, [tab, sport, sort, loading]);
 
   if (loading) {
     return (
@@ -615,19 +701,33 @@ export function AiPicksFeed() {
           })}
         </div>
 
-        {sports.length > 1 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {['all', ...sports].map((s) => (
-              <button key={s} type="button" onClick={() => {
-                  setSport(s);
-                  setResultedLimit(RESULTED_PAGE);
-                }} className={`${chip(sport === s)} inline-flex items-center gap-1`}>
-                {s !== 'all' && <SportLogo sport={s} tours={s === 'tennis' ? ['ATP', 'WTA'] : []} className="h-3 w-3" />}
-                {s === 'all' ? 'All sports' : SPORT_LABELS[s] ?? s}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className={`flex flex-wrap items-center gap-2 ${sports.length > 1 ? 'justify-between' : 'justify-end'}`}>
+          {sports.length > 1 ? (
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+              {['all', ...sports].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => {
+                    setSport(s);
+                    setResultedLimit(RESULTED_PAGE);
+                  }}
+                  className={`${chip(sport === s)} inline-flex items-center gap-1`}
+                >
+                  {s !== 'all' && <SportLogo sport={s} tours={s === 'tennis' ? ['ATP', 'WTA'] : []} className="h-3 w-3" />}
+                  {s === 'all' ? 'All sports' : SPORT_LABELS[s] ?? s}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <PicksSortButton
+            sort={sort}
+            onChange={(next) => {
+              setSort(next);
+              setResultedLimit(RESULTED_PAGE);
+            }}
+          />
+        </div>
       </div>
 
       {shown.length === 0 ? (
