@@ -4,7 +4,7 @@
   "homeTeam": "Cairns Taipans",
   "awayTeam": "New Zealand Breakers",
   "commenceTime": "2026-10-25T04:00:00.000Z",
-  "capturedAt": "2026-10-20T21:44:39.191Z",
+  "capturedAt": "2026-10-21T00:42:20.647Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -26,7 +26,7 @@
     "TABtouch",
     "Unibet"
   ],
-  "lineCount": 3146,
+  "lineCount": 3148,
   "lines": [
     {
       "player": "Carlin Davison",
@@ -40924,6 +40924,32 @@
       "over": "+210",
       "under": "N/A",
       "overDecimal": 3.1,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylin Galloway",
+      "playerKey": "jaylin galloway",
+      "book": "PlayUp",
+      "stat": "pa",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-556",
+      "under": "N/A",
+      "overDecimal": 1.18,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylin Galloway",
+      "playerKey": "jaylin galloway",
+      "book": "PlayUp",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 13.5,
+      "label": "14+",
+      "over": "-455",
+      "under": "N/A",
+      "overDecimal": 1.22,
       "underDecimal": null
     }
   ]
