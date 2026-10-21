@@ -1,17 +1,16 @@
 # NBA dashboard data: BallDontLie (GOAT) -> Supabase nba_* tables.
 # Writes to the database only (no Redis, no repo commits).
-#   - Every 3 hours: injuries, schedule/results, standings, players, and box scores
-#     for the last day (so AI picks grade soon after a game ends).
-#   - Daily after US games finish: box scores (+ quarters), advanced, lineups,
-#     play-by-play/shots and season averages for the current season.
+#   - Every 2 hours, every job for the last 3 days: injuries, results, box scores (+ quarters),
+#     advanced (usage), lineups, play-by-play/shots, season averages (play types, tracking,
+#     hustle). A run takes ~30 s. GitHub drops scheduled runs often, so any run that does
+#     happen catches up on what a skipped one missed, including stats BallDontLie posts late.
 #   - Manual: any jobs/seasons, e.g. a full backfill.
+# Off-the-hour minutes: GitHub delays or skips far more runs at :00 and :30.
 name: NBA Sync
 
 on:
   schedule:
-    - cron: '0 */3 * * *'
-    # 09:30 UTC (~8:30pm AEDT): all US games are final
-    - cron: '30 9 * * *'
+    - cron: '17 */2 * * *'
   workflow_dispatch:
     inputs:
       jobs:
@@ -65,7 +64,5 @@ jobs:
             [ -n "${{ inputs.seasons }}" ] && ARGS="$ARGS --seasons=${{ inputs.seasons }}"
             [ "${{ inputs.full }}" = "true" ] && ARGS="$ARGS --full"
             ARGS="$ARGS --max-games=${{ inputs.max_games }}"
-          elif [ "${{ github.event.schedule }}" = "0 */3 * * *" ]; then
-            ARGS="--jobs=injuries,players,games,standings,stats --days=1"
           fi
           npx tsx scripts/sync-nba-bdl.ts $ARGS

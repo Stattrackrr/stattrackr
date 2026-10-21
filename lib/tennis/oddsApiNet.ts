@@ -1,10 +1,8 @@
 /**
- * Tennis odds from odds-api.net: every bookmaker it lists per match (Sportsbet, TAB, Ladbrokes, PointsBet, ...),
- * plus bet365 AU kept apart. API-Tennis's bet365 is the international book, which prices game handicap /
- * total games lines the AU site doesn't offer, so the AI only trusts the AU row for bet365.
+ * Tennis odds from odds-api.net: every bookmaker it lists per match (Sportsbet, TAB, Ladbrokes, PointsBet, ...).
+ * Its bet365 matches the AU site and is stored as `bet365 au`, apart from API-Tennis's international bet365.
  */
 
-import { decimalToAmerican } from '@/lib/currencyUtils';
 import {
   emptySourceMatch,
   sideOf,
@@ -15,10 +13,9 @@ import {
 } from '@/lib/tennis/extraBooks/shared';
 import type { TennisNextGame } from '@/lib/tennis/nextGame';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
-import { tennisOuLinePlausible, type TennisBookRow, type TennisOuLine } from '@/lib/tennis/oddsTypes';
+import type { TennisBookRow } from '@/lib/tennis/oddsTypes';
 
 const BASE = 'https://api.odds-api.net/v1';
-const BOOK = 'bet365';
 export const TENNIS_BET365_AU_BOOK = 'bet365 au';
 const CONCURRENCY = 4;
 /** Fixture start times move with order of play; odds-api.net keeps the scheduled time. */
@@ -46,8 +43,6 @@ type NetItem = {
   player_name?: string;
   market_key?: string;
 };
-
-type Pair = { a?: NetItem; b?: NetItem; main: boolean };
 
 function apiKey(): string {
   return String(process.env.ODDS_API_NET_KEY || process.env.ODDS_API_NET || '').trim();
@@ -130,91 +125,23 @@ function num(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function american(decimal: number | undefined): string {
-  return typeof decimal === 'number' && decimal > 1 ? decimalToAmerican(decimal) : 'N/A';
-}
-
-/** Prefers the book's main line, then the most balanced. */
-function pickPair(rows: Map<number, Pair>): [number, Pair] | null {
-  const complete = [...rows.entries()].filter(([, row]) => row.a?.odds && row.b?.odds);
-  if (!complete.length) return null;
-  const balance = ([, row]: [number, Pair]) => Math.abs((row.a!.odds as number) - (row.b!.odds as number));
-  complete.sort((x, y) => Number(y[1].main) - Number(x[1].main) || balance(x) - balance(y));
-  return complete[0];
-}
-
-const EMPTY: TennisOuLine = { line: 'N/A', over: 'N/A', under: 'N/A' };
-
-/** One bet365 AU book row in API-Tennis home orientation, or null when bet365 prices none of these markets. */
-export function tennisBet365AuRowFromItems(items: NetItem[], homeIsHome: boolean): TennisBookRow | null {
-  const winner: Pair = { main: true };
-  const handicaps = new Map<number, Pair>();
-  const totals = new Map<number, Pair>();
-  for (const item of items) {
-    if (String(item.bookmaker || '').toLowerCase() !== BOOK || item.is_available === false) continue;
-    if (String(item.period || '').toLowerCase() !== 'full time') continue;
-    if (!(typeof item.odds === 'number' && item.odds > 1)) continue;
-    const side = String(item.side || '').toLowerCase();
-    if (item.bet_type === 'moneyline') {
-      if (side === 'home') winner.a = item;
-      else if (side === 'away') winner.b = item;
-      continue;
-    }
-    if (String(item.metric || '').toLowerCase() !== 'games') continue;
-    const line = num(item.line);
-    if (line == null) continue;
-    if (item.bet_type === 'handicap') {
-      if (side !== 'home' && side !== 'away') continue;
-      const homeLine = side === 'home' ? line : -line;
-      const row = handicaps.get(homeLine) ?? { main: false };
-      if (side === 'home') row.a = item;
-      else row.b = item;
-      row.main ||= item.main_line_eligible === true;
-      handicaps.set(homeLine, row);
-    } else if (item.bet_type === 'total') {
-      const raw = String(item.line || '').toLowerCase();
-      const ou = raw.includes('under') ? 'under' : raw.includes('over') ? 'over' : null;
-      if (!ou || !tennisOuLinePlausible('totalGames', line)) continue;
-      const row = totals.get(line) ?? { main: false };
-      if (ou === 'over') row.a = item;
-      else row.b = item;
-      row.main ||= item.main_line_eligible === true;
-      totals.set(line, row);
-    }
-  }
-
-  const homeOdds = homeIsHome ? winner.a?.odds : winner.b?.odds;
-  const awayOdds = homeIsHome ? winner.b?.odds : winner.a?.odds;
-  let spread: TennisOuLine | null = null;
-  const hc = pickPair(handicaps);
-  if (hc && tennisOuLinePlausible('spread', hc[0])) {
-    const [netHomeLine, row] = hc;
-    spread = homeIsHome
-      ? { line: String(netHomeLine), over: american(row.a!.odds), under: american(row.b!.odds) }
-      : { line: String(-netHomeLine), over: american(row.b!.odds), under: american(row.a!.odds) };
-  }
-  const tot = pickPair(totals);
-  const total = tot ? { line: String(tot[0]), over: american(tot[1].a!.odds), under: american(tot[1].b!.odds) } : null;
-  if (!homeOdds && !awayOdds && !spread && !total) return null;
-  return {
-    name: TENNIS_BET365_AU_BOOK,
-    region: 'au',
-    H2H: { home: american(homeOdds), away: american(awayOdds) },
-    Spread: spread ?? EMPTY,
-    Total: total ?? EMPTY,
-    GamesWon: EMPTY,
-    GamesLost: EMPTY,
-    TotalSets: EMPTY,
-    SpreadLines: spread ? [spread] : [],
-    TotalLines: total ? [total] : [],
-    GamesWonLines: [],
-    GamesLostLines: [],
-    TotalSetsLines: [],
-  };
-}
-
 /** Australian books on odds-api.net; others keep the region `getBookmakerRegion` gives them. */
-const AU_BOOKS = new Set(['sportsbet', 'tab', 'tabtouch', 'ladbrokes', 'neds', 'pointsbet', 'palmerbet', 'betr', 'dabble', 'betright', 'playup', 'picklebet', 'unibet']);
+const AU_BOOKS = new Set([
+  'sportsbet',
+  'tab',
+  'tabtouch',
+  'ladbrokes',
+  'neds',
+  'pointsbet',
+  'palmerbet',
+  'betr',
+  'dabble',
+  'betright',
+  'playup',
+  'picklebet',
+  'unibet',
+  TENNIS_BET365_AU_BOOK,
+]);
 
 function overUnderSide(item: NetItem): 'over' | 'under' | null {
   const text = `${item.side ?? ''} ${item.line ?? ''}`.toLowerCase();
@@ -282,21 +209,12 @@ export function tennisOddsApiNetSourceFromItems(items: NetItem[], book: string, 
   return src;
 }
 
-export type TennisOddsApiNetBooks = {
-  /** bet365 AU, kept apart so it shows next to the international bet365 row instead of merging into it. */
-  bet365Au: Map<string, TennisBookRow>;
-  /** Every other odds-api.net book per API-Tennis match id. */
-  rows: Map<string, TennisBookRow[]>;
-};
-
-/** One all-bookmaker snapshot per matched match. */
-export async function fetchTennisOddsApiNetBooks(games: TennisNextGame[]): Promise<TennisOddsApiNetBooks> {
-  const bet365Au = new Map<string, TennisBookRow>();
+/** One all-bookmaker snapshot per matched match; book rows per API-Tennis match id. */
+export async function fetchTennisOddsApiNetBooks(games: TennisNextGame[]): Promise<Map<string, TennisBookRow[]>> {
   const rows = new Map<string, TennisBookRow[]>();
-  const out = { bet365Au, rows };
-  if (!apiKey() || !games.length) return out;
+  if (!apiKey() || !games.length) return rows;
   const leagues = await tennisLeagues();
-  if (!leagues.length) return out;
+  if (!leagues.length) return rows;
   const events = (await mapLimit(leagues, CONCURRENCY, leagueEvents)).flat();
   const matched: Array<{
     matchId: string;
@@ -339,15 +257,14 @@ export async function fetchTennisOddsApiNetBooks(games: TennisNextGame[]): Promi
       if (!book) continue;
       byBook.set(book, [...(byBook.get(book) ?? []), item]);
     }
-    const b365 = tennisBet365AuRowFromItems(byBook.get(BOOK) ?? [], homeIsHome);
-    if (b365) bet365Au.set(matchId, b365);
     const others: TennisBookRow[] = [];
     for (const [book, list] of byBook) {
-      if (book.startsWith(BOOK)) continue;
-      const row = sourceMatchToBookRow(tennisOddsApiNetSourceFromItems(list, book, names), homeIsHome, bestOfThree);
+      if (book.startsWith('bet365') && book !== 'bet365') continue;
+      const name = book === 'bet365' ? TENNIS_BET365_AU_BOOK : book;
+      const row = sourceMatchToBookRow(tennisOddsApiNetSourceFromItems(list, name, names), homeIsHome, bestOfThree);
       if (row) others.push(row);
     }
     if (others.length) rows.set(matchId, others);
   });
-  return out;
+  return rows;
 }

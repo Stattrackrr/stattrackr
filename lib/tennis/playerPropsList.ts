@@ -1069,9 +1069,7 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
           (row) => row.name.toLowerCase() === playerName.trim().toLowerCase()
         ) ||
         null;
-      const books = australianBooksFirst(
-        orientBooks(snapshot.bet365Au ? [...snapshot.bookmakers, snapshot.bet365Au] : snapshot.bookmakers, side.isHome)
-      );
+      const books = australianBooksFirst(orientBooks(snapshot.bookmakers, side.isHome));
       for (const book of books) {
         data.push(
           ...rowsForBook({

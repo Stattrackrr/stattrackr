@@ -22,7 +22,6 @@ function withBudget<T>(work: Promise<T>, fallback: T): Promise<T> {
 }
 
 export type ExtraTennisBooks = {
-  bet365Au: Map<string, TennisBookRow>;
   rows: Map<string, TennisBookRow[]>;
   /** Matches each feed priced, for the refresh summary. */
   counts: Record<string, number>;
@@ -31,16 +30,16 @@ export type ExtraTennisBooks = {
 export async function fetchExtraTennisBooks(games: TennisNextGame[]): Promise<ExtraTennisBooks> {
   const feeds = [ladbrokesTennisFeed, nedsTennisFeed, betrightTennisFeed, pointsbetTennisFeed, unibetTennisFeed];
   const [net, ...siteRows] = await Promise.all([
-    withBudget(fetchTennisOddsApiNetBooks(games), { bet365Au: new Map(), rows: new Map() }),
+    withBudget(fetchTennisOddsApiNetBooks(games), new Map<string, TennisBookRow[]>()),
     ...feeds.map((feed) => withBudget(runExtraBookFeed(feed, games), new Map<string, TennisBookRow>())),
   ]);
   const rows = new Map<string, TennisBookRow[]>();
   const add = (matchId: string, row: TennisBookRow) => rows.set(matchId, [...(rows.get(matchId) ?? []), row]);
-  for (const [matchId, list] of net.rows) for (const row of list) add(matchId, row);
-  const counts: Record<string, number> = { 'odds-api.net': net.rows.size, 'bet365 AU': net.bet365Au.size };
+  for (const [matchId, list] of net) for (const row of list) add(matchId, row);
+  const counts: Record<string, number> = { 'odds-api.net': net.size };
   feeds.forEach((feed, i) => {
     counts[feed.name] = siteRows[i].size;
     for (const [matchId, row] of siteRows[i]) add(matchId, row);
   });
-  return { bet365Au: net.bet365Au, rows, counts };
+  return { rows, counts };
 }

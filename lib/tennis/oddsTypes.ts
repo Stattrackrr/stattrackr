@@ -99,6 +99,76 @@ function preferredBookRank(name: string | undefined): number {
   return hit >= 0 ? hit : 99;
 }
 
+const NO_OU: TennisOuLine = { line: 'N/A', over: 'N/A', under: 'N/A' };
+
+function hasTotalSets(book: TennisBookRow): boolean {
+  return [book.TotalSets, ...(book.TotalSetsLines ?? [])].some(hasOu);
+}
+
+function hasWinASet(book: TennisBookRow): boolean {
+  return [book.SetsWon, book.SetsLost, ...(book.SetsWonLines ?? []), ...(book.SetsLostLines ?? [])].some(hasOu);
+}
+
+function isBet365(book: TennisBookRow): boolean {
+  return /^bet\s*365/i.test(book.name.trim());
+}
+
+function isBet365Au(book: TennisBookRow): boolean {
+  return isBet365(book) && /\bau\b/i.test(book.name);
+}
+
+/** The international row cut to its set markets, or null when it prices none. */
+function bet365SetMarkets(book: TennisBookRow): TennisBookRow | null {
+  if (!hasTotalSets(book) && !hasWinASet(book)) return null;
+  return {
+    ...book,
+    H2H: { home: 'N/A', away: 'N/A' },
+    Spread: NO_OU,
+    Total: NO_OU,
+    GamesWon: NO_OU,
+    GamesLost: NO_OU,
+    SpreadLines: [],
+    TotalLines: [],
+    GamesWonLines: [],
+    GamesLostLines: [],
+  };
+}
+
+/**
+ * One bet365 row priced like the AU site. API-Tennis's bet365 is the international book: its winner, handicap
+ * and game totals don't match bet365 AU, but its set markets (total sets, to win a set) do. So the AU row
+ * (odds-api.net) prices everything, and the international row only fills set markets the AU row lacks.
+ */
+export function tennisAustralianBet365(books: TennisBookRow[]): TennisBookRow[] {
+  const au = books.find(isBet365Au);
+  const intl = books.filter((book) => isBet365(book) && !isBet365Au(book));
+  const sets = intl.find((book) => hasTotalSets(book) || hasWinASet(book));
+  let merged: TennisBookRow | null = sets ? bet365SetMarkets(sets) : null;
+  if (au) {
+    merged = { ...au };
+    if (sets && !hasTotalSets(au) && hasTotalSets(sets)) {
+      merged.TotalSets = sets.TotalSets;
+      merged.TotalSetsLines = sets.TotalSetsLines ?? [];
+    }
+    if (sets && !hasWinASet(au) && hasWinASet(sets)) {
+      merged.SetsWon = sets.SetsWon;
+      merged.SetsLost = sets.SetsLost;
+      merged.SetsWonLines = sets.SetsWonLines;
+      merged.SetsLostLines = sets.SetsLostLines;
+    }
+  }
+  const out: TennisBookRow[] = [];
+  let placed = false;
+  for (const book of books) {
+    if (!isBet365(book)) out.push(book);
+    else if (!placed) {
+      placed = true;
+      if (merged) out.push(merged);
+    }
+  }
+  return out;
+}
+
 export function tennisBookIsAustralian(name: string | null | undefined, region?: TennisBookRegion): boolean {
   return (region ?? getBookmakerRegion(String(name || ''))) === 'au';
 }

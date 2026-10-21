@@ -146,19 +146,24 @@ export async function buildNbaPlayTypeMatchup(opts: {
 }): Promise<NbaPlayTypeMatchupPayload> {
   const year = await resolveNbaDataSeason(opts.year ?? null);
   const club = opts.opponent ? resolveNbaClub(opts.opponent) ?? getNbaClubByCode(opts.opponent) : null;
-  return nbaDashCached('play-type-matchup-v1', [year, opts.playerId, club?.code ?? null], NBA_DASH_CACHE.league, () =>
+  return nbaDashCached('play-type-matchup-v2', [year, opts.playerId, club?.code ?? null], NBA_DASH_CACHE.league, () =>
     buildPlayerMatchup(year, opts.playerId, club)
   );
 }
 
+function leagueTable(year: number): Promise<LeagueTable> {
+  return nbaDashCached('play-type-matchup-league-v2', [year], NBA_DASH_CACHE.league, () => buildLeagueTable(year));
+}
+
 async function buildPlayerMatchup(
-  year: number,
+  requestedYear: number,
   playerId: string,
   club: ReturnType<typeof resolveNbaClub>
 ): Promise<NbaPlayTypeMatchupPayload> {
-  const table = await nbaDashCached('play-type-matchup-league-v2', [year], NBA_DASH_CACHE.league, () =>
-    buildLeagueTable(year)
-  );
+  // BDL publishes Synergy play types a few weeks into a season; until then show last season's.
+  let table = await leagueTable(requestedYear);
+  if (!Object.keys(table.players).length) table = await leagueTable(requestedYear - 1);
+  const year = table.year;
   const own = table.players[playerId] ?? {};
   const totalPpg = table.playerPpg[playerId] ?? 0;
 

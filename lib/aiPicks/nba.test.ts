@@ -28,7 +28,7 @@ import {
 import { gameIdentity, type WatchPoint } from './decide/timing';
 import { nextWatchRow, postedState } from './decide/watch';
 import { legBet, legSelection } from './format';
-import { gradeNbaLeg, type NbaBoxRow, type NbaGameRow, type NbaResults } from './grade/nba';
+import { gradeNbaLeg, nbaLiveResult, NbaResultsSource, type NbaBoxRow, type NbaGameRow, type NbaResults } from './grade/nba';
 import { nbaClosingFromBoard } from './grade/nbaClosing';
 import { adjustNbaGame, type NbaGameProjection } from './model/nbaGames';
 import { NBA_VOLUME, nbaTenPlusCount, nbaTenPlusProb, projectNbaProp } from './model/nbaProps';
@@ -300,6 +300,59 @@ function fakeResults(game: Partial<NbaGameRow> | null, box: Partial<NbaBoxRow>[]
     box: async () => box as NbaBoxRow[],
   };
 }
+
+test('NBA live results: the BallDontLie box only counts once team points match the final score', () => {
+  const g = { id: 5, status_state: 'final', home_team_score: 30, visitor_team_score: 12, home_team: { id: 1 }, visitor_team: { id: 2 } };
+  const stats = [
+    { player: { id: 7 }, team: { id: 1 }, min: '34:30', pts: 25, reb: 5, ast: 4, fg3m: 3 },
+    { player: { id: 8 }, team: { id: 1 }, min: '20', pts: 5, reb: 1, ast: 1, fg3m: 0 },
+    { player: { id: 9 }, team: { id: 2 }, min: '30', pts: 12, reb: 9, ast: 2, fg3m: 1 },
+  ];
+  const ok = nbaLiveResult(g, stats);
+  assert.equal(ok.game.home_score, 30);
+  assert.deepEqual(ok.box.map((r) => [r.player_id, r.pts, r.minutes]), [[7, 25, 34.5], [8, 5, 20], [9, 12, 30]]);
+  assert.deepEqual(nbaLiveResult({ ...g, home_team_score: 32 }, stats).box, [], 'box still behind the final score');
+  assert.deepEqual(nbaLiveResult({ ...g, status_state: 'in_progress' }, stats).box, []);
+});
+
+test('NBA results source: asks BallDontLie only when the synced tables are behind', async () => {
+  const tip = NOW - 3 * H;
+  const calls: string[] = [];
+  const bdl = {
+    get: async <T,>(path: string) => {
+      calls.push(path);
+      return { data: { id: 5, status_state: 'final', home_team_score: 10, visitor_team_score: 4, home_team: { id: 1 }, visitor_team: { id: 2 } } } as T;
+    },
+    all: async <T,>(path: string) => {
+      calls.push(path);
+      return [
+        { player: { id: 7 }, team: { id: 1 }, min: '30', pts: 10, reb: 3, ast: 2, fg3m: 1 },
+        { player: { id: 9 }, team: { id: 2 }, min: '30', pts: 4, reb: 1, ast: 0, fg3m: 0 },
+      ] as T[];
+    },
+  };
+  const stored = (game: Partial<NbaGameRow>, box: Partial<NbaBoxRow>[] = []): NbaResults => ({
+    game: async () => ({ id: 5, status_state: 'in_progress', postponed: false, home_score: 8, visitor_score: 4, tipoff_at: iso(tip), ...game }) as NbaGameRow,
+    box: async () => box as NbaBoxRow[],
+  });
+
+  const behind = new NbaResultsSource({ stored: stored({}), bdl, nowMs: NOW });
+  assert.equal((await behind.game('5'))?.status_state, 'final');
+  assert.deepEqual((await behind.box('5')).map((r) => r.player_id), [7, 9]);
+  assert.equal(calls.length, 2, 'one game read and one box read, cached for the run');
+
+  calls.length = 0;
+  const early = new NbaResultsSource({ stored: stored({ tipoff_at: iso(NOW - H) }), bdl, nowMs: NOW });
+  assert.equal((await early.game('5'))?.status_state, 'in_progress');
+  assert.equal(calls.length, 0, 'still inside 2h of tip-off');
+
+  const synced = new NbaResultsSource({ stored: stored({ status_state: 'final' }, [{ player_id: 7, pts: 10 }]), bdl, nowMs: NOW });
+  assert.equal((await synced.box('5')).length, 1);
+  assert.equal(calls.length, 0, 'synced tables already have the result');
+
+  const noBox = new NbaResultsSource({ stored: stored({ status_state: 'final' }), bdl, nowMs: NOW });
+  assert.deepEqual((await noBox.box('5')).map((r) => r.player_id), [7, 9]);
+});
 
 test('NBA grading: waits for final and box scores, DNP voids, game lines from the final score', async () => {
   const start = NOW - 5 * H;

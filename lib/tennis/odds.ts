@@ -33,6 +33,7 @@ import { deleteTennisPlayerPropsListCache } from '@/lib/tennis/playerPropsListCa
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import {
   filterTennisOuLines,
+  tennisAustralianBet365,
   type TennisBookRow,
   type TennisMatchOdds,
   type TennisOuLine,
@@ -54,8 +55,6 @@ export type TennisOddsSnapshot = {
   homeName: string;
   awayName: string;
   bookmakers: TennisBookRow[];
-  /** bet365 AU (odds-api.net), home-oriented like `bookmakers`. The AI uses it in place of API-Tennis's bet365. */
-  bet365Au?: TennisBookRow | null;
   fetchedAt: string;
   oddsApiEventId?: string;
   commenceTime?: string | null;
@@ -577,10 +576,7 @@ function presentSnapshot(snapshot: TennisOddsSnapshot, next: TennisNextGame): Te
     matchId: snapshot.matchId,
     homeTeam: playerIsHome ? next.homeName : next.awayName,
     awayTeam: playerIsHome ? next.awayName : next.homeName,
-    bookmakers: orientBooksForPlayer(
-      snapshot.bet365Au ? [...snapshot.bookmakers, snapshot.bet365Au] : snapshot.bookmakers,
-      playerIsHome
-    ),
+    bookmakers: orientBooksForPlayer(snapshot.bookmakers, playerIsHome),
     fetchedAt: snapshot.fetchedAt,
   };
 }
@@ -588,14 +584,13 @@ function presentSnapshot(snapshot: TennisOddsSnapshot, next: TennisNextGame): Te
 async function writeSnapshot(
   next: TennisNextGame,
   books: TennisBookRow[],
-  extra?: { oddsApiEventId?: string; sportKey?: string | null; bet365Au?: TennisBookRow | null }
+  extra?: { oddsApiEventId?: string; sportKey?: string | null }
 ): Promise<TennisOddsSnapshot> {
   const snapshot: TennisOddsSnapshot = {
     matchId: String(next.matchId),
     homeName: next.homeName,
     awayName: next.awayName,
-    bookmakers: books,
-    bet365Au: extra?.bet365Au ?? null,
+    bookmakers: tennisAustralianBet365(books),
     fetchedAt: new Date().toISOString(),
     oddsApiEventId: extra?.oddsApiEventId,
     commenceTime: next.tipoff,
@@ -607,10 +602,19 @@ async function writeSnapshot(
   return snapshot;
 }
 
+/** Older snapshots kept the AU bet365 row apart and the international one whole; both get merged on the way out. */
+async function getSnapshot(matchId: string): Promise<TennisOddsSnapshot | null> {
+  const snapshot = await sharedCache.getJSON<TennisOddsSnapshot & { bet365Au?: TennisBookRow | null }>(snapshotKey(matchId));
+  if (!snapshot) return null;
+  const { bet365Au, ...rest } = snapshot;
+  const books = [...(rest.bookmakers ?? []), ...(bet365Au ? [bet365Au] : [])];
+  return { ...rest, bookmakers: tennisAustralianBet365(books) };
+}
+
 export async function readTennisOddsSnapshot(matchId: string): Promise<TennisOddsSnapshot | null> {
   const id = String(matchId || '').trim();
   if (!id) return null;
-  const snapshot = await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(id));
+  const snapshot = await getSnapshot(id);
   return snapshot?.bookmakers?.length ? snapshot : null;
 }
 
@@ -776,7 +780,6 @@ export async function refreshTennisOddsSnapshots(opts?: {
     const catalog = await refreshOddsApiTennisCatalog({ upcoming, force: true });
     const targets = pickRefreshTargets(upcoming);
     const extra: ExtraTennisBooks = await fetchExtraTennisBooks(targets).catch(() => ({
-      bet365Au: new Map(),
       rows: new Map(),
       counts: {},
     }));
@@ -798,7 +801,6 @@ export async function refreshTennisOddsSnapshots(opts?: {
           await writeSnapshot(game, books, {
             oddsApiEventId: oddsApi?.eventId,
             sportKey: oddsApi?.sportKey,
-            bet365Au: extra.bet365Au.get(matchId) ?? null,
           });
           snapshots += 1;
         })
@@ -925,9 +927,7 @@ export async function getTennisMatchOddsForPlayer(opts: {
     opponentName: opponentName || null,
   });
   const fixtureId = String(fixture?.matchId || '').trim();
-  const fixtureSnapshot = fixtureId
-    ? await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(fixtureId))
-    : null;
+  const fixtureSnapshot = fixtureId ? await getSnapshot(fixtureId) : null;
   const fromOdds = await findTennisNextGameFromOdds({
     playerName: playerName || fixture?.homeName || fixture?.awayName,
     opponentName: opponentName || fixture?.opponent,
@@ -936,9 +936,7 @@ export async function getTennisMatchOddsForPlayer(opts: {
   });
   const oddsId = String(fromOdds?.matchId || '').trim();
   const oddsSnapshot =
-    fromOdds && oddsId && oddsId !== fixtureId
-      ? await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(oddsId))
-      : null;
+    fromOdds && oddsId && oddsId !== fixtureId ? await getSnapshot(oddsId) : null;
   const fixturePriced = presentIfUseful(fixtureSnapshot, fixture);
   const oddsPriced = presentIfUseful(oddsSnapshot, fromOdds);
   if (snapshotHasChartLines(fixtureSnapshot) && fixturePriced) return fixturePriced;
