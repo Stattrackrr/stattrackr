@@ -1,0 +1,113 @@
+{
+  "mode": "player",
+  "playerName": "Archie Woodhill",
+  "team": "Brisbane Bullets",
+  "years": [
+    2026
+  ],
+  "gamesUsed": 1,
+  "fixturesFetched": 0,
+  "fixturesCached": 1,
+  "shotCount": 8,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 5,
+      "fgm": 1,
+      "fgPct": 20,
+      "share": 62.5
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 12.5
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 2,
+      "fgm": 1,
+      "fgPct": 50,
+      "share": 25
+    }
+  ],
+  "points": [
+    [
+      8.12,
+      2.27,
+      0,
+      0
+    ],
+    [
+      7.65,
+      3.15,
+      0,
+      0
+    ],
+    [
+      8.71,
+      8.73,
+      0,
+      1
+    ],
+    [
+      7.76,
+      2.9,
+      1,
+      0
+    ],
+    [
+      8.21,
+      2.49,
+      0,
+      0
+    ],
+    [
+      6.97,
+      2.13,
+      0,
+      0
+    ],
+    [
+      6.45,
+      2.2,
+      0,
+      0
+    ],
+    [
+      7.9,
+      9.25,
+      1,
+      1
+    ]
+  ],
+  "generatedAt": "2026-10-21T18:00:39.106Z"
+}

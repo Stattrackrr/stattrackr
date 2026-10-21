@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-20T17:55:51.496Z",
+  "generatedAt": "2026-10-21T18:00:15.075Z",
   "source": "rosetta.nbl.com.au",
   "teams": [
     {
@@ -10,16 +10,16 @@
       "teamCode": "TAS",
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "teamLogo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-      "played": 7,
-      "win": 5,
+      "played": 8,
+      "win": 6,
       "loss": 2,
-      "points_for": 684,
-      "points_against": 663,
-      "points_percentage": 1.0317,
-      "win_percentage": 0.7143,
-      "last_5": "WLWWWLW",
-      "streak": 1,
-      "home_wins": 3,
+      "points_for": 790,
+      "points_against": 748,
+      "points_percentage": 1.0561,
+      "win_percentage": 0.75,
+      "last_5": "WLWWWLWW",
+      "streak": 2,
+      "home_wins": 4,
       "home_losses": 1,
       "away_wins": 2,
       "away_losses": 1
@@ -86,26 +86,6 @@
     },
     {
       "pos": 5,
-      "team": "Brisbane Bullets",
-      "teamCode": "BRI",
-      "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-      "teamLogo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-      "played": 6,
-      "win": 3,
-      "loss": 3,
-      "points_for": 574,
-      "points_against": 584,
-      "points_percentage": 0.9829,
-      "win_percentage": 0.5,
-      "last_5": "WWLLLW",
-      "streak": 1,
-      "home_wins": 3,
-      "home_losses": 1,
-      "away_wins": 0,
-      "away_losses": 2
-    },
-    {
-      "pos": 6,
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
@@ -125,7 +105,7 @@
       "away_losses": 2
     },
     {
-      "pos": 7,
+      "pos": 6,
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
@@ -145,7 +125,7 @@
       "away_losses": 4
     },
     {
-      "pos": 8,
+      "pos": 7,
       "team": "Melbourne United",
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
@@ -163,6 +143,26 @@
       "home_losses": 3,
       "away_wins": 3,
       "away_losses": 1
+    },
+    {
+      "pos": 8,
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "teamLogo": "https://cdn.nbl.com.au/app_assets/BNE.png",
+      "played": 7,
+      "win": 3,
+      "loss": 4,
+      "points_for": 659,
+      "points_against": 690,
+      "points_percentage": 0.9551,
+      "win_percentage": 0.4286,
+      "last_5": "WWLLLWL",
+      "streak": 0,
+      "home_wins": 3,
+      "home_losses": 1,
+      "away_wins": 0,
+      "away_losses": 3
     },
     {
       "pos": 9,

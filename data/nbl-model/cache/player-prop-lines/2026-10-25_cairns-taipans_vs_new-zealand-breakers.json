@@ -4,7 +4,7 @@
   "homeTeam": "Cairns Taipans",
   "awayTeam": "New Zealand Breakers",
   "commenceTime": "2026-10-25T04:00:00.000Z",
-  "capturedAt": "2026-10-21T13:57:47.355Z",
+  "capturedAt": "2026-10-21T18:00:51.110Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -26,7 +26,7 @@
     "TABtouch",
     "Unibet"
   ],
-  "lineCount": 3157,
+  "lineCount": 3163,
   "lines": [
     {
       "player": "Carlin Davison",
@@ -41067,6 +41067,84 @@
       "over": "+1100",
       "under": "N/A",
       "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Jack Mcveigh",
+      "playerKey": "jack mcveigh",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-1250",
+      "under": "N/A",
+      "overDecimal": 1.08,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylin Galloway",
+      "playerKey": "jaylin galloway",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 17.5,
+      "label": "18+",
+      "over": "+375",
+      "under": "N/A",
+      "overDecimal": 4.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylin Galloway",
+      "playerKey": "jaylin galloway",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 18.5,
+      "label": "19+",
+      "over": "+500",
+      "under": "N/A",
+      "overDecimal": 6,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylin Galloway",
+      "playerKey": "jaylin galloway",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "+650",
+      "under": "N/A",
+      "overDecimal": 7.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylin Galloway",
+      "playerKey": "jaylin galloway",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 20.5,
+      "label": "21+",
+      "over": "+850",
+      "under": "N/A",
+      "overDecimal": 9.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylin Galloway",
+      "playerKey": "jaylin galloway",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 21.5,
+      "label": "22+",
+      "over": "+1000",
+      "under": "N/A",
+      "overDecimal": 11,
       "underDecimal": null
     }
   ]

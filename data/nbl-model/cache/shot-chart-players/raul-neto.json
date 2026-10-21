@@ -1,0 +1,89 @@
+{
+  "mode": "player",
+  "playerName": "Raul Neto",
+  "team": "Brisbane Bullets",
+  "years": [
+    2026
+  ],
+  "gamesUsed": 1,
+  "fixturesFetched": 0,
+  "fixturesCached": 1,
+  "shotCount": 4,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 3,
+      "fgm": 3,
+      "fgPct": 100,
+      "share": 75
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 1,
+      "fgm": 1,
+      "fgPct": 100,
+      "share": 25
+    }
+  ],
+  "points": [
+    [
+      7.08,
+      2.52,
+      1,
+      0
+    ],
+    [
+      7.13,
+      1.65,
+      1,
+      0
+    ],
+    [
+      9.12,
+      8.75,
+      1,
+      1
+    ],
+    [
+      8.19,
+      2.49,
+      1,
+      0
+    ]
+  ],
+  "generatedAt": "2026-10-21T18:00:39.106Z"
+}

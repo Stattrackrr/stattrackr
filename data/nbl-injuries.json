@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-10-20T17:56:17.143Z",
+  "generatedAt": "2026-10-21T18:00:36.344Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
-  "sourceUpdatedText": "Tuesday, October 13, 6:00pm AEDT",
-  "injuryCount": 25,
+  "sourceUpdatedText": "Tuesday, October 20, 8:00pm AEDT",
+  "injuryCount": 26,
   "injuries": [
     {
       "team": "Adelaide 36ers",
       "player": "Flynn Cameron",
       "injury": "Ankle",
-      "returning": "Round 5",
+      "returning": "TBC",
       "status": "Out",
-      "note": "Left Adelaide’s NBL27 opener against Melbourne United at John Cain Arena on Saturday 19 September 2026 with an ankle injury, reported by basketball.com.au. He started the game. Michael Randall reported on 23 September that Cameron will not fly to Perth for the trip to the Wildcats. Jai at Fox Sports (@NBLPleb) reported on 27 September that Cameron is sidelined in a moon boot on his right ankle and is expected to be out for up to six weeks. That is an upper bound rather than a date, and no starting point was given for it. The NBL’s 29 September update puts his return at Round 5.",
+      "note": "Left Adelaide’s NBL27 opener against Melbourne United at John Cain Arena on Saturday 19 September 2026 with an ankle injury, reported by basketball.com.au. He started the game. Michael Randall reported on 23 September that Cameron will not fly to Perth for the trip to the Wildcats. Jai at Fox Sports (@NBLPleb) reported on 27 September that Cameron is sidelined in a moon boot on his right ankle and is expected to be out for up to six weeks. That is an upper bound rather than a date, and no starting point was given for it. The NBL’s list of 20 October has his return as TBC.",
       "listedByNbl": true
     },
     {
@@ -34,19 +34,29 @@
     },
     {
       "team": "Brisbane Bullets",
+      "player": "Tyrell Harrison",
+      "injury": "Ankle",
+      "returning": "Test",
+      "status": "Day-to-Day",
+      "note": "A game-time decision for Brisbane’s game at Tasmania on 21 October 2026, Walshly News reported, after he left the 15 October win over South East Melbourne with an ankle injury.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Brisbane Bullets",
+      "player": "Jacob Holt",
+      "injury": "Ankle",
+      "returning": "Round 10",
+      "status": "Out",
+      "note": "Expected to miss five weeks with the ankle injury from 15 October 2026, Walshly News reported on 21 October. Archie Woodhill suits up in his place.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Brisbane Bullets",
       "player": "Sam McDaniel",
       "injury": "Lower leg",
       "returning": "Round 10",
       "status": "Out",
       "note": "Will miss at least six weeks with a lower leg injury, the NBL reported on 9 October 2026 in announcing that Brisbane have signed Mawot Mag as his injury replacement player. He was hurt in Brisbane’s home game against Tasmania on Saturday 3 October, the night he returned from a hand injury, and Brisbane’s update of 7 October ruled him out for about six weeks, with Josh Duach suiting up in his absence. The NBL’s list of 13 October has him back in Round 10.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Taine Murray",
-      "injury": "Lower Limb",
-      "returning": "Round 5-6",
-      "status": "Out",
       "listedByNbl": true
     },
     {
@@ -71,7 +81,7 @@
       "team": "Cairns Taipans",
       "player": "Jaylin Galloway",
       "injury": "Shoulder",
-      "returning": "Round 6",
+      "returning": "Test",
       "status": "Out",
       "note": "He is targeting the Taipans’ home game against the New Zealand Breakers on Sunday 25 October for his return from shoulder surgery and his Cairns debut, reported by Michael Randall of the Herald Sun on 7 October 2026. He has not played since 30 June, for Australia against Puerto Rico. Cairns said in their 3 October game preview that he was making considerable progress in his rehabilitation.",
       "listedByNbl": true
@@ -98,9 +108,9 @@
       "team": "Melbourne United",
       "player": "Chris Goulding",
       "injury": "Calf",
-      "returning": "Round 5",
+      "returning": "Round 7",
       "status": "Out",
-      "note": "Goulding missed Melbourne United’s game against Cairns at John Cain Arena on Saturday 3 October with a calf strain, according to the Taipans’ game preview of 3 October 2026. United have not given a return date; the NBL’s list of 13 October has him back in Round 5.",
+      "note": "Goulding missed Melbourne United’s game against Cairns at John Cain Arena on Saturday 3 October with a calf strain, according to the Taipans’ game preview of 3 October 2026. United have not given a return date; the NBL’s list of 20 October has him back in Round 7.",
       "listedByNbl": true
     },
     {
@@ -134,7 +144,7 @@
       "team": "New Zealand Breakers",
       "player": "Josiah-Jordan James",
       "injury": "Hamstring",
-      "returning": "Assessed 9-23 Oct",
+      "returning": "TBC",
       "status": "Out",
       "note": "The Breakers say James has a torn left hamstring, reported by Olgun Uluc on 16 September 2026. On 3 October general manager Dillon Boucher said James is three weeks post-injury and will be assessed at the four-to-six-week mark of his rehabilitation, reported by Jai at Fox Sports (@NBLPleb). Mojave King has joined as injury cover, and Boucher said the club will keep monitoring the import market.",
       "listedByNbl": true
@@ -144,17 +154,16 @@
       "player": "Kristian Doolittle",
       "injury": "Foot",
       "returning": "TBC",
-      "status": "TBC",
-      "note": "Missed Perth’s loss at the Sydney Kings on 17 October 2026 with a foot injury, the NBL reported. No return date has been given.",
+      "status": "Out",
       "listedByNbl": true
     },
     {
       "team": "Perth Wildcats",
       "player": "Jo Lual-Acuil Jr",
       "injury": "Calf",
-      "returning": "Review in 3 weeks",
+      "returning": "After FIBA break",
       "status": "Out",
-      "note": "Perth confirmed on 1 October that he is out with a calf injury, will miss Friday’s home game against South East Melbourne and will be re-evaluated in about three weeks. Development player Tana Kopa replaces him on the roster. He left Perth’s 97-93 win over the New Zealand Breakers on 26 September after 7 minutes and 38 seconds, first reported by basketball.com.au that night.",
+      "note": "Perth said on 21 October that he has had a setback with the injury and will be re-evaluated after the November FIBA break, with a further update on his return due then. The club had ruled him out on 1 October with a calf injury and a review in about three weeks. Development player Tana Kopa replaced him on the roster. He left Perth’s 97-93 win over the New Zealand Breakers on 26 September after 7 minutes and 38 seconds, first reported by basketball.com.au that night.",
       "listedByNbl": true
     },
     {
@@ -177,17 +186,16 @@
     {
       "team": "South East Melbourne Phoenix",
       "player": "Tanner Krebs",
-      "injury": "Not disclosed",
+      "injury": "Neck",
       "returning": "TBC",
       "status": "Out",
-      "note": "Failed a fitness test and misses the home game against the Cairns Taipans on 17 October 2026, Michael Randall reported. He played 27 minutes at Brisbane on 15 October.",
       "listedByNbl": true
     },
     {
       "team": "Sydney Kings",
       "player": "Matthew Dellavedova",
       "injury": "Calf",
-      "returning": "Re-evaluated next week",
+      "returning": "Round 7",
       "status": "Out",
       "note": "The Sydney Kings said on Tuesday 13 October 2026 that Dellavedova will miss both Round 5 games, against the New Zealand Breakers on Wednesday 14 October and the Perth Wildcats on Sunday 18 October, with a calf injury, and will be re-evaluated next week. Lachlan Bofinger replaces him in the squad. The NBL’s list of 13 October has him back in Round 7.",
       "listedByNbl": true
@@ -204,9 +212,9 @@
       "team": "Tasmania JackJumpers",
       "player": "Ben Ayre",
       "injury": "Hip flexor",
-      "returning": "Test",
+      "returning": "Round 7",
       "status": "Out",
-      "note": "WIN News Tasmania’s Brent Costelloe reported from the JackJumpers press conference on Wednesday 17 September that Ayre was \"still a few weeks away from returning\". The NBL’s 21 September list now gives him a return of Round 3, which is consistent with that report. Michael Randall reported on 22 September that he remains out for Tasmania’s trip to Cairns on 23 September.",
+      "note": "WIN News Tasmania’s Brent Costelloe reported from the JackJumpers press conference on Wednesday 17 September that Ayre was \"still a few weeks away from returning\". The NBL’s list of 20 October has him back in Round 7, having listed him as a test on 13 October.",
       "listedByNbl": true
     },
     {
