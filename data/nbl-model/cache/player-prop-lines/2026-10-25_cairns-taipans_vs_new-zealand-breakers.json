@@ -4,7 +4,7 @@
   "homeTeam": "Cairns Taipans",
   "awayTeam": "New Zealand Breakers",
   "commenceTime": "2026-10-25T04:00:00.000Z",
-  "capturedAt": "2026-10-21T00:42:20.647Z",
+  "capturedAt": "2026-10-21T07:50:00.113Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -26,7 +26,7 @@
     "TABtouch",
     "Unibet"
   ],
-  "lineCount": 3148,
+  "lineCount": 3157,
   "lines": [
     {
       "player": "Carlin Davison",
@@ -40950,6 +40950,123 @@
       "over": "-455",
       "under": "N/A",
       "overDecimal": 1.22,
+      "underDecimal": null
+    },
+    {
+      "player": "Dejan Vasiljevic",
+      "playerKey": "dejan vasiljevic",
+      "book": "Dabble",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Dejan Vasiljevic",
+      "playerKey": "dejan vasiljevic",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 6.5,
+      "label": "7+",
+      "over": "-1000",
+      "under": "N/A",
+      "overDecimal": 1.1,
+      "underDecimal": null
+    },
+    {
+      "player": "Jack Mcveigh",
+      "playerKey": "jack mcveigh",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 30.5,
+      "label": "31+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylin Galloway",
+      "playerKey": "jaylin galloway",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 15.5,
+      "label": "16+",
+      "over": "+700",
+      "under": "N/A",
+      "overDecimal": 8,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylin Galloway",
+      "playerKey": "jaylin galloway",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 16.5,
+      "label": "17+",
+      "over": "+900",
+      "under": "N/A",
+      "overDecimal": 10,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 23.5,
+      "label": "24+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Jonah Bolden",
+      "playerKey": "jonah bolden",
+      "book": "Dabble",
+      "stat": "rebounds",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-1250",
+      "under": "N/A",
+      "overDecimal": 1.08,
+      "underDecimal": null
+    },
+    {
+      "player": "Keanu Pinder",
+      "playerKey": "keanu pinder",
+      "book": "Bet Right",
+      "stat": "pa",
+      "kind": "milestone",
+      "line": 21.5,
+      "label": "22+",
+      "over": "+188",
+      "under": "N/A",
+      "overDecimal": 2.88,
+      "underDecimal": null
+    },
+    {
+      "player": "Keanu Pinder",
+      "playerKey": "keanu pinder",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 24.5,
+      "label": "25+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
       "underDecimal": null
     }
   ]
