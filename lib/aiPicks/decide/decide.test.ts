@@ -5,7 +5,7 @@ import { candidateKey } from '../candidates/types';
 import { DEFAULT_AI_PICKS_PARAMS as P } from '../params';
 import type { AiPick } from '../types';
 import { aiDayKey, gameIdentity, readiness, type WatchPoint } from './timing';
-import { chooseMulti, chooseSingles, multiKey, qualifiesSingle, subjectId, type PostedState, type Watched } from './select';
+import { chooseMulti, chooseSingles, multiKey, multiLegsCompatible, qualifiesSingle, subjectId, type PostedState, type Watched } from './select';
 import { isClosedRow, nextWatchRow, postedState, watchBatches } from './watch';
 import { parseReview } from './review';
 import { pickTitle } from '../format';
@@ -304,4 +304,15 @@ test('review parsing fails closed', () => {
 test('titles name the match for match-level tennis bets', () => {
   assert.equal(pickTitle([cand()]), 'A. One vs B. Two: over 21.5 total games');
   assert.equal(pickTitle([cand({ market: 'match_winner', player: 'A. One', side: 'yes', line: null })]), 'A. One to win');
+});
+
+test('multi legs: basketball never mixes with tennis; basketball same Sydney day, tennis within 12 hours', () => {
+  const at = (sport: AiCandidate['sport'], local: string) => ({ sport, startsAt: new Date(`${local}+11:00`).toISOString() });
+  assert.equal(multiLegsCompatible(at('nba', '2026-10-22T10:00:00'), at('nbl', '2026-10-22T19:30:00')), true);
+  assert.equal(multiLegsCompatible(at('nba', '2026-10-22T10:00:00'), at('nba', '2026-10-22T15:00:00')), true);
+  assert.equal(multiLegsCompatible(at('nba', '2026-10-22T10:00:00'), at('nba', '2026-10-23T10:00:00')), false);
+  assert.equal(multiLegsCompatible(at('nba', '2026-10-22T23:00:00'), at('nba', '2026-10-23T01:00:00')), false);
+  assert.equal(multiLegsCompatible(at('nba', '2026-10-22T10:00:00'), at('tennis', '2026-10-22T11:00:00')), false);
+  assert.equal(multiLegsCompatible(at('tennis', '2026-10-22T19:00:00'), at('tennis', '2026-10-23T03:00:00')), true);
+  assert.equal(multiLegsCompatible(at('tennis', '2026-10-22T09:00:00'), at('tennis', '2026-10-23T05:00:00')), false);
 });

@@ -10,7 +10,7 @@ import { isNblPropMarket, isPlayerPropMarket } from '@/lib/aiPicks/markets';
 import { round } from '@/lib/aiPicks/model/math';
 import { paramsForSport, type AiPicksParams, type AiSportParams } from '@/lib/aiPicks/params';
 import { AI_PICK_MIN_PRICE } from '@/lib/aiPicks/types';
-import { gameIdentity, heldUp, MIN_LEAD_MS, readiness, type WatchPoint } from '@/lib/aiPicks/decide/timing';
+import { aiDayKey, gameIdentity, heldUp, MIN_LEAD_MS, readiness, type WatchPoint } from '@/lib/aiPicks/decide/timing';
 
 export const POST_HORIZON_MS = 24 * 60 * 60 * 1000;
 /**
@@ -307,10 +307,27 @@ export function multiKey(keys: string[]): string {
 const allowanceOpen = (times: number[], cap: number, gapMs: number, nowMs: number) =>
   times.length < cap && !(times.length && nowMs - Math.max(...times) < gapMs);
 
+/** Tennis legs may run overnight (7pm then 3am) but not most of a day apart. */
+export const TENNIS_MULTI_MAX_GAP_MS = 12 * 60 * 60 * 1000;
+
 /**
- * Best ready 2-leg multi: legs from different games, both bettable at one book, combined price
- * at least 1.65, and positive EV after treating the legs as independent. All-NBA multis go on the
- * NBA allowance (sized to the slate); any other on the shared one.
+ * Two legs can share a multi: basketball (NBA and NBL) never mixes with tennis. Basketball legs start
+ * on the same Sydney day, even when tomorrow's game is inside the 24-hour window; tennis legs start
+ * within TENNIS_MULTI_MAX_GAP_MS of each other.
+ */
+export function multiLegsCompatible(
+  a: Pick<AiCandidate, 'sport' | 'startsAt'>,
+  b: Pick<AiCandidate, 'sport' | 'startsAt'>
+): boolean {
+  if ((a.sport === 'tennis') !== (b.sport === 'tennis')) return false;
+  if (a.sport === 'tennis') return Math.abs(Date.parse(a.startsAt) - Date.parse(b.startsAt)) <= TENNIS_MULTI_MAX_GAP_MS;
+  return aiDayKey(a.startsAt) === aiDayKey(b.startsAt);
+}
+
+/**
+ * Best ready 2-leg multi: legs from different games that can be combined (see multiLegsCompatible), both
+ * bettable at one book, combined price at least 1.65, and positive EV after treating the legs as
+ * independent. All-NBA multis go on the NBA allowance (sized to the slate); any other on the shared one.
  */
 export function chooseMulti(
   watched: Watched[],
@@ -332,7 +349,7 @@ export function chooseMulti(
   for (let i = 0; i < pool.length; i += 1) {
     for (let j = i + 1; j < pool.length; j += 1) {
       const [a, b] = [pool[i]!, pool[j]!].sort((x, y) => Date.parse(x.c.startsAt) - Date.parse(y.c.startsAt));
-      if (gameIdentity(a.c) === gameIdentity(b.c)) continue;
+      if (gameIdentity(a.c) === gameIdentity(b.c) || !multiLegsCompatible(a.c, b.c)) continue;
       if (a.c.sport === 'nba' && b.c.sport === 'nba' ? !nbaOpen : !sharedOpen) continue;
       const key = multiKey([a.c.key, b.c.key]);
       if (exclude.rejected.has(key)) continue;
