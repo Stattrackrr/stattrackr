@@ -139,7 +139,91 @@ const avg = (values: number[]) => (values.length ? round1(values.reduce((s, v) =
 const wholeMinutes = (v: number | null | undefined) => (v == null || !Number.isFinite(v) ? null : Math.round(v));
 const statWords = (stat: string) => NBA_ASK_STAT_WORDS[stat] ?? stat;
 const clubName = (code: string | null | undefined) => (code && getNbaClubByCode(code)?.name) || code || '';
-const lastNameOf = (name: string) => name.trim().split(/\s+/).filter(Boolean).at(-1) || name;
+const NAME_SUFFIX = /^(?:jr|sr|ii|iii|iv|v)\.?$/i;
+
+/** "Jabari Smith Jr." -> "Smith". */
+export function nbaAskLastName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  while (parts.length > 1 && NAME_SUFFIX.test(parts.at(-1)!)) parts.pop();
+  return parts.at(-1) || name;
+}
+const lastNameOf = nbaAskLastName;
+
+const AVERAGE_WORDS = Object.values(NBA_ASK_STAT_WORDS).sort((a, b) => b.length - a.length);
+const AVERAGE_WORDS_RE = AVERAGE_WORDS.map((w) => w.replace(/[+]/g, '\\+').replace(/\s+/g, '\\s+')).join('|');
+const AVERAGE_CLAIMS = [
+  new RegExp(`averag(?:e|es|ed|ing)\\s+(?:of\\s+|about\\s+|around\\s+)?(\\d+(?:\\.\\d+)?)\\s+(${AVERAGE_WORDS_RE})(?![\\w+])`, 'gi'),
+  new RegExp(`(${AVERAGE_WORDS_RE})\\s+average\\s+(?:is|was|of|at|sits at)\\s+(\\d+(?:\\.\\d+)?)`, 'gi'),
+];
+
+/** Pack `player.averages` keys -> the window a sentence would name. */
+const AVERAGES_KEY_WINDOW: Record<string, string> = { last5: 'last5', last10: 'last10', thisSeason: 'season' };
+
+/** Windows named in a sentence or a hit-rate label: "this season", "last 10", "against San Antonio". */
+function windowsIn(text: string): Set<string> {
+  const s = text.toLowerCase();
+  const out = new Set<string>();
+  if (/\bthis season\b|\bseason average\b/.test(s)) out.add('season');
+  for (const m of s.matchAll(/\blast\s+(\d+)\b/g)) out.add(`last${m[1]}`);
+  if (/\bagainst\b|\bhead to head\b|\bmeetings?\b/.test(s)) out.add('against');
+  return out;
+}
+
+type KnownAverage = { words: string; window: string | null; value: number };
+
+/** Every average the pack gives, with its market and window when it has one. */
+function knownAverages(pack: unknown): KnownAverage[] {
+  const known: KnownAverage[] = [];
+  const add = (words: string, window: string | null, v: unknown) => {
+    if (typeof v === 'number' && Number.isFinite(v)) known.push({ words, window, value: v });
+  };
+  const walk = (node: unknown, market: string | null, window: string | null) => {
+    if (Array.isArray(node)) return node.forEach((item) => walk(item, market, window));
+    if (!node || typeof node !== 'object') return;
+    const obj = node as Record<string, unknown>;
+    const m = typeof obj.market === 'string' ? obj.market : market;
+    const w = typeof obj.window === 'string' ? [...windowsIn(obj.window)][0] ?? null : window;
+    if (m && 'average' in obj) add(m, w, obj.average);
+    for (const [key, value] of Object.entries(obj)) {
+      if (AVERAGE_WORDS.includes(key)) add(key, w, value);
+      walk(value, m, AVERAGES_KEY_WINDOW[key] ?? w);
+    }
+  };
+  walk(pack, null, null);
+  return known;
+}
+
+/** The sentence around `index`, ignoring decimal points ("27.8"). */
+function sentenceAt(text: string, index: number): string {
+  const ends = [...text.matchAll(/[.!?](?=\s|$)/g)].map((m) => m.index!);
+  const start = ends.filter((e) => e < index).at(-1);
+  const end = ends.find((e) => e >= index);
+  return text.slice(start == null ? 0 : start + 1, end == null ? text.length : end + 1);
+}
+
+/**
+ * "averaging 30 points + rebounds + assists this season" claims whose number is not that market's
+ * average for the window named in the same sentence (any window when none is named).
+ */
+export function nbaAverageMismatches(text: string, pack: unknown): string[] {
+  const known = knownAverages(pack);
+  const bad: string[] = [];
+  for (const [i, re] of AVERAGE_CLAIMS.entries()) {
+    for (const m of text.matchAll(re)) {
+      const [num, words] = i === 0 ? [m[1]!, m[2]!] : [m[2]!, m[1]!];
+      const key = words.toLowerCase().replace(/\s+/g, ' ');
+      const n = Number(num);
+      const windows = windowsIn(sentenceAt(text, m.index!));
+      const market = known.filter((k) => k.words === key);
+      const scoped = windows.size ? market.filter((k) => k.window && windows.has(k.window)) : market;
+      // A window the pack has no average for (e.g. "last 3") can't be checked.
+      if (windows.size && !scoped.length) continue;
+      const ok = scoped.some((k) => Math.abs(round1(k.value) - n) < 0.05 || (Number.isInteger(n) && Math.round(k.value) === n));
+      if (!ok) bad.push(m[0]);
+    }
+  }
+  return bad;
+}
 
 function playedGames(games: NbaGameLogRow[]): NbaGameLogRow[] {
   return games.filter((g) => g.date && (g.minutes ?? 0) > 0);
@@ -188,9 +272,10 @@ function lineRead(games: NbaGameLogRow[], stat: string, line: number, opponentCo
   };
 }
 
-function averagesFor(rows: NbaGameLogRow[]) {
+/** Every combo is listed so the model never adds them up (or mislabels one) itself. */
+function averagesFor(rows: NbaGameLogRow[], focusStat: string) {
   const out: Record<string, number | null> = {};
-  for (const stat of ['points', 'rebounds', 'assists', 'threeMade', 'pra']) {
+  for (const stat of new Set([...BEST_PLAY_STATS, focusStat])) {
     out[statWords(stat)] = avg(rows.map((g) => nbaStatValue(g, stat)).filter((v): v is number => v != null));
   }
   out.minutes = avg(rows.map((g) => g.minutes).filter((v): v is number => v != null && v > 0));
@@ -213,9 +298,9 @@ function playerForm(games: NbaGameLogRow[], stat: string, now = Date.now()) {
   return {
     gamesThisSeason: season.length,
     averages: {
-      last5: averagesFor(played.slice(-5)),
-      last10: averagesFor(played.slice(-10)),
-      thisSeason: averagesFor(season),
+      last5: averagesFor(played.slice(-5), stat),
+      last10: averagesFor(played.slice(-10), stat),
+      thisSeason: averagesFor(season, stat),
     },
     lastGames: played
       .slice(-5)
@@ -801,6 +886,12 @@ export async function answerNbaAsk(opts: {
           ? `That price is under ${MIN_DECIMAL.toFixed(2)}. Pick a market priced ${MIN_DECIMAL.toFixed(2)} or more, or pass.`
           : null,
       askPriceCheck(priceOffers(markets)),
+      (r) => {
+        const bad = nbaAverageMismatches(askReplyText(r), pack);
+        return bad.length
+          ? `These averages don't match the market or window in their sentence: ${bad.map((b) => `"${b}"`).join('; ')}. player.averages has last5, last10 and thisSeason for every market (points, points + rebounds, points + rebounds + assists and so on); quote the number from the matching market and window.`
+          : null;
+      },
     ],
   });
   return { ...reply, suggestions };

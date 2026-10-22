@@ -1,16 +1,11 @@
 # NBA dashboard data: BallDontLie (GOAT) -> Supabase nba_* tables.
 # Writes to the database only (no Redis, no repo commits).
-#   - Every 2 hours, every job for the last 3 days: injuries, results, box scores (+ quarters),
-#     advanced (usage), lineups, play-by-play/shots, season averages (play types, tracking,
-#     hustle). A run takes ~30 s. GitHub drops scheduled runs often, so any run that does
-#     happen catches up on what a skipped one missed, including stats BallDontLie posts late.
-#   - Manual: any jobs/seasons, e.g. a full backfill.
-# Off-the-hour minutes: GitHub delays or skips far more runs at :00 and :30.
+# The incremental sync runs every 15 minutes from the Vercel cron /api/cron/sync-nba-bdl
+# (GitHub skipped most scheduled runs). This workflow is for manual runs: any jobs/seasons,
+# e.g. a full backfill.
 name: NBA Sync
 
 on:
-  schedule:
-    - cron: '17 */2 * * *'
   workflow_dispatch:
     inputs:
       jobs:

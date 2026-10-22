@@ -7,9 +7,9 @@ import { getEspnLogoUrl } from '@/app/nba/research/dashboard/utils/teamUtils';
 
 export const NBA_CURRENT_SEASON_YEAR = 2026; // 2026-27
 
-/** Play-by-play (shot charts, play types by zone) starts in 2025-26 on BallDontLie. */
+/** Shot charts show the current season only. */
 export const NBA_SHOT_CHART_SEASON_YEAR = 2026;
-export const NBA_SHOT_CHART_CACHE_YEARS: readonly number[] = [2026, 2025];
+export const NBA_SHOT_CHART_CACHE_YEARS: readonly number[] = [NBA_SHOT_CHART_SEASON_YEAR];
 
 /** Seasons loaded into the player chart (current → older). */
 export const NBA_CHART_HISTORY_YEARS: readonly number[] = [2026, 2025, 2024, 2023];

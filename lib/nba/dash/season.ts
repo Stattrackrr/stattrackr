@@ -5,7 +5,7 @@
  */
 import { createHash } from 'crypto';
 import { sharedCache } from '@/lib/sharedCache';
-import { nbaDashCached } from './responseCache';
+import { nbaDashCached, nbaDashDataAt } from './responseCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getNbaClubByCode, getNbaClubById, NBA_CURRENT_SEASON_YEAR } from './teams';
 import type { NbaGameLogRow, NbaLeaguePlayerStatRow } from './types';
@@ -268,9 +268,10 @@ async function loadPlayersInfo(): Promise<Map<string, NbaPlayerInfo>> {
   return out;
 }
 
-export function getNbaPlayersInfo(): Promise<Map<string, NbaPlayerInfo>> {
+export async function getNbaPlayersInfo(): Promise<Map<string, NbaPlayerInfo>> {
+  const dataAt = await nbaDashDataAt();
   const hit = seasonGlobals.playersCache;
-  if (hit && Date.now() - hit.at <= CURRENT_TTL_MS) return hit.promise;
+  if (hit && Date.now() - hit.at <= CURRENT_TTL_MS && hit.at >= dataAt) return hit.promise;
   const promise = loadPlayersInfo();
   seasonGlobals.playersCache = { at: Date.now(), promise };
   promise.catch(() => {
@@ -467,9 +468,9 @@ export function unpackNbaSeasonRows(parts: Record<SnapshotTable, SnapshotPart[]>
   return out;
 }
 
-async function readSeasonSnapshot(season: number): Promise<SeasonRows | null> {
+async function readSeasonSnapshot(season: number, minBuiltAt: number): Promise<SeasonRows | null> {
   const meta = await sharedCache.getJSON<SnapshotMeta>(snapshotMetaKey(season));
-  if (!meta?.builtAt || !meta.parts) return null;
+  if (!meta?.builtAt || !meta.parts || meta.builtAt < minBuiltAt) return null;
   if (SNAPSHOT_TABLES.some((t) => !(Number(meta.parts[t]) >= 1))) return null;
   const entries = SNAPSHOT_TABLES.flatMap((table) =>
     Array.from({ length: Number(meta.parts[table]) || 0 }, (_, idx) => ({ table, idx }))
@@ -507,7 +508,8 @@ async function writeSeasonSnapshot(season: number, rows: SeasonRows, builtAt: nu
 }
 
 async function loadSeasonRows(season: number): Promise<SeasonRows> {
-  const snap = await readSeasonSnapshot(season).catch(() => null);
+  const dataAt = isCurrentSeason(season) ? await nbaDashDataAt() : 0;
+  const snap = await readSeasonSnapshot(season, dataAt).catch(() => null);
   if (snap) return snap;
   const rows = await fetchSeasonRowsFromDb(season);
   await writeSeasonSnapshot(season, rows, Date.now()).catch((err) =>
@@ -517,19 +519,22 @@ async function loadSeasonRows(season: number): Promise<SeasonRows> {
 }
 
 /**
- * Rebuild season snapshots that are missing or older than their max age (30 min for the
- * current season, 24 h for past ones). Called from the NBA odds cron.
+ * Rebuild season snapshots that are missing, older than their max age (30 min for the current
+ * season, 24 h for past ones) or built before the last NBA sync wrote new data. Called from the
+ * NBA odds and sync crons.
  */
 export async function refreshNbaSeasonSnapshots(
   seasons: number[]
 ): Promise<Array<{ season: number; rebuilt: boolean; ageMin: number | null; error?: string }>> {
   const out: Array<{ season: number; rebuilt: boolean; ageMin: number | null; error?: string }> = [];
+  const dataAt = await nbaDashDataAt();
   for (const season of [...new Set(seasons)]) {
     const meta = await sharedCache.getJSON<SnapshotMeta>(snapshotMetaKey(season)).catch(() => null);
     const age = meta?.builtAt ? Date.now() - meta.builtAt : null;
     const maxAge = isCurrentSeason(season) ? SNAPSHOT_CURRENT_MAX_AGE_MS : SNAPSHOT_PAST_MAX_AGE_MS;
     const ageMin = age != null ? Math.round(age / 60000) : null;
-    if (age != null && age < maxAge) {
+    const behindSync = isCurrentSeason(season) && (meta?.builtAt ?? 0) < dataAt;
+    if (age != null && age < maxAge && !behindSync) {
       out.push({ season, rebuilt: false, ageMin });
       continue;
     }
@@ -610,10 +615,11 @@ async function buildDataset(season: number): Promise<NbaSeasonDataset> {
   };
 }
 
-export function getNbaSeasonDataset(season: number): Promise<NbaSeasonDataset> {
+export async function getNbaSeasonDataset(season: number): Promise<NbaSeasonDataset> {
   const ttl = season >= NBA_CURRENT_SEASON_YEAR ? CURRENT_TTL_MS : PAST_TTL_MS;
+  const dataAt = isCurrentSeason(season) ? await nbaDashDataAt() : 0;
   const hit = datasetCache.get(season);
-  if (hit && Date.now() - hit.at < ttl) return hit.promise;
+  if (hit && Date.now() - hit.at < ttl && hit.at >= dataAt) return hit.promise;
   const promise = buildDataset(season);
   datasetCache.set(season, { at: Date.now(), promise });
   promise.catch(() => {

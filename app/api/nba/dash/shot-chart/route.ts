@@ -12,7 +12,7 @@ function parseYears(raw: string | null): number[] {
   const years = String(raw || '')
     .split(',')
     .map((y) => Number(y.trim()))
-    .filter((y) => Number.isFinite(y) && y >= 2025);
+    .filter((y) => Number.isFinite(y) && y >= NBA_SHOT_CHART_SEASON_YEAR);
   return years.length ? years : [...NBA_SHOT_CHART_CACHE_YEARS];
 }
 

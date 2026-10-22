@@ -35,6 +35,10 @@
       "schedule": "5,15,25,35,45,55 * * * *"
     },
     {
+      "path": "/api/cron/sync-nba-bdl",
+      "schedule": "11,26,41,56 * * * *"
+    },
+    {
       "path": "/api/cron/warm-nba-dashboard",
       "schedule": "2,17,32,47 * * * *"
     },
@@ -124,6 +128,9 @@
       "maxDuration": 300
     },
     "app/api/cron/warm-nba-dashboard/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/cron/sync-nba-bdl/route.ts": {
       "maxDuration": 300
     },
     "app/api/afl/player-props/refresh/route.ts": {

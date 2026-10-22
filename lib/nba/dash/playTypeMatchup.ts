@@ -83,6 +83,8 @@ async function buildLeagueTable(year: number): Promise<LeagueTable> {
   }
 
   const rankedPlayers: LeagueTable['rankedPlayers'] = {};
+  // Defence is estimated from player shares; without any there is nothing to rank teams on.
+  if (!rows.length) return { year, players, playerPpg: {}, rankedPlayers, teams: {}, leagueAvg: {} };
   for (const [type, list] of byType) {
     const ranked = list.filter((p) => p.gp >= MIN_GAMES_FOR_RANK).sort((a, b) => b.ppg - a.ppg);
     ranked.forEach((p, i) => {
@@ -146,13 +148,13 @@ export async function buildNbaPlayTypeMatchup(opts: {
 }): Promise<NbaPlayTypeMatchupPayload> {
   const year = await resolveNbaDataSeason(opts.year ?? null);
   const club = opts.opponent ? resolveNbaClub(opts.opponent) ?? getNbaClubByCode(opts.opponent) : null;
-  return nbaDashCached('play-type-matchup-v2', [year, opts.playerId, club?.code ?? null], NBA_DASH_CACHE.league, () =>
+  return nbaDashCached('play-type-matchup-v3', [year, opts.playerId, club?.code ?? null], NBA_DASH_CACHE.league, () =>
     buildPlayerMatchup(year, opts.playerId, club)
   );
 }
 
 function leagueTable(year: number): Promise<LeagueTable> {
-  return nbaDashCached('play-type-matchup-league-v2', [year], NBA_DASH_CACHE.league, () => buildLeagueTable(year));
+  return nbaDashCached('play-type-matchup-league-v3', [year], NBA_DASH_CACHE.league, () => buildLeagueTable(year));
 }
 
 async function buildPlayerMatchup(
@@ -160,9 +162,7 @@ async function buildPlayerMatchup(
   playerId: string,
   club: ReturnType<typeof resolveNbaClub>
 ): Promise<NbaPlayTypeMatchupPayload> {
-  // BDL publishes Synergy play types a few weeks into a season; until then show last season's.
-  let table = await leagueTable(requestedYear);
-  if (!Object.keys(table.players).length) table = await leagueTable(requestedYear - 1);
+  const table = await leagueTable(requestedYear);
   const year = table.year;
   const own = table.players[playerId] ?? {};
   const totalPpg = table.playerPpg[playerId] ?? 0;

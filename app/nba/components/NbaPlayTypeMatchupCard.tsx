@@ -212,7 +212,9 @@ export default function NbaPlayTypeMatchupCard({
         {!loading && !error && payload && rows.length === 0 && (
           <div className="text-center py-10">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              No play type data for {playerName ?? 'this player'} this season.
+              {payload.teamsRanked === 0
+                ? `${payload.seasonLabel} play types aren't published yet. The NBA posts them a few games into the season.`
+                : `No play type data for ${playerName ?? 'this player'} this season.`}
             </p>
           </div>
         )}

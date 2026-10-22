@@ -27,7 +27,7 @@ import { fetchTeamDepthChart } from '@/app/nba/research/dashboard/utils/depthCha
 import { calculateSelectedPosition } from '@/app/nba/research/dashboard/utils/positionUtils';
 import NbaOpponentBreakdownCard from '@/app/nba/components/NbaOpponentBreakdownCard';
 import NbaTeamMatchupCard from '@/app/nba/components/NbaTeamMatchupCard';
-import { NbaTeamSelectionsCard } from '@/app/nba/components/NbaTeamSelectionsCard';
+import { NbaPredictedLineupsCard } from '@/app/nba/components/NbaPredictedLineupsCard';
 import { NbaLineSelector } from '@/app/nba/components/NbaLineSelector';
 import { NbaInjuriesCard } from '@/app/nba/components/NbaInjuriesCard';
 import { NbaLadderCard } from '@/app/nba/components/NbaLadderCard';
@@ -2091,7 +2091,7 @@ export default function NbaDashboardPage() {
                     {showEmptyShell || showStatsLoadingShell ? (
                       <div className={`h-[180px] rounded-lg animate-pulse ${pulse}`} />
                     ) : (
-                      <NbaTeamSelectionsCard
+                      <NbaPredictedLineupsCard
                         isDark={!!mounted && isDark}
                         playerTeam={matchupLeft}
                         opponentTeam={displayOpponent}
@@ -2116,7 +2116,7 @@ export default function NbaDashboardPage() {
                   <div
                     className={`hidden lg:flex w-full min-w-0 flex-col rounded-lg ${NBA_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}
                   >
-                    <NbaTeamSelectionsCard
+                    <NbaPredictedLineupsCard
                       isDark={!!mounted && isDark}
                       playerTeam={matchupLeft}
                       opponentTeam={displayOpponent}
@@ -2394,7 +2394,7 @@ export default function NbaDashboardPage() {
                 <div
                   className={`order-9 lg:hidden w-full min-w-0 rounded-lg ${NBA_DASH_CARD_GLOW} p-3 sm:p-4`}
                 >
-                  <NbaTeamSelectionsCard
+                  <NbaPredictedLineupsCard
                     isDark={!!mounted && isDark}
                     playerTeam={matchupLeft}
                     opponentTeam={displayOpponent}

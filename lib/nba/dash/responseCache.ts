@@ -10,17 +10,36 @@ import { sharedCache } from '@/lib/sharedCache';
 
 const PREFIX = 'nba_dash_resp_v1';
 const MEMORY_MAX_ENTRIES = 400;
+const DATA_AT_KEY = 'nba_dash_data_at';
+const DATA_AT_TTL_SECONDS = 30 * 24 * 60 * 60;
+const DATA_AT_CHECK_MS = 60_000;
 
 type Entry<T> = { at: number; data: T };
 type CacheGlobals = {
   memory: Map<string, Entry<unknown>>;
   inflight: Map<string, Promise<unknown>>;
+  dataAt?: { checkedAt: number; value: number };
 };
 
 const globals: CacheGlobals = ((globalThis as { __nbaDashRespCache?: CacheGlobals }).__nbaDashRespCache ??= {
   memory: new Map(),
   inflight: new Map(),
 });
+
+/** When the NBA sync last wrote new data (ms). Anything built before it is stale. */
+export async function nbaDashDataAt(): Promise<number> {
+  const hit = globals.dataAt;
+  if (hit && Date.now() - hit.checkedAt < DATA_AT_CHECK_MS) return hit.value;
+  const stored = await sharedCache.getJSON<number>(DATA_AT_KEY).catch(() => null);
+  const value = Number(stored) || 0;
+  globals.dataAt = { checkedAt: Date.now(), value };
+  return value;
+}
+
+export async function markNbaDashDataChanged(at = Date.now()): Promise<void> {
+  await sharedCache.setJSON(DATA_AT_KEY, at, DATA_AT_TTL_SECONDS);
+  globals.dataAt = { checkedAt: Date.now(), value: at };
+}
 
 const warmContext = new AsyncLocalStorage<boolean>();
 
@@ -32,8 +51,8 @@ export function runNbaDashWarm<T>(fn: () => Promise<T>): Promise<T> {
 export type NbaDashCachePolicy = { freshSeconds: number; maxAgeSeconds: number };
 
 /**
- * Box scores and shots only change when the NBA sync runs (every 3 hours), and the next game's odds
- * post hours after a game ends, so logs stay fresh for two hours.
+ * Box scores and shots only change when the NBA sync writes new data, which also marks every
+ * entry built before it stale, so logs can stay fresh for two hours otherwise.
  */
 export const NBA_DASH_CACHE = {
   playerLogs: { freshSeconds: 2 * 60 * 60, maxAgeSeconds: 6 * 60 * 60 },
@@ -97,11 +116,13 @@ export async function nbaDashCached<T>(
 ): Promise<T> {
   const key = cacheKey(name, parts);
   const warming = warmContext.getStore() === true;
+  const dataAt = await nbaDashDataAt();
   const now = Date.now();
   const age = (e: Entry<unknown>) => (now - e.at) / 1000;
+  const fresh = (e: Entry<unknown>) => age(e) < policy.freshSeconds && e.at >= dataAt;
 
   let entry = globals.memory.get(key) as Entry<T> | undefined;
-  if (!entry || age(entry) >= policy.freshSeconds) {
+  if (!entry || !fresh(entry)) {
     const stored = await sharedCache.getJSON<Entry<T>>(key).catch(() => null);
     if (stored && typeof stored.at === 'number' && (!entry || stored.at > entry.at)) {
       entry = stored;
@@ -109,7 +130,7 @@ export async function nbaDashCached<T>(
     }
   }
   if (entry && age(entry) < policy.maxAgeSeconds) {
-    if (age(entry) < policy.freshSeconds) return entry.data;
+    if (fresh(entry)) return entry.data;
     if (warming) return rebuild(key, policy, build);
     refreshLater(key, policy, build);
     return entry.data;

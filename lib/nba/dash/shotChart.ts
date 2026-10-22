@@ -3,6 +3,7 @@
  * defense by zone, ranked league-wide from the stored shot summary.
  */
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { nbaDashDataAt } from './responseCache';
 import { resolveNbaClub } from './teams';
 import { getNbaPlayersInfo, getNbaSeasonDataset, selectAllParallel, type NbaPlayerInfo } from './season';
 import { nbaShotSummaryJob, type NbaShotSummary, type NbaShotSummaryEntry } from './shotSummary';
@@ -27,9 +28,10 @@ const MIN_FTA_FOR_RANK = 20;
 
 const summaryCache = new Map<number, { at: number; promise: Promise<NbaShotSummary | null> }>();
 
-export function loadNbaShotSummary(season: number): Promise<NbaShotSummary | null> {
+export async function loadNbaShotSummary(season: number): Promise<NbaShotSummary | null> {
+  const dataAt = await nbaDashDataAt();
   const hit = summaryCache.get(season);
-  if (hit && Date.now() - hit.at < SUMMARY_TTL_MS) return hit.promise;
+  if (hit && Date.now() - hit.at < SUMMARY_TTL_MS && hit.at >= dataAt) return hit.promise;
   const promise = (async () => {
     const { data, error } = await supabaseAdmin
       .from('nba_sync_state')

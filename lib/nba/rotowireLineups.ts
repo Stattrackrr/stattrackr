@@ -1,7 +1,8 @@
 /**
  * RotoWire's public NBA lineups page (predicted starters, "may not play" tags), logged per game so
- * the predictions can be checked against who actually started and played before the model uses them.
- * Internal only: never shown to users or quoted in pick write-ups. Fetched lightly (see rotowireFetchDue).
+ * the predictions can be checked against who actually started and played. The dashboard's predicted
+ * lineups card reads this log (lib/nba/dash/predictedLineups.ts); the AI picks do not use it.
+ * Fetched lightly (see rotowireFetchDue).
  */
 
 import sharedCache from '@/lib/sharedCache';
