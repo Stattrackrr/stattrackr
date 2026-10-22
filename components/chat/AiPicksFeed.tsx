@@ -464,6 +464,12 @@ const SORT_OPTIONS: Array<{ id: SortKey; label: string }> = [
   { id: 'next-up', label: 'Next up' },
 ];
 
+/** Resulted picks have already been played, so "Next up" only applies to pending. */
+const TAB_SORTS: Record<Tab, { default: SortKey; options: SortKey[] }> = {
+  pending: { default: 'next-up', options: ['units-desc', 'units-asc', 'placed-recent', 'next-up'] },
+  resulted: { default: 'placed-recent', options: ['units-desc', 'units-asc', 'placed-recent'] },
+};
+
 const time = (iso: string | null | undefined): number => {
   const t = Date.parse(String(iso || ''));
   return Number.isFinite(t) ? t : 0;
@@ -498,7 +504,15 @@ function tabOrder(picks: AiPick[], tab: Tab, sort: SortKey): AiPick[] {
   return sortPicks(filtered, sort);
 }
 
-function PicksSortButton({ sort, onChange }: { sort: SortKey; onChange: (next: SortKey) => void }) {
+function PicksSortButton({
+  sort,
+  options,
+  onChange,
+}: {
+  sort: SortKey;
+  options: SortKey[];
+  onChange: (next: SortKey) => void;
+}) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const active = SORT_OPTIONS.find((o) => o.id === sort)?.label ?? 'Sort';
@@ -530,7 +544,7 @@ function PicksSortButton({ sort, onChange }: { sort: SortKey; onChange: (next: S
           role="menu"
           className="absolute right-0 z-20 mt-1.5 w-52 overflow-hidden rounded-xl border border-gray-200 bg-white text-sm shadow-lg dark:border-gray-700 dark:bg-[#0f1a2b]"
         >
-          {SORT_OPTIONS.map((option) => {
+          {SORT_OPTIONS.filter((o) => options.includes(o.id)).map((option) => {
             const selected = option.id === sort;
             return (
               <button
@@ -575,7 +589,11 @@ export function AiPicksFeed() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('pending');
   const [sport, setSport] = useState<string>('all');
-  const [sort, setSort] = useState<SortKey>('next-up');
+  const [sorts, setSorts] = useState<Record<Tab, SortKey>>({
+    pending: TAB_SORTS.pending.default,
+    resulted: TAB_SORTS.resulted.default,
+  });
+  const sort = sorts[tab];
 
   const load = useCallback(async () => {
     try {
@@ -668,7 +686,7 @@ export function AiPicksFeed() {
 
   return (
     <div ref={topRef} className="flex min-h-full flex-col gap-3">
-      <div className="-mx-5 -mt-4 space-y-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur dark:bg-[#0f1a2b]/95 sm:sticky sm:-top-4 sm:z-10">
+      <div className="-mx-5 -mt-4 space-y-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur dark:bg-[#0f1a2b]/95 relative z-10 sm:sticky sm:-top-4">
         <RecordStrip picks={picks} />
 
         <div role="tablist" aria-label="Picks" className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1 dark:bg-white/[0.04]">
@@ -724,8 +742,9 @@ export function AiPicksFeed() {
           ) : null}
           <PicksSortButton
             sort={sort}
+            options={TAB_SORTS[tab].options}
             onChange={(next) => {
-              setSort(next);
+              setSorts((prev) => ({ ...prev, [tab]: next }));
               setResultedLimit(RESULTED_PAGE);
             }}
           />
