@@ -4,7 +4,7 @@
   "homeTeam": "South East Melbourne Phoenix",
   "awayTeam": "Adelaide 36ers",
   "commenceTime": "2026-10-24T08:30:00.000Z",
-  "capturedAt": "2026-10-21T23:28:38.793Z",
+  "capturedAt": "2026-10-22T05:04:29.910Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -26,7 +26,7 @@
     "Ladbrokes",
     "Picklebet"
   ],
-  "lineCount": 3339,
+  "lineCount": 3343,
   "lines": [
     {
       "player": "Angus Glover",
@@ -43433,6 +43433,58 @@
       "over": "-1250",
       "under": "N/A",
       "overDecimal": 1.08,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
+      "book": "Picklebet",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 15.5,
+      "label": "16+",
+      "over": "-385",
+      "under": "N/A",
+      "overDecimal": 1.26,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
+      "book": "Picklebet",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 17.5,
+      "label": "18+",
+      "over": "-217",
+      "under": "N/A",
+      "overDecimal": 1.46,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
+      "book": "Picklebet",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 21.5,
+      "label": "22+",
+      "over": "+120",
+      "under": "N/A",
+      "overDecimal": 2.2,
+      "underDecimal": null
+    },
+    {
+      "player": "Angus Glover",
+      "playerKey": "angus glover",
+      "book": "Picklebet",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 23.5,
+      "label": "24+",
+      "over": "+190",
+      "under": "N/A",
+      "overDecimal": 2.9,
       "underDecimal": null
     }
   ]
