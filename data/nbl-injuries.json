@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-21T18:00:36.344Z",
+  "generatedAt": "2026-10-22T17:58:39.587Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Tuesday, October 20, 8:00pm AEDT",
-  "injuryCount": 26,
+  "injuryCount": 25,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -84,15 +84,6 @@
       "returning": "Test",
       "status": "Out",
       "note": "He is targeting the Taipans’ home game against the New Zealand Breakers on Sunday 25 October for his return from shoulder surgery and his Cairns debut, reported by Michael Randall of the Herald Sun on 7 October 2026. He has not played since 30 June, for Australia against Puerto Rico. Cairns said in their 3 October game preview that he was making considerable progress in his rehabilitation.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Illawarra Hawks",
-      "player": "Todd Blanchfield",
-      "injury": "Finger",
-      "returning": "TBC",
-      "status": "Out",
-      "note": "Blanchfield has a broken finger. Illawarra head coach Justin Tatum, as reported by basketball.com.au on Monday 28 September 2026: “As of right now, I know Todd Blanchfield’s finger is broken. The timeframe is to be determined.” An earlier report, on Sunday 27 September, had described it as a broken thumb with a four-to-six-week absence; the coach has since said no timeframe is set.",
       "listedByNbl": true
     },
     {

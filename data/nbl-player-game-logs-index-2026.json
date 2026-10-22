@@ -1,10 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-21T18:00:25.082Z",
+  "generatedAt": "2026-10-22T17:58:26.196Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 161,
-  "gameRows": 746,
+  "gameRows": 770,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -35,7 +35,7 @@
       "name": "Andrew Carr",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/378c71b4-8d3d-4161-aaa4-88c69be7309e-2026.json"
     },
     {
@@ -179,7 +179,7 @@
       "name": "Brodie McGregor",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/fcd143b4-3573-4b51-9ead-4707f48d0f20-2026.json"
     },
     {
@@ -299,7 +299,7 @@
       "name": "Daniel Grida",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/27ab462f-634a-4809-a40e-f102be36c282-2026.json"
     },
     {
@@ -379,7 +379,7 @@
       "name": "Fletcher MacDonald",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/39c99a6c-4190-4abb-9f27-b41f7b2470f5-2026.json"
     },
     {
@@ -411,7 +411,7 @@
       "name": "Harry Wessels",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/9f292ecd-bd5e-413a-b8d7-8397eaa04b3e-2026.json"
     },
     {
@@ -499,7 +499,7 @@
       "name": "Jason Spurgin",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/be414749-6d0f-4620-857d-a9b017a2c0b4-2026.json"
     },
     {
@@ -507,7 +507,7 @@
       "name": "Jayden Stone",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 3,
+      "gameCount": 4,
       "cacheFile": "nbl-model/cache/player-logs/509b7fe4-bf76-47ca-bb4c-4eea1ca5bdfb-2026.json"
     },
     {
@@ -595,7 +595,7 @@
       "name": "Johny Narkle",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 7,
+      "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/1db6c57b-a7f5-43a3-aaaa-4731f2bc57f5-2026.json"
     },
     {
@@ -683,7 +683,7 @@
       "name": "Kelan Martin",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 8,
+      "gameCount": 9,
       "cacheFile": "nbl-model/cache/player-logs/76536695-6c04-4c8a-b104-5ebbabb95879-2026.json"
     },
     {
@@ -699,7 +699,7 @@
       "name": "Kendric Davis",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/be4c5c96-8667-40f8-98d0-4c1d99641bc5-2026.json"
     },
     {
@@ -763,7 +763,7 @@
       "name": "Lachlan Bofinger",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 0,
+      "gameCount": 1,
       "cacheFile": "nbl-model/cache/player-logs/98ee26c6-adb4-470a-b30e-63c14524d6d1-2026.json"
     },
     {
@@ -771,7 +771,7 @@
       "name": "Lamar Patterson",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 7,
+      "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/72703b55-4db2-4e14-b7a4-a38f31c32388-2026.json"
     },
     {
@@ -827,7 +827,7 @@
       "name": "Makuach Maluach",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/6a42971e-6638-4472-b289-98c544aaa90a-2026.json"
     },
     {
@@ -835,7 +835,7 @@
       "name": "Makur Maker",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 4,
+      "gameCount": 5,
       "cacheFile": "nbl-model/cache/player-logs/37a78ca5-710d-42d4-8754-028ac9c8ba2b-2026.json"
     },
     {
@@ -907,7 +907,7 @@
       "name": "Milton Doyle",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 8,
+      "gameCount": 9,
       "cacheFile": "nbl-model/cache/player-logs/ade09c69-e9b3-46d1-8202-2b778e96409a-2026.json"
     },
     {
@@ -1067,7 +1067,7 @@
       "name": "Sam Froling",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 8,
+      "gameCount": 9,
       "cacheFile": "nbl-model/cache/player-logs/5bc7a4df-bd9f-4177-ab25-a1de3e4cb0a1-2026.json"
     },
     {
@@ -1171,7 +1171,7 @@
       "name": "Todd Blanchfield",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 2,
+      "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/f1f3155a-4ff7-445f-9c59-f0f9a9be8a8c-2026.json"
     },
     {
@@ -1187,7 +1187,7 @@
       "name": "Torrey Craig",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/e11926a6-ab96-4a00-9e0f-f343b2f97655-2026.json"
     },
     {
@@ -1203,7 +1203,7 @@
       "name": "Tyler Harvey",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 8,
+      "gameCount": 9,
       "cacheFile": "nbl-model/cache/player-logs/7efc81c9-d26e-4950-97e1-1b9b03b1bacd-2026.json"
     },
     {
@@ -1211,7 +1211,7 @@
       "name": "Tyler Robertson",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/ac10899d-d7cc-4994-8ee6-fda299502786-2026.json"
     },
     {
@@ -1235,7 +1235,7 @@
       "name": "Wani Swaka Lo Buluk",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 8,
+      "gameCount": 9,
       "cacheFile": "nbl-model/cache/player-logs/6c6c60a2-caa9-4b1e-ba1d-6c61dccf2592-2026.json"
     },
     {
@@ -1251,7 +1251,7 @@
       "name": "Will Johnston",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/9b55dd7f-4988-4e54-a889-36d23705aeb8-2026.json"
     },
     {
@@ -1267,7 +1267,7 @@
       "name": "William Hickey",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 8,
+      "gameCount": 9,
       "cacheFile": "nbl-model/cache/player-logs/3af27cad-ac89-4122-842c-2772197168c5-2026.json"
     },
     {
@@ -1275,7 +1275,7 @@
       "name": "Xavier Cooks",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/46fc1fe9-abf7-4e72-9c80-60483ae9da5e-2026.json"
     },
     {

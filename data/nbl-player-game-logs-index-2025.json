@@ -1,10 +1,10 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-10-21T17:59:14.740Z",
+  "generatedAt": "2026-10-22T17:56:44.596Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 195,
-  "gameRows": 4359,
+  "gameRows": 4367,
   "players": [
     {
       "playerId": "bdad9a20-d7a4-471d-928f-91b4f2930c21",
@@ -699,7 +699,7 @@
       "name": "Jonah Bolden",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 0,
+      "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/fc16e0a8-a6b8-4000-b37f-d3a58d98244b-2025.json"
     },
     {

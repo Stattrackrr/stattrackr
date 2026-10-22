@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-21T17:59:56.272Z",
+  "generatedAt": "2026-10-22T17:57:52.137Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-      "name": "Illawarra Hawks",
-      "team_code": "ILL",
-      "nextMatches": [
-        {
-          "id": "da97ddec-8727-408e-a50b-ad507ff52350",
-          "match_slug": "illawarra-hawks-v-sydney-kings-men-22-10-2026",
-          "match_title": "Illawarra Hawks v Sydney Kings men 22-10-2026",
-          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
-          "external_id": "370e679e-58ad-11f1-acba-8b618b817e22",
-          "start_time_datetime": "2026-10-22T08:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
-          "opponent_name": "Sydney Kings",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-          "venue": "WIN Entertainment Centre",
-          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
-        }
-      ]
-    },
-    {
-      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
-      "name": "Sydney Kings",
-      "team_code": "SYD",
-      "nextMatches": [
-        {
-          "id": "da97ddec-8727-408e-a50b-ad507ff52350",
-          "match_slug": "illawarra-hawks-v-sydney-kings-men-22-10-2026",
-          "match_title": "Illawarra Hawks v Sydney Kings men 22-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS27",
-          "external_id": "370e679e-58ad-11f1-acba-8b618b817e22",
-          "start_time_datetime": "2026-10-22T08:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "opponent_name": "Illawarra Hawks",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-          "venue": "WIN Entertainment Centre",
-          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
-        }
-      ]
-    },
     {
       "id": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "name": "Perth Wildcats",
@@ -86,6 +44,27 @@
           "opponent_logo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
           "venue": "RAC Arena",
           "opponent_logo_blurhash": "LDH_Pv_N1b?HHrkCTJD%1v?HD456"
+        }
+      ]
+    },
+    {
+      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "name": "Illawarra Hawks",
+      "team_code": "ILL",
+      "nextMatches": [
+        {
+          "id": "55cbc3e1-4965-4869-96ea-3f7e37eb3f13",
+          "match_slug": "illawarra-hawks-v-brisbane-bullets-men-24-10-2026",
+          "match_title": "Illawarra Hawks v Brisbane Bullets men 24-10-2026",
+          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
+          "external_id": "37106a00-58ad-11f1-a7e9-87e414b8c2d5",
+          "start_time_datetime": "2026-10-24T06:30:00.000Z",
+          "is_home": true,
+          "opponent_id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+          "opponent_name": "Brisbane Bullets",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/BNE.png",
+          "venue": "WIN Entertainment Centre",
+          "opponent_logo_blurhash": "LAD9iCxu0s5dS+s*s+xU0aIwoI}$"
         }
       ]
     },
@@ -191,6 +170,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
           "venue": "Cairns Convention Centre",
           "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
+      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+      "name": "Sydney Kings",
+      "team_code": "SYD",
+      "nextMatches": [
+        {
+          "id": "6d62e4b3-6983-4eb8-90b0-cc149c05dec5",
+          "match_slug": "melbourne-united-v-sydney-kings-men-25-10-2026",
+          "match_title": "Melbourne United v Sydney Kings men 25-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS27",
+          "external_id": "3716743f-58ad-11f1-8c04-1fa229f84a5e",
+          "start_time_datetime": "2026-10-25T06:00:00.000Z",
+          "is_home": false,
+          "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "opponent_name": "Melbourne United",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
         }
       ]
     },

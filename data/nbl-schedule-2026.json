@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-21T17:59:55.351Z",
+  "generatedAt": "2026-10-22T17:57:50.805Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -1680,7 +1680,7 @@
     {
       "id": "3748a57b-58ad-11f1-a4fa-fb9d3a8baf78",
       "externalId": "3748a57b-58ad-11f1-a4fa-fb9d3a8baf78",
-      "startTime": "2026-12-03T08:30:00.000Z",
+      "startTime": "2026-12-03T09:00:00.000Z",
       "round": "11",
       "status": "scheduled",
       "homeTeam": "Brisbane Bullets",
@@ -2136,7 +2136,7 @@
     {
       "id": "3729bbac-58ad-11f1-b394-cbe0cbdf48fe",
       "externalId": "3729bbac-58ad-11f1-b394-cbe0cbdf48fe",
-      "startTime": "2026-11-04T08:30:00.000Z",
+      "startTime": "2026-11-04T09:00:00.000Z",
       "round": "8",
       "status": "scheduled",
       "homeTeam": "Brisbane Bullets",
@@ -2288,7 +2288,7 @@
     {
       "id": "37196322-58ad-11f1-9f91-61e38b2284ba",
       "externalId": "37196322-58ad-11f1-9f91-61e38b2284ba",
-      "startTime": "2026-10-29T08:30:00.000Z",
+      "startTime": "2026-10-29T09:00:00.000Z",
       "round": "7",
       "status": "scheduled",
       "homeTeam": "Brisbane Bullets",
@@ -2423,7 +2423,7 @@
       "externalId": "370e679e-58ad-11f1-acba-8b618b817e22",
       "startTime": "2026-10-22T08:30:00.000Z",
       "round": "6",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Illawarra Hawks",
       "homeTeamCode": "ILL",
       "homeTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
@@ -2432,8 +2432,8 @@
       "awayTeamCode": "SYD",
       "awayTeamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 82,
+      "awayScore": 108,
       "venue": "WIN Entertainment Centre",
       "matchSlug": "illawarra-hawks-v-sydney-kings-men-22-10-2026"
     },
