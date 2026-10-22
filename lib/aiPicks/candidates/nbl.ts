@@ -39,6 +39,7 @@ import { nblPlayerEvidence, type NblInjuryContext, type NblPropContext } from '@
 import { effectiveModelWeight, type AiSportParams } from '@/lib/aiPicks/params';
 import {
   BLOCKING_FLAG,
+  betKind,
   bettableQuote,
   candidateKey,
   distinctPrices,
@@ -97,7 +98,7 @@ export function propSelections(lines: NblSnapLine[]): PropSelection[] {
     if (price == null || !(price > 1)) return;
     const key = `${kind}|${line}|${side}`;
     const sel = map.get(key) ?? { line, kind, side, quotes: [] };
-    sel.quotes.push({ book, price });
+    sel.quotes.push(kind === 'milestone' ? { book, price, milestone: true } : { book, price });
     map.set(key, sel);
   };
   for (const l of lines) {
@@ -112,7 +113,7 @@ export function propSelections(lines: NblSnapLine[]): PropSelection[] {
     for (const q of sel.quotes) {
       const mine = over.quotes.find((o) => o.book === q.book);
       if (!mine) over.quotes.push(q);
-      else if (q.price > mine.price) mine.price = q.price;
+      else if (q.price > mine.price) Object.assign(mine, { price: q.price, milestone: true });
     }
     map.delete(key);
   }
@@ -224,7 +225,7 @@ export function buildNblPropCandidates(input: {
       const mixed = blend(model, market, w);
       const prob = sideWin(mixed, sel.side);
       const ev = evPerUnit(prob, picked.best.price, mixed.push);
-      const marketKind: AiPickMarketKind =
+      const lineKind: AiPickMarketKind =
         sel.kind === 'milestone' ? 'milestone' : mkt.mainLine != null && sel.line === mkt.mainLine ? 'main' : 'alternate';
       const support = nblPropSupport(player.games, stat, sel.line, sel.side, {
         currentSeason: input.currentSeason,
@@ -247,7 +248,7 @@ export function buildNblPropCandidates(input: {
           eventLabel: nblEventLabel(game),
           startsAt: game.commenceTime,
           market: stat,
-          marketKind,
+          marketKind: betKind(lineKind, picked.best),
           player: player.name,
           playerId: player.playerId,
           team: player.team,
@@ -270,7 +271,7 @@ export function buildNblPropCandidates(input: {
           projection: proj.mean,
           support,
           supportScore: score,
-          ...eligibility(picked.best.price, marketKind, blocked, params),
+          ...eligibility(picked.best.price, lineKind, blocked, params),
           flags,
           context: {
             projection: proj,
@@ -280,6 +281,7 @@ export function buildNblPropCandidates(input: {
             marketMean: round(mkt.mean, 2),
             marketSource: mkt.source,
             mainLine: mkt.mainLine,
+            lineKind,
             modelWeight: round(w),
             opponent: input.opponent,
             evidence: nblPlayerEvidence(player.games, stat, input.currentSeason),

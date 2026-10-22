@@ -40,8 +40,10 @@ test('sizing: edge drives size, caps keep it honest', () => {
   const fresh = sizeUnits(single(0.6, 2), P, {});
   assert.equal(fresh.units, 1.5);
   assert.match(fresh.why, /still proving itself/);
-  // Long price.
-  assert.equal(sizeUnits(single(0.45, 2.8), P, proven).units, 1.5);
+  // Long prices: 1 unit past $2.20, half a unit past $2.70, however big the edge.
+  assert.equal(sizeUnits(single(0.6, 2.4), P, proven).units, 1);
+  assert.equal(sizeUnits(single(0.5, 2.95), P, proven).units, 0.5);
+  assert.match(sizeUnits(single(0.5, 2.95), P, proven).why, /long price/);
   // Thin edge stays small.
   assert.equal(sizeUnits(single(0.53, 1.95), P, proven).units, 1);
   // Bad recent run.

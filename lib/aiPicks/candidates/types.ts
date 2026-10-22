@@ -1,6 +1,7 @@
 import { AI_PICK_MIN_PRICE, type AiPickMarketKind, type AiPickSide } from '@/lib/aiPicks/types';
 
-export type CandidateQuote = { book: string; price: number };
+/** `milestone`: the book lists it one way only ("4+"), the same bet as over 3.5. */
+export type CandidateQuote = { book: string; price: number; milestone?: boolean };
 
 /** A record the side would have hit, e.g. "Last 10: 7/10". */
 export type SupportRecord = { label: string; hits: number; games: number };
@@ -73,6 +74,14 @@ export const BLOCKING_FLAG = /Fewer than|Has not played|Not enough|retired|Only 
 
 export function edgeFlag(ev: number, maxTrustedEv: number): string | null {
   return ev > maxTrustedEv ? `Edge of ${Math.round(ev * 100)}% is too big to trust` : null;
+}
+
+/**
+ * The bet as the posting book lists it: its "4+" is a milestone even where other books run 3.5 as an
+ * over/under. The line's kind across books (main / alternate / milestone) still decides singles.
+ */
+export function betKind(lineKind: AiPickMarketKind, best: CandidateQuote): AiPickMarketKind {
+  return best.milestone ? 'milestone' : lineKind;
 }
 
 /** Legs shorter than this barely move a multi's price. */

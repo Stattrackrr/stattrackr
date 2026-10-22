@@ -31,9 +31,9 @@ function supportFactor(score: number | null): number {
 }
 
 /** Long prices lose more often; their stake is capped however big the edge looks. */
-function priceCap(price: number): number {
-  if (price > 3) return 1;
-  if (price > 2.5) return 1.5;
+export function priceCap(price: number): number {
+  if (price > 2.7) return 0.5;
+  if (price > 2.2) return 1;
   return MAX_UNITS;
 }
 

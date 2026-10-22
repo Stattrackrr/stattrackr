@@ -7,7 +7,7 @@
 
 import type { AiPickMarketKind, AiPickSide } from '@/lib/aiPicks/types';
 import { isNblPropMarket, NBA_ACHIEVEMENT_MARKETS, type NbaAchievementMarket, type NblPropMarket } from '@/lib/aiPicks/markets';
-import { evPerUnit, fairOneWay, fairTwoWay, round, winShare, type SideProbs } from '@/lib/aiPicks/model/math';
+import { clamp, evPerUnit, fairOneWay, fairTwoWay, round, winShare, type SideProbs } from '@/lib/aiPicks/model/math';
 import { supportScore, nblPropSideProbs, type NblPropProjection } from '@/lib/aiPicks/model/nblProps';
 import type { NblInjuryContext, NblPropContext } from '@/lib/aiPicks/model/nblContext';
 import {
@@ -30,6 +30,7 @@ import {
 import { effectiveModelWeight, type AiSportParams } from '@/lib/aiPicks/params';
 import {
   BLOCKING_FLAG,
+  betKind,
   bettableQuote,
   edgeFlag,
   eligibility,
@@ -204,6 +205,21 @@ export type NbaPropGameContext = {
   facts: Record<string, unknown>;
 };
 
+/** Projection this far from the market's number (share of it) keeps the model's full say... */
+export const NBA_TRUST_FULL_GAP = 0.15;
+/** ...and this far or more leaves the price to the market alone. */
+export const NBA_TRUST_NONE_GAP = 0.4;
+
+/**
+ * Share of the model's weight kept for a prop. A projection far from the market usually missed a role
+ * change (early season leans on last season), and those bets lost; the market's number wins out.
+ */
+export function nbaModelTrust(projection: number, marketMean: number): number {
+  if (!(marketMean > 0)) return 1;
+  const gap = Math.abs(projection - marketMean) / marketMean;
+  return clamp(1 - (gap - NBA_TRUST_FULL_GAP) / (NBA_TRUST_NONE_GAP - NBA_TRUST_FULL_GAP), 0, 1);
+}
+
 export function buildNbaPropCandidates(input: {
   game: NbaGameRef;
   lines: NblSnapLine[];
@@ -234,6 +250,11 @@ export function buildNbaPropCandidates(input: {
     const listed = context.listed;
     if (listed) baseFlags.push(/out/i.test(listed.status) ? `Listed out on the injury report (${listed.status})` : `On the injury report (${listed.status})`);
     if (mkt.source === 'milestone') baseFlags.push('No over/under posted yet');
+    const trust = nbaModelTrust(proj.mean, mkt.mean);
+    if (trust < 1) {
+      const off = Math.round((Math.abs(proj.mean - mkt.mean) / mkt.mean) * 100);
+      baseFlags.push(`Projection ${off}% off the market's ${round(mkt.mean, 1)}: leaning on the market`);
+    }
 
     for (const sel of propSelections(lines)) {
       const picked = bettableQuote(sel.quotes);
@@ -243,11 +264,11 @@ export function buildNbaPropCandidates(input: {
       if (!market) continue;
       const split = sel.kind === 'ou' ? sharpSplit(bookOversAt(lines, sel.line)) : null;
       const kindKey = sel.kind === 'milestone' ? 'milestone' : 'prop';
-      const w = effectiveModelWeight(params.modelWeight[kindKey] ?? 0.35, proj.sample, params.sampleHalfLife);
+      const w = trust * effectiveModelWeight(params.modelWeight[kindKey] ?? 0.35, proj.sample, params.sampleHalfLife);
       const mixed = blend(model, market, w);
       const prob = sideWin(mixed, sel.side);
       const ev = evPerUnit(prob, picked.best.price, mixed.push);
-      const marketKind: AiPickMarketKind =
+      const lineKind: AiPickMarketKind =
         sel.kind === 'milestone' ? 'milestone' : mkt.mainLine != null && sel.line === mkt.mainLine ? 'main' : 'alternate';
       const support = nbaPropSupport(player.games, stat, sel.line, sel.side, {
         currentSeason: input.currentSeason,
@@ -271,7 +292,7 @@ export function buildNbaPropCandidates(input: {
           eventLabel: nbaEventLabel(game),
           startsAt: game.commenceTime,
           market: stat,
-          marketKind,
+          marketKind: betKind(lineKind, picked.best),
           player: player.name,
           playerId: player.playerId,
           team: player.team,
@@ -292,7 +313,7 @@ export function buildNbaPropCandidates(input: {
           projection: proj.mean,
           support,
           supportScore: score,
-          ...eligibility(picked.best.price, marketKind, blocked, params),
+          ...eligibility(picked.best.price, lineKind, blocked, params),
           flags,
           context: {
             projection: proj,
@@ -302,6 +323,7 @@ export function buildNbaPropCandidates(input: {
             marketMean: round(mkt.mean, 2),
             marketSource: mkt.source,
             mainLine: mkt.mainLine,
+            lineKind,
             modelWeight: round(w),
             listedStatus: listed?.status ?? null,
             waitingOn: context.waitingOn,

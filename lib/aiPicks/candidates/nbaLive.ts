@@ -9,7 +9,8 @@ import { evPerUnit, round } from '@/lib/aiPicks/model/math';
 import type { AiSportParams } from '@/lib/aiPicks/params';
 import { nbaAchievementQuotes, nbaPlayerLines } from './nba';
 import { gameQuotes, propSelections } from './nbl';
-import { BLOCKING_FLAG, bettableQuote, edgeFlag, eligibility, isAussieBook, type AiCandidate, type CandidateQuote } from './types';
+import { BLOCKING_FLAG, betKind, bettableQuote, edgeFlag, eligibility, isAussieBook, type AiCandidate, type CandidateQuote } from './types';
+import type { AiPickMarketKind } from '@/lib/aiPicks/types';
 import type { NblGameOdds } from '@/lib/nbl/oddsTypes';
 import { normalizeNbaPropPlayerName } from '@/lib/nba/dash/odds';
 import { fetchNbaOddsNetProps, isNbaOddsNetBook, isNbaOddsNetGameBook } from '@/lib/nba/dash/oddsApiNet';
@@ -73,14 +74,16 @@ export function repriceNbaCandidate(c: AiCandidate, live: NbaLiveGame, params: A
   const edge = edgeFlag(ev, params.maxTrustedEv);
   if (edge) flags.push(edge);
   const blocked = flags.some((f) => BLOCKING_FLAG.test(f));
+  const lineKind = (c.context.lineKind as AiPickMarketKind | undefined) ?? c.marketKind;
   return {
     ...c,
+    marketKind: betKind(lineKind, picked.best),
     bestPrice: picked.best.price,
     bestBook: picked.best.book,
     quotes: picked.quotes,
     ev: round(ev),
     flags,
-    ...eligibility(picked.best.price, c.marketKind, blocked, params),
+    ...eligibility(picked.best.price, lineKind, blocked, params),
   };
 }
 

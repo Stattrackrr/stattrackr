@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   nbaAchievementFair,
   nbaAchievementQuotes,
+  nbaModelTrust,
   nbaPlayerLines,
   nbaRosterEntry,
   resolveNbaBoardName,
@@ -12,7 +13,7 @@ import { liveNbaQuotes, repriceNbaCandidate, type NbaLiveGame } from './candidat
 import { propSelections } from './candidates/nbl';
 import { sharpSplit } from './candidates/sharp';
 import type { AiCandidate } from './candidates/types';
-import { candidateKey } from './candidates/types';
+import { betKind, candidateKey } from './candidates/types';
 import {
   chooseMulti,
   chooseSingles,
@@ -395,13 +396,17 @@ test('a "30+" milestone and over 29.5 are one bet: one selection carrying every 
   assert.deepEqual(
     [...overs[0]!.quotes].sort((a, b) => a.book.localeCompare(b.book)),
     [
-      { book: 'betright', price: 1.85 },
-      { book: 'ladbrokes', price: 1.91 },
+      { book: 'betright', price: 1.85, milestone: true },
+      { book: 'ladbrokes', price: 1.91, milestone: true },
       { book: 'sportsbet', price: 1.88 },
     ],
-    "Ladbrokes' better 30+ price counts once"
+    "Ladbrokes' better 30+ price counts once, and is bet as its 30+"
   );
   assert.ok(sels.some((s) => s.kind === 'milestone' && s.line === 34.5), 'a milestone with no matching over/under stays');
+  // The bet reads as the posting book lists it; the line's kind across books still decides singles.
+  assert.equal(betKind('alternate', { book: 'dabble', price: 1.75, milestone: true }), 'milestone');
+  assert.equal(betKind('alternate', { book: 'ladbrokes', price: 1.8 }), 'alternate');
+  assert.equal(betKind('main', { book: 'sportsbet', price: 1.88 }), 'main');
 });
 
 test('a questionable player: his overs wait until 90 minutes before tip, his unders post early (sitting voids them)', () => {
@@ -709,4 +714,14 @@ test('live price check: a soft price that moved is repriced from the fresh pull,
   assert.deepEqual(liveNbaQuotes(total, { props: {}, lines }), [{ book: 'Sportsbet', price: 1.87 }]);
   const away = cand({ player: null, playerId: null, team: 'Boston Celtics', market: 'spread', side: 'away', line: 3.5, context: {} });
   assert.deepEqual(liveNbaQuotes(away, { props: {}, lines }), [{ book: 'Sportsbet', price: 1.91 }]);
+});
+
+test('NBA props: the model keeps its say near the market and hands over to it when far off', () => {
+  assert.equal(nbaModelTrust(23.5, 21.6), 1, 'within 15%');
+  assert.equal(nbaModelTrust(14.08, 13.11), 1);
+  assert.ok(Math.abs(nbaModelTrust(27.4, 21.8) - 0.57) < 0.02, 'Suggs: 26% off');
+  assert.ok(nbaModelTrust(1.87, 2.25) > 0.9, 'below the market counts the same way');
+  assert.equal(nbaModelTrust(33.3, 21.4), 0, 'Holiday: 56% off');
+  assert.equal(nbaModelTrust(16.29, 9.44), 0, 'Sheppard: 73% off');
+  assert.equal(nbaModelTrust(10, 0), 1);
 });
