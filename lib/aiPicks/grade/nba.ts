@@ -104,9 +104,16 @@ function defaultBdl(): BdlReader | null {
   return apiKey ? new BdlClient({ apiKey, perMinute: 60, maxRetries: 1 }) : null;
 }
 
+/** Box rows whose points add up to the final score: anything less was saved mid-game. */
+function completeBox(game: NbaGameRow, rows: NbaBoxRow[]): boolean {
+  if (!rows.length || game.home_score == null || game.visitor_score == null) return false;
+  return rows.reduce((sum, r) => sum + (num(r.pts) ?? 0), 0) === game.home_score + game.visitor_score;
+}
+
 /**
  * Per-run cache over the synced tables (the leg's event key is the game id). A game the database still
- * shows unfinished 2h after tip-off, or final with no box score, is read straight from BallDontLie.
+ * shows unfinished 2h after tip-off is read straight from BallDontLie, and so is a box score that does
+ * not add up to the final score (the sync can save one mid-game).
  */
 export class NbaResultsSource implements NbaResults {
   private games = new Map<string, Promise<NbaGameRow | null>>();
@@ -166,10 +173,12 @@ export class NbaResultsSource implements NbaResults {
     let hit = this.boxes.get(gameId);
     if (!hit) {
       hit = (async () => {
+        const game = await this.game(gameId);
+        if (game?.status_state !== 'final') return [];
         const rows = await this.stored.box(gameId);
-        if (rows.length) return rows;
-        if ((await this.game(gameId))?.status_state !== 'final') return rows;
-        return (await this.liveResult(gameId))?.box ?? rows;
+        if (completeBox(game, rows)) return rows;
+        const live = (await this.liveResult(gameId))?.box ?? [];
+        return completeBox(game, live) ? live : [];
       })();
       this.boxes.set(gameId, hit);
     }

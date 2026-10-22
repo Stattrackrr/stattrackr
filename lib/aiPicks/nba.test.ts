@@ -346,12 +346,19 @@ test('NBA results source: asks BallDontLie only when the synced tables are behin
   assert.equal((await early.game('5'))?.status_state, 'in_progress');
   assert.equal(calls.length, 0, 'still inside 2h of tip-off');
 
-  const synced = new NbaResultsSource({ stored: stored({ status_state: 'final' }, [{ player_id: 7, pts: 10 }]), bdl, nowMs: NOW });
-  assert.equal((await synced.box('5')).length, 1);
+  const synced = new NbaResultsSource({ stored: stored({ status_state: 'final' }, [{ player_id: 7, pts: 8 }, { player_id: 9, pts: 4 }]), bdl, nowMs: NOW });
+  assert.equal((await synced.box('5')).length, 2);
   assert.equal(calls.length, 0, 'synced tables already have the result');
 
-  const noBox = new NbaResultsSource({ stored: stored({ status_state: 'final' }), bdl, nowMs: NOW });
+  const noBox = new NbaResultsSource({ stored: stored({ status_state: 'final', home_score: 10 }), bdl, nowMs: NOW });
   assert.deepEqual((await noBox.box('5')).map((r) => r.player_id), [7, 9]);
+
+  // The sync saved the game three minutes in and never caught up; BallDontLie has the final.
+  const midGame = new NbaResultsSource({ stored: stored({ home_score: 5, visitor_score: 0 }, [{ player_id: 7, pts: 5 }]), bdl, nowMs: NOW });
+  assert.deepEqual((await midGame.box('5')).map((r) => [r.player_id, r.pts]), [[7, 10], [9, 4]]);
+
+  const stale = new NbaResultsSource({ stored: stored({ status_state: 'final' }, [{ player_id: 7, pts: 5 }]), bdl: null, nowMs: NOW });
+  assert.deepEqual(await stale.box('5'), [], 'a box that does not add up waits rather than grades');
 });
 
 test('NBA grading: waits for final and box scores, DNP voids, game lines from the final score', async () => {
