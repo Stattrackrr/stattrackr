@@ -4,7 +4,7 @@
   "homeTeam": "Cairns Taipans",
   "awayTeam": "New Zealand Breakers",
   "commenceTime": "2026-10-25T04:00:00.000Z",
-  "capturedAt": "2026-10-23T00:45:21.592Z",
+  "capturedAt": "2026-10-23T07:43:11.059Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -29,7 +29,7 @@
     "Bwin",
     "Bwin_de"
   ],
-  "lineCount": 3302,
+  "lineCount": 3303,
   "lines": [
     {
       "player": "Carlin Davison",
@@ -42955,6 +42955,19 @@
       "over": "+300",
       "under": "N/A",
       "overDecimal": 4,
+      "underDecimal": null
+    },
+    {
+      "player": "Jonah Bolden",
+      "playerKey": "jonah bolden",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-1250",
+      "under": "N/A",
+      "overDecimal": 1.08,
       "underDecimal": null
     }
   ]
