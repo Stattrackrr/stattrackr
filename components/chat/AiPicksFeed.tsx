@@ -783,7 +783,28 @@ export function AiPicksFeed() {
           )}
         </>
       )}
+
+      <PicksDisclaimer />
     </div>
+  );
+}
+
+function PicksDisclaimer() {
+  const link = 'font-medium text-gray-600 underline underline-offset-2 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white';
+  return (
+    <p className="mt-auto border-t border-gray-200 pt-4 text-center text-[11px] leading-relaxed text-gray-500 dark:border-white/[0.07] dark:text-gray-400">
+      Stattrackr AI picks are generated automatically from statistical models and are provided for information and
+      entertainment only. They are not financial or betting advice, and past results do not guarantee future results. You
+      must be 18+ to bet. Only bet what you can afford to lose. If gambling is causing you harm, call Gambling Help Online on{' '}
+      <a href="tel:1800858858" className={link}>
+        1800 858 858
+      </a>{' '}
+      or visit{' '}
+      <a href="https://www.gamblinghelponline.org.au" target="_blank" rel="noopener noreferrer" className={link}>
+        gamblinghelponline.org.au
+      </a>
+      .
+    </p>
   );
 }
 

@@ -7,21 +7,29 @@ import type { AiPick } from '@/lib/aiPicks/types';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => supabase as any;
 
-/** Newest first. RLS returns nothing unless the viewer is admin, or picks are public and the viewer is premium. */
+type AiPicksSettings = { isPublic: boolean; publicSince: string | null };
+
+export async function fetchAiPicksSettings(): Promise<AiPicksSettings> {
+  const { data, error } = await db().from('ai_picks_settings').select('*').maybeSingle();
+  if (error || !data) return { isPublic: false, publicSince: null };
+  return { isPublic: Boolean(data.is_public), publicSince: data.public_since ?? null };
+}
+
+/**
+ * Newest first, without picks settled before the public record's start date (admin sees the same record
+ * as everyone else). RLS returns nothing unless the viewer is admin, or picks are public and the viewer is premium.
+ */
 export async function fetchAiPicks(limit = 200): Promise<AiPick[]> {
-  const { data, error } = await db()
-    .from('ai_picks')
-    .select('*, ai_pick_legs(*)')
-    .order('posted_at', { ascending: false })
-    .limit(limit);
+  const { publicSince } = await fetchAiPicksSettings();
+  let query = db().from('ai_picks').select('*, ai_pick_legs(*)');
+  if (publicSince) query = query.or(`settled_at.is.null,settled_at.gte."${publicSince}"`);
+  const { data, error } = await query.order('posted_at', { ascending: false }).limit(limit);
   if (error) throw new Error(error.message);
   return ((data ?? []) as AiPickRow[]).map(aiPickFromRow);
 }
 
 export async function fetchAiPicksPublic(): Promise<boolean> {
-  const { data, error } = await db().from('ai_picks_settings').select('is_public').maybeSingle();
-  if (error) return false;
-  return Boolean(data?.is_public);
+  return (await fetchAiPicksSettings()).isPublic;
 }
 
 /** Map AI picks onto the record modal's bet shape (push counts as void: stake returned). */

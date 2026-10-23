@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
 import { BackToPropsButton } from '@/components/BackToPropsButton';
 import { PickAlertsButton } from '@/components/picks/PickAlertsButton';
+import { PicksReadMeButton } from '@/components/picks/PicksReadMeButton';
 import { AiPicksFeed, AiPicksLearningPanel } from '@/components/chat/AiPicksFeed';
 import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
 import { useChatViewer } from '@/components/chat/useChatViewer';
@@ -213,6 +214,7 @@ export default function PicksPageClient() {
                           </p>
                         </div>
                         <div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center">
+                          <PicksReadMeButton />
                           <PickAlertsButton />
                           {!locked ? (
                             <button
