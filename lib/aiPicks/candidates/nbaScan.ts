@@ -168,6 +168,8 @@ export async function scanNbaCandidates(opts: {
   const gamePace = new Map(finals.map((f) => [f.matchId, ((f.homePoss + f.awayPoss) / 2) * (48 / f.minutes)]));
 
   const logsOf = (id: string): NbaGameLogRow[] => [...(prev.logsByPlayer.get(id) ?? []), ...(cur.logsByPlayer.get(id) ?? [])];
+  /** A player's own sample: games he left before half-time say nothing about a full game (books void them). */
+  const sampleOf = (id: string): NbaGameLogRow[] => logsOf(id).filter((g) => !g.noSecondHalf);
   const positionOf = (id: string) => nbaPositionGroup(cur.players.get(id)?.position ?? prev.players.get(id)?.position);
 
   const dvp: NbaDvpTable = emptyNbaDvp();
@@ -225,7 +227,7 @@ export async function scanNbaCandidates(opts: {
         const mins = teamRecent.flatMap((g) => (g.players.has(id) ? [g.players.get(id)!] : []));
         return mins.length >= 3 && avg(mins) >= minMinutes;
       }
-      const own = (playedGames(logsOf(id)) as NbaGameLogRow[]).filter((g) => !g.postseason);
+      const own = (playedGames(sampleOf(id)) as NbaGameLogRow[]).filter((g) => !g.postseason);
       const mine = own.filter((g) => g.season === season);
       if (mine.length >= 3) return avg(mine.slice(-5).map((g) => g.minutes ?? 0)) >= minMinutes;
       // The team is under way without him: the market and its ratings already reflect that.
@@ -243,7 +245,7 @@ export async function scanNbaCandidates(opts: {
   const missing = (out: Injury[]): NbaMissing => {
     const m: NbaMissing = { players: [], points: 0, gameScore: 0, minutes: 0 };
     for (const inj of out) {
-      const rows = (playedGames(logsOf(inj.playerId)) as NbaGameLogRow[]).filter((g) => !g.postseason).slice(-40);
+      const rows = (playedGames(sampleOf(inj.playerId)) as NbaGameLogRow[]).filter((g) => !g.postseason).slice(-40);
       m.players.push(nameOf(inj.playerId));
       if (!rows.length) continue;
       m.points += rows.reduce((a, g) => a + (g.points ?? 0), 0) / rows.length;
@@ -322,7 +324,7 @@ export async function scanNbaCandidates(opts: {
       const club = getNbaClubById(cur.players.get(id)?.currentTeamId ?? prev.players.get(id)?.currentTeamId)!;
       const isHome = club.code === homeClub.code;
       const oppClub = isHome ? awayClub : homeClub;
-      const games = logsOf(id);
+      const games = sampleOf(id);
       const lines = nbaPlayerLines(cleaned, names);
       propLines += lines.length;
       if (!lines.length && !NBA_ACHIEVEMENT_MARKETS.some((m) => nbaAchievementQuotes(cleaned, names, m).length)) continue;

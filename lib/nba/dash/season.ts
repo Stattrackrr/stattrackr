@@ -68,6 +68,8 @@ export const ADV_COLUMNS =
   'game_id, player_id, usage_pct, ts_pct, pace, possessions, offensive_rating, defensive_rating, touches, passes, secondary_assists, free_throw_assists, rebound_chances_total, rebound_chances_off, rebound_chances_def, contested_fga, uncontested_fga, deflections, points_paint, points_fast_break, points_second_chance, distance, ' +
   // Only these keys of the ~2.6 KB `raw` blob are used; selecting the whole blob is ~90 MB a season.
   'raw_reb_pct:raw->rebound_percentage, raw_oreb_pct:raw->offensive_rebound_percentage, raw_dreb_pct:raw->defensive_rebound_percentage';
+/** Players with minutes in the 3rd or 4th quarter: everyone else who played left before half-time. */
+export const SECOND_HALF_COLUMNS = 'game_id, player_id';
 export const GAME_COLUMNS =
   'id, season, game_date, tipoff_at, status_state, postseason, home_team_id, visitor_team_id, home_score, visitor_score, home_q1, home_q2, home_q3, home_q4, visitor_q1, visitor_q2, visitor_q3, visitor_q4';
 
@@ -374,14 +376,14 @@ export async function selectByGameIds(
   return out;
 }
 
-type SeasonRows = { gameRows: Row[]; boxRows: Row[]; advRows: Row[] };
+type SeasonRows = { gameRows: Row[]; boxRows: Row[]; advRows: Row[]; secondHalfRows: Row[] };
 
 async function fetchSeasonRowsFromDb(season: number): Promise<SeasonRows> {
   const gameRows = await selectAllParallel(() =>
     supabaseAdmin.from('nba_games').select(GAME_COLUMNS).eq('season', season).order('id')
   );
   const gameIds = gameRows.filter((g) => g.status_state === 'final').map((g) => Number(g.id));
-  const [boxRows, advRows] = await Promise.all([
+  const [boxRows, advRows, secondHalfRows] = await Promise.all([
     selectByGameIds(
       (ids) =>
         supabaseAdmin
@@ -403,8 +405,21 @@ async function fetchSeasonRowsFromDb(season: number): Promise<SeasonRows> {
           .order('player_id'),
       gameIds
     ),
+    selectByGameIds(
+      (ids) =>
+        supabaseAdmin
+          .from('nba_player_game_stats')
+          .select(SECOND_HALF_COLUMNS)
+          .in('game_id', ids)
+          .in('period', [3, 4])
+          .gt('minutes', 0)
+          .order('game_id')
+          .order('player_id')
+          .order('period'),
+      gameIds
+    ),
   ]);
-  return { gameRows, boxRows, advRows };
+  return { gameRows, boxRows, advRows, secondHalfRows };
 }
 
 // ---------------------------------------------------------------------------
@@ -412,9 +427,12 @@ async function fetchSeasonRowsFromDb(season: number): Promise<SeasonRows> {
 // ~80k rows out of Supabase (~10 s). The NBA odds cron keeps it fresh.
 // ---------------------------------------------------------------------------
 
-const SNAPSHOT_TABLES = ['gameRows', 'boxRows', 'advRows'] as const;
+const SNAPSHOT_TABLES = ['gameRows', 'boxRows', 'advRows', 'secondHalfRows'] as const;
 type SnapshotTable = (typeof SNAPSHOT_TABLES)[number];
-const SNAPSHOT_SCHEMA = createHash('sha1').update(`${GAME_COLUMNS}|${BOX_COLUMNS}|${ADV_COLUMNS}`).digest('hex').slice(0, 8);
+const SNAPSHOT_SCHEMA = createHash('sha1')
+  .update(`${GAME_COLUMNS}|${BOX_COLUMNS}|${ADV_COLUMNS}|${SECOND_HALF_COLUMNS}`)
+  .digest('hex')
+  .slice(0, 8);
 const SNAPSHOT_PREFIX = `nba_season_rows_v1:${SNAPSHOT_SCHEMA}`;
 /** Rows per Redis value; keeps each GET well under the shared cache's 2 s timeout. */
 const SNAPSHOT_PART_ROWS = 12_000;
@@ -550,10 +568,16 @@ export async function refreshNbaSeasonSnapshots(
 }
 
 async function buildDataset(season: number): Promise<NbaSeasonDataset> {
-  const [{ gameRows, boxRows, advRows }, players] = await Promise.all([loadSeasonRows(season), getNbaPlayersInfo()]);
+  const [{ gameRows, boxRows, advRows, secondHalfRows }, players] = await Promise.all([
+    loadSeasonRows(season),
+    getNbaPlayersInfo(),
+  ]);
 
   const games = new Map<number, Row>(gameRows.map((g) => [Number(g.id), g]));
   const adv = new Map<string, Row>(advRows.map((a) => [`${a.game_id}:${a.player_id}`, a]));
+  const secondHalf = new Set(secondHalfRows.map((r) => `${r.game_id}:${r.player_id}`));
+  /** Games with quarter rows synced; without them nobody can be marked as missing the second half. */
+  const quarterGames = new Set(secondHalfRows.map((r) => String(r.game_id)));
   const logsByPlayer = new Map<string, NbaGameLogRow[]>();
   const teamGames = new Map<string, NbaTeamGameTotals>();
 
@@ -596,6 +620,7 @@ async function buildDataset(season: number): Promise<NbaSeasonDataset> {
     }
     if (mins <= 0) continue;
     const row = toNbaGameLogRow(r, g, adv.get(`${r.game_id}:${r.player_id}`));
+    if (quarterGames.has(String(r.game_id)) && !secondHalf.has(`${r.game_id}:${r.player_id}`)) row.noSecondHalf = true;
     const id = String(r.player_id);
     const list = logsByPlayer.get(id);
     if (list) list.push(row);

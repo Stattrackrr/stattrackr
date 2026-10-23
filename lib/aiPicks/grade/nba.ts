@@ -27,7 +27,17 @@ export type NbaBoxRow = {
   stl?: number | null;
   blk?: number | null;
 };
-export type NbaResults = { game(gameId: string): Promise<NbaGameRow | null>; box(gameId: string): Promise<NbaBoxRow[]> };
+export type NbaResults = {
+  game(gameId: string): Promise<NbaGameRow | null>;
+  box(gameId: string): Promise<NbaBoxRow[]>;
+  /** Player ids with minutes in the 3rd or 4th quarter; null while the quarter box scores aren't in. */
+  secondHalf?(gameId: string): Promise<Set<string> | null>;
+  /** Player ids ejected from the game; null while the play-by-play isn't in. */
+  ejected?(gameId: string): Promise<Set<string> | null>;
+};
+
+/** Nobody plays more than this in a first half, so anyone over it played after half-time. */
+const FIRST_HALF_MINUTES = 24;
 
 const db = async () => (await import('@/lib/supabaseAdmin')).supabaseAdmin;
 
@@ -59,6 +69,36 @@ export class StoredNbaResults implements NbaResults {
     if (error) throw new Error(`nba box ${gameId}: ${error.message}`);
     return (data ?? []) as NbaBoxRow[];
   }
+
+  async secondHalf(gameId: string): Promise<Set<string> | null> {
+    const { data, error } = await (await db())
+      .from('nba_player_game_stats')
+      .select('player_id')
+      .eq('game_id', Number(gameId))
+      .in('period', [3, 4])
+      .gt('minutes', 0);
+    if (error) throw new Error(`nba second half ${gameId}: ${error.message}`);
+    return data?.length ? new Set(data.map((r) => String(r.player_id))) : null;
+  }
+
+  async ejected(gameId: string): Promise<Set<string> | null> {
+    const id = Number(gameId);
+    const { data, error } = await (await db()).from('nba_plays').select('participants').eq('game_id', id).eq('type', 'Ejection');
+    if (error) throw new Error(`nba ejections ${gameId}: ${error.message}`);
+    if (data?.length) return ejectedIds(data);
+    const { data: game, error: gameError } = await (await db()).from('nba_games').select('plays_synced_at').eq('id', id).maybeSingle();
+    if (gameError) throw new Error(`nba plays synced ${gameId}: ${gameError.message}`);
+    return game?.plays_synced_at ? new Set() : null;
+  }
+}
+
+function ejectedIds(plays: Array<{ type?: unknown; participants?: unknown }>): Set<string> {
+  const ids = new Set<string>();
+  for (const p of plays) {
+    if (p.type != null && p.type !== 'Ejection') continue;
+    if (Array.isArray(p.participants)) for (const id of p.participants) ids.add(String(id));
+  }
+  return ids;
 }
 
 type Obj = Record<string, any>;
@@ -119,6 +159,8 @@ export class NbaResultsSource implements NbaResults {
   private games = new Map<string, Promise<NbaGameRow | null>>();
   private boxes = new Map<string, Promise<NbaBoxRow[]>>();
   private live = new Map<string, Promise<LiveResult | null>>();
+  private halves = new Map<string, Promise<Set<string> | null>>();
+  private ejections = new Map<string, Promise<Set<string> | null>>();
   private readonly stored: NbaResults;
   private readonly bdl: BdlReader | null;
   private readonly nowMs: number;
@@ -184,6 +226,49 @@ export class NbaResultsSource implements NbaResults {
     }
     return hit;
   }
+
+  secondHalf(gameId: string): Promise<Set<string> | null> {
+    let hit = this.halves.get(gameId);
+    if (!hit) {
+      hit = (async () => {
+        const stored = (await this.stored.secondHalf?.(gameId)) ?? null;
+        if (stored || !this.bdl) return stored;
+        try {
+          const rows = (
+            await Promise.all(
+              [3, 4].map((p) => this.bdl!.all<Obj>(`/v1/stats?game_ids[]=${encodeURIComponent(gameId)}&period=${p}`))
+            )
+          ).flat();
+          const ids = rows.filter((s) => s.player?.id != null && (parseBdlMinutes(s.min) ?? 0) > 0).map((s) => String(s.player.id));
+          return ids.length ? new Set(ids) : null;
+        } catch (err) {
+          console.warn(`[ai-grade] BallDontLie quarters ${gameId}:`, err instanceof Error ? err.message : err);
+          return null;
+        }
+      })();
+      this.halves.set(gameId, hit);
+    }
+    return hit;
+  }
+
+  ejected(gameId: string): Promise<Set<string> | null> {
+    let hit = this.ejections.get(gameId);
+    if (!hit) {
+      hit = (async () => {
+        const stored = (await this.stored.ejected?.(gameId)) ?? null;
+        if (stored || !this.bdl) return stored;
+        try {
+          const { data } = await this.bdl.get<{ data: Obj[] }>(`/v1/plays?game_id=${encodeURIComponent(gameId)}`);
+          return data?.length ? ejectedIds(data) : null;
+        } catch (err) {
+          console.warn(`[ai-grade] BallDontLie plays ${gameId}:`, err instanceof Error ? err.message : err);
+          return null;
+        }
+      })();
+      this.ejections.set(gameId, hit);
+    }
+    return hit;
+  }
 }
 
 function boxValues(row: NbaBoxRow): NblBoxValues {
@@ -227,8 +312,32 @@ export async function gradeNbaLeg(leg: AiPickLeg, source: NbaResults, nowMs: num
     const rows = await source.box(leg.eventKey);
     if (!rows.length) return age > GIVE_UP_MS ? { status: 'void', value: null, note: 'Box score never arrived' } : null;
     const row = rows.find((r) => String(r.player_id) === leg.playerId) ?? null;
-    if (isNbaAchievementMarket(leg.market)) return gradeNbaAchievement(leg.market, row);
-    return gradeNblProp(leg, leg.market, row ? boxValues(row) : null);
+    const grade = isNbaAchievementMarket(leg.market)
+      ? gradeNbaAchievement(leg.market, row)
+      : gradeNblProp(leg, leg.market, row ? boxValues(row) : null);
+    const minutes = row ? num(row.minutes) : null;
+    if (!minutes || minutes > FIRST_HALF_MINUTES || decidedEarly(leg, grade)) return grade;
+    return leftEarly(leg, grade, minutes, source, age);
   }
   return { status: 'void', value: null, note: `Unknown NBA market ${leg.market}` };
+}
+
+/** Settled by what he did before leaving: an over or yes already hit, an under already gone past. */
+function decidedEarly(leg: AiPickLeg, grade: LegGrade): boolean {
+  return leg.side === 'under' ? grade.status === 'loss' : grade.status === 'win';
+}
+
+/**
+ * A player who played the first half only: books void a bet his injury left undecided, but an ejection
+ * is on him and the bet stands. null = quarter box scores or play-by-play not in yet.
+ */
+async function leftEarly(leg: AiPickLeg, grade: LegGrade, minutes: number, source: NbaResults, age: number): Promise<LegGrade | null> {
+  if (!source.secondHalf) return grade;
+  const played = await source.secondHalf(leg.eventKey);
+  if (!played) return age > GIVE_UP_MS ? grade : null;
+  if (played.has(leg.playerId!)) return grade;
+  const ejected = source.ejected ? await source.ejected(leg.eventKey) : new Set<string>();
+  if (!ejected && age <= GIVE_UP_MS) return null;
+  if (ejected?.has(leg.playerId!)) return { ...grade, note: `${grade.note} (ejected)` };
+  return { status: 'void', value: null, note: `Did not return for the second half (${Math.round(minutes)} min)` };
 }

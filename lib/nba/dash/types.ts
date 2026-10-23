@@ -14,6 +14,11 @@ export type NbaGameLogRow = {
   result: string | null;
   venue?: string | null;
   minutes: number | null;
+  /**
+   * Played in the first half but not after it (left injured, ejected). Not a full game's worth of
+   * stats, so models leave it out of a player's sample.
+   */
+  noSecondHalf?: boolean;
   points: number | null;
   rebounds: number | null;
   offensiveRebounds: number | null;
