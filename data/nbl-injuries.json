@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T17:58:39.587Z",
+  "generatedAt": "2026-10-23T17:52:52.676Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
@@ -36,9 +36,9 @@
       "team": "Brisbane Bullets",
       "player": "Tyrell Harrison",
       "injury": "Ankle",
-      "returning": "Test",
+      "returning": "TBC",
       "status": "Day-to-Day",
-      "note": "A game-time decision for Brisbane’s game at Tasmania on 21 October 2026, Walshly News reported, after he left the 15 October win over South East Melbourne with an ankle injury.",
+      "note": "A game-time decision for Brisbane’s game at the Illawarra Hawks on Saturday 24 October 2026, the Bullets confirmed on 23 October, Fox Sports reported. He missed the 21 October game at Tasmania after hurting the ankle in the 15 October win over South East Melbourne.",
       "listedByNbl": true
     },
     {
@@ -142,19 +142,11 @@
     },
     {
       "team": "Perth Wildcats",
-      "player": "Kristian Doolittle",
-      "injury": "Foot",
-      "returning": "TBC",
-      "status": "Out",
-      "listedByNbl": true
-    },
-    {
-      "team": "Perth Wildcats",
       "player": "Jo Lual-Acuil Jr",
       "injury": "Calf",
-      "returning": "After FIBA break",
+      "returning": "Round 11",
       "status": "Out",
-      "note": "Perth said on 21 October that he has had a setback with the injury and will be re-evaluated after the November FIBA break, with a further update on his return due then. The club had ruled him out on 1 October with a calf injury and a review in about three weeks. Development player Tana Kopa replaced him on the roster. He left Perth’s 97-93 win over the New Zealand Breakers on 26 September after 7 minutes and 38 seconds, first reported by basketball.com.au that night.",
+      "note": "Perth said on 21 October that he has had a setback with the injury and will be re-evaluated after the November FIBA break. The NBL listed his return as Round 11 on 22 October. The club had ruled him out on 1 October with a calf injury and a review in about three weeks. Development player Tana Kopa replaced him on the roster. He left Perth’s 97-93 win over the New Zealand Breakers on 26 September after 7 minutes and 38 seconds, first reported by basketball.com.au that night.",
       "listedByNbl": true
     },
     {
@@ -164,6 +156,14 @@
       "returning": "Season",
       "status": "Out for the season",
       "note": "Perth have confirmed a successful reconstruction of a torn ACL in his right knee and say he is expected to miss the entirety of the 2026-27 season. He is a development player, announced by the club on 9 June 2026, and is not in our 12-man projected Perth depth chart. The NBL added him to its own list in the 21 September 2026 refresh.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Perth Wildcats",
+      "player": "Jimmy Whitt",
+      "injury": "Personal Reasons",
+      "returning": "TBC",
+      "status": "Out",
       "listedByNbl": true
     },
     {

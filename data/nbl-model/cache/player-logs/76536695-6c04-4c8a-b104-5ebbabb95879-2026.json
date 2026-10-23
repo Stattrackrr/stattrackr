@@ -5,7 +5,7 @@
   "teamCode": "ILL",
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-22T17:58:18.234Z",
+  "generatedAt": "2026-10-23T17:52:31.757Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 9,
   "games": [
@@ -358,7 +358,7 @@
       "steals": 0,
       "blocks": 0,
       "turnovers": 1,
-      "fouls": 3,
+      "fouls": 2,
       "fgMade": 1,
       "fgAttempted": 10,
       "fgPct": 0.1,

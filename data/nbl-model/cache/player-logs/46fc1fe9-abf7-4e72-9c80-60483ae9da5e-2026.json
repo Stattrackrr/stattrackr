@@ -5,7 +5,7 @@
   "teamCode": "SYD",
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-22T17:58:17.862Z",
+  "generatedAt": "2026-10-23T17:52:31.022Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 7,
   "games": [
@@ -276,7 +276,7 @@
       "steals": 0,
       "blocks": 0,
       "turnovers": 0,
-      "fouls": 4,
+      "fouls": 3,
       "fgMade": 5,
       "fgAttempted": 8,
       "fgPct": 0.625,

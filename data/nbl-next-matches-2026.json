@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-22T17:57:52.137Z",
+  "generatedAt": "2026-10-23T17:52:08.749Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "bc5327d5-322e-4796-b103-4c3b63869edb",
-      "name": "Perth Wildcats",
-      "team_code": "PER",
-      "nextMatches": [
-        {
-          "id": "3e67bcd2-6570-4c7d-8f2c-416bf28e795f",
-          "match_slug": "perth-wildcats-v-melbourne-united-men-23-10-2026",
-          "match_title": "Perth Wildcats v Melbourne United men 23-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=WILDCATS27",
-          "external_id": "371130fd-58ad-11f1-aac7-754512109772",
-          "start_time_datetime": "2026-10-23T10:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "opponent_name": "Melbourne United",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
-          "venue": "RAC Arena",
-          "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
-        }
-      ]
-    },
-    {
-      "id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-      "name": "Melbourne United",
-      "team_code": "MEL",
-      "nextMatches": [
-        {
-          "id": "3e67bcd2-6570-4c7d-8f2c-416bf28e795f",
-          "match_slug": "perth-wildcats-v-melbourne-united-men-23-10-2026",
-          "match_title": "Perth Wildcats v Melbourne United men 23-10-2026",
-          "match_ticket_url": "https://pages.melbourneutd.com.au/nbl27-tickets-hub/?lid=0g7nc1z6h8fv",
-          "external_id": "371130fd-58ad-11f1-aac7-754512109772",
-          "start_time_datetime": "2026-10-23T10:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "bc5327d5-322e-4796-b103-4c3b63869edb",
-          "opponent_name": "Perth Wildcats",
-          "opponent_logo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
-          "venue": "RAC Arena",
-          "opponent_logo_blurhash": "LDH_Pv_N1b?HHrkCTJD%1v?HD456"
-        }
-      ]
-    },
     {
       "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "name": "Illawarra Hawks",
@@ -174,6 +132,27 @@
       ]
     },
     {
+      "id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+      "name": "Melbourne United",
+      "team_code": "MEL",
+      "nextMatches": [
+        {
+          "id": "6d62e4b3-6983-4eb8-90b0-cc149c05dec5",
+          "match_slug": "melbourne-united-v-sydney-kings-men-25-10-2026",
+          "match_title": "Melbourne United v Sydney Kings men 25-10-2026",
+          "match_ticket_url": "https://pages.melbourneutd.com.au/nbl27-tickets-hub/?lid=0g7nc1z6h8fv",
+          "external_id": "3716743f-58ad-11f1-8c04-1fa229f84a5e",
+          "start_time_datetime": "2026-10-25T06:00:00.000Z",
+          "is_home": true,
+          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "opponent_name": "Sydney Kings",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
+        }
+      ]
+    },
+    {
       "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "name": "Sydney Kings",
       "team_code": "SYD",
@@ -191,6 +170,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
           "venue": "John Cain Arena",
           "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
+        }
+      ]
+    },
+    {
+      "id": "bc5327d5-322e-4796-b103-4c3b63869edb",
+      "name": "Perth Wildcats",
+      "team_code": "PER",
+      "nextMatches": [
+        {
+          "id": "46a0c0f4-bd33-45d7-bfff-04684a8b3acb",
+          "match_slug": "perth-wildcats-v-sydney-kings-men-28-10-2026",
+          "match_title": "Perth Wildcats v Sydney Kings men 28-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=WILDCATS27",
+          "external_id": "371aff1e-58ad-11f1-b4cd-0919017f2391",
+          "start_time_datetime": "2026-10-28T10:30:00.000Z",
+          "is_home": true,
+          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "opponent_name": "Sydney Kings",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
+          "venue": "RAC Arena",
+          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
         }
       ]
     },

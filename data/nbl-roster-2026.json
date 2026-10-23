@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-22T17:58:01.926Z",
+  "generatedAt": "2026-10-23T17:52:18.942Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 161,
+  "playerCount": 162,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -1064,6 +1064,16 @@
       "position": "G",
       "jersey": "9",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f2652d5c3d4741d4acfd5c2469fee0ec?size=800&format=webp"
+    },
+    {
+      "playerId": "6e596ff7-c694-411c-a409-16e9f62ac8b7",
+      "name": "Mangok Mathiang",
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "position": "F",
+      "jersey": "7",
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/47d13a92db22406e957c88d33b4f9794?size=800&format=webp"
     },
     {
       "playerId": "9ffab474-7164-40a8-8b80-247393b30895",

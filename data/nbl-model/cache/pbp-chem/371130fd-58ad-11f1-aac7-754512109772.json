@@ -1,0 +1,3441 @@
+{
+  "fixtureId": "371130fd-58ad-11f1-aac7-754512109772",
+  "homeTeam": "Perth Wildcats",
+  "awayTeam": "Melbourne United",
+  "homeTeamCode": "PER",
+  "awayTeamCode": "MEL",
+  "lineupValid": true,
+  "players": [
+    {
+      "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+      "name": "Alex Higgins-Titsha",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+      "name": "Angus Brandt",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+      "name": "Anthony Dell'Orso",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 4,
+      "assistedMakes": 3,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+      "name": "Brandon Knight",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 8,
+      "assistedMakes": 3,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+      "name": "Cameron Huefner",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+      "name": "Cole Anthony",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 5,
+      "assistedMakes": 0,
+      "assists": 3,
+      "ptsCreated": 7,
+      "finds": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+      "name": "Dylan Windler",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 5,
+      "assistedMakes": 2,
+      "assists": 4,
+      "ptsCreated": 10,
+      "finds": [
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+      "name": "Elijah Pepper",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 7,
+      "assistedMakes": 6,
+      "assists": 2,
+      "ptsCreated": 4,
+      "finds": [
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 3,
+          "pts": 7
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+      "name": "Fabijan Krslovic",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+      "name": "Jaron Rillie",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 3,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+      "name": "Jesse Wagstaff",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+      "name": "Joe Ingles",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 4,
+      "assistedMakes": 4,
+      "assists": 8,
+      "ptsCreated": 18,
+      "finds": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 3,
+          "pts": 7
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 3,
+          "pts": 8
+        },
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+      "name": "Josh Oduro",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 8,
+      "assistedMakes": 4,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+      "name": "Kristian Doolittle",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 8,
+      "assistedMakes": 3,
+      "assists": 8,
+      "ptsCreated": 18,
+      "finds": [
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "count": 3,
+          "pts": 7
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+      "name": "Kyle Bowen",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+      "name": "Luke Travers",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 11,
+      "assistedMakes": 6,
+      "assists": 5,
+      "ptsCreated": 12,
+      "finds": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 3,
+          "pts": 8
+        },
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 3,
+          "pts": 7
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+      "name": "Malith Machar",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+      "name": "Sam Waardenburg",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 4,
+      "assistedMakes": 4,
+      "assists": 5,
+      "ptsCreated": 10,
+      "finds": [
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+      "name": "Shea Ili",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 3,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+      "name": "Tom Wilson",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    }
+  ],
+  "onOff": [
+    {
+      "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+      "name": "Alex Higgins-Titsha",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 1.8,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 0,
+          "offMin": 1.8,
+          "onPoss": 0,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 1.8,
+          "offMin": 0,
+          "onPoss": 7,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 1.8,
+          "offMin": 0,
+          "onPoss": 6,
+          "offPoss": 1,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 0,
+          "offMin": 1.8,
+          "onPoss": 0,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 1.8,
+          "offMin": 0,
+          "onPoss": 7,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 0,
+          "offMin": 1.8,
+          "onPoss": 1,
+          "offPoss": 6,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 1.8,
+          "offMin": 0,
+          "onPoss": 7,
+          "offPoss": 0,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 0,
+          "offMin": 1.8,
+          "onPoss": 0,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 0,
+          "offMin": 1.8,
+          "onPoss": 0,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+      "name": "Angus Brandt",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 14.4,
+      "teammates": [
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 10.2,
+          "offMin": 4.2,
+          "onPoss": 39,
+          "offPoss": 14,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 12,
+          "offMin": 2.4,
+          "onPoss": 45,
+          "offPoss": 8,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 10.1,
+          "offMin": 4.3,
+          "onPoss": 38,
+          "offPoss": 15,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 12.9,
+          "offMin": 1.5,
+          "onPoss": 49,
+          "offPoss": 4,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 0,
+          "offMin": 14.4,
+          "onPoss": 0,
+          "offPoss": 53,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 1.5,
+          "offMin": 12.8,
+          "onPoss": 5,
+          "offPoss": 48,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 6.6,
+          "offMin": 7.8,
+          "onPoss": 22,
+          "offPoss": 31,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "onMin": 0,
+          "offMin": 14.4,
+          "onPoss": 0,
+          "offPoss": 53,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 4.2,
+          "offMin": 10.2,
+          "onPoss": 14,
+          "offPoss": 39,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+      "name": "Anthony Dell'Orso",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 19.1,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 1.5,
+          "offMin": 17.6,
+          "onPoss": 5,
+          "offPoss": 66,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 16.6,
+          "offMin": 2.6,
+          "onPoss": 62,
+          "offPoss": 9,
+          "onPts": 6,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 11.6,
+          "offMin": 7.6,
+          "onPoss": 41,
+          "offPoss": 30,
+          "onPts": 4,
+          "offPts": 5,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 6.2,
+          "offMin": 12.9,
+          "onPoss": 21,
+          "offPoss": 50,
+          "onPts": 3,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 19.1,
+          "offMin": 0,
+          "onPoss": 71,
+          "offPoss": 0,
+          "onPts": 9,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 4.8,
+          "offMin": 14.4,
+          "onPoss": 19,
+          "offPoss": 52,
+          "onPts": 2,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 8.9,
+          "offMin": 10.2,
+          "onPoss": 34,
+          "offPoss": 37,
+          "onPts": 5,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "onMin": 1.8,
+          "offMin": 17.3,
+          "onPoss": 7,
+          "offPoss": 64,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 6.1,
+          "offMin": 13.1,
+          "onPoss": 24,
+          "offPoss": 47,
+          "onPts": 7,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+      "name": "Brandon Knight",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 29.5,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 12,
+          "offMin": 17.5,
+          "onPoss": 45,
+          "offPoss": 66,
+          "onPts": 8,
+          "offPts": 12,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 25.3,
+          "offMin": 4.2,
+          "onPoss": 97,
+          "offPoss": 14,
+          "onPts": 18,
+          "offPts": 2,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 16.8,
+          "offMin": 12.6,
+          "onPoss": 63,
+          "offPoss": 48,
+          "onPts": 17,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 28,
+          "offMin": 1.5,
+          "onPoss": 107,
+          "offPoss": 4,
+          "onPts": 18,
+          "offPts": 2,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 5,
+          "offMin": 24.4,
+          "onPoss": 21,
+          "offPoss": 90,
+          "onPts": 6,
+          "offPts": 14,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 11.6,
+          "offMin": 17.9,
+          "onPoss": 41,
+          "offPoss": 70,
+          "onPts": 6,
+          "offPts": 14,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 6,
+          "offMin": 23.5,
+          "onPoss": 21,
+          "offPoss": 90,
+          "onPts": 2,
+          "offPts": 18,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "onMin": 1.8,
+          "offMin": 27.7,
+          "onPoss": 6,
+          "offPoss": 105,
+          "onPts": 3,
+          "offPts": 17,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 11.4,
+          "offMin": 18,
+          "onPoss": 43,
+          "offPoss": 68,
+          "onPts": 2,
+          "offPts": 18,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+      "name": "Cameron Huefner",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 12.7,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 4.2,
+          "offMin": 8.5,
+          "onPoss": 14,
+          "offPoss": 35,
+          "onPts": 3,
+          "offPts": 1,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 7.8,
+          "offMin": 4.9,
+          "onPoss": 33,
+          "offPoss": 16,
+          "onPts": 1,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 11.4,
+          "offMin": 1.3,
+          "onPoss": 43,
+          "offPoss": 6,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 2.6,
+          "offMin": 10.1,
+          "onPoss": 8,
+          "offPoss": 41,
+          "onPts": 1,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 11.2,
+          "offMin": 1.5,
+          "onPoss": 45,
+          "offPoss": 4,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 2,
+          "offMin": 10.7,
+          "onPoss": 9,
+          "offPoss": 40,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 6.1,
+          "offMin": 6.6,
+          "onPoss": 24,
+          "offPoss": 25,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 5.4,
+          "offMin": 7.3,
+          "onPoss": 20,
+          "offPoss": 29,
+          "onPts": 3,
+          "offPts": 1,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "onMin": 0,
+          "offMin": 12.7,
+          "onPoss": 0,
+          "offPoss": 49,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+      "name": "Cole Anthony",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 28.7,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 21.6,
+          "offMin": 7.1,
+          "onPoss": 87,
+          "offPoss": 24,
+          "onPts": 14,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 22.8,
+          "offMin": 5.9,
+          "onPoss": 92,
+          "offPoss": 19,
+          "onPts": 13,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 6.7,
+          "offMin": 22,
+          "onPoss": 27,
+          "offPoss": 84,
+          "onPts": 6,
+          "offPts": 13,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 22.1,
+          "offMin": 6.6,
+          "onPoss": 88,
+          "offPoss": 23,
+          "onPts": 15,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 0
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "onMin": 11,
+          "offMin": 17.7,
+          "onPoss": 38,
+          "offPoss": 73,
+          "onPts": 13,
+          "offPts": 6,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 4.8,
+          "offMin": 23.8,
+          "onPoss": 16,
+          "offPoss": 95,
+          "onPts": 4,
+          "offPts": 15,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 14.5,
+          "offMin": 14.2,
+          "onPoss": 56,
+          "offPoss": 55,
+          "onPts": 6,
+          "offPts": 13,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 6.3,
+          "offMin": 22.4,
+          "onPoss": 22,
+          "offPoss": 89,
+          "onPts": 5,
+          "offPts": 14,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 5,
+          "offMin": 23.8,
+          "onPoss": 18,
+          "offPoss": 93,
+          "onPts": 0,
+          "offPts": 19,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+      "name": "Dylan Windler",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 22.2,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 10.1,
+          "offMin": 12.1,
+          "onPoss": 38,
+          "offPoss": 44,
+          "onPts": 4,
+          "offPts": 6,
+          "onReb": 3,
+          "offReb": 4,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 18.2,
+          "offMin": 4,
+          "onPoss": 69,
+          "offPoss": 13,
+          "onPts": 10,
+          "offPts": 0,
+          "onReb": 6,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 16.8,
+          "offMin": 5.4,
+          "onPoss": 63,
+          "offPoss": 19,
+          "onPts": 6,
+          "offPts": 4,
+          "onReb": 6,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 20.7,
+          "offMin": 1.5,
+          "onPoss": 78,
+          "offPoss": 4,
+          "onPts": 10,
+          "offPts": 0,
+          "onReb": 6,
+          "offReb": 1,
+          "onAst": 4,
+          "offAst": 0
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 6.8,
+          "offMin": 15.4,
+          "onPoss": 26,
+          "offPoss": 56,
+          "onPts": 4,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 6.2,
+          "offMin": 16,
+          "onPoss": 21,
+          "offPoss": 61,
+          "onPts": 2,
+          "offPts": 8,
+          "onReb": 2,
+          "offReb": 5,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 7.3,
+          "offMin": 14.9,
+          "onPoss": 25,
+          "offPoss": 57,
+          "onPts": 4,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 5,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "onMin": 0,
+          "offMin": 22.2,
+          "onPoss": 0,
+          "offPoss": 82,
+          "onPts": 0,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 2.6,
+          "offMin": 19.6,
+          "onPoss": 8,
+          "offPoss": 74,
+          "onPts": 0,
+          "offPts": 10,
+          "onReb": 1,
+          "offReb": 6,
+          "onAst": 1,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+      "name": "Elijah Pepper",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 33.1,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 10.2,
+          "offMin": 22.9,
+          "onPoss": 39,
+          "offPoss": 89,
+          "onPts": 4,
+          "offPts": 18,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 25.3,
+          "offMin": 7.8,
+          "onPoss": 97,
+          "offPoss": 31,
+          "onPts": 20,
+          "offPts": 2,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 18.2,
+          "offMin": 14.9,
+          "onPoss": 69,
+          "offPoss": 59,
+          "onPts": 6,
+          "offPts": 16,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 33.1,
+          "offMin": 0,
+          "onPoss": 128,
+          "offPoss": 0,
+          "onPts": 22,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 9.8,
+          "offMin": 23.2,
+          "onPoss": 40,
+          "offPoss": 88,
+          "onPts": 5,
+          "offPts": 17,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 16.6,
+          "offMin": 16.5,
+          "onPoss": 62,
+          "offPoss": 66,
+          "onPts": 15,
+          "offPts": 7,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 9.6,
+          "offMin": 23.5,
+          "onPoss": 37,
+          "offPoss": 91,
+          "onPts": 4,
+          "offPts": 18,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "onMin": 1.8,
+          "offMin": 31.3,
+          "onPoss": 7,
+          "offPoss": 121,
+          "onPts": 0,
+          "offPts": 22,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 7.8,
+          "offMin": 25.3,
+          "onPoss": 33,
+          "offPoss": 95,
+          "onPts": 12,
+          "offPts": 10,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+      "name": "Fabijan Krslovic",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 12.8,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 0,
+          "offMin": 12.8,
+          "onPoss": 0,
+          "offPoss": 45,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 8.9,
+          "offMin": 3.9,
+          "onPoss": 32,
+          "offPoss": 13,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 6.3,
+          "offMin": 6.5,
+          "onPoss": 22,
+          "offPoss": 23,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 2.4,
+          "offMin": 10.4,
+          "onPoss": 9,
+          "offPoss": 36,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 10.3,
+          "offMin": 2.5,
+          "onPoss": 37,
+          "offPoss": 8,
+          "onPts": 1,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "onMin": 8,
+          "offMin": 4.8,
+          "onPoss": 26,
+          "offPoss": 19,
+          "onPts": 2,
+          "offPts": 1,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 2.5,
+          "offMin": 10.3,
+          "onPoss": 8,
+          "offPoss": 37,
+          "onPts": 2,
+          "offPts": 1,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 11,
+          "offMin": 1.8,
+          "onPoss": 40,
+          "offPoss": 5,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 1.8,
+          "offMin": 11,
+          "onPoss": 6,
+          "offPoss": 39,
+          "onPts": 1,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+      "name": "Jaron Rillie",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 16.3,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 6.6,
+          "offMin": 9.8,
+          "onPoss": 22,
+          "offPoss": 38,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 9.6,
+          "offMin": 6.7,
+          "onPoss": 37,
+          "offPoss": 23,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 6,
+          "offMin": 10.4,
+          "onPoss": 21,
+          "offPoss": 39,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 7.3,
+          "offMin": 9,
+          "onPoss": 25,
+          "offPoss": 35,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 14.9,
+          "offMin": 1.5,
+          "onPoss": 56,
+          "offPoss": 4,
+          "onPts": 4,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 1
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 6.7,
+          "offMin": 9.7,
+          "onPoss": 25,
+          "offPoss": 35,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 8.9,
+          "offMin": 7.5,
+          "onPoss": 34,
+          "offPoss": 26,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 2
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "onMin": 0,
+          "offMin": 16.3,
+          "onPoss": 0,
+          "offPoss": 60,
+          "onPts": 0,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 3
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 5.4,
+          "offMin": 10.9,
+          "onPoss": 20,
+          "offPoss": 40,
+          "onPts": 2,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+      "name": "Jesse Wagstaff",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 11.7,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 0,
+          "offMin": 11.7,
+          "onPoss": 0,
+          "offPoss": 47,
+          "onPts": 0,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 9.8,
+          "offMin": 1.9,
+          "onPoss": 40,
+          "offPoss": 7,
+          "onPts": 5,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 5,
+          "offMin": 6.7,
+          "onPoss": 21,
+          "offPoss": 26,
+          "onPts": 3,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 6.8,
+          "offMin": 4.9,
+          "onPoss": 26,
+          "offPoss": 21,
+          "onPts": 5,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 11.7,
+          "offMin": 0,
+          "onPoss": 47,
+          "offPoss": 0,
+          "onPts": 7,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 4.8,
+          "offMin": 7,
+          "onPoss": 19,
+          "offPoss": 28,
+          "onPts": 4,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 6.7,
+          "offMin": 5,
+          "onPoss": 25,
+          "offPoss": 22,
+          "onPts": 4,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "onMin": 0,
+          "offMin": 11.7,
+          "onPoss": 1,
+          "offPoss": 46,
+          "onPts": 0,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 2,
+          "offMin": 9.7,
+          "onPoss": 9,
+          "offPoss": 38,
+          "onPts": 0,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+      "name": "Joe Ingles",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 24.8,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 12.7,
+          "offMin": 12.1,
+          "onPoss": 50,
+          "offPoss": 43,
+          "onPts": 3,
+          "offPts": 8,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 4,
+          "offAst": 4
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 16.5,
+          "offMin": 8.3,
+          "onPoss": 65,
+          "offPoss": 28,
+          "onPts": 11,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 7,
+          "offAst": 1
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 14.5,
+          "offMin": 10.3,
+          "onPoss": 56,
+          "offPoss": 37,
+          "onPts": 5,
+          "offPts": 6,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 5,
+          "offAst": 3
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 2.4,
+          "offMin": 22.4,
+          "onPoss": 9,
+          "offPoss": 84,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 8
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 16.1,
+          "offMin": 8.7,
+          "onPoss": 61,
+          "offPoss": 32,
+          "onPts": 8,
+          "offPts": 3,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 5,
+          "offAst": 3
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "onMin": 14.8,
+          "offMin": 10,
+          "onPoss": 52,
+          "offPoss": 41,
+          "onPts": 3,
+          "offPts": 8,
+          "onReb": 4,
+          "offReb": 2,
+          "onAst": 4,
+          "offAst": 4
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 7,
+          "offMin": 17.8,
+          "onPoss": 25,
+          "offPoss": 68,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 2,
+          "offReb": 4,
+          "onAst": 3,
+          "offAst": 5
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 11,
+          "offMin": 13.8,
+          "onPoss": 40,
+          "offPoss": 53,
+          "onPts": 8,
+          "offPts": 3,
+          "onReb": 5,
+          "offReb": 1,
+          "onAst": 4,
+          "offAst": 4
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 4.3,
+          "offMin": 20.5,
+          "onPoss": 14,
+          "offPoss": 79,
+          "onPts": 6,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 6,
+          "onAst": 0,
+          "offAst": 8
+        }
+      ]
+    },
+    {
+      "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+      "name": "Josh Oduro",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 26,
+      "teammates": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 21.6,
+          "offMin": 4.4,
+          "onPoss": 88,
+          "offPoss": 15,
+          "onPts": 17,
+          "offPts": 5,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 21.6,
+          "offMin": 4.4,
+          "onPoss": 87,
+          "offPoss": 16,
+          "onPts": 18,
+          "offPts": 4,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 6.7,
+          "offMin": 19.3,
+          "onPoss": 27,
+          "offPoss": 76,
+          "onPts": 4,
+          "offPts": 18,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 18.9,
+          "offMin": 7,
+          "onPoss": 77,
+          "offPoss": 26,
+          "onPts": 18,
+          "offPts": 4,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "onMin": 11.3,
+          "offMin": 14.7,
+          "onPoss": 43,
+          "offPoss": 60,
+          "onPts": 5,
+          "offPts": 17,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 5.3,
+          "offMin": 20.6,
+          "onPoss": 19,
+          "offPoss": 84,
+          "onPts": 4,
+          "offPts": 18,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 12.7,
+          "offMin": 13.3,
+          "onPoss": 50,
+          "offPoss": 53,
+          "onPts": 13,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 0,
+          "offMin": 26,
+          "onPoss": 0,
+          "offPoss": 103,
+          "onPts": 0,
+          "offPts": 22,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 5.8,
+          "offMin": 20.2,
+          "onPoss": 21,
+          "offPoss": 82,
+          "onPts": 9,
+          "offPts": 13,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+      "name": "Kristian Doolittle",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 38.4,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 12.9,
+          "offMin": 25.5,
+          "onPoss": 49,
+          "offPoss": 98,
+          "onPts": 9,
+          "offPts": 14,
+          "onReb": 4,
+          "offReb": 6,
+          "onAst": 2,
+          "offAst": 6
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 33.1,
+          "offMin": 5.3,
+          "onPoss": 128,
+          "offPoss": 19,
+          "onPts": 18,
+          "offPts": 5,
+          "onReb": 8,
+          "offReb": 2,
+          "onAst": 8,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 28,
+          "offMin": 10.4,
+          "onPoss": 107,
+          "offPoss": 40,
+          "onPts": 14,
+          "offPts": 9,
+          "onReb": 5,
+          "offReb": 5,
+          "onAst": 6,
+          "offAst": 2
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 20.7,
+          "offMin": 17.6,
+          "onPoss": 78,
+          "offPoss": 69,
+          "onPts": 13,
+          "offPts": 10,
+          "onReb": 3,
+          "offReb": 7,
+          "onAst": 3,
+          "offAst": 5
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 11.7,
+          "offMin": 26.7,
+          "onPoss": 47,
+          "offPoss": 100,
+          "onPts": 6,
+          "offPts": 17,
+          "onReb": 2,
+          "offReb": 8,
+          "onAst": 3,
+          "offAst": 5
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 19.1,
+          "offMin": 19.2,
+          "onPoss": 71,
+          "offPoss": 76,
+          "onPts": 16,
+          "offPts": 7,
+          "onReb": 6,
+          "offReb": 4,
+          "onAst": 5,
+          "offAst": 3
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 14.9,
+          "offMin": 23.5,
+          "onPoss": 56,
+          "offPoss": 91,
+          "onPts": 11,
+          "offPts": 12,
+          "onReb": 7,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 6
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "onMin": 1.8,
+          "offMin": 36.6,
+          "onPoss": 7,
+          "offPoss": 140,
+          "onPts": 2,
+          "offPts": 21,
+          "onReb": 0,
+          "offReb": 10,
+          "onAst": 0,
+          "offAst": 8
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 11.2,
+          "offMin": 27.1,
+          "onPoss": 45,
+          "offPoss": 102,
+          "onPts": 3,
+          "offPts": 20,
+          "onReb": 5,
+          "offReb": 5,
+          "onAst": 3,
+          "offAst": 5
+        }
+      ]
+    },
+    {
+      "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+      "name": "Kyle Bowen",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 7.8,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 5.3,
+          "offMin": 2.5,
+          "onPoss": 19,
+          "offPoss": 8,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 4.5,
+          "offMin": 3.3,
+          "onPoss": 16,
+          "offPoss": 11,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 4.8,
+          "offMin": 2.9,
+          "onPoss": 16,
+          "offPoss": 11,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 0,
+          "offMin": 7.8,
+          "onPoss": 0,
+          "offPoss": 27,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 0,
+          "offMin": 7.8,
+          "onPoss": 0,
+          "offPoss": 27,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "onMin": 6.2,
+          "offMin": 1.5,
+          "onPoss": 22,
+          "offPoss": 5,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 7,
+          "offMin": 0.8,
+          "onPoss": 25,
+          "offPoss": 2,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 2.5,
+          "offMin": 5.3,
+          "onPoss": 8,
+          "offPoss": 19,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 0.8,
+          "offMin": 7,
+          "onPoss": 2,
+          "offPoss": 25,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+      "name": "Luke Travers",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 31.5,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 21.6,
+          "offMin": 10,
+          "onPoss": 88,
+          "offPoss": 35,
+          "onPts": 17,
+          "offPts": 9,
+          "onReb": 6,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 22.8,
+          "offMin": 8.7,
+          "onPoss": 92,
+          "offPoss": 31,
+          "onPts": 18,
+          "offPts": 8,
+          "onReb": 8,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 6.7,
+          "offMin": 24.9,
+          "onPoss": 27,
+          "offPoss": 96,
+          "onPts": 7,
+          "offPts": 19,
+          "onReb": 2,
+          "offReb": 7,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 25.4,
+          "offMin": 6.2,
+          "onPoss": 100,
+          "offPoss": 23,
+          "onPts": 24,
+          "offPts": 2,
+          "onReb": 8,
+          "offReb": 1,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "onMin": 14.2,
+          "offMin": 17.3,
+          "onPoss": 51,
+          "offPoss": 72,
+          "onPts": 12,
+          "offPts": 14,
+          "onReb": 2,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 5
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 4.5,
+          "offMin": 27.1,
+          "onPoss": 16,
+          "offPoss": 107,
+          "onPts": 2,
+          "offPts": 24,
+          "onReb": 1,
+          "offReb": 8,
+          "onAst": 0,
+          "offAst": 5
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 16.5,
+          "offMin": 15,
+          "onPoss": 65,
+          "offPoss": 58,
+          "onPts": 15,
+          "offPts": 11,
+          "onReb": 6,
+          "offReb": 3,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 8.9,
+          "offMin": 22.7,
+          "onPoss": 32,
+          "offPoss": 91,
+          "onPts": 7,
+          "offPts": 19,
+          "onReb": 2,
+          "offReb": 7,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 5.7,
+          "offMin": 25.9,
+          "onPoss": 21,
+          "offPoss": 102,
+          "onPts": 2,
+          "offPts": 24,
+          "onReb": 1,
+          "offReb": 8,
+          "onAst": 2,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+      "name": "Malith Machar",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 9.1,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 6.7,
+          "offMin": 2.4,
+          "onPoss": 27,
+          "offPoss": 9,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 6.7,
+          "offMin": 2.4,
+          "onPoss": 27,
+          "offPoss": 9,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 6.7,
+          "offMin": 2.4,
+          "onPoss": 27,
+          "offPoss": 9,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 9.1,
+          "offMin": 0,
+          "onPoss": 36,
+          "offPoss": 0,
+          "onPts": 3,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "onMin": 2.4,
+          "offMin": 6.7,
+          "onPoss": 9,
+          "offPoss": 27,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 0,
+          "offMin": 9.1,
+          "onPoss": 0,
+          "offPoss": 36,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 2.4,
+          "offMin": 6.7,
+          "onPoss": 9,
+          "offPoss": 27,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 2.4,
+          "offMin": 6.7,
+          "onPoss": 9,
+          "offPoss": 27,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 0,
+          "offMin": 9.1,
+          "onPoss": 0,
+          "offPoss": 36,
+          "onPts": 0,
+          "offPts": 3,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+      "name": "Sam Waardenburg",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 30.3,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 18.9,
+          "offMin": 11.4,
+          "onPoss": 77,
+          "offPoss": 40,
+          "onPts": 9,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 3,
+          "onAst": 4,
+          "offAst": 1
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 25.4,
+          "offMin": 5,
+          "onPoss": 100,
+          "offPoss": 17,
+          "onPts": 9,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 3,
+          "onAst": 4,
+          "offAst": 1
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 22.1,
+          "offMin": 8.2,
+          "onPoss": 88,
+          "offPoss": 29,
+          "onPts": 6,
+          "offPts": 3,
+          "onReb": 5,
+          "offReb": 2,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 9.1,
+          "offMin": 21.2,
+          "onPoss": 36,
+          "offPoss": 81,
+          "onPts": 2,
+          "offPts": 7,
+          "onReb": 5,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "onMin": 12.4,
+          "offMin": 18,
+          "onPoss": 43,
+          "offPoss": 74,
+          "onPts": 3,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 5,
+          "onAst": 1,
+          "offAst": 4
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 0,
+          "offMin": 30.3,
+          "onPoss": 0,
+          "offPoss": 117,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 7,
+          "onAst": 0,
+          "offAst": 5
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 16.1,
+          "offMin": 14.3,
+          "onPoss": 61,
+          "offPoss": 56,
+          "onPts": 5,
+          "offPts": 4,
+          "onReb": 4,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 4
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 10.3,
+          "offMin": 20,
+          "onPoss": 37,
+          "offPoss": 80,
+          "onPts": 0,
+          "offPts": 9,
+          "onReb": 3,
+          "offReb": 4,
+          "onAst": 1,
+          "offAst": 4
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 7.1,
+          "offMin": 23.3,
+          "onPoss": 26,
+          "offPoss": 91,
+          "onPts": 2,
+          "offPts": 7,
+          "onReb": 1,
+          "offReb": 6,
+          "onAst": 2,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+      "name": "Shea Ili",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 20.3,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 11.3,
+          "offMin": 9.1,
+          "onPoss": 43,
+          "offPoss": 29,
+          "onPts": 2,
+          "offPts": 5,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 14.2,
+          "offMin": 6.1,
+          "onPoss": 51,
+          "offPoss": 21,
+          "onPts": 5,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 11,
+          "offMin": 9.4,
+          "onPoss": 38,
+          "offPoss": 34,
+          "onPts": 5,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 2.4,
+          "offMin": 17.9,
+          "onPoss": 9,
+          "offPoss": 63,
+          "onPts": 2,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 12.4,
+          "offMin": 7.9,
+          "onPoss": 43,
+          "offPoss": 29,
+          "onPts": 5,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 6.2,
+          "offMin": 14.1,
+          "onPoss": 22,
+          "offPoss": 50,
+          "onPts": 0,
+          "offPts": 7,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 14.8,
+          "offMin": 5.6,
+          "onPoss": 52,
+          "offPoss": 20,
+          "onPts": 4,
+          "offPts": 3,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 8,
+          "offMin": 12.4,
+          "onPoss": 26,
+          "offPoss": 46,
+          "onPts": 5,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "onMin": 1.1,
+          "offMin": 19.2,
+          "onPoss": 4,
+          "offPoss": 68,
+          "onPts": 0,
+          "offPts": 7,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+      "name": "Tom Wilson",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "minutes": 7.9,
+      "teammates": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "onMin": 5.8,
+          "offMin": 2.1,
+          "onPoss": 21,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "onMin": 5.7,
+          "offMin": 2.2,
+          "onPoss": 21,
+          "offPoss": 7,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "onMin": 5,
+          "offMin": 2.9,
+          "onPoss": 18,
+          "offPoss": 10,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "onMin": 0,
+          "offMin": 7.9,
+          "onPoss": 0,
+          "offPoss": 28,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "onMin": 7.1,
+          "offMin": 0.8,
+          "onPoss": 26,
+          "offPoss": 2,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "onMin": 1.1,
+          "offMin": 6.7,
+          "onPoss": 4,
+          "offPoss": 24,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "onMin": 0.8,
+          "offMin": 7.1,
+          "onPoss": 2,
+          "offPoss": 26,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "onMin": 4.3,
+          "offMin": 3.6,
+          "onPoss": 14,
+          "offPoss": 14,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "onMin": 1.8,
+          "offMin": 6.1,
+          "onPoss": 6,
+          "offPoss": 22,
+          "onPts": 0,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    }
+  ],
+  "fetchedAt": "2026-10-23T17:52:57.044Z"
+}

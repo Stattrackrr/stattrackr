@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-22T17:57:50.805Z",
+  "generatedAt": "2026-10-23T17:52:07.656Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2404,7 +2404,7 @@
       "externalId": "371130fd-58ad-11f1-aac7-754512109772",
       "startTime": "2026-10-23T10:30:00.000Z",
       "round": "6",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Perth Wildcats",
       "homeTeamCode": "PER",
       "homeTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
@@ -2413,8 +2413,8 @@
       "awayTeamCode": "MEL",
       "awayTeamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 103,
+      "awayScore": 102,
       "venue": "RAC Arena",
       "matchSlug": "perth-wildcats-v-melbourne-united-men-23-10-2026"
     },
