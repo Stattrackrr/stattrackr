@@ -10,6 +10,7 @@ import {
   saneSpreads,
 } from './candidates/nba';
 import { liveNbaQuotes, repriceNbaCandidate, type NbaLiveGame } from './candidates/nbaLive';
+import { nbaCorePropBooks } from '@/lib/nba/dash/oddsApiNet';
 import { propSelections } from './candidates/nbl';
 import { sharpSplit } from './candidates/sharp';
 import type { AiCandidate } from './candidates/types';
@@ -761,4 +762,10 @@ test('NBA props: the model keeps its say near the market and hands over to it wh
   assert.equal(nbaModelTrust(33.3, 21.4), 0, 'Holiday: 56% off');
   assert.equal(nbaModelTrust(16.29, 9.44), 0, 'Sheppard: 73% off');
   assert.equal(nbaModelTrust(10, 0), 1);
+});
+test('NBA props are held when the feed has props from fewer than two of the big AU books', () => {
+  const line = { 'Trey Murphy III': { REB: [{ line: '4', over: '+65', under: 'N/A', milestone: true }] } };
+  assert.deepEqual(nbaCorePropBooks({ tab: line, dabble: line, betr: line, draftkings: line }), ['tab'], 'only TAB of the big books');
+  assert.deepEqual(nbaCorePropBooks({ sportsbet: line, ladbrokes: line, tab: {} }), ['sportsbet', 'ladbrokes'], 'an empty book does not count');
+  assert.deepEqual(nbaCorePropBooks(undefined), []);
 });
