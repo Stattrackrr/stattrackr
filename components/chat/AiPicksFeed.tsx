@@ -1,10 +1,10 @@
 'use client';
 
-import { ArrowUpDown, Check, Clock, Loader2, Minus, Sparkles, X } from 'lucide-react';
+import { ArrowUpDown, Check, Clock, Highlighter, Loader2, Minus, Sparkles, X } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { supabase } from '@/lib/supabaseClient';
-import { aiPicksAsRecordBets, fetchAiPicks } from '@/lib/aiPicks/client';
+import { aiPicksAsRecordBets, fetchAddedPickIds, fetchAiPicks, setPickAdded } from '@/lib/aiPicks/client';
 import { legBet, legSubject } from '@/lib/aiPicks/format';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import type { AiPick, AiPickLeg, AiPickStatus } from '@/lib/aiPicks/types';
@@ -320,7 +320,38 @@ function pickTours(pick: AiPick, info: TennisInfo): TennisTour[] {
   return (['ATP', 'WTA'] as const).filter((t) => found.includes(t));
 }
 
-function PickCard({ pick, info }: { pick: AiPick; info: TennisInfo }) {
+/** The member's own marker for "I have this bet on"; it changes nothing else on the card or the record. */
+function AddedButton({ added, onToggle }: { added: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={added}
+      title={added ? 'Highlighted for you. Tap to remove.' : 'Highlight a bet you have on'}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset transition-colors ${
+        added
+          ? 'bg-orange-50 text-orange-700 ring-orange-500/30 hover:bg-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-400/30 dark:hover:bg-orange-500/20'
+          : 'bg-white text-gray-600 ring-gray-200 hover:bg-gray-50 dark:bg-transparent dark:text-gray-300 dark:ring-white/15 dark:hover:bg-white/5'
+      }`}
+    >
+      {added ? <Check className="h-3 w-3" strokeWidth={2.5} /> : <Highlighter className="h-3 w-3" strokeWidth={2.5} />}
+      {added ? 'Highlighted' : 'Highlight'}
+    </button>
+  );
+}
+
+function PickCard({
+  pick,
+  info,
+  added,
+  onToggleAdded,
+}: {
+  pick: AiPick;
+  info: TennisInfo;
+  added: boolean;
+  /** Missing when the member can't mark picks (signed out, or before the table exists). */
+  onToggleAdded?: (pickId: string) => void;
+}) {
   const settled = pick.status !== 'pending';
   const profit = pick.profitUnits ?? 0;
   const isMulti = pick.kind === 'multi';
@@ -329,7 +360,13 @@ function PickCard({ pick, info }: { pick: AiPick; info: TennisInfo }) {
   const single = legs[0];
 
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm dark:border-white/[0.07] dark:bg-[#0f1a2b]">
+    <article
+      className={`relative overflow-hidden rounded-2xl border shadow-sm ${
+        added
+          ? 'border-orange-400 bg-orange-50/60 ring-1 ring-orange-400/60 dark:border-orange-500/60 dark:bg-orange-500/[0.06] dark:ring-orange-500/40'
+          : 'border-gray-200/80 bg-white dark:border-white/[0.07] dark:bg-[#0f1a2b]'
+      }`}
+    >
       <span className={`absolute inset-y-0 left-0 w-1 ${STATUS_META[pick.status].accent}`} aria-hidden />
 
       <div className="flex items-center justify-between gap-3 px-4 pt-3.5">
@@ -341,7 +378,10 @@ function PickCard({ pick, info }: { pick: AiPick; info: TennisInfo }) {
           </span>
           <span className="truncate text-[11px] text-gray-400 dark:text-gray-500">· {fmtPosted(pick.postedAt)}</span>
         </div>
-        <StatusPill status={pick.status} />
+        <div className="flex shrink-0 items-center gap-1.5">
+          {onToggleAdded && <AddedButton added={added} onToggle={() => onToggleAdded(pick.id)} />}
+          <StatusPill status={pick.status} />
+        </div>
       </div>
 
       <div className="px-4 pb-3 pt-3">
@@ -606,6 +646,37 @@ export function AiPicksFeed() {
     }
   }, []);
 
+  // null: the member can't mark picks (signed out, or before migrations/ai_pick_added.sql is run).
+  const [addedIds, setAddedIds] = useState<Set<string> | null>(null);
+  const loadAdded = useCallback(async () => {
+    setAddedIds(await fetchAddedPickIds().catch(() => null));
+  }, []);
+  useEffect(() => {
+    void loadAdded();
+    // Marked on another device (phone after an alert, then the PC).
+    const onFocus = () => void loadAdded();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loadAdded]);
+  const addedRef = useRef(addedIds);
+  useEffect(() => {
+    addedRef.current = addedIds;
+  }, [addedIds]);
+  const toggleAdded = useCallback((pickId: string) => {
+    if (!addedRef.current) return;
+    const next = !addedRef.current.has(pickId);
+    const mark = (on: boolean) =>
+      setAddedIds((prev) => {
+        if (!prev) return prev;
+        const updated = new Set(prev);
+        if (on) updated.add(pickId);
+        else updated.delete(pickId);
+        return updated;
+      });
+    mark(next);
+    setPickAdded(pickId, next).catch(() => mark(!next));
+  }, []);
+
   useEffect(() => {
     void load();
     const channel = supabase
@@ -769,7 +840,13 @@ export function AiPicksFeed() {
       ) : (
         <>
           {shown.map((pick) => (
-            <PickCard key={pick.id} pick={pick} info={tennisInfo} />
+            <PickCard
+              key={pick.id}
+              pick={pick}
+              info={tennisInfo}
+              added={addedIds?.has(pick.id) ?? false}
+              onToggleAdded={addedIds ? toggleAdded : undefined}
+            />
           ))}
           {hiddenCount > 0 && (
             <button
