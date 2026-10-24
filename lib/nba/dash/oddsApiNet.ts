@@ -83,14 +83,6 @@ export function isNbaOddsNetBook(book: string): boolean {
   return STORED_BOOKS.has(book);
 }
 
-/** The big AU books odds-api.net normally carries props from on every NBA game. */
-const CORE_PROP_BOOKS = ['sportsbet', 'ladbrokes', 'neds', 'tab', 'unibet', 'bet365_au'];
-
-/** Big AU books pricing player props for this game; few means the feed is degraded and its prices may be stale. */
-export function nbaCorePropBooks(props: NbaPlayerPropsByBook | undefined): string[] {
-  return CORE_PROP_BOOKS.filter((b) => Object.keys(props?.[b] ?? {}).length > 0);
-}
-
 /** The AU game-line books plus Pinnacle, the sharpest line there is (a reference for the fair price, never bet). */
 const NBA_GAME_LINE_BOOKS: Record<string, string> = { ...GAME_LINE_BOOKS, pinnacle: 'Pinnacle' };
 const GAME_LINE_BOOK_NAMES = new Set(Object.values(NBA_GAME_LINE_BOOKS));

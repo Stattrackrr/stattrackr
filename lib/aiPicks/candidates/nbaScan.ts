@@ -40,7 +40,6 @@ import {
 } from '@/lib/aiPicks/candidates/nba';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
 import { getNbaOddsCache, normalizeNbaPropPlayerName } from '@/lib/nba/dash/odds';
-import { nbaCorePropBooks } from '@/lib/nba/dash/oddsApiNet';
 import type { NbaGameOdds, NbaOddsCache } from '@/lib/nba/dash/oddsTypes';
 import { getNbaSeasonDataset, type NbaSeasonDataset } from '@/lib/nba/dash/season';
 import { getNbaClubById, NBA_CURRENT_SEASON_YEAR, resolveNbaClub } from '@/lib/nba/dash/teams';
@@ -71,7 +70,6 @@ const REGULAR_MINUTES = 20;
 const MISSED_GAMES_BLOCK = 3;
 const MIN_HISTORY_GAMES = 10;
 const EARLY_SEASON_GAMES = 5;
-const MIN_CORE_PROP_BOOKS = 2;
 /** A game this close gets the live injury report. */
 export const NBA_LIVE_INJURY_LEAD_MS = 3 * 60 * 60 * 1000;
 const LIVE_INJURY_TIMEOUT_MS = 20_000;
@@ -302,12 +300,6 @@ export async function scanNbaCandidates(opts: {
       }
     }
     const roster = [...rosterById.values()];
-    // With most of the big books missing, the books left in the feed have been seen holding prices hours old.
-    const coreBooks = nbaCorePropBooks(odds.playerProps);
-    const feedFlag =
-      coreBooks.length < MIN_CORE_PROP_BOOKS
-        ? `Fewer than ${MIN_CORE_PROP_BOOKS} big AU books pricing props for this game (${coreBooks.join(', ') || 'none'}): prices may be stale`
-        : null;
     const boardPlayers = new Set<string>();
     for (const players of Object.values(odds.playerProps ?? {})) for (const name of Object.keys(players ?? {})) boardPlayers.add(name);
     const namesById = new Map<string, string[]>();
@@ -338,7 +330,7 @@ export async function scanNbaCandidates(opts: {
       if (!lines.length && !NBA_ACHIEVEMENT_MARKETS.some((m) => nbaAchievementQuotes(cleaned, names, m).length)) continue;
       const player: NbaResolvedPlayer = { playerId: id, name: nameOf(id), team: club.name, teamCode: club.code, games };
 
-      const flags: string[] = feedFlag ? [feedFlag] : [];
+      const flags: string[] = [];
       const played = playedGames(games) as NbaGameLogRow[];
       const thisSeason = played.filter((g) => g.season === season);
       const lastTeam = played.at(-1)?.teamCode ?? null;
