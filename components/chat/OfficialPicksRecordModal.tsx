@@ -367,7 +367,6 @@ const UnitsPnlChart = memo(function UnitsPnlChart({
         <XAxis
           dataKey="bet"
           type="category"
-          scale="band"
           stroke={axisColor}
           tick={{ fill: axisColor, fontSize: compactChart ? 9 : 11 }}
           ticks={ticks}
