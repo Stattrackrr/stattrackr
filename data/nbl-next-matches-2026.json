@@ -1,94 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-23T17:52:08.749Z",
+  "generatedAt": "2026-10-24T16:33:16.322Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-      "name": "Illawarra Hawks",
-      "team_code": "ILL",
-      "nextMatches": [
-        {
-          "id": "55cbc3e1-4965-4869-96ea-3f7e37eb3f13",
-          "match_slug": "illawarra-hawks-v-brisbane-bullets-men-24-10-2026",
-          "match_title": "Illawarra Hawks v Brisbane Bullets men 24-10-2026",
-          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
-          "external_id": "37106a00-58ad-11f1-a7e9-87e414b8c2d5",
-          "start_time_datetime": "2026-10-24T06:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-          "opponent_name": "Brisbane Bullets",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-          "venue": "WIN Entertainment Centre",
-          "opponent_logo_blurhash": "LAD9iCxu0s5dS+s*s+xU0aIwoI}$"
-        }
-      ]
-    },
-    {
-      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-      "name": "Brisbane Bullets",
-      "team_code": "BRI",
-      "nextMatches": [
-        {
-          "id": "55cbc3e1-4965-4869-96ea-3f7e37eb3f13",
-          "match_slug": "illawarra-hawks-v-brisbane-bullets-men-24-10-2026",
-          "match_title": "Illawarra Hawks v Brisbane Bullets men 24-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS27",
-          "external_id": "37106a00-58ad-11f1-a7e9-87e414b8c2d5",
-          "start_time_datetime": "2026-10-24T06:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "opponent_name": "Illawarra Hawks",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-          "venue": "WIN Entertainment Centre",
-          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
-        }
-      ]
-    },
-    {
-      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-      "name": "South East Melbourne Phoenix",
-      "team_code": "SEM",
-      "nextMatches": [
-        {
-          "id": "a96e0fda-a53d-48b2-9b36-db4a97cd70dd",
-          "match_slug": "south-east-melbourne-phoenix-v-adelaide-36ers-men-24-10-2026",
-          "match_title": "South East Melbourne Phoenix v Adelaide 36ers men 24-10-2026",
-          "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
-          "external_id": "3711a017-58ad-11f1-b649-93b9302663c0",
-          "start_time_datetime": "2026-10-24T08:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-          "opponent_name": "Adelaide 36ers",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-          "venue": "John Cain Arena",
-          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
-        }
-      ]
-    },
-    {
-      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-      "name": "Adelaide 36ers",
-      "team_code": "ADL",
-      "nextMatches": [
-        {
-          "id": "a96e0fda-a53d-48b2-9b36-db4a97cd70dd",
-          "match_slug": "south-east-melbourne-phoenix-v-adelaide-36ers-men-24-10-2026",
-          "match_title": "South East Melbourne Phoenix v Adelaide 36ers men 24-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
-          "external_id": "3711a017-58ad-11f1-b649-93b9302663c0",
-          "start_time_datetime": "2026-10-24T08:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-          "opponent_name": "South East Melbourne Phoenix",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
-          "venue": "John Cain Arena",
-          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
-        }
-      ]
-    },
     {
       "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "name": "Cairns Taipans",
@@ -195,6 +111,48 @@
       ]
     },
     {
+      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "name": "Brisbane Bullets",
+      "team_code": "BRI",
+      "nextMatches": [
+        {
+          "id": "0fcef652-8104-4871-9afb-c7516d311ef1",
+          "match_slug": "brisbane-bullets-v-cairns-taipans-men-29-10-2026",
+          "match_title": "Brisbane Bullets v Cairns Taipans men 29-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS27",
+          "external_id": "37196322-58ad-11f1-9f91-61e38b2284ba",
+          "start_time_datetime": "2026-10-29T09:00:00.000Z",
+          "is_home": true,
+          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "opponent_name": "Cairns Taipans",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
+          "venue": "Brisbane Entertainment Centre",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
+      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "name": "Adelaide 36ers",
+      "team_code": "ADL",
+      "nextMatches": [
+        {
+          "id": "1bdcde8d-df8e-4c16-9994-6716733a61c7",
+          "match_slug": "nz-breakers-v-adelaide-36ers-men-30-10-2026",
+          "match_title": "NZ Breakers v Adelaide 36ers men 30-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
+          "external_id": "371d934c-58ad-11f1-8edf-4b570c3bab13",
+          "start_time_datetime": "2026-10-30T06:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "opponent_name": "NZ Breakers",
+          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
+          "venue": "Spark Arena",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
       "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "name": "Tasmania JackJumpers",
       "team_code": "TAS",
@@ -212,6 +170,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
           "venue": "Silverdome",
           "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
+        }
+      ]
+    },
+    {
+      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "name": "Illawarra Hawks",
+      "team_code": "ILL",
+      "nextMatches": [
+        {
+          "id": "ecbaa29d-7d1b-4d7f-bfe6-f53e080d95d7",
+          "match_slug": "perth-wildcats-v-illawarra-hawks-men-31-10-2026",
+          "match_title": "Perth Wildcats v Illawarra Hawks men 31-10-2026",
+          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
+          "external_id": "37214b47-58ad-11f1-9b38-e78395b5c13c",
+          "start_time_datetime": "2026-10-31T10:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "opponent_name": "Perth Wildcats",
+          "opponent_logo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
+          "venue": "RAC Arena",
+          "opponent_logo_blurhash": "LDH_Pv_N1b?HHrkCTJD%1v?HD456"
+        }
+      ]
+    },
+    {
+      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+      "name": "South East Melbourne Phoenix",
+      "team_code": "SEM",
+      "nextMatches": [
+        {
+          "id": "8888930e-b37c-4d02-9a65-f412fc11e3ae",
+          "match_slug": "south-east-melbourne-phoenix-v-tasmania-jackjumpers-men-01-11-2026",
+          "match_title": "South East Melbourne Phoenix v Tasmania JackJumpers men 01-11-2026",
+          "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
+          "external_id": "374fd3d1-58ad-11f1-945e-cbcb1725dbfe",
+          "start_time_datetime": "2026-11-01T04:00:00.000Z",
+          "is_home": true,
+          "opponent_id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+          "opponent_name": "Tasmania JackJumpers",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/TAS.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "L25$batj01ah1hWW^Moe00V[.kSz"
         }
       ]
     }

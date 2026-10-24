@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-23T17:52:07.656Z",
+  "generatedAt": "2026-10-24T16:33:15.225Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2366,7 +2366,7 @@
       "externalId": "3711a017-58ad-11f1-b649-93b9302663c0",
       "startTime": "2026-10-24T08:30:00.000Z",
       "round": "6",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
       "homeTeamCode": "SEM",
       "homeTeamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
@@ -2375,8 +2375,8 @@
       "awayTeamCode": "ADL",
       "awayTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 108,
+      "awayScore": 94,
       "venue": "John Cain Arena",
       "matchSlug": "south-east-melbourne-phoenix-v-adelaide-36ers-men-24-10-2026"
     },
@@ -2385,7 +2385,7 @@
       "externalId": "37106a00-58ad-11f1-a7e9-87e414b8c2d5",
       "startTime": "2026-10-24T06:30:00.000Z",
       "round": "6",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Illawarra Hawks",
       "homeTeamCode": "ILL",
       "homeTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
@@ -2394,8 +2394,8 @@
       "awayTeamCode": "BRI",
       "awayTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 81,
+      "awayScore": 98,
       "venue": "WIN Entertainment Centre",
       "matchSlug": "illawarra-hawks-v-brisbane-bullets-men-24-10-2026"
     },

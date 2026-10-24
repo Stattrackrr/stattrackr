@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-23T17:52:52.676Z",
+  "generatedAt": "2026-10-24T16:34:00.665Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Tuesday, October 20, 8:00pm AEDT",
-  "injuryCount": 25,
+  "injuryCount": 23,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -30,15 +30,6 @@
       "injury": "ACL",
       "returning": "TBC",
       "status": "Out",
-      "listedByNbl": true
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Tyrell Harrison",
-      "injury": "Ankle",
-      "returning": "TBC",
-      "status": "Day-to-Day",
-      "note": "A game-time decision for Brisbane’s game at the Illawarra Hawks on Saturday 24 October 2026, the Bullets confirmed on 23 October, Fox Sports reported. He missed the 21 October game at Tasmania after hurting the ankle in the 15 October win over South East Melbourne.",
       "listedByNbl": true
     },
     {
@@ -170,14 +161,6 @@
       "team": "South East Melbourne Phoenix",
       "player": "Hunter Goodrick",
       "injury": "Knee",
-      "returning": "TBC",
-      "status": "Out",
-      "listedByNbl": true
-    },
-    {
-      "team": "South East Melbourne Phoenix",
-      "player": "Tanner Krebs",
-      "injury": "Neck",
       "returning": "TBC",
       "status": "Out",
       "listedByNbl": true
