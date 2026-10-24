@@ -4,16 +4,17 @@
   "homeTeam": "Melbourne United",
   "awayTeam": "Sydney Kings",
   "commenceTime": "2026-10-25T06:00:00.000Z",
-  "capturedAt": "2026-10-24T11:18:01.891Z",
+  "capturedAt": "2026-10-24T16:05:46.547Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
     "Sportsbet",
     "BetMGM",
     "Bwin",
-    "Bwin_de"
+    "Bwin_de",
+    "Palmerbet"
   ],
-  "lineCount": 465,
+  "lineCount": 473,
   "lines": [
     {
       "player": "Andrew Carr",
@@ -6058,6 +6059,110 @@
       "over": "+3300",
       "under": "N/A",
       "overDecimal": 34,
+      "underDecimal": null
+    },
+    {
+      "player": "Andrew Carr",
+      "playerKey": "andrew carr",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-3333",
+      "under": "N/A",
+      "overDecimal": 1.03,
+      "underDecimal": null
+    },
+    {
+      "player": "Joe Ingles",
+      "playerKey": "joe ingles",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-2000",
+      "under": "N/A",
+      "overDecimal": 1.05,
+      "underDecimal": null
+    },
+    {
+      "player": "Luke Travers",
+      "playerKey": "luke travers",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
+      "underDecimal": null
+    },
+    {
+      "player": "Makuach Maluach",
+      "playerKey": "makuach maluach",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
+      "underDecimal": null
+    },
+    {
+      "player": "Sam Waardenburg",
+      "playerKey": "sam waardenburg",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-1429",
+      "under": "N/A",
+      "overDecimal": 1.07,
+      "underDecimal": null
+    },
+    {
+      "player": "Shea Ili",
+      "playerKey": "shea ili",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-278",
+      "under": "N/A",
+      "overDecimal": 1.36,
+      "underDecimal": null
+    },
+    {
+      "player": "Will Johnston",
+      "playerKey": "will johnston",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-400",
+      "under": "N/A",
+      "overDecimal": 1.25,
+      "underDecimal": null
+    },
+    {
+      "player": "Xavier Cooks",
+      "playerKey": "xavier cooks",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
       "underDecimal": null
     }
   ]
