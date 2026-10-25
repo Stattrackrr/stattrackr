@@ -307,6 +307,25 @@ export function multiKey(keys: string[]): string {
 const allowanceOpen = (times: number[], cap: number, gapMs: number, nowMs: number) =>
   times.length < cap && !(times.length && nowMs - Math.max(...times) < gapMs);
 
+/** Basketball multis are built from short lines (20+ PRA rather than 25+); tennis legs, where multis have paid, are not capped. */
+export const MAX_BASKETBALL_LEG_PRICE = 1.5;
+
+function legPriceOk(sport: string, price: number): boolean {
+  return sport === 'tennis' || price <= MAX_BASKETBALL_LEG_PRICE;
+}
+
+/**
+ * A single could still be posted on this player (or game) under the per-game and per-sport limits.
+ * Such subjects stay out of multis: one pick per subject, so a leg would rule the single out.
+ */
+export function singleRoomFor(c: AiCandidate, params: AiPicksParams, state: PostedState): boolean {
+  const p = sportParams(params, c.sport);
+  if (c.player && state.playersRecent.has(`${c.sport}|${c.player.toLowerCase()}`)) return false;
+  if (c.sport === 'nba') return nbaGameSlotOpen(c, state, {}) && nbaSlateOpen(c, p, state, 0);
+  const cap = isStandoutSingle(c, p) ? MAX_SINGLES_CEILING : p.maxSinglesPerDay;
+  return (state.singlesRecent[c.sport]?.length ?? 0) < cap && !state.singleGamesRecent.has(gameIdentity(c));
+}
+
 /** Tennis legs may run overnight (7pm then 3am) but not most of a day apart. */
 export const TENNIS_MULTI_MAX_GAP_MS = 12 * 60 * 60 * 1000;
 
@@ -339,10 +358,16 @@ export function chooseMulti(
   const sharedOpen = allowanceOpen(state.multisRecent, MAX_MULTIS_PER_WINDOW, MULTI_GAP_MS, nowMs);
   const nbaOpen = allowanceOpen(state.nbaMultisRecent ?? [], nbaMultiCap(state.nbaSlateGames ?? 0), NBA_MULTI_GAP_MS, nowMs);
   if (!sharedOpen && !nbaOpen) return null;
+  const forSingles = new Set(
+    watched
+      .filter((w) => qualifiesSingle(w.c, params, nowMs).ok && !conflicts(w.c, state) && singleRoomFor(w.c, params, state))
+      .map((w) => subjectId(w.c))
+  );
   const pool = watched
     .filter((w) => w.c.prob >= MIN_LEG_PROB && (w.c.supportScore == null || w.c.supportScore >= MIN_LEG_SUPPORT))
     .filter((w) => qualifiesLeg(w.c, params, nowMs).ok && heldUp(w.history, nowMs))
     .filter((w) => !conflicts(w.c, state) && !exclude.keys.has(w.c.key) && !exclude.subjects?.has(subjectId(w.c)))
+    .filter((w) => !forSingles.has(subjectId(w.c)))
     .sort((a, b) => b.c.ev - a.c.ev)
     .slice(0, MAX_LEG_POOL);
   let best: Proposal | null = null;
@@ -355,7 +380,8 @@ export function chooseMulti(
       if (exclude.rejected.has(key)) continue;
       const maxPrice = longMultiFull(state, [a.c.sport, b.c.sport]) ? LONG_MULTI_PRICE : MAX_MULTI_PRICE;
       const first = sportParams(params, a.c.sport);
-      const r = readiness(a.c, a.history, { nowMs, postWindowHours: first.postWindowHours, minEv: first.minEvLeg });
+      // Posting early takes the same strong edge a single needs, so a multi never jumps ahead of one.
+      const r = readiness(a.c, a.history, { nowMs, postWindowHours: first.postWindowHours, minEv: first.minEvSingle });
       if (!r.ready) continue;
       const pa = bookPrices(a.c.quotes);
       const pb = bookPrices(b.c.quotes);
@@ -363,6 +389,7 @@ export function chooseMulti(
       for (const [k, qa] of pa) {
         const qb = pb.get(k);
         if (!qb) continue;
+        if (!legPriceOk(a.c.sport, qa.price) || !legPriceOk(b.c.sport, qb.price)) continue;
         const price = qa.price * qb.price;
         if (price < AI_PICK_MIN_PRICE || price > maxPrice) continue;
         if (!pick || price > pick.price) pick = { qa, qb, price };

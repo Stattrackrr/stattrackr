@@ -100,7 +100,7 @@ export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
     maxPriceSingle: 3.5,
     maxPriceLeg: 2.6,
     oneWayMarginPower: 1.08,
-    postWindowHours: 6,
+    postWindowHours: 12,
     maxSinglesPerDay: 3,
     stakeScale: {},
     contextStrength: 1,
@@ -121,7 +121,7 @@ export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
     maxPriceSingle: 3.5,
     maxPriceLeg: 2.6,
     oneWayMarginPower: 1.08,
-    postWindowHours: 6,
+    postWindowHours: 12,
     maxSinglesPerDay: 3,
     stakeScale: {},
     contextStrength: 1,
@@ -179,6 +179,8 @@ export function mergeSportParams<T extends AiSportParams>(defaults: T, stored: u
     ...s,
     modelWeight: { ...defaults.modelWeight, ...(s.modelWeight ?? {}) },
     stakeScale: { ...defaults.stakeScale, ...(s.stakeScale ?? {}) },
+    // Posting policy, not a learned value: stored copies of old windows must not override it.
+    postWindowHours: defaults.postWindowHours,
   };
 }
 

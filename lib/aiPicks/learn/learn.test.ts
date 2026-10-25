@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
 import type { Proposal } from '@/lib/aiPicks/decide/select';
 import { bestStrength, bestWeight, learnSport, perCluster, pickMetrics, shrinkStep, type LearnSample } from '@/lib/aiPicks/learn/learn';
-import { DEFAULT_AI_PICKS_PARAMS, modelGroup, modelVersion } from '@/lib/aiPicks/params';
+import { DEFAULT_AI_PICKS_PARAMS, mergeSportParams, modelGroup, modelVersion } from '@/lib/aiPicks/params';
 import type { AiPick, AiPickLeg } from '@/lib/aiPicks/types';
 import { kellyStake, sizeUnits, snapUnits, trackRecords } from '@/lib/aiPicks/units';
 
@@ -215,4 +215,10 @@ test('learning: context strength moves one small step, only on enough plays wher
   assert.ok(wrong.changes.some((c) => c.startsWith('context strength 1 -> 0.9')));
   const right = learnSport('nbl', P.nbl, ctxBatch(300, 7), [], () => 'x');
   assert.equal(right.params.contextStrength, 1.1);
+});
+
+test('the posting window is policy: a stored learned copy of an old window does not override it', () => {
+  const merged = mergeSportParams(DEFAULT_AI_PICKS_PARAMS.nba, { ...DEFAULT_AI_PICKS_PARAMS.nba, postWindowHours: 6, minEvSingle: 0.04 });
+  assert.equal(merged.postWindowHours, 12);
+  assert.equal(merged.minEvSingle, 0.04, 'learned values still apply');
 });

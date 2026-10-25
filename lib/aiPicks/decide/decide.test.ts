@@ -138,8 +138,8 @@ test('singles: spaced through the day, capped per 24h, standouts get the shorter
 });
 
 test('multis: capped per 24h and spaced', () => {
-  const a = cand({ eventKey: 'm1', startsAt: iso(NOW + 2 * H), bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
-  const b = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'bet365', price: 1.38 }] });
+  const a = cand({ singleEligible: false, eventKey: 'm1', startsAt: iso(NOW + 2 * H), bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
+  const b = cand({ singleEligible: false, eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'bet365', price: 1.38 }] });
   const w: Watched[] = [a, b].map((c) => ({ c, history: held() }));
   const multi = (multisRecent: number[]) => chooseMulti(w, P, { ...empty(), multisRecent }, NOW, { keys: new Set(), rejected: new Set() });
   assert.ok(multi([NOW - 4 * H]));
@@ -152,8 +152,8 @@ test('multis: one tennis multi above 2.5 per 24h; after that only 2.5 or under',
     { book: 'Bet365', price: hi },
     { book: 'TAB', price: lo },
   ];
-  const a = cand({ eventKey: 'm1', startsAt: iso(NOW + 2 * H), bestPrice: 1.75, prob: 0.66, ev: 0.1, quotes: quotes(1.75, 1.6) });
-  const b = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.7, prob: 0.66, ev: 0.1, quotes: quotes(1.7, 1.55) });
+  const a = cand({ singleEligible: false, eventKey: 'm1', startsAt: iso(NOW + 2 * H), bestPrice: 1.75, prob: 0.66, ev: 0.1, quotes: quotes(1.75, 1.6) });
+  const b = cand({ singleEligible: false, eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.7, prob: 0.66, ev: 0.1, quotes: quotes(1.7, 1.55) });
   const w: Watched[] = [a, b].map((c) => ({ c, history: held() }));
   const multi = (longMultisRecent: Record<string, number[]>) =>
     chooseMulti(w, P, { ...empty(), multisRecent: [NOW - 10 * H], longMultisRecent }, NOW, { keys: new Set(), rejected: new Set() });
@@ -164,9 +164,9 @@ test('multis: one tennis multi above 2.5 per 24h; after that only 2.5 or under',
 
 test('multi: separate games, priced at one book, at least 1.65', () => {
   const near = iso(NOW + 2 * H);
-  const a = cand({ eventKey: 'm1', startsAt: near, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
-  const b = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'bet365', price: 1.38 }] });
-  const sameGame = cand({ eventKey: 'm1', market: 'player_games', player: 'A. One', startsAt: near, prob: 0.8, ev: 0.12, quotes: [{ book: 'Bet365', price: 1.4 }, { book: 'TAB', price: 1.38 }] });
+  const a = cand({ singleEligible: false, eventKey: 'm1', startsAt: near, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
+  const b = cand({ singleEligible: false, eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'bet365', price: 1.38 }] });
+  const sameGame = cand({ singleEligible: false, eventKey: 'm1', market: 'player_games', player: 'A. One', startsAt: near, prob: 0.8, ev: 0.12, quotes: [{ book: 'Bet365', price: 1.4 }, { book: 'TAB', price: 1.38 }] });
   const w: Watched[] = [a, b, sameGame].map((c) => ({ c, history: held() }));
   const m = chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set() })!;
   assert.ok(m);
@@ -200,8 +200,8 @@ test('one pick per subject: a tennis match, an NBL player in a game, an NBL game
   const used = { ...empty(), subjectsUsed: new Set([subjectId(handicap)]) };
   assert.equal(chooseSingles([{ c: games, history: held() }], P, used, NOW).length, 0);
 
-  const other = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'Bet365', price: 1.38 }] });
-  const leg = cand({ ...games, key: undefined, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
+  const other = cand({ singleEligible: false, eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'Bet365', price: 1.38 }] });
+  const leg = cand({ ...games, singleEligible: false, key: undefined, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
   const w: Watched[] = [leg, other].map((c) => ({ c, history: held() }));
   assert.ok(chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set() }));
   assert.equal(chooseMulti(w, P, used, NOW, { keys: new Set(), rejected: new Set() }), null);

@@ -141,7 +141,7 @@ test('NBA singles follow the slate: one per game (at least 2), then standout edg
 
 test('NBA multis have their own allowance sized to the slate, an hour apart', () => {
   const leg = (player: string, eventKey: string) =>
-    cand({ player, playerId: player, eventKey, bestPrice: 1.5, quotes: [{ book: 'Bet365', price: 1.5 }, { book: 'Sportsbet', price: 1.48 }], prob: 0.75, ev: 0.125, supportScore: 0.7 });
+    cand({ player, playerId: player, eventKey, bestPrice: 1.5, quotes: [{ book: 'Bet365', price: 1.5 }, { book: 'Sportsbet', price: 1.48 }], prob: 0.75, ev: 0.125, supportScore: 0.7, singleEligible: false });
   const w = [leg('A', 'g1'), leg('B', 'g2')].map((c): Watched => ({ c, history: held }));
   const multi = (state: Partial<PostedState>) => chooseMulti(w, P, { ...empty(), ...state }, NOW, { keys: new Set(), rejected: new Set() });
   const full = [NOW - 20 * H, NOW - 12 * H, NOW - 5 * H];
@@ -761,4 +761,33 @@ test('NBA props: the model keeps its say near the market and hands over to it wh
   assert.equal(nbaModelTrust(33.3, 21.4), 0, 'Holiday: 56% off');
   assert.equal(nbaModelTrust(16.29, 9.44), 0, 'Sheppard: 73% off');
   assert.equal(nbaModelTrust(10, 0), 1);
+});
+test('NBA multis: a player who can still be a single stays out, and legs are short lines only', () => {
+  const at = iso(NOW + 3 * H);
+  const pra = (player: string, eventKey: string, line: number, price: number, prob: number, single: boolean) =>
+    cand({
+      player,
+      playerId: player,
+      eventKey,
+      startsAt: at,
+      market: 'pra',
+      marketKind: 'milestone',
+      line,
+      bestPrice: price,
+      quotes: [{ book: 'Bet365', price }, { book: 'Sportsbet', price: price - 0.05 }],
+      prob,
+      ev: prob * price - 1,
+      supportScore: 0.75,
+      singleEligible: single,
+    });
+  const jjj25 = pra('Jaren Jackson Jr.', 'g1', 24.5, 1.8, 0.602, true);
+  const jjj20 = pra('Jaren Jackson Jr.', 'g1', 19.5, 1.3, 0.8, false);
+  const rj25 = pra('RJ Barrett', 'g2', 24.5, 1.61, 0.648, false);
+  const rj20 = pra('RJ Barrett', 'g2', 19.5, 1.32, 0.8, false);
+  const w = [jjj25, jjj20, rj25, rj20].map((c): Watched => ({ c, history: held }));
+  const pickMulti = (state: PostedState) => chooseMulti(w, P, state, NOW, { keys: new Set(), rejected: new Set() });
+  assert.equal(pickMulti({ ...empty(), nbaSlateGames: 6 }), null, 'JJJ 25+ can still go up as a single, so no JJJ leg');
+  const gameFull = { ...empty(), nbaSlateGames: 6, singlesByGame: { [gameIdentity(jjj25)]: { prop: 2, game: 0 } } };
+  const m = pickMulti(gameFull)!;
+  assert.deepEqual(m.legs.map((l) => l.c.key).sort(), [jjj20.key, rj20.key].sort(), 'his game has its singles: the short 20+ lines, never the 1.80 / 1.61 legs');
 });
