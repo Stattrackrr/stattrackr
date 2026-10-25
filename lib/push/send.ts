@@ -58,8 +58,13 @@ async function sendToRecipients(recipients: Recipient[], message: PushMessage): 
 }
 
 /** Alert every device allowed to read AI picks. Never throws; posting a pick must not fail on a push. */
-export async function sendNewPicksPush(titles: string[]): Promise<{ sent: number; removed: number; error?: string }> {
-  if (!titles.length) return { sent: 0, removed: 0 };
+export async function sendNewPicksPush(
+  picks: Array<{ id: string; title: string }>
+): Promise<{ sent: number; removed: number; error?: string }> {
+  if (!picks.length) return { sent: 0, removed: 0 };
+  const titles = picks.map((p) => p.title);
+  // Tapping the alert opens the feed scrolled to the (first) new pick.
+  const url = `/picks?pick=${encodeURIComponent(picks[0]!.id)}`;
   if (!configure()) return { sent: 0, removed: 0, error: 'VAPID keys not set' };
   try {
     const { data, error } = await db().rpc('push_pick_recipients');
@@ -68,11 +73,11 @@ export async function sendNewPicksPush(titles: string[]): Promise<{ sent: number
     if (!recipients.length) return { sent: 0, removed: 0 };
     const message: PushMessage =
       titles.length === 1
-        ? { title: 'New StatTrackr AI pick', body: titles[0]!, url: '/picks', tag: 'ai-picks', badgeCount: 1 }
+        ? { title: 'New StatTrackr AI pick', body: titles[0]!, url, tag: 'ai-picks', badgeCount: 1 }
         : {
             title: `${titles.length} new StatTrackr AI picks`,
             body: titles.slice(0, 3).join(' · '),
-            url: '/picks',
+            url,
             tag: 'ai-picks',
             badgeCount: titles.length,
           };

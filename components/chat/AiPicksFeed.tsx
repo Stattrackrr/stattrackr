@@ -345,12 +345,15 @@ function PickCard({
   info,
   added,
   onToggleAdded,
+  flash = false,
 }: {
   pick: AiPick;
   info: TennisInfo;
   added: boolean;
   /** Missing when the member can't mark picks (signed out, or before the table exists). */
   onToggleAdded?: (pickId: string) => void;
+  /** Briefly outlined after a pick alert opens the feed on this card. */
+  flash?: boolean;
 }) {
   const settled = pick.status !== 'pending';
   const profit = pick.profitUnits ?? 0;
@@ -361,7 +364,10 @@ function PickCard({
 
   return (
     <article
-      className={`relative overflow-hidden rounded-2xl border shadow-sm ${
+      id={`pick-${pick.id}`}
+      className={`relative overflow-hidden rounded-2xl border shadow-sm outline-offset-2 transition-[outline-color] duration-700 ${
+        flash ? 'outline-2 outline-purple-500' : 'outline-2 outline-transparent'
+      } ${
         added
           ? 'border-orange-400 bg-orange-50/60 ring-1 ring-orange-400/60 dark:border-orange-500/60 dark:bg-orange-500/[0.06] dark:ring-orange-500/40'
           : 'border-gray-200/80 bg-white dark:border-white/[0.07] dark:bg-[#0f1a2b]'
@@ -726,6 +732,40 @@ export function AiPicksFeed() {
     if (container) container.scrollTop = 0;
   }, [tab, sport, sort, loading]);
 
+  // A pick alert opens /picks?pick=<id>: show that pick's tab, scroll to it and outline it briefly.
+  const [focusId, setFocusId] = useState<string | null>(() =>
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('pick')
+  );
+  const [scrollToId, setScrollToId] = useState<string | null>(null);
+  const [flashId, setFlashId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!focusId || loading) return;
+    const target = picks.find((p) => p.id === focusId);
+    setFocusId(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('pick');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    if (!target) return;
+    setSport('all');
+    setTab(target.status === 'pending' ? 'pending' : 'resulted');
+    setResultedLimit(Math.max(RESULTED_PAGE, picks.length));
+    setScrollToId(target.id);
+  }, [focusId, loading, picks]);
+  useEffect(() => {
+    if (!scrollToId) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(`pick-${scrollToId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setFlashId(scrollToId);
+      setScrollToId(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [scrollToId]);
+  useEffect(() => {
+    if (!flashId) return;
+    const timer = setTimeout(() => setFlashId(null), 2500);
+    return () => clearTimeout(timer);
+  }, [flashId]);
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
@@ -846,6 +886,7 @@ export function AiPicksFeed() {
               info={tennisInfo}
               added={addedIds?.has(pick.id) ?? false}
               onToggleAdded={addedIds ? toggleAdded : undefined}
+              flash={flashId === pick.id}
             />
           ))}
           {hiddenCount > 0 && (

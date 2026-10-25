@@ -512,7 +512,7 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
         }
         mark('post');
         if (summary.posted.length) {
-          summary.push = await sendNewPicksPush(summary.posted.map((p) => p.title));
+          summary.push = await sendNewPicksPush(summary.posted);
           mark('push');
         }
       }

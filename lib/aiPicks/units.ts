@@ -37,6 +37,16 @@ export function priceCap(price: number): number {
   return MAX_UNITS;
 }
 
+/** Best price this far above the shortest book on the same line usually means a stale or wrong price. */
+const BOOK_SPREAD_LIMIT = 1.25;
+
+/** Best price over the shortest price quoted for this selection (1 with fewer than two books). */
+export function bookSpread(quotes: Array<{ price: number }>): number {
+  const prices = quotes.map((q) => q.price).filter((p) => p > 1);
+  if (prices.length < 2) return 1;
+  return Math.max(...prices) / Math.min(...prices);
+}
+
 export function snapUnits(raw: number): number {
   return clamp(Math.round(raw * 2) / 2, MIN_UNITS, MAX_UNITS);
 }
@@ -54,8 +64,11 @@ export function sizeUnits(
   const scale = scales.reduce((a, b) => a + b, 0) / scales.length;
   const raw = (s.kellyFraction * kelly * support * scale) / s.unitShare;
 
-  const caps: Array<[number, string]> = [[priceCap(p.price), 'long price']];
+  const caps: Array<[number, string]> = [[s.maxUnits, 'stake ceiling']];
+  if (priceCap(p.price) < MAX_UNITS) caps.push([priceCap(p.price), 'long price']);
   if (p.kind === 'multi') caps.push([s.multiMaxUnits, 'multi']);
+  if (p.legs.some((l) => bookSpread(l.c.quotes ?? []) > BOOK_SPREAD_LIMIT)) caps.push([1, 'books far apart on the price']);
+  if (p.legs.some((l) => (l.c.flags ?? []).some((f) => f.startsWith('Early season')))) caps.push([1.5, 'early season']);
   for (const sport of new Set(p.legs.map((l) => l.c.sport))) {
     const rec = records[sport];
     if (!rec || rec.settled < s.rampPicks) caps.push([s.rampMaxUnits, `${sport} still proving itself`]);

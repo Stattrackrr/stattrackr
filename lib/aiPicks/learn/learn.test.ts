@@ -35,7 +35,19 @@ test('kelly stake and the unit ladder', () => {
 });
 
 test('sizing: edge drives size, caps keep it honest', () => {
-  assert.equal(sizeUnits(single(0.6, 2), P, proven).units, 3);
+  const big = sizeUnits(single(0.6, 2), P, proven);
+  assert.equal(big.units, 2, 'the stake ceiling holds even a big edge on a proven sport');
+  assert.match(big.why, /stake ceiling/);
+  assert.equal(sizeUnits(single(0.6, 2), { ...P, staking: { ...P.staking, maxUnits: 3 } }, proven).units, 3, 'the ladder still reaches 3 once the ceiling is lifted');
+  assert.doesNotMatch(big.why, /long price/, 'a $2.00 price is not a long price');
+  // Reaves 10+ R+A: TAB 2.10 against Sportsbet 1.45 is a price gap, not an edge to stake big on.
+  const apart = sizeUnits(single(0.6, 2, { quotes: [{ book: 'tab', price: 2.1 }, { book: 'dabble', price: 2.02 }, { book: 'sportsbet', price: 1.45 }] }), P, proven);
+  assert.equal(apart.units, 1);
+  assert.match(apart.why, /books far apart/);
+  assert.equal(sizeUnits(single(0.6, 2, { quotes: [{ book: 'tab', price: 2 }, { book: 'sportsbet', price: 1.85 }] }), P, proven).units, 2, 'normal spread');
+  const early = sizeUnits(single(0.6, 2, { flags: ['Early season: projection leans on last season'] }), P, proven);
+  assert.equal(early.units, 1.5);
+  assert.match(early.why, /early season/);
   // New sport: capped until it has a record.
   const fresh = sizeUnits(single(0.6, 2), P, {});
   assert.equal(fresh.units, 1.5);

@@ -53,6 +53,8 @@ export type AiStakingParams = {
   rampPicks: number;
   rampMaxUnits: number;
   multiMaxUnits: number;
+  /** Ceiling on any pick while the public record is new; the ladder itself goes to 3 units. */
+  maxUnits: number;
   /** Recent ROI below this (over at least drawdownMinPicks) drops stakes to 1 unit. */
   drawdownRoi: number;
   drawdownMinPicks: number;
@@ -83,6 +85,7 @@ export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
     rampPicks: 30,
     rampMaxUnits: 1.5,
     multiMaxUnits: 1,
+    maxUnits: 2,
     drawdownRoi: -0.15,
     drawdownMinPicks: 20,
   },
