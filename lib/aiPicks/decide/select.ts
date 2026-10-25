@@ -347,13 +347,16 @@ export function multiLegsCompatible(
  * Best ready 2-leg multi: legs from different games that can be combined (see multiLegsCompatible), both
  * bettable at one book, combined price at least 1.65, and positive EV after treating the legs as
  * independent. All-NBA multis go on the NBA allowance (sized to the slate); any other on the shared one.
+ * NBA and NBL legs never share a posted multi (0 from 10 before this rule); `mixedBasketball` finds the
+ * best such pair instead, for tracking only.
  */
 export function chooseMulti(
   watched: Watched[],
   params: AiPicksParams,
   state: PostedState,
   nowMs: number,
-  exclude: { keys: Set<string>; rejected: Set<string>; subjects?: Set<string> }
+  exclude: { keys: Set<string>; rejected: Set<string>; subjects?: Set<string> },
+  opts: { mixedBasketball?: boolean } = {}
 ): Proposal | null {
   const sharedOpen = allowanceOpen(state.multisRecent, MAX_MULTIS_PER_WINDOW, MULTI_GAP_MS, nowMs);
   const nbaOpen = allowanceOpen(state.nbaMultisRecent ?? [], nbaMultiCap(state.nbaSlateGames ?? 0), NBA_MULTI_GAP_MS, nowMs);
@@ -375,6 +378,7 @@ export function chooseMulti(
     for (let j = i + 1; j < pool.length; j += 1) {
       const [a, b] = [pool[i]!, pool[j]!].sort((x, y) => Date.parse(x.c.startsAt) - Date.parse(y.c.startsAt));
       if (gameIdentity(a.c) === gameIdentity(b.c) || !multiLegsCompatible(a.c, b.c)) continue;
+      if ((a.c.sport !== b.c.sport) !== Boolean(opts.mixedBasketball)) continue;
       if (a.c.sport === 'nba' && b.c.sport === 'nba' ? !nbaOpen : !sharedOpen) continue;
       const key = multiKey([a.c.key, b.c.key]);
       if (exclude.rejected.has(key)) continue;

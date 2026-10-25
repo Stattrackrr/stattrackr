@@ -93,6 +93,8 @@ export type AiPicksRunSummary = {
   shortlisted: number;
   proposals: Array<{ kind: string; title: string; price: number; ev: number; reason: string }>;
   posted: Array<{ id: string; title: string }>;
+  /** Best NBA + NBL multi this scan, saved to the watchlist but never posted. */
+  mixedNotPosted?: { title: string; price: number; ev: number };
   rejected: Array<{ title: string; reason: string }>;
   closingCaptured: number;
   /** NBA games in the window and what they allow, against what is already posted. */
@@ -356,6 +358,8 @@ async function chooseLivePriced(
   }
 }
 
+const MIXED_MULTI_NOT_POSTED = 'Not posted: NBA + NBL multi (tracked only)';
+
 function multiWatchRow(p: Proposal, nowIso: string): WatchRow {
   const first = p.legs[0]!.c;
   return {
@@ -471,6 +475,19 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
       const closedMultis = new Set(await listClosedMultiKeys(new Date(nowMs - RECENT_PICKS_MS).toISOString()));
       const { singles, multi } = await chooseLivePriced(watched, params, state, nowMs, closedMultis, summary);
       mark('price check');
+      // NBA + NBL multis no longer post; the best one is kept (never shown) so its legs' grades can be checked later.
+      const mixed = chooseMulti(
+        watched,
+        params,
+        state,
+        nowMs,
+        { keys: new Set(singles.map((s) => s.key)), rejected: closedMultis, subjects: new Set(singles.map((s) => subjectId(s.legs[0]!.c))) },
+        { mixedBasketball: true }
+      );
+      if (mixed && !(await listWatchRows([mixed.key]))[0]) {
+        await upsertWatchRows([{ ...multiWatchRow(mixed, nowIso), status: 'dropped', reason: MIXED_MULTI_NOT_POSTED }]);
+        summary.mixedNotPosted = { title: pickTitle(mixed.legs.map((l) => l.c)), price: mixed.price, ev: mixed.ev };
+      }
       const proposals: Proposal[] = [...singles];
       if (multi) {
         const prior = (await listWatchRows([multi.key]))[0];

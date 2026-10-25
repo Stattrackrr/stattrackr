@@ -791,3 +791,14 @@ test('NBA multis: a player who can still be a single stays out, and legs are sho
   const m = pickMulti(gameFull)!;
   assert.deepEqual(m.legs.map((l) => l.c.key).sort(), [jjj20.key, rj20.key].sort(), 'his game has its singles: the short 20+ lines, never the 1.80 / 1.61 legs');
 });
+test('NBA and NBL legs never share a posted multi; the tracking-only search still finds the pair', () => {
+  const leg = (sport: AiCandidate['sport'], eventKey: string, eventLabel: string, player: string, startsAt: string) =>
+    cand({ sport, eventKey, eventLabel, player, playerId: player, startsAt, market: 'points', marketKind: 'milestone', line: 9.5, bestPrice: 1.3, quotes: [{ book: 'Bet365', price: 1.3 }, { book: 'Sportsbet', price: 1.27 }], prob: 0.82, ev: 0.066, supportScore: 0.75, singleEligible: false });
+  const nba = leg('nba', 'g1', 'Boston Celtics @ Detroit Pistons', 'Jayson Tatum', iso(NOW + 2 * H));
+  const nbl = leg('nbl', 'n1', 'NZ Breakers @ Sydney Kings', 'Jaylin Galloway', iso(NOW + 3 * H));
+  const w = [nba, nbl].map((c): Watched => ({ c, history: held }));
+  const exclude = { keys: new Set<string>(), rejected: new Set<string>() };
+  assert.equal(chooseMulti(w, P, empty(), NOW, exclude), null);
+  const tracked = chooseMulti(w, P, empty(), NOW, exclude, { mixedBasketball: true });
+  assert.equal(tracked?.sport, 'mixed');
+});
