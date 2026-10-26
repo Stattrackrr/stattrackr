@@ -380,7 +380,7 @@ test('NBA grading: waits for final and box scores, DNP voids, game lines from th
   assert.equal((await gradeNbaLeg(leg({}), fakeResults({ status_state: 'scheduled', postponed: true }), start + 25 * H))?.status, 'void');
 });
 
-test('NBA grading: a player who left in the first half voids a bet not yet won, unless he was ejected', async () => {
+test('NBA grading: a player who left in the first half voids a bet he would have lost, unless he was ejected', async () => {
   const start = NOW - 5 * H;
   const leg = (over: Partial<AiPickLeg>) =>
     ({ sport: 'nba', eventKey: '1', startsAt: iso(start), market: 'points', playerId: '7', side: 'over', line: 8.5, ...over }) as AiPickLeg;
@@ -399,7 +399,7 @@ test('NBA grading: a player who left in the first half voids a bet not yet won, 
   assert.match(left?.note ?? '', /second half \(11 min\)/);
   assert.equal((await gradeNbaLeg(leg({ line: 4.5 }), results(['8']), NOW))?.status, 'win', 'already hit before leaving');
   assert.equal((await gradeNbaLeg(leg({ line: 5 }), results(['8']), NOW))?.status, 'void', 'on the line is not decided');
-  assert.equal((await gradeNbaLeg(leg({ side: 'under' }), results(['8']), NOW))?.status, 'void', 'under only "won" by leaving');
+  assert.equal((await gradeNbaLeg(leg({ side: 'under' }), results(['8']), NOW))?.status, 'win', 'injured but finished under: the under wins');
   assert.equal((await gradeNbaLeg(leg({ side: 'under', line: 4.5 }), results(['8']), NOW))?.status, 'loss', 'under already gone past');
   assert.equal((await gradeNbaLeg(leg({ market: 'doubleDouble', side: 'yes', line: null }), results(['8']), NOW))?.status, 'void');
 
