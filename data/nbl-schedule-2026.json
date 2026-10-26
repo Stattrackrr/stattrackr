@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-24T16:33:15.225Z",
+  "generatedAt": "2026-10-26T19:11:10.564Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2328,7 +2328,7 @@
       "externalId": "3716743f-58ad-11f1-8c04-1fa229f84a5e",
       "startTime": "2026-10-25T06:00:00.000Z",
       "round": "6",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Melbourne United",
       "homeTeamCode": "MEL",
       "homeTeamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
@@ -2337,8 +2337,8 @@
       "awayTeamCode": "SYD",
       "awayTeamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 105,
+      "awayScore": 95,
       "venue": "John Cain Arena",
       "matchSlug": "melbourne-united-v-sydney-kings-men-25-10-2026"
     },
@@ -2347,7 +2347,7 @@
       "externalId": "3714bc12-58ad-11f1-bdd2-69207a436dad",
       "startTime": "2026-10-25T04:00:00.000Z",
       "round": "6",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Cairns Taipans",
       "homeTeamCode": "CNS",
       "homeTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
@@ -2356,8 +2356,8 @@
       "awayTeamCode": "NZL",
       "awayTeamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "awayLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 86,
+      "awayScore": 84,
       "venue": "Cairns Convention Centre",
       "matchSlug": "cairns-taipans-v-nz-breakers-men-25-10-2026"
     },

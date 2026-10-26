@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-24T16:33:25.707Z",
+  "generatedAt": "2026-10-26T19:11:20.279Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 162,
   "players": [
@@ -1282,7 +1282,7 @@
       "teamCode": "BRI",
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "G",
-      "jersey": null,
+      "jersey": "19",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b8e6235a56aa463bb71d84e75ad65dfc?size=800&format=webp"
     },
     {

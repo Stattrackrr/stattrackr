@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-24T16:34:00.665Z",
+  "generatedAt": "2026-10-26T19:12:00.600Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
-  "sourceUpdatedText": "Tuesday, October 20, 8:00pm AEDT",
-  "injuryCount": 23,
+  "sourceUpdatedText": "Saturday, October 24, 5:00pm AEDT",
+  "injuryCount": 22,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -22,6 +22,14 @@
       "returning": "Retired",
       "status": "Out",
       "note": "Retired on October 20, 2026. Adelaide 36ers announced that a persistent knee injury had forced him to end his career, after 173 NBL games, 124 of them for Adelaide. He did not play in NBL27 and moves into a non-playing role with the club.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Adelaide 36ers",
+      "player": "Matt Kenyon",
+      "injury": "Back",
+      "returning": "TBC",
+      "status": "Out",
       "listedByNbl": true
     },
     {
@@ -69,15 +77,6 @@
       "listedByNbl": true
     },
     {
-      "team": "Cairns Taipans",
-      "player": "Jaylin Galloway",
-      "injury": "Shoulder",
-      "returning": "Test",
-      "status": "Out",
-      "note": "He is targeting the Taipans’ home game against the New Zealand Breakers on Sunday 25 October for his return from shoulder surgery and his Cairns debut, reported by Michael Randall of the Herald Sun on 7 October 2026. He has not played since 30 June, for Australia against Puerto Rico. Cairns said in their 3 October game preview that he was making considerable progress in his rehabilitation.",
-      "listedByNbl": true
-    },
-    {
       "team": "Illawarra Hawks",
       "player": "Mason Peatling",
       "injury": "Foot",
@@ -111,15 +110,6 @@
       "returning": "TBC",
       "status": "Out",
       "note": "New Zealand Breakers general manager Dillon Boucher said on 3 October 2026 that Le Gassick is managing a nerve impingement in his neck and shoulder, and that his return-to-play timeline is not yet certain, reported by Jai at Fox Sports (@NBLPleb). The NBL had listed him with an ankle injury before removing him from its list in the 26 September refresh. He has not played in NBL27.",
-      "listedByNbl": true
-    },
-    {
-      "team": "New Zealand Breakers",
-      "player": "Parker Jackson-Cartwright",
-      "injury": "Lower leg",
-      "returning": "Number of weeks",
-      "status": "Out",
-      "note": "The New Zealand Breakers announced on Saturday 10 October 2026, as reported by NBL.com.au, that Jackson-Cartwright will be sidelined for a number of weeks with a lower-leg injury. President of Basketball Dillon Boucher: “Our medical team have caught this early and will manage and monitor him carefully over the next few weeks.” Kael Robinson replaced him in the squad for that night’s game against the Perth Wildcats at RAC Arena.",
       "listedByNbl": true
     },
     {

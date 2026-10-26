@@ -5,18 +5,18 @@
   "years": [
     2026
   ],
-  "gamesUsed": 5,
+  "gamesUsed": 6,
   "fixturesFetched": 0,
-  "fixturesCached": 5,
-  "shotCount": 20,
+  "fixturesCached": 6,
+  "shotCount": 27,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 4,
+      "fga": 6,
       "fgm": 1,
-      "fgPct": 25,
-      "share": 20
+      "fgPct": 16.666666666666664,
+      "share": 22.22222222222222
     },
     {
       "zone": "paint",
@@ -24,31 +24,31 @@
       "fga": 9,
       "fgm": 3,
       "fgPct": 33.33333333333333,
-      "share": 45
+      "share": 33.33333333333333
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 1,
+      "fga": 2,
       "fgm": 0,
       "fgPct": 0,
-      "share": 5
+      "share": 7.4074074074074066
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 4,
+      "fga": 6,
       "fgm": 1,
-      "fgPct": 25,
-      "share": 20
+      "fgPct": 16.666666666666664,
+      "share": 22.22222222222222
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 1,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 5
+      "fga": 3,
+      "fgm": 2,
+      "fgPct": 66.66666666666666,
+      "share": 11.11111111111111
     },
     {
       "zone": "aboveBreak3",
@@ -56,7 +56,7 @@
       "fga": 1,
       "fgm": 0,
       "fgPct": 0,
-      "share": 5
+      "share": 3.7037037037037033
     }
   ],
   "points": [
@@ -179,7 +179,49 @@
       2.09,
       1,
       0
+    ],
+    [
+      8.39,
+      2.25,
+      0,
+      0
+    ],
+    [
+      10.52,
+      3.29,
+      0,
+      0
+    ],
+    [
+      6.63,
+      2.18,
+      0,
+      0
+    ],
+    [
+      14.39,
+      1.81,
+      1,
+      1
+    ],
+    [
+      0.84,
+      4.13,
+      0,
+      1
+    ],
+    [
+      14.5,
+      3.31,
+      1,
+      1
+    ],
+    [
+      0.5,
+      2.22,
+      0,
+      1
     ]
   ],
-  "generatedAt": "2026-10-24T16:34:02.474Z"
+  "generatedAt": "2026-10-26T19:12:02.177Z"
 }

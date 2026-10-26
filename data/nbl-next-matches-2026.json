@@ -1,94 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-24T16:33:16.322Z",
+  "generatedAt": "2026-10-26T19:11:11.723Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
-      "name": "Cairns Taipans",
-      "team_code": "CNS",
-      "nextMatches": [
-        {
-          "id": "1a0e41ce-a2b7-4922-b2ba-b8cff4d8fb31",
-          "match_slug": "cairns-taipans-v-nz-breakers-men-25-10-2026",
-          "match_title": "Cairns Taipans v NZ Breakers men 25-10-2026",
-          "match_ticket_url": "https://tickets.taipans.com/",
-          "external_id": "3714bc12-58ad-11f1-bdd2-69207a436dad",
-          "start_time_datetime": "2026-10-25T04:00:00.000Z",
-          "is_home": true,
-          "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-          "opponent_name": "NZ Breakers",
-          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-          "venue": "Cairns Convention Centre",
-          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
-        }
-      ]
-    },
-    {
-      "id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-      "name": "NZ Breakers",
-      "team_code": "NZL",
-      "nextMatches": [
-        {
-          "id": "1a0e41ce-a2b7-4922-b2ba-b8cff4d8fb31",
-          "match_slug": "cairns-taipans-v-nz-breakers-men-25-10-2026",
-          "match_title": "Cairns Taipans v NZ Breakers men 25-10-2026",
-          "match_ticket_url": "https://fans.nzbreakers.basketball/schedule",
-          "external_id": "3714bc12-58ad-11f1-bdd2-69207a436dad",
-          "start_time_datetime": "2026-10-25T04:00:00.000Z",
-          "is_home": false,
-          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
-          "opponent_name": "Cairns Taipans",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-          "venue": "Cairns Convention Centre",
-          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
-        }
-      ]
-    },
-    {
-      "id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-      "name": "Melbourne United",
-      "team_code": "MEL",
-      "nextMatches": [
-        {
-          "id": "6d62e4b3-6983-4eb8-90b0-cc149c05dec5",
-          "match_slug": "melbourne-united-v-sydney-kings-men-25-10-2026",
-          "match_title": "Melbourne United v Sydney Kings men 25-10-2026",
-          "match_ticket_url": "https://pages.melbourneutd.com.au/nbl27-tickets-hub/?lid=0g7nc1z6h8fv",
-          "external_id": "3716743f-58ad-11f1-8c04-1fa229f84a5e",
-          "start_time_datetime": "2026-10-25T06:00:00.000Z",
-          "is_home": true,
-          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
-          "opponent_name": "Sydney Kings",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-          "venue": "John Cain Arena",
-          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
-        }
-      ]
-    },
-    {
-      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
-      "name": "Sydney Kings",
-      "team_code": "SYD",
-      "nextMatches": [
-        {
-          "id": "6d62e4b3-6983-4eb8-90b0-cc149c05dec5",
-          "match_slug": "melbourne-united-v-sydney-kings-men-25-10-2026",
-          "match_title": "Melbourne United v Sydney Kings men 25-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS27",
-          "external_id": "3716743f-58ad-11f1-8c04-1fa229f84a5e",
-          "start_time_datetime": "2026-10-25T06:00:00.000Z",
-          "is_home": false,
-          "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "opponent_name": "Melbourne United",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
-          "venue": "John Cain Arena",
-          "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
-        }
-      ]
-    },
     {
       "id": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "name": "Perth Wildcats",
@@ -111,6 +27,27 @@
       ]
     },
     {
+      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+      "name": "Sydney Kings",
+      "team_code": "SYD",
+      "nextMatches": [
+        {
+          "id": "46a0c0f4-bd33-45d7-bfff-04684a8b3acb",
+          "match_slug": "perth-wildcats-v-sydney-kings-men-28-10-2026",
+          "match_title": "Perth Wildcats v Sydney Kings men 28-10-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS27",
+          "external_id": "371aff1e-58ad-11f1-b4cd-0919017f2391",
+          "start_time_datetime": "2026-10-28T10:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "opponent_name": "Perth Wildcats",
+          "opponent_logo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
+          "venue": "RAC Arena",
+          "opponent_logo_blurhash": "LDH_Pv_N1b?HHrkCTJD%1v?HD456"
+        }
+      ]
+    },
+    {
       "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "name": "Brisbane Bullets",
       "team_code": "BRI",
@@ -128,6 +65,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
           "venue": "Brisbane Entertainment Centre",
           "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
+      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "name": "Cairns Taipans",
+      "team_code": "CNS",
+      "nextMatches": [
+        {
+          "id": "0fcef652-8104-4871-9afb-c7516d311ef1",
+          "match_slug": "brisbane-bullets-v-cairns-taipans-men-29-10-2026",
+          "match_title": "Brisbane Bullets v Cairns Taipans men 29-10-2026",
+          "match_ticket_url": "https://tickets.taipans.com/",
+          "external_id": "37196322-58ad-11f1-9f91-61e38b2284ba",
+          "start_time_datetime": "2026-10-29T09:00:00.000Z",
+          "is_home": false,
+          "opponent_id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+          "opponent_name": "Brisbane Bullets",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/BNE.png",
+          "venue": "Brisbane Entertainment Centre",
+          "opponent_logo_blurhash": "LAD9iCxu0s5dS+s*s+xU0aIwoI}$"
+        }
+      ]
+    },
+    {
+      "id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "name": "NZ Breakers",
+      "team_code": "NZL",
+      "nextMatches": [
+        {
+          "id": "1bdcde8d-df8e-4c16-9994-6716733a61c7",
+          "match_slug": "nz-breakers-v-adelaide-36ers-men-30-10-2026",
+          "match_title": "NZ Breakers v Adelaide 36ers men 30-10-2026",
+          "match_ticket_url": "https://fans.nzbreakers.basketball/schedule",
+          "external_id": "371d934c-58ad-11f1-8edf-4b570c3bab13",
+          "start_time_datetime": "2026-10-30T06:30:00.000Z",
+          "is_home": true,
+          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+          "opponent_name": "Adelaide 36ers",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
+          "venue": "Spark Arena",
+          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
         }
       ]
     },
@@ -170,6 +149,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
           "venue": "Silverdome",
           "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
+        }
+      ]
+    },
+    {
+      "id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+      "name": "Melbourne United",
+      "team_code": "MEL",
+      "nextMatches": [
+        {
+          "id": "59dffcbe-947d-4804-a7f3-9d5f4182a6a3",
+          "match_slug": "cairns-taipans-v-melbourne-united-men-31-10-2026",
+          "match_title": "Cairns Taipans v Melbourne United men 31-10-2026",
+          "match_ticket_url": "https://pages.melbourneutd.com.au/nbl27-tickets-hub/?lid=0g7nc1z6h8fv",
+          "external_id": "3719f6ce-58ad-11f1-b7b9-736e6b79ac99",
+          "start_time_datetime": "2026-10-31T08:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "opponent_name": "Cairns Taipans",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
+          "venue": "Cairns Convention Centre",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
         }
       ]
     },

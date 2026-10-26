@@ -5,18 +5,18 @@
   "years": [
     2026
   ],
-  "gamesUsed": 7,
+  "gamesUsed": 8,
   "fixturesFetched": 0,
-  "fixturesCached": 7,
-  "shotCount": 55,
+  "fixturesCached": 8,
+  "shotCount": 59,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 13,
-      "fgm": 11,
-      "fgPct": 84.61538461538461,
-      "share": 23.636363636363637
+      "fga": 15,
+      "fgm": 13,
+      "fgPct": 86.66666666666667,
+      "share": 25.423728813559322
     },
     {
       "zone": "paint",
@@ -24,15 +24,15 @@
       "fga": 12,
       "fgm": 10,
       "fgPct": 83.33333333333334,
-      "share": 21.818181818181817
+      "share": 20.33898305084746
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 3,
+      "fga": 4,
       "fgm": 3,
-      "fgPct": 100,
-      "share": 5.454545454545454
+      "fgPct": 75,
+      "share": 6.779661016949152
     },
     {
       "zone": "leftCorner3",
@@ -40,15 +40,15 @@
       "fga": 11,
       "fgm": 6,
       "fgPct": 54.54545454545454,
-      "share": 20
+      "share": 18.64406779661017
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 7,
-      "fgm": 5,
-      "fgPct": 71.42857142857143,
-      "share": 12.727272727272727
+      "fga": 8,
+      "fgm": 6,
+      "fgPct": 75,
+      "share": 13.559322033898304
     },
     {
       "zone": "aboveBreak3",
@@ -56,7 +56,7 @@
       "fga": 9,
       "fgm": 6,
       "fgPct": 66.66666666666666,
-      "share": 16.363636363636363
+      "share": 15.254237288135593
     }
   ],
   "points": [
@@ -319,6 +319,30 @@
       1
     ],
     [
+      6.83,
+      2.27,
+      1,
+      0
+    ],
+    [
+      14.52,
+      1.7,
+      1,
+      1
+    ],
+    [
+      9.34,
+      6.39,
+      0,
+      0
+    ],
+    [
+      8.64,
+      1.79,
+      1,
+      0
+    ],
+    [
       10.04,
       2.52,
       1,
@@ -391,5 +415,5 @@
       1
     ]
   ],
-  "generatedAt": "2026-10-24T16:34:02.474Z"
+  "generatedAt": "2026-10-26T19:12:02.177Z"
 }
