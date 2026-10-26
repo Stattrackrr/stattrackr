@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useChatUnread } from '@/lib/chatUnread';
 import { usePicksUnread } from '@/lib/aiPicks/unread';
 import { usePathname, useRouter } from 'next/navigation';
@@ -74,6 +74,52 @@ export function MobileBottomNavigation({
     const dismissed = getLocalStorage('readMeNotificationDismissed') === 'true';
     setShowReadMeBadge(!dismissed);
   }, []);
+
+  // iOS (Safari and home-screen app) can leave fixed elements at a stale height after the app comes
+  // back from the background or the keyboard closes, floating this bar mid-screen until a reload.
+  // Re-laying out the page and re-compositing the bar puts it back on the bottom edge.
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let frame = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Scrolling in place stops a flick mid-scroll, so it only runs on coming back to the app or rotating.
+    const reanchor = (relayout: boolean) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (relayout) window.scrollTo(window.scrollX, window.scrollY);
+        const bar = barRef.current;
+        if (!bar) return;
+        bar.style.transform = 'translateZ(0)';
+        frame = requestAnimationFrame(() => {
+          bar.style.transform = '';
+        });
+      });
+    };
+    const soon = (relayout: boolean) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => reanchor(relayout), 150);
+    };
+    const onReturn = () => soon(true);
+    const onResize = () => soon(false);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') onReturn();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onReturn);
+    window.addEventListener('focus', onReturn);
+    window.addEventListener('orientationchange', onReturn);
+    window.visualViewport?.addEventListener('resize', onResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onReturn);
+      window.removeEventListener('focus', onReturn);
+      window.removeEventListener('orientationchange', onReturn);
+      window.visualViewport?.removeEventListener('resize', onResize);
+    };
+  }, []);
   const prefetchProps = () => {
     router.prefetch('/props');
     void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
@@ -105,7 +151,7 @@ export function MobileBottomNavigation({
     }`;
 
   return (
-    <div className="lg:hidden fixed bottom-2 left-0 right-0 z-50 pb-safe flex justify-center px-3 pointer-events-none">
+    <div ref={barRef} className="lg:hidden fixed bottom-2 left-0 right-0 z-50 pb-safe flex justify-center px-3 pointer-events-none">
       <div className="relative w-full max-w-[460px] pointer-events-auto">
       {/* Profile Dropdown Menu - Shows above bottom nav */}
       {showProfileDropdown && (
