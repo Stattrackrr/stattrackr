@@ -51,11 +51,14 @@ export async function fetchAiPicksPublic(): Promise<boolean> {
   return (await fetchAiPicksSettings()).isPublic;
 }
 
-/** Map AI picks onto the record modal's bet shape (push counts as void: stake returned). */
+/** Sydney calendar day of a timestamp (the posted UTC date puts Sunday's picks on Saturday). */
+const sydneyDay = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' });
+
+/** Map AI picks onto the record modal's bet shape (push counts as void: stake returned), dated by game day. */
 export function aiPicksAsRecordBets(picks: AiPick[]): OfficialPickBet[] {
   return picks.map((p) => ({
     id: p.id,
-    date: p.postedAt.slice(0, 10),
+    date: sydneyDay(p.firstStartsAt),
     sport: p.sport.toUpperCase(),
     market: p.kind === 'multi' ? 'Multi' : p.legs[0]?.market ?? null,
     selection: p.title,
