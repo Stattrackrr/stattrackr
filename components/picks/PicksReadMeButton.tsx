@@ -21,6 +21,14 @@ const PAGES: ReadMePage[] = [
     ],
   },
   {
+    title: 'How the model chooses picks',
+    paragraphs: [
+      'Statistical models for NBA, NBL and tennis project each market from form, matchups, pace, minutes, injuries and rest, then compare that to the best bookmaker price we can find.',
+      'Only plays where our numbers beat the market by enough, with enough books pricing it and enough recent support, make the shortlist. Volume is capped so the strongest edges get posted, not every small lean.',
+      'A second pass then reads the same evidence like a careful punter and rejects anything it would not back. What gets through is posted with a unit size based on the edge and the model\'s own track record.',
+    ],
+  },
+  {
     title: 'Take the line as early as you can',
     paragraphs: [
       'Bet every pick as close to when it is posted as possible.',
