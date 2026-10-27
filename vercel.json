@@ -35,6 +35,10 @@
       "schedule": "5,15,25,35,45,55 * * * *"
     },
     {
+      "path": "/api/cron/refresh-nba-odds-near",
+      "schedule": "*/3 * * * *"
+    },
+    {
       "path": "/api/cron/sync-nba-bdl",
       "schedule": "11,26,41,56 * * * *"
     },
