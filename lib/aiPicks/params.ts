@@ -178,9 +178,15 @@ export function mergeSportParams<T extends AiSportParams>(defaults: T, stored: u
     ...defaults,
     ...s,
     modelWeight: { ...defaults.modelWeight, ...(s.modelWeight ?? {}) },
-    stakeScale: { ...defaults.stakeScale, ...(s.stakeScale ?? {}) },
     // Posting policy, not a learned value: stored copies of old windows must not override it.
     postWindowHours: defaults.postWindowHours,
+    // Until the public record has proven itself, learning may tighten the edge bar and shrink stakes,
+    // never loosen or grow them.
+    minEvSingle: Math.max(s.minEvSingle ?? defaults.minEvSingle, defaults.minEvSingle),
+    minEvLeg: Math.max(s.minEvLeg ?? defaults.minEvLeg, defaults.minEvLeg),
+    stakeScale: Object.fromEntries(
+      Object.entries({ ...defaults.stakeScale, ...(s.stakeScale ?? {}) }).map(([group, scale]) => [group, Math.min(scale, 1)])
+    ),
   };
 }
 

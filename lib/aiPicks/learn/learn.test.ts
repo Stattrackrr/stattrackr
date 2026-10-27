@@ -220,3 +220,11 @@ test('the posting window is policy: a stored learned copy of an old window does 
   assert.equal(merged.postWindowHours, 12);
   assert.equal(merged.minEvSingle, 0.04, 'learned values still apply');
 });
+
+test('learning can tighten the edge bar and shrink stakes, but not loosen or grow them', () => {
+  const d = DEFAULT_AI_PICKS_PARAMS.nba;
+  const loose = mergeSportParams(d, { ...d, minEvSingle: 0.025, minEvLeg: 0.015, stakeScale: { prop: 1.1, milestone: 0.8 } });
+  assert.equal(loose.minEvSingle, 0.03);
+  assert.equal(loose.minEvLeg, 0.02);
+  assert.deepEqual(loose.stakeScale, { prop: 1, milestone: 0.8 });
+});
