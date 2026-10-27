@@ -5,7 +5,7 @@
   "teamCode": "ADL",
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-26T19:11:40.707Z",
+  "generatedAt": "2026-10-27T18:41:14.913Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 9,
   "games": [
@@ -354,7 +354,7 @@
       "rebounds": 8,
       "offensiveRebounds": 4,
       "defensiveRebounds": 4,
-      "assists": 3,
+      "assists": 4,
       "steals": 1,
       "blocks": 1,
       "turnovers": 5,
@@ -372,11 +372,11 @@
       "ftAttempted": 9,
       "ftPct": 1,
       "plusMinus": null,
-      "efficiency": 26,
-      "pra": 32,
+      "efficiency": 27,
+      "pra": 33,
       "pr": 29,
-      "pa": 24,
-      "ra": 11
+      "pa": 25,
+      "ra": 12
     }
   ]
 }

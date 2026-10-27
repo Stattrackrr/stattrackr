@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-26T19:11:20.279Z",
+  "generatedAt": "2026-10-27T18:40:53.903Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 162,
   "players": [
@@ -32,7 +32,7 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "F",
-      "jersey": null,
+      "jersey": "3",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7df74a87fdbc42878f588a781ff19b3d?size=800&format=webp"
     },
     {
@@ -602,7 +602,7 @@
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
-      "jersey": null,
+      "jersey": "30",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8f04d95b8a9c4325bdbe22cb017a992e?size=800&format=webp"
     },
     {
@@ -1192,7 +1192,7 @@
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
-      "jersey": null,
+      "jersey": "11",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/71ed6d182d704ca2ba34e0223e0c192c?size=800&format=webp"
     },
     {
