@@ -23,13 +23,10 @@ const PAGES: ReadMePage[] = [
   {
     title: 'How the model chooses picks',
     paragraphs: [
-      'Player props start from game logs. The projection is rate × minutes: a recency-weighted per-minute rate (half-life ~12–20 games, older seasons down-weighted) times expected minutes from a short memory (~3–4 game half-life), because role changes show up in minutes first.',
-      'Spread is residual noise around that rate plus minutes swinging: variance ≈ residual + rate² × minutesVar. Over/under probabilities come from a negative binomial (or Poisson when the spread is tight) so every line — main, alternate, milestone — gets a real probability.',
-    ],
-    points: [
-      'Context multiplies the mean (capped ~0.85–1.18): matchup / DvP, pace vs his recent games, home/away split, teammates out, rest. NBA also rebuilds points/rebounds/assists from shot volume, rebound chances and passes, shrunk toward his long-run conversion.',
-      'Game lines use team offensive and defensive ratings per 100 possessions and pace (normal margin/total). Tennis blends serve/return simulation with Elo, rank, form and H2H.',
-      'That model probability is blended with the de-vigged market: P = w × P_model + (1 − w) × P_market, with w shrinking when the sample is thin. Edge is EV = P × (price − 1) − (1 − P − push). Only edges above the bar, with support from recent hit rates, get posted.',
+      'For player props it builds a projection from his game logs: how much he produces per minute lately, times how many minutes he is expected to play. Recent games count more than older ones; minutes use a short memory so a role change shows up fast.',
+      'That number is then nudged for the game — matchup, pace, home or away, teammates out, rest — and turned into a chance he clears the line. NBA also looks at shot attempts, rebound chances and passes, not just the raw box score.',
+      'Game lines lean on each team\'s offensive and defensive rating and pace. Tennis uses serve and return numbers, Elo, ranking, form and head to head.',
+      'Those chances are checked against the bookmaker price. If our number is clearly better than the market, and his recent hit rates agree (last 5 / 10 / season), it can become a pick. Unit size follows how strong the edge is and how the model has been going.',
     ],
   },
   {
