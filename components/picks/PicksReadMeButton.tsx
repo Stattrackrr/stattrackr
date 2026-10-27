@@ -23,10 +23,13 @@ const PAGES: ReadMePage[] = [
   {
     title: 'How the model chooses picks',
     paragraphs: [
-      'Every few minutes the board is scanned across NBA, NBL and tennis. Statistical models project each market — player props, game lines, match markets — from form, matchups, pace, minutes, injuries and rest, then compare that to the best bookmaker price we can find.',
-      'A play only makes the shortlist when our probability beats the market by enough, at least two books price it, and recent hit rates support the side. Soft one-book prices and thin samples are skipped. Candidates are watched as prices move; NBA plays that hang on a questionable call wait until closer to tip.',
-      'From that list, only the strongest edges are taken — singles and the occasional multi — with caps so one game or one player is not overbet. A second pass then reads the same evidence like a careful punter and rejects anything it would not back.',
-      'What gets through is posted at the best available line, with a unit size from the edge and the model\'s own track record. Settled results feed back into the knobs over time so the bar can tighten when things are soft.',
+      'Player props start from game logs. The projection is rate × minutes: a recency-weighted per-minute rate (half-life ~12–20 games, older seasons down-weighted) times expected minutes from a short memory (~3–4 game half-life), because role changes show up in minutes first.',
+      'Spread is residual noise around that rate plus minutes swinging: variance ≈ residual + rate² × minutesVar. Over/under probabilities come from a negative binomial (or Poisson when the spread is tight) so every line — main, alternate, milestone — gets a real probability.',
+    ],
+    points: [
+      'Context multiplies the mean (capped ~0.85–1.18): matchup / DvP, pace vs his recent games, home/away split, teammates out, rest. NBA also rebuilds points/rebounds/assists from shot volume, rebound chances and passes, shrunk toward his long-run conversion.',
+      'Game lines use team offensive and defensive ratings per 100 possessions and pace (normal margin/total). Tennis blends serve/return simulation with Elo, rank, form and H2H.',
+      'That model probability is blended with the de-vigged market: P = w × P_model + (1 − w) × P_market, with w shrinking when the sample is thin. Edge is EV = P × (price − 1) − (1 − P − push). Only edges above the bar, with support from recent hit rates, get posted.',
     ],
   },
   {
