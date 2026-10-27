@@ -23,9 +23,10 @@ const PAGES: ReadMePage[] = [
   {
     title: 'How the model chooses picks',
     paragraphs: [
-      'Statistical models for NBA, NBL and tennis project each market from form, matchups, pace, minutes, injuries and rest, then compare that to the best bookmaker price we can find.',
-      'Only plays where our numbers beat the market by enough, with enough books pricing it and enough recent support, make the shortlist. Volume is capped so the strongest edges get posted, not every small lean.',
-      'A second pass then reads the same evidence like a careful punter and rejects anything it would not back. What gets through is posted with a unit size based on the edge and the model\'s own track record.',
+      'Every few minutes the board is scanned across NBA, NBL and tennis. Statistical models project each market — player props, game lines, match markets — from form, matchups, pace, minutes, injuries and rest, then compare that to the best bookmaker price we can find.',
+      'A play only makes the shortlist when our probability beats the market by enough, at least two books price it, and recent hit rates support the side. Soft one-book prices and thin samples are skipped. Candidates are watched as prices move; NBA plays that hang on a questionable call wait until closer to tip.',
+      'From that list, only the strongest edges are taken — singles and the occasional multi — with caps so one game or one player is not overbet. A second pass then reads the same evidence like a careful punter and rejects anything it would not back.',
+      'What gets through is posted at the best available line, with a unit size from the edge and the model\'s own track record. Settled results feed back into the knobs over time so the bar can tighten when things are soft.',
     ],
   },
   {
