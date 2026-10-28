@@ -4,7 +4,7 @@
   "homeTeam": "Brisbane Bullets",
   "awayTeam": "Cairns Taipans",
   "commenceTime": "2026-10-29T09:00:00.000Z",
-  "capturedAt": "2026-10-28T01:29:18.919Z",
+  "capturedAt": "2026-10-28T08:44:44.385Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -30,7 +30,7 @@
     "Bet365",
     "BetMGM"
   ],
-  "lineCount": 4143,
+  "lineCount": 4148,
   "lines": [
     {
       "player": "Jack Mcveigh",
@@ -53889,6 +53889,71 @@
       "over": "+180",
       "under": "N/A",
       "overDecimal": 2.8,
+      "underDecimal": null
+    },
+    {
+      "player": "Jack Mcveigh",
+      "playerKey": "jack mcveigh",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 28.5,
+      "label": "29+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Jonah Bolden",
+      "playerKey": "jonah bolden",
+      "book": "Bet Right",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-909",
+      "under": "N/A",
+      "overDecimal": 1.11,
+      "underDecimal": null
+    },
+    {
+      "player": "Jonah Bolden",
+      "playerKey": "jonah bolden",
+      "book": "Picklebet",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-909",
+      "under": "N/A",
+      "overDecimal": 1.11,
+      "underDecimal": null
+    },
+    {
+      "player": "Jonah Bolden",
+      "playerKey": "jonah bolden",
+      "book": "Dabble",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+1000",
+      "under": "N/A",
+      "overDecimal": 11,
+      "underDecimal": null
+    },
+    {
+      "player": "Keanu Pinder",
+      "playerKey": "keanu pinder",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 23.5,
+      "label": "24+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
       "underDecimal": null
     }
   ]
