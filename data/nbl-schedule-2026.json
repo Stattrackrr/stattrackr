@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-27T18:40:43.126Z",
+  "generatedAt": "2026-10-28T18:57:29.662Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2309,7 +2309,7 @@
       "externalId": "371aff1e-58ad-11f1-b4cd-0919017f2391",
       "startTime": "2026-10-28T10:30:00.000Z",
       "round": "7",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Perth Wildcats",
       "homeTeamCode": "PER",
       "homeTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
@@ -2318,8 +2318,8 @@
       "awayTeamCode": "SYD",
       "awayTeamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 91,
+      "awayScore": 99,
       "venue": "RAC Arena",
       "matchSlug": "perth-wildcats-v-sydney-kings-men-28-10-2026"
     },

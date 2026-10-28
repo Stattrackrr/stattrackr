@@ -4,7 +4,7 @@
   "homeTeam": "Brisbane Bullets",
   "awayTeam": "Cairns Taipans",
   "commenceTime": "2026-10-29T09:00:00.000Z",
-  "capturedAt": "2026-10-28T16:44:11.871Z",
+  "capturedAt": "2026-10-28T18:58:31.649Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -30,7 +30,7 @@
     "Bet365",
     "BetMGM"
   ],
-  "lineCount": 4160,
+  "lineCount": 4165,
   "lines": [
     {
       "player": "Jack Mcveigh",
@@ -54110,6 +54110,71 @@
       "over": "+475",
       "under": "N/A",
       "overDecimal": 5.75,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Picklebet",
+      "stat": "pa",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-909",
+      "under": "N/A",
+      "overDecimal": 1.11,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Picklebet",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 0.5,
+      "label": "1+",
+      "over": "-909",
+      "under": "N/A",
+      "overDecimal": 1.11,
+      "underDecimal": null
+    },
+    {
+      "player": "Nate Hinton",
+      "playerKey": "nate hinton",
+      "book": "Picklebet",
+      "stat": "pa",
+      "kind": "milestone",
+      "line": 34.5,
+      "label": "35+",
+      "over": "+750",
+      "under": "N/A",
+      "overDecimal": 8.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Raul Neto",
+      "playerKey": "raul neto",
+      "book": "Picklebet",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 17.5,
+      "label": "18+",
+      "over": "+210",
+      "under": "N/A",
+      "overDecimal": 3.1,
+      "underDecimal": null
+    },
+    {
+      "player": "Raul Neto",
+      "playerKey": "raul neto",
+      "book": "PlayUp",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 17.5,
+      "label": "18+",
+      "over": "+210",
+      "under": "N/A",
+      "overDecimal": 3.1,
       "underDecimal": null
     }
   ]

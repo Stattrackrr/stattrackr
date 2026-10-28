@@ -5,58 +5,58 @@
   "years": [
     2026
   ],
-  "gamesUsed": 3,
+  "gamesUsed": 4,
   "fixturesFetched": 0,
-  "fixturesCached": 3,
-  "shotCount": 32,
+  "fixturesCached": 4,
+  "shotCount": 50,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 5,
-      "fgm": 4,
-      "fgPct": 80,
-      "share": 15.625
+      "fga": 7,
+      "fgm": 6,
+      "fgPct": 85.71428571428571,
+      "share": 14.000000000000002
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 5,
-      "fgm": 2,
-      "fgPct": 40,
-      "share": 15.625
+      "fga": 9,
+      "fgm": 3,
+      "fgPct": 33.33333333333333,
+      "share": 18
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 2,
-      "fgm": 2,
-      "fgPct": 100,
-      "share": 6.25
+      "fga": 4,
+      "fgm": 3,
+      "fgPct": 75,
+      "share": 8
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 4,
+      "fga": 7,
       "fgm": 1,
-      "fgPct": 25,
-      "share": 12.5
+      "fgPct": 14.285714285714285,
+      "share": 14.000000000000002
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 6,
-      "fgm": 2,
+      "fga": 9,
+      "fgm": 3,
       "fgPct": 33.33333333333333,
-      "share": 18.75
+      "share": 18
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 10,
-      "fgm": 2,
-      "fgPct": 20,
-      "share": 31.25
+      "fga": 14,
+      "fgm": 4,
+      "fgPct": 28.57142857142857,
+      "share": 28.000000000000004
     }
   ],
   "points": [
@@ -251,7 +251,115 @@
       6.57,
       1,
       0
+    ],
+    [
+      3.8,
+      7.8,
+      0,
+      1
+    ],
+    [
+      12.44,
+      5.17,
+      0,
+      0
+    ],
+    [
+      6.33,
+      2.72,
+      0,
+      0
+    ],
+    [
+      7.5,
+      1.4,
+      1,
+      0
+    ],
+    [
+      13.69,
+      5.42,
+      0,
+      1
+    ],
+    [
+      12.74,
+      4.53,
+      1,
+      0
+    ],
+    [
+      6.81,
+      2.86,
+      0,
+      0
+    ],
+    [
+      14.55,
+      2,
+      1,
+      1
+    ],
+    [
+      4.68,
+      5.87,
+      1,
+      0
+    ],
+    [
+      11.81,
+      7.57,
+      1,
+      1
+    ],
+    [
+      12.87,
+      6.6,
+      0,
+      1
+    ],
+    [
+      1.15,
+      5.01,
+      0,
+      1
+    ],
+    [
+      3.35,
+      7.94,
+      0,
+      1
+    ],
+    [
+      6.15,
+      1.95,
+      1,
+      0
+    ],
+    [
+      0.52,
+      1.72,
+      0,
+      1
+    ],
+    [
+      9.68,
+      5.26,
+      0,
+      0
+    ],
+    [
+      3.82,
+      8.23,
+      1,
+      1
+    ],
+    [
+      1.67,
+      6.17,
+      0,
+      1
     ]
   ],
-  "generatedAt": "2026-10-27T18:41:33.086Z"
+  "generatedAt": "2026-10-28T18:58:21.228Z"
 }

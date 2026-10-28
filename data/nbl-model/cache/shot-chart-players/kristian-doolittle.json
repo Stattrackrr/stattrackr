@@ -5,26 +5,26 @@
   "years": [
     2026
   ],
-  "gamesUsed": 6,
+  "gamesUsed": 7,
   "fixturesFetched": 0,
-  "fixturesCached": 6,
-  "shotCount": 66,
+  "fixturesCached": 7,
+  "shotCount": 71,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 9,
-      "fgm": 4,
-      "fgPct": 44.44444444444444,
-      "share": 13.636363636363635
+      "fga": 12,
+      "fgm": 5,
+      "fgPct": 41.66666666666667,
+      "share": 16.901408450704224
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 23,
-      "fgm": 14,
-      "fgPct": 60.86956521739131,
-      "share": 34.84848484848485
+      "fga": 24,
+      "fgm": 15,
+      "fgPct": 62.5,
+      "share": 33.80281690140845
     },
     {
       "zone": "midRange",
@@ -32,15 +32,15 @@
       "fga": 7,
       "fgm": 3,
       "fgPct": 42.857142857142854,
-      "share": 10.606060606060606
+      "share": 9.859154929577464
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 0,
+      "fga": 1,
       "fgm": 0,
       "fgPct": 0,
-      "share": 0
+      "share": 1.4084507042253522
     },
     {
       "zone": "rightCorner3",
@@ -48,7 +48,7 @@
       "fga": 9,
       "fgm": 6,
       "fgPct": 66.66666666666666,
-      "share": 13.636363636363635
+      "share": 12.676056338028168
     },
     {
       "zone": "aboveBreak3",
@@ -56,7 +56,7 @@
       "fga": 18,
       "fgm": 7,
       "fgPct": 38.88888888888889,
-      "share": 27.27272727272727
+      "share": 25.352112676056336
     }
   ],
   "points": [
@@ -385,6 +385,36 @@
       1
     ],
     [
+      0.48,
+      1.77,
+      0,
+      1
+    ],
+    [
+      10.07,
+      2.88,
+      1,
+      0
+    ],
+    [
+      7.99,
+      1.7,
+      0,
+      0
+    ],
+    [
+      7.5,
+      1.4,
+      1,
+      0
+    ],
+    [
+      6.81,
+      2.09,
+      0,
+      0
+    ],
+    [
       4.05,
       4.79,
       0,
@@ -457,5 +487,5 @@
       0
     ]
   ],
-  "generatedAt": "2026-10-27T18:41:33.086Z"
+  "generatedAt": "2026-10-28T18:58:21.228Z"
 }
