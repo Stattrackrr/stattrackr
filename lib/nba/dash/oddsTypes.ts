@@ -38,6 +38,11 @@ export interface NbaGameOdds {
   /** Spread line is the home side's (negative = home favoured); over = home price, under = away. */
   bookmakers: NbaBookRow[];
   playerProps?: NbaPlayerPropsByBook;
+  /**
+   * Each book's own last scrape of its player props (ISO): BallDontLie's updated_at, odds-api.net's
+   * bookmaker_as_of_ts_ms. One time per book, not per price; when the feed reached us is not used.
+   */
+  propBookTimes?: Record<string, string>;
 }
 
 export interface NbaOddsCache {

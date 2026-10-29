@@ -76,6 +76,8 @@ type BdlPlayerProp = {
   prop_type: string;
   line_value: string;
   market: { type: 'over_under' | 'milestone'; over_odds?: number | null; under_odds?: number | null; odds?: number | null };
+  /** When BallDontLie last scraped this vendor (shared by all of its rows in a game). */
+  updated_at?: string | null;
 };
 
 type GameMeta = { gameId: string; homeTeam: string; awayTeam: string; commenceTime: string; tipMs: number };
@@ -203,6 +205,22 @@ function playerPropsFor(rows: BdlPlayerProp[], names: Map<number, string>): NbaP
     if (!list.some((e) => e.line === entry!.line && Boolean(e.milestone) === Boolean(entry!.milestone))) list.push(entry);
   }
   return out;
+}
+
+/** Latest scrape time per vendor in a game's BallDontLie prop rows. */
+export function bdlPropBookTimes(rows: BdlPlayerProp[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const r of rows) {
+    const vendor = String(r.vendor || '').trim().toLowerCase();
+    const ms = Date.parse(String(r.updated_at ?? ''));
+    if (!vendor || EXCLUDED_VENDORS.has(vendor) || !Number.isFinite(ms)) continue;
+    if (!out[vendor] || ms > Date.parse(out[vendor]!)) out[vendor] = new Date(ms).toISOString();
+  }
+  return out;
+}
+
+function pickTimes(times: Record<string, string> | undefined, fromOddsNet: boolean): Record<string, string> {
+  return Object.fromEntries(Object.entries(times ?? {}).filter(([book]) => isNbaOddsNetBook(book) === fromOddsNet));
 }
 
 function pickBooks(props: NbaPlayerPropsByBook | undefined, fromOddsNet: boolean): NbaPlayerPropsByBook {
@@ -339,12 +357,17 @@ export async function refreshNbaDashOdds(options?: { dryRun?: boolean }): Promis
   const targetIds = new Set(propsTargets.map((t) => t.gameId));
   for (const game of games) {
     if (!targetIds.has(game.gameId)) continue;
-    const prevProps = previousById.get(game.gameId)?.playerProps;
+    const prev = previousById.get(game.gameId);
+    const prevProps = prev?.playerProps;
     const rows = propRows.get(game.gameId);
     const bdlProps = rows ? playerPropsFor(rows, names) : pickBooks(prevProps, false);
     const freshNet = oddsNet?.props.get(game.gameId);
     const netProps = freshNet ?? pickBooks(prevProps, true);
     game.playerProps = mergeProps(bdlProps, netProps);
+    game.propBookTimes = {
+      ...(rows ? bdlPropBookTimes(rows) : pickTimes(prev?.propBookTimes, false)),
+      ...(freshNet ? (oddsNet?.bookTimes.get(game.gameId) ?? {}) : pickTimes(prev?.propBookTimes, true)),
+    };
     const auLines =
       oddsNet?.gameLines.get(game.gameId) ??
       (previousById.get(game.gameId)?.bookmakers ?? []).filter((b) => isNbaOddsNetGameBook(b.name));
@@ -422,6 +445,7 @@ export async function refreshNbaNearTipOdds(): Promise<NbaNearTipRefreshResult> 
     const fresh = oddsNet.props.get(game.gameId);
     if (!fresh || oddsNet.failed.has(game.gameId)) continue;
     game.playerProps = mergeProps(pickBooks(game.playerProps, false), fresh);
+    game.propBookTimes = { ...pickTimes(game.propBookTimes, false), ...(oddsNet.bookTimes.get(game.gameId) ?? {}) };
     const auLines = oddsNet.gameLines.get(game.gameId);
     if (auLines) game.bookmakers = [...game.bookmakers.filter((b) => !isNbaOddsNetGameBook(b.name)), ...auLines];
     updated += 1;

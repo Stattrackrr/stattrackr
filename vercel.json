@@ -39,6 +39,10 @@
       "schedule": "*/3 * * * *"
     },
     {
+      "path": "/api/cron/nba-prop-log",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/sync-nba-bdl",
       "schedule": "11,26,41,56 * * * *"
     },
