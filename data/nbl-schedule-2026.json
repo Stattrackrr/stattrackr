@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-28T18:57:29.662Z",
+  "generatedAt": "2026-10-29T18:56:52.686Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2290,7 +2290,7 @@
       "externalId": "37196322-58ad-11f1-9f91-61e38b2284ba",
       "startTime": "2026-10-29T09:00:00.000Z",
       "round": "7",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Brisbane Bullets",
       "homeTeamCode": "BRI",
       "homeTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
@@ -2299,8 +2299,8 @@
       "awayTeamCode": "CNS",
       "awayTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 85,
+      "awayScore": 107,
       "venue": "Brisbane Entertainment Centre",
       "matchSlug": "brisbane-bullets-v-cairns-taipans-men-29-10-2026"
     },
@@ -2606,7 +2606,7 @@
       "homeScore": 100,
       "awayScore": 110,
       "venue": "WIN Entertainment Centre",
-      "matchSlug": "illawarra-hawks-v-cairns-taipans-men-11-10-2026"
+      "matchSlug": "illawarra-hawks-v-cairns-taipans-11-10-2026"
     },
     {
       "id": "36fffdc1-58ad-11f1-b499-f3575d2dc39f",
@@ -2625,7 +2625,7 @@
       "homeScore": 78,
       "awayScore": 84,
       "venue": "Afterpay Arena",
-      "matchSlug": "sydney-kings-v-adelaide-36ers-men-11-10-2026"
+      "matchSlug": "sydney-kings-v-adelaide-36ers-11-10-2026"
     },
     {
       "id": "3705bd4d-58ad-11f1-8baa-ede76c1d904d",
@@ -2720,7 +2720,7 @@
       "homeScore": 91,
       "awayScore": 96,
       "venue": "Adelaide Entertainment Centre",
-      "matchSlug": "adelaide-36ers-v-melbourne-united-men-07-10-2026"
+      "matchSlug": "adelaide-36ers-v-melbourne-united-07-10-2026"
     },
     {
       "id": "36fff950-58ad-11f1-8de3-37c9e1eacb09",
@@ -2777,7 +2777,7 @@
       "homeScore": 95,
       "awayScore": 107,
       "venue": "John Cain Arena",
-      "matchSlug": "melbourne-united-v-cairns-taipans-men-03-10-2026"
+      "matchSlug": "melbourne-united-v-cairns-taipans-03-10-2026"
     },
     {
       "id": "37007b03-58ad-11f1-89e4-67a8251482c3",
