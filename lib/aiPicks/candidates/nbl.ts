@@ -120,44 +120,28 @@ export function cleanLadder(lines: NblSnapLine[]): NblSnapLine[] {
   });
 }
 
-/** Another main line counts as a normal line to bet instead once this many books post it as theirs. */
-const NORMAL_LINE_BOOKS = 2;
-
-/** Each book's own main over/under: its most balanced two-way pair (ties go to the line nearest the consensus). */
-export function bookMainLines(lines: NblSnapLine[], consensus: number): Map<string, number> {
-  const best = new Map<string, { line: number; gap: number }>();
-  for (const l of lines) {
-    if (l.kind !== 'ou' || !l.overDecimal || !l.underDecimal || !coherentPair(l.overDecimal, l.underDecimal)) continue;
-    const gap = Math.abs(l.overDecimal - l.underDecimal);
-    const prev = best.get(l.book);
-    const closer = prev && Math.abs(gap - prev.gap) < 1e-9 && Math.abs(l.line - consensus) < Math.abs(prev.line - consensus);
-    if (!prev || gap < prev.gap - 1e-9 || closer) best.set(l.book, { line: l.line, gap });
-  }
-  return new Map([...best].map(([book, v]) => [book, v.line]));
-}
-
 /**
- * The normal lines: the consensus main plus any other main line at least NORMAL_LINE_BOOKS books post.
- * When books split (Sportsbet 23.5, Ladbrokes 24.5), the easier line is the normal bet for each side.
+ * The main lines: every line some book prices both ways. An over's main line is the lowest of them and
+ * an under's the highest (Sportsbet 23.5 and Ladbrokes 24.5: over 23.5, under 24.5).
  */
 export function normalLineRange(lines: NblSnapLine[], mainLine: number): { low: number; high: number } {
-  const counts = new Map<number, number>();
-  for (const line of bookMainLines(lines, mainLine).values()) counts.set(line, (counts.get(line) ?? 0) + 1);
-  const normal = [mainLine, ...[...counts].filter(([, n]) => n >= NORMAL_LINE_BOOKS).map(([line]) => line)];
-  return { low: Math.min(...normal), high: Math.max(...normal) };
+  const twoWay = lines
+    .filter((l) => l.kind === 'ou' && l.overDecimal && l.underDecimal && coherentPair(l.overDecimal, l.underDecimal))
+    .map((l) => l.line);
+  const all = [mainLine, ...twoWay];
+  return { low: Math.min(...all), high: Math.max(...all) };
 }
 
-/** A main line in its own right: the consensus, or a line enough books post as their own main. */
+/** A main line, not an alternate: some book prices it both ways. */
 export function isNormalLine(lines: NblSnapLine[], mainLine: number | null, line: number): boolean {
   if (mainLine == null) return false;
-  if (line === mainLine) return true;
-  return [...bookMainLines(lines, mainLine).values()].filter((l) => l === line).length >= NORMAL_LINE_BOOKS;
+  return line === mainLine || bookOversAt(lines, line).length > 0;
 }
 
 /**
- * Main line first: with an over/under posted, a prop is bet at a normal line or an easier one, never a
- * harder rung (10+ when the line is 8.5, or 25+ when Sportsbet's line is 23.5). An off-main line with
- * no two-way price of its own has only a fitted guess behind it.
+ * Main line first: with an over/under posted, an over is bet at the lowest two-way line or an easier
+ * one and an under at the highest, never a harder rung (10+ when the line is 8.5, or 25+ when
+ * Sportsbet's line is 23.5). An off-main line with no two-way price of its own has only a fitted guess.
  */
 export function mainLineFlags(sel: Pick<PropSelection, 'line' | 'kind' | 'side'>, mainLine: number | null, lines: NblSnapLine[]): string[] {
   const flags: string[] = [];

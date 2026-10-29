@@ -829,14 +829,18 @@ test('ladder: a "10+" quoted shorter than over 8.5 is bad data and is dropped; s
 
 test('main line first: harder rungs are blocked, the main line and easier rungs are not', () => {
   const two = (value: number) => ({ player: 'P', playerKey: 'p', book: 'sportsbet', stat: 'ra', kind: 'ou', line: value, label: '', over: '', under: '', overDecimal: 1.9, underDecimal: 1.9 }) as NblSnapLine;
-  const lines = [two(8.5), two(7.5)];
+  const lines = [two(8.5)];
   const blocked = (flags: string[]) => flags.some((f) => BLOCKING_FLAG.test(f));
   assert.equal(blocked(mainLineFlags({ line: 9.5, kind: 'milestone', side: 'over' }, 8.5, lines)), true, '10+ when the line is 8.5');
   assert.equal(blocked(mainLineFlags({ line: 8.5, kind: 'ou', side: 'over' }, 8.5, lines)), false);
   assert.equal(blocked(mainLineFlags({ line: 7.5, kind: 'milestone', side: 'over' }, 8.5, lines)), false, '8+ is easier');
   assert.equal(blocked(mainLineFlags({ line: 6.5, kind: 'ou', side: 'under' }, 8.5, lines)), true, 'under 6.5 is harder than under 8.5');
   assert.equal(blocked(mainLineFlags({ line: 9.5, kind: 'ou', side: 'under' }, 8.5, lines)), true, 'easier, but no two-way price at 9.5');
-  assert.equal(blocked(mainLineFlags({ line: 7.5, kind: 'ou', side: 'over' }, 8.5, lines)), false, 'easier, priced both ways');
+  // Overs go to the lowest line priced both ways, unders to the highest.
+  const ladder = [two(8.5), two(7.5)];
+  assert.equal(blocked(mainLineFlags({ line: 7.5, kind: 'ou', side: 'over' }, 8.5, ladder)), false, 'the lowest over/under is the over line');
+  assert.equal(blocked(mainLineFlags({ line: 8.5, kind: 'ou', side: 'over' }, 8.5, ladder)), true, 'over 8.5 is harder than over 7.5');
+  assert.equal(blocked(mainLineFlags({ line: 8.5, kind: 'ou', side: 'under' }, 8.5, ladder)), false, 'the highest over/under is the under line');
   assert.deepEqual(mainLineFlags({ line: 12.5, kind: 'milestone', side: 'over' }, null, lines), [], 'no main line posted: milestones stand on their own');
 
   // Ty Jerome points: Sportsbet, PointsBet and FanDuel at 23.5, most books at 24.5. "25+" (over 24.5) is the
@@ -850,10 +854,11 @@ test('main line first: harder rungs are blocked, the main line and easier rungs 
   assert.equal(blocked(mainLineFlags({ line: 24.5, kind: 'ou', side: 'under' }, 24.5, split)), false, 'under 24.5 is the normal under');
   assert.equal(blocked(mainLineFlags({ line: 23.5, kind: 'ou', side: 'under' }, 24.5, split)), true, 'under 23.5 is harder than under 24.5');
   assert.equal(isNormalLine(split, 24.5, 23.5), true, "Sportsbet's 23.5 is a main line, not an alternate");
-  assert.equal(isNormalLine(split, 24.5, 22.5), false);
-  // One book's own odd line, or a book's alternates (its main is its most balanced pair), do not move the range.
-  const lone = [...split.slice(3), at('playup', 22.5), at('ladbrokes', 21.5, 1.4, 2.9)];
-  assert.equal(blocked(mainLineFlags({ line: 24.5, kind: 'ou', side: 'over' }, 24.5, lone)), false, 'one book at 22.5 is not a normal line');
+  assert.equal(isNormalLine(split, 24.5, 22.5), false, 'nobody prices 22.5 both ways');
+  // Any book's over/under counts: one book at 22.5 makes 22.5 the over's line and 24.5 still the under's.
+  const lone = [...split.slice(3), at('playup', 22.5)];
+  assert.match(mainLineFlags({ line: 24.5, kind: 'ou', side: 'over' }, 24.5, lone)[0]!, /bet the 22.5 line instead/);
+  assert.equal(blocked(mainLineFlags({ line: 24.5, kind: 'ou', side: 'under' }, 24.5, lone)), false);
   assert.equal(BLOCKING_FLAG.test('Alternate line: main lines only'), true);
   assert.equal(postable({ sport: 'nbl', player: 'Shea Ili' }), true, 'NBL props post');
   assert.equal(postable({ sport: 'nbl', player: null }), false, 'NBL game lines do not');
