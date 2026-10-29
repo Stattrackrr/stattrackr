@@ -439,7 +439,15 @@ export async function refreshNbaNearTipOdds(): Promise<NbaNearTipRefreshResult> 
   if (!targets.length) return { success: true, games: 0, updated: 0, oddsNetRequests: 0 };
 
   const oddsNet = await fetchNbaOddsNetProps(targets);
-  const nowIso = new Date(nowMs).toISOString();
+  const updated = await layOddsNetOntoBoard(board, oddsNet, new Date(nowMs).toISOString(), { near: true });
+  return { success: true, games: targets.length, updated, oddsNetRequests: oddsNet.requests };
+}
+
+/**
+ * A fresh odds-api.net pull laid onto the stored board: its AU props, book times and game lines replace
+ * the board's for those games (BallDontLie books untouched), then line moves are recorded.
+ */
+async function layOddsNetOntoBoard(board: NbaOddsCache, oddsNet: NbaOddsNetResult, nowIso: string, opts: { near?: boolean } = {}): Promise<number> {
   let updated = 0;
   for (const game of board.games) {
     const fresh = oddsNet.props.get(game.gameId);
@@ -450,17 +458,26 @@ export async function refreshNbaNearTipOdds(): Promise<NbaNearTipRefreshResult> 
     if (auLines) game.bookmakers = [...game.bookmakers.filter((b) => !isNbaOddsNetGameBook(b.name)), ...auLines];
     updated += 1;
   }
-  if (updated) {
-    board.oddsNetNearFetchedAt = nowIso;
-    await sharedCache.setJSON(NBA_DASH_ODDS_KEY, board, BOARD_TTL_SECONDS);
-    for (const game of board.games) {
-      if (!oddsNet.props.has(game.gameId) || !game.playerProps) continue;
-      try {
-        await recordNbaLineMoves(game, nowIso);
-      } catch (err) {
-        console.warn(`[NBA odds near] line movement failed for ${game.gameId}:`, err instanceof Error ? err.message : err);
-      }
+  if (!updated) return 0;
+  if (opts.near) board.oddsNetNearFetchedAt = nowIso;
+  await sharedCache.setJSON(NBA_DASH_ODDS_KEY, board, BOARD_TTL_SECONDS);
+  for (const game of board.games) {
+    if (!oddsNet.props.has(game.gameId) || !game.playerProps) continue;
+    try {
+      await recordNbaLineMoves(game, nowIso);
+    } catch (err) {
+      console.warn(`[NBA odds] line movement failed for ${game.gameId}:`, err instanceof Error ? err.message : err);
     }
   }
-  return { success: true, games: targets.length, updated, oddsNetRequests: oddsNet.requests };
+  return updated;
+}
+
+/**
+ * A pull made elsewhere (the AI's price check before posting) saved to the board, so the dashboard shows
+ * the prices a pick posted at instead of the last scheduled refresh.
+ */
+export async function saveNbaOddsNetPull(oddsNet: NbaOddsNetResult): Promise<number> {
+  const board = await sharedCache.getJSON<NbaOddsCache>(NBA_DASH_ODDS_KEY);
+  if (!board?.games?.length) return 0;
+  return layOddsNetOntoBoard(board, oddsNet, new Date().toISOString());
 }

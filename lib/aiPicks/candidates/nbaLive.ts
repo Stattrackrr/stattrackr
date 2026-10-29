@@ -94,6 +94,9 @@ export async function fetchLiveNbaGames(
   const res = await fetchNbaOddsNetProps(
     games.map((g) => ({ gameId: g.gameId, homeTeam: g.homeTeam, awayTeam: g.awayTeam, tipMs: Date.parse(g.startsAt) }))
   );
+  // The dashboard reads the board: give it the same prices the picks are about to post at.
+  const { saveNbaOddsNetPull } = await import('@/lib/nba/dash/oddsIngest');
+  await saveNbaOddsNetPull(res).catch((err) => console.warn('[ai-picks] saving live prices to the board failed:', err instanceof Error ? err.message : err));
   const live = new Map<string, NbaLiveGame>();
   for (const g of games) {
     const props = res.props.get(g.gameId);
