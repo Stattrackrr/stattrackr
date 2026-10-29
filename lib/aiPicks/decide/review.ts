@@ -1,7 +1,9 @@
 /**
- * Second opinion before anything is posted. The model's numbers found the play; the language model
- * reads the same evidence like a careful punter, rejects anything it would not back, and writes the
- * post. No reply, a bad reply, or a missing verdict means the play is not posted.
+ * Data check before anything is posted. The model's numbers chose the play; the language model only
+ * vetoes data problems (wrong player, contradictory availability, stale or broken numbers), with a
+ * category so vetoed plays can be compared with the rest, and writes the post. Judging probability
+ * was tried and its rejects lost as often as its approvals. No reply, a bad reply, or a missing
+ * verdict means the play is not posted.
  */
 
 import { askLlmConfig, callLlm } from '@/lib/ai/ask/llm';
@@ -11,7 +13,10 @@ import { isNbaAchievementMarket } from '@/lib/aiPicks/markets';
 import { round } from '@/lib/aiPicks/model/math';
 import { AI_PICKS_TZ } from '@/lib/aiPicks/decide/timing';
 
-export type ReviewVerdict = { approve: boolean; reason: string; writeUp: string };
+/** Why a play was vetoed; 'none' when approved. Logged so vetoed plays can be compared with the rest. */
+export const VETO_CATEGORIES = ['identity', 'injury_news', 'stale_data', 'other'] as const;
+export type VetoCategory = (typeof VETO_CATEGORIES)[number] | 'none';
+export type ReviewVerdict = { approve: boolean; category: VetoCategory; reason: string; writeUp: string };
 export type ReviewResult = {
   verdicts: Map<string, ReviewVerdict>;
   tokensIn: number;
@@ -23,33 +28,25 @@ export type ReviewResult = {
 const TIMEOUT_MS = 45_000;
 const MAX_WRITE_UP = 700;
 
-const SYSTEM = `You are Stattrackr AI, a disciplined sports bettor posting your own picks in a betting community.
-A pricing model has shortlisted the plays below. For each one, read the evidence and decide whether you would put your own money on it.
+const SYSTEM = `You are Stattrackr AI, posting picks in a betting community.
+A pricing model has already chosen the plays below and decided they are worth betting. You do not judge the price, the probability, the projection, form or the matchup: that is the model's call.
+Your two jobs: check each play for data problems, and write the post for the ones that pass.
 
-Weigh all of the evidence, not just hit rates:
-- NBL props: the projection against the line and what moved it (adjustments), averages over the last 5 / last 10 / season, minutes and usage trend, the matchup rank and opponent defence, pace, home/away split, teammates and opponents out, rest.
-- NBL game lines: both teams' offensive and defensive ratings, pace, the points model, players out, rest.
-- NBA props: the projection against the line and what moved it (how the opponent defends his position, pace, teammates out), averages over the last 5 / last 10 / season, minutes, usage, shot attempts and the tracking numbers given (rebound chances, passes, touches), opponents out, rest. Early in the season the numbers lean on last season; weigh role and minutes changes carefully.
-- NBA double-double / triple-double (yes bets: 10+ in two / three of points, rebounds, assists, steals, blocks): his projected points, rebounds and assists and expected minutes, how often he got there over the last 5 / 10 / 15 / season, and the stat that usually falls short. These sit on minutes: a blowout risk or minutes cap is the main way they lose.
-- NBA game lines: both teams' offensive and defensive ratings per 100 possessions, expected pace, regulars out, back to backs. NBA markets are sharp: only back a side when the evidence clearly agrees.
-- Tennis: serve and return points won (surface weighted, adjusted for opponent strength), hold rate, break points saved and converted, first and second serve, Elo overall and on the surface, rankings, form, head to head, rest and recent workload.
-
-Reject a play when:
-- the evidence points the other way (projection or averages on the wrong side of the line, a falling minutes or usage trend, a tough matchup, recent records mostly against it),
-- it leans on a tiny or stale sample (few games this season, long layoff),
-- the case is only that one bookmaker is out of line with the rest,
-- the case leans on someone being questionable or day-to-day: the numbers assume he plays his normal role, so never back an under (or a teammate's over) on the chance he sits or is limited, and never give it as a reason in the post,
-- for a multi, either leg would be rejected on its own.
-Approve only plays you would genuinely back. Rejecting is normal; never approve to fill a quota.
+Veto a play only for one of these, and give its category:
+- "identity": the player or team looks wrong (a name that does not belong to either team, a stat or role that cannot be this player).
+- "injury_news": the evidence contradicts itself on who is playing (the player is listed out or has not played in weeks, or the case needs a teammate who is listed out).
+- "stale_data": numbers that are clearly stale or broken (last game long ago with no note, impossible values, averages or a projection that cannot be right).
+- "other": any other clear data error; say what it is.
+Never veto because you disagree with the edge, think the line is close, or dislike recent form. Approving is the default when the data is sound.
 
 For approved plays write the post: 2 or 3 sentences, under 70 words, plain Australian English, first person, confident but not hyped.
-Speak as yourself ("I make it around 60%"), never about "the model". Round numbers the way a person would.
-Use one or two concrete numbers from the evidence (a projection against the line, an average, a matchup rank, a serve stat).
-No emojis, no hashtags, no "lock", no guarantees, no betting jargon like EV, de-vig or implied probability.
+Lead with the concrete reason in the evidence: the projection against the line and what moved it (minutes, teammates out, matchup, pace). Speak as yourself ("I make it around 60%"), never about "the model". Round numbers the way a person would.
+Never rest the post on someone being questionable or day-to-day: the numbers assume he plays his normal role.
+No emojis, no hashtags, no "lock", no guarantees, no streak talk, no betting jargon like EV, de-vig or implied probability.
 Never mention anything that is not in the evidence: no news, quotes, injuries or stats you were not given.
 
 Reply with JSON only:
-{"reviews":[{"id":"P1","approve":true,"reason":"one short line for the log","writeUp":"the post, empty if rejected"}]}`;
+{"reviews":[{"id":"P1","approve":true,"category":"none","reason":"one short line for the log","writeUp":"the post, empty if vetoed"}]}`;
 
 function whenLocal(iso: string): string {
   return new Date(iso).toLocaleString('en-AU', { timeZone: AI_PICKS_TZ, weekday: 'short', hour: 'numeric', minute: '2-digit' });
@@ -118,7 +115,6 @@ function legEvidence(leg: Proposal['legs'][number]) {
     ourChance: pct(c.prob),
     modelAlone: pct(c.modelProb),
     marketChance: pct(c.marketProb),
-    recentRecords: c.support.map((s) => `${s.label}: ${s.hits}/${s.games}`),
     notes: c.flags,
     ...extra,
   };
@@ -148,7 +144,7 @@ export function parseReview(raw: string, count: number): Map<string, ReviewVerdi
   const out = new Map<string, ReviewVerdict>();
   const match = String(raw || '').match(/\{[\s\S]*\}/);
   if (!match) return out;
-  let parsed: { reviews?: Array<{ id?: unknown; approve?: unknown; reason?: unknown; writeUp?: unknown }> };
+  let parsed: { reviews?: Array<{ id?: unknown; approve?: unknown; category?: unknown; reason?: unknown; writeUp?: unknown }> };
   try {
     parsed = JSON.parse(match[0]);
   } catch {
@@ -159,7 +155,11 @@ export function parseReview(raw: string, count: number): Map<string, ReviewVerdi
     const n = Number(id.replace(/^P/i, ''));
     if (!Number.isInteger(n) || n < 1 || n > count) continue;
     const writeUp = clean(r.writeUp);
-    out.set(`P${n}`, { approve: r.approve === true && writeUp.length >= 20, reason: clean(r.reason).slice(0, 200), writeUp });
+    const approve = r.approve === true && writeUp.length >= 20;
+    const named = VETO_CATEGORIES.find((c) => c === r.category);
+    const category: VetoCategory = approve ? 'none' : named ?? 'other';
+    const reason = clean(r.reason).slice(0, 200) || (r.approve === true ? 'Approved without a usable write-up' : '');
+    out.set(`P${n}`, { approve, category, reason, writeUp });
   }
   return out;
 }

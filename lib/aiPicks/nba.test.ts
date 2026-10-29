@@ -10,10 +10,12 @@ import {
   saneSpreads,
 } from './candidates/nba';
 import { liveNbaQuotes, repriceNbaCandidate, type NbaLiveGame } from './candidates/nbaLive';
-import { propSelections } from './candidates/nbl';
+import { cleanLadder, mainLineFlags, propSelections } from './candidates/nbl';
+import { postable } from './params';
+import type { NblSnapLine } from '@/lib/nbl/playerPropSnapshots';
 import { sharpSplit } from './candidates/sharp';
 import type { AiCandidate } from './candidates/types';
-import { betKind, candidateKey } from './candidates/types';
+import { BLOCKING_FLAG, betKind, candidateKey } from './candidates/types';
 import {
   chooseMulti,
   chooseSingles,
@@ -801,4 +803,45 @@ test('NBA and NBL legs never share a posted multi; the tracking-only search stil
   assert.equal(chooseMulti(w, P, empty(), NOW, exclude), null);
   const tracked = chooseMulti(w, P, empty(), NOW, exclude, { mixedBasketball: true });
   assert.equal(tracked?.sport, 'mixed');
+});
+test('ladder: a "10+" quoted shorter than over 8.5 is bad data and is dropped; sensible rungs stay', () => {
+  const line = (book: string, kind: 'ou' | 'milestone', value: number, over: number | null, under: number | null) =>
+    ({ player: 'VJ Edgecombe', playerKey: 'vj edgecombe', book, stat: 'ra', kind, line: value, label: String(value), over: '', under: '', overDecimal: over, underDecimal: under }) as NblSnapLine;
+  const lines = [
+    line('sportsbet', 'ou', 8.5, 2.02, 1.78),
+    line('pointsbet', 'ou', 8.5, 1.98, 1.82),
+    line('betr', 'milestone', 9.5, 2.7, null),
+    line('sportsbet', 'milestone', 9.5, 2.63, null),
+    line('dabble', 'milestone', 9.5, 1.88, null),
+    line('tab', 'milestone', 9.5, 1.8, null),
+    line('tab', 'milestone', 7.5, 1.45, null),
+    line('dabble', 'milestone', 7.5, 2.4, null),
+  ];
+  const cleaned = cleanLadder(lines);
+  const price = (book: string, value: number) => cleaned.find((l) => l.book === book && l.line === value)?.overDecimal;
+  assert.equal(price('betr', 9.5), 2.7);
+  assert.equal(price('dabble', 9.5), null, '10+ at 1.88 is shorter than over 8.5');
+  assert.equal(price('tab', 9.5), null);
+  assert.equal(price('tab', 7.5), 1.45, '8+ shorter than the main line is right');
+  assert.equal(price('dabble', 7.5), null, '8+ paying more than over 8.5 cannot be right');
+  assert.equal(price('sportsbet', 8.5), 2.02, 'the main line itself is untouched');
+});
+
+test('main line first: harder rungs are blocked, the main line and easier rungs are not', () => {
+  const two = (value: number) => ({ player: 'P', playerKey: 'p', book: 'sportsbet', stat: 'ra', kind: 'ou', line: value, label: '', over: '', under: '', overDecimal: 1.9, underDecimal: 1.9 }) as NblSnapLine;
+  const lines = [two(8.5), two(7.5)];
+  const blocked = (flags: string[]) => flags.some((f) => BLOCKING_FLAG.test(f));
+  assert.equal(blocked(mainLineFlags({ line: 9.5, kind: 'milestone', side: 'over' }, 8.5, lines)), true, '10+ when the line is 8.5');
+  assert.equal(blocked(mainLineFlags({ line: 8.5, kind: 'ou', side: 'over' }, 8.5, lines)), false);
+  assert.equal(blocked(mainLineFlags({ line: 7.5, kind: 'milestone', side: 'over' }, 8.5, lines)), false, '8+ is easier');
+  assert.equal(blocked(mainLineFlags({ line: 6.5, kind: 'ou', side: 'under' }, 8.5, lines)), true, 'under 6.5 is harder than under 8.5');
+  assert.equal(blocked(mainLineFlags({ line: 9.5, kind: 'ou', side: 'under' }, 8.5, lines)), true, 'easier, but no two-way price at 9.5');
+  assert.equal(blocked(mainLineFlags({ line: 7.5, kind: 'ou', side: 'over' }, 8.5, lines)), false, 'easier, priced both ways');
+  assert.deepEqual(mainLineFlags({ line: 12.5, kind: 'milestone', side: 'over' }, null, lines), [], 'no main line posted: milestones stand on their own');
+  assert.equal(BLOCKING_FLAG.test('Alternate line: main lines only'), true);
+  assert.equal(postable({ sport: 'nbl', player: 'Shea Ili' }), true, 'NBL props post');
+  assert.equal(postable({ sport: 'nbl', player: null }), false, 'NBL game lines do not');
+  assert.equal(postable({ sport: 'nba', player: null }), false, 'NBA game lines are tracked only');
+  assert.equal(postable({ sport: 'nba', player: 'VJ Edgecombe' }), true, 'NBA props post');
+  assert.equal(postable({ sport: 'tennis', player: null }), true, 'tennis match markets post');
 });

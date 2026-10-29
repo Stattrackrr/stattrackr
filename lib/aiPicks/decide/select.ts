@@ -161,6 +161,12 @@ export function subjectId(
 
 type Check = { ok: true } | { ok: false; reason: string };
 
+/**
+ * Basketball hit records went into the gate, the ranking and the stake, rewarding lines that just
+ * went the bettor's way (which the market has priced). They are logged and shown, never decide.
+ */
+const decidesOnHitRate = (c: Pick<AiCandidate, 'sport'>) => c.sport !== 'nbl' && c.sport !== 'nba';
+
 function common(c: AiCandidate, p: AiSportParams, nowMs: number): Check {
   const toStart = Date.parse(c.startsAt) - nowMs;
   if (!(toStart > MIN_LEAD_MS) || toStart > POST_HORIZON_MS) return { ok: false, reason: 'Outside the posting window' };
@@ -170,7 +176,7 @@ function common(c: AiCandidate, p: AiSportParams, nowMs: number): Check {
   }
   // Books on a shared feed post identical prices, so a price only counts once.
   if (distinctPrices(c.quotes).length < MIN_BOOKS) return { ok: false, reason: 'Fewer than 2 books price it' };
-  if (c.supportScore != null && c.supportScore < p.minSupport) return { ok: false, reason: 'Support too thin' };
+  if (decidesOnHitRate(c) && c.supportScore != null && c.supportScore < p.minSupport) return { ok: false, reason: 'Support too thin' };
   // An edge that is only one book being generous, with our own numbers no better than the market, is not a play.
   if (c.modelProb != null && c.marketProb != null && c.modelProb < c.marketProb + MIN_MODEL_LEAN) {
     return { ok: false, reason: 'Model does not back it' };
@@ -197,7 +203,7 @@ export function qualifiesLeg(c: AiCandidate, params: AiPicksParams, nowMs: numbe
 }
 
 function rankScore(c: AiCandidate): number {
-  return c.ev * (0.8 + 0.4 * (c.supportScore ?? 0.5));
+  return decidesOnHitRate(c) ? c.ev * (0.8 + 0.4 * (c.supportScore ?? 0.5)) : c.ev;
 }
 
 function conflicts(c: AiCandidate, state: PostedState): boolean {

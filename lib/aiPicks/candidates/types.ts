@@ -70,7 +70,8 @@ export function distinctPrices(quotes: CandidateQuote[]): number[] {
 }
 
 /** Flags that rule a candidate out: bad or missing data rather than a weak edge. */
-export const BLOCKING_FLAG = /Fewer than|Has not played|Not enough|retired|Only one side|differ by|far apart|too big to trust|Listed out/;
+export const BLOCKING_FLAG =
+  /Fewer than|Has not played|Not enough|retired|Only one side|differ by|far apart|too big to trust|Listed out|Longer than the main line|No two-way price at this line|Alternate line/;
 
 export function edgeFlag(ev: number, maxTrustedEv: number): string | null {
   return ev > maxTrustedEv ? `Edge of ${Math.round(ev * 100)}% is too big to trust` : null;

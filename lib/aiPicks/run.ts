@@ -1,7 +1,7 @@
 /**
  * One AI picks tick (cron, every 15 minutes): scan stored lines, update the watchlist, record
- * closing prices for legs about to start, choose what is ready, have the language model review it,
- * and post what it approves, staked from the edge and the AI's own track record.
+ * closing prices for legs about to start, choose what is ready, have the language model check it for
+ * data problems, and post what it approves at a flat stake.
  */
 
 import { alternateBooks } from '@/lib/aiPicks/books';
@@ -33,8 +33,8 @@ import { pickTitle } from '@/lib/aiPicks/format';
 import { isNblPropMarket } from '@/lib/aiPicks/markets';
 import { round } from '@/lib/aiPicks/model/math';
 import { loadActiveParams } from '@/lib/aiPicks/learn/state';
-import { modelVersion, type AiPicksParams } from '@/lib/aiPicks/params';
-import { sizeUnits, trackRecords, type TrackRecord } from '@/lib/aiPicks/units';
+import { modelVersion, MULTIS_POSTED, postable, PROPS_ONLY_SPORTS, type AiPicksParams } from '@/lib/aiPicks/params';
+import { sizeUnits } from '@/lib/aiPicks/units';
 import { reschedules, type FixtureTimes } from '@/lib/aiPicks/reschedule';
 import { readNblPulseScoreBoardCache } from '@/lib/nbl/pulseScore';
 import { NBL_ODDS_CACHE_KEY, type NblOddsCache } from '@/lib/nbl/refreshNblOdds';
@@ -51,7 +51,6 @@ import {
   listPendingLegsStartingBetween,
   listPendingPicks,
   listPicksPostedSince,
-  listSettledPickStats,
   listWatchingKeys,
   listWatchRows,
   readAiPicksSettings,
@@ -66,8 +65,6 @@ import {
   type WatchRow,
 } from '@/lib/aiPicks/server';
 
-/** How far back settled picks count toward a sport's track record. */
-const TRACK_RECORD_MS = 365 * 86_400_000;
 /** An NBL props board (or the NBA odds board) older than this is not trusted for posting. */
 const MAX_BOARD_AGE_MS = 45 * 60 * 1000;
 /** NBA AU prices are pulled every 25 minutes; three missed pulls and they are stale. */
@@ -250,10 +247,9 @@ async function postProposal(
   writeUp: string,
   review: string,
   params: AiPicksParams,
-  records: Record<string, TrackRecord>,
   scannedAt: string
 ): Promise<string | null> {
-  const stake = sizeUnits(p, params, records);
+  const stake = sizeUnits(p);
   const keys = p.kind === 'multi' ? [p.key, ...p.legs.map((l) => l.c.key)] : [p.key];
   const claimed: string[] = [];
   for (const key of keys) {
@@ -290,11 +286,13 @@ async function postProposal(
 
 function choose(watched: Watched[], params: AiPicksParams, state: PostedState, nowMs: number, closedMultis: Set<string>) {
   const singles = chooseSingles(watched, params, state, nowMs);
-  const multi = chooseMulti(watched, params, state, nowMs, {
-    keys: new Set(singles.map((s) => s.key)),
-    rejected: closedMultis,
-    subjects: new Set(singles.map((s) => subjectId(s.legs[0]!.c))),
-  });
+  const multi = MULTIS_POSTED
+    ? chooseMulti(watched, params, state, nowMs, {
+        keys: new Set(singles.map((s) => s.key)),
+        rejected: closedMultis,
+        subjects: new Set(singles.map((s) => subjectId(s.legs[0]!.c))),
+      })
+    : null;
   return { singles, multi };
 }
 
@@ -473,7 +471,9 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
         };
       }
       const closedMultis = new Set(await listClosedMultiKeys(new Date(nowMs - RECENT_PICKS_MS).toISOString()));
-      const { singles, multi } = await chooseLivePriced(watched, params, state, nowMs, closedMultis, summary);
+      const postableRows = watched.filter((w) => postable(w.c));
+      if (postableRows.length < watched.length) summary.skipped.push(`Game lines tracked, not posted: ${[...PROPS_ONLY_SPORTS].join(', ')}`);
+      const { singles, multi } = await chooseLivePriced(postableRows, params, state, nowMs, closedMultis, summary);
       mark('price check');
       // NBA + NBL multis no longer post; the best one is kept (never shown) so its legs' grades can be checked later.
       const mixed = chooseMulti(
@@ -505,7 +505,6 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
       }));
 
       if (proposals.length) {
-        const records = trackRecords(await listSettledPickStats(new Date(nowMs - TRACK_RECORD_MS).toISOString()), nowMs);
         mark('select');
         review = await reviewProposals(proposals);
         mark('review');
@@ -515,12 +514,12 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
           const title = pickTitle(p.legs.map((l) => l.c));
           if (!verdict) continue;
           if (!verdict.approve) {
-            await setWatchStatus([p.key], 'dropped', `${REVIEW_REJECTED} ${verdict.reason || 'not backed'}`);
+            await setWatchStatus([p.key], 'dropped', `${REVIEW_REJECTED} [${verdict.category}] ${verdict.reason || 'no reason given'}`);
             summary.rejected.push({ title, reason: verdict.reason });
             continue;
           }
           try {
-            const id = await postProposal(p, verdict.writeUp, verdict.reason, params, records, scan.scannedAt);
+            const id = await postProposal(p, verdict.writeUp, verdict.reason, params, scan.scannedAt);
             if (id) summary.posted.push({ id, title });
             else summary.skipped.push(`${title}: claimed by another run`);
           } catch (e) {

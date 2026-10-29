@@ -44,6 +44,22 @@ export type AiSportParams = {
   contextStrength: number;
 };
 
+/**
+ * Multis compound each leg's overstated probability, and the product-of-probabilities edge is the
+ * most inflated number in the system. None post until single-leg calibration is proven.
+ */
+export const MULTIS_POSTED = false;
+
+/**
+ * Sports whose game lines (head to head, spreads, totals) are still watched and graded but never
+ * posted. NBL posted totals were all unders and went 2-3; NBA's ratings model loses to the market.
+ */
+export const PROPS_ONLY_SPORTS: ReadonlySet<string> = new Set(['nbl', 'nba']);
+
+export function postable(c: { sport: string; player: string | null }): boolean {
+  return c.player != null || !PROPS_ONLY_SPORTS.has(c.sport);
+}
+
 export type AiStakingParams = {
   /** Share of full Kelly staked. */
   kellyFraction: number;

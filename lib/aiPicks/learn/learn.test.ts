@@ -23,8 +23,6 @@ function single(prob: number, price: number, over: Partial<AiCandidate> = {}): P
   return { kind: 'single', key: 'k', sport: c.sport, legs: [{ c, price, book: 'Bet365' }], price, book: 'Bet365', prob, ev: prob * price - 1, reason: '' };
 }
 
-const proven = { tennis: { settled: 50, recentPicks: 10, recentRoi: 0.05 } };
-
 test('kelly stake and the unit ladder', () => {
   assert.ok(Math.abs(kellyStake(0.6, 2) - 0.2) < 1e-9);
   assert.equal(kellyStake(0.4, 2), 0);
@@ -34,37 +32,12 @@ test('kelly stake and the unit ladder', () => {
   assert.equal(snapUnits(9), 3);
 });
 
-test('sizing: edge drives size, caps keep it honest', () => {
-  const big = sizeUnits(single(0.6, 2), P, proven);
-  assert.equal(big.units, 2, 'the stake ceiling holds even a big edge on a proven sport');
-  assert.match(big.why, /stake ceiling/);
-  assert.equal(sizeUnits(single(0.6, 2), { ...P, staking: { ...P.staking, maxUnits: 3 } }, proven).units, 3, 'the ladder still reaches 3 once the ceiling is lifted');
-  assert.doesNotMatch(big.why, /long price/, 'a $2.00 price is not a long price');
-  // Braun 4+ rebounds: TAB 1.68 against Sportsbet 1.30 was a soft price, so a gap between books does not cut the stake.
-  const apart = sizeUnits(single(0.6, 2, { quotes: [{ book: 'tab', price: 2 }, { book: 'sportsbet', price: 1.5 }] }), P, proven);
-  assert.equal(apart.units, 2);
-  const early = sizeUnits(single(0.6, 2, { flags: ['Early season: projection leans on last season'] }), P, proven);
-  assert.equal(early.units, 1.5);
-  assert.match(early.why, /early season/);
-  // New sport: capped until it has a record.
-  const fresh = sizeUnits(single(0.6, 2), P, {});
-  assert.equal(fresh.units, 1.5);
-  assert.match(fresh.why, /still proving itself/);
-  // Long prices: 1 unit past $2.20, half a unit past $2.70, however big the edge.
-  assert.equal(sizeUnits(single(0.6, 2.4), P, proven).units, 1);
-  assert.equal(sizeUnits(single(0.5, 2.95), P, proven).units, 0.5);
-  assert.match(sizeUnits(single(0.5, 2.95), P, proven).why, /long price/);
-  // Thin edge stays small.
-  assert.equal(sizeUnits(single(0.53, 1.95), P, proven).units, 1);
-  // Bad recent run.
-  const cold = { tennis: { settled: 80, recentPicks: 25, recentRoi: -0.2 } };
-  assert.equal(sizeUnits(single(0.6, 2), P, cold).units, 1);
-  // Learned stake scale pulls it down.
-  const scaled = { ...P, tennis: { ...P.tennis, stakeScale: { total_games: 0.6 } } };
-  assert.equal(sizeUnits(single(0.56, 1.95), scaled, proven).units, 1.5);
-  // Multis cap at 1 unit.
-  const m = single(0.6, 2);
-  assert.equal(sizeUnits({ ...m, kind: 'multi', legs: [...m.legs, ...m.legs] }, P, proven).units, 1);
+test('sizing: flat 1 unit, half a unit above $2.50, whatever the edge', () => {
+  assert.deepEqual(sizeUnits(single(0.6, 2)), { units: 1, why: 'Flat stake: 1u' });
+  assert.equal(sizeUnits(single(0.9, 1.9)).units, 1, 'a big claimed edge does not grow the stake');
+  assert.equal(sizeUnits(single(0.5, 2.5)).units, 1);
+  assert.equal(sizeUnits(single(0.5, 2.51)).units, 0.5);
+  assert.match(sizeUnits(single(0.5, 2.95)).why, /0.5u above \$2.50/);
 });
 
 test('track records count settled picks and recent ROI', () => {

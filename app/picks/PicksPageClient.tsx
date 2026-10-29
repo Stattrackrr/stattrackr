@@ -247,7 +247,7 @@ export default function PicksPageClient() {
         isAdmin={viewer.isAdmin}
         isDark={isDark}
         loadBets={loadAiRecordBets}
-        subtitle="Stattrackr AI units performance. Every pick is graded automatically."
+        subtitle="Stattrackr AI units performance. Every pick is graded automatically at the price shown when it was posted, which may no longer be available by the time you bet."
       />
     </div>
   );

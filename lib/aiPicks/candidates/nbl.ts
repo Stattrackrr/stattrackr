@@ -90,6 +90,50 @@ export function marketOverAt(lines: NblSnapLine[], line: number, combine: FairCo
   return combine(bookOversAt(lines, line));
 }
 
+/** Margins differ between books and rungs; a price this far the wrong side of the main line is bad data. */
+const LADDER_SLACK = 0.02;
+
+/**
+ * Drops prices that cannot be right for their line. An over (or milestone) on a harder line than the
+ * main one must pay at least the main over, and on an easier line no more than it; unders the other
+ * way round. One mislabeled feed row (a "10+" quoted shorter than over 8.5) otherwise drags the fair
+ * price up and creates an edge that is not there.
+ */
+export function cleanLadder(lines: NblSnapLine[]): NblSnapLine[] {
+  const twoWay = lines.filter((l) => l.kind === 'ou' && l.overDecimal && l.underDecimal);
+  const main = consensusLine(twoWay.map((l) => l.line));
+  if (main == null) return lines;
+  const overAtMain = median(twoWay.filter((l) => l.line === main).map((l) => l.overDecimal!));
+  const underAtMain = median(twoWay.filter((l) => l.line === main).map((l) => l.underDecimal!));
+  return lines.map((l) => {
+    let over = l.overDecimal;
+    let under = l.underDecimal;
+    if (over && overAtMain != null) {
+      if (l.line > main && over < overAtMain * (1 - LADDER_SLACK)) over = null;
+      else if (l.line < main && over > overAtMain * (1 + LADDER_SLACK)) over = null;
+    }
+    if (under && underAtMain != null) {
+      if (l.line < main && under < underAtMain * (1 - LADDER_SLACK)) under = null;
+      else if (l.line > main && under > underAtMain * (1 + LADDER_SLACK)) under = null;
+    }
+    return over === l.overDecimal && under === l.underDecimal ? l : { ...l, overDecimal: over, underDecimal: under };
+  });
+}
+
+/**
+ * Main line first: with an over/under posted, a prop is bet at the main line or an easier one, never a
+ * harder rung (10+ when the line is 8.5). An off-main line with no two-way price of its own has only a
+ * fitted guess behind it.
+ */
+export function mainLineFlags(sel: Pick<PropSelection, 'line' | 'kind' | 'side'>, mainLine: number | null, lines: NblSnapLine[]): string[] {
+  const flags: string[] = [];
+  if (mainLine == null) return flags;
+  const harder = sel.side === 'over' ? sel.line > mainLine : sel.line < mainLine;
+  if (harder) flags.push(`Longer than the main line (${mainLine}): bet the main line instead`);
+  else if (sel.kind === 'ou' && sel.line !== mainLine && !bookOversAt(lines, sel.line).length) flags.push('No two-way price at this line');
+  return flags;
+}
+
 export type PropSelection = { line: number; kind: 'ou' | 'milestone'; side: 'over' | 'under'; quotes: CandidateQuote[] };
 
 export function propSelections(lines: NblSnapLine[]): PropSelection[] {
@@ -195,7 +239,8 @@ export function buildNblPropCandidates(input: {
     byStat.set(l.stat, [...(byStat.get(l.stat) ?? []), l]);
   }
 
-  for (const [stat, lines] of byStat) {
+  for (const [stat, rawLines] of byStat) {
+    const lines = cleanLadder(rawLines);
     const base = projectNblProp(player.games, stat, { currentSeason: input.currentSeason });
     if (!base) continue;
     const ctx = input.context?.forStat(stat) ?? { factors: [], total: 1, fullTotal: 1 };
@@ -232,7 +277,7 @@ export function buildNblPropCandidates(input: {
         opponent: input.opponent,
       });
       const score = supportScore(support);
-      const flags = [...baseFlags, ...picked.flags];
+      const flags = [...baseFlags, ...picked.flags, ...mainLineFlags(sel, mkt.mainLine, lines)];
       const gap = Math.abs(winShare(model, sel.side) - winShare(market, sel.side));
       if (gap > params.maxModelMarketGap) flags.push(`Model and market differ by ${Math.round(gap * 100)}%`);
       if (score != null && score < params.minSupport) flags.push('Thin support in the game logs');
@@ -365,6 +410,7 @@ export function buildNblGameCandidates(input: {
     const mixed = blend(model, args.fair, w);
     const prob = sideWin(mixed, args.side);
     const flags = [...picked.flags];
+    if (args.marketKind === 'alternate') flags.push('Alternate line: main lines only');
     const gap = Math.abs(sideWin(model, args.side) - sideWin(args.fair, args.side));
     if (gap > params.maxModelMarketGap) flags.push(`Model and market differ by ${Math.round(gap * 100)}%`);
     if (sample < 3) flags.push('Few games of team form');

@@ -41,7 +41,9 @@ import { isSharpBook, sharpFair, sharpSplit } from '@/lib/aiPicks/candidates/sha
 import {
   blend,
   bookOversAt,
+  cleanLadder,
   gameQuotes,
+  mainLineFlags,
   marketMean,
   marketProbsAt,
   propSelections,
@@ -237,7 +239,8 @@ export function buildNbaPropCandidates(input: {
     byStat.set(l.stat, [...(byStat.get(l.stat) ?? []), l]);
   }
 
-  for (const [stat, lines] of byStat) {
+  for (const [stat, rawLines] of byStat) {
+    const lines = cleanLadder(rawLines);
     const base = projectNbaProp(player.games, stat, input.currentSeason);
     if (!base) continue;
     const ctx = context.forStat(stat, base);
@@ -276,7 +279,7 @@ export function buildNbaPropCandidates(input: {
         opponentName: input.opponent.name,
       });
       const score = supportScore(support);
-      const flags = [...baseFlags, ...picked.flags];
+      const flags = [...baseFlags, ...picked.flags, ...mainLineFlags(sel, mkt.mainLine, lines)];
       const gap = Math.abs(winShare(model, sel.side) - winShare(market, sel.side));
       if (gap > params.maxModelMarketGap) flags.push(`Model and market differ by ${Math.round(gap * 100)}%`);
       if (score != null && score < params.minSupport) flags.push('Thin support in the game logs');
@@ -519,6 +522,7 @@ export function buildNbaGameCandidates(input: {
     const mixed = blend(model, args.fair, w);
     const prob = sideWin(mixed, args.side);
     const flags = [...(input.flags ?? []), ...picked.flags];
+    if (args.marketKind === 'alternate') flags.push('Alternate line: main lines only');
     const gap = Math.abs(sideWin(model, args.side) - sideWin(args.fair, args.side));
     if (gap > params.maxModelMarketGap) flags.push(`Model and market differ by ${Math.round(gap * 100)}%`);
     const ev = evPerUnit(prob, picked.best.price, mixed.push);

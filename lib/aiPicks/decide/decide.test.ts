@@ -102,6 +102,14 @@ test('singles: NBL props wait for over/under lines; two books needed', () => {
   assert.equal(qualifiesSingle(cand({ startsAt: iso(NOW + 30 * H) }), P, NOW).ok, false);
 });
 
+test('hit records never decide a basketball bet; tennis keeps its support gate', () => {
+  const cold = { supportScore: 0.3, context: { marketSource: 'main' } };
+  for (const sport of ['nba', 'nbl'] as const) {
+    assert.equal(qualifiesSingle(cand({ sport, market: 'points', player: 'X', ...cold }), P, NOW).ok, true, `${sport}: 3 from 10 still qualifies`);
+  }
+  assert.deepEqual(qualifiesSingle(cand(cold), P, NOW), { ok: false, reason: 'Support too thin' });
+});
+
 test('singles: one per sport per run, one per game, no opposite side', () => {
   const near = iso(NOW + 2 * H);
   const a = cand({ eventKey: 'm1', startsAt: near, ev: 0.08 });
@@ -292,11 +300,18 @@ test('posted state counts the last 24 hours and remembers used selections', () =
   assert.ok(s.subjectsUsed.has(subjectId(leg)));
 });
 
-test('review parsing fails closed', () => {
-  const ok = parseReview('{"reviews":[{"id":"P1","approve":true,"reason":"solid","writeUp":"Backing the over here, both have gone long lately."},{"id":"P2","approve":true,"writeUp":""}]}', 3);
+test('review parsing fails closed and keeps the veto category', () => {
+  const ok = parseReview(
+    '{"reviews":[{"id":"P1","approve":true,"reason":"solid","writeUp":"Backing the over here, both have gone long lately."},{"id":"P2","approve":true,"writeUp":""},{"id":"P3","approve":false,"category":"injury_news","reason":"listed out"},{"id":"P4","approve":false,"category":"vibes","reason":"x"}]}',
+    5
+  );
   assert.equal(ok.get('P1')?.approve, true);
+  assert.equal(ok.get('P1')?.category, 'none');
   assert.equal(ok.get('P2')?.approve, false);
-  assert.equal(ok.has('P3'), false);
+  assert.equal(ok.get('P2')?.category, 'other', 'no write-up cannot post');
+  assert.equal(ok.get('P3')?.category, 'injury_news');
+  assert.equal(ok.get('P4')?.category, 'other', 'unknown categories are logged as other');
+  assert.equal(ok.has('P5'), false);
   assert.equal(parseReview('not json', 1).size, 0);
   assert.equal(parseReview('{"reviews":[{"id":"P9","approve":true,"writeUp":"xxxxxxxxxxxxxxxxxxxxxxxxx"}]}', 1).size, 0);
 });
