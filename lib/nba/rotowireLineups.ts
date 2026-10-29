@@ -1,7 +1,8 @@
 /**
  * RotoWire's public NBA lineups page (predicted starters, "may not play" tags), logged per game so
  * the predictions can be checked against who actually started and played. The dashboard's predicted
- * lineups card reads this log (lib/nba/dash/predictedLineups.ts); the AI picks do not use it.
+ * lineups card reads this log (lib/nba/dash/predictedLineups.ts); the NBA prop log keeps every version
+ * in the database (lib/nba/propLog/context.ts) to record starter status at each snapshot.
  * Fetched lightly (see rotowireFetchDue).
  */
 
@@ -159,7 +160,7 @@ export function mergeRotowireDay(log: RwDayLog | null, page: RwPage & { date: st
 
 export type RwLogResult =
   | { fetched: false; reason: string }
-  | { fetched: true; date: string | null; games: number; changed: number; warning?: string };
+  | { fetched: true; date: string | null; games: number; changed: number; warning?: string; page?: RwPage };
 
 /** Writes `nba_rotowire_lineups_v1:<ET date>` (21-day TTL) and the fetch-throttle state in Redis. */
 export async function logRotowireLineups(nowMs = Date.now(), opts: { force?: boolean } = {}): Promise<RwLogResult> {
@@ -194,6 +195,7 @@ export async function logRotowireLineups(nowMs = Date.now(), opts: { force?: boo
     date: page.date,
     games: page.games.length,
     changed: merged.changed,
+    page,
     ...(short ? { warning: `${short} game(s) without five starters per side (page changed?)` } : {}),
   };
 }

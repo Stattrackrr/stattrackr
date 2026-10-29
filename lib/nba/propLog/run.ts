@@ -11,8 +11,11 @@ import { getNbaOddsCache } from '@/lib/nba/dash/odds';
 import type { NbaGameOdds } from '@/lib/nba/dash/oddsTypes';
 import { getNbaClubById, resolveNbaClub } from '@/lib/nba/dash/teams';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { latestLineups, lineupGameKey, starterBasis, trackStatusChanges, type LineupVersion } from './context';
 import { gameLines, gameMarket, impliedTeamTotal, type LoggedLine, type PropLogPlayer } from './lines';
 import { dueKinds, type ExistingSnapshot as Existing, type SnapshotKind } from './schedule';
+
+type RowKind = SnapshotKind | 'injury_change';
 
 /** Frozen with the start of forward logging; any change bumps a version and starts a new sample. */
 export const PROP_LOG_VERSIONS = { model: 'none', feature: 'inputs-v1', policy: 'log-v1' } as const;
@@ -62,7 +65,7 @@ async function rosters(teamIds: string[]): Promise<Map<string, PropLogPlayer[]>>
   return out;
 }
 
-type InjuryRow = { player_id: number; team_id: number; status: string; return_date: string | null; description: string | null; updated_at: string | null };
+type InjuryRow = { player_id: number; team_id: number | null; status: string; return_date: string | null; description: string | null; updated_at?: string | null };
 
 async function injuryReport(): Promise<InjuryRow[]> {
   const { data, error } = await supabaseAdmin.from('nba_injuries').select('player_id, team_id, status, return_date, description, updated_at');
@@ -70,15 +73,20 @@ async function injuryReport(): Promise<InjuryRow[]> {
   return (data ?? []) as InjuryRow[];
 }
 
-function snapshotRow(
-  odds: NbaGameOdds,
-  line: LoggedLine,
-  kind: SnapshotKind,
-  nowIso: string,
-  ctx: { homeCode: string; awayCode: string; market: ReturnType<typeof gameMarket>; injuries: InjuryRow[]; injuriesAt: string | null }
-) {
+type GameCtx = {
+  homeCode: string;
+  awayCode: string;
+  market: ReturnType<typeof gameMarket>;
+  injuries: InjuryRow[];
+  injuriesAt: string | null;
+  lineups: Map<string, LineupVersion | undefined>;
+  rosters: Map<string, PropLogPlayer[]>;
+};
+
+function snapshotRow(odds: NbaGameOdds, line: LoggedLine, kind: RowKind, nowIso: string, ctx: GameCtx) {
   const team = line.player?.teamCode ?? null;
   const isHome = team === ctx.homeCode;
+  const lineup = team ? ctx.lineups.get(team) : undefined;
   return {
     game_id: odds.gameId,
     tip_at: odds.commenceTime,
@@ -108,6 +116,8 @@ function snapshotRow(
     implied_team_total: team ? impliedTeamTotal(ctx.market, isHome) : null,
     injury_report: ctx.injuries,
     injury_source_ts: ctx.injuriesAt,
+    lineup_version_id: lineup?.id ?? null,
+    starter_basis: team ? starterBasis(line.player, lineup, ctx.rosters.get(team) ?? []) : null,
     model_version: PROP_LOG_VERSIONS.model,
     feature_version: PROP_LOG_VERSIONS.feature,
     policy_version: PROP_LOG_VERSIONS.policy,
@@ -130,17 +140,30 @@ function quoteRows(snapshotId: string, line: LoggedLine, nowIso: string) {
 export type PropLogSummary = {
   games: number;
   lines: number;
-  inserted: Record<SnapshotKind, number>;
+  inserted: Record<RowKind, number>;
   closeUpdated: number;
   quotes: number;
   unmatched: number;
+  statusChanges: number;
+  lineupsLinked: number;
   graded: number;
   skipped: string[];
 };
 
 export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSummary> {
   const nowIso = new Date(nowMs).toISOString();
-  const summary: PropLogSummary = { games: 0, lines: 0, inserted: { first: 0, t6h: 0, t2h: 0, close: 0 }, closeUpdated: 0, quotes: 0, unmatched: 0, graded: 0, skipped: [] };
+  const summary: PropLogSummary = {
+    games: 0,
+    lines: 0,
+    inserted: { first: 0, t6h: 0, t2h: 0, close: 0, injury_change: 0 },
+    closeUpdated: 0,
+    quotes: 0,
+    unmatched: 0,
+    statusChanges: 0,
+    lineupsLinked: 0,
+    graded: 0,
+    skipped: [],
+  };
   const board = await getNbaOddsCache();
   if (!board) {
     summary.skipped.push('No NBA board stored');
@@ -157,13 +180,25 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
   summary.games = games.length;
   if (!games.length) return summary;
 
-  const clubs = games.flatMap((g) => [resolveNbaClub(g.homeTeam), resolveNbaClub(g.awayTeam)]);
-  const [existing, players, injuries] = await Promise.all([
+  const nextGameByTeam = new Map<number, string>();
+  for (const g of [...board.games].sort((a, b) => Date.parse(a.commenceTime) - Date.parse(b.commenceTime))) {
+    if (!(Date.parse(g.commenceTime) > nowMs)) continue;
+    for (const club of [resolveNbaClub(g.homeTeam), resolveNbaClub(g.awayTeam)]) {
+      if (club && !nextGameByTeam.has(Number(club.id))) nextGameByTeam.set(Number(club.id), g.gameId);
+    }
+  }
+  const clubs = games.flatMap((g) => [resolveNbaClub(g.homeTeam), resolveNbaClub(g.awayTeam)]).filter((c) => c != null);
+  const [existing, players, status, lineups] = await Promise.all([
     existingSnapshots(games.map((g) => g.gameId)),
-    rosters([...new Set(clubs.filter((c) => c).map((c) => c!.id))]),
-    injuryReport(),
+    rosters([...new Set(clubs.map((c) => c.id))]),
+    trackStatusChanges(nowMs, nextGameByTeam),
+    latestLineups([...new Set(clubs.map((c) => c.code))], nowMs),
   ]);
-  const injuriesAt = injuries.reduce<string | null>((m, r) => (r.updated_at && (!m || r.updated_at > m) ? r.updated_at : m), null);
+  summary.statusChanges = status.changes;
+  if (status.error) summary.skipped.push(`Live injury report failed, using the stored one: ${status.error}`);
+  const stored = status.report ? null : await injuryReport();
+  const injuries: InjuryRow[] = status.report ?? stored ?? [];
+  const injuriesAt = status.reportAt ?? (stored ?? []).reduce<string | null>((m, r) => (r.updated_at && (!m || r.updated_at > m) ? r.updated_at : m), null);
 
   const inserts: Array<{ row: ReturnType<typeof snapshotRow>; line: LoggedLine }> = [];
   const closeUpdates: Array<{ id: string; row: ReturnType<typeof snapshotRow>; line: LoggedLine }> = [];
@@ -175,20 +210,27 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
       continue;
     }
     const teamIds = new Set([Number(home.id), Number(away.id)]);
-    const ctx = {
+    const gameKey = lineupGameKey(odds.commenceTime, away.code, home.code);
+    const ctx: GameCtx = {
       homeCode: home.code,
       awayCode: away.code,
       market: gameMarket(odds),
       injuries: injuries.filter((r) => teamIds.has(Number(r.team_id))),
       injuriesAt,
+      lineups: new Map([home.code, away.code].map((code) => [code, lineups.get(`${gameKey}|${code}`)])),
+      rosters: players,
     };
+    summary.lineupsLinked += [...ctx.lineups.values()].filter(Boolean).length;
+    const news = [...teamIds].some((id) => status.changedTeams.has(id));
     const lines = gameLines(odds, [...(players.get(home.code) ?? []), ...(players.get(away.code) ?? [])]);
     summary.lines += lines.length;
     const tipMs = Date.parse(odds.commenceTime);
     const prior = existing.get(odds.gameId);
     for (const line of lines) {
       const seen = prior?.get(lineKey(line.boardName, line.stat)) ?? [];
-      for (const kind of dueKinds(seen, tipMs, nowMs)) {
+      const kinds: RowKind[] = dueKinds(seen, tipMs, nowMs);
+      if (news) kinds.push('injury_change');
+      for (const kind of kinds) {
         const row = snapshotRow(odds, line, kind, nowIso, ctx);
         const close = kind === 'close' ? seen.find((e) => e.kind === 'close') : undefined;
         if (close) closeUpdates.push({ id: close.id, row, line });
@@ -216,7 +258,7 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
       if (qError) throw new Error(`nba_prop_book_quotes insert: ${qError.message}`);
     }
     summary.quotes += quotes.length;
-    for (const b of batch) summary.inserted[b.row.snapshot_kind as SnapshotKind] += 1;
+    for (const b of batch) summary.inserted[b.row.snapshot_kind] += 1;
   }
 
   for (const u of closeUpdates) {
