@@ -43,6 +43,7 @@ import {
   bookOversAt,
   cleanLadder,
   gameQuotes,
+  isNormalLine,
   mainLineFlags,
   marketMean,
   marketProbsAt,
@@ -272,7 +273,7 @@ export function buildNbaPropCandidates(input: {
       const prob = sideWin(mixed, sel.side);
       const ev = evPerUnit(prob, picked.best.price, mixed.push);
       const lineKind: AiPickMarketKind =
-        sel.kind === 'milestone' ? 'milestone' : mkt.mainLine != null && sel.line === mkt.mainLine ? 'main' : 'alternate';
+        sel.kind === 'milestone' ? 'milestone' : isNormalLine(lines, mkt.mainLine, sel.line) ? 'main' : 'alternate';
       const support = nbaPropSupport(player.games, stat, sel.line, sel.side, {
         currentSeason: input.currentSeason,
         opponentCode: input.opponent.code,

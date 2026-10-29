@@ -10,7 +10,7 @@ import {
   saneSpreads,
 } from './candidates/nba';
 import { liveNbaQuotes, repriceNbaCandidate, type NbaLiveGame } from './candidates/nbaLive';
-import { cleanLadder, mainLineFlags, propSelections } from './candidates/nbl';
+import { cleanLadder, isNormalLine, mainLineFlags, propSelections } from './candidates/nbl';
 import { postable } from './params';
 import type { NblSnapLine } from '@/lib/nbl/playerPropSnapshots';
 import { sharpSplit } from './candidates/sharp';
@@ -838,6 +838,22 @@ test('main line first: harder rungs are blocked, the main line and easier rungs 
   assert.equal(blocked(mainLineFlags({ line: 9.5, kind: 'ou', side: 'under' }, 8.5, lines)), true, 'easier, but no two-way price at 9.5');
   assert.equal(blocked(mainLineFlags({ line: 7.5, kind: 'ou', side: 'over' }, 8.5, lines)), false, 'easier, priced both ways');
   assert.deepEqual(mainLineFlags({ line: 12.5, kind: 'milestone', side: 'over' }, null, lines), [], 'no main line posted: milestones stand on their own');
+
+  // Ty Jerome points: Sportsbet, PointsBet and FanDuel at 23.5, most books at 24.5. "25+" (over 24.5) is the
+  // harder version of Sportsbet's line, so it waits; over 23.5 and under 24.5 are the normal bets.
+  const at = (book: string, value: number, over = 1.9, under = 1.9) =>
+    ({ player: 'P', playerKey: 'p', book, stat: 'points', kind: 'ou', line: value, label: '', over: '', under: '', overDecimal: over, underDecimal: under }) as NblSnapLine;
+  const split = [at('sportsbet', 23.5), at('pointsbet', 23.5), at('fanduel', 23.5), at('ladbrokes', 24.5), at('unibet', 24.5), at('draftkings', 24.5), at('caesars', 24.5)];
+  assert.equal(blocked(mainLineFlags({ line: 24.5, kind: 'milestone', side: 'over' }, 24.5, split)), true, '25+ when Sportsbet has 23.5');
+  assert.match(mainLineFlags({ line: 24.5, kind: 'milestone', side: 'over' }, 24.5, split)[0]!, /bet the 23.5 line instead/);
+  assert.equal(blocked(mainLineFlags({ line: 23.5, kind: 'ou', side: 'over' }, 24.5, split)), false, 'over 23.5 is the normal over');
+  assert.equal(blocked(mainLineFlags({ line: 24.5, kind: 'ou', side: 'under' }, 24.5, split)), false, 'under 24.5 is the normal under');
+  assert.equal(blocked(mainLineFlags({ line: 23.5, kind: 'ou', side: 'under' }, 24.5, split)), true, 'under 23.5 is harder than under 24.5');
+  assert.equal(isNormalLine(split, 24.5, 23.5), true, "Sportsbet's 23.5 is a main line, not an alternate");
+  assert.equal(isNormalLine(split, 24.5, 22.5), false);
+  // One book's own odd line, or a book's alternates (its main is its most balanced pair), do not move the range.
+  const lone = [...split.slice(3), at('playup', 22.5), at('ladbrokes', 21.5, 1.4, 2.9)];
+  assert.equal(blocked(mainLineFlags({ line: 24.5, kind: 'ou', side: 'over' }, 24.5, lone)), false, 'one book at 22.5 is not a normal line');
   assert.equal(BLOCKING_FLAG.test('Alternate line: main lines only'), true);
   assert.equal(postable({ sport: 'nbl', player: 'Shea Ili' }), true, 'NBL props post');
   assert.equal(postable({ sport: 'nbl', player: null }), false, 'NBL game lines do not');
