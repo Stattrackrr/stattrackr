@@ -43,6 +43,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/nba-lag-poll",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/sync-nba-bdl",
       "schedule": "11,26,41,56 * * * *"
     },
