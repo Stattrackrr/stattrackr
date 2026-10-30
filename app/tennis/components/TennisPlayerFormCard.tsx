@@ -9,6 +9,7 @@ import {
   tennisTourLabel,
 } from '@/lib/tennis/chartStats';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
+import { tennisSurfaceLabel } from '@/lib/tennis/venues';
 import {
   PLAYER_FORM_WINDOWS,
   type PlayerFormTone,
@@ -46,7 +47,7 @@ function formatMatchScore(score: string, isWin: boolean): string {
 function surfaceLabel(raw: string | null | undefined): string {
   const s = String(raw || '').trim();
   if (!s) return '—';
-  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  return s.replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
 
 function fmtPct(value: number | null | undefined, digits = 0): string {
@@ -465,7 +466,7 @@ export function TennisPlayerFormCard({
                 ) : null}
               </span>
               {compact ? null : (
-                <span className={`text-[11px] truncate ${muted}`}>{surfaceLabel(game.surface)}</span>
+                <span className={`text-[11px] truncate ${muted}`}>{surfaceLabel(tennisSurfaceLabel(game.surface, game.tourneyName))}</span>
               )}
               {compact ? null : <span className={`text-[11px] truncate ${muted}`}>{event}</span>}
               <span className={`text-[11px] tabular-nums whitespace-nowrap ${strong}`}>
