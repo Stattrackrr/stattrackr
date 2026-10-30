@@ -77,14 +77,6 @@ export function edgeFlag(ev: number, maxTrustedEv: number): string | null {
   return ev > maxTrustedEv ? `Edge of ${Math.round(ev * 100)}% is too big to trust` : null;
 }
 
-/**
- * The bet as the posting book lists it: its "4+" is a milestone even where other books run 3.5 as an
- * over/under. The line's kind across books (main / alternate / milestone) still decides singles.
- */
-export function betKind(lineKind: AiPickMarketKind, best: CandidateQuote): AiPickMarketKind {
-  return best.milestone ? 'milestone' : lineKind;
-}
-
 /** Legs shorter than this barely move a multi's price. */
 const MIN_LEG_PRICE = 1.15;
 

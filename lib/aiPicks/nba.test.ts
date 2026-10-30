@@ -15,7 +15,7 @@ import { postable } from './params';
 import type { NblSnapLine } from '@/lib/nbl/playerPropSnapshots';
 import { sharpSplit } from './candidates/sharp';
 import type { AiCandidate } from './candidates/types';
-import { BLOCKING_FLAG, betKind, candidateKey } from './candidates/types';
+import { BLOCKING_FLAG, candidateKey } from './candidates/types';
 import {
   chooseMulti,
   chooseSingles,
@@ -442,10 +442,10 @@ test('a "30+" milestone and over 29.5 are one bet: one selection carrying every 
     "Ladbrokes' better 30+ price counts once, and is bet as its 30+"
   );
   assert.ok(sels.some((s) => s.kind === 'milestone' && s.line === 34.5), 'a milestone with no matching over/under stays');
-  // The bet reads as the posting book lists it; the line's kind across books still decides singles.
-  assert.equal(betKind('alternate', { book: 'dabble', price: 1.75, milestone: true }), 'milestone');
-  assert.equal(betKind('alternate', { book: 'ladbrokes', price: 1.8 }), 'alternate');
-  assert.equal(betKind('main', { book: 'sportsbet', price: 1.88 }), 'main');
+  // A book's "13+" on a real over/under line is labelled as the over/under: "over 12.5", not "13+".
+  const leg = { sport: 'nbl', market: 'pr', player: 'Dejan Vasiljevic', team: null, side: 'over', line: 12.5 } as const;
+  assert.equal(legSelection({ ...leg, marketKind: 'main' }), 'Dejan Vasiljevic over 12.5 pts + reb');
+  assert.equal(legSelection({ ...leg, marketKind: 'milestone' }), 'Dejan Vasiljevic 13+ pts + reb', 'only a line nobody prices both ways reads as 13+');
 });
 
 test('a questionable player: his overs wait until 90 minutes before tip, his unders post early (sitting voids them)', () => {

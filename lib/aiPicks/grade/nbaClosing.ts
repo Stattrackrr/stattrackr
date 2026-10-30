@@ -37,8 +37,13 @@ export function nbaClosingFromBoard(leg: AiPickLeg, game: NbaGameOdds): ClosingL
     if (!leg.player || leg.line == null) return null;
     const names = boardNames(game, leg);
     if (!names.length) return null;
-    const kind = leg.marketKind === 'milestone' ? 'milestone' : 'ou';
-    const line = nbaPlayerLines(game, names).find((l) => bookKey(l.book) === book && l.stat === leg.market && l.kind === kind && l.line === leg.line);
+    // The book may list the leg's line as an over/under or as its "N+" (same bet for an over).
+    const mine = nbaPlayerLines(game, names).filter((l) => bookKey(l.book) === book && l.stat === leg.market && l.line === leg.line);
+    const order = leg.marketKind === 'milestone' ? (['milestone', 'ou'] as const) : (['ou', 'milestone'] as const);
+    const line = order
+      .filter((kind) => kind === 'ou' || leg.side === 'over')
+      .map((kind) => mine.find((l) => l.kind === kind))
+      .find(Boolean);
     if (!line) return null;
     const price = leg.side === 'under' ? line.underDecimal : line.overDecimal;
     return price ? { line: leg.line, price } : null;

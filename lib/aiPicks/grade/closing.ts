@@ -11,16 +11,21 @@ function balance(l: NblSnapLine): number {
   return Math.abs(l.overDecimal - l.underDecimal);
 }
 
-/** The leg's book at tip-off: its main O/U (or the same milestone) and the price on the leg's side. */
+/**
+ * The leg's book at tip-off and the price on the leg's side: the same line (as an over/under, or as the
+ * book's "13+" for an over), else for an over/under leg the book's main O/U.
+ */
 export function closingFromSnapLines(leg: AiPickLeg, lines: NblSnapLine[]): ClosingLine | null {
   if (!leg.player || !isNblPropMarket(leg.market)) return null;
   const pk = playerKeyOf(leg.player);
   const book = bookKey(leg.bookmaker);
   const mine = lines.filter((l) => l.playerKey === pk && l.stat === leg.market && bookKey(l.book) === book);
+  const at = (kind: NblSnapLine['kind']) => mine.find((l) => l.kind === kind && l.line === leg.line);
+  const milestone = leg.side === 'over' ? at('milestone') : undefined;
   const pick =
     leg.marketKind === 'milestone'
-      ? mine.find((l) => l.kind === 'milestone' && l.line === leg.line)
-      : mine.filter((l) => l.kind === 'ou').sort((a, b) => balance(a) - balance(b))[0];
+      ? milestone ?? at('ou')
+      : at('ou') ?? milestone ?? mine.filter((l) => l.kind === 'ou').sort((a, b) => balance(a) - balance(b))[0];
   if (!pick) return null;
   const price = leg.side === 'under' ? pick.underDecimal : pick.overDecimal;
   return { line: pick.line, price: price ?? null };

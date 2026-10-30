@@ -30,7 +30,6 @@ import {
 import { effectiveModelWeight, type AiSportParams } from '@/lib/aiPicks/params';
 import {
   BLOCKING_FLAG,
-  betKind,
   bettableQuote,
   edgeFlag,
   eligibility,
@@ -296,7 +295,7 @@ export function buildNbaPropCandidates(input: {
           eventLabel: nbaEventLabel(game),
           startsAt: game.commenceTime,
           market: stat,
-          marketKind: betKind(lineKind, picked.best),
+          marketKind: lineKind,
           player: player.name,
           playerId: player.playerId,
           team: player.team,

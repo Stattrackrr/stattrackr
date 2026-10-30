@@ -39,7 +39,6 @@ import { nblPlayerEvidence, type NblInjuryContext, type NblPropContext } from '@
 import { effectiveModelWeight, type AiSportParams } from '@/lib/aiPicks/params';
 import {
   BLOCKING_FLAG,
-  betKind,
   bettableQuote,
   candidateKey,
   distinctPrices,
@@ -313,7 +312,7 @@ export function buildNblPropCandidates(input: {
           eventLabel: nblEventLabel(game),
           startsAt: game.commenceTime,
           market: stat,
-          marketKind: betKind(lineKind, picked.best),
+          marketKind: lineKind,
           player: player.name,
           playerId: player.playerId,
           team: player.team,
