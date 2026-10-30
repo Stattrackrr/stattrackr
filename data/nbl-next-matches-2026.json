@@ -1,94 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-29T18:56:53.807Z",
+  "generatedAt": "2026-10-30T18:34:37.264Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-      "name": "NZ Breakers",
-      "team_code": "NZL",
-      "nextMatches": [
-        {
-          "id": "1bdcde8d-df8e-4c16-9994-6716733a61c7",
-          "match_slug": "nz-breakers-v-adelaide-36ers-men-30-10-2026",
-          "match_title": "NZ Breakers v Adelaide 36ers men 30-10-2026",
-          "match_ticket_url": "https://fans.nzbreakers.basketball/schedule",
-          "external_id": "371d934c-58ad-11f1-8edf-4b570c3bab13",
-          "start_time_datetime": "2026-10-30T06:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-          "opponent_name": "Adelaide 36ers",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-          "venue": "Spark Arena",
-          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
-        }
-      ]
-    },
-    {
-      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-      "name": "Adelaide 36ers",
-      "team_code": "ADL",
-      "nextMatches": [
-        {
-          "id": "1bdcde8d-df8e-4c16-9994-6716733a61c7",
-          "match_slug": "nz-breakers-v-adelaide-36ers-men-30-10-2026",
-          "match_title": "NZ Breakers v Adelaide 36ers men 30-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
-          "external_id": "371d934c-58ad-11f1-8edf-4b570c3bab13",
-          "start_time_datetime": "2026-10-30T06:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-          "opponent_name": "NZ Breakers",
-          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-          "venue": "Spark Arena",
-          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
-        }
-      ]
-    },
-    {
-      "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-      "name": "Tasmania JackJumpers",
-      "team_code": "TAS",
-      "nextMatches": [
-        {
-          "id": "8b4d6ee3-94cb-4b35-9748-0e3049a7fa75",
-          "match_slug": "tasmania-jackjumpers-v-sydney-kings-men-30-10-2026",
-          "match_title": "Tasmania JackJumpers v Sydney Kings men 30-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=JACKJUMP27",
-          "external_id": "3718733a-58ad-11f1-b000-3ffa71afcf53",
-          "start_time_datetime": "2026-10-30T08:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
-          "opponent_name": "Sydney Kings",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-          "venue": "Silverdome",
-          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
-        }
-      ]
-    },
-    {
-      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
-      "name": "Sydney Kings",
-      "team_code": "SYD",
-      "nextMatches": [
-        {
-          "id": "8b4d6ee3-94cb-4b35-9748-0e3049a7fa75",
-          "match_slug": "tasmania-jackjumpers-v-sydney-kings-men-30-10-2026",
-          "match_title": "Tasmania JackJumpers v Sydney Kings men 30-10-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS27",
-          "external_id": "3718733a-58ad-11f1-b000-3ffa71afcf53",
-          "start_time_datetime": "2026-10-30T08:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-          "opponent_name": "Tasmania JackJumpers",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-          "venue": "Silverdome",
-          "opponent_logo_blurhash": "L25$batj01ah1hWW^Moe00V[.kSz"
-        }
-      ]
-    },
     {
       "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "name": "Cairns Taipans",
@@ -195,6 +111,48 @@
       ]
     },
     {
+      "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+      "name": "Tasmania JackJumpers",
+      "team_code": "TAS",
+      "nextMatches": [
+        {
+          "id": "8888930e-b37c-4d02-9a65-f412fc11e3ae",
+          "match_slug": "south-east-melbourne-phoenix-v-tasmania-jackjumpers-men-01-11-2026",
+          "match_title": "South East Melbourne Phoenix v Tasmania JackJumpers men 01-11-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=JACKJUMP27",
+          "external_id": "374fd3d1-58ad-11f1-945e-cbcb1725dbfe",
+          "start_time_datetime": "2026-11-01T04:00:00.000Z",
+          "is_home": false,
+          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "opponent_name": "South East Melbourne Phoenix",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
+        }
+      ]
+    },
+    {
+      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "name": "Adelaide 36ers",
+      "team_code": "ADL",
+      "nextMatches": [
+        {
+          "id": "3a1eb0ac-3300-4b1b-8a74-d9949fbb6bcc",
+          "match_slug": "adelaide-36ers-v-brisbane-bullets-men-01-11-2026",
+          "match_title": "Adelaide 36ers v Brisbane Bullets men 01-11-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
+          "external_id": "372517f1-58ad-11f1-b481-53622f199a68",
+          "start_time_datetime": "2026-11-01T06:00:00.000Z",
+          "is_home": true,
+          "opponent_id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+          "opponent_name": "Brisbane Bullets",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/BNE.png",
+          "venue": "Adelaide Entertainment Centre",
+          "opponent_logo_blurhash": "LAD9iCxu0s5dS+s*s+xU0aIwoI}$"
+        }
+      ]
+    },
+    {
       "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "name": "Brisbane Bullets",
       "team_code": "BRI",
@@ -212,6 +170,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
           "venue": "Adelaide Entertainment Centre",
           "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
+        }
+      ]
+    },
+    {
+      "id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "name": "NZ Breakers",
+      "team_code": "NZL",
+      "nextMatches": [
+        {
+          "id": "a1d37535-71f6-499a-a094-71c600159e67",
+          "match_slug": "melbourne-united-v-nz-breakers-men-02-11-2026",
+          "match_title": "Melbourne United v NZ Breakers men 02-11-2026",
+          "match_ticket_url": "https://fans.nzbreakers.basketball/schedule",
+          "external_id": "372b8b55-58ad-11f1-9407-d95637fbed2b",
+          "start_time_datetime": "2026-11-02T08:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "opponent_name": "Melbourne United",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
+        }
+      ]
+    },
+    {
+      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+      "name": "Sydney Kings",
+      "team_code": "SYD",
+      "nextMatches": [
+        {
+          "id": "6c851a76-5294-4174-9d3b-e415c5d087e5",
+          "match_slug": "sydney-kings-v-south-east-melbourne-phoenix-men-08-11-2026",
+          "match_title": "Sydney Kings v South East Melbourne Phoenix men 08-11-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS27",
+          "external_id": "37495c97-58ad-11f1-8f28-d7e4e018b88d",
+          "start_time_datetime": "2026-11-08T04:00:00.000Z",
+          "is_home": true,
+          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "opponent_name": "South East Melbourne Phoenix",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
+          "venue": "Afterpay Arena",
+          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
         }
       ]
     }

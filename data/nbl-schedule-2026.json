@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-29T18:56:52.686Z",
+  "generatedAt": "2026-10-30T18:34:35.323Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2252,7 +2252,7 @@
       "externalId": "3718733a-58ad-11f1-b000-3ffa71afcf53",
       "startTime": "2026-10-30T08:30:00.000Z",
       "round": "7",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
       "homeTeamCode": "TAS",
       "homeTeamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
@@ -2261,8 +2261,8 @@
       "awayTeamCode": "SYD",
       "awayTeamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 68,
+      "awayScore": 71,
       "venue": "Silverdome",
       "matchSlug": "tasmania-jackjumpers-v-sydney-kings-men-30-10-2026"
     },
@@ -2271,7 +2271,7 @@
       "externalId": "371d934c-58ad-11f1-8edf-4b570c3bab13",
       "startTime": "2026-10-30T06:30:00.000Z",
       "round": "7",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "NZ Breakers",
       "homeTeamCode": "NZL",
       "homeTeamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
@@ -2280,8 +2280,8 @@
       "awayTeamCode": "ADL",
       "awayTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 101,
+      "awayScore": 108,
       "venue": "Spark Arena",
       "matchSlug": "nz-breakers-v-adelaide-36ers-men-30-10-2026"
     },
@@ -2606,7 +2606,7 @@
       "homeScore": 100,
       "awayScore": 110,
       "venue": "WIN Entertainment Centre",
-      "matchSlug": "illawarra-hawks-v-cairns-taipans-11-10-2026"
+      "matchSlug": "illawarra-hawks-v-cairns-taipans-men-11-10-2026"
     },
     {
       "id": "36fffdc1-58ad-11f1-b499-f3575d2dc39f",
@@ -2625,7 +2625,7 @@
       "homeScore": 78,
       "awayScore": 84,
       "venue": "Afterpay Arena",
-      "matchSlug": "sydney-kings-v-adelaide-36ers-11-10-2026"
+      "matchSlug": "sydney-kings-v-adelaide-36ers-men-11-10-2026"
     },
     {
       "id": "3705bd4d-58ad-11f1-8baa-ede76c1d904d",
@@ -2720,7 +2720,7 @@
       "homeScore": 91,
       "awayScore": 96,
       "venue": "Adelaide Entertainment Centre",
-      "matchSlug": "adelaide-36ers-v-melbourne-united-07-10-2026"
+      "matchSlug": "adelaide-36ers-v-melbourne-united-men-07-10-2026"
     },
     {
       "id": "36fff950-58ad-11f1-8de3-37c9e1eacb09",
@@ -2777,7 +2777,7 @@
       "homeScore": 95,
       "awayScore": 107,
       "venue": "John Cain Arena",
-      "matchSlug": "melbourne-united-v-cairns-taipans-03-10-2026"
+      "matchSlug": "melbourne-united-v-cairns-taipans-men-03-10-2026"
     },
     {
       "id": "37007b03-58ad-11f1-89e4-67a8251482c3",

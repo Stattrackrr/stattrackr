@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-29T18:57:42.335Z",
+  "generatedAt": "2026-10-30T18:35:33.112Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Saturday, October 24, 5:00pm AEDT",
-  "injuryCount": 22,
+  "injuryCount": 21,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -22,14 +22,6 @@
       "returning": "Retired",
       "status": "Out",
       "note": "Retired on October 20, 2026. Adelaide 36ers announced that a persistent knee injury had forced him to end his career, after 173 NBL games, 124 of them for Adelaide. He did not play in NBL27 and moves into a non-playing role with the club.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Adelaide 36ers",
-      "player": "Matt Kenyon",
-      "injury": "Back",
-      "returning": "TBC",
-      "status": "Out",
       "listedByNbl": true
     },
     {
