@@ -44,7 +44,10 @@ export type ModelLine = {
 
 export type ModelSpec = { params: Param[]; features: readonly FeatureSpec[]; controls: { booksMean: number; booksSd: number; dispMean: number; dispSd: number } };
 
-const sd = (xs: number[], mean: number) => Math.sqrt(xs.reduce((a, x) => a + (x - mean) ** 2, 0) / Math.max(1, xs.length - 1)) || 1;
+const sd = (xs: number[], mean: number) => {
+  const v = Math.sqrt(xs.reduce((a, x) => a + (x - mean) ** 2, 0) / Math.max(1, xs.length - 1));
+  return v > 1e-9 ? v : 1;
+};
 
 export function modelSpec(lines: ModelLine[], features: readonly FeatureSpec[] = V1_FEATURES): ModelSpec {
   const books = lines.map((l) => l.nBooks);
