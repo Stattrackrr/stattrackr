@@ -8,6 +8,7 @@
 import { gradeNbaLeg, NbaResultsSource } from '@/lib/aiPicks/grade/nba';
 import type { AiPickLeg } from '@/lib/aiPicks/types';
 import { getNbaOddsCache } from '@/lib/nba/dash/odds';
+import { buildNbaPropDvpIndex, type NbaPropDvpIndex } from '@/lib/nba/dash/playerPropsDvp';
 import type { NbaGameOdds } from '@/lib/nba/dash/oddsTypes';
 import { getNbaClubById, resolveNbaClub } from '@/lib/nba/dash/teams';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
@@ -17,8 +18,11 @@ import { dueKinds, type ExistingSnapshot as Existing, type SnapshotKind } from '
 
 type RowKind = SnapshotKind | 'injury_change';
 
-/** Frozen with the start of forward logging; any change bumps a version and starts a new sample. */
-export const PROP_LOG_VERSIONS = { model: 'none', feature: 'inputs-v1', policy: 'log-v1' } as const;
+/**
+ * Frozen with the start of forward logging; any change bumps a version and starts a new sample.
+ * inputs-v2: adds the BettingPros defence-vs-position rank at the player's depth-chart slot.
+ */
+export const PROP_LOG_VERSIONS = { model: 'none', feature: 'inputs-v2', policy: 'log-v1' } as const;
 
 const H = 60 * 60 * 1000;
 const HORIZON_MS = 36 * H;
@@ -53,16 +57,39 @@ async function existingSnapshots(gameIds: string[]): Promise<Map<string, Map<str
   return out;
 }
 
-async function rosters(teamIds: string[]): Promise<Map<string, PropLogPlayer[]>> {
-  const { data, error } = await supabaseAdmin.from('nba_players').select('id, full_name, team_id').eq('is_active', true).in('team_id', teamIds.map(Number));
+async function rosters(teamIds: string[]): Promise<{ byTeam: Map<string, PropLogPlayer[]>; positions: Map<string, string | null> }> {
+  const { data, error } = await supabaseAdmin.from('nba_players').select('id, full_name, team_id, position').eq('is_active', true).in('team_id', teamIds.map(Number));
   if (error) throw new Error(`nba_players: ${error.message}`);
-  const out = new Map<string, PropLogPlayer[]>();
+  const byTeam = new Map<string, PropLogPlayer[]>();
+  const positions = new Map<string, string | null>();
   for (const r of data ?? []) {
     const club = getNbaClubById(r.team_id);
     if (!club || !r.full_name) continue;
-    out.set(club.code, [...(out.get(club.code) ?? []), { id: String(r.id), name: String(r.full_name), teamCode: club.code }]);
+    byTeam.set(club.code, [...(byTeam.get(club.code) ?? []), { id: String(r.id), name: String(r.full_name), teamCode: club.code }]);
+    positions.set(String(r.id), r.position ?? null);
   }
-  return out;
+  return { byTeam, positions };
+}
+
+/**
+ * The BettingPros defence-vs-position rank (rank 1 allows the least) at the player's depth-chart slot,
+ * the same number the props page shows. Logged only; nothing decides on it. Missing data leaves it out.
+ */
+async function addBettingProsDvp(rows: Array<ReturnType<typeof snapshotRow>>, positions: Map<string, string | null>): Promise<void> {
+  const teams = [...new Set(rows.map((r) => r.team).filter((t): t is string => Boolean(t)))];
+  if (!teams.length) return;
+  let index: NbaPropDvpIndex;
+  try {
+    index = await buildNbaPropDvpIndex(teams);
+  } catch {
+    return;
+  }
+  for (const row of rows) {
+    if (!row.team || !row.player_id) continue;
+    const position = index.positionFor({ playerId: row.player_id, name: row.player_name, teamCode: row.team, position: positions.get(row.player_id) ?? null });
+    const dvp = index.lookup({ opponentCode: row.opponent, position, stat: row.stat });
+    row.features = { ...row.features, bpDvp: { position, rank: dvp.dvpRating, value: dvp.dvpStatValue, teams: dvp.dvpFieldSize } };
+  }
 }
 
 type InjuryRow = { player_id: number; team_id: number | null; status: string; return_date: string | null; description: string | null; updated_at?: string | null };
@@ -118,6 +145,7 @@ function snapshotRow(odds: NbaGameOdds, line: LoggedLine, kind: RowKind, nowIso:
     injury_source_ts: ctx.injuriesAt,
     lineup_version_id: lineup?.id ?? null,
     starter_basis: team ? starterBasis(line.player, lineup, ctx.rosters.get(team) ?? []) : null,
+    features: {} as Record<string, unknown>,
     model_version: PROP_LOG_VERSIONS.model,
     feature_version: PROP_LOG_VERSIONS.feature,
     policy_version: PROP_LOG_VERSIONS.policy,
@@ -188,12 +216,13 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
     }
   }
   const clubs = games.flatMap((g) => [resolveNbaClub(g.homeTeam), resolveNbaClub(g.awayTeam)]).filter((c) => c != null);
-  const [existing, players, status, lineups] = await Promise.all([
+  const [existing, roster, status, lineups] = await Promise.all([
     existingSnapshots(games.map((g) => g.gameId)),
     rosters([...new Set(clubs.map((c) => c.id))]),
     trackStatusChanges(nowMs, nextGameByTeam),
     latestLineups([...new Set(clubs.map((c) => c.code))], nowMs),
   ]);
+  const players = roster.byTeam;
   summary.statusChanges = status.changes;
   if (status.error) summary.skipped.push(`Live injury report failed, using the stored one: ${status.error}`);
   const stored = status.report ? null : await injuryReport();
@@ -239,6 +268,8 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
       }
     }
   }
+
+  await addBettingProsDvp([...inserts, ...closeUpdates].map((x) => x.row), roster.positions);
 
   for (let i = 0; i < inserts.length; i += INSERT_BATCH) {
     const batch = inserts.slice(i, i + INSERT_BATCH);
