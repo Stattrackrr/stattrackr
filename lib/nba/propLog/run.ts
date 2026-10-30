@@ -13,6 +13,7 @@ import type { NbaGameOdds } from '@/lib/nba/dash/oddsTypes';
 import { getNbaClubById, resolveNbaClub } from '@/lib/nba/dash/teams';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { latestLineups, lineupGameKey, starterBasis, trackStatusChanges, type LineupVersion } from './context';
+import { addModelFeatures } from './features';
 import { gameLines, gameMarket, impliedTeamTotal, type LoggedLine, type PropLogPlayer } from './lines';
 import { dueKinds, type ExistingSnapshot as Existing, type SnapshotKind } from './schedule';
 
@@ -21,8 +22,9 @@ type RowKind = SnapshotKind | 'injury_change';
 /**
  * Frozen with the start of forward logging; any change bumps a version and starts a new sample.
  * inputs-v2: adds the BettingPros defence-vs-position rank at the player's depth-chart slot.
+ * inputs-v3: adds the new model's inputs (minutes with tonight's information, pooled usage, implied-minutes gap).
  */
-export const PROP_LOG_VERSIONS = { model: 'none', feature: 'inputs-v2', policy: 'log-v1' } as const;
+export const PROP_LOG_VERSIONS = { model: 'none', feature: 'inputs-v3', policy: 'log-v1' } as const;
 
 const H = 60 * 60 * 1000;
 const HORIZON_MS = 36 * H;
@@ -145,6 +147,7 @@ function snapshotRow(odds: NbaGameOdds, line: LoggedLine, kind: RowKind, nowIso:
     injury_source_ts: ctx.injuriesAt,
     lineup_version_id: lineup?.id ?? null,
     starter_basis: team ? starterBasis(line.player, lineup, ctx.rosters.get(team) ?? []) : null,
+    role_changed_recently: null as boolean | null,
     features: {} as Record<string, unknown>,
     model_version: PROP_LOG_VERSIONS.model,
     feature_version: PROP_LOG_VERSIONS.feature,
@@ -174,6 +177,7 @@ export type PropLogSummary = {
   unmatched: number;
   statusChanges: number;
   lineupsLinked: number;
+  featuresComputed?: number;
   graded: number;
   skipped: string[];
 };
@@ -269,7 +273,16 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
     }
   }
 
-  await addBettingProsDvp([...inserts, ...closeUpdates].map((x) => x.row), roster.positions);
+  const pending = [...inserts, ...closeUpdates].map((x) => x.row);
+  await addBettingProsDvp(pending, roster.positions);
+  if (pending.length) {
+    try {
+      const f = await addModelFeatures(pending);
+      summary.featuresComputed = f.computed;
+    } catch (err) {
+      summary.skipped.push(`Model inputs failed: ${err instanceof Error ? err.message : err}`);
+    }
+  }
 
   for (let i = 0; i < inserts.length; i += INSERT_BATCH) {
     const batch = inserts.slice(i, i + INSERT_BATCH);
