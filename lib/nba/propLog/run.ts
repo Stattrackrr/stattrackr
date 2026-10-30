@@ -24,8 +24,10 @@ type RowKind = SnapshotKind | 'injury_change';
  * Frozen with the start of forward logging; any change bumps a version and starts a new sample.
  * inputs-v2: adds the BettingPros defence-vs-position rank at the player's depth-chart slot.
  * inputs-v3: adds the new model's inputs (minutes with tonight's information, pooled usage, implied-minutes gap).
+ * inputs-v4: adds feature-library candidates (opponent absences, rest and travel, chances against results,
+ *            combos against their parts, referee crew).
  */
-export const PROP_LOG_VERSIONS = { model: 'none', feature: 'inputs-v3', policy: 'log-v1' } as const;
+export const PROP_LOG_VERSIONS = { model: 'none', feature: 'inputs-v4', policy: 'log-v1' } as const;
 
 const H = 60 * 60 * 1000;
 const HORIZON_MS = 36 * H;
@@ -149,7 +151,7 @@ function snapshotRow(odds: NbaGameOdds, line: LoggedLine, kind: RowKind, nowIso:
     lineup_version_id: lineup?.id ?? null,
     starter_basis: team ? starterBasis(line.player, lineup, ctx.rosters.get(team) ?? []) : null,
     role_changed_recently: null as boolean | null,
-    features: {} as Record<string, unknown>,
+    features: (team ? { home: isHome } : {}) as Record<string, unknown>,
     model_version: PROP_LOG_VERSIONS.model,
     feature_version: PROP_LOG_VERSIONS.feature,
     policy_version: PROP_LOG_VERSIONS.policy,
@@ -288,7 +290,13 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
   await addBettingProsDvp(pending, roster.positions);
   if (pending.length) {
     try {
-      const f = await addModelFeatures(pending);
+      const f = await addModelFeatures(pending, {
+        positions: roster.positions,
+        partLine: (gameId, playerId, stat) => {
+          const l = currentLines.get(`${gameId}|${playerId}|${stat}`);
+          return l ? { line: l.mainLine, fairOver: l.fairOverAll } : null;
+        },
+      });
       summary.featuresComputed = f.computed;
     } catch (err) {
       summary.skipped.push(`Model inputs failed: ${err instanceof Error ? err.message : err}`);

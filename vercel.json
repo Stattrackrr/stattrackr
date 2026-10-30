@@ -47,6 +47,10 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/cron/nba-officials",
+      "schedule": "20 * * * *"
+    },
+    {
       "path": "/api/cron/nba-model-report",
       "schedule": "0 15 * * 1"
     },
