@@ -17,9 +17,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 const isBrowser = typeof window !== 'undefined'
-const TAB_NAMESPACE_SESSION_KEY = 'stattrackr_tab_namespace'
-const TAB_NAMESPACE_LIST_KEY = 'stattrackr_tab_namespaces'
-const MAX_TAB_SESSIONS = 10
+/**
+ * Every tab shares one stored session. Supabase refresh tokens are single-use: tabs holding their own
+ * copies invalidate each other on the first refresh. With one store, the client's cross-tab lock lets
+ * one tab refresh and the others read the new token.
+ */
+const AUTH_NAMESPACE = 'stattrackr'
+/** Earlier builds kept a copy of the session per tab under these; migrated once, then removed. */
+const LEGACY_TAB_NAMESPACE_SESSION_KEY = 'stattrackr_tab_namespace'
+const LEGACY_TAB_NAMESPACE_LIST_KEY = 'stattrackr_tab_namespaces'
 const PERSISTENT_STORAGE_KEY = 'sb-auth-token'
 const SESSION_STORAGE_KEY = 'sb-session-token'
 const SIGNED_OUT_FLAG_KEY = 'stattrackr_signed_out'
@@ -43,7 +49,7 @@ const PREFERENCE_KEYS = new Set([
   'stattrackr_remember_me',
   'stattrackr_google_login',
   'stattrackr_login_redirect',
-  TAB_NAMESPACE_LIST_KEY,
+  LEGACY_TAB_NAMESPACE_LIST_KEY,
 ])
 
 function isProtectedLocalKey(key: string, namespace: string, targetKey: string): boolean {
@@ -65,29 +71,9 @@ function localStorageEntriesBySize(namespace: string, targetKey: string): Array<
   return entries
 }
 
-function dropOtherTabSessions(currentNamespace: string) {
-  const namespaces = getRegisteredNamespaces()
-  for (const ns of namespaces) {
-    if (ns && ns !== currentNamespace) cleanupNamespace(ns)
-  }
-  try {
-    window.localStorage.setItem(TAB_NAMESPACE_LIST_KEY, JSON.stringify([currentNamespace]))
-  } catch {
-    // ignore
-  }
-}
-
 function setLocalStorageWithQuotaRecovery(namespace: string, key: string, value: string) {
   const targetKey = `${namespace}:${key}`
   const write = () => window.localStorage.setItem(targetKey, value)
-  try {
-    write()
-    return
-  } catch (error) {
-    if (!isQuotaExceededError(error)) throw error
-  }
-
-  dropOtherTabSessions(namespace)
   try {
     write()
     return
@@ -165,68 +151,47 @@ const cleanupNamespace = (namespace: string) => {
   window.localStorage.removeItem(`${namespace}:${SESSION_STORAGE_KEY}`)
 }
 
-const getRegisteredNamespaces = (): string[] => {
-  if (!isBrowser) return []
-  const raw = window.localStorage.getItem(TAB_NAMESPACE_LIST_KEY)
+const legacyTabNamespaces = (): string[] => {
+  const raw = window.localStorage.getItem(LEGACY_TAB_NAMESPACE_LIST_KEY)
   if (!raw) return []
   try {
     const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) {
-      return parsed.filter((id): id is string => typeof id === 'string')
-    }
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
   } catch {
-    // ignore
+    return []
   }
-  return []
 }
 
-const persistNamespaces = (namespaces: string[]) => {
+/**
+ * One-time move from per-tab sessions: adopt this tab's own session (else the newest tab's) into the
+ * shared store unless the user just signed out, then remove every per-tab copy.
+ */
+const migrateLegacyTabSessions = () => {
   if (!isBrowser) return
   try {
-    window.localStorage.setItem(TAB_NAMESPACE_LIST_KEY, JSON.stringify(namespaces))
-  } catch {
-    // If quota is exceeded here, keep going; auth storage has its own recovery path.
-  }
-}
-
-const registerNamespace = (namespace: string): string[] => {
-  if (!isBrowser) return []
-  const namespaces = getRegisteredNamespaces()
-  if (!namespaces.includes(namespace)) {
-    namespaces.push(namespace)
-  }
-  while (namespaces.length > MAX_TAB_SESSIONS) {
-    const removed = namespaces.shift()
-    if (removed) {
-      cleanupNamespace(removed)
+    const own = window.sessionStorage.getItem(LEGACY_TAB_NAMESPACE_SESSION_KEY)
+    const listed = legacyTabNamespaces()
+    if (!own && !listed.length) return
+    const sharedKey = `${AUTH_NAMESPACE}:${PERSISTENT_STORAGE_KEY}`
+    if (!window.localStorage.getItem(sharedKey) && !isSignedOutFlagSet()) {
+      const candidates = [own, ...[...listed].reverse()].filter((ns): ns is string => Boolean(ns))
+      const token = candidates.map((ns) => window.localStorage.getItem(`${ns}:${PERSISTENT_STORAGE_KEY}`)).find(Boolean)
+      if (token) setLocalStorageWithQuotaRecovery(AUTH_NAMESPACE, PERSISTENT_STORAGE_KEY, token)
     }
+    for (const ns of new Set([own, ...listed])) if (ns) cleanupNamespace(ns)
+    window.localStorage.removeItem(LEGACY_TAB_NAMESPACE_LIST_KEY)
+    window.sessionStorage.removeItem(LEGACY_TAB_NAMESPACE_SESSION_KEY)
+  } catch {
+    // A failed move only means signing in again.
   }
-  persistNamespaces(namespaces)
-  return namespaces
 }
 
-const ensureTabNamespace = (): string => {
-  if (!isBrowser) return 'server'
-  let namespace = window.sessionStorage.getItem(TAB_NAMESPACE_SESSION_KEY)
-  if (!namespace) {
-    const randomId =
-      typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2)
-    namespace = `tab-${randomId}`
-    window.sessionStorage.setItem(TAB_NAMESPACE_SESSION_KEY, namespace)
-  }
-  registerNamespace(namespace)
-  return namespace
-}
+migrateLegacyTabSessions()
 
-const tabNamespace = ensureTabNamespace()
-const registeredNamespaces = registerNamespace(tabNamespace)
-
-/** Drop this window's auth tokens. Another window keeps its own session. */
-const clearCurrentTabAuthTokens = () => {
+/** Drop the stored session (shared by every tab, so all of them sign out). */
+const clearAuthTokens = () => {
   if (!isBrowser) return
-  cleanupNamespace(tabNamespace)
+  cleanupNamespace(AUTH_NAMESPACE)
   try {
     window.sessionStorage.removeItem('st_viewer_profile_v1')
   } catch {
@@ -234,53 +199,20 @@ const clearCurrentTabAuthTokens = () => {
   }
 }
 
-const copySessionFromNamespace = (source: string, target: string) => {
-  if (!isBrowser || source === target) return
-  // After an explicit logout, never resurrect a session from another tab namespace.
-  if (isSignedOutFlagSet()) return
-  const persistent = window.localStorage.getItem(`${source}:${PERSISTENT_STORAGE_KEY}`)
-  const sessionOnly = window.localStorage.getItem(`${source}:${SESSION_STORAGE_KEY}`)
-  if (persistent !== null && !window.localStorage.getItem(`${target}:${PERSISTENT_STORAGE_KEY}`)) {
-    try {
-      setLocalStorageWithQuotaRecovery(target, PERSISTENT_STORAGE_KEY, persistent)
-    } catch {
-      // ignore; target tab can still proceed to login if token copy fails
-    }
-  }
-  if (sessionOnly !== null && !window.localStorage.getItem(`${target}:${SESSION_STORAGE_KEY}`)) {
-    try {
-      setLocalStorageWithQuotaRecovery(target, SESSION_STORAGE_KEY, sessionOnly)
-    } catch {
-      // ignore; target tab can still proceed to login if token copy fails
-    }
-  }
-}
-
-if (isBrowser) {
-  const existingPersistent = window.localStorage.getItem(`${tabNamespace}:${PERSISTENT_STORAGE_KEY}`)
-  const existingSession = window.localStorage.getItem(`${tabNamespace}:${SESSION_STORAGE_KEY}`)
-  if (existingPersistent || existingSession) {
-    try {
-      window.localStorage.removeItem(SIGNED_OUT_FLAG_KEY)
-    } catch {
-      // ignore
-    }
-  }
-  if (!existingPersistent && !existingSession && !isSignedOutFlagSet()) {
-    const candidateNamespaces = registeredNamespaces.filter(ns => ns !== tabNamespace)
-    const sourceNamespace = candidateNamespaces[candidateNamespaces.length - 1]
-    if (sourceNamespace) {
-      copySessionFromNamespace(sourceNamespace, tabNamespace)
-    }
+if (isBrowser && window.localStorage.getItem(`${AUTH_NAMESPACE}:${PERSISTENT_STORAGE_KEY}`)) {
+  try {
+    window.localStorage.removeItem(SIGNED_OUT_FLAG_KEY)
+  } catch {
+    // ignore
   }
 }
 
 const persistentStorage = isBrowser
-  ? createNamespacedStorage(window.localStorage, tabNamespace, true)
+  ? createNamespacedStorage(window.localStorage, AUTH_NAMESPACE, true)
   : undefined
 
 const sessionOnlyStorage = isBrowser
-  ? createNamespacedStorage(window.sessionStorage, tabNamespace)
+  ? createNamespacedStorage(window.sessionStorage, AUTH_NAMESPACE)
   : undefined
 
 if (supabaseUrl !== 'https://placeholder.supabase.co') {
@@ -288,7 +220,7 @@ if (supabaseUrl !== 'https://placeholder.supabase.co') {
     console.log('✅ Supabase client initialized:', {
       url: supabaseUrl,
       keyLength: supabaseAnonKey.length,
-      namespace: isBrowser ? tabNamespace : 'server',
+      namespace: isBrowser ? AUTH_NAMESPACE : 'server',
     });
   }
 } else if (isBrowser && process.env.NODE_ENV === 'development') {
@@ -481,7 +413,7 @@ try {
       supabase.auth.signOut = async (options) => {
         const result = await originalSignOut(options);
         markSignedOutFlag();
-        clearCurrentTabAuthTokens();
+        clearAuthTokens();
         void import('@/lib/profileSubscriptionGate')
           .then((m) => m.invalidateViewerProfileCache())
           .catch(() => {});
@@ -538,7 +470,7 @@ async function signOutFully(
   const result = await supabase.auth.signOut(options);
   // Patched signOut already clears namespaces; keep this as a safe second pass.
   markSignedOutFlag();
-  clearCurrentTabAuthTokens();
+  clearAuthTokens();
   return result;
 }
 
