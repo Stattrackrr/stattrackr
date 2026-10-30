@@ -95,6 +95,7 @@ import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { tennisEventPlaceLabel, tennisTourLabel } from '@/lib/tennis/chartStats';
 import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
+import { tennisSurfaceLabel } from '@/lib/tennis/venues';
 import {
   formatTennisStartClock,
   tennisCommenceTimeStillOnBoard,
@@ -1329,7 +1330,7 @@ function tennisPropsEventSubtitle(prop: PlayerProp, games: AflGameForProps[]): s
   const game = prop.gameId ? games.find((g) => g.gameId === prop.gameId) ?? null : null;
   const tour = tennisTourLabel({ tour: prop.team || prop.playerTeam });
   const place = tennisEventPlaceLabel(prop.tournamentName || game?.tournamentName);
-  const surface = String(prop.surface || game?.surface || '').trim();
+  const surface = tennisSurfaceLabel(prop.surface || game?.surface, prop.tournamentName || game?.tournamentName);
   return [tour, place, surface].filter(Boolean).join(' - ');
 }
 
