@@ -14,6 +14,7 @@ import { getNbaClubById, resolveNbaClub } from '@/lib/nba/dash/teams';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { latestLineups, lineupGameKey, starterBasis, trackStatusChanges, type LineupVersion } from './context';
 import { addModelFeatures } from './features';
+import { readPriceMemory, recordShadowBets, updatePriceChecks, writePriceMemory, type Trigger } from './shadow';
 import { gameLines, gameMarket, impliedTeamTotal, type LoggedLine, type PropLogPlayer } from './lines';
 import { dueKinds, type ExistingSnapshot as Existing, type SnapshotKind } from './schedule';
 
@@ -178,6 +179,8 @@ export type PropLogSummary = {
   statusChanges: number;
   lineupsLinked: number;
   featuresComputed?: number;
+  shadowBets?: number;
+  priceChecks?: number;
   graded: number;
   skipped: string[];
 };
@@ -235,6 +238,10 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
 
   const inserts: Array<{ row: ReturnType<typeof snapshotRow>; line: LoggedLine }> = [];
   const closeUpdates: Array<{ id: string; row: ReturnType<typeof snapshotRow>; line: LoggedLine }> = [];
+  const memory = await readPriceMemory().catch(() => ({}) as Awaited<ReturnType<typeof readPriceMemory>>);
+  const allLines: Array<{ gameId: string; line: LoggedLine }> = [];
+  const currentLines = new Map<string, LoggedLine>();
+  const triggers: Trigger[] = [];
   for (const odds of games) {
     const home = resolveNbaClub(odds.homeTeam);
     const away = resolveNbaClub(odds.awayTeam);
@@ -257,6 +264,10 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
     const news = [...teamIds].some((id) => status.changedTeams.has(id));
     const lines = gameLines(odds, [...(players.get(home.code) ?? []), ...(players.get(away.code) ?? [])]);
     summary.lines += lines.length;
+    for (const line of lines) {
+      allLines.push({ gameId: odds.gameId, line });
+      if (line.player) currentLines.set(`${odds.gameId}|${line.player.id}|${line.stat}`, line);
+    }
     const tipMs = Date.parse(odds.commenceTime);
     const prior = existing.get(odds.gameId);
     for (const line of lines) {
@@ -302,8 +313,25 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
       if (qError) throw new Error(`nba_prop_book_quotes insert: ${qError.message}`);
     }
     summary.quotes += quotes.length;
-    for (const b of batch) summary.inserted[b.row.snapshot_kind] += 1;
+    for (const b of batch) {
+      summary.inserted[b.row.snapshot_kind] += 1;
+      const policy = b.row.snapshot_kind === 't2h' ? 'main' : b.row.snapshot_kind === 'injury_change' ? 'news' : null;
+      const id = ids.get(key(b.row));
+      if (policy && id) triggers.push({ snapshotId: id, kind: policy, row: b.row, line: b.line });
+    }
   }
+
+  try {
+    summary.shadowBets = await recordShadowBets(triggers, memory, nowMs);
+  } catch (err) {
+    summary.skipped.push(`Shadow bets failed: ${err instanceof Error ? err.message : err}`);
+  }
+  try {
+    summary.priceChecks = await updatePriceChecks(currentLines, nowMs);
+  } catch (err) {
+    summary.skipped.push(`Price checks failed: ${err instanceof Error ? err.message : err}`);
+  }
+  await writePriceMemory(memory, allLines, nowIso).catch((err) => summary.skipped.push(`Price memory failed: ${err instanceof Error ? err.message : err}`));
 
   for (const u of closeUpdates) {
     const { error } = await supabaseAdmin.from('nba_prop_snapshots').update(u.row).eq('id', u.id);
