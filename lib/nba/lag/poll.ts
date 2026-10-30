@@ -22,7 +22,7 @@ const STATE_TTL_S = 24 * 60 * 60;
 const WINDOW_MS = 2 * 60 * 60 * 1000;
 const EVENT_MS = 30 * 60 * 1000;
 /** odds-api.net pulls for lag follow-ups per UTC day (each is a few credits). */
-export const AU_DAILY_CAP = 500;
+export const AU_DAILY_CAP = 150;
 const MIN_AU_GAP_MS = 60_000;
 
 type BookFollow = { before: AuQuote; sourceTs: string | null; followedAt?: string; after?: AuQuote };
