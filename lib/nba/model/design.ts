@@ -28,11 +28,39 @@ export const V1_FEATURES: readonly FeatureSpec[] = [
   { name: 'usage_shift_reb', key: 'usage_shift_z', stats: ['rebounds'] },
 ];
 
+export type CandidateSpec = FeatureSpec & {
+  /** Base-stat lines, or combo lines (PRA, PR, PA, RA) for inputs that only exist on combos. */
+  lines: 'base' | 'combo';
+};
+
+/**
+ * The feature library: logged on every snapshot, each tested on its own against the current model
+ * (market + v1) before it can join. Keys are numeric feature values on the logged line.
+ */
+export const CANDIDATE_FEATURES: readonly CandidateSpec[] = [
+  { name: 'opp_starters_out', key: 'opp_starters_out', lines: 'base' },
+  { name: 'opp_position_starters_out', key: 'opp_position_starters_out', lines: 'base' },
+  { name: 'opp_stat_share_out', key: 'opp_stat_share_out', lines: 'base' },
+  { name: 'rest_diff', key: 'rest_diff', lines: 'base' },
+  { name: 'games_last6', key: 'games_last6', lines: 'base' },
+  { name: 'opp_games_last6', key: 'opp_games_last6', lines: 'base' },
+  { name: 'road_trip', key: 'road_trip', lines: 'base' },
+  { name: 'altitude_visitor', key: 'altitude_visitor', lines: 'base' },
+  { name: 'minutes_load', key: 'minutes_load', lines: 'base' },
+  { name: 'ref_fta', key: 'ref_fta_z', lines: 'base', stats: ['points'] },
+  { name: 'ref_fta_player', key: 'ref_fta_player', lines: 'base', stats: ['points'] },
+  { name: 'ref_points', key: 'ref_points_z', lines: 'base', stats: ['points', 'threeMade'] },
+  { name: 'chances_gap', key: 'chances_gap_z', lines: 'base' },
+  { name: 'bp_dvp_rank', key: 'bp_dvp_rank', lines: 'base' },
+  { name: 'combo_gap', key: 'combo_gap_z', lines: 'combo' },
+];
+
 export type ModelLine = {
   y: 0 | 1;
   /** De-vigged consensus P(over) at decision time, bet book excluded. */
   fairOver: number;
-  stat: BaseStat;
+  /** A base stat, or a combo (PRA, PR, PA, RA) in feature-library tests. */
+  stat: string;
   features: Record<string, number | null | undefined>;
   game: string;
   /** Player id: lines of one player in one game share a unit of weight. */
@@ -72,7 +100,7 @@ export function lineVector(spec: ModelSpec, l: Pick<ModelLine, 'fairOver' | 'sta
     logit(l.fairOver),
     1,
     ...BASE_STATS.map((s) => (s === l.stat ? 1 : 0)),
-    ...spec.features.map((f) => (f.stats && !f.stats.includes(l.stat) ? 0 : Number(l.features[f.key] ?? 0) || 0)),
+    ...spec.features.map((f) => (f.stats && !(f.stats as readonly string[]).includes(l.stat) ? 0 : Number(l.features[f.key] ?? 0) || 0)),
     (l.nBooks - c.booksMean) / c.booksSd,
     ((l.bookDispersion ?? 0) - c.dispMean) / c.dispSd,
   ];

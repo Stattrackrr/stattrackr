@@ -2,6 +2,7 @@ import { ACTIVE_COEFS, SHADOW_POLICY_VERSION } from '@/lib/nba/propLog/shadow';
 import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { fitLoggedLines } from './fitLogged';
+import type { CandidateResult } from './candidates';
 import type { LoggedFit } from './fitLines';
 import { buildReport, type Report, type ReportBet } from './report';
 
@@ -79,12 +80,12 @@ export async function regularSeasonGamesLeft(nowMs: number): Promise<number> {
   return count ?? 0;
 }
 
-export type WeeklyReport = Report & { fit: LoggedFit };
+export type WeeklyReport = Report & { fit: LoggedFit; candidates: CandidateResult[] };
 
 export async function buildWeeklyReport(nowMs = Date.now()): Promise<WeeklyReport> {
-  const [bets, gamesLeft, fit] = await Promise.all([loadReportBets(), regularSeasonGamesLeft(nowMs), fitLoggedLines()]);
+  const [bets, gamesLeft, logged] = await Promise.all([loadReportBets(), regularSeasonGamesLeft(nowMs), fitLoggedLines()]);
   const report = buildReport({ bets, nowMs, gamesLeft, policyVersion: SHADOW_POLICY_VERSION, modelVersion: ACTIVE_COEFS.version });
-  return { ...report, fit };
+  return { ...report, fit: logged.fit, candidates: logged.candidates };
 }
 
 /** Saves the report as the latest and under its date, so past weeks stay readable. */

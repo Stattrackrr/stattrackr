@@ -6,7 +6,7 @@
  */
 
 import type { ModelCoefs } from '@/lib/nba/propLog/shadowRules';
-import { BASE_STATS, buildDesign, marketOnlyDesign, modelSpec, V1_FEATURES, type BaseStat, type ModelLine, type ModelSpec } from './design';
+import { BASE_STATS, buildDesign, CANDIDATE_FEATURES, marketOnlyDesign, modelSpec, V1_FEATURES, type ModelLine, type ModelSpec } from './design';
 import { fitResidual, fitWithCv, lambdasFor, liftOverBaseline, predict, type Design, type Interval } from './residual';
 
 /** Below this, a fit is noise; the report says so instead. */
@@ -28,15 +28,28 @@ export type SnapshotRow = {
   result_over: string | null;
 };
 
-export function toModelLine(r: SnapshotRow): ModelLine | null {
+export const COMBO_STATS = ['pra', 'pr', 'pa', 'ra'] as const;
+
+/** Numeric inputs a logged line carries: v1 and every library candidate (true/false as 1/0), plus derived ones. */
+function numericFeatures(f: Record<string, unknown>): Record<string, number | null> {
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : typeof v === 'boolean' ? (v ? 1 : 0) : null);
+  const derived: Record<string, unknown> = {
+    bp_dvp_rank: (f.bpDvp as { rank?: unknown } | undefined)?.rank,
+    ref_fta_player: num(f.ref_fta_z) != null && num(f.fta_share) != null ? num(f.ref_fta_z)! * num(f.fta_share)! : null,
+  };
+  const keys = new Set([...V1_FEATURES.map((s) => s.key), ...CANDIDATE_FEATURES.map((s) => s.key)]);
+  return Object.fromEntries([...keys].map((k) => [k, num(k in derived ? derived[k] : f[k])]));
+}
+
+export function toModelLine(r: SnapshotRow, opts: { combos?: boolean } = {}): ModelLine | null {
   if (r.result_over !== 'win' && r.result_over !== 'loss') return null;
-  if (r.fair_over_all == null || !(BASE_STATS as readonly string[]).includes(r.stat)) return null;
-  const f = r.features ?? {};
+  const allowed: readonly string[] = opts.combos ? [...BASE_STATS, ...COMBO_STATS] : BASE_STATS;
+  if (r.fair_over_all == null || !allowed.includes(r.stat)) return null;
   return {
     y: r.result_over === 'win' ? 1 : 0,
     fairOver: Number(r.fair_over_all),
-    stat: r.stat as BaseStat,
-    features: Object.fromEntries(V1_FEATURES.map((s) => [s.key, typeof f[s.key] === 'number' ? (f[s.key] as number) : null])),
+    stat: r.stat,
+    features: numericFeatures(r.features ?? {}),
     game: r.game_id,
     subject: r.player_id,
     date: etDate(r.tip_at),
