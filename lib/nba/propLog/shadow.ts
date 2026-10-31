@@ -14,7 +14,8 @@ import type { LoggedLine, LoggedQuote } from './lines';
 import { confirmationGaps, decide, fairExcluding, MODEL_V0, priceConfirmed, type ModelCoefs, type PriceMemory } from './shadowRules';
 
 /** Bumped whenever the policy or the coefficients change; each version is its own evaluation sample. */
-export const SHADOW_POLICY_VERSION = 'shadow-v0';
+/** shadow-v0.1: news fires only on real designation moves for players with props, one bet per line per game. */
+export const SHADOW_POLICY_VERSION = 'shadow-v0.1';
 export const ACTIVE_COEFS: ModelCoefs = MODEL_V0;
 
 const MEMORY_KEY = 'nba_prop_log_price_memory_v1';
@@ -98,9 +99,31 @@ export async function recordShadowBets(triggers: Trigger[], memory: Record<strin
     });
   }
   if (!bets.length) return 0;
+  // News: one would-be bet per player, stat and side per game; a later report change doesn't bet the same line again.
+  const lineOf = (b: Record<string, unknown>) => `${b.game_id}|${b.player_id}|${b.stat}|${b.side}`;
+  const newsGames = [...new Set(bets.filter((b) => b.policy === 'news').map((b) => String(b.game_id)))];
+  const taken = new Set<string>();
+  if (newsGames.length) {
+    const { data: prior, error: pError } = await supabaseAdmin
+      .from('nba_shadow_bets')
+      .select('game_id, player_id, stat, side')
+      .eq('policy', 'news')
+      .eq('policy_version', SHADOW_POLICY_VERSION)
+      .in('game_id', newsGames);
+    if (pError) throw new Error(`nba_shadow_bets read: ${pError.message}`);
+    for (const p of prior ?? []) taken.add(lineOf(p));
+  }
+  const fresh = bets.filter((b) => {
+    if (b.policy !== 'news') return true;
+    const key = lineOf(b);
+    if (taken.has(key)) return false;
+    taken.add(key);
+    return true;
+  });
+  if (!fresh.length) return 0;
   const { data, error } = await supabaseAdmin
     .from('nba_shadow_bets')
-    .upsert(bets, { onConflict: 'policy,policy_version,trigger_snapshot_id,side', ignoreDuplicates: true })
+    .upsert(fresh, { onConflict: 'policy,policy_version,trigger_snapshot_id,side', ignoreDuplicates: true })
     .select('id, book, price, created_at');
   if (error) throw new Error(`nba_shadow_bets: ${error.message}`);
   const checks = (data ?? []).map((b) => ({ shadow_bet_id: b.id, posted_at: b.created_at, book: b.book, price_posted: b.price }));

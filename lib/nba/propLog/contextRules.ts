@@ -25,6 +25,19 @@ export function designationOf(status: string | null | undefined): string {
   return 'other';
 }
 
+const SEVERITY: Record<string, number> = { cleared: 0, other: 0, probable: 1, 'day-to-day': 2, questionable: 3, doubtful: 4, out: 5 };
+
+/**
+ * Whether a change is news worth a snapshot: the designation actually moves, and the move involves
+ * questionable, doubtful or out. Same-designation edits (return date, wording), "available" players
+ * dropping off the report and probable/available swaps are logged but are not news.
+ */
+export function isNewsChange(c: Pick<StatusChange, 'from_status' | 'designation'>): boolean {
+  const from = SEVERITY[c.from_status == null ? 'cleared' : designationOf(c.from_status)] ?? 0;
+  const to = SEVERITY[c.designation] ?? 0;
+  return from !== to && Math.max(from, to) >= SEVERITY.questionable!;
+}
+
 /** Changes between two pulls of the report: new listings, status changes, and players who dropped off it. */
 export function diffReports(prev: Record<string, ReportRow>, next: ReportRow[]): StatusChange[] {
   const out: StatusChange[] = [];

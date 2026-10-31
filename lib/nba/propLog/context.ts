@@ -13,7 +13,7 @@ import type { RwPage } from '@/lib/nba/rotowireLineups';
 import { mapInjury } from '@/lib/nba/sync/mappers';
 import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { diffReports, type LineupVersion, type ReportRow } from './contextRules';
+import { diffReports, isNewsChange, type LineupVersion, type ReportRow } from './contextRules';
 
 export { lineupGameKey, starterBasis, type LineupVersion } from './contextRules';
 
@@ -38,8 +38,8 @@ export type StatusResult = {
   report: ReportRow[] | null;
   reportAt: string | null;
   changes: number;
-  /** Team ids with a change this run; their games get an injury_change snapshot. */
-  changedTeams: Set<number>;
+  /** Players with a news change this run (see isNewsChange), by team id. */
+  newsPlayers: Map<number, Set<string>>;
   error?: string;
 };
 
@@ -54,7 +54,7 @@ export async function trackStatusChanges(nowMs: number, nextGameByTeam: Map<numb
   try {
     report = await liveReport();
   } catch (e) {
-    return { report: null, reportAt: null, changes: 0, changedTeams: new Set(), error: (e as Error).message };
+    return { report: null, reportAt: null, changes: 0, newsPlayers: new Map(), error: (e as Error).message };
   }
   const state = await sharedCache.getJSON<ReportState>(STATE_KEY);
   const changes = state ? diffReports(state.players, report) : [];
@@ -75,12 +75,12 @@ export async function trackStatusChanges(nowMs: number, nextGameByTeam: Map<numb
     if (error) throw new Error(`nba_status_changes: ${error.message}`);
   }
   await sharedCache.setJSON(STATE_KEY, { at: nowIso, players: Object.fromEntries(report.map((r) => [String(r.player_id), r])) }, STATE_TTL_S);
-  return {
-    report,
-    reportAt: nowIso,
-    changes: changes.length,
-    changedTeams: new Set(changes.flatMap((c) => (c.team_id == null ? [] : [c.team_id]))),
-  };
+  const newsPlayers = new Map<number, Set<string>>();
+  for (const c of changes) {
+    if (c.team_id == null || !isNewsChange(c)) continue;
+    newsPlayers.set(c.team_id, (newsPlayers.get(c.team_id) ?? new Set()).add(c.player_id));
+  }
+  return { report, reportAt: nowIso, changes: changes.length, newsPlayers };
 }
 
 const lineupHash = (t: { confirmed: boolean; status: string; starters: unknown; mayNotPlay: unknown }) =>

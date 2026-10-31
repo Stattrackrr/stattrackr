@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { designationOf, diffReports, lineupGameKey, starterBasis, type ReportRow } from './contextRules';
+import { designationOf, diffReports, isNewsChange, lineupGameKey, starterBasis, type ReportRow } from './contextRules';
 
 const row = (id: number, status: string, team = 23): ReportRow => ({ player_id: id, team_id: team, status, return_date: null, description: 'ankle' });
 
@@ -16,6 +16,20 @@ test('status changes: new listings, changed statuses and players who drop off th
     ]
   );
   assert.deepEqual(diffReports(prev, Object.values(prev)), [], 'an unchanged report logs nothing');
+});
+
+test('news: only real designation moves that involve questionable, doubtful or out', () => {
+  const news = (from: string | null, to: string) => isNewsChange({ from_status: from, designation: to === 'cleared' ? 'cleared' : designationOf(to) });
+  assert.equal(news('Questionable', 'Out'), true);
+  assert.equal(news('Out', 'cleared'), true, 'back off the report');
+  assert.equal(news(null, 'Out'), true, 'newly listed out');
+  assert.equal(news('Questionable', 'Probable'), true);
+  assert.equal(news('Day-To-Day', 'Questionable'), true);
+  assert.equal(news('Out', 'Out'), false, 'return date or wording only');
+  assert.equal(news('Questionable', 'Questionable'), false);
+  assert.equal(news('Available', 'cleared'), false);
+  assert.equal(news('Probable', 'Available'), false);
+  assert.equal(news(null, 'Probable'), false);
 });
 
 test('designations', () => {

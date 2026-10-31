@@ -39,13 +39,15 @@ const GRADE_GROUPS_PER_RUN = 400;
 
 const lineKey = (boardName: string, stat: string) => `${boardName}|${stat}`;
 
-async function existingSnapshots(gameIds: string[]): Promise<Map<string, Map<string, Existing[]>>> {
+/** Snapshots already taken per game and line, and the players each game has had props for. */
+async function existingSnapshots(gameIds: string[]): Promise<{ byGame: Map<string, Map<string, Existing[]>>; propPlayers: Map<string, Set<string>> }> {
   const out = new Map<string, Map<string, Existing[]>>();
-  if (!gameIds.length) return out;
+  const propPlayers = new Map<string, Set<string>>();
+  if (!gameIds.length) return { byGame: out, propPlayers };
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabaseAdmin
       .from('nba_prop_snapshots')
-      .select('id, game_id, board_name, stat, snapshot_kind, captured_at')
+      .select('id, game_id, board_name, player_id, stat, snapshot_kind, captured_at')
       .in('game_id', gameIds)
       .in('snapshot_kind', ['first', 't6h', 't2h', 'close'])
       .order('id')
@@ -56,10 +58,11 @@ async function existingSnapshots(gameIds: string[]): Promise<Map<string, Map<str
       const key = lineKey(r.board_name, r.stat);
       game.set(key, [...(game.get(key) ?? []), { id: r.id, kind: r.snapshot_kind, capturedAt: r.captured_at }]);
       out.set(r.game_id, game);
+      if (r.player_id) propPlayers.set(r.game_id, (propPlayers.get(r.game_id) ?? new Set()).add(String(r.player_id)));
     }
     if (!data || data.length < 1000) break;
   }
-  return out;
+  return { byGame: out, propPlayers };
 }
 
 async function rosters(teamIds: string[]): Promise<{ byTeam: Map<string, PropLogPlayer[]>; positions: Map<string, string | null> }> {
@@ -263,15 +266,17 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
       rosters: players,
     };
     summary.lineupsLinked += [...ctx.lineups.values()].filter(Boolean).length;
-    const news = [...teamIds].some((id) => status.changedTeams.has(id));
     const lines = gameLines(odds, [...(players.get(home.code) ?? []), ...(players.get(away.code) ?? [])]);
     summary.lines += lines.length;
     for (const line of lines) {
       allLines.push({ gameId: odds.gameId, line });
       if (line.player) currentLines.set(`${odds.gameId}|${line.player.id}|${line.stat}`, line);
     }
+    // News for this game: a real status move for someone the books have had props on today.
+    const withProps = new Set([...(existing.propPlayers.get(odds.gameId) ?? []), ...lines.flatMap((l) => (l.player ? [l.player.id] : []))]);
+    const news = [...teamIds].some((id) => [...(status.newsPlayers.get(id) ?? [])].some((p) => withProps.has(p)));
     const tipMs = Date.parse(odds.commenceTime);
-    const prior = existing.get(odds.gameId);
+    const prior = existing.byGame.get(odds.gameId);
     for (const line of lines) {
       const seen = prior?.get(lineKey(line.boardName, line.stat)) ?? [];
       const kinds: RowKind[] = dueKinds(seen, tipMs, nowMs);
