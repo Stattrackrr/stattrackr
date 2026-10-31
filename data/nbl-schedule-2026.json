@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-30T18:34:35.323Z",
+  "generatedAt": "2026-10-31T17:40:16.806Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2214,7 +2214,7 @@
       "externalId": "37214b47-58ad-11f1-9b38-e78395b5c13c",
       "startTime": "2026-10-31T10:30:00.000Z",
       "round": "7",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Perth Wildcats",
       "homeTeamCode": "PER",
       "homeTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
@@ -2223,8 +2223,8 @@
       "awayTeamCode": "ILL",
       "awayTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 98,
+      "awayScore": 105,
       "venue": "RAC Arena",
       "matchSlug": "perth-wildcats-v-illawarra-hawks-men-31-10-2026"
     },
@@ -2233,7 +2233,7 @@
       "externalId": "3719f6ce-58ad-11f1-b7b9-736e6b79ac99",
       "startTime": "2026-10-31T08:30:00.000Z",
       "round": "7",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Cairns Taipans",
       "homeTeamCode": "CNS",
       "homeTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
@@ -2242,8 +2242,8 @@
       "awayTeamCode": "MEL",
       "awayTeamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 97,
+      "awayScore": 113,
       "venue": "Cairns Convention Centre",
       "matchSlug": "cairns-taipans-v-melbourne-united-men-31-10-2026"
     },

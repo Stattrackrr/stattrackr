@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-30T18:35:33.112Z",
+  "generatedAt": "2026-10-31T17:41:06.532Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Saturday, October 24, 5:00pm AEDT",
-  "injuryCount": 21,
+  "injuryCount": 20,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -75,15 +75,6 @@
       "returning": "Season",
       "status": "Out for the season",
       "note": "Illawarra announced on 9 October 2026 that he will have season-ending foot surgery, NBL.com.au reported.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Melbourne United",
-      "player": "Chris Goulding",
-      "injury": "Calf",
-      "returning": "Round 7",
-      "status": "Out",
-      "note": "Goulding missed Melbourne United’s game against Cairns at John Cain Arena on Saturday 3 October with a calf strain, according to the Taipans’ game preview of 3 October 2026. United have not given a return date; the NBL’s list of 20 October has him back in Round 7.",
       "listedByNbl": true
     },
     {
@@ -177,9 +168,9 @@
       "team": "Tasmania JackJumpers",
       "player": "Majok Deng",
       "injury": "Lower leg",
-      "returning": "Round 8-10",
+      "returning": "Mid-December",
       "status": "Out",
-      "note": "Michael Randall reported on 22 September 2026 that Deng will miss Tasmania’s trip to the Cairns Taipans on Wednesday 23 September, joining Josh Bannan, Anthony Drmic, Ben Ayre and Bryce Hamilton on the sidelines, without specifying an injury. The NBL’s own list added him as a lower leg injury in its 26 September update, and its 29 September update puts his return at Round 8-10. He did not dress against Cairns.",
+      "note": "Michael Randall reported on 22 September 2026 that Deng will miss Tasmania’s trip to the Cairns Taipans on Wednesday 23 September, joining Josh Bannan, Anthony Drmic, Ben Ayre and Bryce Hamilton on the sidelines, without specifying an injury. The NBL’s own list added him as a lower leg injury in its 26 September update. On 31 October 2026 he was expected to miss another six weeks, which points to mid-December. The NBL’s list of 30 October has him back in Round 13.",
       "listedByNbl": true
     },
     {
