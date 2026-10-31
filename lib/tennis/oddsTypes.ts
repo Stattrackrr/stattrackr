@@ -10,8 +10,16 @@ export const TENNIS_SELECTOR_MAX_DECIMAL = 2.5;
 /** Props-page moneyline floor. Dashboard H2H still shows shorter prices. */
 export const TENNIS_MONEYLINE_MIN_DECIMAL = 1.3;
 
+/**
+ * A market outside the standard columns (set betting, set winners, set correct scores, set totals,
+ * odd/even...), kept so every market a book prices reaches the logs. Player selections are "home" or
+ * "away" in the row's orientation, e.g. set_betting "home 2-1"; `price` is decimal.
+ */
+export type TennisExtraMarket = { market: string; selection: string; line: number | null; price: number };
+
 export interface TennisBookRow {
   name: string;
+  extraMarkets?: TennisExtraMarket[];
   region?: TennisBookRegion;
   H2H: { home: string; away: string };
   Spread: TennisOuLine;
