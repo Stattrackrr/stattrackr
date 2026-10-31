@@ -282,6 +282,15 @@ test('two prices fit exactly', () => {
   close(expit(inv.theta[1]), 0.6, 1e-4, 'pB');
 });
 
+test('correlated match effects (conditions moving both servers together): fewer mismatches, more games', () => {
+  const at = (rho: number) => withTau(makeModel(['tot:19.5', 'tot:22.5', 'hcp:-3.5']), 0.25, 5, rho)(0.64, 0.62);
+  const indep = at(0);
+  const corr = at(0.6);
+  assert.ok(1 - corr['tot:19.5']! < 1 - indep['tot:19.5']! - 0.03, 'short matches clearly less likely');
+  assert.ok(corr['tot:22.5']! > indep['tot:22.5']! + 0.03, 'over 22.5 clearly more likely');
+  assert.ok(corr['hcp:-3.5']! < indep['hcp:-3.5']!, 'big winning margins less likely');
+});
+
 test('overdispersion: totals priced with tau match a tau world; tau = 0 is too narrow', () => {
   const tau = 0.25;
   const s = simMany(0.66, 0.6, 3, NORMAL, NORMAL, 12000, 21, tau);

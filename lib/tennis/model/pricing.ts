@@ -379,15 +379,28 @@ export function integrate(model: PricingModel, theta: [number, number], cov: Cov
   return acc!;
 }
 
-/** A model whose prices already include match-level serve-strength noise tau (logit SD). */
-export function withTau(model: PricingModel, tau: number, order = 5): PricingModel {
-  return (pA, pB) => integrate(model, [logit(pA), logit(pB)], [[tau * tau, 0], [0, tau * tau]], order);
+/**
+ * Quadrature order: 5 is accurate for best-of-3; best-of-5 tail markets at large tau need 7. The same
+ * order is used for the inversion and the final pricing, so the fitted (pA, pB) belong to the model
+ * that prices the bet.
+ */
+export const quadratureOrder = (bestOf: number) => (bestOf === 5 ? 7 : 5);
+
+/** Match-level noise: tau (logit SD) per player, correlated rho across the two (court, conditions). */
+const matchNoise = (tau: number, rho: number): Cov2 => [
+  [tau * tau, rho * tau * tau],
+  [rho * tau * tau, tau * tau],
+];
+
+/** A model whose prices already include match-level serve-strength noise tau (logit SD), correlation rho. */
+export function withTau(model: PricingModel, tau: number, order = 5, rho = 0): PricingModel {
+  return (pA, pB) => integrate(model, [logit(pA), logit(pB)], matchNoise(tau, rho), order);
 }
 
-/** Prices averaged over price-noise uncertainty plus match-level tau (one combined Gaussian). */
-export function priceIntegrated(theta: [number, number], cov: Cov2, tau: number, model: PricingModel, order = 5): Prices {
-  const t2 = tau * tau;
-  return integrate(model, theta, [[cov[0][0] + t2, cov[0][1]], [cov[1][0], cov[1][1] + t2]], order);
+/** Prices averaged over price-noise uncertainty plus match-level tau and rho (one combined Gaussian). */
+export function priceIntegrated(theta: [number, number], cov: Cov2, tau: number, model: PricingModel, order = 5, rho = 0): Prices {
+  const n = matchNoise(tau, rho);
+  return integrate(model, theta, [[cov[0][0] + n[0][0], cov[0][1] + n[0][1]], [cov[1][0] + n[1][0], cov[1][1] + n[1][1]]], order);
 }
 
 // ---------- inversion ----------
