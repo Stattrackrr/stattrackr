@@ -440,6 +440,12 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
     summary.errors.push('Previous run still going');
     return summary;
   }
+  // Without the tables nothing can be stored, and price memory must not move ahead of what was written.
+  const preflight = await supabaseAdmin.from('tennis_matches').select('match_id').limit(1);
+  if (preflight.error) {
+    summary.errors.push(`Tennis logging tables unavailable (run migrations/tennis_logging.sql): ${preflight.error.message}`);
+    return summary;
+  }
   await sharedCache.setJSON(LOCK_KEY, { at: nowMs }, Math.ceil(LOCK_MS / 1000));
   const nowIso = new Date(nowMs).toISOString();
   try {
@@ -584,7 +590,15 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
       await sharedCache.setJSON(`${STATE_PREFIX}${fx.matchId}`, state, STATE_TTL_S);
     }
 
+    const quoteErrors = summary.errors.length;
     summary.quotesWritten = await insertBatches('tennis_quotes', quoteRows, summary.errors);
+    if (summary.errors.length > quoteErrors) {
+      // Some price changes weren't stored: forget them, so the next poll writes them again.
+      for (const matchId of quotesByMatch.keys()) {
+        const state = await sharedCache.getJSON<MatchState>(`${STATE_PREFIX}${matchId}`);
+        if (state) await sharedCache.setJSON(`${STATE_PREFIX}${matchId}`, { ...state, quotes: {} }, STATE_TTL_S);
+      }
+    }
     summary.heartbeats = await insertBatches('tennis_poll_heartbeats', heartbeats, summary.errors);
     await updatePriceChecks(quotesByMatch, nowMs, summary);
     await archiveRaw('oddsnet', rawNet, nowIso, summary);

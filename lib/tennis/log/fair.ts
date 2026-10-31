@@ -13,9 +13,13 @@ import { partner, type LogMarket, type QuoteRow } from './quotes';
 export const SHARP_BOOKS: ReadonlySet<string> = new Set(['pinnacle', 'betfair']);
 /** Lines closer than this are the same line. Stored on every candidate row. */
 export const SAME_LINE_TOL = 0.01;
-/** Until tau and rho are fitted from history (spec section 17), the provisional values, flagged on every arm. */
-export const PROVISIONAL_TAU = 0.2;
-export const PROVISIONAL_RHO = 0;
+/**
+ * Provisional tau and rho, flagged on every arm, until they're fitted against market-implied serve rates.
+ * The history fit (lib/tennis/model/tauRho.json) gives tau about 0.22 as an upper bound (it includes the
+ * no-odds baseline's error) and rho about -0.55 (a player's good day lifts his serve and his return).
+ */
+export const PROVISIONAL_TAU = 0.15;
+export const PROVISIONAL_RHO = -0.5;
 /** sig seeds per market from measurable noise (spec section 7). */
 const SIG: Record<string, number> = { win: 0.02, tot: 0.03, hcp: 0.04 };
 export const MIN_EV = 0.03;

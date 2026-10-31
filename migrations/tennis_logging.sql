@@ -224,3 +224,6 @@ ALTER TABLE public.book_void_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tennis_rules ENABLE ROW LEVEL SECURITY;
 
 COMMIT;
+
+-- Make the API see the new tables straight away.
+NOTIFY pgrst, 'reload schema';
