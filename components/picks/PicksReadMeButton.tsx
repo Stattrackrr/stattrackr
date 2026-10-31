@@ -21,6 +21,15 @@ const PAGES: ReadMePage[] = [
     ],
   },
   {
+    title: 'How the model chooses picks',
+    paragraphs: [
+      'For player props it builds a projection from his game logs: how much he produces per minute lately, times how many minutes he is expected to play. Recent games count more than older ones; minutes use a short memory so a role change shows up fast.',
+      'That number is then nudged for the game — matchup, pace, home or away, teammates out, rest — and turned into a chance he clears the line. NBA also looks at shot attempts, rebound chances and passes, not just the raw box score.',
+      'Game lines lean on each team\'s offensive and defensive rating and pace. Tennis uses serve and return numbers, Elo, ranking, form and head to head.',
+      'Those chances are checked against the bookmaker price. If our number is clearly better than the market, and his recent hit rates agree (last 5 / 10 / season), it can become a pick. Unit size follows how strong the edge is and how the model has been going.',
+    ],
+  },
+  {
     title: 'Take the line as early as you can',
     paragraphs: [
       'Bet every pick as close to when it is posted as possible.',
