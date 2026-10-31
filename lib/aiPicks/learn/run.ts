@@ -58,10 +58,11 @@ export async function runAiLearning(nowMs = Date.now()): Promise<AiLearnSummary>
     const params = await loadActiveParams(summary.errors);
     const sinceIso = new Date(nowMs - LOOKBACK_DAYS * 86_400_000).toISOString();
     const [rows, picks] = await Promise.all([listGradedWatchRows(sinceIso), listPicksPostedSince(sinceIso, 3000)]);
+    // Tennis is frozen at its active version while the new model's logging runs: learning on
+    // shortlisted lines would keep moving its weights under the data being collected.
     const sports = [
       ['nbl', params.nbl],
       ['nba', params.nba],
-      ['tennis', params.tennis],
     ] as const;
     for (const [sport, current] of sports) {
       const samples = rows.filter((r) => r.sport === sport).map(watchSample).filter((s): s is LearnSample => s != null);

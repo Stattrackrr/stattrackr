@@ -1,6 +1,7 @@
 /**
- * Tennis odds from odds-api.net: every bookmaker it lists per match (Sportsbet, TAB, Ladbrokes, PointsBet, ...).
- * Its bet365 matches the AU site and is stored as `bet365 au`, apart from API-Tennis's international bet365.
+ * Tennis odds from odds-api.net: the Australian books (Sportsbet, TAB, Ladbrokes, PointsBet, ...) plus
+ * Pinnacle and Betfair. Its bet365 matches the AU site and is stored as `bet365 au`, apart from
+ * API-Tennis's international bet365.
  */
 
 import {
@@ -18,6 +19,30 @@ import type { TennisBookRow } from '@/lib/tennis/oddsTypes';
 const BASE = 'https://api.odds-api.net/v1';
 export const TENNIS_BET365_AU_BOOK = 'bet365 au';
 const CONCURRENCY = 4;
+/**
+ * Asking for every bookmaker (100+) ran past the snapshot's row cap and cut off most Australian books,
+ * so the request names the books we use. Pinnacle and Betfair are the sharp anchor.
+ */
+export const TENNIS_ODDS_NET_BOOKS: readonly string[] = [
+  'sportsbet',
+  'tab',
+  'tabtouch',
+  'ladbrokes',
+  'neds',
+  'pointsbet',
+  'betright',
+  'unibet',
+  'dabble',
+  'playup',
+  'betr',
+  'picklebet',
+  'palmerbet',
+  'bet365',
+  'betgoodwin',
+  'pinnacle',
+  'betfair',
+];
+const SNAPSHOT_PAGES = 4;
 /** Fixture start times move with order of play; odds-api.net keeps the scheduled time. */
 const START_TOLERANCE_MS = 24 * 60 * 60 * 1000;
 
@@ -209,8 +234,13 @@ export function tennisOddsApiNetSourceFromItems(items: NetItem[], book: string, 
   return src;
 }
 
-/** One all-bookmaker snapshot per matched match; book rows per API-Tennis match id. */
-export async function fetchTennisOddsApiNetBooks(games: TennisNextGame[]): Promise<Map<string, TennisBookRow[]>> {
+export type TennisOddsNetStats = { matches: number; rowCapHits: string[] };
+
+/** One snapshot of our books per matched match; book rows per API-Tennis match id. */
+export async function fetchTennisOddsApiNetBooks(
+  games: TennisNextGame[],
+  stats: TennisOddsNetStats = { matches: 0, rowCapHits: [] }
+): Promise<Map<string, TennisBookRow[]>> {
   const rows = new Map<string, TennisBookRow[]>();
   if (!apiKey() || !games.length) return rows;
   const leagues = await tennisLeagues();
@@ -242,15 +272,24 @@ export async function fetchTennisOddsApiNetBooks(games: TennisNextGame[]): Promi
   await mapLimit(matched, CONCURRENCY, async ({ matchId, eventId, homeIsHome, names, bestOfThree }) => {
     const items: NetItem[] = [];
     let cursor = '';
-    for (let pageNo = 0; pageNo < 4; pageNo += 1) {
-      const qs = new URLSearchParams({ limit: '500' });
+    for (let pageNo = 0; pageNo < SNAPSHOT_PAGES; pageNo += 1) {
+      const qs = new URLSearchParams({ limit: '500', bookmakers: TENNIS_ODDS_NET_BOOKS.join(',') });
       if (cursor) qs.set('cursor', cursor);
       const snap = await fetchJson(`${BASE}/events/${encodeURIComponent(eventId)}/odds/snapshot?${qs}`);
-      if (!snap) break;
+      if (!snap) {
+        cursor = '';
+        break;
+      }
       items.push(...((snap.items ?? []) as NetItem[]));
-      cursor = String(snap.next_cursor || '');
-      if (!cursor || snap.complete === true) break;
+      cursor = snap.complete === true ? '' : String(snap.next_cursor || '');
+      if (!cursor) break;
     }
+    // Pages still left after the last one: some books were cut off. Logged so it can't happen silently.
+    if (cursor) {
+      stats.rowCapHits.push(matchId);
+      console.warn(`[tennis odds-api.net] row cap hit for match ${matchId} (event ${eventId}) after ${items.length} rows`);
+    }
+    stats.matches += 1;
     const byBook = new Map<string, NetItem[]>();
     for (const item of items) {
       const book = String(item.bookmaker || '').toLowerCase();

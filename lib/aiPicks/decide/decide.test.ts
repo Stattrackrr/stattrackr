@@ -102,12 +102,12 @@ test('singles: NBL props wait for over/under lines; two books needed', () => {
   assert.equal(qualifiesSingle(cand({ startsAt: iso(NOW + 30 * H) }), P, NOW).ok, false);
 });
 
-test('hit records never decide a basketball bet; tennis keeps its support gate', () => {
+test('hit records never decide a bet, in any sport', () => {
   const cold = { supportScore: 0.3, context: { marketSource: 'main' } };
   for (const sport of ['nba', 'nbl'] as const) {
     assert.equal(qualifiesSingle(cand({ sport, market: 'points', player: 'X', ...cold }), P, NOW).ok, true, `${sport}: 3 from 10 still qualifies`);
   }
-  assert.deepEqual(qualifiesSingle(cand(cold), P, NOW), { ok: false, reason: 'Support too thin' });
+  assert.equal(qualifiesSingle(cand(cold), P, NOW).ok, true, 'tennis: 3 from 10 still qualifies');
 });
 
 test('singles: one per sport per run, one per game, no opposite side', () => {

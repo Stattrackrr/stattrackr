@@ -94,6 +94,47 @@ export type TennisResult = {
   score: string;
 };
 
+export const TENNIS_HOUSE_RULE_NOTE = 'house rule, provisional until book rules are verified';
+
+const setComplete = (a: number, b: number) => (a >= 6 || b >= 6) && (Math.abs(a - b) >= 2 || a === 7 || b === 7);
+
+/**
+ * A match that ended early (retirement, default, abandonment) under the house rule: a bet the play
+ * had already decided stands, anything still open is void. Sets are from the leg player's view,
+ * including the unfinished one.
+ */
+export function gradeTennisUnfinished(
+  leg: Pick<AiPickLeg, 'market' | 'side' | 'line'>,
+  sets: Array<{ playerGames: number; opponentGames: number }>,
+  score: string
+): LegGrade {
+  const done = sets.filter((s) => setComplete(s.playerGames, s.opponentGames));
+  const setsWon = done.filter((s) => s.playerGames > s.opponentGames).length;
+  const setsStarted = done.length + (sets.length > done.length ? 1 : 0);
+  const games = sets.reduce((a, s) => a + s.playerGames + s.opponentGames, 0);
+  const playerGames = sets.reduce((a, s) => a + s.playerGames, 0);
+  const note = `Ended early ${score} (${TENNIS_HOUSE_RULE_NOTE})`;
+  const voided: LegGrade = { status: 'void', value: null, note: `Not decided before the match ended: ${score} (${TENNIS_HOUSE_RULE_NOTE})` };
+  const overDecided = (value: number): LegGrade => {
+    if (leg.line == null || !(value > leg.line)) return voided;
+    return { status: leg.side === 'over' ? 'win' : 'loss', value, note };
+  };
+  switch (leg.market) {
+    case 'win_a_set':
+      return setsWon >= 1 ? { status: leg.side === 'yes' ? 'win' : 'loss', value: setsWon, note } : voided;
+    case 'total_games':
+      return overDecided(games);
+    case 'player_games':
+      return overDecided(playerGames);
+    case 'total_sets':
+      return overDecided(setsStarted);
+    case 'player_sets':
+      return overDecided(setsWon);
+    default:
+      return voided;
+  }
+}
+
 export function gradeTennis(leg: Pick<AiPickLeg, 'market' | 'side' | 'line'>, r: TennisResult): LegGrade {
   const note = `${r.won ? 'Won' : 'Lost'} ${r.score}`;
   const yes = leg.side === 'yes';

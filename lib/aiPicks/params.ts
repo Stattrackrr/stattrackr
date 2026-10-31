@@ -56,6 +56,19 @@ export const MULTIS_POSTED = false;
  */
 export const PROPS_ONLY_SPORTS: ReadonlySet<string> = new Set(['nbl', 'nba']);
 
+/**
+ * The rule set each sport's watchlist rows and picks are made under. Bumped whenever the rules change;
+ * evaluations select by version, never by date. Rows from before tagging are "<sport>-legacy".
+ */
+export const AI_POLICY_VERSIONS: Readonly<Record<string, string>> = { nba: 'nba-a1', nbl: 'nbl-a1', tennis: 'tennis-a1' };
+
+export function policyVersion(sports: string[]): string {
+  return [...new Set(sports)]
+    .sort()
+    .map((s) => AI_POLICY_VERSIONS[s] ?? `${s}-a1`)
+    .join(' / ');
+}
+
 export function postable(c: { sport: string; player: string | null }): boolean {
   return c.player != null || !PROPS_ONLY_SPORTS.has(c.sport);
 }

@@ -1,5 +1,5 @@
 import { isTennisMarket } from '@/lib/aiPicks/markets';
-import { gradeTennis, type LegGrade, type TennisResult } from '@/lib/aiPicks/grade/rules';
+import { gradeTennis, gradeTennisUnfinished, type LegGrade, type TennisResult } from '@/lib/aiPicks/grade/rules';
 import type { AiPickLeg } from '@/lib/aiPicks/types';
 import {
   isUnplayedTennisMatch,
@@ -105,8 +105,9 @@ export function gradeTennisLeg(
       : null;
   }
   const score = String(row.score || '');
-  if (isUnplayedTennisMatch(score) || tennisScoreIsRetired(score) || /\bdef\b/i.test(score)) {
-    return { status: 'void', value: null, note: `Match not completed (${score || 'no score'})` };
+  if (isUnplayedTennisMatch(score)) return { status: 'void', value: null, note: `Match not played (${score || 'no score'})` };
+  if (tennisScoreIsRetired(score) || /\bdef\b/i.test(score)) {
+    return gradeTennisUnfinished(leg, parseTennisSetsFromPlayerView(score, row.isWin), score);
   }
   const result = tennisResultFromRow(row);
   if (!result) return { status: 'void', value: null, note: 'Score could not be read' };

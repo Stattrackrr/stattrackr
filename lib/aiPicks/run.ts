@@ -33,7 +33,7 @@ import { pickTitle } from '@/lib/aiPicks/format';
 import { isNblPropMarket } from '@/lib/aiPicks/markets';
 import { round } from '@/lib/aiPicks/model/math';
 import { loadActiveParams } from '@/lib/aiPicks/learn/state';
-import { modelVersion, MULTIS_POSTED, postable, PROPS_ONLY_SPORTS, type AiPicksParams } from '@/lib/aiPicks/params';
+import { modelVersion, MULTIS_POSTED, policyVersion, postable, PROPS_ONLY_SPORTS, type AiPicksParams } from '@/lib/aiPicks/params';
 import { sizeUnits } from '@/lib/aiPicks/units';
 import { reschedules, type FixtureTimes } from '@/lib/aiPicks/reschedule';
 import { readNblPulseScoreBoardCache } from '@/lib/nbl/pulseScore';
@@ -274,7 +274,7 @@ async function postProposal(
         ev: round(p.ev, 4),
         first_starts_at: p.legs.map((l) => l.c.startsAt).sort()[0]!,
         model_version: modelVersion(params, p.legs.map((l) => l.c.sport)),
-        context: pickContext(p, review, scannedAt, stake.why),
+        context: { ...pickContext(p, review, scannedAt, stake.why), policy_version: policyVersion(p.legs.map((l) => l.c.sport)) },
       },
       legs
     );

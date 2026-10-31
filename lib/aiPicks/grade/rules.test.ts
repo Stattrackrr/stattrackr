@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { gradeHandicap, gradeNblGame, gradeNblProp, gradeOverUnder, gradeTennis } from './rules';
+import { gradeHandicap, gradeNblGame, gradeNblProp, gradeOverUnder, gradeTennis, gradeTennisUnfinished } from './rules';
 import { settlePick } from '../settle';
 import { closingFromSnapLines } from './closing';
 import { rosettaUtcMs } from './nbl';
@@ -57,6 +57,30 @@ test('tennis markets from the player view', () => {
   const lost = { won: false, gamesWon: 7, gamesLost: 12, setsWon: 0, setsLost: 2, score: '4-6 3-6' };
   assert.equal(gradeTennis({ market: 'win_a_set', side: 'yes', line: null }, lost).status, 'loss');
   assert.equal(gradeTennis({ market: 'win_a_set', side: 'no', line: null }, lost).status, 'win');
+});
+
+test('tennis retirement, house rule: decided bets stand, the rest void', () => {
+  // Fritz won the first set 6-3, 2-1 in the second when the opponent retired.
+  const sets = [
+    { playerGames: 6, opponentGames: 3 },
+    { playerGames: 2, opponentGames: 1 },
+  ];
+  const g = (market: string, side: string, line: number | null = null) => gradeTennisUnfinished({ market, side, line } as never, sets, '6-3 2-1 RET').status;
+  assert.equal(g('win_a_set', 'yes'), 'win');
+  assert.equal(g('win_a_set', 'no'), 'loss');
+  assert.equal(g('match_winner', 'yes'), 'void');
+  assert.equal(g('game_handicap', 'yes', -3.5), 'void');
+  assert.equal(g('total_games', 'over', 11.5), 'win', '12 games already played');
+  assert.equal(g('total_games', 'under', 11.5), 'loss');
+  assert.equal(g('total_games', 'over', 20.5), 'void');
+  assert.equal(g('total_games', 'under', 20.5), 'void', 'an under is never decided early');
+  assert.equal(g('player_games', 'over', 7.5), 'win');
+  assert.equal(g('total_sets', 'over', 1.5), 'win', 'a second set had started');
+  assert.equal(g('total_sets', 'over', 2.5), 'void');
+  assert.equal(g('player_sets', 'over', 0.5), 'win');
+  const lostFirst = gradeTennisUnfinished({ market: 'win_a_set', side: 'yes', line: null } as never, [{ playerGames: 3, opponentGames: 6 }, { playerGames: 1, opponentGames: 0 }], '3-6 1-0 RET');
+  assert.equal(lostFirst.status, 'void', 'no set won yet');
+  assert.match(lostFirst.note, /provisional/);
 });
 
 test('settle: singles, multis, and void legs dropping out', () => {
