@@ -239,6 +239,71 @@ test('DP against the independent simulator on every rule set', () => {
   }
 });
 
+test('set-level markets: set betting, first-set winner and first-set scores add up and match the simulator', () => {
+  for (const [name, [bo, rn, rf]] of Object.entries(CONFIGS)) {
+    const need = Math.floor(bo / 2) + 1;
+    const scores: string[] = [];
+    for (let l = 0; l < need; l += 1) scores.push(`${need}-${l}`, `${l}-${need}`);
+    const set1 = ['6-0', '6-1', '6-4', '7-5', '7-6', '0-6', '4-6', '6-7'];
+    const p = makeModel(['win', 'set1win', ...scores.map((s) => `setbet:${s}`), ...set1.map((s) => `set1:${s}`)], bo, rn, rf)(0.66, 0.58);
+    close(scores.reduce((a, s) => a + p[`setbet:${s}`]!, 0), 1, 1e-9, `${name} set betting sums to 1`);
+    close(scores.filter((s) => s.startsWith(String(need))).reduce((a, s) => a + p[`setbet:${s}`]!, 0), p.win!, 1e-9, `${name} set betting vs win`);
+    const sim = simMany(0.66, 0.58, bo, rn, rf, bo === 3 ? 5000 : 3000, 13);
+    const straight = sim.filter((m) => m[2] === need && m[3] === 0).length / sim.length;
+    close(straight, p[`setbet:${need}-0`]!, 0.03, `${name} straight-sets win vs sim`);
+  }
+  // First set alone: a set is a set, so first-set scores come straight from the set DP.
+  const d = makeModel(['set1win', 'set1:6-0', 'set1:7-6', 'set1:6-7'])(0.66, 0.58);
+  const r = rng(17);
+  let won = 0;
+  let love = 0;
+  let tb = 0;
+  const N = 40000;
+  for (let i = 0; i < N; i += 1) {
+    const [[a, b]] = [simFirstSet(0.66, 0.58, r.u)];
+    if (a > b) won += 1;
+    if (a === 6 && b === 0) love += 1;
+    if (a + b === 13) tb += 1;
+  }
+  close(won / N, d.set1win!, 0.01, 'first-set winner vs sim');
+  close(love / N, d['set1:6-0']!, 0.005, 'first set 6-0 vs sim');
+  close(tb / N, d['set1:7-6']! + d['set1:6-7']!, 0.01, 'first-set tiebreak rate vs sim');
+});
+
+/** One standard set, random first server, by the simulator's own rules. */
+function simFirstSet(pA: number, pB: number, u: () => number): [number, number] {
+  const pt = (s: number) => (s === 0 ? u() < pA : u() >= pB);
+  const game = (s: number) => {
+    let a = 0;
+    let b = 0;
+    for (;;) {
+      if (pt(s)) a += 1;
+      else b += 1;
+      if (Math.max(a, b) >= 4 && Math.abs(a - b) >= 2) return a > b;
+    }
+  };
+  const tb = (s0: number) => {
+    let a = 0;
+    let b = 0;
+    for (let n = 0; ; n += 1) {
+      const s = n === 0 ? s0 : Math.floor((n - 1) / 2) % 2 === 0 ? 1 - s0 : s0;
+      if (pt(s)) a += 1;
+      else b += 1;
+      if (Math.max(a, b) >= 7 && Math.abs(a - b) >= 2) return a > b;
+    }
+  };
+  let srv = u() < 0.5 ? 0 : 1;
+  let ga = 0;
+  let gb = 0;
+  for (;;) {
+    if (ga === 6 && gb === 6) return tb(srv) ? [7, 6] : [6, 7];
+    if (game(srv)) ga += 1;
+    else gb += 1;
+    srv = 1 - srv;
+    if (Math.max(ga, gb) >= 6 && Math.abs(ga - gb) >= 2) return [ga, gb];
+  }
+}
+
 const KEYS = ['win', 'tot:21.5', 'hcp:-2.5'];
 const SIG = Object.fromEntries(KEYS.map((k) => [k, 0.03]));
 

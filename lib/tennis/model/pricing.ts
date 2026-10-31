@@ -291,10 +291,40 @@ export class MatchDist {
 export type Prices = Record<PriceKey, number>;
 export type PricingModel = (pA: number, pB: number) => Prices;
 
+/** First-set games distribution S[a][b], averaged over who serves first (the match's first set). */
+export function firstSetDist(pA: number, pB: number, rule: SetRule = NORMAL): Grid {
+  const a = setArray(pA, pB, true, rule);
+  const b = setArray(pA, pB, false, rule);
+  return addGrids(
+    a.map((row) => row.map((v) => v / 2)),
+    b.map((row) => row.map((v) => v / 2))
+  );
+}
+
+/**
+ * Set-level keys on top of MatchDist's: "setbet:x-y" (match ends x sets to y, A first), "set1win" (A wins
+ * set 1), "set1:x-y" (set 1 finishes x games to y, A first; a tiebreak set is 7-6).
+ */
+function setLevelPrice(key: PriceKey, d: MatchDist, set1: () => Grid): number | null {
+  const [kind, raw] = key.split(':');
+  if (kind === 'setbet') {
+    const G = d.arrays.get(raw!.replace('-', ','));
+    return G ? G.reduce((s, row) => s + row.reduce((x, v) => x + v, 0), 0) : 0;
+  }
+  if (kind === 'set1win') return set1().reduce((s, row, a) => s + row.reduce((x, v, b) => x + (a > b ? v : 0), 0), 0);
+  if (kind === 'set1') {
+    const [a, b] = raw!.split('-').map(Number) as [number, number];
+    return set1()[a]?.[b] ?? 0;
+  }
+  return null;
+}
+
 export function makeModel(keys: PriceKey[], bestOf = 3, ruleN: SetRule = NORMAL, ruleF: SetRule = NORMAL): PricingModel {
   return (pA, pB) => {
     const d = new MatchDist(matchArrays(pA, pB, bestOf, ruleN, ruleF));
-    return Object.fromEntries(keys.map((k) => [k, d.price(k)]));
+    let set1: Grid | null = null;
+    const firstSet = () => (set1 ??= firstSetDist(pA, pB, bestOf === 1 ? ruleF : ruleN));
+    return Object.fromEntries(keys.map((k) => [k, setLevelPrice(k, d, firstSet) ?? d.price(k)]));
   };
 }
 
