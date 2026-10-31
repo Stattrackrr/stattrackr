@@ -134,14 +134,49 @@ async function leagueEvents(league: string): Promise<NetEvent[]> {
   return events.filter((ev) => ev.event_id != null && ev.event_state !== 'finished');
 }
 
+const NAME_PARTICLES = new Set(['de', 'da', 'do', 'dos', 'das', 'van', 'von', 'del', 'della', 'di', 'le', 'la', 'el']);
+
+function foldWords(name: string): string[] {
+  const comma = name.indexOf(',');
+  const ordered = comma > 0 ? `${name.slice(comma + 1)} ${name.slice(0, comma)}` : name;
+  return ordered
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((w) => w && !NAME_PARTICLES.has(w));
+}
+
+/**
+ * "J. Reis Da Silva" against "Joao Lucas Reis Da Silva": the first initial starts the first given name and the
+ * spelled-out words are the full name's trailing surname block. Looser than tennisIdentityMatch (an extra given
+ * name may go uncovered), so it's only used where both players and the start time must also agree.
+ */
+export function tennisShortFullMatch(a: string, b: string): boolean {
+  const one = (short: string[], full: string[]) => {
+    const firstFull = short.findIndex((w) => w.length > 1);
+    if (firstFull < 1 || full.some((w) => w.length === 1)) return false;
+    const surname = short.slice(firstFull);
+    if (full.length <= surname.length || !full[0]!.startsWith(short[0]!)) return false;
+    return surname.every((w, i) => full[full.length - surname.length + i] === w);
+  };
+  const wa = foldWords(a);
+  const wb = foldWords(b);
+  return one(wa, wb) || one(wb, wa);
+}
+
+function samePlayer(a: string, b: string): boolean {
+  return tennisIdentityMatch(a, b) || tennisShortFullMatch(a, b);
+}
+
 function sameMatch(ev: NetEvent, game: TennisNextGame): { homeIsHome: boolean } | null {
   const home = String(ev.home_team || '');
   const away = String(ev.away_team || '');
   const start = typeof ev.start_time === 'number' ? ev.start_time * 1000 : NaN;
   const tip = Date.parse(String(game.tipoff || ''));
   if (Number.isFinite(start) && Number.isFinite(tip) && Math.abs(start - tip) > START_TOLERANCE_MS) return null;
-  if (tennisIdentityMatch(home, game.homeName) && tennisIdentityMatch(away, game.awayName)) return { homeIsHome: true };
-  if (tennisIdentityMatch(home, game.awayName) && tennisIdentityMatch(away, game.homeName)) return { homeIsHome: false };
+  if (samePlayer(home, game.homeName) && samePlayer(away, game.awayName)) return { homeIsHome: true };
+  if (samePlayer(home, game.awayName) && samePlayer(away, game.homeName)) return { homeIsHome: false };
   return null;
 }
 

@@ -22,7 +22,25 @@ type HandIndex = {
   byName: Map<string, TennisHand>;
   byCompact: Map<string, TennisHand | 'conflict'>;
   byTokens: Map<string, TennisHand | 'conflict'>;
+  /** "a|zverev", "j|reis silva": first initial + a trailing surname block, for fixture names like "A. Zverev". */
+  byInitial: Map<string, TennisHand | 'conflict'>;
 };
+
+const NAME_PARTICLES = new Set(['de', 'da', 'do', 'dos', 'das', 'van', 'von', 'del', 'della', 'di', 'le', 'la', 'el']);
+
+function nameWords(name: string): string[] {
+  return foldTennisName(name)
+    .split(' ')
+    .filter((w) => w && !NAME_PARTICLES.has(w));
+}
+
+/** "A. Zverev" -> "a|zverev"; null unless the name is initial(s) then spelled-out words. */
+export function tennisInitialKey(name: string): string | null {
+  const words = nameWords(name);
+  const firstFull = words.findIndex((w) => w.length > 1);
+  if (firstFull < 1) return null;
+  return `${words[0]!.charAt(0)}|${words.slice(firstFull).join(' ')}`;
+}
 
 type HandRuntime = {
   index: HandIndex | null;
@@ -85,6 +103,12 @@ function addHand(index: HandIndex, name: string, hand: TennisHand) {
   }
   setOrConflict(index.byCompact, compactTennisName(name) || null, hand);
   setOrConflict(index.byTokens, tennisNameTokenKey(name), hand);
+  const words = nameWords(name);
+  if (words.length >= 2 && words.every((w) => w.length > 1)) {
+    const keys = new Set<string>();
+    for (let k = 1; k < words.length; k += 1) keys.add(`${words[0]!.charAt(0)}|${words.slice(k).join(' ')}`);
+    for (const key of keys) setOrConflict(index.byInitial, key, hand);
+  }
 }
 
 export function loadEspnHandsCache(): EspnHandsCache {
@@ -105,7 +129,7 @@ export function loadEspnHandsCache(): EspnHandsCache {
 function loadHandIndex(): HandIndex {
   const runtime = handRuntime();
   if (runtime.index) return runtime.index;
-  const index: HandIndex = { byName: new Map(), byCompact: new Map(), byTokens: new Map() };
+  const index: HandIndex = { byName: new Map(), byCompact: new Map(), byTokens: new Map(), byInitial: new Map() };
   const cache = loadEspnHandsCache();
   for (const [queryName, hit] of Object.entries(cache.hits)) {
     const hand = normalizeTennisHand(hit.hand);
@@ -138,6 +162,7 @@ export function tennisHandForName(name: string | null | undefined): TennisHand |
     index.byName.get(key) ||
     pick(index.byCompact, compactTennisName(raw)) ||
     pick(index.byTokens, tennisNameTokenKey(raw)) ||
+    pick(index.byInitial, tennisInitialKey(raw)) ||
     null;
   runtime.byRawName.set(raw, hand);
   return hand;

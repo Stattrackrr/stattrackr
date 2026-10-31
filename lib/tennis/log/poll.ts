@@ -36,6 +36,7 @@ const CALIBRATION_VERSION = 'prior-0';
 const STATE_PREFIX = 'tennis_log_state_v1:';
 const ACTIVE_KEY = 'tennis_log_active_v1';
 const LOCK_KEY = 'tennis_log_lock_v1';
+const ENDING_KEY = 'tennis_log_ending_v1';
 const LOCK_MS = 4 * 60_000;
 const H = 60 * 60_000;
 const WINDOW_MS = 6 * H;
@@ -68,6 +69,7 @@ type MatchState = {
   arms: Partial<Record<'main' | 'late' | 'close', string>>;
   shadow?: { id: string; market: LogMarket; line: number | null; selection: string; book: string; price: number; fair: number };
   liveSeenAt?: string;
+  netEventId?: string;
 };
 
 type Fixture = {
@@ -353,15 +355,20 @@ function outcomeFromLogs(score: string, isWin: boolean): MatchOutcome & { score:
 }
 
 /**
- * Observed match length (API-Tennis gives no duration): a live match whose odds-api.net event has left the
- * open list is over. Both ends are seen at poll resolution (a few minutes).
+ * Observed match length (API-Tennis gives no duration). A live match is over once API-Tennis marks it
+ * finished or it's no longer either player's next match, on two polls running (one missed fetch never ends
+ * a match); the end is the first of those polls. odds-api.net can't tell us: it drops events once they go live.
  */
-async function markEnded(events: TennisOddsNetEvent[], nowMs: number, summary: TennisLogSummary): Promise<void> {
-  if (!events.length) return;
-  const open = new Set(events.map((e) => String(e.event_id)));
+async function markEnded(nowMs: number, summary: TennisLogSummary): Promise<void> {
+  const { byPlayerId } = await readUpcomingTennisByPlayerCache();
+  if (!byPlayerId.size) return;
+  const open = new Set<string>();
+  for (const next of byPlayerId.values()) {
+    if (next.matchId && !tennisFixtureStatusIsTerminal(next.status || '')) open.add(String(next.matchId));
+  }
   const { data, error } = await supabaseAdmin
     .from('tennis_matches')
-    .select('match_id, oddsnet_event_id, live_seen_at')
+    .select('match_id, live_seen_at')
     .not('live_seen_at', 'is', null)
     .is('ended_seen_at', null)
     .gte('live_seen_at', new Date(nowMs - 10 * H).toISOString())
@@ -370,11 +377,28 @@ async function markEnded(events: TennisOddsNetEvent[], nowMs: number, summary: T
     if (!/column/i.test(error.message)) summary.errors.push(`ended read: ${error.message}`);
     return;
   }
+  const pending = (await sharedCache.getJSON<Record<string, number>>(ENDING_KEY)) ?? {};
+  const live = new Set((data ?? []).map((m) => m.match_id));
+  for (const id of Object.keys(pending)) if (!live.has(id)) delete pending[id];
   for (const m of data ?? []) {
-    if (!m.oddsnet_event_id || open.has(String(m.oddsnet_event_id))) continue;
-    const minutes = Math.round((nowMs - Date.parse(m.live_seen_at)) / 60_000);
-    await supabaseAdmin.from('tennis_matches').update({ ended_seen_at: new Date(nowMs).toISOString(), minutes_observed: minutes }).eq('match_id', m.match_id);
+    if (open.has(m.match_id)) {
+      delete pending[m.match_id];
+      continue;
+    }
+    const firstGone = pending[m.match_id];
+    if (firstGone == null) {
+      pending[m.match_id] = nowMs;
+      continue;
+    }
+    const minutes = Math.round((firstGone - Date.parse(m.live_seen_at)) / 60_000);
+    const { error: uError } = await supabaseAdmin
+      .from('tennis_matches')
+      .update({ ended_seen_at: new Date(firstGone).toISOString(), minutes_observed: minutes })
+      .eq('match_id', m.match_id);
+    if (uError) summary.errors.push(`ended ${m.match_id}: ${uError.message}`);
+    else delete pending[m.match_id];
   }
+  await sharedCache.setJSON(ENDING_KEY, pending, STATE_TTL_S);
 }
 
 /** Results for matches that should be over, and grades for their would-be bets. */
@@ -507,6 +531,7 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
       const withConditions = base.map((row, i) => {
         const fx = matchedNet[i]!.fx;
         const venue = lookupTennisVenue(fx.next.tournamentName, fx.next.surface);
+        const located = Number.isFinite(venue.lat) && Number.isFinite(venue.lng) && !(venue.lat === 0 && venue.lng === 0);
         return {
           ...row,
           indoor: venue.setting == null ? null : venue.setting === 'Indoor',
@@ -514,8 +539,8 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
           court_pace: lookupCourtPace(fx.next.tournamentName),
           venue_city: venue.city || null,
           venue_country: venue.country || null,
-          venue_lat: Number.isFinite(venue.lat) ? venue.lat : null,
-          venue_lng: Number.isFinite(venue.lng) ? venue.lng : null,
+          venue_lat: located ? venue.lat : null,
+          venue_lng: located ? venue.lng : null,
           home_hand: tennisHandForName(fx.next.homeName),
           away_hand: tennisHandForName(fx.next.awayName),
         };
@@ -574,10 +599,15 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
         heartbeats.push({ match_id: fx.matchId, feed: `scraper:${s.book}`, polled_at: nowIso, ok: s.ok, error: s.ok ? null : 'detail failed', books: { [s.book]: null }, n_quotes: rows.length });
         if (s.source) rawScraped[`${fx.matchId}|${s.book}`] = s.source;
       }
-      if (!hit && !scraped.get(fx.matchId)?.length) continue;
-      summary.polled += 1;
+      // odds-api.net drops an event once it goes in-play: a matched event missing from a list that did load
+      // means the match has started. Matches with no data this poll still get their live / close checks.
+      const netGone = Boolean(state.netEventId) && !hit && events.length > 0;
+      if (hit) state.netEventId = String(hit.event.event_id);
+      const hasData = quotes.length > 0;
+      if (!hasData && !state.lastPoll) continue;
+      if (hasData) summary.polled += 1;
 
-      const live = fx.next.live || hit?.event.event_state === 'live';
+      const live = fx.next.live || hit?.event.event_state === 'live' || netGone;
       if (live && !state.liveSeenAt) {
         state.liveSeenAt = nowIso;
         await supabaseAdmin.from('tennis_matches').update({ live_seen_at: nowIso, status: 'live' }).eq('match_id', fx.matchId);
@@ -592,7 +622,7 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
           await writeClv(fx, state, close, summary);
         }
       }
-      if (!live) {
+      if (!live && hasData) {
         // Prices on change: a row only when a book's price for a selection is new or different.
         const seen = new Set<string>();
         for (const q of quotes) {
@@ -705,7 +735,7 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
     }
     await sharedCache.setJSON(ACTIVE_KEY, active, STATE_TTL_S);
 
-    await markEnded(events, nowMs, summary);
+    await markEnded(nowMs, summary);
     await gradeFinished(nowMs, summary);
     await expireRaw(nowMs, summary);
   } catch (err) {
