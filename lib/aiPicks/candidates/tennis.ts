@@ -4,7 +4,7 @@
  */
 
 import type { AiPickMarketKind, AiPickSide } from '@/lib/aiPicks/types';
-import type { TennisMarket } from '@/lib/aiPicks/markets';
+import { TENNIS_PICK_MARKETS, type TennisMarket } from '@/lib/aiPicks/markets';
 import { coherentPair, evPerUnit, fairTwoWay, median, round } from '@/lib/aiPicks/model/math';
 import { anchorSimulation } from '@/lib/aiPicks/model/tennisAnchor';
 import type { TennisContext } from '@/lib/aiPicks/model/tennisContext';
@@ -382,6 +382,7 @@ export function buildTennisCandidates(input: {
   const out: AiCandidate[] = [];
 
   for (const sel of selections) {
+    if (!TENNIS_PICK_MARKETS.has(sel.market)) continue;
     const picked = bettableQuote(sel.quotes);
     const model =
       sel.market === 'match_winner' && tc

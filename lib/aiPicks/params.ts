@@ -59,8 +59,9 @@ export const PROPS_ONLY_SPORTS: ReadonlySet<string> = new Set(['nbl', 'nba']);
 /**
  * The rule set each sport's watchlist rows and picks are made under. Bumped whenever the rules change;
  * evaluations select by version, never by date. Rows from before tagging are "<sport>-legacy".
+ * tennis-a2: picks limited to winner, game handicap, total games, games won and win a set.
  */
-export const AI_POLICY_VERSIONS: Readonly<Record<string, string>> = { nba: 'nba-a1', nbl: 'nbl-a1', tennis: 'tennis-a1' };
+export const AI_POLICY_VERSIONS: Readonly<Record<string, string>> = { nba: 'nba-a1', nbl: 'nbl-a1', tennis: 'tennis-a2' };
 
 export function policyVersion(sports: string[]): string {
   return [...new Set(sports)]

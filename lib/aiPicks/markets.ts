@@ -35,6 +35,12 @@ export const TENNIS_MARKETS = [
   'win_a_set',
 ] as const;
 
+/**
+ * The tennis markets picks may be made on (owner decision): winner, game handicap, total games, games
+ * won and win a set. Sets played and sets won stay above so older legs still grade.
+ */
+export const TENNIS_PICK_MARKETS: ReadonlySet<string> = new Set(['match_winner', 'game_handicap', 'total_games', 'player_games', 'win_a_set']);
+
 export type NblPropMarket = (typeof NBL_PROP_MARKETS)[number];
 export type NblGameMarket = (typeof NBL_GAME_MARKETS)[number];
 export type TennisMarket = (typeof TENNIS_MARKETS)[number];
