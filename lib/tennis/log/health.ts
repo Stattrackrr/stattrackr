@@ -41,7 +41,11 @@ export async function checkTennisLogHealth(nowMs = Date.now()): Promise<TennisLo
   add('runs with errors', runs > 0 && withErrors / runs <= 0.05, `${withErrors} of ${runs} (today and yesterday)`, 'at most 5%');
 
   // Close arms: every match that had a main arm and started over 2 hours ago should have closed.
-  const { data: arms } = await supabaseAdmin.from('tennis_arm_snapshots').select('match_id, arm').gte('captured_at', new Date(nowMs - 48 * H).toISOString()).limit(5000);
+  const { data: arms } = await supabaseAdmin.from('tennis_arm_snapshots').select('match_id, arm, minutes_to_start').gte('captured_at', new Date(nowMs - 48 * H).toISOString()).limit(5000);
+  // A close is the last poll before play: more than an hour before the scheduled start means a false start.
+  const closes = (arms ?? []).filter((a) => a.arm === 'close');
+  const early = closes.filter((a) => Number(a.minutes_to_start) > 60).length;
+  add('close arm timing', !closes.length || early / closes.length <= 0.1, `${early} of ${closes.length} taken over 60 min before the scheduled start`, 'at most 10%');
   const { data: started } = await supabaseAdmin
     .from('tennis_matches')
     .select('match_id')

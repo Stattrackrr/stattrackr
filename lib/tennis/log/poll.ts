@@ -45,6 +45,8 @@ const WINDOW_MS = 6 * H;
 const LATE_MS = 30 * 60_000;
 /** Without a live flag, a match is closed out this long after its scheduled start. */
 const CLOSE_FALLBACK_MS = 6 * H;
+/** odds-api.net drops events around its own listed start, which can be up to ~20 min before play. */
+const NET_DROP_LEAD_MS = 45 * 60_000;
 const GRADE_AFTER_MS = 3 * H;
 const CONFIRM_GAP_MS = 2 * 60_000;
 const SOURCE_FRESH_MS = 15 * 60_000;
@@ -72,6 +74,7 @@ type MatchState = {
   shadow?: { id: string; market: LogMarket; line: number | null; selection: string; book: string; price: number; fair: number };
   liveSeenAt?: string;
   netEventId?: string;
+  netMissed?: number;
 };
 
 type Fixture = {
@@ -210,6 +213,14 @@ async function writeArm(arm: 'main' | 'late' | 'close', fx: Fixture, quotes: Fee
   const paired = new Set(pairs.flatMap((p) => [`${p.book}|${p.market}|${p.line ?? ''}|${p.base}`, `${p.book}|${p.market}|${p.line ?? ''}|${partner(p.base)}`]));
   const oneSided = merged.filter((q) => !SHARP_BOOKS.has(q.book) && !paired.has(`${q.book}|${q.market}|${q.line ?? ''}|${q.selection}`)).length;
   const capturedAt = new Date(nowMs).toISOString();
+  if (arm === 'close') {
+    // A reopened (premature) close is replaced, with its candidate rows.
+    const { data: old } = await supabaseAdmin.from('tennis_arm_snapshots').select('id').eq('match_id', fx.matchId).eq('arm', 'close').maybeSingle();
+    if (old) {
+      await supabaseAdmin.from('tennis_candidates').delete().eq('arm_snapshot_id', old.id);
+      await supabaseAdmin.from('tennis_arm_snapshots').delete().eq('id', old.id);
+    }
+  }
   const { data: snap, error } = await supabaseAdmin
     .from('tennis_arm_snapshots')
     .upsert(
@@ -637,14 +648,22 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
       // odds-api.net drops an event around its listed start, which can be well before play begins: a matched
       // event missing from a list that did load means pre-match pricing is over (close out, stop collecting),
       // but only API-Tennis saying live marks the start. Matches with no data still get their close checks.
+      // Its event list loads league by league and a failed league is skipped, so a single missing poll means
+      // nothing: dropped = missing on two polls running, within NET_DROP_LEAD_MS of the scheduled start.
       const netGone = Boolean(state.netEventId) && !hit && events.length > 0;
+      state.netMissed = netGone ? (state.netMissed ?? 0) + 1 : 0;
       if (hit) state.netEventId = String(hit.event.event_id);
+      const nearStart = nowMs >= fx.tipMs - NET_DROP_LEAD_MS;
+      const netDropped = netGone && state.netMissed >= 2 && nearStart;
       const hasData = quotes.length > 0;
       if (!hasData && !state.lastPoll) continue;
       if (hasData) summary.polled += 1;
 
       const started = fx.next.live || hit?.event.event_state === 'live';
-      const live = started || netGone;
+      const live = started || netDropped;
+      // A close taken while the match was still well before its start was premature (an earlier feed flicker):
+      // reopen it so the real close overwrites it.
+      if (state.arms.close && !live && !nearStart) delete state.arms.close;
       if (started && !state.liveSeenAt) {
         state.liveSeenAt = nowIso;
         await supabaseAdmin.from('tennis_matches').update({ live_seen_at: nowIso, status: 'live' }).eq('match_id', fx.matchId);
@@ -747,6 +766,9 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
     const current = new Set(fixtures.map((f) => f.matchId));
     for (const [matchId, tipMs] of Object.entries(active)) {
       if (current.has(matchId)) continue;
+      // The upcoming list can drop a match for a poll or two well before it starts: only close out once its
+      // scheduled start has passed (it stays tracked and resumes if it comes back).
+      if (nowMs < tipMs) continue;
       const state = await sharedCache.getJSON<MatchState>(`${STATE_PREFIX}${matchId}`);
       if (state && !state.arms.close && state.lastPoll) {
         const { data: m } = await supabaseAdmin.from('tennis_matches').select('best_of, is_grand_slam, tier, home_id, away_id').eq('match_id', matchId).maybeSingle();
