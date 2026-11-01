@@ -611,16 +611,18 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
         heartbeats.push({ match_id: fx.matchId, feed: `scraper:${s.book}`, polled_at: nowIso, ok: s.ok, error: s.ok ? null : 'detail failed', books: { [s.book]: null }, n_quotes: rows.length });
         if (s.source) rawScraped[`${fx.matchId}|${s.book}`] = s.source;
       }
-      // odds-api.net drops an event once it goes in-play: a matched event missing from a list that did load
-      // means the match has started. Matches with no data this poll still get their live / close checks.
+      // odds-api.net drops an event around its listed start, which can be well before play begins: a matched
+      // event missing from a list that did load means pre-match pricing is over (close out, stop collecting),
+      // but only API-Tennis saying live marks the start. Matches with no data still get their close checks.
       const netGone = Boolean(state.netEventId) && !hit && events.length > 0;
       if (hit) state.netEventId = String(hit.event.event_id);
       const hasData = quotes.length > 0;
       if (!hasData && !state.lastPoll) continue;
       if (hasData) summary.polled += 1;
 
-      const live = fx.next.live || hit?.event.event_state === 'live' || netGone;
-      if (live && !state.liveSeenAt) {
+      const started = fx.next.live || hit?.event.event_state === 'live';
+      const live = started || netGone;
+      if (started && !state.liveSeenAt) {
         state.liveSeenAt = nowIso;
         await supabaseAdmin.from('tennis_matches').update({ live_seen_at: nowIso, status: 'live' }).eq('match_id', fx.matchId);
       }
