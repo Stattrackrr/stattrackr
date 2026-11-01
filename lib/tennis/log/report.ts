@@ -29,7 +29,7 @@ const HORIZON = '2027-12-31';
 /** Provisional price-noise SD in logit units until noise is measured from repeat quotes. */
 const PROVISIONAL_NOISE_LOGIT = 0.1;
 const DERIVATION_ARMS = 200;
-const FEEDS = ['oddsnet', ...['betright', 'ladbrokes', 'neds', 'pointsbet', 'unibet'].map((b) => `scraper:${b}`)];
+const FEEDS = ['oddsnet', 'apitennis', ...['betright', 'ladbrokes', 'neds', 'pointsbet', 'unibet'].map((b) => `scraper:${b}`)];
 
 const logit = (p: number) => Math.log(p / (1 - p));
 
@@ -99,6 +99,8 @@ export type TennisWeeklyReport = {
   derivation: { noiseLogit: number; noiseByMarket: Record<string, { sd: number; n: number }>; verdicts: Array<DerivationVerdict & { market: string }>; note: string };
   /** The latest daily integrity check. */
   health: TennisLogHealth | null;
+  /** Coherence chi-square of the arm inversions (dof = prices - 2), reported, never a gate (spec section 7). */
+  coherence: { arms: number; p10: number | null; p50: number | null; p90: number | null; shareAbove3_84: number | null };
 };
 
 /** Executable opportunities: qualifying sharp_direct main-arm sides still on offer 10 minutes later. */
@@ -371,6 +373,11 @@ export async function buildTennisWeeklyReport(nowMs = Date.now()): Promise<Tenni
       note: `Pinnacle winner + main total inverted at the provisional tau/rho; misfits standardised by each market's measured noise (Pinnacle vs Betfair on the same line, SD/sqrt 2) once it has ${NOISE_MIN_PAIRS}+ pairs, else the provisional ${PROVISIONAL_NOISE_LOGIT}.`,
     },
     health: await readTennisLogHealth().catch(() => null),
+    coherence: (() => {
+      const xs = arms.map((a) => Number((a.model as { coherence?: number } | null)?.coherence)).filter(Number.isFinite).sort((a, b) => a - b);
+      const q = (p: number) => (xs.length ? Math.round(xs[Math.floor(p * (xs.length - 1))]! * 100) / 100 : null);
+      return { arms: xs.length, p10: q(0.1), p50: q(0.5), p90: q(0.9), shareAbove3_84: xs.length ? Math.round((100 * xs.filter((x) => x > 3.84).length) / xs.length) / 100 : null };
+    })(),
   };
 }
 

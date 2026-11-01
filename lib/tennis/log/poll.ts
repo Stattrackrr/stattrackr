@@ -28,6 +28,7 @@ import { makeModel, priceIntegrated } from '@/lib/tennis/model/pricing';
 import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { chooseShadowBet, CODE_VERSION, dpKey, evaluateCandidates, invertArm, matchRules, pairQuotes, SAME_LINE_TOL, SHARP_BOOKS, sharpFairs, type ArmModel, type Candidate, type SharpFair } from './fair';
+import { apiTennisOddsToQuotes, fetchApiTennisOdds, REFERENCE_BOOKS } from './apiTennisOdds';
 import { BOOK_RULES_VERSION, gradeForBook } from './bookRules';
 import { GRADER_VERSION, gradeSelection, isRoundRobin, type MatchOutcome, type SetScore } from './grade';
 import { MAPPING_VERSION, partner, quoteKey, sourceToQuotes, type LogMarket, type QuoteRow } from './quotes';
@@ -195,7 +196,8 @@ async function insertBatches(table: string, rows: Array<Record<string, unknown>>
 
 /** Snapshot, candidates and (main arm) the would-be bet for one match. */
 async function writeArm(arm: 'main' | 'late' | 'close', fx: Fixture, quotes: FeedQuote[], state: MatchState, nowMs: number, summary: TennisLogSummary): Promise<{ id: string; fairs: SharpFair[]; model: ArmModel | null } | null> {
-  const merged = mergeBooks(quotes);
+  // Reference books (API-Tennis's non-Australian books) are logged as quotes but never priced or bet.
+  const merged = mergeBooks(quotes).filter((q) => !REFERENCE_BOOKS.has(q.book));
   const pairs = pairQuotes(merged);
   const fairs = sharpFairs(pairs);
   let model: ArmModel | null = null;
@@ -524,6 +526,10 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
     // odds-api.net: one snapshot per matched event.
     const events: TennisOddsNetEvent[] = await listTennisOddsNetEvents().catch(() => []);
     const matchedNet = fixtures.map((fx) => ({ fx, hit: matchTennisOddsNetEvent(events, fx.next) }));
+    // API-Tennis odds: every match today and tomorrow (UTC) in one request, keyed by our match id.
+    const apiOdds = fixtures.length
+      ? await fetchApiTennisOdds(new Date(nowMs).toISOString().slice(0, 10), new Date(nowMs + 24 * H).toISOString().slice(0, 10))
+      : null;
 
     if (fixtures.length) {
       const rows = matchedNet.map(({ fx, hit }) => ({
@@ -590,6 +596,7 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
     const quotesByMatch = new Map<string, FeedQuote[]>();
     const rawNet: Record<string, unknown> = {};
     const rawScraped: Record<string, unknown> = {};
+    const rawApiTennis: Record<string, unknown> = {};
 
     for (const { fx, hit, snap } of netResults) {
       const state = (await sharedCache.getJSON<MatchState>(`${STATE_PREFIX}${fx.matchId}`)) ?? { quotes: {}, arms: {} };
@@ -611,6 +618,15 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
         });
         if (snap?.rowCapHit) summary.rowCapHits += 1;
         if (snap?.raw.length) rawNet[fx.matchId] = { event_id: hit.event.event_id, event_state: hit.event.event_state ?? null, pages: snap.raw };
+      }
+      if (fixtures.length) {
+        const rawApi = apiOdds?.byMatch.get(fx.matchId);
+        const rows = rawApi ? apiTennisOddsToQuotes(rawApi, fx.bestOf) : [];
+        for (const q of rows) quotes.push({ ...q, feed: 'apitennis', sourceTs: null });
+        if (!apiOdds || rawApi) {
+          heartbeats.push({ match_id: fx.matchId, feed: 'apitennis', polled_at: nowIso, ok: Boolean(apiOdds), error: apiOdds ? null : 'fetch failed', books: Object.fromEntries([...new Set(rows.map((q) => q.book))].map((b) => [b, null])), n_quotes: rows.length });
+        }
+        if (rawApi) rawApiTennis[fx.matchId] = rawApi;
       }
       for (const s of scraped.get(fx.matchId) ?? []) {
         const rows = s.source ? sourceToQuotes(s.source, s.homeIsHome, fx.bestOf, s.book) : [];
@@ -725,6 +741,7 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
     await updatePriceChecks(quotesByMatch, nowMs, summary);
     await archiveRaw('oddsnet', rawNet, nowIso, summary);
     await archiveRaw('scrapers', rawScraped, nowIso, summary);
+    await archiveRaw('apitennis', rawApiTennis, nowIso, summary);
 
     // Matches that dropped off the fixture list (started, finished) without a close: close out from the last poll.
     const current = new Set(fixtures.map((f) => f.matchId));

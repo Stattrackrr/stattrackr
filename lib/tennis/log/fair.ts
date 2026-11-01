@@ -23,7 +23,8 @@ export const PROVISIONAL_RHO = -0.5;
 /** sig seeds per market from measurable noise (spec section 7). */
 const SIG: Record<string, number> = { win: 0.02, tot: 0.03, hcp: 0.04 };
 export const MIN_EV = 0.03;
-export const CODE_VERSION = 'tennis-v0-1';
+/** v0-2: API-Tennis feed added (Pinnacle on ITF / qualifying / Challenger matches odds-api.net doesn't list). */
+export const CODE_VERSION = 'tennis-v0-2';
 
 const logit = (p: number) => Math.log(p / (1 - p));
 const isHalf = (line: number | null) => line == null || Math.abs(Math.abs(line % 1) - 0.5) < 1e-9;

@@ -12,7 +12,7 @@ import { RUN_STATS_PREFIX, type TennisLogRunStats } from './poll';
 const HEALTH_KEY = 'tennis_log_health_v1';
 const HEALTH_TTL_S = 60 * 24 * 60 * 60;
 const H = 60 * 60_000;
-const FEEDS = ['oddsnet', 'scraper:betright', 'scraper:pointsbet', 'scraper:unibet', 'scraper:ladbrokes', 'scraper:neds'];
+const FEEDS = ['oddsnet', 'apitennis', 'scraper:betright', 'scraper:pointsbet', 'scraper:unibet', 'scraper:ladbrokes', 'scraper:neds'];
 
 export type HealthCheck = { name: string; ok: boolean; value: string; expect: string };
 export type TennisLogHealth = { checkedAt: string; ok: boolean; checks: HealthCheck[]; recentErrors: Array<{ at: string; error: string }> };
@@ -75,22 +75,24 @@ export async function checkTennisLogHealth(nowMs = Date.now()): Promise<TennisLo
     const total = (ok ?? 0) + (failed ?? 0);
     if (!total) {
       // Ladbrokes / Neds scrapers are blocked (403) and odds-api.net carries both books; silence is expected.
-      if (feed === 'oddsnet' || feed === 'scraper:betright') add(`feed ${feed}`, false, 'no heartbeats in 24h', 'heartbeats every poll');
+      if (feed === 'oddsnet' || feed === 'apitennis' || feed === 'scraper:betright') add(`feed ${feed}`, false, 'no heartbeats in 24h', 'heartbeats every poll');
       continue;
     }
     add(`feed ${feed}`, (failed ?? 0) / total <= 0.1, `${failed} of ${total} failed`, 'at most 10%');
   }
 
-  // Coverage: share of tracked matches with an odds-api.net event (Pinnacle / Betfair come only from there).
-  const { data: recent } = await supabaseAdmin.from('tennis_matches').select('tier, oddsnet_event_id').gte('scheduled_start', since24).lt('scheduled_start', new Date(nowMs).toISOString()).limit(5000);
+  // Sharp coverage: share of main arms in 24h with a Pinnacle / Betfair price to anchor the fair.
+  const { data: mains } = await supabaseAdmin.from('tennis_arm_snapshots').select('match_id, sharp').eq('arm', 'main').gte('captured_at', since24).limit(5000);
+  const { data: tiers } = await supabaseAdmin.from('tennis_matches').select('match_id, tier').in('match_id', (mains ?? []).map((a) => a.match_id));
+  const tierOf = new Map((tiers ?? []).map((m) => [m.match_id, m.tier ?? 'unknown']));
   const byTier: Record<string, [number, number]> = {};
-  for (const m of recent ?? []) {
-    const t = (byTier[m.tier ?? 'unknown'] ??= [0, 0]);
+  for (const a of mains ?? []) {
+    const t = (byTier[tierOf.get(a.match_id) ?? 'unknown'] ??= [0, 0]);
     t[0] += 1;
-    if (m.oddsnet_event_id) t[1] += 1;
+    if (Array.isArray(a.sharp) && a.sharp.length) t[1] += 1;
   }
-  const tour = byTier.tour ?? [0, 0];
-  add('odds-api.net coverage, tour matches', !tour[0] || tour[1] / tour[0] >= 0.6, Object.entries(byTier).map(([t, [n, k]]) => `${t} ${k}/${n}`).join(', ') || 'no matches', 'tour at least 60%');
+  const allMains = Object.values(byTier).reduce((a, [n, k]) => [a[0] + n, a[1] + k], [0, 0]);
+  add('sharp price at the main arm', !allMains[0] || allMains[1] / allMains[0] >= 0.6, Object.entries(byTier).map(([t, [n, k]]) => `${t} ${k}/${n}`).join(', ') || 'no main arms', 'at least 60% of matches');
 
   return {
     checkedAt: new Date(nowMs).toISOString(),
