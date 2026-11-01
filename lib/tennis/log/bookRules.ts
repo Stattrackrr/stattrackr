@@ -31,7 +31,7 @@ export type BookRule =
   /** Win a set: Yes wins only if the selected player retires having won a set; everything else void. */
   | 'set_if_retirer_won';
 
-type Entry = { rule: BookRule; flag?: string };
+type Entry = { rule: BookRule; flag?: string; roundRobinNeedsSet?: boolean };
 type BookEntry = { source: string; document: string; verified: boolean; markets: Record<LogMarket, Entry> };
 
 const decidedRest = (mw: BookRule): Record<LogMarket, Entry> => ({
@@ -49,7 +49,7 @@ export const BOOK_RULES: Record<string, BookEntry> = {
     verified: true,
     markets: {
       ...decidedRest('advancer_void'),
-      match_winner: { rule: 'advancer_void', flag: 'Round-robin events (rule 9): match bets stand only after the first set.' },
+      match_winner: { rule: 'advancer_void', flag: 'Round-robin events (rule 9): match bets stand only after the first set.', roundRobinNeedsSet: true },
     },
   },
   tab: {
@@ -277,6 +277,7 @@ export function gradeForBook(book: string, market: LogMarket, line: number | nul
   const setsDone = outcome.sets.filter(setDone).length;
   const winner = outcome.winner ?? null;
   const pickedWinner = selection === winner;
+  if (entry.roundRobinNeedsSet && outcome.roundRobin && setsDone < 1) return out('void');
   switch (entry.rule) {
     case 'advancer_void':
       return out(!winner ? 'void' : pickedWinner ? 'win' : 'void');

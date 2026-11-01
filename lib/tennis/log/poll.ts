@@ -29,7 +29,7 @@ import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { chooseShadowBet, CODE_VERSION, dpKey, evaluateCandidates, invertArm, matchRules, pairQuotes, SAME_LINE_TOL, SHARP_BOOKS, sharpFairs, type ArmModel, type Candidate, type SharpFair } from './fair';
 import { BOOK_RULES_VERSION, gradeForBook } from './bookRules';
-import { GRADER_VERSION, gradeSelection, type MatchOutcome, type SetScore } from './grade';
+import { GRADER_VERSION, gradeSelection, isRoundRobin, type MatchOutcome, type SetScore } from './grade';
 import { MAPPING_VERSION, partner, quoteKey, sourceToQuotes, type LogMarket, type QuoteRow } from './quotes';
 
 export const LOG_POLICY_VERSION = 'tennis-v0-1';
@@ -348,12 +348,12 @@ async function updatePriceChecks(quotesByMatch: Map<string, FeedQuote[]>, nowMs:
 }
 
 /** The finished match from the home player's logs: status and per-set scores (home first). */
-function outcomeFromLogs(score: string, isWin: boolean): MatchOutcome & { score: string } {
+function outcomeFromLogs(score: string, isWin: boolean, roundRobin: boolean): MatchOutcome & { score: string } {
   const winner = isWin ? 'home' : 'away';
-  if (isUnplayedTennisMatch(score)) return { status: 'walkover', sets: [], score, winner };
+  if (isUnplayedTennisMatch(score)) return { status: 'walkover', sets: [], score, winner, roundRobin };
   const sets: SetScore[] = parseTennisSetsFromPlayerView(score, isWin).map((s) => ({ home: s.playerGames, away: s.opponentGames, tiebreak: s.tiebreak ?? null }));
   const status = tennisScoreIsRetired(score) ? 'retired' : /\bdef\b/i.test(score) ? 'default' : 'completed';
-  return { status, sets, score, winner };
+  return { status, sets, score, winner, roundRobin };
 }
 
 /**
@@ -425,7 +425,7 @@ async function gradeFinished(nowMs: number, summary: TennisLogSummary): Promise<
       if (stale) await supabaseAdmin.from('tennis_matches').update({ status: 'unknown', graded_at: new Date(nowMs).toISOString() }).eq('match_id', m.match_id);
       continue;
     }
-    const outcome = outcomeFromLogs(String(row.score || ''), row.isWin);
+    const outcome = outcomeFromLogs(String(row.score || ''), row.isWin, isRoundRobin(String(row.tourneyName || ''), String(row.round || '')));
     const early = outcome.status === 'retired' || outcome.status === 'default';
     const matchUpdate = {
       status: outcome.status,

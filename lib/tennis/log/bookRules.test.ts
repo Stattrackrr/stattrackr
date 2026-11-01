@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { BOOK_RULES, completions, gradeForBook } from './bookRules';
-import { gradeSelection, type MatchOutcome } from './grade';
+import { gradeSelection, isRoundRobin, type MatchOutcome } from './grade';
 import { LOG_MARKETS, type LogMarket } from './quotes';
 
 const ret = (sets: Array<[number, number]>, winner: 'home' | 'away', status: MatchOutcome['status'] = 'retired'): MatchOutcome => ({
@@ -89,6 +89,16 @@ test('walkovers void, completed matches settle normally, unknown books use the h
   assert.equal(g('pinnacle', 'total_games', 18.5, 'over', done), 'win');
   const unknown = gradeForBook('someone', 'total_games', 17.5, 'over', ret([[7, 6], [5, 0]], 'home'), 3, 'win');
   assert.deepEqual(unknown, { grade: 'win', rule: 'house', verified: false });
+});
+
+test('Sportsbet round-robin matches need a completed set for match bets', () => {
+  const early = { ...ret([[3, 2]], 'home'), roundRobin: true };
+  assert.equal(g('sportsbet', 'match_winner', null, 'home', early), 'void');
+  assert.equal(g('sportsbet', 'match_winner', null, 'home', { ...ret([[6, 3], [1, 0]], 'home'), roundRobin: true }), 'win');
+  assert.equal(isRoundRobin('ATP Finals - Turin', ''), true);
+  assert.equal(isRoundRobin('ATP Finals - Turin', 'SF'), false);
+  assert.equal(isRoundRobin('ATP Davis Cup - World Group', ''), false);
+  assert.equal(isRoundRobin('Paris', ''), false);
 });
 
 test('Palmerbet voids everything before the first set completes', () => {

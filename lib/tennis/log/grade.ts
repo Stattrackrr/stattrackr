@@ -15,7 +15,15 @@ export type MatchOutcome = {
   sets: SetScore[];
   /** The player who progressed (on a retirement or default, the one who didn't retire). */
   winner?: 'home' | 'away' | null;
+  /** A round-robin match (tour finals group stage, United Cup groups): some books treat retirements differently. */
+  roundRobin?: boolean;
 };
+
+/** Round-robin stage from API-Tennis's tournament and round (group matches carry no knockout round label). */
+export function isRoundRobin(tournament: string, round: string): boolean {
+  if (!/\bfinals\b|united cup/i.test(tournament) || /davis|billie jean/i.test(tournament)) return false;
+  return !/^(1\/\d+|r\d+|qf|sf|f|final|semi|quarter)/i.test(String(round || '').trim());
+}
 export type Grade = 'win' | 'loss' | 'push' | 'void';
 
 export const setDone = (s: SetScore) => (s.home >= 6 || s.away >= 6) && (Math.abs(s.home - s.away) >= 2 || s.home === 7 || s.away === 7);
