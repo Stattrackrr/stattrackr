@@ -13,6 +13,7 @@ import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { makeModel, priceIntegrated, type SetRule } from '@/lib/tennis/model/pricing';
 import { gradeForBook } from './bookRules';
+import { readTennisLogHealth, type TennisLogHealth } from './health';
 import { derivationVerdict, type DerivationVerdict, type MisfitRow, type PollChange } from './derivation';
 import { DEFAULT_DEVIG, type Devig } from './devig';
 import { invertArm, matchRules, MIN_EV, type SharpFair } from './fair';
@@ -95,7 +96,9 @@ export type TennisWeeklyReport = {
   };
   completion: Array<{ tour: string; tier: string; graded: number; completed: number; retired: number; walkover: number; unknown: number }>;
   pilot: { info: InfoResult | null; plan: MdePlan | null; horizon: string; note: string };
-  derivation: { noiseLogit: number; verdicts: Array<DerivationVerdict & { market: string }>; note: string };
+  derivation: { noiseLogit: number; noiseByMarket: Record<string, { sd: number; n: number }>; verdicts: Array<DerivationVerdict & { market: string }>; note: string };
+  /** The latest daily integrity check. */
+  health: TennisLogHealth | null;
 };
 
 /** Executable opportunities: qualifying sharp_direct main-arm sides still on offer 10 minutes later. */
@@ -124,8 +127,37 @@ async function opportunities(rows: Array<{ match_id: string; captured_at: string
   return { qualifying: rows.length, checked, executable10m: executable, share: checked ? executable / checked : null };
 }
 
+/**
+ * Price noise per market from Pinnacle and Betfair pricing the same line at the same arm: the logit gap between
+ * two independent noisy readings has variance 2 sigma^2, so sigma = SD(gap) / sqrt(2).
+ */
+function sharpNoise(arms: Array<{ sharp: SharpFair[] }>): Record<string, { sd: number; n: number }> {
+  const gaps: Record<string, number[]> = {};
+  for (const arm of arms) {
+    for (const f of arm.sharp ?? []) {
+      const pin = (f.byBook as Record<string, Devig | undefined>)?.pinnacle?.[DEFAULT_DEVIG][0];
+      const bf = (f.byBook as Record<string, Devig | undefined>)?.betfair?.[DEFAULT_DEVIG][0];
+      if (!(pin! > 0.02 && pin! < 0.98 && bf! > 0.02 && bf! < 0.98)) continue;
+      (gaps[f.market] ??= []).push(logit(pin!) - logit(bf!));
+    }
+  }
+  const out: Record<string, { sd: number; n: number }> = {};
+  for (const [market, xs] of Object.entries(gaps)) {
+    const mean = xs.reduce((a, v) => a + v, 0) / xs.length;
+    const sd = Math.sqrt(xs.reduce((a, v) => a + (v - mean) ** 2, 0) / Math.max(1, xs.length - 1)) / Math.SQRT2;
+    out[market] = { sd, n: xs.length };
+  }
+  return out;
+}
+
+const NOISE_MIN_PAIRS = 30;
+
 /** Pinnacle's derivative prices against its own winner + total, through the DP at the provisional tau / rho. */
-function derivationRows(arms: Array<{ match_id: string; sharp: SharpFair[] }>, matches: Map<string, MatchRow>): { handicap: MisfitRow[]; gamesWon: MisfitRow[] } {
+function derivationRows(arms: Array<{ match_id: string; sharp: SharpFair[] }>, matches: Map<string, MatchRow>, noise: Record<string, { sd: number; n: number }>): { handicap: MisfitRow[]; gamesWon: MisfitRow[] } {
+  const noiseOf = (market: string) => {
+    const m = noise[market];
+    return m && m.n >= NOISE_MIN_PAIRS && m.sd > 0 ? m.sd : PROVISIONAL_NOISE_LOGIT;
+  };
   const handicap: MisfitRow[] = [];
   const gamesWon: MisfitRow[] = [];
   for (const arm of arms) {
@@ -164,7 +196,7 @@ function derivationRows(arms: Array<{ match_id: string; sharp: SharpFair[] }>, m
       const row: MisfitRow = {
         match: arm.match_id,
         tier: m.tier ?? 'unknown',
-        z: misfit / PROVISIONAL_NOISE_LOGIT,
+        z: misfit / noiseOf(f.market),
         misfit,
         logitWin: logit(win.p),
         totalLine: Number(totals[0]!.line),
@@ -285,7 +317,8 @@ export async function buildTennisWeeklyReport(nowMs = Date.now()): Promise<Tenni
 
   // Pinnacle derivation on the most recent main arms.
   const recentMain = arms.filter((a) => a.arm === 'main').sort((a, b) => b.captured_at.localeCompare(a.captured_at)).slice(0, DERIVATION_ARMS);
-  const der = derivationRows(recentMain, matches);
+  const noise = sharpNoise(arms.filter((a) => a.arm === 'main'));
+  const der = derivationRows(recentMain, matches, noise);
   const moves = await pinnacleMoves(since7).catch(() => null);
   const verdicts: TennisWeeklyReport['derivation']['verdicts'] = [];
   for (const [market, rows] of [['game_handicap', der.handicap], ['games_won', der.gamesWon]] as const) {
@@ -333,9 +366,11 @@ export async function buildTennisWeeklyReport(nowMs = Date.now()): Promise<Tenni
     },
     derivation: {
       noiseLogit: PROVISIONAL_NOISE_LOGIT,
+      noiseByMarket: noise,
       verdicts,
-      note: 'Pinnacle winner + main total inverted at the provisional tau/rho; misfits standardised by a provisional noise SD until repeat-quote noise is measured.',
+      note: `Pinnacle winner + main total inverted at the provisional tau/rho; misfits standardised by each market's measured noise (Pinnacle vs Betfair on the same line, SD/sqrt 2) once it has ${NOISE_MIN_PAIRS}+ pairs, else the provisional ${PROVISIONAL_NOISE_LOGIT}.`,
     },
+    health: await readTennisLogHealth().catch(() => null),
   };
 }
 

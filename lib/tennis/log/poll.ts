@@ -526,9 +526,9 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
     const matchedNet = fixtures.map((fx) => ({ fx, hit: matchTennisOddsNetEvent(events, fx.next) }));
 
     if (fixtures.length) {
-      const base = matchedNet.map(({ fx, hit }) => ({
+      const rows = matchedNet.map(({ fx, hit }) => ({
         match_id: fx.matchId,
-        oddsnet_event_id: hit ? String(hit.event.event_id) : null,
+        ...(hit ? { oddsnet_event_id: String(hit.event.event_id) } : {}),
         tour: fx.next.tour,
         tier: fx.tier,
         tournament: fx.next.tournamentName,
@@ -544,7 +544,7 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
         policy_version: LOG_POLICY_VERSION,
         updated_at: nowIso,
       }));
-      const withConditions = base.map((row, i) => {
+      const withConditions = rows.map((row, i) => {
         const fx = matchedNet[i]!.fx;
         const venue = lookupTennisVenue(fx.next.tournamentName, fx.next.surface);
         const located = Number.isFinite(venue.lat) && Number.isFinite(venue.lng) && !(venue.lat === 0 && venue.lng === 0);
@@ -561,10 +561,13 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
           away_hand: tennisHandForName(fx.next.awayName),
         };
       });
-      let { error } = await supabaseAdmin.from('tennis_matches').upsert(withConditions, { onConflict: 'match_id' });
-      // Before migrations/tennis_logging_v2.sql the condition columns don't exist; keep logging without them.
-      if (error && /column/i.test(error.message)) ({ error } = await supabaseAdmin.from('tennis_matches').upsert(base, { onConflict: 'match_id' }));
-      if (error) summary.errors.push(`tennis_matches: ${error.message}`);
+      // A batch upsert writes the union of its rows' columns (missing ones as null), so matches whose
+      // odds-api.net event has dropped (live) go in their own batch and keep the stored event id.
+      for (const batch of [withConditions.filter((r) => 'oddsnet_event_id' in r), withConditions.filter((r) => !('oddsnet_event_id' in r))]) {
+        if (!batch.length) continue;
+        const { error } = await supabaseAdmin.from('tennis_matches').upsert(batch, { onConflict: 'match_id' });
+        if (error) summary.errors.push(`tennis_matches: ${error.message}`);
+      }
     }
     const netResults = await mapLimit(matchedNet, CONCURRENCY, async ({ fx, hit }) =>
       hit ? { fx, hit, snap: await fetchTennisOddsNetSnapshot(hit.event).catch(() => null) } : { fx, hit, snap: null }
@@ -761,5 +764,46 @@ export async function runTennisLog(nowMs = Date.now()): Promise<TennisLogSummary
   } finally {
     await sharedCache.deleteJSON(LOCK_KEY).catch(() => undefined);
   }
+  await recordRun(summary, nowMs).catch(() => undefined);
   return summary;
+}
+
+export type TennisLogRunStats = {
+  date: string;
+  runs: number;
+  runsWithErrors: number;
+  lastRunAt: string | null;
+  maxGapMinutes: number;
+  quotesWritten: number;
+  shadowBets: number;
+  graded: number;
+  arms: Record<string, number>;
+  recentErrors: Array<{ at: string; error: string }>;
+};
+
+export const RUN_STATS_PREFIX = 'tennis_log_runs_v1:';
+
+/** Daily run counters for the health check: errors otherwise only reach the cron's HTTP response. */
+async function recordRun(summary: TennisLogSummary, nowMs: number): Promise<void> {
+  const date = new Date(nowMs).toISOString().slice(0, 10);
+  const key = `${RUN_STATS_PREFIX}${date}`;
+  const prev = (await sharedCache.getJSON<TennisLogRunStats>(key)) ?? { date, runs: 0, runsWithErrors: 0, lastRunAt: null, maxGapMinutes: 0, quotesWritten: 0, shadowBets: 0, graded: 0, arms: {}, recentErrors: [] };
+  const lastAt = prev.lastRunAt ?? (await sharedCache.getJSON<TennisLogRunStats>(`${RUN_STATS_PREFIX}${new Date(nowMs - 24 * H).toISOString().slice(0, 10)}`))?.lastRunAt ?? null;
+  const gap = lastAt ? (nowMs - Date.parse(lastAt)) / 60_000 : 0;
+  const arms = { ...prev.arms };
+  for (const [arm, n] of Object.entries(summary.arms)) arms[arm] = (arms[arm] ?? 0) + n;
+  const errors = summary.errors.filter((e) => e !== 'Previous run still going');
+  const next: TennisLogRunStats = {
+    date,
+    runs: prev.runs + 1,
+    runsWithErrors: prev.runsWithErrors + (errors.length ? 1 : 0),
+    lastRunAt: new Date(nowMs).toISOString(),
+    maxGapMinutes: Math.max(prev.maxGapMinutes, Math.round(gap)),
+    quotesWritten: prev.quotesWritten + summary.quotesWritten,
+    shadowBets: prev.shadowBets + summary.shadowBets,
+    graded: prev.graded + summary.graded,
+    arms,
+    recentErrors: [...prev.recentErrors, ...errors.slice(0, 3).map((error) => ({ at: new Date(nowMs).toISOString(), error: error.slice(0, 300) }))].slice(-20),
+  };
+  await sharedCache.setJSON(key, next, 14 * 24 * 60 * 60);
 }
