@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-31T17:41:06.532Z",
+  "generatedAt": "2026-11-01T18:23:55.088Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
-  "sourceUpdatedText": "Saturday, October 24, 5:00pm AEDT",
-  "injuryCount": 20,
+  "sourceUpdatedText": "October 33, 5:00pm AEDT (their stamp as printed, which is not a real date)",
+  "injuryCount": 24,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -39,6 +39,24 @@
       "returning": "Round 10",
       "status": "Out",
       "note": "Expected to miss five weeks with the ankle injury from 15 October 2026, Walshly News reported on 21 October. Archie Woodhill suits up in his place.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Brisbane Bullets",
+      "player": "Max Mackinnon",
+      "injury": "Concussion",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "The Brisbane Bullets said on Saturday 31 October 2026 that Mackinnon is out of their upcoming games because of concussion protocols. He last played against the Cairns Taipans on Thursday 29 October.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Brisbane Bullets",
+      "player": "Lat Mayen",
+      "injury": "Undisclosed",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "The Brisbane Bullets ruled Mayen out of the Round 7 game against the Adelaide 36ers on Sunday 1 November 2026. The NBL lists the injury as undisclosed and spells his name Lay.",
       "listedByNbl": true
     },
     {
@@ -144,7 +162,7 @@
       "injury": "Calf",
       "returning": "Possibly 8 November",
       "status": "Out",
-      "note": "The Sydney Kings said on Tuesday 27 October 2026 that Dellavedova will miss both Round 7 games, against the Perth Wildcats on Wednesday 28 October and the Tasmania JackJumpers on Friday 30 October, as he continues his recovery from a calf injury. The club named a potential return against the South East Melbourne Phoenix on Sunday 8 November. Lachlan Bofinger replaces him in the squad. The NBL’s list of 24 October still has him back in Round 7.",
+      "note": "The Sydney Kings said on Tuesday 27 October 2026 that Dellavedova will miss both Round 7 games, against the Perth Wildcats on Wednesday 28 October and the Tasmania JackJumpers on Friday 30 October, as he continues his recovery from a calf injury. The club named a potential return against the South East Melbourne Phoenix on Sunday 8 November. Lachlan Bofinger replaces him in the squad. The NBL’s list of 30 October has his return as TBC.",
       "listedByNbl": true
     },
     {
@@ -159,9 +177,9 @@
       "team": "Tasmania JackJumpers",
       "player": "Ben Ayre",
       "injury": "Hip flexor",
-      "returning": "Round 7",
+      "returning": "Round 9",
       "status": "Out",
-      "note": "WIN News Tasmania’s Brent Costelloe reported from the JackJumpers press conference on Wednesday 17 September that Ayre was \"still a few weeks away from returning\". The NBL’s list of 20 October has him back in Round 7, having listed him as a test on 13 October.",
+      "note": "WIN News Tasmania’s Brent Costelloe reported from the JackJumpers press conference on Wednesday 17 September that Ayre was \"still a few weeks away from returning\". He has not played in NBL27 and missed both Round 7 games. The NBL’s latest list still has him back in Round 9.",
       "listedByNbl": true
     },
     {
@@ -170,7 +188,16 @@
       "injury": "Lower leg",
       "returning": "Mid-December",
       "status": "Out",
-      "note": "Michael Randall reported on 22 September 2026 that Deng will miss Tasmania’s trip to the Cairns Taipans on Wednesday 23 September, joining Josh Bannan, Anthony Drmic, Ben Ayre and Bryce Hamilton on the sidelines, without specifying an injury. The NBL’s own list added him as a lower leg injury in its 26 September update. On 31 October 2026 he was expected to miss another six weeks, which points to mid-December. The NBL’s list of 30 October has him back in Round 13.",
+      "note": "Michael Randall reported on 22 September 2026 that Deng will miss Tasmania’s trip to the Cairns Taipans on Wednesday 23 September, joining Josh Bannan, Anthony Drmic, Ben Ayre and Bryce Hamilton on the sidelines, without specifying an injury. The NBL’s own list added him as a lower leg injury in its 26 September update. The NBL said on 30 October 2026 he will miss a further six weeks with a fractured fibula, which points to mid-December, and its list of that date has him back in Round 13.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Tasmania JackJumpers",
+      "player": "Ben Gold",
+      "injury": "Foot",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Head coach Scott Roth said after Tasmania’s loss to the Sydney Kings on Friday 30 October 2026 that Gold has been dealing with a foot problem, has not practised in about two weeks and will be shut down “for a while”. The NBL’s list carries him as an ankle injury, return to be confirmed.",
       "listedByNbl": true
     },
     {
@@ -180,6 +207,15 @@
       "returning": "TBC",
       "status": "Out",
       "note": "Tasmania have confirmed the knee injury is an ACL, and have signed Nick Stoddart as a Nominated Replacement Player to cover him for the Blitz and the start of the season.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Tasmania JackJumpers",
+      "player": "David Johnson",
+      "injury": "Calf",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Johnson left Tasmania’s loss to the Sydney Kings on Friday 30 October 2026 in the second quarter and did not return. Head coach Scott Roth said afterwards the calf injury “is going to be quite a while”.",
       "listedByNbl": true
     }
   ]

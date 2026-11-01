@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-10-31T17:40:16.806Z",
+  "generatedAt": "2026-11-01T18:23:21.054Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2176,7 +2176,7 @@
       "externalId": "372517f1-58ad-11f1-b481-53622f199a68",
       "startTime": "2026-11-01T06:00:00.000Z",
       "round": "7",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Adelaide 36ers",
       "homeTeamCode": "ADL",
       "homeTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
@@ -2185,8 +2185,8 @@
       "awayTeamCode": "BRI",
       "awayTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 89,
+      "awayScore": 96,
       "venue": "Adelaide Entertainment Centre",
       "matchSlug": "adelaide-36ers-v-brisbane-bullets-men-01-11-2026"
     },
@@ -2195,7 +2195,7 @@
       "externalId": "374fd3d1-58ad-11f1-945e-cbcb1725dbfe",
       "startTime": "2026-11-01T04:00:00.000Z",
       "round": "7",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
       "homeTeamCode": "SEM",
       "homeTeamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
@@ -2204,8 +2204,8 @@
       "awayTeamCode": "TAS",
       "awayTeamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 89,
+      "awayScore": 98,
       "venue": "John Cain Arena",
       "matchSlug": "south-east-melbourne-phoenix-v-tasmania-jackjumpers-men-01-11-2026"
     },
