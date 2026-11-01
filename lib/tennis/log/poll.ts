@@ -28,6 +28,7 @@ import { makeModel, priceIntegrated } from '@/lib/tennis/model/pricing';
 import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { chooseShadowBet, CODE_VERSION, dpKey, evaluateCandidates, invertArm, matchRules, pairQuotes, SAME_LINE_TOL, SHARP_BOOKS, sharpFairs, type ArmModel, type Candidate, type SharpFair } from './fair';
+import { BOOK_RULES_VERSION, gradeForBook } from './bookRules';
 import { GRADER_VERSION, gradeSelection, type MatchOutcome, type SetScore } from './grade';
 import { MAPPING_VERSION, partner, quoteKey, sourceToQuotes, type LogMarket, type QuoteRow } from './quotes';
 
@@ -348,10 +349,11 @@ async function updatePriceChecks(quotesByMatch: Map<string, FeedQuote[]>, nowMs:
 
 /** The finished match from the home player's logs: status and per-set scores (home first). */
 function outcomeFromLogs(score: string, isWin: boolean): MatchOutcome & { score: string } {
-  if (isUnplayedTennisMatch(score)) return { status: 'walkover', sets: [], score };
+  const winner = isWin ? 'home' : 'away';
+  if (isUnplayedTennisMatch(score)) return { status: 'walkover', sets: [], score, winner };
   const sets: SetScore[] = parseTennisSetsFromPlayerView(score, isWin).map((s) => ({ home: s.playerGames, away: s.opponentGames, tiebreak: s.tiebreak ?? null }));
   const status = tennisScoreIsRetired(score) ? 'retired' : /\bdef\b/i.test(score) ? 'default' : 'completed';
-  return { status, sets, score };
+  return { status, sets, score, winner };
 }
 
 /**
@@ -405,7 +407,7 @@ async function markEnded(nowMs: number, summary: TennisLogSummary): Promise<void
 async function gradeFinished(nowMs: number, summary: TennisLogSummary): Promise<void> {
   const { data: matches, error } = await supabaseAdmin
     .from('tennis_matches')
-    .select('match_id, home_id, scheduled_start')
+    .select('match_id, home_id, scheduled_start, best_of')
     .is('graded_at', null)
     .lt('scheduled_start', new Date(nowMs - GRADE_AFTER_MS).toISOString())
     .limit(40);
@@ -424,28 +426,38 @@ async function gradeFinished(nowMs: number, summary: TennisLogSummary): Promise<
       continue;
     }
     const outcome = outcomeFromLogs(String(row.score || ''), row.isWin);
-    const { error: mError } = await supabaseAdmin
-      .from('tennis_matches')
-      .update({
-        status: outcome.status,
-        score: outcome.score,
-        set_scores: outcome.sets,
-        completed: outcome.status === 'completed',
-        graded_at: new Date(nowMs).toISOString(),
-        updated_at: new Date(nowMs).toISOString(),
-      })
-      .eq('match_id', m.match_id);
+    const early = outcome.status === 'retired' || outcome.status === 'default';
+    const matchUpdate = {
+      status: outcome.status,
+      score: outcome.score,
+      set_scores: outcome.sets,
+      completed: outcome.status === 'completed',
+      retired_side: early ? (outcome.winner === 'home' ? 'away' : 'home') : null,
+      graded_at: new Date(nowMs).toISOString(),
+      updated_at: new Date(nowMs).toISOString(),
+    };
+    let { error: mError } = await supabaseAdmin.from('tennis_matches').update({ ...matchUpdate, winner_side: outcome.winner }).eq('match_id', m.match_id);
+    // Before migrations/tennis_book_void_rules.sql there is no winner_side column.
+    if (mError && /column/i.test(mError.message)) ({ error: mError } = await supabaseAdmin.from('tennis_matches').update(matchUpdate).eq('match_id', m.match_id));
     if (mError) {
       summary.errors.push(`match result ${m.match_id}: ${mError.message}`);
       continue;
     }
-    const { data: bets } = await supabaseAdmin.from('tennis_shadow_bets').select('id, market, line, selection').eq('match_id', m.match_id).is('result', null);
+    // Option A: the posted book's rule settles the bet; the house grade is kept as the sensitivity check.
+    const { data: bets } = await supabaseAdmin.from('tennis_shadow_bets').select('id, book, market, line, selection').eq('match_id', m.match_id).is('result', null);
     for (const b of bets ?? []) {
-      const result = gradeSelection(b.market as LogMarket, b.line == null ? null : Number(b.line), b.selection, outcome);
-      await supabaseAdmin
-        .from('tennis_shadow_bets')
-        .update({ result, grader_version: GRADER_VERSION, rule_unverified: true, graded_at: new Date(nowMs).toISOString() })
-        .eq('id', b.id);
+      const line = b.line == null ? null : Number(b.line);
+      const house = gradeSelection(b.market as LogMarket, line, b.selection, outcome);
+      const byBook = gradeForBook(b.book, b.market as LogMarket, line, b.selection, outcome, Number(m.best_of) || 3, house);
+      const update = {
+        result: byBook.grade,
+        grader_version: byBook.rule === 'house' ? GRADER_VERSION : `${BOOK_RULES_VERSION}:${byBook.rule}`,
+        rule_unverified: !byBook.verified,
+        graded_at: new Date(nowMs).toISOString(),
+      };
+      let { error: bError } = await supabaseAdmin.from('tennis_shadow_bets').update({ ...update, result_house: house }).eq('id', b.id);
+      if (bError && /column/i.test(bError.message)) ({ error: bError } = await supabaseAdmin.from('tennis_shadow_bets').update(update).eq('id', b.id));
+      if (bError) summary.errors.push(`bet grade ${b.id}: ${bError.message}`);
     }
     summary.graded += 1;
   }

@@ -12,6 +12,7 @@
 import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { makeModel, priceIntegrated, type SetRule } from '@/lib/tennis/model/pricing';
+import { gradeForBook } from './bookRules';
 import { derivationVerdict, type DerivationVerdict, type MisfitRow, type PollChange } from './derivation';
 import { DEFAULT_DEVIG, type Devig } from './devig';
 import { invertArm, matchRules, MIN_EV, type SharpFair } from './fair';
@@ -41,6 +42,7 @@ type MatchRow = {
   set_scores: SetScore[] | null;
   graded_at: string | null;
   scheduled_start: string | null;
+  winner_side?: 'home' | 'away' | null;
 };
 
 /** Every row of a select, 1000 at a time. */
@@ -62,7 +64,7 @@ async function count(table: string, filter: (q: any) => any = (q) => q): Promise
 
 function outcomeOf(m: MatchRow): MatchOutcome | null {
   if (!m.graded_at || !['completed', 'retired', 'default', 'walkover'].includes(m.status)) return null;
-  return { status: m.status as MatchOutcome['status'], sets: m.set_scores ?? [] };
+  return { status: m.status as MatchOutcome['status'], sets: m.set_scores ?? [], winner: m.winner_side ?? null };
 }
 
 export type TennisWeeklyReport = {
@@ -82,7 +84,9 @@ export type TennisWeeklyReport = {
   shadow: {
     bets: number;
     graded: Record<string, number>;
+    /** Settled under each bet's book rules (Option A); the house rule is the sensitivity check. */
     units: number;
+    unitsHouseRule: number;
     clvTotal: ReturnType<typeof clusteredMean>;
     clvA: ReturnType<typeof clusteredMean>;
     clvB: ReturnType<typeof clusteredMean>;
@@ -198,7 +202,9 @@ export async function buildTennisWeeklyReport(nowMs = Date.now()): Promise<Tenni
   const since7 = new Date(nowMs - 7 * DAY).toISOString();
   const since28 = new Date(nowMs - 28 * DAY).toISOString();
 
-  const matchRows = await selectAll<MatchRow>('tennis_matches', 'match_id, tour, tier, best_of, is_grand_slam, status, set_scores, graded_at, scheduled_start');
+  const matchCols = 'match_id, tour, tier, best_of, is_grand_slam, status, set_scores, graded_at, scheduled_start';
+  // winner_side arrives with migrations/tennis_book_void_rules.sql.
+  const matchRows = await selectAll<MatchRow>('tennis_matches', `${matchCols}, winner_side`).catch(() => selectAll<MatchRow>('tennis_matches', matchCols));
   const matches = new Map(matchRows.map((m) => [m.match_id, m]));
   const arms = await selectAll<{ match_id: string; arm: string; captured_at: string; sharp: SharpFair[]; model: unknown }>('tennis_arm_snapshots', 'match_id, arm, captured_at, sharp, model');
 
@@ -229,16 +235,18 @@ export async function buildTennisWeeklyReport(nowMs = Date.now()): Promise<Tenni
   const qualifying = mainCands.filter((c) => c.fair_source === 'sharp_direct' && Number(c.ev) >= MIN_EV && c.captured_at >= since28);
 
   // Would-be bets.
-  const bets = await selectAll<{ match_id: string; price: number; result: string | null; vanished: boolean | null; clv: { total?: number; a?: number; b?: number } | null }>(
-    'tennis_shadow_bets',
-    'match_id, price, result, vanished, clv'
-  );
+  type BetRow = { match_id: string; price: number; result: string | null; result_house?: string | null; vanished: boolean | null; clv: { total?: number; a?: number; b?: number } | null };
+  const betCols = 'match_id, price, result, vanished, clv';
+  const bets = await selectAll<BetRow>('tennis_shadow_bets', `${betCols}, result_house`).catch(() => selectAll<BetRow>('tennis_shadow_bets', betCols));
   const graded: Record<string, number> = {};
+  const unitsOf = (r: string | null | undefined, price: number) => (r === 'win' ? price - 1 : r === 'loss' ? -1 : 0);
   let units = 0;
+  let unitsHouse = 0;
   for (const b of bets) {
     if (!b.result) continue;
     graded[b.result] = (graded[b.result] ?? 0) + 1;
-    units += b.result === 'win' ? Number(b.price) - 1 : b.result === 'loss' ? -1 : 0;
+    units += unitsOf(b.result, Number(b.price));
+    unitsHouse += unitsOf(b.result_house ?? b.result, Number(b.price));
   }
   const clvRows = (k: 'total' | 'a' | 'b') => bets.filter((b) => b.clv && Number.isFinite(b.clv[k])).map((b) => ({ match: b.match_id, v: Number(b.clv![k]) }));
   const vanishedChecked = bets.filter((b) => b.vanished != null);
@@ -264,7 +272,9 @@ export async function buildTennisWeeklyReport(nowMs = Date.now()): Promise<Tenni
     const m = matches.get(c.match_id);
     const outcome = m && outcomeOf(m);
     if (!outcome) continue;
-    const g = gradeSelection(c.market as LogMarket, c.line == null ? null : Number(c.line), c.selection, outcome);
+    const line = c.line == null ? null : Number(c.line);
+    const house = gradeSelection(c.market as LogMarket, line, c.selection, outcome);
+    const g = gradeForBook(c.book, c.market as LogMarket, line, c.selection, outcome, m.best_of, house).grade;
     if (g !== 'win' && g !== 'loss') continue;
     infoRows.push({ match: c.match_id, y: g === 'win' ? 1 : 0, q: Number(c.q), edge: Number(c.edge), price: Number(c.price) });
   }
@@ -305,6 +315,7 @@ export async function buildTennisWeeklyReport(nowMs = Date.now()): Promise<Tenni
       bets: bets.length,
       graded,
       units: Math.round(units * 100) / 100,
+      unitsHouseRule: Math.round(unitsHouse * 100) / 100,
       clvTotal: clusteredMean(clvRows('total')),
       clvA: clusteredMean(clvRows('a')),
       clvB: clusteredMean(clvRows('b')),
