@@ -27,11 +27,12 @@ type HandIndex = {
 };
 
 const NAME_PARTICLES = new Set(['de', 'da', 'do', 'dos', 'das', 'van', 'von', 'del', 'della', 'di', 'le', 'la', 'el']);
+const NAME_SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv']);
 
 function nameWords(name: string): string[] {
   return foldTennisName(name)
     .split(' ')
-    .filter((w) => w && !NAME_PARTICLES.has(w));
+    .filter((w) => w && !NAME_PARTICLES.has(w) && !NAME_SUFFIXES.has(w));
 }
 
 /** "A. Zverev" -> "a|zverev"; null unless the name is initial(s) then spelled-out words. */

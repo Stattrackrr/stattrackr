@@ -407,7 +407,7 @@ async function markEnded(nowMs: number, summary: TennisLogSummary): Promise<void
 async function gradeFinished(nowMs: number, summary: TennisLogSummary): Promise<void> {
   const { data: matches, error } = await supabaseAdmin
     .from('tennis_matches')
-    .select('match_id, home_id, scheduled_start, best_of')
+    .select('match_id, home_id, scheduled_start, best_of, minutes_observed')
     .is('graded_at', null)
     .lt('scheduled_start', new Date(nowMs - GRADE_AFTER_MS).toISOString())
     .limit(40);
@@ -427,7 +427,11 @@ async function gradeFinished(nowMs: number, summary: TennisLogSummary): Promise<
     }
     const outcome = outcomeFromLogs(String(row.score || ''), row.isWin, isRoundRobin(String(row.tourneyName || ''), String(row.round || '')));
     const early = outcome.status === 'retired' || outcome.status === 'default';
+    // A start seen late (API-Tennis's live flag can lag) gives an impossible length: under 2 minutes a game.
+    const games = outcome.sets.reduce((a, s) => a + s.home + s.away, 0);
+    const implausible = m.minutes_observed != null && Number(m.minutes_observed) < 2 * games;
     const matchUpdate = {
+      ...(implausible ? { minutes_observed: null } : {}),
       status: outcome.status,
       score: outcome.score,
       set_scores: outcome.sets,

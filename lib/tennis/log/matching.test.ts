@@ -8,6 +8,7 @@ test('short fixture names match full odds names with extra given names and parti
   assert.ok(tennisShortFullMatch('Joaquin Aguilar Cardozo', 'J. Aguilar Cardozo'));
   assert.ok(tennisShortFullMatch('T. A. Tirante', 'Tirante, Thiago Agustin'));
   assert.ok(tennisShortFullMatch('A. De Minaur', 'Alex de Minaur'));
+  assert.ok(tennisShortFullMatch('M. Damm', 'Martin Damm Jr'));
 });
 
 test('short-name match never takes a different initial or a partial surname', () => {

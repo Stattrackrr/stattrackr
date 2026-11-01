@@ -144,8 +144,10 @@ function foldWords(name: string): string[] {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .split(/[^a-z]+/)
-    .filter((w) => w && !NAME_PARTICLES.has(w));
+    .filter((w) => w && !NAME_PARTICLES.has(w) && !NAME_SUFFIXES.has(w));
 }
+
+const NAME_SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv']);
 
 /**
  * "J. Reis Da Silva" against "Joao Lucas Reis Da Silva": the first initial starts the first given name and the
