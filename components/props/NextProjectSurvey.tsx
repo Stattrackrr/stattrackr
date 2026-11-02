@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import { useTheme } from '@/contexts/ThemeContext';
 import { NEXT_PROJECT_OPTIONS, type NextProjectOption } from '@/lib/nextProjectSurvey';
@@ -23,12 +23,14 @@ export function NextProjectSurvey() {
   const [error, setError] = useState<string | null>(null);
   const [thanks, setThanks] = useState(false);
   const [preview, setPreview] = useState(false);
+  // ?survey=preview opens it straight away and saves nothing (to check the look before launch). Read while
+  // rendering: the props page rewrites its URL in its own (layout) effects, which run first and drop the query.
+  const previewRef = useRef(typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('survey') === 'preview');
   const isDark = mounted && themeDark;
 
   useEffect(() => {
     setMounted(true);
-    // ?survey=preview opens it straight away and saves nothing (to check the look before launch).
-    if (new URLSearchParams(window.location.search).get('survey') === 'preview') {
+    if (previewRef.current) {
       setPreview(true);
       setOpen(true);
       return;
@@ -85,7 +87,7 @@ export function NextProjectSurvey() {
 
   const toggle = (id: NextProjectOption) => {
     setError(null);
-    setChoices((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+    setChoices([id]);
   };
 
   const wantsSport = choices.includes('another_sport');
@@ -159,7 +161,7 @@ export function NextProjectSurvey() {
               <p className={`mt-4 text-sm leading-6 sm:text-[15px] ${muted}`}>
                 Our betting AI is collecting data every day. While it learns, we&apos;re starting our next project, and you get to help pick it.
               </p>
-              <p className={`mt-2 text-xs sm:text-[13px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Choose as many as you like.</p>
+              <p className={`mt-2 text-xs sm:text-[13px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Pick one.</p>
 
               <div className="mt-4 grid grid-cols-1 gap-2.5">
                 {NEXT_PROJECT_OPTIONS.map((option) => {
@@ -184,6 +186,16 @@ export function NextProjectSurvey() {
                           <div>
                             <div className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{option.label}</div>
                             <div className={`mt-0.5 text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{option.detail}</div>
+                            {option.points.length ? (
+                              <ul className={`mt-1.5 space-y-1 text-xs leading-5 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                                {option.points.map((point) => (
+                                  <li key={point} className="flex gap-2">
+                                    <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-purple-400" />
+                                    {point}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : null}
                           </div>
                           <span
                             className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
