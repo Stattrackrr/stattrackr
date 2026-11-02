@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shared utilities for fetching and parsing BettingPros DVP data
  */
 
@@ -168,175 +168,80 @@ export function extractStatsFromHTML(html: string): any {
   return parsed;
 }
 
+const CACHE_KEY = 'bettingpros_dvp_data';
+/** The last full table, kept indefinitely (over 300 days never expires in nbaCache) for when the page is empty. */
+export const BETTINGPROS_LAST_GOOD_KEY = 'bettingpros_dvp_last_good';
+const LAST_GOOD_TTL_MINUTES = 400 * 24 * 60;
+const BP_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.5',
+};
+
+/** The page, parsed; null when it can't be fetched or carries no usable table. */
+async function fetchBettingProsPage(url: string): Promise<any | null> {
+  try {
+    const response = await fetch(url, { headers: BP_HEADERS, cache: 'no-store' });
+    if (!response.ok) {
+      console.warn(`[BettingPros] HTTP ${response.status}`);
+      return null;
+    }
+    const html = await response.text();
+    if (!html || html.length < 1000) return null;
+    const data = extractStatsFromHTML(html);
+    if (!data || typeof data !== 'object' || !hasTeams(data)) {
+      console.warn(`[BettingPros] Page has ${Object.keys(data?.teamStats ?? {}).length} teams in teamStats`);
+      return null;
+    }
+    return data;
+  } catch (err: any) {
+    console.warn('[BettingPros] Fetch/parse failed:', err?.message ?? err);
+    return null;
+  }
+}
+
 /**
- * Fetch and cache BettingPros data (shared across all requests)
+ * BettingPros Defense vs Position data, shared by every DvP view. Order: fresh cache, the page (retried once
+ * past the CDN cache), then the recent copy, then the last full table. BettingPros sometimes publishes the
+ * page with an empty table (avgGamesPlayed 0): that is never cached or served.
  */
 export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
-  const cacheKey = 'bettingpros_dvp_data';
-  
-  // Check cache (cache for 1 hour to avoid hitting BettingPros too frequently)
   if (!forceRefresh) {
-    // Try in-memory cache first (fastest)
-    const cached = cache.get<any>(cacheKey);
-    if (cached && hasTeams(cached)) {
-      return cached;
-    }
-    
-    // Try Supabase cache (persistent across cold starts)
+    const cached = cache.get<any>(CACHE_KEY);
+    if (cached && hasTeams(cached)) return cached;
     try {
-      const supabaseCached = await getNBACache<any>(cacheKey, { quiet: true });
+      const supabaseCached = await getNBACache<any>(CACHE_KEY, { quiet: true });
       if (supabaseCached && hasTeams(supabaseCached)) {
-        // Store in in-memory cache for faster future access
-        cache.set(cacheKey, supabaseCached, 60); // 60 minutes
+        cache.set(CACHE_KEY, supabaseCached, 60);
         return supabaseCached;
       }
     } catch (error) {
-      // Supabase cache failed, continue with fetch
       console.warn('[BettingPros] Supabase cache check failed, continuing with fetch:', error);
     }
   }
 
-  // Fetch the HTML page
-  const response = await fetch(BETTINGPROS_URL, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.5',
-    },
-    cache: 'no-store',
-  });
-
-  if (!response.ok) {
-    // Try to use stale cache if available (in-memory first, then Supabase)
-    let staleCache = cache.get<any>(cacheKey);
-    if (staleCache && hasTeams(staleCache)) {
-      console.warn(`[BettingPros] HTTP ${response.status}, using stale in-memory cached data`);
-      return staleCache;
-    }
-    
-    // Try Supabase cache
-    try {
-      const supabaseStale = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseStale && hasTeams(supabaseStale)) {
-        console.warn(`[BettingPros] HTTP ${response.status}, using stale Supabase cached data`);
-        cache.set(cacheKey, supabaseStale, 60);
-        return supabaseStale;
-      }
-    } catch (error) {
-      // Supabase check failed, continue
-    }
-    
-    throw new Error(`BettingPros ${response.status}: ${response.statusText}`);
+  const fresh = (await fetchBettingProsPage(BETTINGPROS_URL)) ?? (await fetchBettingProsPage(`${BETTINGPROS_URL}?_=${Date.now()}`));
+  if (fresh) {
+    cache.set(CACHE_KEY, fresh, 3600000);
+    setNBACache(CACHE_KEY, 'bettingpros_dvp', fresh, 60, true).catch((err) => console.warn('[BettingPros] Failed to store in Supabase cache:', err));
+    setNBACache(BETTINGPROS_LAST_GOOD_KEY, 'bettingpros_dvp', fresh, LAST_GOOD_TTL_MINUTES, true).catch(() => undefined);
+    return fresh;
   }
 
-  const html = await response.text();
-  
-  if (!html || html.length < 1000) {
-    // Try to use stale cache if available (in-memory first, then Supabase)
-    let staleCache = cache.get<any>(cacheKey);
-    if (staleCache && hasTeams(staleCache)) {
-      console.warn('[BettingPros] Empty/invalid HTML, using stale in-memory cached data');
-      return staleCache;
-    }
-    
-    // Try Supabase cache
+  const stale = cache.get<any>(CACHE_KEY);
+  if (stale && hasTeams(stale)) return stale;
+  for (const key of [CACHE_KEY, BETTINGPROS_LAST_GOOD_KEY]) {
     try {
-      const supabaseStale = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseStale && hasTeams(supabaseStale)) {
-        console.warn('[BettingPros] Empty/invalid HTML, using stale Supabase cached data');
-        cache.set(cacheKey, supabaseStale, 60);
-        return supabaseStale;
+      const saved = await getNBACache<any>(key, { quiet: true });
+      if (saved && hasTeams(saved)) {
+        console.warn(`[BettingPros] Live page unusable, serving ${key}`);
+        cache.set(CACHE_KEY, saved, 15);
+        return saved;
       }
-    } catch (error) {
-      // Supabase check failed, continue
+    } catch {
+      // try the next copy
     }
-    
-    throw new Error('BettingPros returned empty or invalid HTML');
   }
-  
-  let bpData;
-  try {
-    bpData = extractStatsFromHTML(html);
-  } catch (extractError: any) {
-    console.error('[BettingPros] Error extracting data from HTML:', extractError.message);
-    // Try to use cached data if available (even if expired) - in-memory first, then Supabase
-    let staleCache = cache.get<any>(cacheKey);
-    if (staleCache && hasTeams(staleCache)) {
-      console.warn('[BettingPros] Using stale in-memory cached data due to extraction error');
-      return staleCache;
-    }
-    
-    // Try Supabase cache
-    try {
-      const supabaseStale = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseStale && hasTeams(supabaseStale)) {
-        console.warn('[BettingPros] Using stale Supabase cached data due to extraction error');
-        cache.set(cacheKey, supabaseStale, 60);
-        return supabaseStale;
-      }
-    } catch (error) {
-      // Supabase check failed, continue
-    }
-    
-    throw new Error(`Failed to extract BettingPros data: ${extractError.message}`);
-  }
-  
-  // Validate the extracted data structure
-  if (!bpData || typeof bpData !== 'object') {
-    // Try to use stale cache if available (in-memory first, then Supabase)
-    let staleCache = cache.get<any>(cacheKey);
-    if (staleCache && hasTeams(staleCache)) {
-      console.warn('[BettingPros] Invalid data structure, using stale in-memory cached data');
-      return staleCache;
-    }
-    
-    // Try Supabase cache
-    try {
-      const supabaseStale = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseStale && hasTeams(supabaseStale)) {
-        console.warn('[BettingPros] Invalid data structure, using stale Supabase cached data');
-        cache.set(cacheKey, supabaseStale, 60);
-        return supabaseStale;
-      }
-    } catch (error) {
-      // Supabase check failed, continue
-    }
-    
-    throw new Error('Extracted BettingPros data is not a valid object');
-  }
-  
-  // An empty or near-empty table (e.g. a new season before stats fill in) must never be cached: it would be
-  // served for every DvP lookup until it expires.
-  if (!bpData.teamStats || typeof bpData.teamStats !== 'object' || Object.keys(bpData.teamStats).length < MIN_TEAMS) {
-    // Try to use stale cache if available (in-memory first, then Supabase)
-    let staleCache = cache.get<any>(cacheKey);
-    if (staleCache && hasTeams(staleCache)) {
-      console.warn('[BettingPros] Missing teamStats, using stale in-memory cached data');
-      return staleCache;
-    }
-    
-    // Try Supabase cache
-    try {
-      const supabaseStale = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseStale && hasTeams(supabaseStale)) {
-        console.warn('[BettingPros] Missing teamStats, using stale Supabase cached data');
-        cache.set(cacheKey, supabaseStale, 60);
-        return supabaseStale;
-      }
-    } catch (error) {
-      // Supabase check failed, continue
-    }
-    
-    throw new Error('BettingPros data missing teamStats property');
-  }
-  
-  // Cache for 1 hour (3600000 ms)
-  // Store in in-memory cache (fast, but lost on cold start)
-  cache.set(cacheKey, bpData, 3600000);
-  // Store in Supabase cache (persistent across cold starts)
-  setNBACache(cacheKey, 'bettingpros_dvp', bpData, 60, true).catch(err => {
-    console.warn('[BettingPros] Failed to store in Supabase cache:', err);
-  });
-  
-  return bpData;
+  throw new Error('BettingPros data missing teamStats property');
 }
+
