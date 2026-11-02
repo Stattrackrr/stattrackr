@@ -1,0 +1,120 @@
+{
+  "gameId": "109303311",
+  "gameKey": "2026-11-06_tasmania-jackjumpers_vs_new-zealand-breakers",
+  "homeTeam": "Tasmania JackJumpers",
+  "awayTeam": "New Zealand Breakers",
+  "commenceTime": "2026-11-06T08:30:00.000Z",
+  "capturedAt": "2026-11-02T20:26:03.358Z",
+  "closing": false,
+  "source": "odds-api-net",
+  "books": [
+    "Palmerbet"
+  ],
+  "lineCount": 8,
+  "lines": [
+    {
+      "player": "Carlin Davison",
+      "playerKey": "carlin davison",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-2000",
+      "under": "N/A",
+      "overDecimal": 1.05,
+      "underDecimal": null
+    },
+    {
+      "player": "Charles Bediako",
+      "playerKey": "charles bediako",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-1250",
+      "under": "N/A",
+      "overDecimal": 1.08,
+      "underDecimal": null
+    },
+    {
+      "player": "Dejan Vasiljevic",
+      "playerKey": "dejan vasiljevic",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-2000",
+      "under": "N/A",
+      "overDecimal": 1.05,
+      "underDecimal": null
+    },
+    {
+      "player": "Josh Bannan",
+      "playerKey": "josh bannan",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
+      "underDecimal": null
+    },
+    {
+      "player": "Mojave King",
+      "playerKey": "mojave king",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-833",
+      "under": "N/A",
+      "overDecimal": 1.12,
+      "underDecimal": null
+    },
+    {
+      "player": "Nick Marshall",
+      "playerKey": "nick marshall",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-3333",
+      "under": "N/A",
+      "overDecimal": 1.03,
+      "underDecimal": null
+    },
+    {
+      "player": "Nick Stoddart",
+      "playerKey": "nick stoddart",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-200",
+      "under": "N/A",
+      "overDecimal": 1.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Will Magnay",
+      "playerKey": "will magnay",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
+      "underDecimal": null
+    }
+  ]
+}
