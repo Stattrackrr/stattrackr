@@ -3629,6 +3629,8 @@ export default function NBALandingPage() {
         combinedPaintUnlocked: combinedPaintUnlockedRef.current,
         combinedFetchComplete: combinedPropsFetchCompleteRef.current,
         noAflOdds: combinedOddsFlagsRef.current.noAflOdds === true,
+        noTennisOdds: combinedOddsFlagsRef.current.noTennisOdds === true,
+        noNblOdds: combinedOddsFlagsRef.current.noNblOdds === true,
         scrollY: window.scrollY,
         currentPage: currentPageRef.current,
       };
@@ -4072,8 +4074,8 @@ export default function NBALandingPage() {
       initialFetchCompletedRef.current = true;
       combinedOddsFlagsRef.current = {
         noAflOdds: warmSnapshot.noAflOdds,
-        noTennisOdds: false,
-        noNblOdds: false,
+        noTennisOdds: warmSnapshot.noTennisOdds === true,
+        noNblOdds: warmSnapshot.noNblOdds === true,
         nbaSettled: (warmSnapshot.playerProps as PlayerProp[]).length > 0 || !NBA_PUBLIC_ENABLED,
       };
       if (!urlSpecifiesSport) {
@@ -4115,19 +4117,23 @@ export default function NBALandingPage() {
       }
       selectedAflGamesRef.current = new Set(snapGameIds);
       setSelectedAflGames(new Set(snapGameIds));
-      setCombinedPaintUnlocked(
-        combinedModeFirstPaintReady(
-          paintedNbaProps,
-          paintedAflProps,
-          Array.isArray(warmSnapshot.tennisCombinedProps)
-            ? (warmSnapshot.tennisCombinedProps as PlayerProp[])
-            : [],
-          Array.isArray(warmSnapshot.nblCombinedProps)
-            ? (warmSnapshot.nblCombinedProps as PlayerProp[]).filter(isNblListProp)
-            : [],
-          combinedOddsFlagsRef.current
-        )
+      const warmPaintReady = combinedModeFirstPaintReady(
+        warmSnapshot.playerProps as PlayerProp[],
+        warmSnapshot.aflProps as PlayerProp[],
+        Array.isArray(warmSnapshot.tennisCombinedProps)
+          ? (warmSnapshot.tennisCombinedProps as PlayerProp[])
+          : [],
+        Array.isArray(warmSnapshot.nblCombinedProps)
+          ? (warmSnapshot.nblCombinedProps as PlayerProp[]).filter(isNblListProp)
+          : [],
+        combinedOddsFlagsRef.current
       );
+      setCombinedPaintUnlocked(warmPaintReady);
+      // A restore that can't paint the All view must not also skip the fetch, or the skeleton never clears.
+      if (!warmPaintReady) {
+        skipPropsRefetchOnceRef.current = false;
+        combinedWarmToggleRef.current = false;
+      }
       setCombinedFetchComplete(warmSnapshot.combinedFetchComplete);
       setCombinedPropsLoading(false);
       setPropsLoading(false);
