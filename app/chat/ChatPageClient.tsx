@@ -1210,7 +1210,7 @@ export default function ChatPageClient() {
                               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                                 Community Chat
                               </h2>
-                              {onlineCount ? (
+                              {viewer.isAdmin && onlineCount ? (
                                 <span
                                   className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300"
                                   title="People on StatTrackr right now"
