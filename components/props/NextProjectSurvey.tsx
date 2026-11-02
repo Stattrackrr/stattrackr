@@ -22,10 +22,17 @@ export function NextProjectSurvey() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [thanks, setThanks] = useState(false);
+  const [preview, setPreview] = useState(false);
   const isDark = mounted && themeDark;
 
   useEffect(() => {
     setMounted(true);
+    // ?survey=preview opens it straight away and saves nothing (to check the look before launch).
+    if (new URLSearchParams(window.location.search).get('survey') === 'preview') {
+      setPreview(true);
+      setOpen(true);
+      return;
+    }
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -59,13 +66,13 @@ export function NextProjectSurvey() {
   }, []);
 
   const snooze = useCallback(() => {
-    if (userId) {
+    if (userId && !preview) {
       try {
         localStorage.setItem(`${STORAGE_PREFIX}:${userId}:snoozed`, String(Date.now() + SNOOZE_MS));
       } catch {}
     }
     setOpen(false);
-  }, [userId]);
+  }, [userId, preview]);
 
   useEffect(() => {
     if (!open) return;
@@ -86,6 +93,10 @@ export function NextProjectSurvey() {
 
   const submit = async () => {
     if (!canSubmit) return;
+    if (preview) {
+      setThanks(true);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
