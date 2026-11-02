@@ -8,6 +8,8 @@ import { normalizeAbbr } from "@/lib/nbaAbbr";
 import JSON5 from "json5";
 
 const BETTINGPROS_URL = 'https://www.bettingpros.com/nba/defense-vs-position/';
+const MIN_TEAMS = 25;
+const hasTeams = (data: any) => Object.keys(data?.teamStats ?? {}).length >= MIN_TEAMS;
 
 // Map BettingPros team abbreviations to our format
 export const OUR_TO_BP_ABBR: Record<string, string> = {
@@ -176,14 +178,14 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
   if (!forceRefresh) {
     // Try in-memory cache first (fastest)
     const cached = cache.get<any>(cacheKey);
-    if (cached) {
+    if (cached && hasTeams(cached)) {
       return cached;
     }
     
     // Try Supabase cache (persistent across cold starts)
     try {
       const supabaseCached = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseCached) {
+      if (supabaseCached && hasTeams(supabaseCached)) {
         // Store in in-memory cache for faster future access
         cache.set(cacheKey, supabaseCached, 60); // 60 minutes
         return supabaseCached;
@@ -207,7 +209,7 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
   if (!response.ok) {
     // Try to use stale cache if available (in-memory first, then Supabase)
     let staleCache = cache.get<any>(cacheKey);
-    if (staleCache) {
+    if (staleCache && hasTeams(staleCache)) {
       console.warn(`[BettingPros] HTTP ${response.status}, using stale in-memory cached data`);
       return staleCache;
     }
@@ -215,7 +217,7 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
     // Try Supabase cache
     try {
       const supabaseStale = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseStale) {
+      if (supabaseStale && hasTeams(supabaseStale)) {
         console.warn(`[BettingPros] HTTP ${response.status}, using stale Supabase cached data`);
         cache.set(cacheKey, supabaseStale, 60);
         return supabaseStale;
@@ -232,7 +234,7 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
   if (!html || html.length < 1000) {
     // Try to use stale cache if available (in-memory first, then Supabase)
     let staleCache = cache.get<any>(cacheKey);
-    if (staleCache) {
+    if (staleCache && hasTeams(staleCache)) {
       console.warn('[BettingPros] Empty/invalid HTML, using stale in-memory cached data');
       return staleCache;
     }
@@ -240,7 +242,7 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
     // Try Supabase cache
     try {
       const supabaseStale = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseStale) {
+      if (supabaseStale && hasTeams(supabaseStale)) {
         console.warn('[BettingPros] Empty/invalid HTML, using stale Supabase cached data');
         cache.set(cacheKey, supabaseStale, 60);
         return supabaseStale;
@@ -259,7 +261,7 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
     console.error('[BettingPros] Error extracting data from HTML:', extractError.message);
     // Try to use cached data if available (even if expired) - in-memory first, then Supabase
     let staleCache = cache.get<any>(cacheKey);
-    if (staleCache) {
+    if (staleCache && hasTeams(staleCache)) {
       console.warn('[BettingPros] Using stale in-memory cached data due to extraction error');
       return staleCache;
     }
@@ -267,7 +269,7 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
     // Try Supabase cache
     try {
       const supabaseStale = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseStale) {
+      if (supabaseStale && hasTeams(supabaseStale)) {
         console.warn('[BettingPros] Using stale Supabase cached data due to extraction error');
         cache.set(cacheKey, supabaseStale, 60);
         return supabaseStale;
@@ -283,7 +285,7 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
   if (!bpData || typeof bpData !== 'object') {
     // Try to use stale cache if available (in-memory first, then Supabase)
     let staleCache = cache.get<any>(cacheKey);
-    if (staleCache) {
+    if (staleCache && hasTeams(staleCache)) {
       console.warn('[BettingPros] Invalid data structure, using stale in-memory cached data');
       return staleCache;
     }
@@ -291,7 +293,7 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
     // Try Supabase cache
     try {
       const supabaseStale = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseStale) {
+      if (supabaseStale && hasTeams(supabaseStale)) {
         console.warn('[BettingPros] Invalid data structure, using stale Supabase cached data');
         cache.set(cacheKey, supabaseStale, 60);
         return supabaseStale;
@@ -303,10 +305,12 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
     throw new Error('Extracted BettingPros data is not a valid object');
   }
   
-  if (!bpData.teamStats || typeof bpData.teamStats !== 'object') {
+  // An empty or near-empty table (e.g. a new season before stats fill in) must never be cached: it would be
+  // served for every DvP lookup until it expires.
+  if (!bpData.teamStats || typeof bpData.teamStats !== 'object' || Object.keys(bpData.teamStats).length < MIN_TEAMS) {
     // Try to use stale cache if available (in-memory first, then Supabase)
     let staleCache = cache.get<any>(cacheKey);
-    if (staleCache) {
+    if (staleCache && hasTeams(staleCache)) {
       console.warn('[BettingPros] Missing teamStats, using stale in-memory cached data');
       return staleCache;
     }
@@ -314,7 +318,7 @@ export async function fetchBettingProsData(forceRefresh = false): Promise<any> {
     // Try Supabase cache
     try {
       const supabaseStale = await getNBACache<any>(cacheKey, { quiet: true });
-      if (supabaseStale) {
+      if (supabaseStale && hasTeams(supabaseStale)) {
         console.warn('[BettingPros] Missing teamStats, using stale Supabase cached data');
         cache.set(cacheKey, supabaseStale, 60);
         return supabaseStale;
