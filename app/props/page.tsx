@@ -5966,7 +5966,8 @@ export default function NBALandingPage() {
         lastUpdated: null,
         nextUpdate: null,
         ingestMessage: null,
-        noTennisOdds: false,
+        // Keep a confirmed "no tennis odds": resetting it re-locks the All view whenever another sport refills.
+        noTennisOdds: combinedOddsFlagsRef.current.noTennisOdds,
         games: [],
         props: tennisCombinedPropsRef.current.filter(isTennisListProp),
       },
