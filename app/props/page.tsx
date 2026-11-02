@@ -10996,8 +10996,8 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11006,8 +11006,8 @@ export default function NBALandingPage() {
                                   ) : (
                                     <div className="relative inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11075,8 +11075,8 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11085,8 +11085,8 @@ export default function NBALandingPage() {
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11149,8 +11149,8 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11159,8 +11159,8 @@ export default function NBALandingPage() {
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11226,8 +11226,8 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11236,8 +11236,8 @@ export default function NBALandingPage() {
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11302,8 +11302,8 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11312,8 +11312,8 @@ export default function NBALandingPage() {
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11363,8 +11363,8 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
+                                        background: 'transparent',
+                                        borderColor: 'transparent',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
@@ -11687,11 +11687,11 @@ export default function NBALandingPage() {
                           
                           // Helper to get stat box color based on hit rate
                           const getStatBoxStyle = (hitRate: { hits: number; total: number } | null | undefined, isStreak = false) => {
-                            // If no hitRate data (null/undefined) or no valid data (total === 0) and not streak, return grey box - darker on mobile/dark mode
-                            if (!isStreak && (!hitRate || hitRate.total === 0)) {
+                            // No data: no box, just the dash (same size so the grid stays aligned).
+                            if (isStreak ? prop.streak == null : !hitRate || hitRate.total === 0) {
                               return {
-                                background: mounted && isDark ? '#1a2140' : '#f3f4f6',
-                                borderColor: mounted && isDark ? '#4d4a73' : '#d1d5db',
+                                background: 'transparent',
+                                borderColor: 'transparent',
                                 borderWidth: '2px',
                                 boxShadow: 'none',
                               };
@@ -12151,7 +12151,7 @@ export default function NBALandingPage() {
                                 {/* DvP */}
                                 <div className="relative flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={(() => {
                                   if (prop.dvpRating === null || prop.dvpRating === undefined) {
-                                    return { background: mounted && isDark ? '#1a2140' : '#f9fafb', borderColor: mounted && isDark ? '#4d4a73' : '#e5e7eb' };
+                                    return { background: 'transparent', borderColor: 'transparent' };
                                   }
                                   let bgColor = mounted && isDark ? '#1a2140' : '#f9fafb';
                                   let borderColor = mounted && isDark ? '#4d4a73' : '#e5e7eb';
