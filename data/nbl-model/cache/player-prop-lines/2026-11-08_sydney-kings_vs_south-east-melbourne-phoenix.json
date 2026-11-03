@@ -4,7 +4,7 @@
   "homeTeam": "Sydney Kings",
   "awayTeam": "South East Melbourne Phoenix",
   "commenceTime": "2026-11-08T04:00:00.000Z",
-  "capturedAt": "2026-11-03T12:05:40.009Z",
+  "capturedAt": "2026-11-03T19:51:28.758Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -12,7 +12,7 @@
     "Sportsbet",
     "Palmerbet"
   ],
-  "lineCount": 590,
+  "lineCount": 591,
   "lines": [
     {
       "player": "Andrew Carr",
@@ -7682,6 +7682,19 @@
       "over": "-5000",
       "under": "N/A",
       "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "Kendric Davis",
+      "playerKey": "kendric davis",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 16.5,
+      "label": "17+",
+      "over": "-1250",
+      "under": "N/A",
+      "overDecimal": 1.08,
       "underDecimal": null
     }
   ]
