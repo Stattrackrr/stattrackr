@@ -5,7 +5,7 @@
   "teamCode": "CNS",
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-03T20:10:09.865Z",
+  "generatedAt": "2026-11-04T20:26:58.913Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 11,
   "games": [
@@ -399,7 +399,7 @@
       "steals": 1,
       "blocks": 2,
       "turnovers": 3,
-      "fouls": 3,
+      "fouls": 4,
       "fgMade": 4,
       "fgAttempted": 9,
       "fgPct": 0.444444,

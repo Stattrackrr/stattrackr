@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-03T20:10:40.572Z",
+  "generatedAt": "2026-11-04T20:28:05.219Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "October 33, 5:00pm AEDT (their stamp as printed, which is not a real date)",
-  "injuryCount": 24,
+  "injuryCount": 25,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -12,7 +12,7 @@
       "injury": "Ankle",
       "returning": "TBC",
       "status": "Out",
-      "note": "Left Adelaide’s NBL27 opener against Melbourne United at John Cain Arena on Saturday 19 September 2026 with an ankle injury, reported by basketball.com.au. He started the game. Michael Randall reported on 23 September that Cameron will not fly to Perth for the trip to the Wildcats. Jai at Fox Sports (@NBLPleb) reported on 27 September that Cameron is sidelined in a moon boot on his right ankle and is expected to be out for up to six weeks. That is an upper bound rather than a date, and no starting point was given for it. The NBL’s list of 20 October has his return as TBC.",
+      "note": "Hurt his right ankle in Adelaide’s opener on 19 September 2026 (basketball.com.au). Fox Sports (@NBLPleb) reported on 27 September he was in a moon boot and could miss up to six weeks. The NBL’s list of 20 October has his return as TBC.",
       "listedByNbl": true
     },
     {
@@ -47,16 +47,7 @@
       "injury": "Concussion",
       "returning": "TBC",
       "status": "Out",
-      "note": "The Brisbane Bullets said on Saturday 31 October 2026 that Mackinnon is out of their upcoming games because of concussion protocols. He last played against the Cairns Taipans on Thursday 29 October.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Lat Mayen",
-      "injury": "Undisclosed",
-      "returning": "TBC",
-      "status": "Out",
-      "note": "The Brisbane Bullets ruled Mayen out of the Round 7 game against the Adelaide 36ers on Sunday 1 November 2026. The NBL lists the injury as undisclosed and spells his name Lay.",
+      "note": "Still in concussion protocol and out of the game against the Perth Wildcats on Wednesday 4 November 2026, the Herald Sun reported that day. He last played on 29 October.",
       "listedByNbl": true
     },
     {
@@ -65,7 +56,7 @@
       "injury": "Lower leg",
       "returning": "Round 10",
       "status": "Out",
-      "note": "Will miss at least six weeks with a lower leg injury, the NBL reported on 9 October 2026 in announcing that Brisbane have signed Mawot Mag as his injury replacement player. He was hurt in Brisbane’s home game against Tasmania on Saturday 3 October, the night he returned from a hand injury, and Brisbane’s update of 7 October ruled him out for about six weeks, with Josh Duach suiting up in his absence. The NBL’s list of 13 October has him back in Round 10.",
+      "note": "Hurt his lower leg against Tasmania on 3 October 2026 and ruled out for about six weeks; Mawot Mag is his injury replacement. The NBL lists Round 10, and the Herald Sun reported on 4 November he could return around the FIBA break.",
       "listedByNbl": true
     },
     {
@@ -74,16 +65,25 @@
       "injury": "Lower limb",
       "returning": "Early December",
       "status": "Out",
-      "note": "Brisbane confirmed on Monday 12 October 2026 that Velicka has been ruled out with a lower limb injury and is expected to return at the start of December; the NBL’s list of 13 October has him back in Rounds 11 to 12. He was hurt in the Bullets’ game against the Cairns Taipans on Thursday 8 October. Brisbane have signed Raul Neto as his injury replacement player, the NBL announced on 13 October. Olgun Uluc of ESPN had reported on 10 October, citing sources, a quad injury of about eight weeks. Velicka was averaging 13.8 points and a league-leading 10.2 assists in NBL27.",
+      "note": "Hurt against the Cairns Taipans on 8 October 2026. Brisbane expect him back in early December and the NBL lists Rounds 11 to 12; the Herald Sun reported on 4 November he could return around the FIBA break. Raul Neto is his injury replacement.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Cairns Taipans",
+      "player": "Walter Brown",
+      "injury": "Undisclosed",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Out of both Round 8 games, the Taipans confirmed on 4 November 2026 (Fox Sports, @NBLPleb). Not on the NBL list.",
       "listedByNbl": true
     },
     {
       "team": "Cairns Taipans",
       "player": "Sunday Dech",
       "injury": "Hamstring",
-      "returning": "Round 8",
+      "returning": "TBC",
       "status": "Out",
-      "note": "The Taipans confirmed on 7 October 2026 that Dech will be out for at least four weeks with a hamstring injury, reported by Jai of Fox Sports (@NBLPleb). The NBL’s list of the same evening has him back in Round 8.",
+      "note": "Out of both Round 8 games, the Taipans confirmed on 4 November 2026 (Fox Sports, @NBLPleb).",
       "listedByNbl": true
     },
     {
@@ -120,6 +120,15 @@
       "returning": "TBC",
       "status": "Out",
       "note": "The Breakers say James has a torn left hamstring, reported by Olgun Uluc on 16 September 2026. On 3 October general manager Dillon Boucher said James is three weeks post-injury and will be assessed at the four-to-six-week mark of his rehabilitation, reported by Jai at Fox Sports (@NBLPleb). Mojave King has joined as injury cover, and Boucher said the club will keep monitoring the import market.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Perth Wildcats",
+      "player": "Brandon Knight",
+      "injury": "Soreness",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Ruled out of Perth’s game against the Brisbane Bullets at Nissan Arena on Wednesday 4 November with soreness, the Perth Wildcats confirmed on Tuesday 3 November 2026, as reported by Fox Sports. The NBL has not yet added him to its injury list. He made his NBL debut against the New Zealand Breakers on Saturday 10 October after missing Perth’s first four games.",
       "listedByNbl": true
     },
     {
@@ -162,7 +171,7 @@
       "injury": "Calf",
       "returning": "Possibly 8 November",
       "status": "Out",
-      "note": "The Sydney Kings said on Tuesday 27 October 2026 that Dellavedova will miss both Round 7 games, against the Perth Wildcats on Wednesday 28 October and the Tasmania JackJumpers on Friday 30 October, as he continues his recovery from a calf injury. The club named a potential return against the South East Melbourne Phoenix on Sunday 8 November. Lachlan Bofinger replaces him in the squad. The NBL’s list of 30 October has his return as TBC.",
+      "note": "The Sydney Kings said on 27 October 2026 that Dellavedova would miss both Round 7 games (Perth and Tasmania) as he recovers from a calf injury. The club named a potential return against the South East Melbourne Phoenix on Sunday 8 November. Lachlan Bofinger replaces him in the squad. The NBL’s list of 30 October has his return as TBC.",
       "listedByNbl": true
     },
     {
@@ -188,7 +197,7 @@
       "injury": "Lower leg",
       "returning": "Mid-December",
       "status": "Out",
-      "note": "Michael Randall reported on 22 September 2026 that Deng will miss Tasmania’s trip to the Cairns Taipans on Wednesday 23 September, joining Josh Bannan, Anthony Drmic, Ben Ayre and Bryce Hamilton on the sidelines, without specifying an injury. The NBL’s own list added him as a lower leg injury in its 26 September update. The NBL said on 30 October 2026 he will miss a further six weeks with a fractured fibula, which points to mid-December, and its list of that date has him back in Round 13.",
+      "note": "Fractured fibula. The NBL said on 30 October 2026 he will miss a further six weeks, and its list of that date has him back in Round 13.",
       "listedByNbl": true
     },
     {

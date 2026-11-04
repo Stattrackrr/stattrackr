@@ -1,10 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-03T20:10:18.501Z",
+  "generatedAt": "2026-11-04T20:27:15.032Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 162,
-  "gameRows": 1058,
+  "gameRows": 1076,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -19,7 +19,7 @@
       "name": "Alex Higgins-Titsha",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 7,
+      "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/45f14944-075d-47c1-a972-2dcfc073c958-2026.json"
     },
     {
@@ -43,7 +43,7 @@
       "name": "Angus Brandt",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/145dc428-1473-408f-b295-0004e66f4456-2026.json"
     },
     {
@@ -59,7 +59,7 @@
       "name": "Anthony Dell'Orso",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/a9125673-5d09-4a1b-aac1-b403f5bf372a-2026.json"
     },
     {
@@ -83,7 +83,7 @@
       "name": "Archie Woodhill",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 4,
+      "gameCount": 5,
       "cacheFile": "nbl-model/cache/player-logs/c18d40cc-7977-4b30-a1b8-f0fcc14e98ab-2026.json"
     },
     {
@@ -219,7 +219,7 @@
       "name": "Cameron Huefner",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/322328f8-6ddd-422d-8a17-24a66897100d-2026.json"
     },
     {
@@ -347,7 +347,7 @@
       "name": "Dylan Windler",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/19611d1d-9349-4e39-a3ef-0733577b56e5-2026.json"
     },
     {
@@ -355,7 +355,7 @@
       "name": "Elijah Pepper",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/318cc011-ca3e-4a82-b1cf-fd805b05d6d4-2026.json"
     },
     {
@@ -403,7 +403,7 @@
       "name": "Harry Rouhliadeff",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 10,
+      "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/2d1e9f7f-e241-4797-8b2f-70472f07f4c8-2026.json"
     },
     {
@@ -491,7 +491,7 @@
       "name": "Jaron Rillie",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/a1fe0dc7-5cf6-4e8e-9bbd-26c2564bf1a9-2026.json"
     },
     {
@@ -523,7 +523,7 @@
       "name": "Jaylin Williams",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 10,
+      "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/a13a2ea7-3918-4cd3-93d2-a33703ce234d-2026.json"
     },
     {
@@ -555,7 +555,7 @@
       "name": "Jesse Wagstaff",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/4a3d7bc9-18a9-4106-a201-79643586e4c3-2026.json"
     },
     {
@@ -731,7 +731,7 @@
       "name": "Kristian Doolittle",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 8,
+      "gameCount": 9,
       "cacheFile": "nbl-model/cache/player-logs/37613082-354f-48d0-b16d-0d9ff613f64c-2026.json"
     },
     {
@@ -899,7 +899,7 @@
       "name": "Mawot Mag",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/b3b5ecb0-ba46-4821-9e2b-6e4180a30f95-2026.json"
     },
     {
@@ -923,7 +923,7 @@
       "name": "Mitch Norton",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 10,
+      "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/2e2291aa-36b6-4928-b348-0f5951fbc3b4-2026.json"
     },
     {
@@ -939,7 +939,7 @@
       "name": "Nate Hinton",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 10,
+      "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/aeb4d203-4032-44a5-a412-584f007d6dfb-2026.json"
     },
     {
@@ -1027,7 +1027,7 @@
       "name": "Raul Neto",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 4,
+      "gameCount": 5,
       "cacheFile": "nbl-model/cache/player-logs/006371b2-9a3f-4d04-8057-723db3ee6042-2026.json"
     },
     {
@@ -1147,7 +1147,7 @@
       "name": "Taine Murray",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 4,
+      "gameCount": 5,
       "cacheFile": "nbl-model/cache/player-logs/bf2ff692-c8a9-4e97-bf5e-907ee38b9af1-2026.json"
     },
     {
@@ -1227,7 +1227,7 @@
       "name": "Tyrell Harrison",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/fb85d99d-86ac-46f7-b60d-ea33ae00a9fd-2026.json"
     },
     {

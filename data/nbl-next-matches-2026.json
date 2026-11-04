@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-03T20:09:49.518Z",
+  "generatedAt": "2026-11-04T20:26:28.203Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-      "name": "Brisbane Bullets",
-      "team_code": "BRI",
-      "nextMatches": [
-        {
-          "id": "e036f2c1-ad19-44e8-adb1-cd21374cf56b",
-          "match_slug": "brisbane-bullets-v-perth-wildcats-men-04-11-2026",
-          "match_title": "Brisbane Bullets v Perth Wildcats men 04-11-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS27",
-          "external_id": "3729bbac-58ad-11f1-b394-cbe0cbdf48fe",
-          "start_time_datetime": "2026-11-04T09:00:00.000Z",
-          "is_home": true,
-          "opponent_id": "bc5327d5-322e-4796-b103-4c3b63869edb",
-          "opponent_name": "Perth Wildcats",
-          "opponent_logo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
-          "venue": "Nissan Arena",
-          "opponent_logo_blurhash": "LDH_Pv_N1b?HHrkCTJD%1v?HD456"
-        }
-      ]
-    },
-    {
-      "id": "bc5327d5-322e-4796-b103-4c3b63869edb",
-      "name": "Perth Wildcats",
-      "team_code": "PER",
-      "nextMatches": [
-        {
-          "id": "e036f2c1-ad19-44e8-adb1-cd21374cf56b",
-          "match_slug": "brisbane-bullets-v-perth-wildcats-men-04-11-2026",
-          "match_title": "Brisbane Bullets v Perth Wildcats men 04-11-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=WILDCATS27",
-          "external_id": "3729bbac-58ad-11f1-b394-cbe0cbdf48fe",
-          "start_time_datetime": "2026-11-04T09:00:00.000Z",
-          "is_home": false,
-          "opponent_id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-          "opponent_name": "Brisbane Bullets",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-          "venue": "Nissan Arena",
-          "opponent_logo_blurhash": "LAD9iCxu0s5dS+s*s+xU0aIwoI}$"
-        }
-      ]
-    },
     {
       "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "name": "Cairns Taipans",
@@ -174,6 +132,27 @@
       ]
     },
     {
+      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "name": "Brisbane Bullets",
+      "team_code": "BRI",
+      "nextMatches": [
+        {
+          "id": "86692a50-4483-49d6-bc27-94c945833cf6",
+          "match_slug": "melbourne-united-v-brisbane-bullets-men-07-11-2026",
+          "match_title": "Melbourne United v Brisbane Bullets men 07-11-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS27",
+          "external_id": "3723d03c-58ad-11f1-9032-15ea51636534",
+          "start_time_datetime": "2026-11-07T08:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "opponent_name": "Melbourne United",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
+        }
+      ]
+    },
+    {
       "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "name": "Sydney Kings",
       "team_code": "SYD",
@@ -212,6 +191,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
           "venue": "Afterpay Arena",
           "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
+        }
+      ]
+    },
+    {
+      "id": "bc5327d5-322e-4796-b103-4c3b63869edb",
+      "name": "Perth Wildcats",
+      "team_code": "PER",
+      "nextMatches": [
+        {
+          "id": "7f0a98cc-a010-4975-ae54-3214dd1bb150",
+          "match_slug": "perth-wildcats-v-cairns-taipans-men-08-11-2026",
+          "match_title": "Perth Wildcats v Cairns Taipans men 08-11-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=WILDCATS27",
+          "external_id": "37289ea9-58ad-11f1-9790-bd240d5ec994",
+          "start_time_datetime": "2026-11-08T06:00:00.000Z",
+          "is_home": true,
+          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "opponent_name": "Cairns Taipans",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
+          "venue": "RAC Arena",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
         }
       ]
     }

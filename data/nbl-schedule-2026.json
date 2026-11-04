@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-03T20:09:48.412Z",
+  "generatedAt": "2026-11-04T20:26:26.257Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2138,7 +2138,7 @@
       "externalId": "3729bbac-58ad-11f1-b394-cbe0cbdf48fe",
       "startTime": "2026-11-04T09:00:00.000Z",
       "round": "8",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Brisbane Bullets",
       "homeTeamCode": "BRI",
       "homeTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
@@ -2147,8 +2147,8 @@
       "awayTeamCode": "PER",
       "awayTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "awayLogo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 109,
+      "awayScore": 104,
       "venue": "Nissan Arena",
       "matchSlug": "brisbane-bullets-v-perth-wildcats-men-04-11-2026"
     },
