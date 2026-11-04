@@ -22,7 +22,33 @@ async function count(table: string, filter: (q: any) => any): Promise<number | n
   return error ? null : n ?? 0;
 }
 
+// Supabase returns at most 1,000 rows per request whatever the limit, so row lists are read page by page.
+async function selectAll<T = any>(build: () => any, pageSize = 1000): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await build().range(from, from + pageSize - 1);
+    if (error) throw new Error(error.message);
+    rows.push(...((data ?? []) as T[]));
+    if (!data || data.length < pageSize) return rows;
+  }
+}
+
+async function selectIn<T = any>(table: string, columns: string, column: string, ids: string[]): Promise<T[]> {
+  const rows: T[] = [];
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data, error } = await supabaseAdmin.from(table).select(columns).in(column, ids.slice(i, i + 200));
+    if (error) throw new Error(error.message);
+    rows.push(...((data ?? []) as T[]));
+  }
+  return rows;
+}
+
 const pct = (a: number, b: number) => (b ? `${Math.round((100 * a) / b)}%` : 'n/a');
+
+// ITF is reported but not judged: Pinnacle and Betfair price only part of it.
+const SHARP_TIERS = ['tour', 'challenger'];
+const SHARP_MIN_SHARE = 0.6;
+const SHARP_MIN_MATCHES = 10;
 
 export async function checkTennisLogHealth(nowMs = Date.now()): Promise<TennisLogHealth> {
   const checks: HealthCheck[] = [];
@@ -41,20 +67,24 @@ export async function checkTennisLogHealth(nowMs = Date.now()): Promise<TennisLo
   add('runs with errors', runs > 0 && withErrors / runs <= 0.05, `${withErrors} of ${runs} (today and yesterday)`, 'at most 5%');
 
   // Close arms: every match that had a main arm and started over 2 hours ago should have closed.
-  const { data: arms } = await supabaseAdmin.from('tennis_arm_snapshots').select('match_id, arm, minutes_to_start').gte('captured_at', new Date(nowMs - 48 * H).toISOString()).limit(5000);
+  const arms = await selectAll(() =>
+    supabaseAdmin.from('tennis_arm_snapshots').select('match_id, arm, minutes_to_start').gte('captured_at', new Date(nowMs - 48 * H).toISOString()).order('captured_at'),
+  );
   // A close is the last poll before play: more than an hour before the scheduled start means a false start.
-  const closes = (arms ?? []).filter((a) => a.arm === 'close');
+  const closes = arms.filter((a) => a.arm === 'close');
   const early = closes.filter((a) => Number(a.minutes_to_start) > 60).length;
   add('close arm timing', !closes.length || early / closes.length <= 0.1, `${early} of ${closes.length} taken over 60 min before the scheduled start`, 'at most 10%');
-  const { data: started } = await supabaseAdmin
-    .from('tennis_matches')
-    .select('match_id')
-    .lt('scheduled_start', new Date(nowMs - 2 * H).toISOString())
-    .gte('scheduled_start', new Date(nowMs - 48 * H).toISOString())
-    .limit(5000);
-  const startedIds = new Set((started ?? []).map((m) => m.match_id));
-  const withMain = new Set((arms ?? []).filter((a) => a.arm === 'main' && startedIds.has(a.match_id)).map((a) => a.match_id));
-  const withClose = new Set((arms ?? []).filter((a) => a.arm === 'close').map((a) => a.match_id));
+  const started = await selectAll(() =>
+    supabaseAdmin
+      .from('tennis_matches')
+      .select('match_id')
+      .lt('scheduled_start', new Date(nowMs - 2 * H).toISOString())
+      .gte('scheduled_start', new Date(nowMs - 48 * H).toISOString())
+      .order('match_id'),
+  );
+  const startedIds = new Set(started.map((m) => m.match_id));
+  const withMain = new Set(arms.filter((a) => a.arm === 'main' && startedIds.has(a.match_id)).map((a) => a.match_id));
+  const withClose = new Set(arms.filter((a) => a.arm === 'close').map((a) => a.match_id));
   const closed = [...withMain].filter((id) => withClose.has(id)).length;
   add('close arm written', !withMain.size || closed / withMain.size >= 0.9, `${closed} of ${withMain.size} (${pct(closed, withMain.size)})`, 'at least 90%');
 
@@ -67,8 +97,10 @@ export async function checkTennisLogHealth(nowMs = Date.now()): Promise<TennisLo
 
   // Would-be bets: +20 min price check within the hour; CLV once the match has closed.
   const missingChecks = await count('tennis_shadow_bets', (q) => q.is('price_20m', null).lt('created_at', new Date(nowMs - H).toISOString()).gte('created_at', new Date(nowMs - 7 * 24 * H).toISOString()));
-  const { data: openBets } = await supabaseAdmin.from('tennis_shadow_bets').select('match_id').is('clv', null).gte('created_at', new Date(nowMs - 7 * 24 * H).toISOString()).limit(1000);
-  const missingClv = (openBets ?? []).filter((b) => withClose.has(b.match_id)).length;
+  const openBets = await selectAll(() =>
+    supabaseAdmin.from('tennis_shadow_bets').select('match_id').is('clv', null).gte('created_at', new Date(nowMs - 7 * 24 * H).toISOString()).order('created_at'),
+  );
+  const missingClv = openBets.filter((b) => withClose.has(b.match_id)).length;
   add('would-be bet price checks', (missingChecks ?? 0) === 0, `${missingChecks ?? 'n/a'} missing the +20 min check`, 'none');
   add('would-be bet CLV', missingClv === 0, `${missingClv} closed without CLV`, 'none');
 
@@ -86,17 +118,27 @@ export async function checkTennisLogHealth(nowMs = Date.now()): Promise<TennisLo
   }
 
   // Sharp coverage: share of main arms in 24h with a Pinnacle / Betfair price to anchor the fair.
-  const { data: mains } = await supabaseAdmin.from('tennis_arm_snapshots').select('match_id, sharp').eq('arm', 'main').gte('captured_at', since24).limit(5000);
-  const { data: tiers } = await supabaseAdmin.from('tennis_matches').select('match_id, tier').in('match_id', (mains ?? []).map((a) => a.match_id));
-  const tierOf = new Map((tiers ?? []).map((m) => [m.match_id, m.tier ?? 'unknown']));
+  const mains = await selectAll(() =>
+    supabaseAdmin.from('tennis_arm_snapshots').select('match_id, sharp').eq('arm', 'main').gte('captured_at', since24).order('captured_at'),
+  );
+  const tiers = await selectIn<{ match_id: string; tier: string | null }>('tennis_matches', 'match_id, tier', 'match_id', [...new Set(mains.map((a) => a.match_id))]);
+  const tierOf = new Map(tiers.map((m) => [m.match_id, m.tier ?? 'unknown']));
   const byTier: Record<string, [number, number]> = {};
-  for (const a of mains ?? []) {
+  for (const a of mains) {
     const t = (byTier[tierOf.get(a.match_id) ?? 'unknown'] ??= [0, 0]);
     t[0] += 1;
     if (Array.isArray(a.sharp) && a.sharp.length) t[1] += 1;
   }
-  const allMains = Object.values(byTier).reduce((a, [n, k]) => [a[0] + n, a[1] + k], [0, 0]);
-  add('sharp price at the main arm', !allMains[0] || allMains[1] / allMains[0] >= 0.6, Object.entries(byTier).map(([t, [n, k]]) => `${t} ${k}/${n}`).join(', ') || 'no main arms', 'at least 60% of matches');
+  const sharpOk = SHARP_TIERS.every((t) => {
+    const [n, k] = byTier[t] ?? [0, 0];
+    return n < SHARP_MIN_MATCHES || k / n >= SHARP_MIN_SHARE;
+  });
+  add(
+    'sharp price at the main arm',
+    sharpOk,
+    Object.entries(byTier).map(([t, [n, k]]) => `${t} ${k}/${n} (${pct(k, n)})`).join(', ') || 'no main arms',
+    `tour and challenger each at least ${SHARP_MIN_SHARE * 100}% (from ${SHARP_MIN_MATCHES} matches); itf reported only`,
+  );
 
   return {
     checkedAt: new Date(nowMs).toISOString(),
