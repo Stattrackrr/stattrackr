@@ -659,19 +659,55 @@ function snapshotToGame(
   };
 }
 
-/** A healthy Redis roster holds ~2000 players; below this, names on the board will not resolve to ids. */
-const MIN_LIST_ROSTER_PLAYERS = 500;
+/** Odds books often list "A. Michelsen"; the roster/file has "Alex Michelsen". Prefer the full form. */
+function tennisNameLooksAbbreviated(name: string): boolean {
+  const parts = String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length < 2) return false;
+  const first = parts[0]!;
+  return first.length <= 2 || /^[A-Za-z]\.$/.test(first);
+}
+
+function preferFullTennisName(current: string, rosterName: string): string {
+  const cur = String(current || '').trim();
+  const next = String(rosterName || '').trim();
+  if (!next) return cur;
+  if (!cur) return next;
+  if (tennisNameLooksAbbreviated(cur) && !tennisNameLooksAbbreviated(next)) return next;
+  if (!tennisNameLooksAbbreviated(cur) && tennisNameLooksAbbreviated(next)) return cur;
+  return next.length >= cur.length ? next : cur;
+}
+
+/** Redis roster first (ranks / headshots), then the on-disk file for anyone missing — and upgrade abbreviated Redis names. */
+function mergeTennisRosterPlayers(primary: TennisPlayer[], extra: TennisPlayer[]): TennisPlayer[] {
+  const byId = new Map(primary.map((player) => [player.playerId, { ...player }]));
+  for (const row of extra) {
+    const existing = byId.get(row.playerId);
+    if (!existing) {
+      byId.set(row.playerId, { ...row });
+      continue;
+    }
+    existing.name = preferFullTennisName(existing.name, row.name);
+    if (!existing.imageUrl && row.imageUrl) existing.imageUrl = row.imageUrl;
+    if (!existing.ioc && row.ioc) existing.ioc = row.ioc;
+    if (existing.rank == null && row.rank != null) existing.rank = row.rank;
+    if (existing.rankPoints == null && row.rankPoints != null) existing.rankPoints = row.rankPoints;
+    if (!existing.hand && row.hand) existing.hand = row.hand;
+    if (existing.height == null && row.height != null) existing.height = row.height;
+  }
+  return [...byId.values()];
+}
 
 async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayload> {
   await hydrateTennisMatchOverlay({ allowRemote: false });
   const roster = await readTennisRosterCache();
-  let playerRows = roster?.players || [];
-  if (playerRows.length < MIN_LIST_ROSTER_PLAYERS) {
-    let extra = loadTennisPlayers();
-    if (!extra.length) extra = loadTennisPlayers({ currentOnly: true });
-    const seen = new Set(playerRows.map((player) => player.playerId));
-    playerRows = [...playerRows, ...extra.filter((player) => !seen.has(player.playerId))];
-  }
+  let extra = loadTennisPlayers();
+  if (!extra.length) extra = loadTennisPlayers({ currentOnly: true });
+  // Always merge the file roster: Redis alone is often missing players the odds feed names with initials,
+  // which left the props board stuck on "A. Michelsen" instead of "Alex Michelsen".
+  let playerRows = mergeTennisRosterPlayers(roster?.players || [], extra);
   playerRows = applyStandingsRanks(playerRows, roster?.standings);
   const [index, catalog, players, liveEvents, dvpStore] = await Promise.all([
     listTennisOddsIndex(),
@@ -1639,7 +1675,7 @@ function rosterHitForListedName(
   );
 }
 
-/** Cached list rows often keep a blank country even when the roster has one. */
+/** Cached list rows often keep a blank country even when the roster has one, and odds-abbreviated names. */
 function fillRosterFlags(rows: TennisListPropRow[]): TennisListPropRow[] {
   const players = rows.length ? loadTennisPlayers() : [];
   if (!players.length) return rows;
@@ -1654,10 +1690,24 @@ function fillRosterFlags(rows: TennisListPropRow[]): TennisListPropRow[] {
     const player = hitFor(row.playerName, row.playerId);
     const opponent = hitFor(row.opponent, row.opponentId);
     let next = row;
-    if (player?.ioc && !next.playerIoc) next = { ...next, playerIoc: player.ioc };
-    if (player && !next.playerId) next = { ...next, playerId: player.playerId };
-    if (opponent?.ioc && !next.opponentIoc) next = { ...next, opponentIoc: opponent.ioc };
-    if (opponent && !next.opponentId) next = { ...next, opponentId: opponent.playerId };
+    if (player) {
+      next = {
+        ...next,
+        playerName: preferFullTennisName(next.playerName, player.name),
+        playerId: next.playerId || player.playerId,
+        playerIoc: next.playerIoc || player.ioc,
+        playerRank: next.playerRank ?? player.rank ?? null,
+      };
+    }
+    if (opponent) {
+      next = {
+        ...next,
+        opponent: preferFullTennisName(String(next.opponent || ''), opponent.name),
+        opponentId: next.opponentId || opponent.playerId,
+        opponentIoc: next.opponentIoc || opponent.ioc,
+        opponentRank: next.opponentRank ?? opponent.rank ?? null,
+      };
+    }
     return next;
   });
 }
