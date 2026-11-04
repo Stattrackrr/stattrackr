@@ -1657,11 +1657,13 @@ function rosterHitForListedName(
 
 /** Cached list rows often keep a blank country even when the roster has one, and odds-abbreviated names. */
 function fillRosterFlags(rows: TennisListPropRow[]): TennisListPropRow[] {
-  const players = rows.length ? loadTennisPlayers() : [];
-  if (!players.length) return rows;
+  if (!rows.length) return rows;
+  // On Vercel the compiled api-tennis roster is absent; still expand names from the committed id map.
+  const players = loadTennisPlayers();
   const playersById = new Map(players.map((player) => [player.playerId, player]));
   const hits = new Map<string, TennisPlayer | null>();
   const hitFor = (name: string | null | undefined, id: string | null | undefined) => {
+    if (!players.length) return null;
     const key = `${String(id || '').trim()}|${String(name || '').trim()}`;
     if (!hits.has(key)) hits.set(key, rosterHitForListedName(players, playersById, name, id));
     return hits.get(key) ?? null;
