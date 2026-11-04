@@ -16,6 +16,7 @@ import { upsertCombinedSnapshotTennisFromList } from '@/lib/combinedPropsSnapsho
 import { dropTennisWinASetRowsWithoutPrice } from '@/lib/tennis/aggregatePropsForPaint';
 import { tennisMatchesPlayed } from '@/lib/tennis/chartStats';
 import { TENNIS_CURRENT_YEAR, loadPlayerMatches, loadTennisPlayers, tennisDvpProfile } from '@/lib/tennis/data';
+import { preferFullTennisName, tennisDisplayNameFor } from '@/lib/tennis/playerNames';
 import {
   ensureTennisDvpBoardRanks,
   findCachedTennisDvpEvent,
@@ -659,27 +660,6 @@ function snapshotToGame(
   };
 }
 
-/** Odds books often list "A. Michelsen"; the roster/file has "Alex Michelsen". Prefer the full form. */
-function tennisNameLooksAbbreviated(name: string): boolean {
-  const parts = String(name || '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (parts.length < 2) return false;
-  const first = parts[0]!;
-  return first.length <= 2 || /^[A-Za-z]\.$/.test(first);
-}
-
-function preferFullTennisName(current: string, rosterName: string): string {
-  const cur = String(current || '').trim();
-  const next = String(rosterName || '').trim();
-  if (!next) return cur;
-  if (!cur) return next;
-  if (tennisNameLooksAbbreviated(cur) && !tennisNameLooksAbbreviated(next)) return next;
-  if (!tennisNameLooksAbbreviated(cur) && tennisNameLooksAbbreviated(next)) return cur;
-  return next.length >= cur.length ? next : cur;
-}
-
 /** Redis roster first (ranks / headshots), then the on-disk file for anyone missing — and upgrade abbreviated Redis names. */
 function mergeTennisRosterPlayers(primary: TennisPlayer[], extra: TennisPlayer[]): TennisPlayer[] {
   const byId = new Map(primary.map((player) => [player.playerId, { ...player }]));
@@ -1067,8 +1047,8 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
     ];
     for (const side of sides) {
       const meta = side.meta;
-      const playerName = meta?.name || side.name;
       const playerId = meta?.playerId || null;
+      const playerName = tennisDisplayNameFor(playerId, meta?.name || side.name);
       const tour = matchTour;
       const opponent = side.isHome ? snapshot.awayName : snapshot.homeName;
       const opponentId = side.opponentMeta?.playerId || null;
@@ -1582,7 +1562,7 @@ export async function applyTennisListLiveOverlay(
   } catch {
     /* keep baked DVP if live overlay fails */
   }
-  return { ...next, data: fillMissingTennisOpponentIoc(next.data) };
+  return { ...next, data: fillMissingTennisOpponentIoc(fillRosterFlags(next.data)) };
 }
 
 let listBuildInflight: Promise<TennisPlayerPropsListPayload> | null = null;
@@ -1708,6 +1688,12 @@ function fillRosterFlags(rows: TennisListPropRow[]): TennisListPropRow[] {
         opponentRank: next.opponentRank ?? opponent.rank ?? null,
       };
     }
+    // Committed full-name map: production Redis often stores "A. Michelsen" with the right id.
+    next = {
+      ...next,
+      playerName: tennisDisplayNameFor(next.playerId, next.playerName),
+      opponent: tennisDisplayNameFor(next.opponentId, String(next.opponent || '')),
+    };
     return next;
   });
 }
