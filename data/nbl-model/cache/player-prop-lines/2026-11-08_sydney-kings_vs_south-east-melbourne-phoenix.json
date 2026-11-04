@@ -4,7 +4,7 @@
   "homeTeam": "Sydney Kings",
   "awayTeam": "South East Melbourne Phoenix",
   "commenceTime": "2026-11-08T04:00:00.000Z",
-  "capturedAt": "2026-11-04T00:42:55.727Z",
+  "capturedAt": "2026-11-04T09:30:49.072Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -13,7 +13,7 @@
     "Palmerbet",
     "TAB"
   ],
-  "lineCount": 747,
+  "lineCount": 749,
   "lines": [
     {
       "player": "Andrew Carr",
@@ -9724,6 +9724,32 @@
       "over": "+450",
       "under": "N/A",
       "overDecimal": 5.5,
+      "underDecimal": null
+    },
+    {
+      "player": "Jordan Hunter",
+      "playerKey": "jordan hunter",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 17.5,
+      "label": "18+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Nathan Sobey",
+      "playerKey": "nathan sobey",
+      "book": "Dabble",
+      "stat": "threeMade",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+1000",
+      "under": "N/A",
+      "overDecimal": 11,
       "underDecimal": null
     }
   ]

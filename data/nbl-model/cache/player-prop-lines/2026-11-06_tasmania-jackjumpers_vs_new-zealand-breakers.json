@@ -4,7 +4,7 @@
   "homeTeam": "Tasmania JackJumpers",
   "awayTeam": "New Zealand Breakers",
   "commenceTime": "2026-11-06T08:30:00.000Z",
-  "capturedAt": "2026-11-04T00:42:55.655Z",
+  "capturedAt": "2026-11-04T09:30:49.072Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -14,7 +14,7 @@
     "Dabble",
     "Ladbrokes"
   ],
-  "lineCount": 1005,
+  "lineCount": 1012,
   "lines": [
     {
       "player": "Carlin Davison",
@@ -13079,6 +13079,97 @@
       "over": "+1600",
       "under": "N/A",
       "overDecimal": 17,
+      "underDecimal": null
+    },
+    {
+      "player": "Dakota Mathias",
+      "playerKey": "dakota mathias",
+      "book": "Dabble",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 7.5,
+      "label": "8+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Dakota Mathias",
+      "playerKey": "dakota mathias",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 8.5,
+      "label": "9+",
+      "over": "-1250",
+      "under": "N/A",
+      "overDecimal": 1.08,
+      "underDecimal": null
+    },
+    {
+      "player": "Dakota Mathias",
+      "playerKey": "dakota mathias",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 26.5,
+      "label": "27+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Nicholas Stoddart",
+      "playerKey": "nicholas stoddart",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 12.5,
+      "label": "13+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Parker Jackson-Cartwright",
+      "playerKey": "parker jackson cartwright",
+      "book": "Dabble",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 12.5,
+      "label": "13+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Sam Mennenga",
+      "playerKey": "sam mennenga",
+      "book": "Dabble",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 5.5,
+      "label": "6+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Will Magnay",
+      "playerKey": "will magnay",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 23.5,
+      "label": "24+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
       "underDecimal": null
     }
   ]
