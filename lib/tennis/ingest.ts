@@ -20,6 +20,7 @@ import {
   type ApiTennisPlayer,
   type ApiTennisStanding,
 } from '@/lib/tennis/apiTennis';
+import { isNotPlayedTennisStatus } from '@/lib/tennis/chartStats';
 import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
 import { clientTennisHeadshotUrl } from '@/lib/tennis/headshotDisplay';
 import type { TennisMatchRow, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
@@ -583,8 +584,8 @@ function ymdOffset(iso: string, days: number): string | null {
  */
 export async function refreshTennisLogsForMatches(
   targets: Array<{ matchKey: string; startsAt: string }>
-): Promise<{ checked: number; finished: number; added: number; updated: number }> {
-  const out = { checked: 0, finished: 0, added: 0, updated: 0 };
+): Promise<{ checked: number; finished: number; added: number; updated: number; unplayed: Record<string, string> }> {
+  const out = { checked: 0, finished: 0, added: 0, updated: 0, unplayed: {} as Record<string, string> };
   if (!apiKey()) return out;
   const byKey = new Map<string, string>();
   for (const t of targets) {
@@ -607,6 +608,11 @@ export async function refreshTennisLogsForMatches(
     for (const json of results) {
       const rows = (Array.isArray(json?.result) ? json.result : []) as ApiTennisFixture[];
       for (const fx of rows) {
+        // A walkover has a "winner" but no score, so it never becomes a log row; graders void on the status.
+        if (isNotPlayedTennisStatus(fx.event_status)) {
+          out.unplayed[String(fx.event_key)] = String(fx.event_status);
+          continue;
+        }
         const status = String(fx.event_status || '').toLowerCase();
         if (status === 'finished' || /retir/.test(status) || /player/i.test(String(fx.event_winner || ''))) {
           finished.push(fx);

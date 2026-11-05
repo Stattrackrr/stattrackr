@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
+import { supportingYDomain } from '@/lib/charts/supportingYDomain';
 import { CHART_CONFIG } from '@/app/nba/research/dashboard/constants';
 import type { NbaChartTimeframe } from '@/app/nba/components/NbaStatsChart';
 import { NBA_CURRENT_SEASON_YEAR, resolveNbaClubName } from '@/lib/nba/dash/teams';
@@ -715,6 +716,7 @@ export function NbaSupportingStats({
   }
 
   const isPercent = chartData[0]?.isPercent ?? PCT_KINDS.has(supportingStatKind);
+  const yDomain = supportingYDomain(chartData.map((row) => row.value), isPercent);
 
   return (
     <div className="flex flex-col gap-3 min-w-0">
@@ -754,6 +756,7 @@ export function NbaSupportingStats({
       <div className={`w-full h-[380px] min-h-[340px] flex-shrink-0 min-w-0 pointer-events-none select-none ${alignRightTight ? 'lg:pr-6 xl:pr-7' : ''}`}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart key={timeframe} data={chartData} margin={margin} barCategoryGap="5%">
+            <YAxis type="number" domain={yDomain} hide allowDataOverflow />
             <XAxis
               dataKey="xKey"
               axisLine={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: 2 }}

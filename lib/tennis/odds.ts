@@ -35,6 +35,7 @@ import {
   filterTennisOuLines,
   tennisAustralianBet365,
   type TennisBookRow,
+  type TennisExtraMarket,
   type TennisMatchOdds,
   type TennisOuLine,
 } from '@/lib/tennis/oddsTypes';
@@ -506,6 +507,16 @@ function mergeOuLineLists(primary: TennisOuLine[], extra: TennisOuLine[]): Tenni
   return [...byLine.values()].sort((a, b) => Number.parseFloat(a.line) - Number.parseFloat(b.line));
 }
 
+/** Both sources' extra markets; where both price the same selection, the first source's price stays. */
+function mergeExtraMarkets(a: TennisExtraMarket[] | undefined, b: TennisExtraMarket[] | undefined): TennisExtraMarket[] {
+  const out = new Map<string, TennisExtraMarket>();
+  for (const m of [...(a ?? []), ...(b ?? [])]) {
+    const key = `${m.market}|${m.selection}|${m.line ?? ''}`;
+    if (!out.has(key)) out.set(key, m);
+  }
+  return [...out.values()];
+}
+
 function mergeBookRows(primary: TennisBookRow[], extra: TennisBookRow[]): TennisBookRow[] {
   const byKey = new Map<string, TennisBookRow>();
   const displayName = (name: string) => getBookmakerInfo(name).name;
@@ -531,9 +542,11 @@ function mergeBookRows(primary: TennisBookRow[], extra: TennisBookRow[]): Tennis
       'setsWon',
       mergeOuLineLists(prev.SetsLostLines ?? [], row.SetsLostLines ?? [])
     );
+    const extraMarkets = mergeExtraMarkets(prev.extraMarkets, row.extraMarkets);
     byKey.set(key, {
       name: prev.name,
       region: prev.region ?? regionOf(row),
+      ...(extraMarkets.length ? { extraMarkets } : {}),
       H2H: {
         home: prev.H2H.home !== 'N/A' ? prev.H2H.home : row.H2H.home,
         away: prev.H2H.away !== 'N/A' ? prev.H2H.away : row.H2H.away,

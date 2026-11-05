@@ -19,14 +19,17 @@ const DAYS_BACK = 1;
 const DAYS_AHEAD = 6;
 const PROPS_WINDOW_MS = (DAYS_AHEAD + 1) * 24 * 60 * 60 * 1000;
 /**
- * odds-api.net costs 1 credit per request (shared 50k/month with NBL): the soonest games only,
- * pulled every third cron tick. Worst case 16 credits × 48 pulls a day ≈ 23k a month.
+ * odds-api.net costs 1 credit per request (250k/month on Starter, shared with NBL): the soonest
+ * games every 25 minutes, the day's slate every run inside 6 hours of tip, and the last 90 minutes
+ * every 3 minutes (refreshNbaNearTipOdds). About 60k a month for NBA.
  */
 const ODDS_NET_MAX_GAMES = 15;
 const ODDS_NET_MIN_INTERVAL_MS = 25 * 60 * 1000;
 /** Games inside this of tip are pulled every cron run (10 minutes; a little under so jitter never skips one). */
-const ODDS_NET_NEAR_TIP_MS = 2 * 60 * 60 * 1000;
+const ODDS_NET_NEAR_TIP_MS = 6 * 60 * 60 * 1000;
 const ODDS_NET_NEAR_INTERVAL_MS = 9 * 60 * 1000;
+/** The quick refresh covers games this close to tip. */
+const ODDS_NET_FINAL_MS = 90 * 60 * 1000;
 /** Matches findNbaOddsGame's 4h cutoff with some slack. */
 const KEEP_AFTER_TIP_MS = 6 * 60 * 60 * 1000;
 const BOARD_TTL_SECONDS = 3 * 24 * 60 * 60;
@@ -73,6 +76,8 @@ type BdlPlayerProp = {
   prop_type: string;
   line_value: string;
   market: { type: 'over_under' | 'milestone'; over_odds?: number | null; under_odds?: number | null; odds?: number | null };
+  /** When BallDontLie last scraped this vendor (shared by all of its rows in a game). */
+  updated_at?: string | null;
 };
 
 type GameMeta = { gameId: string; homeTeam: string; awayTeam: string; commenceTime: string; tipMs: number };
@@ -200,6 +205,22 @@ function playerPropsFor(rows: BdlPlayerProp[], names: Map<number, string>): NbaP
     if (!list.some((e) => e.line === entry!.line && Boolean(e.milestone) === Boolean(entry!.milestone))) list.push(entry);
   }
   return out;
+}
+
+/** Latest scrape time per vendor in a game's BallDontLie prop rows. */
+export function bdlPropBookTimes(rows: BdlPlayerProp[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const r of rows) {
+    const vendor = String(r.vendor || '').trim().toLowerCase();
+    const ms = Date.parse(String(r.updated_at ?? ''));
+    if (!vendor || EXCLUDED_VENDORS.has(vendor) || !Number.isFinite(ms)) continue;
+    if (!out[vendor] || ms > Date.parse(out[vendor]!)) out[vendor] = new Date(ms).toISOString();
+  }
+  return out;
+}
+
+function pickTimes(times: Record<string, string> | undefined, fromOddsNet: boolean): Record<string, string> {
+  return Object.fromEntries(Object.entries(times ?? {}).filter(([book]) => isNbaOddsNetBook(book) === fromOddsNet));
 }
 
 function pickBooks(props: NbaPlayerPropsByBook | undefined, fromOddsNet: boolean): NbaPlayerPropsByBook {
@@ -336,12 +357,17 @@ export async function refreshNbaDashOdds(options?: { dryRun?: boolean }): Promis
   const targetIds = new Set(propsTargets.map((t) => t.gameId));
   for (const game of games) {
     if (!targetIds.has(game.gameId)) continue;
-    const prevProps = previousById.get(game.gameId)?.playerProps;
+    const prev = previousById.get(game.gameId);
+    const prevProps = prev?.playerProps;
     const rows = propRows.get(game.gameId);
     const bdlProps = rows ? playerPropsFor(rows, names) : pickBooks(prevProps, false);
     const freshNet = oddsNet?.props.get(game.gameId);
     const netProps = freshNet ?? pickBooks(prevProps, true);
     game.playerProps = mergeProps(bdlProps, netProps);
+    game.propBookTimes = {
+      ...(rows ? bdlPropBookTimes(rows) : pickTimes(prev?.propBookTimes, false)),
+      ...(freshNet ? (oddsNet?.bookTimes.get(game.gameId) ?? {}) : pickTimes(prev?.propBookTimes, true)),
+    };
     const auLines =
       oddsNet?.gameLines.get(game.gameId) ??
       (previousById.get(game.gameId)?.bookmakers ?? []).filter((b) => isNbaOddsNetGameBook(b.name));
@@ -395,4 +421,63 @@ export async function refreshNbaDashOdds(options?: { dryRun?: boolean }): Promis
     lastUpdated: nowIso,
     ...(options?.dryRun ? { board } : {}),
   };
+}
+
+export type NbaNearTipRefreshResult = { success: boolean; games: number; updated: number; oddsNetRequests: number; error?: string };
+
+/**
+ * Quick refresh between full ingests: only the AU prices (odds-api.net) of games inside 90 minutes
+ * of tip, laid onto the stored board. BallDontLie books are left as the last full ingest stored them.
+ */
+export async function refreshNbaNearTipOdds(): Promise<NbaNearTipRefreshResult> {
+  const nowMs = Date.now();
+  const board = await sharedCache.getJSON<NbaOddsCache>(NBA_DASH_ODDS_KEY);
+  if (!board?.games?.length) return { success: false, games: 0, updated: 0, oddsNetRequests: 0, error: 'No NBA board stored yet' };
+  const targets = board.games
+    .map((g) => ({ gameId: g.gameId, homeTeam: g.homeTeam, awayTeam: g.awayTeam, tipMs: Date.parse(g.commenceTime) }))
+    .filter((t) => Number.isFinite(t.tipMs) && t.tipMs > nowMs && t.tipMs - nowMs <= ODDS_NET_FINAL_MS);
+  if (!targets.length) return { success: true, games: 0, updated: 0, oddsNetRequests: 0 };
+
+  const oddsNet = await fetchNbaOddsNetProps(targets);
+  const updated = await layOddsNetOntoBoard(board, oddsNet, new Date(nowMs).toISOString(), { near: true });
+  return { success: true, games: targets.length, updated, oddsNetRequests: oddsNet.requests };
+}
+
+/**
+ * A fresh odds-api.net pull laid onto the stored board: its AU props, book times and game lines replace
+ * the board's for those games (BallDontLie books untouched), then line moves are recorded.
+ */
+async function layOddsNetOntoBoard(board: NbaOddsCache, oddsNet: NbaOddsNetResult, nowIso: string, opts: { near?: boolean } = {}): Promise<number> {
+  let updated = 0;
+  for (const game of board.games) {
+    const fresh = oddsNet.props.get(game.gameId);
+    if (!fresh || oddsNet.failed.has(game.gameId)) continue;
+    game.playerProps = mergeProps(pickBooks(game.playerProps, false), fresh);
+    game.propBookTimes = { ...pickTimes(game.propBookTimes, false), ...(oddsNet.bookTimes.get(game.gameId) ?? {}) };
+    const auLines = oddsNet.gameLines.get(game.gameId);
+    if (auLines) game.bookmakers = [...game.bookmakers.filter((b) => !isNbaOddsNetGameBook(b.name)), ...auLines];
+    updated += 1;
+  }
+  if (!updated) return 0;
+  if (opts.near) board.oddsNetNearFetchedAt = nowIso;
+  await sharedCache.setJSON(NBA_DASH_ODDS_KEY, board, BOARD_TTL_SECONDS);
+  for (const game of board.games) {
+    if (!oddsNet.props.has(game.gameId) || !game.playerProps) continue;
+    try {
+      await recordNbaLineMoves(game, nowIso);
+    } catch (err) {
+      console.warn(`[NBA odds] line movement failed for ${game.gameId}:`, err instanceof Error ? err.message : err);
+    }
+  }
+  return updated;
+}
+
+/**
+ * A pull made elsewhere (the AI's price check before posting) saved to the board, so the dashboard shows
+ * the prices a pick posted at instead of the last scheduled refresh.
+ */
+export async function saveNbaOddsNetPull(oddsNet: NbaOddsNetResult): Promise<number> {
+  const board = await sharedCache.getJSON<NbaOddsCache>(NBA_DASH_ODDS_KEY);
+  if (!board?.games?.length) return 0;
+  return layOddsNetOntoBoard(board, oddsNet, new Date().toISOString());
 }

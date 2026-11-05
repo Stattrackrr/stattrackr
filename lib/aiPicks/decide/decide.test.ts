@@ -102,6 +102,14 @@ test('singles: NBL props wait for over/under lines; two books needed', () => {
   assert.equal(qualifiesSingle(cand({ startsAt: iso(NOW + 30 * H) }), P, NOW).ok, false);
 });
 
+test('hit records never decide a bet, in any sport', () => {
+  const cold = { supportScore: 0.3, context: { marketSource: 'main' } };
+  for (const sport of ['nba', 'nbl'] as const) {
+    assert.equal(qualifiesSingle(cand({ sport, market: 'points', player: 'X', ...cold }), P, NOW).ok, true, `${sport}: 3 from 10 still qualifies`);
+  }
+  assert.equal(qualifiesSingle(cand(cold), P, NOW).ok, true, 'tennis: 3 from 10 still qualifies');
+});
+
 test('singles: one per sport per run, one per game, no opposite side', () => {
   const near = iso(NOW + 2 * H);
   const a = cand({ eventKey: 'm1', startsAt: near, ev: 0.08 });
@@ -138,8 +146,8 @@ test('singles: spaced through the day, capped per 24h, standouts get the shorter
 });
 
 test('multis: capped per 24h and spaced', () => {
-  const a = cand({ eventKey: 'm1', startsAt: iso(NOW + 2 * H), bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
-  const b = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'bet365', price: 1.38 }] });
+  const a = cand({ singleEligible: false, eventKey: 'm1', startsAt: iso(NOW + 2 * H), bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
+  const b = cand({ singleEligible: false, eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'bet365', price: 1.38 }] });
   const w: Watched[] = [a, b].map((c) => ({ c, history: held() }));
   const multi = (multisRecent: number[]) => chooseMulti(w, P, { ...empty(), multisRecent }, NOW, { keys: new Set(), rejected: new Set() });
   assert.ok(multi([NOW - 4 * H]));
@@ -152,8 +160,8 @@ test('multis: one tennis multi above 2.5 per 24h; after that only 2.5 or under',
     { book: 'Bet365', price: hi },
     { book: 'TAB', price: lo },
   ];
-  const a = cand({ eventKey: 'm1', startsAt: iso(NOW + 2 * H), bestPrice: 1.75, prob: 0.66, ev: 0.1, quotes: quotes(1.75, 1.6) });
-  const b = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.7, prob: 0.66, ev: 0.1, quotes: quotes(1.7, 1.55) });
+  const a = cand({ singleEligible: false, eventKey: 'm1', startsAt: iso(NOW + 2 * H), bestPrice: 1.75, prob: 0.66, ev: 0.1, quotes: quotes(1.75, 1.6) });
+  const b = cand({ singleEligible: false, eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.7, prob: 0.66, ev: 0.1, quotes: quotes(1.7, 1.55) });
   const w: Watched[] = [a, b].map((c) => ({ c, history: held() }));
   const multi = (longMultisRecent: Record<string, number[]>) =>
     chooseMulti(w, P, { ...empty(), multisRecent: [NOW - 10 * H], longMultisRecent }, NOW, { keys: new Set(), rejected: new Set() });
@@ -164,9 +172,9 @@ test('multis: one tennis multi above 2.5 per 24h; after that only 2.5 or under',
 
 test('multi: separate games, priced at one book, at least 1.65', () => {
   const near = iso(NOW + 2 * H);
-  const a = cand({ eventKey: 'm1', startsAt: near, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
-  const b = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'bet365', price: 1.38 }] });
-  const sameGame = cand({ eventKey: 'm1', market: 'player_games', player: 'A. One', startsAt: near, prob: 0.8, ev: 0.12, quotes: [{ book: 'Bet365', price: 1.4 }, { book: 'TAB', price: 1.38 }] });
+  const a = cand({ singleEligible: false, eventKey: 'm1', startsAt: near, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
+  const b = cand({ singleEligible: false, eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'bet365', price: 1.38 }] });
+  const sameGame = cand({ singleEligible: false, eventKey: 'm1', market: 'player_games', player: 'A. One', startsAt: near, prob: 0.8, ev: 0.12, quotes: [{ book: 'Bet365', price: 1.4 }, { book: 'TAB', price: 1.38 }] });
   const w: Watched[] = [a, b, sameGame].map((c) => ({ c, history: held() }));
   const m = chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set() })!;
   assert.ok(m);
@@ -200,8 +208,8 @@ test('one pick per subject: a tennis match, an NBL player in a game, an NBL game
   const used = { ...empty(), subjectsUsed: new Set([subjectId(handicap)]) };
   assert.equal(chooseSingles([{ c: games, history: held() }], P, used, NOW).length, 0);
 
-  const other = cand({ eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'Bet365', price: 1.38 }] });
-  const leg = cand({ ...games, key: undefined, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
+  const other = cand({ singleEligible: false, eventKey: 'm2', startsAt: iso(NOW + 5 * H), bestPrice: 1.4, prob: 0.76, ev: 0.064, quotes: [{ book: 'TAB', price: 1.4 }, { book: 'Bet365', price: 1.38 }] });
+  const leg = cand({ ...games, singleEligible: false, key: undefined, bestPrice: 1.45, prob: 0.74, ev: 0.073, quotes: [{ book: 'Bet365', price: 1.45 }, { book: 'TAB', price: 1.4 }] });
   const w: Watched[] = [leg, other].map((c) => ({ c, history: held() }));
   assert.ok(chooseMulti(w, P, empty(), NOW, { keys: new Set(), rejected: new Set() }));
   assert.equal(chooseMulti(w, P, used, NOW, { keys: new Set(), rejected: new Set() }), null);
@@ -292,11 +300,18 @@ test('posted state counts the last 24 hours and remembers used selections', () =
   assert.ok(s.subjectsUsed.has(subjectId(leg)));
 });
 
-test('review parsing fails closed', () => {
-  const ok = parseReview('{"reviews":[{"id":"P1","approve":true,"reason":"solid","writeUp":"Backing the over here, both have gone long lately."},{"id":"P2","approve":true,"writeUp":""}]}', 3);
+test('review parsing fails closed and keeps the veto category', () => {
+  const ok = parseReview(
+    '{"reviews":[{"id":"P1","approve":true,"reason":"solid","writeUp":"Backing the over here, both have gone long lately."},{"id":"P2","approve":true,"writeUp":""},{"id":"P3","approve":false,"category":"injury_news","reason":"listed out"},{"id":"P4","approve":false,"category":"vibes","reason":"x"}]}',
+    5
+  );
   assert.equal(ok.get('P1')?.approve, true);
+  assert.equal(ok.get('P1')?.category, 'none');
   assert.equal(ok.get('P2')?.approve, false);
-  assert.equal(ok.has('P3'), false);
+  assert.equal(ok.get('P2')?.category, 'other', 'no write-up cannot post');
+  assert.equal(ok.get('P3')?.category, 'injury_news');
+  assert.equal(ok.get('P4')?.category, 'other', 'unknown categories are logged as other');
+  assert.equal(ok.has('P5'), false);
   assert.equal(parseReview('not json', 1).size, 0);
   assert.equal(parseReview('{"reviews":[{"id":"P9","approve":true,"writeUp":"xxxxxxxxxxxxxxxxxxxxxxxxx"}]}', 1).size, 0);
 });

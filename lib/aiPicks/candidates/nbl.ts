@@ -39,7 +39,6 @@ import { nblPlayerEvidence, type NblInjuryContext, type NblPropContext } from '@
 import { effectiveModelWeight, type AiSportParams } from '@/lib/aiPicks/params';
 import {
   BLOCKING_FLAG,
-  betKind,
   bettableQuote,
   candidateKey,
   distinctPrices,
@@ -88,6 +87,70 @@ const medianFair: FairCombine = (fairs) => median(fairs.map((f) => f.p));
 /** Fair P(over) at a line: median across books that price both sides there. */
 export function marketOverAt(lines: NblSnapLine[], line: number, combine: FairCombine = medianFair): number | null {
   return combine(bookOversAt(lines, line));
+}
+
+/** Margins differ between books and rungs; a price this far the wrong side of the main line is bad data. */
+const LADDER_SLACK = 0.02;
+
+/**
+ * Drops prices that cannot be right for their line. An over (or milestone) on a harder line than the
+ * main one must pay at least the main over, and on an easier line no more than it; unders the other
+ * way round. One mislabeled feed row (a "10+" quoted shorter than over 8.5) otherwise drags the fair
+ * price up and creates an edge that is not there.
+ */
+export function cleanLadder(lines: NblSnapLine[]): NblSnapLine[] {
+  const twoWay = lines.filter((l) => l.kind === 'ou' && l.overDecimal && l.underDecimal);
+  const main = consensusLine(twoWay.map((l) => l.line));
+  if (main == null) return lines;
+  const overAtMain = median(twoWay.filter((l) => l.line === main).map((l) => l.overDecimal!));
+  const underAtMain = median(twoWay.filter((l) => l.line === main).map((l) => l.underDecimal!));
+  return lines.map((l) => {
+    let over = l.overDecimal;
+    let under = l.underDecimal;
+    if (over && overAtMain != null) {
+      if (l.line > main && over < overAtMain * (1 - LADDER_SLACK)) over = null;
+      else if (l.line < main && over > overAtMain * (1 + LADDER_SLACK)) over = null;
+    }
+    if (under && underAtMain != null) {
+      if (l.line < main && under < underAtMain * (1 - LADDER_SLACK)) under = null;
+      else if (l.line > main && under > underAtMain * (1 + LADDER_SLACK)) under = null;
+    }
+    return over === l.overDecimal && under === l.underDecimal ? l : { ...l, overDecimal: over, underDecimal: under };
+  });
+}
+
+/**
+ * The main lines: every line some book prices both ways. An over's main line is the lowest of them and
+ * an under's the highest (Sportsbet 23.5 and Ladbrokes 24.5: over 23.5, under 24.5).
+ */
+export function normalLineRange(lines: NblSnapLine[], mainLine: number): { low: number; high: number } {
+  const twoWay = lines
+    .filter((l) => l.kind === 'ou' && l.overDecimal && l.underDecimal && coherentPair(l.overDecimal, l.underDecimal))
+    .map((l) => l.line);
+  const all = [mainLine, ...twoWay];
+  return { low: Math.min(...all), high: Math.max(...all) };
+}
+
+/** A main line, not an alternate: some book prices it both ways. */
+export function isNormalLine(lines: NblSnapLine[], mainLine: number | null, line: number): boolean {
+  if (mainLine == null) return false;
+  return line === mainLine || bookOversAt(lines, line).length > 0;
+}
+
+/**
+ * Main line first: with an over/under posted, an over is bet at the lowest two-way line or an easier
+ * one and an under at the highest, never a harder rung (10+ when the line is 8.5, or 25+ when
+ * Sportsbet's line is 23.5). An off-main line with no two-way price of its own has only a fitted guess.
+ */
+export function mainLineFlags(sel: Pick<PropSelection, 'line' | 'kind' | 'side'>, mainLine: number | null, lines: NblSnapLine[]): string[] {
+  const flags: string[] = [];
+  if (mainLine == null) return flags;
+  const { low, high } = normalLineRange(lines, mainLine);
+  const limit = sel.side === 'over' ? low : high;
+  const harder = sel.side === 'over' ? sel.line > limit : sel.line < limit;
+  if (harder) flags.push(`Longer than the main line (${limit}): bet the ${limit} line instead`);
+  else if (sel.kind === 'ou' && sel.line !== mainLine && !bookOversAt(lines, sel.line).length) flags.push('No two-way price at this line');
+  return flags;
 }
 
 export type PropSelection = { line: number; kind: 'ou' | 'milestone'; side: 'over' | 'under'; quotes: CandidateQuote[] };
@@ -195,7 +258,8 @@ export function buildNblPropCandidates(input: {
     byStat.set(l.stat, [...(byStat.get(l.stat) ?? []), l]);
   }
 
-  for (const [stat, lines] of byStat) {
+  for (const [stat, rawLines] of byStat) {
+    const lines = cleanLadder(rawLines);
     const base = projectNblProp(player.games, stat, { currentSeason: input.currentSeason });
     if (!base) continue;
     const ctx = input.context?.forStat(stat) ?? { factors: [], total: 1, fullTotal: 1 };
@@ -226,13 +290,13 @@ export function buildNblPropCandidates(input: {
       const prob = sideWin(mixed, sel.side);
       const ev = evPerUnit(prob, picked.best.price, mixed.push);
       const lineKind: AiPickMarketKind =
-        sel.kind === 'milestone' ? 'milestone' : mkt.mainLine != null && sel.line === mkt.mainLine ? 'main' : 'alternate';
+        sel.kind === 'milestone' ? 'milestone' : isNormalLine(lines, mkt.mainLine, sel.line) ? 'main' : 'alternate';
       const support = nblPropSupport(player.games, stat, sel.line, sel.side, {
         currentSeason: input.currentSeason,
         opponent: input.opponent,
       });
       const score = supportScore(support);
-      const flags = [...baseFlags, ...picked.flags];
+      const flags = [...baseFlags, ...picked.flags, ...mainLineFlags(sel, mkt.mainLine, lines)];
       const gap = Math.abs(winShare(model, sel.side) - winShare(market, sel.side));
       if (gap > params.maxModelMarketGap) flags.push(`Model and market differ by ${Math.round(gap * 100)}%`);
       if (score != null && score < params.minSupport) flags.push('Thin support in the game logs');
@@ -248,7 +312,7 @@ export function buildNblPropCandidates(input: {
           eventLabel: nblEventLabel(game),
           startsAt: game.commenceTime,
           market: stat,
-          marketKind: betKind(lineKind, picked.best),
+          marketKind: lineKind,
           player: player.name,
           playerId: player.playerId,
           team: player.team,
@@ -365,6 +429,7 @@ export function buildNblGameCandidates(input: {
     const mixed = blend(model, args.fair, w);
     const prob = sideWin(mixed, args.side);
     const flags = [...picked.flags];
+    if (args.marketKind === 'alternate') flags.push('Alternate line: main lines only');
     const gap = Math.abs(sideWin(model, args.side) - sideWin(args.fair, args.side));
     if (gap > params.maxModelMarketGap) flags.push(`Model and market differ by ${Math.round(gap * 100)}%`);
     if (sample < 3) flags.push('Few games of team form');

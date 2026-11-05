@@ -74,6 +74,10 @@ export type NbaOddsNetResult = {
   props: Map<string, NbaPlayerPropsByBook>;
   /** AU game-line rows per fetched game, oriented to the target's home team. */
   gameLines: Map<string, NbaBookRow[]>;
+  /** Each book's own last scrape per fetched game (ISO), keyed by the stored book name. */
+  bookTimes: Map<string, Record<string, string>>;
+  /** odds-api.net's refresh interval per fetched game; polling faster returns nothing new. */
+  refreshSeconds: Map<string, number>;
   /** Games whose fetch failed; callers keep their previous lines. */
   failed: Set<string>;
   requests: number;
@@ -178,7 +182,7 @@ export function nbaOddsNetEventProps(items: OddsNetItem[]): NbaPlayerPropsByBook
 }
 
 export async function fetchNbaOddsNetProps(targets: NbaOddsNetTarget[]): Promise<NbaOddsNetResult> {
-  const result: NbaOddsNetResult = { props: new Map(), gameLines: new Map(), failed: new Set(), requests: 0 };
+  const result: NbaOddsNetResult = { props: new Map(), gameLines: new Map(), bookTimes: new Map(), refreshSeconds: new Map(), failed: new Set(), requests: 0 };
   const key = apiKey();
   if (!key || !targets.length) {
     for (const t of targets) result.failed.add(t.gameId);
@@ -237,6 +241,7 @@ export async function fetchNbaOddsNetProps(targets: NbaOddsNetTarget[]): Promise
     }
     const swapped = teamKey(event!.home_team || event!.home) !== home;
     const items: OddsNetItem[] = [];
+    const times: Record<string, number> = {};
     let cursor = '';
     let ok = true;
     for (let page = 0; page < 4; page += 1) {
@@ -246,12 +251,19 @@ export async function fetchNbaOddsNetProps(targets: NbaOddsNetTarget[]): Promise
         items?: OddsNetItem[];
         next_cursor?: string;
         complete?: boolean;
+        bookmaker_as_of_ts_ms?: Record<string, number>;
+        target_refresh_interval_seconds?: number;
       } | null;
       if (!snap) {
         ok = false;
         break;
       }
       items.push(...(snap.items ?? []));
+      for (const [book, ms] of Object.entries(snap.bookmaker_as_of_ts_ms ?? {})) {
+        const stored = STORED_BOOK[book] ?? book;
+        if (Number.isFinite(ms) && ms > (times[stored] ?? 0)) times[stored] = ms;
+      }
+      if (typeof snap.target_refresh_interval_seconds === 'number') result.refreshSeconds.set(target.gameId, snap.target_refresh_interval_seconds);
       if (!snap.next_cursor || snap.complete === true) break;
       cursor = snap.next_cursor;
     }
@@ -260,6 +272,7 @@ export async function fetchNbaOddsNetProps(targets: NbaOddsNetTarget[]): Promise
       continue;
     }
     result.props.set(target.gameId, nbaOddsNetEventProps(items));
+    result.bookTimes.set(target.gameId, Object.fromEntries(Object.entries(times).map(([b, ms]) => [b, new Date(ms).toISOString()])));
     const lines = nblGameBookRowsFromItems(items, NBA_GAME_LINE_BOOKS) as NbaBookRow[];
     result.gameLines.set(target.gameId, swapped ? lines.map(swapNbaBookRowSides) : lines);
   }

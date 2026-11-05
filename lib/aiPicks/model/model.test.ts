@@ -255,7 +255,7 @@ test('tennis context numbers on every market: context off at strength 0, the mod
     });
   const full = build(1);
   const off = build(0);
-  assert.deepEqual([...new Set(full.map((c) => c.market))].sort(), ['game_handicap', 'match_winner', 'player_games', 'total_games', 'total_sets', 'win_a_set']);
+  assert.deepEqual([...new Set(full.map((c) => c.market))].sort(), ['game_handicap', 'match_winner', 'player_games', 'total_games', 'win_a_set'], 'sets played / sets won are never picked');
   for (const c of [...full, ...off]) assert.ok(c.contextProbs, `${c.key} has no context numbers`);
   for (const c of full) near(c.contextProbs!.full, c.modelProb!, 0.0015);
   // The context model rounds serve rates to 4 places, so strength 0 re-simulates from marginally different inputs.

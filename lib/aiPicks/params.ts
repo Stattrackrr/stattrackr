@@ -44,6 +44,36 @@ export type AiSportParams = {
   contextStrength: number;
 };
 
+/**
+ * Multis compound each leg's overstated probability, and the product-of-probabilities edge is the
+ * most inflated number in the system. None post until single-leg calibration is proven.
+ */
+export const MULTIS_POSTED = false;
+
+/**
+ * Sports whose game lines (head to head, spreads, totals) are still watched and graded but never
+ * posted. NBL posted totals were all unders and went 2-3; NBA's ratings model loses to the market.
+ */
+export const PROPS_ONLY_SPORTS: ReadonlySet<string> = new Set(['nbl', 'nba']);
+
+/**
+ * The rule set each sport's watchlist rows and picks are made under. Bumped whenever the rules change;
+ * evaluations select by version, never by date. Rows from before tagging are "<sport>-legacy".
+ * tennis-a2: picks limited to winner, game handicap, total games, games won and win a set.
+ */
+export const AI_POLICY_VERSIONS: Readonly<Record<string, string>> = { nba: 'nba-a1', nbl: 'nbl-a1', tennis: 'tennis-a2' };
+
+export function policyVersion(sports: string[]): string {
+  return [...new Set(sports)]
+    .sort()
+    .map((s) => AI_POLICY_VERSIONS[s] ?? `${s}-a1`)
+    .join(' / ');
+}
+
+export function postable(c: { sport: string; player: string | null }): boolean {
+  return c.player != null || !PROPS_ONLY_SPORTS.has(c.sport);
+}
+
 export type AiStakingParams = {
   /** Share of full Kelly staked. */
   kellyFraction: number;
@@ -53,6 +83,8 @@ export type AiStakingParams = {
   rampPicks: number;
   rampMaxUnits: number;
   multiMaxUnits: number;
+  /** Ceiling on any pick while the public record is new; the ladder itself goes to 3 units. */
+  maxUnits: number;
   /** Recent ROI below this (over at least drawdownMinPicks) drops stakes to 1 unit. */
   drawdownRoi: number;
   drawdownMinPicks: number;
@@ -83,6 +115,7 @@ export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
     rampPicks: 30,
     rampMaxUnits: 1.5,
     multiMaxUnits: 1,
+    maxUnits: 2,
     drawdownRoi: -0.15,
     drawdownMinPicks: 20,
   },
@@ -97,7 +130,7 @@ export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
     maxPriceSingle: 3.5,
     maxPriceLeg: 2.6,
     oneWayMarginPower: 1.08,
-    postWindowHours: 6,
+    postWindowHours: 12,
     maxSinglesPerDay: 3,
     stakeScale: {},
     contextStrength: 1,
@@ -118,7 +151,7 @@ export const DEFAULT_AI_PICKS_PARAMS: AiPicksParams = {
     maxPriceSingle: 3.5,
     maxPriceLeg: 2.6,
     oneWayMarginPower: 1.08,
-    postWindowHours: 6,
+    postWindowHours: 12,
     maxSinglesPerDay: 3,
     stakeScale: {},
     contextStrength: 1,
@@ -175,7 +208,15 @@ export function mergeSportParams<T extends AiSportParams>(defaults: T, stored: u
     ...defaults,
     ...s,
     modelWeight: { ...defaults.modelWeight, ...(s.modelWeight ?? {}) },
-    stakeScale: { ...defaults.stakeScale, ...(s.stakeScale ?? {}) },
+    // Posting policy, not a learned value: stored copies of old windows must not override it.
+    postWindowHours: defaults.postWindowHours,
+    // Until the public record has proven itself, learning may tighten the edge bar and shrink stakes,
+    // never loosen or grow them.
+    minEvSingle: Math.max(s.minEvSingle ?? defaults.minEvSingle, defaults.minEvSingle),
+    minEvLeg: Math.max(s.minEvLeg ?? defaults.minEvLeg, defaults.minEvLeg),
+    stakeScale: Object.fromEntries(
+      Object.entries({ ...defaults.stakeScale, ...(s.stakeScale ?? {}) }).map(([group, scale]) => [group, Math.min(scale, 1)])
+    ),
   };
 }
 

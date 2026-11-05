@@ -18,6 +18,9 @@ export type PropsPageWarmSnapshot = {
   combinedPaintUnlocked: boolean;
   combinedFetchComplete: boolean;
   noAflOdds: boolean;
+  /** Confirmed "no odds" for tennis / NBL; without them a restored All view waits on sports with no rows. */
+  noTennisOdds?: boolean;
+  noNblOdds?: boolean;
   scrollY: number;
   currentPage: number;
 };

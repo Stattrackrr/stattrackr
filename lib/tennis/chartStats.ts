@@ -48,6 +48,14 @@ export function isUnplayedTennisMatch(score: unknown): boolean {
   return false;
 }
 
+/**
+ * A fixture status meaning the match was not played as scheduled and bets on it are void: walkover,
+ * withdrawal, cancellation, abandonment. Postponed is not: the match gets a new date.
+ */
+export function isNotPlayedTennisStatus(status: unknown): boolean {
+  return /walk\s*-?\s*over|^w\/?o$|withdr|cancel|abandon/i.test(String(status ?? '').trim());
+}
+
 type ParsedScoreSet = { first: number; second: number; tb: number | null };
 
 function parseScoreSetTokens(score: unknown): ParsedScoreSet[] {

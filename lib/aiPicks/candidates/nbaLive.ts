@@ -9,7 +9,7 @@ import { evPerUnit, round } from '@/lib/aiPicks/model/math';
 import type { AiSportParams } from '@/lib/aiPicks/params';
 import { nbaAchievementQuotes, nbaPlayerLines } from './nba';
 import { gameQuotes, propSelections } from './nbl';
-import { BLOCKING_FLAG, betKind, bettableQuote, edgeFlag, eligibility, isAussieBook, type AiCandidate, type CandidateQuote } from './types';
+import { BLOCKING_FLAG, bettableQuote, edgeFlag, eligibility, isAussieBook, type AiCandidate, type CandidateQuote } from './types';
 import type { AiPickMarketKind } from '@/lib/aiPicks/types';
 import type { NblGameOdds } from '@/lib/nbl/oddsTypes';
 import { normalizeNbaPropPlayerName } from '@/lib/nba/dash/odds';
@@ -77,7 +77,7 @@ export function repriceNbaCandidate(c: AiCandidate, live: NbaLiveGame, params: A
   const lineKind = (c.context.lineKind as AiPickMarketKind | undefined) ?? c.marketKind;
   return {
     ...c,
-    marketKind: betKind(lineKind, picked.best),
+    marketKind: lineKind,
     bestPrice: picked.best.price,
     bestBook: picked.best.book,
     quotes: picked.quotes,
@@ -94,6 +94,12 @@ export async function fetchLiveNbaGames(
   const res = await fetchNbaOddsNetProps(
     games.map((g) => ({ gameId: g.gameId, homeTeam: g.homeTeam, awayTeam: g.awayTeam, tipMs: Date.parse(g.startsAt) }))
   );
+  // The dashboard and props page read the board: give them the same prices the picks are about to post at.
+  const { saveNbaOddsNetPull } = await import('@/lib/nba/dash/oddsIngest');
+  const { rebakeNbaPropsPage } = await import('@/lib/nba/dash/propsPageRebake');
+  await saveNbaOddsNetPull(res)
+    .then((saved) => (saved ? rebakeNbaPropsPage() : null))
+    .catch((err) => console.warn('[ai-picks] saving live prices to the board failed:', err instanceof Error ? err.message : err));
   const live = new Map<string, NbaLiveGame>();
   for (const g of games) {
     const props = res.props.get(g.gameId);

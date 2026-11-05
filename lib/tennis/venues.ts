@@ -178,6 +178,8 @@ const VENUES: VenueEntry[] = [
   v(['shanghai challenger'], 'Shanghai', 'China', 31.23, 121.474, 'Outdoor', 'Fast'),
   v(['cary'], 'Cary', 'United States', 35.791, -78.781, 'Outdoor', 'Medium'),
   v(['columbus'], 'Columbus', 'United States', 39.961, -82.999, 'Indoor', 'Fast'),
+  v(['courmayeur'], 'Courmayeur', 'Italy', 45.797, 6.969, 'Indoor', 'Fast'),
+  v(['sioux falls'], 'Sioux Falls', 'United States', 43.545, -96.731, 'Indoor', 'Fast'),
   v(['virtus', 'bologna challenger'], 'Bologna', 'Italy', 44.494, 11.343, 'Outdoor', 'Slow'),
 ];
 
@@ -267,6 +269,13 @@ export function lookupTennisVenue(
     }
   }
   return withTz(lookupHit(fold) || heuristicVenue(name, surface));
+}
+
+/** Surface for display: hard courts at an indoor event read "Indoor Hard"; everything else as given. */
+export function tennisSurfaceLabel(surface: string | null | undefined, tournamentName?: string | null): string {
+  const s = String(surface || '').trim();
+  if (!/\bhard\b/i.test(s) || /indoor/i.test(s)) return s;
+  return lookupTennisVenue(tournamentName, s).setting === 'Indoor' ? 'Indoor Hard' : s;
 }
 
 export function sameTennisEvent(a: string | null | undefined, b: string | null | undefined): boolean {
@@ -459,6 +468,8 @@ const CITY_TZ: Record<string, string> = {
   Busan: 'Asia/Seoul',
   Cary: 'America/New_York',
   Columbus: 'America/New_York',
+  Courmayeur: 'Europe/Rome',
+  'Sioux Falls': 'America/Chicago',
 };
 
 const COUNTRY_TZ: Record<string, string> = {

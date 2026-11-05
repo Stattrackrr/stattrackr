@@ -30,7 +30,6 @@ import {
 import { effectiveModelWeight, type AiSportParams } from '@/lib/aiPicks/params';
 import {
   BLOCKING_FLAG,
-  betKind,
   bettableQuote,
   edgeFlag,
   eligibility,
@@ -41,7 +40,10 @@ import { isSharpBook, sharpFair, sharpSplit } from '@/lib/aiPicks/candidates/sha
 import {
   blend,
   bookOversAt,
+  cleanLadder,
   gameQuotes,
+  isNormalLine,
+  mainLineFlags,
   marketMean,
   marketProbsAt,
   propSelections,
@@ -237,7 +239,8 @@ export function buildNbaPropCandidates(input: {
     byStat.set(l.stat, [...(byStat.get(l.stat) ?? []), l]);
   }
 
-  for (const [stat, lines] of byStat) {
+  for (const [stat, rawLines] of byStat) {
+    const lines = cleanLadder(rawLines);
     const base = projectNbaProp(player.games, stat, input.currentSeason);
     if (!base) continue;
     const ctx = context.forStat(stat, base);
@@ -269,14 +272,14 @@ export function buildNbaPropCandidates(input: {
       const prob = sideWin(mixed, sel.side);
       const ev = evPerUnit(prob, picked.best.price, mixed.push);
       const lineKind: AiPickMarketKind =
-        sel.kind === 'milestone' ? 'milestone' : mkt.mainLine != null && sel.line === mkt.mainLine ? 'main' : 'alternate';
+        sel.kind === 'milestone' ? 'milestone' : isNormalLine(lines, mkt.mainLine, sel.line) ? 'main' : 'alternate';
       const support = nbaPropSupport(player.games, stat, sel.line, sel.side, {
         currentSeason: input.currentSeason,
         opponentCode: input.opponent.code,
         opponentName: input.opponent.name,
       });
       const score = supportScore(support);
-      const flags = [...baseFlags, ...picked.flags];
+      const flags = [...baseFlags, ...picked.flags, ...mainLineFlags(sel, mkt.mainLine, lines)];
       const gap = Math.abs(winShare(model, sel.side) - winShare(market, sel.side));
       if (gap > params.maxModelMarketGap) flags.push(`Model and market differ by ${Math.round(gap * 100)}%`);
       if (score != null && score < params.minSupport) flags.push('Thin support in the game logs');
@@ -292,7 +295,7 @@ export function buildNbaPropCandidates(input: {
           eventLabel: nbaEventLabel(game),
           startsAt: game.commenceTime,
           market: stat,
-          marketKind: betKind(lineKind, picked.best),
+          marketKind: lineKind,
           player: player.name,
           playerId: player.playerId,
           team: player.team,
@@ -519,6 +522,7 @@ export function buildNbaGameCandidates(input: {
     const mixed = blend(model, args.fair, w);
     const prob = sideWin(mixed, args.side);
     const flags = [...(input.flags ?? []), ...picked.flags];
+    if (args.marketKind === 'alternate') flags.push('Alternate line: main lines only');
     const gap = Math.abs(sideWin(model, args.side) - sideWin(args.fair, args.side));
     if (gap > params.maxModelMarketGap) flags.push(`Model and market differ by ${Math.round(gap * 100)}%`);
     const ev = evPerUnit(prob, picked.best.price, mixed.push);

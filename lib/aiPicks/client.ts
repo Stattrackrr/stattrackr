@@ -28,15 +28,37 @@ export async function fetchAiPicks(limit = 200): Promise<AiPick[]> {
   return ((data ?? []) as AiPickRow[]).map(aiPickFromRow);
 }
 
+/** Picks the signed-in member marked "Added"; null when signed out or the table is not there yet. */
+export async function fetchAddedPickIds(): Promise<Set<string> | null> {
+  const { data: auth } = await supabase.auth.getSession();
+  if (!auth.session) return null;
+  const { data, error } = await db().from('ai_pick_added').select('pick_id');
+  if (error) return null;
+  return new Set(((data ?? []) as Array<{ pick_id: string }>).map((r) => r.pick_id));
+}
+
+export async function setPickAdded(pickId: string, added: boolean): Promise<void> {
+  const { data: auth } = await supabase.auth.getSession();
+  const userId = auth.session?.user.id;
+  if (!userId) throw new Error('Not signed in');
+  const { error } = added
+    ? await db().from('ai_pick_added').upsert({ user_id: userId, pick_id: pickId }, { onConflict: 'user_id,pick_id', ignoreDuplicates: true })
+    : await db().from('ai_pick_added').delete().eq('user_id', userId).eq('pick_id', pickId);
+  if (error) throw new Error(error.message);
+}
+
 export async function fetchAiPicksPublic(): Promise<boolean> {
   return (await fetchAiPicksSettings()).isPublic;
 }
 
-/** Map AI picks onto the record modal's bet shape (push counts as void: stake returned). */
+/** Sydney calendar day of a timestamp (the posted UTC date puts Sunday's picks on Saturday). */
+const sydneyDay = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' });
+
+/** Map AI picks onto the record modal's bet shape (push counts as void: stake returned), dated by game day. */
 export function aiPicksAsRecordBets(picks: AiPick[]): OfficialPickBet[] {
   return picks.map((p) => ({
     id: p.id,
-    date: p.postedAt.slice(0, 10),
+    date: sydneyDay(p.firstStartsAt),
     sport: p.sport.toUpperCase(),
     market: p.kind === 'multi' ? 'Multi' : p.legs[0]?.market ?? null,
     selection: p.title,

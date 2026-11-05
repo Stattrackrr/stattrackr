@@ -15,6 +15,7 @@ import {
 } from '@/lib/tennis/advancedAveragesShared';
 import { tennisDashboardFetch } from '@/lib/tennisDashboardFetch';
 import { tennisIsH2hMatch } from '@/lib/tennis/h2hMatch';
+import { tennisSurfaceLabel } from '@/lib/tennis/venues';
 
 type NblAdvancedFilterKey =
   | 'dvp_rank'
@@ -26,12 +27,14 @@ type NblAdvancedFilterKey =
   | 'rank_blocks'
   | 'rank_threes'
   | null;
-type ChartSurfaceFilter = 'all' | 'hard' | 'clay' | 'grass';
+/** 'hard' is outdoor hard only; indoor hard courts have their own filter. */
+type ChartSurfaceFilter = 'all' | 'indoor_hard' | 'hard' | 'clay' | 'grass';
 type ChartBestOfFilter = 'all' | '3' | '5';
 type ChartOppRankFilter = TennisOppRankFilter;
 
 const CHART_SURFACE_FILTERS: Array<{ id: ChartSurfaceFilter; label: string }> = [
   { id: 'all', label: 'All' },
+  { id: 'indoor_hard', label: 'Indoor Hard' },
   { id: 'hard', label: 'Hard' },
   { id: 'clay', label: 'Clay' },
   { id: 'grass', label: 'Grass' },
@@ -185,8 +188,8 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
     else gameResultLabel = raw;
   }
 
-  const surface = String(point.surface || '').trim();
   const tourneyName = String(point.tourneyName || '').trim();
+  const surface = tennisSurfaceLabel(point.surface, tourneyName);
   const metaRows: Array<{ label: string; value: string }> = [];
   if (tourneyName) metaRows.push({ label: 'Event', value: tourneyName });
   if (surface) metaRows.push({ label: 'Surface', value: surface });
@@ -560,10 +563,12 @@ function extractVenueFromGameLog(game: Record<string, unknown>): string {
   return '';
 }
 
-function chartSurfaceKey(raw: unknown): ChartSurfaceFilter | null {
+function chartSurfaceKey(raw: unknown, tourneyName?: unknown): ChartSurfaceFilter | null {
   const key = String(raw ?? '').trim().toLowerCase();
   if (!key) return null;
-  if (key.includes('hard')) return 'hard';
+  if (key.includes('hard')) {
+    return tennisSurfaceLabel(key, String(tourneyName ?? '')) === 'Indoor Hard' ? 'indoor_hard' : 'hard';
+  }
   if (key.includes('clay')) return 'clay';
   if (key.includes('grass')) return 'grass';
   return null;
@@ -1083,7 +1088,7 @@ export function TennisStatsChart({
         if (nblGameFilters.minutesMin != null && (mins == null || mins < nblGameFilters.minutesMin)) return false;
         if (nblGameFilters.minutesMax != null && (mins == null || mins > nblGameFilters.minutesMax)) return false;
       }
-      if (surfaceFilter !== 'all' && chartSurfaceKey(g.surface) !== surfaceFilter) return false;
+      if (surfaceFilter !== 'all' && chartSurfaceKey(g.surface, (g as Record<string, unknown>).tourneyName) !== surfaceFilter) return false;
       if (showBestOfFilter && !matchChartBestOf(g as Record<string, unknown>, bestOfFilter)) return false;
       if (!matchChartOppRank(g.opponentRank, oppRankFilter)) return false;
       return true;
@@ -1722,7 +1727,7 @@ export function TennisStatsChart({
               value={surfaceFilter}
               options={CHART_SURFACE_FILTERS}
               onChange={setSurfaceFilter}
-              widthClass="w-[4.75rem]"
+              widthClass="w-[6.25rem]"
               idleLabel="Surface"
             />
             {showBestOfFilter ? (

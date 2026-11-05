@@ -316,15 +316,19 @@ export async function gradeNbaLeg(leg: AiPickLeg, source: NbaResults, nowMs: num
       ? gradeNbaAchievement(leg.market, row)
       : gradeNblProp(leg, leg.market, row ? boxValues(row) : null);
     const minutes = row ? num(row.minutes) : null;
-    if (!minutes || minutes > FIRST_HALF_MINUTES || decidedEarly(leg, grade)) return grade;
+    if (!minutes || minutes > FIRST_HALF_MINUTES || standsAfterEarlyExit(leg, grade)) return grade;
     return leftEarly(leg, grade, minutes, source, age);
   }
   return { status: 'void', value: null, note: `Unknown NBA market ${leg.market}` };
 }
 
-/** Settled by what he did before leaving: an over or yes already hit, an under already gone past. */
-function decidedEarly(leg: AiPickLeg, grade: LegGrade): boolean {
-  return leg.side === 'under' ? grade.status === 'loss' : grade.status === 'win';
+/**
+ * Leaving early only voids a bet it would otherwise lose: any win stands (an under he finished under
+ * included), and so does an under he had already gone past.
+ */
+function standsAfterEarlyExit(leg: AiPickLeg, grade: LegGrade): boolean {
+  if (grade.status === 'win') return true;
+  return leg.side === 'under' && grade.status === 'loss';
 }
 
 /**

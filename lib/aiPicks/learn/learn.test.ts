@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
 import type { Proposal } from '@/lib/aiPicks/decide/select';
 import { bestStrength, bestWeight, learnSport, perCluster, pickMetrics, shrinkStep, type LearnSample } from '@/lib/aiPicks/learn/learn';
-import { DEFAULT_AI_PICKS_PARAMS, modelGroup, modelVersion } from '@/lib/aiPicks/params';
+import { DEFAULT_AI_PICKS_PARAMS, mergeSportParams, modelGroup, modelVersion } from '@/lib/aiPicks/params';
 import type { AiPick, AiPickLeg } from '@/lib/aiPicks/types';
 import { kellyStake, sizeUnits, snapUnits, trackRecords } from '@/lib/aiPicks/units';
 
@@ -23,8 +23,6 @@ function single(prob: number, price: number, over: Partial<AiCandidate> = {}): P
   return { kind: 'single', key: 'k', sport: c.sport, legs: [{ c, price, book: 'Bet365' }], price, book: 'Bet365', prob, ev: prob * price - 1, reason: '' };
 }
 
-const proven = { tennis: { settled: 50, recentPicks: 10, recentRoi: 0.05 } };
-
 test('kelly stake and the unit ladder', () => {
   assert.ok(Math.abs(kellyStake(0.6, 2) - 0.2) < 1e-9);
   assert.equal(kellyStake(0.4, 2), 0);
@@ -34,27 +32,12 @@ test('kelly stake and the unit ladder', () => {
   assert.equal(snapUnits(9), 3);
 });
 
-test('sizing: edge drives size, caps keep it honest', () => {
-  assert.equal(sizeUnits(single(0.6, 2), P, proven).units, 3);
-  // New sport: capped until it has a record.
-  const fresh = sizeUnits(single(0.6, 2), P, {});
-  assert.equal(fresh.units, 1.5);
-  assert.match(fresh.why, /still proving itself/);
-  // Long prices: 1 unit past $2.20, half a unit past $2.70, however big the edge.
-  assert.equal(sizeUnits(single(0.6, 2.4), P, proven).units, 1);
-  assert.equal(sizeUnits(single(0.5, 2.95), P, proven).units, 0.5);
-  assert.match(sizeUnits(single(0.5, 2.95), P, proven).why, /long price/);
-  // Thin edge stays small.
-  assert.equal(sizeUnits(single(0.53, 1.95), P, proven).units, 1);
-  // Bad recent run.
-  const cold = { tennis: { settled: 80, recentPicks: 25, recentRoi: -0.2 } };
-  assert.equal(sizeUnits(single(0.6, 2), P, cold).units, 1);
-  // Learned stake scale pulls it down.
-  const scaled = { ...P, tennis: { ...P.tennis, stakeScale: { total_games: 0.6 } } };
-  assert.equal(sizeUnits(single(0.56, 1.95), scaled, proven).units, 1.5);
-  // Multis cap at 1 unit.
-  const m = single(0.6, 2);
-  assert.equal(sizeUnits({ ...m, kind: 'multi', legs: [...m.legs, ...m.legs] }, P, proven).units, 1);
+test('sizing: flat 1 unit, half a unit above $2.50, whatever the edge', () => {
+  assert.deepEqual(sizeUnits(single(0.6, 2)), { units: 1, why: 'Flat stake: 1u' });
+  assert.equal(sizeUnits(single(0.9, 1.9)).units, 1, 'a big claimed edge does not grow the stake');
+  assert.equal(sizeUnits(single(0.5, 2.5)).units, 1);
+  assert.equal(sizeUnits(single(0.5, 2.51)).units, 0.5);
+  assert.match(sizeUnits(single(0.5, 2.95)).why, /0.5u above \$2.50/);
 });
 
 test('track records count settled picks and recent ROI', () => {
@@ -203,4 +186,18 @@ test('learning: context strength moves one small step, only on enough plays wher
   assert.ok(wrong.changes.some((c) => c.startsWith('context strength 1 -> 0.9')));
   const right = learnSport('nbl', P.nbl, ctxBatch(300, 7), [], () => 'x');
   assert.equal(right.params.contextStrength, 1.1);
+});
+
+test('the posting window is policy: a stored learned copy of an old window does not override it', () => {
+  const merged = mergeSportParams(DEFAULT_AI_PICKS_PARAMS.nba, { ...DEFAULT_AI_PICKS_PARAMS.nba, postWindowHours: 6, minEvSingle: 0.04 });
+  assert.equal(merged.postWindowHours, 12);
+  assert.equal(merged.minEvSingle, 0.04, 'learned values still apply');
+});
+
+test('learning can tighten the edge bar and shrink stakes, but not loosen or grow them', () => {
+  const d = DEFAULT_AI_PICKS_PARAMS.nba;
+  const loose = mergeSportParams(d, { ...d, minEvSingle: 0.025, minEvLeg: 0.015, stakeScale: { prop: 1.1, milestone: 0.8 } });
+  assert.equal(loose.minEvSingle, 0.03);
+  assert.equal(loose.minEvLeg, 0.02);
+  assert.deepEqual(loose.stakeScale, { prop: 1, milestone: 0.8 });
 });

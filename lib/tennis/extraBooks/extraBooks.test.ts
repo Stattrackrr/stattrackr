@@ -82,7 +82,7 @@ test('Ladbrokes: market handicap is the away line, player names resolve to sides
   assert.deepEqual(src.homeGames, [{ line: 8.5, over: 1.8, under: 1.9 }]);
 });
 
-test('BetRight: lines come from outcome names, set markets skipped', () => {
+test('BetRight: lines come from outcome names; set markets leave the standard columns alone', () => {
   const src = betrightEventsToSource(
     [
       { eventName: 'Match Result', outcomes: [{ outcomeName: 'Juan Manuel La Serna', price: 3.9 }, { outcomeName: 'Hugo Dellien', price: 1.23 }] },
@@ -97,6 +97,35 @@ test('BetRight: lines come from outcome names, set markets skipped', () => {
   assert.deepEqual(src.handicaps, [{ homeLine: 4.5, home: 1.97, away: 1.74 }]);
   assert.deepEqual(src.totals, [{ line: 20.5, over: 1.85, under: 1.85 }]);
   assert.deepEqual(src.homeWinSet, { yes: 2.05, no: 1.7 });
+});
+
+test('BetRight: every other market is kept, players as home/away, and follows the row orientation', () => {
+  const src = betrightEventsToSource(
+    [
+      { eventName: 'First Set Winner', outcomes: [{ outcomeName: 'Juan Manuel La Serna', price: 3.05 }, { outcomeName: 'Hugo Dellien', price: 1.32 }] },
+      { eventName: 'Second Set Winner', outcomes: [{ outcomeName: 'Juan Manuel La Serna', price: 3.2 }, { outcomeName: 'Hugo Dellien', price: 1.3 }] },
+      { eventName: 'Set Betting', outcomes: [{ outcomeName: 'Hugo Dellien 2-0', price: 1.9 }, { outcomeName: 'Juan Manuel La Serna 2-1', price: 9 }] },
+      { eventName: 'First Set Correct Score', outcomes: [{ outcomeName: 'Hugo Dellien 6-3', price: 5.5 }] },
+      { eventName: 'First Set Total Games Over/Under +9.5', outcomes: [{ outcomeName: 'Over 9.5', price: 2.15 }, { outcomeName: 'Under 9.5', price: 1.66 }] },
+      { eventName: 'Total Games Odd/Even', outcomes: [{ outcomeName: 'Odd', price: 1.9 }, { outcomeName: 'Even', price: 1.9 }] },
+      { eventName: 'First Set Score Double Chance', outcomes: [{ outcomeName: 'Either Player To Win 6-4', price: 4 }] },
+      { eventName: 'Hugo Dellien To Win The Tiebreak', outcomes: [{ outcomeName: 'Yes', price: 2.2 }] },
+    ],
+    names
+  );
+  const sel = (market: string) => src.extraMarkets!.filter((m) => m.market === market).map((m) => `${m.selection}${m.line != null && Number.isFinite(m.line) ? ` ${m.line}` : ''}@${m.price}`);
+  assert.deepEqual(sel('set1_winner'), ['home@3.05', 'away@1.32']);
+  assert.deepEqual(sel('set2_winner'), ['home@3.2', 'away@1.3']);
+  assert.deepEqual(sel('set_betting'), ['away 2-0@1.9', 'home 2-1@9']);
+  assert.deepEqual(sel('set1_correct_score'), ['away 6-3@5.5']);
+  assert.deepEqual(sel('set1_total_games'), ['over 9.5@2.15', 'under 9.5@1.66']);
+  assert.deepEqual(sel('total_games_odd_even'), ['odd@1.9', 'even@1.9']);
+  assert.equal(sel('other:set1_score double chance').length, 1, 'unknown set markets kept under their own name');
+  assert.equal(sel('other:away to win the tiebreak').length, 1, 'unknown markets kept, player as away');
+  // API-Tennis lists the players the other way round: home and away swap with the row.
+  const row = sourceMatchToBookRow(src, false, true)!;
+  const flipped = row.extraMarkets!.filter((m) => m.market === 'set_betting').map((m) => m.selection);
+  assert.deepEqual(flipped, ['home 2-0', 'away 2-1']);
 });
 
 test('BetRight: per-player games outcomes lead with the player name', () => {

@@ -70,18 +70,11 @@ export function distinctPrices(quotes: CandidateQuote[]): number[] {
 }
 
 /** Flags that rule a candidate out: bad or missing data rather than a weak edge. */
-export const BLOCKING_FLAG = /Fewer than|Has not played|Not enough|retired|Only one side|differ by|far apart|too big to trust|Listed out/;
+export const BLOCKING_FLAG =
+  /Fewer than|Has not played|Not enough|retired|Only one side|differ by|far apart|too big to trust|Listed out|Longer than the main line|No two-way price at this line|Alternate line/;
 
 export function edgeFlag(ev: number, maxTrustedEv: number): string | null {
   return ev > maxTrustedEv ? `Edge of ${Math.round(ev * 100)}% is too big to trust` : null;
-}
-
-/**
- * The bet as the posting book lists it: its "4+" is a milestone even where other books run 3.5 as an
- * over/under. The line's kind across books (main / alternate / milestone) still decides singles.
- */
-export function betKind(lineKind: AiPickMarketKind, best: CandidateQuote): AiPickMarketKind {
-  return best.milestone ? 'milestone' : lineKind;
 }
 
 /** Legs shorter than this barely move a multi's price. */

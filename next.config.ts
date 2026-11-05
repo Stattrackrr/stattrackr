@@ -11,6 +11,8 @@ const TENNIS_RUNTIME_DATA = [
   './data/tennis/rank-history.json',
   './data/tennis/espn-hands.json',
   './data/tennis/headshots.json',
+  // Full names by player id — Redis/odds often keep "A. Michelsen".
+  './data/tennis/player-names.json',
 ] as const;
 
 /** build-afl-dvp.js is spawned via process.cwd(), so tracing pulls in the whole repo unless trimmed. */
@@ -141,6 +143,8 @@ const nextConfig: NextConfig = {
     '/api/tennis/player-props/list/route': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/headshot/[id]': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/headshot/[id]/route': [...TENNIS_RUNTIME_DATA],
+    '/api/props/combined': [...TENNIS_RUNTIME_DATA],
+    '/api/props/combined/route': [...TENNIS_RUNTIME_DATA],
     '/api/afl/odds/refresh': [...AFL_ODDS_REFRESH_TRACE],
     '/api/afl/odds/refresh/route': [...AFL_ODDS_REFRESH_TRACE],
     '/api/afl/cron/league-player-stats': [

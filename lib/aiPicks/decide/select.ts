@@ -161,6 +161,11 @@ export function subjectId(
 
 type Check = { ok: true } | { ok: false; reason: string };
 
+/**
+ * Hit records (how often the line landed lately) went into the gate and the ranking, rewarding lines
+ * that just went the bettor's way, which the market has already priced. They are logged and shown,
+ * never decide, in every sport.
+ */
 function common(c: AiCandidate, p: AiSportParams, nowMs: number): Check {
   const toStart = Date.parse(c.startsAt) - nowMs;
   if (!(toStart > MIN_LEAD_MS) || toStart > POST_HORIZON_MS) return { ok: false, reason: 'Outside the posting window' };
@@ -170,7 +175,6 @@ function common(c: AiCandidate, p: AiSportParams, nowMs: number): Check {
   }
   // Books on a shared feed post identical prices, so a price only counts once.
   if (distinctPrices(c.quotes).length < MIN_BOOKS) return { ok: false, reason: 'Fewer than 2 books price it' };
-  if (c.supportScore != null && c.supportScore < p.minSupport) return { ok: false, reason: 'Support too thin' };
   // An edge that is only one book being generous, with our own numbers no better than the market, is not a play.
   if (c.modelProb != null && c.marketProb != null && c.modelProb < c.marketProb + MIN_MODEL_LEAN) {
     return { ok: false, reason: 'Model does not back it' };
@@ -197,7 +201,7 @@ export function qualifiesLeg(c: AiCandidate, params: AiPicksParams, nowMs: numbe
 }
 
 function rankScore(c: AiCandidate): number {
-  return c.ev * (0.8 + 0.4 * (c.supportScore ?? 0.5));
+  return c.ev;
 }
 
 function conflicts(c: AiCandidate, state: PostedState): boolean {
@@ -307,6 +311,25 @@ export function multiKey(keys: string[]): string {
 const allowanceOpen = (times: number[], cap: number, gapMs: number, nowMs: number) =>
   times.length < cap && !(times.length && nowMs - Math.max(...times) < gapMs);
 
+/** Basketball multis are built from short lines (20+ PRA rather than 25+); tennis legs, where multis have paid, are not capped. */
+export const MAX_BASKETBALL_LEG_PRICE = 1.5;
+
+function legPriceOk(sport: string, price: number): boolean {
+  return sport === 'tennis' || price <= MAX_BASKETBALL_LEG_PRICE;
+}
+
+/**
+ * A single could still be posted on this player (or game) under the per-game and per-sport limits.
+ * Such subjects stay out of multis: one pick per subject, so a leg would rule the single out.
+ */
+export function singleRoomFor(c: AiCandidate, params: AiPicksParams, state: PostedState): boolean {
+  const p = sportParams(params, c.sport);
+  if (c.player && state.playersRecent.has(`${c.sport}|${c.player.toLowerCase()}`)) return false;
+  if (c.sport === 'nba') return nbaGameSlotOpen(c, state, {}) && nbaSlateOpen(c, p, state, 0);
+  const cap = isStandoutSingle(c, p) ? MAX_SINGLES_CEILING : p.maxSinglesPerDay;
+  return (state.singlesRecent[c.sport]?.length ?? 0) < cap && !state.singleGamesRecent.has(gameIdentity(c));
+}
+
 /** Tennis legs may run overnight (7pm then 3am) but not most of a day apart. */
 export const TENNIS_MULTI_MAX_GAP_MS = 12 * 60 * 60 * 1000;
 
@@ -328,21 +351,30 @@ export function multiLegsCompatible(
  * Best ready 2-leg multi: legs from different games that can be combined (see multiLegsCompatible), both
  * bettable at one book, combined price at least 1.65, and positive EV after treating the legs as
  * independent. All-NBA multis go on the NBA allowance (sized to the slate); any other on the shared one.
+ * NBA and NBL legs never share a posted multi (0 from 10 before this rule); `mixedBasketball` finds the
+ * best such pair instead, for tracking only.
  */
 export function chooseMulti(
   watched: Watched[],
   params: AiPicksParams,
   state: PostedState,
   nowMs: number,
-  exclude: { keys: Set<string>; rejected: Set<string>; subjects?: Set<string> }
+  exclude: { keys: Set<string>; rejected: Set<string>; subjects?: Set<string> },
+  opts: { mixedBasketball?: boolean } = {}
 ): Proposal | null {
   const sharedOpen = allowanceOpen(state.multisRecent, MAX_MULTIS_PER_WINDOW, MULTI_GAP_MS, nowMs);
   const nbaOpen = allowanceOpen(state.nbaMultisRecent ?? [], nbaMultiCap(state.nbaSlateGames ?? 0), NBA_MULTI_GAP_MS, nowMs);
   if (!sharedOpen && !nbaOpen) return null;
+  const forSingles = new Set(
+    watched
+      .filter((w) => qualifiesSingle(w.c, params, nowMs).ok && !conflicts(w.c, state) && singleRoomFor(w.c, params, state))
+      .map((w) => subjectId(w.c))
+  );
   const pool = watched
     .filter((w) => w.c.prob >= MIN_LEG_PROB && (w.c.supportScore == null || w.c.supportScore >= MIN_LEG_SUPPORT))
     .filter((w) => qualifiesLeg(w.c, params, nowMs).ok && heldUp(w.history, nowMs))
     .filter((w) => !conflicts(w.c, state) && !exclude.keys.has(w.c.key) && !exclude.subjects?.has(subjectId(w.c)))
+    .filter((w) => !forSingles.has(subjectId(w.c)))
     .sort((a, b) => b.c.ev - a.c.ev)
     .slice(0, MAX_LEG_POOL);
   let best: Proposal | null = null;
@@ -350,12 +382,14 @@ export function chooseMulti(
     for (let j = i + 1; j < pool.length; j += 1) {
       const [a, b] = [pool[i]!, pool[j]!].sort((x, y) => Date.parse(x.c.startsAt) - Date.parse(y.c.startsAt));
       if (gameIdentity(a.c) === gameIdentity(b.c) || !multiLegsCompatible(a.c, b.c)) continue;
+      if ((a.c.sport !== b.c.sport) !== Boolean(opts.mixedBasketball)) continue;
       if (a.c.sport === 'nba' && b.c.sport === 'nba' ? !nbaOpen : !sharedOpen) continue;
       const key = multiKey([a.c.key, b.c.key]);
       if (exclude.rejected.has(key)) continue;
       const maxPrice = longMultiFull(state, [a.c.sport, b.c.sport]) ? LONG_MULTI_PRICE : MAX_MULTI_PRICE;
       const first = sportParams(params, a.c.sport);
-      const r = readiness(a.c, a.history, { nowMs, postWindowHours: first.postWindowHours, minEv: first.minEvLeg });
+      // Posting early takes the same strong edge a single needs, so a multi never jumps ahead of one.
+      const r = readiness(a.c, a.history, { nowMs, postWindowHours: first.postWindowHours, minEv: first.minEvSingle });
       if (!r.ready) continue;
       const pa = bookPrices(a.c.quotes);
       const pb = bookPrices(b.c.quotes);
@@ -363,6 +397,7 @@ export function chooseMulti(
       for (const [k, qa] of pa) {
         const qb = pb.get(k);
         if (!qb) continue;
+        if (!legPriceOk(a.c.sport, qa.price) || !legPriceOk(b.c.sport, qb.price)) continue;
         const price = qa.price * qb.price;
         if (price < AI_PICK_MIN_PRICE || price > maxPrice) continue;
         if (!pick || price > pick.price) pick = { qa, qb, price };

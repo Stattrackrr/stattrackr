@@ -39,11 +39,17 @@ export type GradeRunSummary = {
 
 async function gradeLeg(
   leg: AiPickLeg,
-  ctx: { nbl: NblResultsSource; nba: NbaResultsSource; tennisLogs: Awaited<ReturnType<typeof loadTennisLogs>>; nowMs: number }
+  ctx: {
+    nbl: NblResultsSource;
+    nba: NbaResultsSource;
+    tennisLogs: Awaited<ReturnType<typeof loadTennisLogs>>;
+    tennisUnplayed?: Map<string, string>;
+    nowMs: number;
+  }
 ): Promise<LegGrade | null> {
   if (leg.sport === 'nbl') return gradeNblLeg(leg, ctx.nbl, ctx.nowMs);
   if (leg.sport === 'nba') return gradeNbaLeg(leg, ctx.nba, ctx.nowMs);
-  if (leg.sport === 'tennis') return gradeTennisLeg(leg, ctx.tennisLogs, ctx.nowMs);
+  if (leg.sport === 'tennis') return gradeTennisLeg(leg, ctx.tennisLogs, ctx.nowMs, ctx.tennisUnplayed);
   return null;
 }
 
@@ -150,10 +156,12 @@ export async function gradeAiPicks(nowMs = Date.now()): Promise<GradeRunSummary>
   try {
     const legs = await listPendingLegsStartedBefore(new Date(nowMs - MIN_PLAY_MS).toISOString());
     summary.legsChecked = legs.length;
+    const tennis = await loadTennisLogsWithFreshResults(legs, nowMs);
     const ctx = {
       nbl: new NblResultsSource(),
       nba: new NbaResultsSource(),
-      tennisLogs: await loadTennisLogsWithFreshResults(legs, nowMs),
+      tennisLogs: tennis.logs,
+      tennisUnplayed: tennis.unplayed,
       nowMs,
     };
     for (const leg of legs) {

@@ -17,6 +17,11 @@ import { dropTennisWinASetRowsWithoutPrice } from '@/lib/tennis/aggregatePropsFo
 import { tennisMatchesPlayed } from '@/lib/tennis/chartStats';
 import { TENNIS_CURRENT_YEAR, loadPlayerMatches, loadTennisPlayers, tennisDvpProfile } from '@/lib/tennis/data';
 import {
+  loadTennisDisplayRanks,
+  preferFullTennisName,
+  tennisDisplayNameFor,
+} from '@/lib/tennis/playerNames';
+import {
   ensureTennisDvpBoardRanks,
   findCachedTennisDvpEvent,
   readTennisDvpLiveStore,
@@ -659,19 +664,34 @@ function snapshotToGame(
   };
 }
 
-/** A healthy Redis roster holds ~2000 players; below this, names on the board will not resolve to ids. */
-const MIN_LIST_ROSTER_PLAYERS = 500;
+/** Redis roster first (ranks / headshots), then the on-disk file for anyone missing — and upgrade abbreviated Redis names. */
+function mergeTennisRosterPlayers(primary: TennisPlayer[], extra: TennisPlayer[]): TennisPlayer[] {
+  const byId = new Map(primary.map((player) => [player.playerId, { ...player }]));
+  for (const row of extra) {
+    const existing = byId.get(row.playerId);
+    if (!existing) {
+      byId.set(row.playerId, { ...row });
+      continue;
+    }
+    existing.name = preferFullTennisName(existing.name, row.name);
+    if (!existing.imageUrl && row.imageUrl) existing.imageUrl = row.imageUrl;
+    if (!existing.ioc && row.ioc) existing.ioc = row.ioc;
+    if (existing.rank == null && row.rank != null) existing.rank = row.rank;
+    if (existing.rankPoints == null && row.rankPoints != null) existing.rankPoints = row.rankPoints;
+    if (!existing.hand && row.hand) existing.hand = row.hand;
+    if (existing.height == null && row.height != null) existing.height = row.height;
+  }
+  return [...byId.values()];
+}
 
 async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayload> {
   await hydrateTennisMatchOverlay({ allowRemote: false });
   const roster = await readTennisRosterCache();
-  let playerRows = roster?.players || [];
-  if (playerRows.length < MIN_LIST_ROSTER_PLAYERS) {
-    let extra = loadTennisPlayers();
-    if (!extra.length) extra = loadTennisPlayers({ currentOnly: true });
-    const seen = new Set(playerRows.map((player) => player.playerId));
-    playerRows = [...playerRows, ...extra.filter((player) => !seen.has(player.playerId))];
-  }
+  let extra = loadTennisPlayers();
+  if (!extra.length) extra = loadTennisPlayers({ currentOnly: true });
+  // Always merge the file roster: Redis alone is often missing players the odds feed names with initials,
+  // which left the props board stuck on "A. Michelsen" instead of "Alex Michelsen".
+  let playerRows = mergeTennisRosterPlayers(roster?.players || [], extra);
   playerRows = applyStandingsRanks(playerRows, roster?.standings);
   const [index, catalog, players, liveEvents, dvpStore] = await Promise.all([
     listTennisOddsIndex(),
@@ -1031,8 +1051,8 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
     ];
     for (const side of sides) {
       const meta = side.meta;
-      const playerName = meta?.name || side.name;
       const playerId = meta?.playerId || null;
+      const playerName = tennisDisplayNameFor(playerId, meta?.name || side.name);
       const tour = matchTour;
       const opponent = side.isHome ? snapshot.awayName : snapshot.homeName;
       const opponentId = side.opponentMeta?.playerId || null;
@@ -1411,7 +1431,7 @@ function overlayUpcomingOpponentMeta(
     if (!sameOpponent) return row;
     let patched = row;
     if (next.opponentIoc) patched = { ...patched, opponentIoc: next.opponentIoc };
-    if (next.opponentRank != null) patched = { ...patched, opponentRank: next.opponentRank };
+    // World rank is applied later from standings; upcoming ranks can be stale disk values.
     if (next.opponentId) patched = { ...patched, opponentId: next.opponentId };
     if (opponent && next.tournamentName && next.tournamentName !== row.tournamentName) {
       patched = {
@@ -1441,12 +1461,57 @@ function overlayUpcomingOpponentMeta(
   return { ...payload, data: fillMissingTennisOpponentIoc(data), games };
 }
 
+type TennisRankRoster = {
+  players?: Array<{ playerId: string; name: string; ioc: string | null; rank: number | null }>;
+  standings?: {
+    ATP?: Array<{ playerId: string; name: string; ioc: string | null; pos?: number | null }>;
+    WTA?: Array<{ playerId: string; name: string; ioc: string | null; pos?: number | null }>;
+  };
+};
+
+/**
+ * One world-rank source for every player and opponent on the board.
+ * Prefer live Redis standings (freshest), then Redis player.rank, then the committed ranks file.
+ */
+function applyListWorldRanks(
+  payload: TennisPlayerPropsListPayload,
+  roster: TennisRankRoster | null | undefined
+): TennisPlayerPropsListPayload {
+  const standingById = new Map<string, number>();
+  for (const row of [...(roster?.standings?.ATP || []), ...(roster?.standings?.WTA || [])]) {
+    const id = String(row.playerId || '').trim();
+    const pos = Number(row.pos);
+    if (id && Number.isFinite(pos) && pos > 0) standingById.set(id, pos);
+  }
+  const playerRankById = new Map<string, number>();
+  for (const player of roster?.players || []) {
+    const id = String(player.playerId || '').trim();
+    const rank = Number(player.rank);
+    if (id && Number.isFinite(rank) && rank > 0) playerRankById.set(id, rank);
+  }
+  const fallback = loadTennisDisplayRanks();
+  const rankFor = (id: string | null | undefined, current: number | null | undefined): number | null => {
+    const key = String(id || '').trim();
+    if (!key) return current ?? null;
+    if (standingById.has(key)) return standingById.get(key)!;
+    if (playerRankById.has(key)) return playerRankById.get(key)!;
+    if (fallback.has(key)) return fallback.get(key)!;
+    return current ?? null;
+  };
+  let changed = false;
+  const data = payload.data.map((row) => {
+    const playerRank = rankFor(row.playerId, row.playerRank);
+    const opponentRank = rankFor(row.opponentId, row.opponentRank);
+    if (playerRank === row.playerRank && opponentRank === row.opponentRank) return row;
+    changed = true;
+    return { ...row, playerRank, opponentRank };
+  });
+  return changed ? { ...payload, data } : payload;
+}
+
 function overlayRosterOpponentMeta(
   payload: TennisPlayerPropsListPayload,
-  roster: {
-    players?: Array<{ playerId: string; name: string; ioc: string | null; rank: number | null }>;
-    standings?: { ATP?: Array<{ playerId: string; name: string; ioc: string | null; pos?: number | null }>; WTA?: Array<{ playerId: string; name: string; ioc: string | null; pos?: number | null }> };
-  } | null | undefined
+  roster: TennisRankRoster | null | undefined
 ): TennisPlayerPropsListPayload {
   const players = roster?.players || [];
   const ranked = [...(roster?.standings?.ATP || []), ...(roster?.standings?.WTA || [])];
@@ -1478,21 +1543,22 @@ function overlayRosterOpponentMeta(
     const resolvedId = hit?.playerId || rankedHit?.playerId || id || null;
     const ioc = hit?.ioc || rankedHit?.ioc || fallbackIoc || resolveTennisIoc(resolvedId, name);
     if (!ioc && !resolvedId) return null;
+    const standingPos = rankedHit?.pos != null && Number(rankedHit.pos) > 0 ? Number(rankedHit.pos) : null;
     return {
       ioc: ioc || null,
       id: resolvedId,
-      rank: hit?.rank ?? rankedHit?.pos ?? null,
+      // Standings position beats a stale player.rank on the roster row.
+      rank: standingPos ?? hit?.rank ?? null,
     };
   });
   const data = payload.data.map((row) => {
-    if (row.opponentIoc && row.opponentId) return row;
     const found = iocFor(String(row.opponentId || '').trim() || null, String(row.opponent || '').trim(), row.opponentIoc);
     if (!found) return row;
     return {
       ...row,
       opponentIoc: row.opponentIoc || found.ioc,
       opponentId: row.opponentId || found.id,
-      opponentRank: row.opponentRank ?? found.rank,
+      opponentRank: found.rank ?? row.opponentRank,
     };
   });
   return { ...payload, data };
@@ -1525,6 +1591,7 @@ export async function applyTennisListLiveOverlay(
   payload: TennisPlayerPropsListPayload
 ): Promise<TennisPlayerPropsListPayload> {
   let next = payload;
+  let roster: TennisRankRoster | null = null;
   try {
     const byPlayerId = await listUpcomingTennisByPlayer({ waitForFresh: false });
     const upcoming = await listUniqueUpcomingTennisGames({ waitForFresh: false });
@@ -1536,7 +1603,7 @@ export async function applyTennisListLiveOverlay(
     next = dropStaleTennisListRows(next, [], undefined);
   }
   try {
-    const roster = await readTennisRosterCache();
+    roster = await readTennisRosterCache();
     next = overlayRosterOpponentMeta(next, roster);
   } catch {
     /* keep baked identity if roster is cold */
@@ -1546,7 +1613,9 @@ export async function applyTennisListLiveOverlay(
   } catch {
     /* keep baked DVP if live overlay fails */
   }
-  return { ...next, data: fillMissingTennisOpponentIoc(next.data) };
+  next = { ...next, data: fillMissingTennisOpponentIoc(fillRosterFlags(next.data)) };
+  // Last: one world-rank pass so player and opponent badges match (Redis standings first).
+  return applyListWorldRanks(next, roster);
 }
 
 let listBuildInflight: Promise<TennisPlayerPropsListPayload> | null = null;
@@ -1639,13 +1708,15 @@ function rosterHitForListedName(
   );
 }
 
-/** Cached list rows often keep a blank country even when the roster has one. */
+/** Cached list rows often keep a blank country even when the roster has one, and odds-abbreviated names. */
 function fillRosterFlags(rows: TennisListPropRow[]): TennisListPropRow[] {
-  const players = rows.length ? loadTennisPlayers() : [];
-  if (!players.length) return rows;
+  if (!rows.length) return rows;
+  // On Vercel the compiled api-tennis roster is absent; still expand names from the committed id map.
+  const players = loadTennisPlayers();
   const playersById = new Map(players.map((player) => [player.playerId, player]));
   const hits = new Map<string, TennisPlayer | null>();
   const hitFor = (name: string | null | undefined, id: string | null | undefined) => {
+    if (!players.length) return null;
     const key = `${String(id || '').trim()}|${String(name || '').trim()}`;
     if (!hits.has(key)) hits.set(key, rosterHitForListedName(players, playersById, name, id));
     return hits.get(key) ?? null;
@@ -1654,10 +1725,30 @@ function fillRosterFlags(rows: TennisListPropRow[]): TennisListPropRow[] {
     const player = hitFor(row.playerName, row.playerId);
     const opponent = hitFor(row.opponent, row.opponentId);
     let next = row;
-    if (player?.ioc && !next.playerIoc) next = { ...next, playerIoc: player.ioc };
-    if (player && !next.playerId) next = { ...next, playerId: player.playerId };
-    if (opponent?.ioc && !next.opponentIoc) next = { ...next, opponentIoc: opponent.ioc };
-    if (opponent && !next.opponentId) next = { ...next, opponentId: opponent.playerId };
+    if (player) {
+      next = {
+        ...next,
+        playerName: preferFullTennisName(next.playerName, player.name),
+        playerId: next.playerId || player.playerId,
+        playerIoc: next.playerIoc || player.ioc,
+        playerRank: next.playerRank ?? player.rank ?? null,
+      };
+    }
+    if (opponent) {
+      next = {
+        ...next,
+        opponent: preferFullTennisName(String(next.opponent || ''), opponent.name),
+        opponentId: next.opponentId || opponent.playerId,
+        opponentIoc: next.opponentIoc || opponent.ioc,
+        opponentRank: next.opponentRank ?? opponent.rank ?? null,
+      };
+    }
+    // Committed full-name map: production Redis often stores "A. Michelsen" with the right id.
+    next = {
+      ...next,
+      playerName: tennisDisplayNameFor(next.playerId, next.playerName),
+      opponent: tennisDisplayNameFor(next.opponentId, String(next.opponent || '')),
+    };
     return next;
   });
 }
@@ -1668,10 +1759,22 @@ export async function getTennisPlayerPropsList(opts?: {
 }): Promise<TennisPlayerPropsListPayload> {
   const tour = opts?.tour === 'ATP' || opts?.tour === 'WTA' ? opts.tour : null;
   const payload = filterTennisListByTour(await loadTennisPlayerPropsList(opts?.refresh), tour);
+  let roster: TennisRankRoster | null = null;
+  try {
+    roster = await readTennisRosterCache();
+  } catch {
+    roster = null;
+  }
   try {
     const overlaid = await overlayLiveTennisDvp(payload);
-    return { ...overlaid, data: fillMissingTennisOpponentIoc(fillRosterFlags(overlaid.data)) };
+    return applyListWorldRanks(
+      { ...overlaid, data: fillMissingTennisOpponentIoc(fillRosterFlags(overlaid.data)) },
+      roster
+    );
   } catch {
-    return { ...payload, data: fillMissingTennisOpponentIoc(fillRosterFlags(payload.data)) };
+    return applyListWorldRanks(
+      { ...payload, data: fillMissingTennisOpponentIoc(fillRosterFlags(payload.data)) },
+      roster
+    );
   }
 }

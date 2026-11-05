@@ -22,6 +22,7 @@ import { tennisIocFromStoredOrRoster } from '@/lib/tennis/resolveIoc';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { mergeCareerH2h } from '@/lib/tennis/h2hHistory';
 import { sortTennisMatchesOldestFirst } from '@/lib/tennis/chartStats';
+import { tennisDisplayNameFor } from '@/lib/tennis/playerNames';
 
 type TennisRosterStandings = {
   ATP?: TennisRankingRow[];
@@ -152,13 +153,18 @@ function usableTennisRoster(players: TennisPlayer[]): TennisPlayer[] {
   });
 }
 
+function withDisplayTennisName<T extends { playerId?: string | null; name?: string | null }>(player: T): T {
+  const name = tennisDisplayNameFor(player.playerId, String(player.name || ''));
+  return name && name !== player.name ? { ...player, name } : player;
+}
+
 export async function loadTennisPlayersCached(opts?: {
   currentOnly?: boolean;
 }): Promise<TennisPlayer[]> {
   const roster = await readTennisRosterCache();
   const redisPlayers = usableTennisRoster(roster?.players || []);
   if (redisPlayers.length >= 50) {
-    const players = fillTennisPlayerRanks(redisPlayers.map(withPlayerCountry), roster?.standings);
+    const players = fillTennisPlayerRanks(redisPlayers.map(withPlayerCountry).map(withDisplayTennisName), roster?.standings);
     return opts?.currentOnly ? takeCurrentTennisRoster(players, roster?.standings) : players;
   }
   // Disk roster.json only — never parse the 528MB match cache on a dashboard GET.

@@ -8,7 +8,7 @@ import type { BookmakerRegion } from '@/lib/bookmakers';
 import { decimalToAmerican } from '@/lib/currencyUtils';
 import type { TennisNextGame } from '@/lib/tennis/nextGame';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
-import { filterTennisOuLines, type TennisBookRow, type TennisOuLine } from '@/lib/tennis/oddsTypes';
+import { filterTennisOuLines, type TennisBookRow, type TennisExtraMarket, type TennisOuLine } from '@/lib/tennis/oddsTypes';
 
 /** Decimal prices. `line` is the over/under line. */
 export type SourceOu = { line: number; over: number; under: number };
@@ -31,6 +31,8 @@ export type SourceMatch = {
   awayWinSet?: SourceYesNo;
   /** ±1.5 set handicaps; only read as win-a-set when the match is best of 3. */
   setHandicaps: SourceHandicap[];
+  /** Every other market the book prices, player selections as "home" / "away" in this source's order. */
+  extraMarkets?: TennisExtraMarket[];
 };
 
 export type ListedEvent = { id: string; home: string; away: string; startsAt: string | null };
@@ -119,10 +121,14 @@ function mainLine(lines: TennisOuLine[]): TennisOuLine {
   return best ?? lines[0] ?? EMPTY;
 }
 
+/** "home 2-1" <-> "away 2-1": the same selection seen from the other orientation. */
+const flipSelection = (s: string) => s.replace(/\b(home|away)\b/g, (side) => (side === 'home' ? 'away' : 'home'));
+
 function flip(src: SourceMatch): SourceMatch {
   const handicap = (h: SourceHandicap): SourceHandicap => ({ homeLine: -h.homeLine, home: h.away, away: h.home });
   return {
     ...src,
+    extraMarkets: src.extraMarkets?.map((m) => ({ ...m, selection: flipSelection(m.selection) })),
     home: src.away,
     away: src.home,
     h2h: src.h2h ? { home: src.h2h.away, away: src.h2h.home } : undefined,
@@ -167,12 +173,14 @@ export function sourceMatchToBookRow(
   const setsWon = yesNoLine(src.homeWinSet ?? (bestOfThree ? winSetFromHandicaps(src.setHandicaps, 'home') : undefined));
   const setsLost = yesNoLine(src.awayWinSet ?? (bestOfThree ? winSetFromHandicaps(src.setHandicaps, 'away') : undefined));
   const h2h = src.h2h && validPrice(src.h2h.home) && validPrice(src.h2h.away) ? src.h2h : undefined;
-  if (!h2h && !spread.length && !total.length && !gamesWon.length && !gamesLost.length && !totalSets.length && !setsWon.length && !setsLost.length) {
+  const extraMarkets = (src.extraMarkets ?? []).filter((m) => validPrice(m.price));
+  if (!h2h && !spread.length && !total.length && !gamesWon.length && !gamesLost.length && !totalSets.length && !setsWon.length && !setsLost.length && !extraMarkets.length) {
     return null;
   }
   return {
     name: src.book,
     region: src.region,
+    ...(extraMarkets.length ? { extraMarkets } : {}),
     H2H: { home: american(h2h?.home), away: american(h2h?.away) },
     Spread: mainLine(spread),
     Total: mainLine(total),

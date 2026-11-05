@@ -95,6 +95,7 @@ import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { tennisEventPlaceLabel, tennisTourLabel } from '@/lib/tennis/chartStats';
 import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
+import { tennisSurfaceLabel } from '@/lib/tennis/venues';
 import {
   formatTennisStartClock,
   tennisCommenceTimeStillOnBoard,
@@ -376,6 +377,18 @@ function dvpRankText(
   _fieldSize?: number | null
 ): string {
   return `#${rank}`;
+}
+
+/** Missing stat in a pill: a short muted dash instead of "N/A". */
+function EmptyStat({ dark }: { dark: boolean }) {
+  return (
+    <span
+      role="img"
+      aria-label="No data"
+      title="No data"
+      className={`block h-[2px] w-3.5 rounded-full ${dark ? 'bg-gray-500/50' : 'bg-gray-300'}`}
+    />
+  );
 }
 
 function propsListRowKey(
@@ -1329,7 +1342,7 @@ function tennisPropsEventSubtitle(prop: PlayerProp, games: AflGameForProps[]): s
   const game = prop.gameId ? games.find((g) => g.gameId === prop.gameId) ?? null : null;
   const tour = tennisTourLabel({ tour: prop.team || prop.playerTeam });
   const place = tennisEventPlaceLabel(prop.tournamentName || game?.tournamentName);
-  const surface = String(prop.surface || game?.surface || '').trim();
+  const surface = tennisSurfaceLabel(prop.surface || game?.surface, prop.tournamentName || game?.tournamentName);
   return [tour, place, surface].filter(Boolean).join(' - ');
 }
 
@@ -3628,6 +3641,8 @@ export default function NBALandingPage() {
         combinedPaintUnlocked: combinedPaintUnlockedRef.current,
         combinedFetchComplete: combinedPropsFetchCompleteRef.current,
         noAflOdds: combinedOddsFlagsRef.current.noAflOdds === true,
+        noTennisOdds: combinedOddsFlagsRef.current.noTennisOdds === true,
+        noNblOdds: combinedOddsFlagsRef.current.noNblOdds === true,
         scrollY: window.scrollY,
         currentPage: currentPageRef.current,
       };
@@ -4071,8 +4086,8 @@ export default function NBALandingPage() {
       initialFetchCompletedRef.current = true;
       combinedOddsFlagsRef.current = {
         noAflOdds: warmSnapshot.noAflOdds,
-        noTennisOdds: false,
-        noNblOdds: false,
+        noTennisOdds: warmSnapshot.noTennisOdds === true,
+        noNblOdds: warmSnapshot.noNblOdds === true,
         nbaSettled: (warmSnapshot.playerProps as PlayerProp[]).length > 0 || !NBA_PUBLIC_ENABLED,
       };
       if (!urlSpecifiesSport) {
@@ -4114,19 +4129,23 @@ export default function NBALandingPage() {
       }
       selectedAflGamesRef.current = new Set(snapGameIds);
       setSelectedAflGames(new Set(snapGameIds));
-      setCombinedPaintUnlocked(
-        combinedModeFirstPaintReady(
-          paintedNbaProps,
-          paintedAflProps,
-          Array.isArray(warmSnapshot.tennisCombinedProps)
-            ? (warmSnapshot.tennisCombinedProps as PlayerProp[])
-            : [],
-          Array.isArray(warmSnapshot.nblCombinedProps)
-            ? (warmSnapshot.nblCombinedProps as PlayerProp[]).filter(isNblListProp)
-            : [],
-          combinedOddsFlagsRef.current
-        )
+      const warmPaintReady = combinedModeFirstPaintReady(
+        warmSnapshot.playerProps as PlayerProp[],
+        warmSnapshot.aflProps as PlayerProp[],
+        Array.isArray(warmSnapshot.tennisCombinedProps)
+          ? (warmSnapshot.tennisCombinedProps as PlayerProp[])
+          : [],
+        Array.isArray(warmSnapshot.nblCombinedProps)
+          ? (warmSnapshot.nblCombinedProps as PlayerProp[]).filter(isNblListProp)
+          : [],
+        combinedOddsFlagsRef.current
       );
+      setCombinedPaintUnlocked(warmPaintReady);
+      // A restore that can't paint the All view must not also skip the fetch, or the skeleton never clears.
+      if (!warmPaintReady) {
+        skipPropsRefetchOnceRef.current = false;
+        combinedWarmToggleRef.current = false;
+      }
       setCombinedFetchComplete(warmSnapshot.combinedFetchComplete);
       setCombinedPropsLoading(false);
       setPropsLoading(false);
@@ -5965,7 +5984,8 @@ export default function NBALandingPage() {
         lastUpdated: null,
         nextUpdate: null,
         ingestMessage: null,
-        noTennisOdds: false,
+        // Keep a confirmed "no tennis odds": resetting it re-locks the All view whenever another sport refills.
+        noTennisOdds: combinedOddsFlagsRef.current.noTennisOdds,
         games: [],
         props: tennisCombinedPropsRef.current.filter(isTennisListProp),
       },
@@ -10976,24 +10996,22 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                      <EmptyStat dark={mounted && isDark} />
                                     </div>
                                   ) : (
                                     <div className="relative inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        N/A
-                                      </div>
+                                      <EmptyStat dark={mounted && isDark} />
                                       {isTennisPropsSport(rowSport) && isTennisMoneylineStat(displayProp.statType) ? (
                                         <span className={`absolute bottom-0.5 left-0 right-0 text-[8px] leading-none font-medium ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                           Seed
@@ -11057,24 +11075,22 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                      <EmptyStat dark={mounted && isDark} />
                                     </div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        N/A
-                                      </div>
+                                      <EmptyStat dark={mounted && isDark} />
                                     </div>
                                   )}
                                 </td>
@@ -11133,24 +11149,22 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                      <EmptyStat dark={mounted && isDark} />
                                     </div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        N/A
-                                      </div>
+                                      <EmptyStat dark={mounted && isDark} />
                                     </div>
                                   )}
                                 </td>
@@ -11212,24 +11226,22 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                      <EmptyStat dark={mounted && isDark} />
                                     </div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        N/A
-                                      </div>
+                                      <EmptyStat dark={mounted && isDark} />
                                     </div>
                                   )}
                                 </td>
@@ -11290,24 +11302,22 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                      <EmptyStat dark={mounted && isDark} />
                                     </div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        N/A
-                                      </div>
+                                      <EmptyStat dark={mounted && isDark} />
                                     </div>
                                   )}
                                 </td>
@@ -11353,15 +11363,15 @@ export default function NBALandingPage() {
                                   ) : propsSport === 'afl' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
-                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
-                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
+                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
                                         borderWidth: '2px',
                                         boxShadow: 'none',
                                       }}>
-                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                      <EmptyStat dark={mounted && isDark} />
                                     </div>
                                   ) : (
-                                    <div className={`text-sm font-medium ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>-</div>
+                                    <EmptyStat dark={mounted && isDark} />
                                   )}
                                 </td>
                                 
@@ -11670,15 +11680,15 @@ export default function NBALandingPage() {
                           };
                           
                           // Helper to format hit rate percentage
-                          const getHitRatePercent = (hitRate: { hits: number; total: number } | null | undefined): string => {
-                            if (!hitRate || hitRate.total === 0) return 'N/A';
+                          const getHitRatePercent = (hitRate: { hits: number; total: number } | null | undefined): string | null => {
+                            if (!hitRate || hitRate.total === 0) return null;
                             return `${((hitRate.hits / hitRate.total) * 100).toFixed(0)}%`;
                           };
                           
                           // Helper to get stat box color based on hit rate
                           const getStatBoxStyle = (hitRate: { hits: number; total: number } | null | undefined, isStreak = false) => {
-                            // If no hitRate data (null/undefined) or no valid data (total === 0) and not streak, return grey box - darker on mobile/dark mode
-                            if (!isStreak && (!hitRate || hitRate.total === 0)) {
+                            // No data: a muted grey box with the dash.
+                            if (isStreak ? prop.streak == null : !hitRate || hitRate.total === 0) {
                               return {
                                 background: mounted && isDark ? '#1a2140' : '#f3f4f6',
                                 borderColor: mounted && isDark ? '#4d4a73' : '#d1d5db',
@@ -12171,7 +12181,7 @@ export default function NBALandingPage() {
                                 })()}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>DvP</div>
                                   <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
-                                    {prop.dvpRating !== null && prop.dvpRating !== undefined ? dvpRankText(rowSport, prop.dvpRating, prop.dvpFieldSize) : 'N/A'}
+                                    {prop.dvpRating !== null && prop.dvpRating !== undefined ? dvpRankText(rowSport, prop.dvpRating, prop.dvpFieldSize) : <span className="flex h-5 items-center"><EmptyStat dark={mounted && isDark} /></span>}
                                   </div>
                                   {isTennisPropsSport(rowSport) && isTennisMoneylineStat(prop.statType) ? (
                                     <span className={`text-[8px] leading-none font-medium mt-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -12187,7 +12197,7 @@ export default function NBALandingPage() {
                                       ? (mounted && isDark ? 'text-gray-400' : 'text-gray-500')
                                       : (mounted && isDark ? 'text-white' : 'text-gray-900')
                                   }`}>
-                                    {getHitRatePercent(prop.last5HitRate)}
+                                    {getHitRatePercent(prop.last5HitRate) ?? <span className="flex h-5 items-center"><EmptyStat dark={mounted && isDark} /></span>}
                                   </div>
                                 </div>
                                 
@@ -12199,7 +12209,7 @@ export default function NBALandingPage() {
                                       ? (mounted && isDark ? 'text-gray-400' : 'text-gray-500')
                                       : (mounted && isDark ? 'text-white' : 'text-gray-900')
                                   }`}>
-                                    {getHitRatePercent(prop.last10HitRate)}
+                                    {getHitRatePercent(prop.last10HitRate) ?? <span className="flex h-5 items-center"><EmptyStat dark={mounted && isDark} /></span>}
                                   </div>
                                 </div>
                                 
@@ -12211,7 +12221,7 @@ export default function NBALandingPage() {
                                       ? (mounted && isDark ? 'text-gray-400' : 'text-gray-500')
                                       : (mounted && isDark ? 'text-white' : 'text-gray-900')
                                   }`}>
-                                    {getHitRatePercent(prop.h2hHitRate)}
+                                    {getHitRatePercent(prop.h2hHitRate) ?? <span className="flex h-5 items-center"><EmptyStat dark={mounted && isDark} /></span>}
                                   </div>
                                 </div>
                                 )}
@@ -12220,7 +12230,7 @@ export default function NBALandingPage() {
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(null, true)}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>STRK</div>
                                   <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
-                                    {prop.streak ?? 'N/A'}
+                                    {prop.streak ?? <span className="flex h-5 items-center"><EmptyStat dark={mounted && isDark} /></span>}
                                   </div>
                                 </div>
                                 
@@ -12232,7 +12242,7 @@ export default function NBALandingPage() {
                                       ? (mounted && isDark ? 'text-gray-400' : 'text-gray-500')
                                       : (mounted && isDark ? 'text-white' : 'text-gray-900')
                                   }`}>
-                                    {getHitRatePercent(prop.seasonHitRate)}
+                                    {getHitRatePercent(prop.seasonHitRate) ?? <span className="flex h-5 items-center"><EmptyStat dark={mounted && isDark} /></span>}
                                   </div>
                                 </div>
                                 

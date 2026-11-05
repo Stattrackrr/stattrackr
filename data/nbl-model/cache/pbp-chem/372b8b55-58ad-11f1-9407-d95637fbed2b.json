@@ -1,0 +1,650 @@
+{
+  "fixtureId": "372b8b55-58ad-11f1-9407-d95637fbed2b",
+  "homeTeam": "Melbourne United",
+  "awayTeam": "NZ Breakers",
+  "homeTeamCode": "MEL",
+  "awayTeamCode": "NZL",
+  "lineupValid": false,
+  "players": [
+    {
+      "personId": "6be49392-410d-11f0-b2dd-9dbbf7342624",
+      "name": "Anzac Rissetto",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 4,
+      "assistedMakes": 4,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 4,
+          "pts": 8
+        }
+      ]
+    },
+    {
+      "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+      "name": "Carlin Davison",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 4,
+      "assistedMakes": 2,
+      "assists": 10,
+      "ptsCreated": 19,
+      "finds": [
+        {
+          "personId": "6be49392-410d-11f0-b2dd-9dbbf7342624",
+          "name": "Anzac Rissetto",
+          "count": 4,
+          "pts": 8
+        },
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+          "name": "Dejan Vasiljevic",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+          "name": "Charles Bediako",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
+          "name": "Mojave King",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "5188b88d-410d-11f0-8e81-9dbbf7342624",
+          "name": "Izayah Le'Afa",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "75b6b600-410d-11f0-b796-2902fc2f936f",
+          "name": "Parker Jackson-Cartwright",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+      "name": "Charles Bediako",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 4,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+      "name": "Chris Goulding",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "024d5bb0-7d7d-11f0-af8e-d779047302e8",
+      "name": "Christian D'Angelo",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+      "name": "Cole Anthony",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 8,
+      "assistedMakes": 2,
+      "assists": 3,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+      "name": "Dejan Vasiljevic",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+          "name": "Nelson Weidemann",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+      "name": "Fabijan Krslovic",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "5188b88d-410d-11f0-8e81-9dbbf7342624",
+      "name": "Izayah Le'Afa",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+      "name": "Joe Ingles",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 6,
+      "ptsCreated": 10,
+      "finds": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+      "name": "Josh Oduro",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 7,
+      "assistedMakes": 4,
+      "assists": 3,
+      "ptsCreated": 9,
+      "finds": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 2,
+          "pts": 4
+        }
+      ]
+    },
+    {
+      "personId": "50cb4bdd-410d-11f0-aa4b-9dbbf7342624",
+      "name": "Kouat Noi",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+      "name": "Kyle Bowen",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+      "name": "Luke Travers",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 5,
+      "assistedMakes": 2,
+      "assists": 6,
+      "ptsCreated": 13,
+      "finds": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+      "name": "Malith Machar",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 4,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
+      "name": "Mojave King",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75b6b600-410d-11f0-b796-2902fc2f936f",
+          "name": "Parker Jackson-Cartwright",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+      "name": "Nelson Weidemann",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+          "name": "Dejan Vasiljevic",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "75b6b600-410d-11f0-b796-2902fc2f936f",
+      "name": "Parker Jackson-Cartwright",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 3,
+      "assistedMakes": 0,
+      "assists": 4,
+      "ptsCreated": 7,
+      "finds": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
+          "name": "Mojave King",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+      "name": "Reuben Te Rangi",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+      "name": "Sam Mennenga",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 7,
+      "assistedMakes": 4,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+          "name": "Reuben Te Rangi",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+          "name": "Charles Bediako",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+          "name": "Nelson Weidemann",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75b6b600-410d-11f0-b796-2902fc2f936f",
+          "name": "Parker Jackson-Cartwright",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+      "name": "Sam Waardenburg",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+      "name": "Shea Ili",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+      "name": "Tom Wilson",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "07948bc9-9cf5-11f1-8acf-bd9f13bc3d7d",
+          "name": "Will Hynes",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "07948bc9-9cf5-11f1-8acf-bd9f13bc3d7d",
+      "name": "Will Hynes",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+          "name": "Tom Wilson",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    }
+  ],
+  "onOff": [],
+  "fetchedAt": "2026-11-02T22:19:30.006Z"
+}

@@ -5,34 +5,34 @@
   "years": [
     2026
   ],
-  "gamesUsed": 8,
+  "gamesUsed": 11,
   "fixturesFetched": 0,
-  "fixturesCached": 8,
-  "shotCount": 34,
+  "fixturesCached": 11,
+  "shotCount": 43,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 8,
+      "fga": 9,
       "fgm": 7,
-      "fgPct": 87.5,
-      "share": 23.52941176470588
+      "fgPct": 77.77777777777779,
+      "share": 20.930232558139537
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 5,
-      "fgm": 2,
-      "fgPct": 40,
-      "share": 14.705882352941178
+      "fga": 7,
+      "fgm": 3,
+      "fgPct": 42.857142857142854,
+      "share": 16.27906976744186
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 2,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 5.88235294117647
+      "fga": 3,
+      "fgm": 1,
+      "fgPct": 33.33333333333333,
+      "share": 6.976744186046512
     },
     {
       "zone": "leftCorner3",
@@ -40,23 +40,23 @@
       "fga": 5,
       "fgm": 3,
       "fgPct": 60,
-      "share": 14.705882352941178
+      "share": 11.627906976744185
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 5,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 14.705882352941178
+      "fga": 9,
+      "fgm": 3,
+      "fgPct": 33.33333333333333,
+      "share": 20.930232558139537
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 9,
+      "fga": 10,
       "fgm": 3,
-      "fgPct": 33.33333333333333,
-      "share": 26.47058823529412
+      "fgPct": 30,
+      "share": 23.25581395348837
     }
   ],
   "points": [
@@ -263,7 +263,61 @@
       1.4,
       1,
       0
+    ],
+    [
+      7.22,
+      3.18,
+      0,
+      0
+    ],
+    [
+      9.23,
+      4.56,
+      1,
+      0
+    ],
+    [
+      13.08,
+      6.19,
+      1,
+      1
+    ],
+    [
+      14.34,
+      3.65,
+      1,
+      1
+    ],
+    [
+      11.83,
+      4.73,
+      1,
+      0
+    ],
+    [
+      2.94,
+      9.43,
+      0,
+      1
+    ],
+    [
+      12.85,
+      7.21,
+      1,
+      1
+    ],
+    [
+      12.69,
+      7.1,
+      0,
+      1
+    ],
+    [
+      7.5,
+      1.4,
+      0,
+      0
     ]
   ],
-  "generatedAt": "2026-10-22T17:58:41.679Z"
+  "generatedAt": "2026-11-04T20:28:08.926Z"
 }
