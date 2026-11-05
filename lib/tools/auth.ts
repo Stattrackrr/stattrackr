@@ -6,20 +6,13 @@
  */
 
 import { authorizeAdminRequest } from '@/lib/adminAuth';
-import { isDataAdminEmail } from '@/lib/adminEmail';
+import { isToolsAdminEmail } from '@/lib/adminEmail';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-
-function adminEmailSet(): Set<string> {
-  const fromEnv = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return new Set(fromEnv);
-}
 
 export async function allowToolsAdmin(request: Request): Promise<boolean> {
   if (process.env.TOOLS_DEV_OPEN === '1') return true;
 
+  // Full site admins (ADMIN_EMAILS / secret) still get Tools.
   const admin = await authorizeAdminRequest(request);
   if (admin.authorized) return true;
 
@@ -35,9 +28,7 @@ export async function allowToolsAdmin(request: Request): Promise<boolean> {
       error,
     } = await supabaseAdmin.auth.getUser(token);
     if (error || !user?.email) return false;
-    const email = user.email.trim().toLowerCase();
-    if (isDataAdminEmail(email)) return true;
-    return adminEmailSet().has(email);
+    return isToolsAdminEmail(user.email);
   } catch {
     return false;
   }

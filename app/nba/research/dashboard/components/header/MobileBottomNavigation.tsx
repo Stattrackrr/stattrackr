@@ -6,7 +6,7 @@ import { usePicksUnread } from '@/lib/aiPicks/unread';
 import { usePathname, useRouter } from 'next/navigation';
 import { CHAT_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
 import { openProUpgrade } from '@/components/ProFeatureLock';
-import { isDataAdminEmail } from '@/lib/adminEmail';
+import { isToolsAdminEmail } from '@/lib/adminEmail';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { getLocalStorage, setSessionStorage } from '../../utils/storageUtils';
 import { ProfileAvatar } from './ProfileAvatar';
@@ -71,7 +71,7 @@ export function MobileBottomNavigation({
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const unreadPicksCount = usePicksUnread(hasPremium);
   const unreadPicksLabel = unreadPicksCount > 9 ? '9+' : unreadPicksCount.toString();
-  const isAdmin = isDataAdminEmail(userEmail);
+  const canUseTools = isToolsAdminEmail(userEmail);
 
   useEffect(() => {
     if (!showBoardMenu) return;
@@ -149,8 +149,8 @@ export function MobileBottomNavigation({
   };
 
   const isPropsActive = pathname?.startsWith('/props');
-  const isToolsActive = isAdmin && pathname?.startsWith('/tools');
-  const isBoardActive = isPropsActive || isToolsActive || (isAdmin && showBoardMenu);
+  const isToolsActive = canUseTools && pathname?.startsWith('/tools');
+  const isBoardActive = isPropsActive || isToolsActive || (canUseTools && showBoardMenu);
   const boardLabel = isToolsActive ? 'Tools' : 'Props';
   const isChatActive = pathname?.startsWith('/chat');
   const isPicksActive = pathname?.startsWith('/picks');
@@ -222,7 +222,7 @@ export function MobileBottomNavigation({
       )}
       
       {/* Props / Tools switcher — Tools only for admin */}
-      {isAdmin && showBoardMenu ? (
+      {canUseTools && showBoardMenu ? (
         <div
           ref={boardMenuRef}
           className="absolute bottom-[calc(100%+10px)] left-3 z-50 w-[168px] overflow-hidden rounded-2xl border border-white/30 bg-white/95 shadow-xl backdrop-blur-md dark:border-white/15 dark:bg-[#0a1929]/95"
@@ -266,15 +266,15 @@ export function MobileBottomNavigation({
           onClick={() => {
             setShowProfileDropdown(false);
             setShowSettingsDropdown(false);
-            if (!isAdmin) {
+            if (!canUseTools) {
               goProps();
               return;
             }
             setShowBoardMenu((open) => !open);
           }}
           className={navButtonClass(!!isBoardActive)}
-          aria-expanded={isAdmin ? showBoardMenu : undefined}
-          aria-haspopup={isAdmin ? 'menu' : undefined}
+          aria-expanded={canUseTools ? showBoardMenu : undefined}
+          aria-haspopup={canUseTools ? 'menu' : undefined}
         >
           <span className={iconChipClass(!!isBoardActive)}>
             {isToolsActive ? (

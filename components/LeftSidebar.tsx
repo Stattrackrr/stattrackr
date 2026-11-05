@@ -12,7 +12,7 @@ import { usePicksUnread } from "@/lib/aiPicks/unread";
 import { supabase } from "@/lib/supabaseClient";
 import { invalidateViewerProfileCache } from '@/lib/profileSubscriptionGate';
 import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
-import { isDataAdminEmail } from '@/lib/adminEmail';
+import { isToolsAdminEmail } from '@/lib/adminEmail';
 import { ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
 
 type OddsFormat = 'american' | 'decimal';
@@ -61,7 +61,7 @@ export default function LeftSidebar({
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const unreadPicksCount = usePicksUnread(hasPremium);
   const unreadPicksLabel = unreadPicksCount > 9 ? '9+' : unreadPicksCount.toString();
-  const isAdmin = isDataAdminEmail(userEmail);
+  const canUseTools = isToolsAdminEmail(userEmail);
   const [showSettings, setShowSettings] = useState(false);
   const [showSportsDropdown, setShowSportsDropdown] = useState(true);
   // Dropdown below profile card (name click toggles this)
@@ -473,7 +473,7 @@ export default function LeftSidebar({
               >
                 Props
               </Link>
-              {isAdmin ? (
+              {canUseTools ? (
                 <Link
                   href="/tools"
                   className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${

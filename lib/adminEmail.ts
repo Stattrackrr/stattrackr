@@ -2,19 +2,38 @@
 
 export const DATA_ADMIN_EMAIL = 'admin@stattrackr.co';
 
-/** Extra accounts that can use admin-gated surfaces (e.g. Betting Tools). */
-const EXTRA_ADMIN_EMAILS = ['tristan.nikolovski31@gmail.com'] as const;
+/** Betting Tools only — not full site admin / AI picks admin. */
+const TOOLS_ADMIN_EMAILS = [
+  DATA_ADMIN_EMAIL,
+  'tristan.nikolovski31@gmail.com',
+] as const;
 
 function publicAdminEmails(): Set<string> {
   const fromEnv = String(process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  return new Set([DATA_ADMIN_EMAIL, ...EXTRA_ADMIN_EMAILS, ...fromEnv]);
+  return new Set([DATA_ADMIN_EMAIL, ...fromEnv]);
 }
 
+function toolsAdminEmails(): Set<string> {
+  const fromEnv = String(process.env.NEXT_PUBLIC_TOOLS_ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return new Set([...TOOLS_ADMIN_EMAILS, ...fromEnv]);
+}
+
+/** Full admin (AI picks, data, etc.) — primary account only (+ optional env). */
 export function isDataAdminEmail(email: string | null | undefined): boolean {
   const normalized = (email ?? '').trim().toLowerCase();
   if (!normalized) return false;
   return publicAdminEmails().has(normalized);
+}
+
+/** Can open Betting Tools (/tools + APIs). */
+export function isToolsAdminEmail(email: string | null | undefined): boolean {
+  const normalized = (email ?? '').trim().toLowerCase();
+  if (!normalized) return false;
+  return toolsAdminEmails().has(normalized);
 }

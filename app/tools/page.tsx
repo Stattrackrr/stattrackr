@@ -13,7 +13,7 @@ import { ProUpgradeHost } from '@/components/ProFeatureLock';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useViewerProfile } from '@/hooks/useViewerProfile';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
-import { isDataAdminEmail } from '@/lib/adminEmail';
+import { isToolsAdminEmail } from '@/lib/adminEmail';
 import { supabase } from '@/lib/supabaseClient';
 import { ToolsBoard } from './ToolsBoard';
 
@@ -21,7 +21,7 @@ export default function ToolsPage() {
   const router = useRouter();
   const { isDark, theme, setTheme } = useTheme();
   const { username, avatarUrl, userEmail, isPro } = useViewerProfile();
-  const isAdmin = isDataAdminEmail(userEmail);
+  const isAdmin = isToolsAdminEmail(userEmail);
   const [mounted, setMounted] = useState(false);
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>(DEFAULT_ODDS_FORMAT);
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
