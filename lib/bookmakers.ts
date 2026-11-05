@@ -442,7 +442,7 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'palmerbet': {
     name: 'Palmerbet',
     logo: 'PB',
-    logoUrl: getLogoUrl('palmerbet.com'),
+    logoUrl: '/images/bookmakers/palmerbet.png?v=20261105a',
     color: '#1D4ED8',
   },
   'betgoodwin': {
@@ -450,6 +450,24 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     logo: 'BG',
     logoUrl: getLogoUrl('betgoodwin.co.uk'),
     color: '#0F766E',
+  },
+  'allbets': {
+    name: 'AllBets',
+    logo: 'AB',
+    logoUrl: getLogoUrl('allbets.com.au'),
+    color: '#0EA5E9',
+  },
+  'allbet': {
+    name: 'AllBets',
+    logo: 'AB',
+    logoUrl: getLogoUrl('allbets.com.au'),
+    color: '#0EA5E9',
+  },
+  'goldbet': {
+    name: 'AllBets',
+    logo: 'AB',
+    logoUrl: getLogoUrl('allbets.com.au'),
+    color: '#0EA5E9',
   },
   'cloudbet': {
     name: 'Cloudbet',
@@ -624,6 +642,9 @@ const AU_BOOK_KEYS = new Set([
   'picklebet',
   'palmerbet',
   'betgoodwin',
+  'allbets',
+  'allbet',
+  'goldbet',
 ]);
 
 const UK_BOOK_KEYS = new Set([
@@ -686,6 +707,7 @@ const LOCAL_BOOKMAKER_LOGO_SLUGS: Record<string, string> = {
   neds: 'neds',
   pointsbet: 'pointsbet',
   pointsbetau: 'pointsbet',
+  palmerbet: 'palmerbet',
   sportsbet: 'sportsbet',
   tab: 'tab',
   unibet: 'unibet',
@@ -697,7 +719,7 @@ function localBookmakerLogoUrl(key: string): string | null {
   const compact = compactBookKey(key);
   const stripped = compact.replace(/(au|uk|us|eu|nl|fr|se|it|de|ca|ag)$/g, '');
   const slug = LOCAL_BOOKMAKER_LOGO_SLUGS[compact] || LOCAL_BOOKMAKER_LOGO_SLUGS[stripped] || null;
-  return slug ? `/images/bookmakers/${slug}.png?v=20260921c` : null;
+  return slug ? `/images/bookmakers/${slug}.png?v=20261105a` : null;
 }
 
 /** Official site used for favicon fallback when a local asset is missing. */
@@ -767,6 +789,9 @@ const BOOK_DOMAINS: Record<string, string> = {
   onexbet: '1xbet.com',
   paddypower: 'paddypower.com',
   palmerbet: 'palmerbet.com',
+  allbet: 'allbets.com.au',
+  allbets: 'allbets.com.au',
+  goldbet: 'allbets.com.au',
   picklebet: 'picklebet.com',
   pinnacle: 'pinnacle.com',
   playup: 'playup.com.au',
