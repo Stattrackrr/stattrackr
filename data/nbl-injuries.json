@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-04T20:28:05.219Z",
+  "generatedAt": "2026-11-05T20:37:38.051Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "October 33, 5:00pm AEDT (their stamp as printed, which is not a real date)",
-  "injuryCount": 25,
+  "injuryCount": 26,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -84,6 +84,15 @@
       "returning": "TBC",
       "status": "Out",
       "note": "Out of both Round 8 games, the Taipans confirmed on 4 November 2026 (Fox Sports, @NBLPleb).",
+      "listedByNbl": true
+    },
+    {
+      "team": "Cairns Taipans",
+      "player": "Jaylin Galloway",
+      "injury": "Back",
+      "returning": "Round 14",
+      "status": "Out",
+      "note": "Low-grade spinal compression fracture. The club said on 4 November 2026 he is due back 23 December, with Luca Yates his replacement.",
       "listedByNbl": true
     },
     {

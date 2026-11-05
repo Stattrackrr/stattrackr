@@ -4,130 +4,130 @@
   "years": [
     2026
   ],
-  "gamesUsed": 11,
+  "gamesUsed": 12,
   "fixturesFetched": 0,
-  "fixturesCached": 11,
-  "shotCount": 809,
+  "fixturesCached": 12,
+  "shotCount": 874,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 285,
-      "fgm": 172,
-      "fgPct": 60.35087719298245,
-      "share": 35.228677379480835
+      "fga": 300,
+      "fgm": 186,
+      "fgPct": 62,
+      "share": 34.32494279176201
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 164,
-      "fgm": 81,
-      "fgPct": 49.390243902439025,
-      "share": 20.27194066749073
+      "fga": 182,
+      "fgm": 90,
+      "fgPct": 49.45054945054945,
+      "share": 20.823798627002287
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 45,
-      "fgm": 21,
-      "fgPct": 46.666666666666664,
-      "share": 5.562422744128554
+      "fga": 50,
+      "fgm": 25,
+      "fgPct": 50,
+      "share": 5.720823798627003
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 87,
-      "fgm": 34,
-      "fgPct": 39.08045977011494,
-      "share": 10.754017305315204
+      "fga": 94,
+      "fgm": 35,
+      "fgPct": 37.234042553191486,
+      "share": 10.755148741418765
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 97,
-      "fgm": 39,
-      "fgPct": 40.20618556701031,
-      "share": 11.990111248454882
+      "fga": 105,
+      "fgm": 44,
+      "fgPct": 41.904761904761905,
+      "share": 12.013729977116705
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 131,
-      "fgm": 39,
-      "fgPct": 29.770992366412212,
-      "share": 16.19283065512979
+      "fga": 143,
+      "fgm": 45,
+      "fgPct": 31.46853146853147,
+      "share": 16.361556064073227
     }
   ],
   "ranks": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 285,
-      "fgm": 172,
-      "fgPct": 60.35087719298245,
-      "share": 35.228677379480835,
+      "fga": 300,
+      "fgm": 186,
+      "fgPct": 62,
+      "share": 34.32494279176201,
       "rank": 2,
       "teamsCompared": 10
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 164,
-      "fgm": 81,
-      "fgPct": 49.390243902439025,
-      "share": 20.27194066749073,
+      "fga": 182,
+      "fgm": 90,
+      "fgPct": 49.45054945054945,
+      "share": 20.823798627002287,
       "rank": 7,
       "teamsCompared": 10
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 45,
-      "fgm": 21,
-      "fgPct": 46.666666666666664,
-      "share": 5.562422744128554,
+      "fga": 50,
+      "fgm": 25,
+      "fgPct": 50,
+      "share": 5.720823798627003,
       "rank": 9,
       "teamsCompared": 10
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 87,
-      "fgm": 34,
-      "fgPct": 39.08045977011494,
-      "share": 10.754017305315204,
+      "fga": 94,
+      "fgm": 35,
+      "fgPct": 37.234042553191486,
+      "share": 10.755148741418765,
       "rank": 7,
       "teamsCompared": 10
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 97,
-      "fgm": 39,
-      "fgPct": 40.20618556701031,
-      "share": 11.990111248454882,
+      "fga": 105,
+      "fgm": 44,
+      "fgPct": 41.904761904761905,
+      "share": 12.013729977116705,
       "rank": 9,
       "teamsCompared": 10
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 131,
-      "fgm": 39,
-      "fgPct": 29.770992366412212,
-      "share": 16.19283065512979,
+      "fga": 143,
+      "fgm": 45,
+      "fgPct": 31.46853146853147,
+      "share": 16.361556064073227,
       "rank": 4,
       "teamsCompared": 10
     }
   ],
-  "pointsAllowed": 1062,
+  "pointsAllowed": 1169,
   "ftDefense": {
-    "ftm": 178,
-    "fta": 255,
-    "ftPct": 69.80392156862744,
-    "games": 11,
+    "ftm": 195,
+    "fta": 279,
+    "ftPct": 69.89247311827957,
+    "games": 12,
     "rank": 1,
     "teamsCompared": 10
   },
-  "generatedAt": "2026-11-04T20:28:09.076Z"
+  "generatedAt": "2026-11-05T20:37:40.001Z"
 }

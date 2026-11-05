@@ -1,10 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-04T20:27:15.032Z",
+  "generatedAt": "2026-11-05T20:36:58.852Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 162,
-  "gameRows": 1076,
+  "gameRows": 1098,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -299,7 +299,7 @@
       "name": "Daniel Grida",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/27ab462f-634a-4809-a40e-f102be36c282-2026.json"
     },
     {
@@ -459,7 +459,7 @@
       "name": "Jack McVeigh",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/b50568ab-1745-4c99-9360-a270000b3366-2026.json"
     },
     {
@@ -531,7 +531,7 @@
       "name": "Jaylon Brown",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/17bfb8e3-400e-428d-96a3-64eecea3b6a2-2026.json"
     },
     {
@@ -595,7 +595,7 @@
       "name": "Johny Narkle",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 10,
+      "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/1db6c57b-a7f5-43a3-aaaa-4731f2bc57f5-2026.json"
     },
     {
@@ -603,7 +603,7 @@
       "name": "Jonah Bolden",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/fc16e0a8-a6b8-4000-b37f-d3a58d98244b-2026.json"
     },
     {
@@ -667,7 +667,7 @@
       "name": "Keanu Pinder",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/59a777fb-049b-4f99-8bb1-f53516f76953-2026.json"
     },
     {
@@ -683,7 +683,7 @@
       "name": "Kelan Martin",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/76536695-6c04-4c8a-b104-5ebbabb95879-2026.json"
     },
     {
@@ -755,7 +755,7 @@
       "name": "Kyrin Galloway",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/872bdcab-a933-4436-874d-4d94f4e184e8-2026.json"
     },
     {
@@ -771,7 +771,7 @@
       "name": "Lamar Patterson",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/72703b55-4db2-4e14-b7a4-a38f31c32388-2026.json"
     },
     {
@@ -779,7 +779,7 @@
       "name": "Lat Mayen",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/2337cf0e-9ee7-439d-8aec-770b3876368c-2026.json"
     },
     {
@@ -787,7 +787,7 @@
       "name": "Lloyd McVeigh",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/69a0f400-cf3f-4a5a-9c5d-cfa80cd00ec3-2026.json"
     },
     {
@@ -803,7 +803,7 @@
       "name": "Luke Paul",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/08c14dd1-935b-4e34-8e1f-97da35d055c9-2026.json"
     },
     {
@@ -835,7 +835,7 @@
       "name": "Makur Maker",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 7,
+      "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/37a78ca5-710d-42d4-8754-028ac9c8ba2b-2026.json"
     },
     {
@@ -843,7 +843,7 @@
       "name": "Malique Lewis",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/c6b7202f-6619-422a-8d2b-8e52a8d48935-2026.json"
     },
     {
@@ -915,7 +915,7 @@
       "name": "Milton Doyle",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/ade09c69-e9b3-46d1-8202-2b778e96409a-2026.json"
     },
     {
@@ -1043,7 +1043,7 @@
       "name": "Reyne Smith",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/b21f6432-c1e5-446a-b516-d1c981b77c48-2026.json"
     },
     {
@@ -1075,7 +1075,7 @@
       "name": "Sam Froling",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/5bc7a4df-bd9f-4177-ab25-a1de3e4cb0a1-2026.json"
     },
     {
@@ -1115,7 +1115,7 @@
       "name": "Shaun Bruce",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/f4c4d041-69b8-4757-9142-f5c028a070f2-2026.json"
     },
     {
@@ -1179,7 +1179,7 @@
       "name": "Todd Blanchfield",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/f1f3155a-4ff7-445f-9c59-f0f9a9be8a8c-2026.json"
     },
     {
@@ -1211,7 +1211,7 @@
       "name": "Tyler Harvey",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/7efc81c9-d26e-4950-97e1-1b9b03b1bacd-2026.json"
     },
     {
@@ -1243,7 +1243,7 @@
       "name": "Wani Swaka Lo Buluk",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/6c6c60a2-caa9-4b1e-ba1d-6c61dccf2592-2026.json"
     },
     {
@@ -1275,7 +1275,7 @@
       "name": "William Hickey",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/3af27cad-ac89-4122-842c-2772197168c5-2026.json"
     },
     {

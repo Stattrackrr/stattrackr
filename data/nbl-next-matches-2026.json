@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-04T20:26:28.203Z",
+  "generatedAt": "2026-11-05T20:36:28.266Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
-      "name": "Cairns Taipans",
-      "team_code": "CNS",
-      "nextMatches": [
-        {
-          "id": "136d5424-6887-4d5a-9e77-714de5909f09",
-          "match_slug": "cairns-taipans-v-illawarra-hawks-men-05-11-2026",
-          "match_title": "Cairns Taipans v Illawarra Hawks men 05-11-2026",
-          "match_ticket_url": "https://tickets.taipans.com/",
-          "external_id": "3723e003-58ad-11f1-b68b-09df0c3978fa",
-          "start_time_datetime": "2026-11-05T08:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "opponent_name": "Illawarra Hawks",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-          "venue": "Cairns Convention Centre",
-          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
-        }
-      ]
-    },
-    {
-      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-      "name": "Illawarra Hawks",
-      "team_code": "ILL",
-      "nextMatches": [
-        {
-          "id": "136d5424-6887-4d5a-9e77-714de5909f09",
-          "match_slug": "cairns-taipans-v-illawarra-hawks-men-05-11-2026",
-          "match_title": "Cairns Taipans v Illawarra Hawks men 05-11-2026",
-          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
-          "external_id": "3723e003-58ad-11f1-b68b-09df0c3978fa",
-          "start_time_datetime": "2026-11-05T08:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
-          "opponent_name": "Cairns Taipans",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-          "venue": "Cairns Convention Centre",
-          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
-        }
-      ]
-    },
     {
       "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "name": "Tasmania JackJumpers",
@@ -107,6 +65,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
           "venue": "Adelaide Entertainment Centre",
           "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
+        }
+      ]
+    },
+    {
+      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "name": "Illawarra Hawks",
+      "team_code": "ILL",
+      "nextMatches": [
+        {
+          "id": "58bd38f7-3f20-44e4-bd17-38c283ddb0db",
+          "match_slug": "adelaide-36ers-v-illawarra-hawks-men-07-11-2026",
+          "match_title": "Adelaide 36ers v Illawarra Hawks men 07-11-2026",
+          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
+          "external_id": "37256511-58ad-11f1-b841-b5c487635207",
+          "start_time_datetime": "2026-11-07T06:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+          "opponent_name": "Adelaide 36ers",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
+          "venue": "Adelaide Entertainment Centre",
+          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
         }
       ]
     },
@@ -212,6 +191,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
           "venue": "RAC Arena",
           "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
+      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "name": "Cairns Taipans",
+      "team_code": "CNS",
+      "nextMatches": [
+        {
+          "id": "7f0a98cc-a010-4975-ae54-3214dd1bb150",
+          "match_slug": "perth-wildcats-v-cairns-taipans-men-08-11-2026",
+          "match_title": "Perth Wildcats v Cairns Taipans men 08-11-2026",
+          "match_ticket_url": "https://tickets.taipans.com/",
+          "external_id": "37289ea9-58ad-11f1-9790-bd240d5ec994",
+          "start_time_datetime": "2026-11-08T06:00:00.000Z",
+          "is_home": false,
+          "opponent_id": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "opponent_name": "Perth Wildcats",
+          "opponent_logo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
+          "venue": "RAC Arena",
+          "opponent_logo_blurhash": "LDH_Pv_N1b?HHrkCTJD%1v?HD456"
         }
       ]
     }

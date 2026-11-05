@@ -5,18 +5,18 @@
   "years": [
     2026
   ],
-  "gamesUsed": 11,
+  "gamesUsed": 12,
   "fixturesFetched": 0,
-  "fixturesCached": 11,
-  "shotCount": 71,
+  "fixturesCached": 12,
+  "shotCount": 77,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 21,
-      "fgm": 18,
-      "fgPct": 85.71428571428571,
-      "share": 29.577464788732392
+      "fga": 22,
+      "fgm": 19,
+      "fgPct": 86.36363636363636,
+      "share": 28.57142857142857
     },
     {
       "zone": "paint",
@@ -24,15 +24,15 @@
       "fga": 6,
       "fgm": 1,
       "fgPct": 16.666666666666664,
-      "share": 8.450704225352112
+      "share": 7.792207792207792
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 2,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 2.8169014084507045
+      "fga": 4,
+      "fgm": 1,
+      "fgPct": 25,
+      "share": 5.194805194805195
     },
     {
       "zone": "leftCorner3",
@@ -40,23 +40,23 @@
       "fga": 5,
       "fgm": 3,
       "fgPct": 60,
-      "share": 7.042253521126761
+      "share": 6.493506493506493
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 13,
+      "fga": 14,
       "fgm": 6,
-      "fgPct": 46.15384615384615,
-      "share": 18.30985915492958
+      "fgPct": 42.857142857142854,
+      "share": 18.181818181818183
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 24,
+      "fga": 26,
       "fgm": 11,
-      "fgPct": 45.83333333333333,
-      "share": 33.80281690140845
+      "fgPct": 42.30769230769231,
+      "share": 33.76623376623377
     }
   ],
   "points": [
@@ -485,7 +485,43 @@
       2.29,
       1,
       0
+    ],
+    [
+      3.11,
+      1.12,
+      1,
+      0
+    ],
+    [
+      14.43,
+      2.13,
+      0,
+      1
+    ],
+    [
+      12.23,
+      8.01,
+      0,
+      1
+    ],
+    [
+      12.44,
+      1.65,
+      0,
+      0
+    ],
+    [
+      11.75,
+      7.81,
+      0,
+      1
+    ],
+    [
+      8.83,
+      1.9,
+      1,
+      0
     ]
   ],
-  "generatedAt": "2026-11-04T20:28:08.926Z"
+  "generatedAt": "2026-11-05T20:37:39.790Z"
 }

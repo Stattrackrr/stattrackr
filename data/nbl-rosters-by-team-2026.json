@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-04T20:26:38.826Z",
+  "generatedAt": "2026-11-05T20:36:37.400Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -441,7 +441,7 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
-          "jersey": null,
+          "jersey": "6",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b78c6a679f3a4aceabaf7160cf8e62bb?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Sydney Kings",
