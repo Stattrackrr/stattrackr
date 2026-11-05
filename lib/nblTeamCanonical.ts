@@ -99,20 +99,49 @@ export function getNblClubById(id: string | null | undefined) {
   return ID_TO_CLUB.get(id) ?? null;
 }
 
-export function resolveNblClubName(input: string | null | undefined): string | null {
+export function resolveNblClub(input: string | null | undefined): (typeof NBL_CLUBS)[number] | null {
   if (!input) return null;
   const key = normalizeTeamKey(input);
   const direct = NAME_TO_CLUB.get(key);
-  if (direct) return direct.name;
+  if (direct) return direct;
   const byCode = getNblClubByCode(input);
-  if (byCode) return byCode.name;
+  if (byCode) return byCode;
   if (key.includes('southeast') || (key.includes('phoenix') && key.includes('melb'))) {
-    return CODE_TO_CLUB.get('SEM')!.name;
+    return CODE_TO_CLUB.get('SEM') ?? null;
   }
   if (key === 'melbourne' || key === 'united' || key === 'melbourneunited') {
-    return CODE_TO_CLUB.get('MEL')!.name;
+    return CODE_TO_CLUB.get('MEL') ?? null;
   }
-  return String(input).trim() || null;
+  return null;
+}
+
+export function resolveNblClubName(input: string | null | undefined): string | null {
+  const club = resolveNblClub(input);
+  if (club) return club.name;
+  return String(input || '').trim() || null;
+}
+
+/**
+ * Official crest URLs (NBL27 ladder). Not always `{code}.png` on cdn.nbl.com.au —
+ * Breakers / United / Bullets / Wildcats use different hosts or filenames.
+ */
+const NBL_LOGO_BY_CODE: Record<NblClubCode, string> = {
+  ADL: 'https://cdn.nbl.com.au/app_assets/ADL.png',
+  BRI: 'https://cdn.nbl.com.au/app_assets/BNE.png',
+  CNS: 'https://cdn.nbl.com.au/app_assets/CNS.png',
+  ILL: 'https://cdn.nbl.com.au/app_assets/ILL.png',
+  MEL: 'https://cdn.nbl.com.au/app_assets/MEL_white.png',
+  NZL: 'https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp',
+  PER: 'https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png',
+  SEM: 'https://cdn.nbl.com.au/app_assets/SEM.png',
+  SYD: 'https://cdn.nbl.com.au/app_assets/SYD.png',
+  TAS: 'https://cdn.nbl.com.au/app_assets/TAS.png',
+};
+
+/** Official NBL crest for a club name / code / nickname. */
+export function nblTeamLogoUrl(input: string | null | undefined): string | null {
+  const club = resolveNblClub(input);
+  return club ? NBL_LOGO_BY_CODE[club.code] ?? null : null;
 }
 
 /** Official current-league club only. `resolveNblClubName` still returns unmatched raw labels. */
