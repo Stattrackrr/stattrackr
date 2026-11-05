@@ -6,6 +6,7 @@ import { usePicksUnread } from '@/lib/aiPicks/unread';
 import { usePathname, useRouter } from 'next/navigation';
 import { CHAT_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
 import { openProUpgrade } from '@/components/ProFeatureLock';
+import { isDataAdminEmail } from '@/lib/adminEmail';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { getLocalStorage, setSessionStorage } from '../../utils/storageUtils';
 import { ProfileAvatar } from './ProfileAvatar';
@@ -64,10 +65,31 @@ export function MobileBottomNavigation({
   const router = useRouter();
   const pathname = usePathname();
   const [showReadMeBadge, setShowReadMeBadge] = useState(false);
+  const [showBoardMenu, setShowBoardMenu] = useState(false);
+  const boardMenuRef = useRef<HTMLDivElement>(null);
   const unreadChatCount = useChatUnread();
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const unreadPicksCount = usePicksUnread(hasPremium);
   const unreadPicksLabel = unreadPicksCount > 9 ? '9+' : unreadPicksCount.toString();
+  const isAdmin = isDataAdminEmail(userEmail);
+
+  useEffect(() => {
+    if (!showBoardMenu) return;
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      const el = boardMenuRef.current;
+      if (el && !el.contains(e.target as Node)) setShowBoardMenu(false);
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('touchstart', onPointer);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('touchstart', onPointer);
+    };
+  }, [showBoardMenu]);
+
+  useEffect(() => {
+    setShowBoardMenu(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -127,10 +149,30 @@ export function MobileBottomNavigation({
   };
 
   const isPropsActive = pathname?.startsWith('/props');
+  const isToolsActive = isAdmin && pathname?.startsWith('/tools');
+  const isBoardActive = isPropsActive || isToolsActive || (isAdmin && showBoardMenu);
+  const boardLabel = isToolsActive ? 'Tools' : 'Props';
   const isChatActive = pathname?.startsWith('/chat');
   const isPicksActive = pathname?.startsWith('/picks');
   const isProfileActive = showProfileDropdown;
   const isSettingsActive = showSettingsDropdown;
+
+  const goProps = () => {
+    setShowBoardMenu(false);
+    setShowProfileDropdown(false);
+    setShowSettingsDropdown(false);
+    if (pathname?.startsWith('/props')) return;
+    prefetchProps();
+    router.push(consumePropsReturnPath('combined'));
+  };
+
+  const goTools = () => {
+    setShowBoardMenu(false);
+    setShowProfileDropdown(false);
+    setShowSettingsDropdown(false);
+    if (pathname?.startsWith('/tools')) return;
+    router.push('/tools');
+  };
 
   const navButtonClass = (active: boolean, disabled = false) =>
     `group flex flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-200 ${
@@ -179,28 +221,76 @@ export function MobileBottomNavigation({
         />
       )}
       
+      {/* Props / Tools switcher — Tools only for admin */}
+      {isAdmin && showBoardMenu ? (
+        <div
+          ref={boardMenuRef}
+          className="absolute bottom-[calc(100%+10px)] left-3 z-50 w-[168px] overflow-hidden rounded-2xl border border-white/30 bg-white/95 shadow-xl backdrop-blur-md dark:border-white/15 dark:bg-[#0a1929]/95"
+        >
+          <button
+            type="button"
+            onClick={goProps}
+            className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition ${
+              isPropsActive
+                ? 'bg-purple-500/15 text-purple-700 dark:text-purple-200'
+                : 'text-gray-800 hover:bg-purple-500/8 dark:text-white dark:hover:bg-white/5'
+            }`}
+          >
+            Props
+            {isPropsActive ? <span className="text-[10px] uppercase tracking-wide opacity-70">Now</span> : null}
+          </button>
+          <div className="h-px bg-black/5 dark:bg-white/10" />
+          <button
+            type="button"
+            onClick={goTools}
+            className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition ${
+              isToolsActive
+                ? 'bg-purple-500/15 text-purple-700 dark:text-purple-200'
+                : 'text-gray-800 hover:bg-purple-500/8 dark:text-white dark:hover:bg-white/5'
+            }`}
+          >
+            Tools
+            {isToolsActive ? <span className="text-[10px] uppercase tracking-wide opacity-70">Now</span> : null}
+          </button>
+        </div>
+      ) : null}
+
       {/* Mobile Navigation */}
       <div className="relative grid grid-cols-5 h-14 lg:hidden rounded-full border border-white/40 dark:border-white/25 bg-white/20 dark:bg-white/10 shadow-[0_10px_28px_rgba(0,0,0,0.22)] backdrop-blur-md overflow-visible px-1">
         <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/20" />
-        {/* Props */}
+        {/* Props / Tools (shared slot) */}
         <button
+          type="button"
+          data-board-button
           onTouchStart={prefetchProps}
           onClick={() => {
-            if (pathname?.startsWith('/props')) return;
-            prefetchProps();
-            router.push(consumePropsReturnPath('combined'));
+            setShowProfileDropdown(false);
+            setShowSettingsDropdown(false);
+            if (!isAdmin) {
+              goProps();
+              return;
+            }
+            setShowBoardMenu((open) => !open);
           }}
-          className={navButtonClass(!!isPropsActive)}
+          className={navButtonClass(!!isBoardActive)}
+          aria-expanded={isAdmin ? showBoardMenu : undefined}
+          aria-haspopup={isAdmin ? 'menu' : undefined}
         >
-          <span className={iconChipClass(!!isPropsActive)}>
-            <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19h16" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V10" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16V6" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16v-4" />
-            </svg>
+          <span className={iconChipClass(!!isBoardActive)}>
+            {isToolsActive ? (
+              <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            ) : (
+              <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V10" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16V6" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16v-4" />
+              </svg>
+            )}
           </span>
-          <span className="text-[10px] font-semibold tracking-[0.01em]">Props</span>
+          <span className="text-[10px] font-semibold tracking-[0.01em]">{boardLabel}</span>
         </button>
         
         <button
@@ -209,6 +299,7 @@ export function MobileBottomNavigation({
           title={CHAT_UNDER_MAINTENANCE ? 'Chat is under maintenance' : undefined}
           onClick={() => {
             if (CHAT_UNDER_MAINTENANCE) return;
+            setShowBoardMenu(false);
             router.push('/chat');
           }}
           className={`relative ${navButtonClass(!!isChatActive, CHAT_UNDER_MAINTENANCE)}`}
@@ -234,6 +325,7 @@ export function MobileBottomNavigation({
         <button
           type="button"
           onClick={() => {
+            setShowBoardMenu(false);
             if (!hasPremium) {
               openProUpgrade();
               return;
@@ -265,7 +357,10 @@ export function MobileBottomNavigation({
         {/* Profile */}
         <button
           data-profile-button
-          onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+          onClick={() => {
+            setShowBoardMenu(false);
+            setShowProfileDropdown(!showProfileDropdown);
+          }}
           className={navButtonClass(isProfileActive)}
         >
           <span className={iconChipClass(isProfileActive)}>
@@ -279,7 +374,10 @@ export function MobileBottomNavigation({
         {/* Settings */}
         <button
           data-settings-button
-          onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+          onClick={() => {
+            setShowBoardMenu(false);
+            setShowSettingsDropdown(!showSettingsDropdown);
+          }}
           className={navButtonClass(isSettingsActive)}
         >
           <span className={`${iconChipClass(isSettingsActive)} relative`}>

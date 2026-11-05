@@ -7,6 +7,7 @@
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { tennisIdentityIndex, tennisSamePersonRecords } from '@/lib/tennis/oddsApi';
 
 type PlayerNamesFile = {
   fetchedAt?: string;
@@ -16,6 +17,7 @@ type PlayerNamesFile = {
 
 let cachedNames: Map<string, string> | null = null;
 let cachedRanks: Map<string, number> | null = null;
+let expandLookup: ((name: string) => Array<{ name: string }>) | null = null;
 
 function loadFile(): PlayerNamesFile {
   try {
@@ -34,6 +36,38 @@ function tennisNameLooksAbbreviated(name: string): boolean {
   if (parts.length < 2) return false;
   const first = parts[0]!;
   return first.length <= 2 || /^[A-Za-z]\.$/.test(first);
+}
+
+function fullNameExpandLookup(): (name: string) => Array<{ name: string }> {
+  if (expandLookup) return expandLookup;
+  const rows: Array<{ name: string }> = [];
+  const seen = new Set<string>();
+  for (const full of loadTennisDisplayNames().values()) {
+    const name = String(full || '').trim();
+    if (!name || tennisNameLooksAbbreviated(name)) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push({ name });
+  }
+  expandLookup = tennisIdentityIndex(rows);
+  return expandLookup;
+}
+
+/**
+ * Odds boards store "H. Mayot"; Tools / UI want "Harold Mayot".
+ * Uses committed player-names.json via identity match. Ambiguous → leave as-is.
+ */
+export function expandTennisDisplayName(name: string | null | undefined): string {
+  const cur = String(name || '').trim();
+  if (!cur || !tennisNameLooksAbbreviated(cur)) return cur;
+  const same = tennisSamePersonRecords(fullNameExpandLookup()(cur));
+  if (!same?.length) return cur;
+  const best = same
+    .map((row) => row.name)
+    .filter((n) => n && !tennisNameLooksAbbreviated(n))
+    .sort((a, b) => b.length - a.length)[0];
+  return best ? preferFullTennisName(cur, best) : cur;
 }
 
 export function preferFullTennisName(current: string, rosterName: string): string {

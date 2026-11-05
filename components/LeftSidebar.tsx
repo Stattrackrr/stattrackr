@@ -12,6 +12,7 @@ import { usePicksUnread } from "@/lib/aiPicks/unread";
 import { supabase } from "@/lib/supabaseClient";
 import { invalidateViewerProfileCache } from '@/lib/profileSubscriptionGate';
 import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
+import { isDataAdminEmail } from '@/lib/adminEmail';
 import { ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
 
 type OddsFormat = 'american' | 'decimal';
@@ -60,6 +61,7 @@ export default function LeftSidebar({
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const unreadPicksCount = usePicksUnread(hasPremium);
   const unreadPicksLabel = unreadPicksCount > 9 ? '9+' : unreadPicksCount.toString();
+  const isAdmin = isDataAdminEmail(userEmail);
   const [showSettings, setShowSettings] = useState(false);
   const [showSportsDropdown, setShowSportsDropdown] = useState(true);
   // Dropdown below profile card (name click toggles this)
@@ -460,6 +462,29 @@ export default function LeftSidebar({
             </div>
 
             <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <Link
+                href="/props"
+                onMouseEnter={() => kickCombinedPropsEarlyFetch()}
+                className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pathname?.startsWith('/props')
+                    ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                    : 'text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                Props
+              </Link>
+              {isAdmin ? (
+                <Link
+                  href="/tools"
+                  className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    pathname?.startsWith('/tools')
+                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                      : 'text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  Tools
+                </Link>
+              ) : null}
               {CHAT_UNDER_MAINTENANCE ? (
                 <div
                   className="mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed"
