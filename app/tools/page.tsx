@@ -13,7 +13,7 @@ import { ProUpgradeHost } from '@/components/ProFeatureLock';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useViewerProfile } from '@/hooks/useViewerProfile';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
-import { isDataAdminEmail } from '@/lib/homeSurvey';
+import { isDataAdminEmail } from '@/lib/adminEmail';
 import { supabase } from '@/lib/supabaseClient';
 import { ToolsBoard } from './ToolsBoard';
 

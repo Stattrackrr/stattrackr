@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { DATA_ADMIN_EMAIL, isDataAdminEmail } from '@/lib/adminEmail';
 
-export const DATA_ADMIN_EMAIL = 'admin@stattrackr.co';
+export { DATA_ADMIN_EMAIL, isDataAdminEmail };
 
 const SPORT_IDS = ['nba', 'nbl', 'afl', 'atp', 'wta'] as const;
 const STAT_IDS = ['opponent', 'advanced', 'form', 'ai'] as const;
@@ -136,10 +137,6 @@ export type SurveyProgress = {
   email: string | null;
   exited: boolean;
 };
-
-export function isDataAdminEmail(email: string | null | undefined): boolean {
-  return (email ?? '').trim().toLowerCase() === DATA_ADMIN_EMAIL;
-}
 
 function pickIds(value: unknown, allowed: readonly string[], max: number): string[] | null {
   if (!Array.isArray(value)) return null;

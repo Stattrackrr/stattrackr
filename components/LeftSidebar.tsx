@@ -12,7 +12,7 @@ import { usePicksUnread } from "@/lib/aiPicks/unread";
 import { supabase } from "@/lib/supabaseClient";
 import { invalidateViewerProfileCache } from '@/lib/profileSubscriptionGate';
 import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
-import { isDataAdminEmail } from '@/lib/homeSurvey';
+import { isDataAdminEmail } from '@/lib/adminEmail';
 import { ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
 
 type OddsFormat = 'american' | 'decimal';

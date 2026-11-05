@@ -6,7 +6,7 @@ import { usePicksUnread } from '@/lib/aiPicks/unread';
 import { usePathname, useRouter } from 'next/navigation';
 import { CHAT_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
 import { openProUpgrade } from '@/components/ProFeatureLock';
-import { isDataAdminEmail } from '@/lib/homeSurvey';
+import { isDataAdminEmail } from '@/lib/adminEmail';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { getLocalStorage, setSessionStorage } from '../../utils/storageUtils';
 import { ProfileAvatar } from './ProfileAvatar';
