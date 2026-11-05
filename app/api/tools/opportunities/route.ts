@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authorizeAdminRequest } from '@/lib/adminAuth';
 import { apiRateLimiter, checkRateLimit } from '@/lib/rateLimit';
+import { allowToolsAdmin } from '@/lib/tools/auth';
 import { resolveSports, runOpportunitiesScan } from '@/lib/tools/runScan';
 import type { ToolsKind, ToolsSport } from '@/lib/tools/types';
 
@@ -8,16 +8,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
-async function allowTools(request: NextRequest): Promise<boolean> {
-  if (process.env.TOOLS_DEV_OPEN === '1') return true;
-  const admin = await authorizeAdminRequest(request);
-  return admin.authorized;
-}
-
 export async function GET(request: NextRequest) {
   const rate = checkRateLimit(request, apiRateLimiter);
   if (!rate.allowed && rate.response) return rate.response;
-  if (!(await allowTools(request))) {
+  if (!(await allowToolsAdmin(request))) {
     return NextResponse.json(
       { success: false, adminRequired: true, error: 'Betting Tools is admin-only.' },
       { status: 403 }
