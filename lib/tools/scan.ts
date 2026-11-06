@@ -96,10 +96,8 @@ function selectionWithLine(
     return `${totalMiddleMarket(info.metric)} ${name} ${line}`;
   }
   if (info?.family === 'team_total' || info?.family === 'player_prop') {
-    if (!line) return name;
-    const base = `${name} ${line}`;
-    const unit = middleWindowUnit(info.metric);
-    return new RegExp(`\\b${unit}\\b`, 'i').test(base) ? base : `${base} ${unit}`;
+    // Card header already has "Player Assists 4.5" — leg is just Over/Under + line.
+    return line ? `${name} ${line}` : name;
   }
   return name;
 }

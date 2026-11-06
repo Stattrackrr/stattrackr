@@ -31,7 +31,7 @@ export function isDataAdminEmail(email: string | null | undefined): boolean {
   return publicAdminEmails().has(normalized);
 }
 
-/** Can open Betting Tools (/tools + APIs). */
+/** Tools admin bypass (inbox + Pro gate). Pro subscribers also get Tools. */
 export function isToolsAdminEmail(email: string | null | undefined): boolean {
   const normalized = (email ?? '').trim().toLowerCase();
   if (!normalized) return false;

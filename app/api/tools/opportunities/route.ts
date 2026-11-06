@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiRateLimiter, checkRateLimit } from '@/lib/rateLimit';
-import { allowToolsAdmin } from '@/lib/tools/auth';
+import { allowToolsAccess } from '@/lib/tools/auth';
 import { resolveSports, runOpportunitiesScan } from '@/lib/tools/runScan';
 import type { ToolsKind, ToolsSport } from '@/lib/tools/types';
 
@@ -11,9 +11,9 @@ export const maxDuration = 120;
 export async function GET(request: NextRequest) {
   const rate = checkRateLimit(request, apiRateLimiter);
   if (!rate.allowed && rate.response) return rate.response;
-  if (!(await allowToolsAdmin(request))) {
+  if (!(await allowToolsAccess(request))) {
     return NextResponse.json(
-      { success: false, adminRequired: true, error: 'Betting Tools is admin-only.' },
+      { success: false, proRequired: true, error: 'Betting Tools is a Pro feature.' },
       { status: 403 }
     );
   }

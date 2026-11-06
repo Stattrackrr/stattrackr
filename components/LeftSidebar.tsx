@@ -13,7 +13,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { invalidateViewerProfileCache } from '@/lib/profileSubscriptionGate';
 import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
 import { kickToolsEarlyFetch } from '@/lib/tools/prefetch';
-import { isToolsAdminEmail } from '@/lib/adminEmail';
 import { ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
 
 type OddsFormat = 'american' | 'decimal';
@@ -62,7 +61,6 @@ export default function LeftSidebar({
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const unreadPicksCount = usePicksUnread(hasPremium);
   const unreadPicksLabel = unreadPicksCount > 9 ? '9+' : unreadPicksCount.toString();
-  const canUseTools = isToolsAdminEmail(userEmail);
   const [showSettings, setShowSettings] = useState(false);
   const [showSportsDropdown, setShowSportsDropdown] = useState(true);
   // Dropdown below profile card (name click toggles this)
@@ -474,7 +472,18 @@ export default function LeftSidebar({
               >
                 Props
               </Link>
-              {canUseTools ? (
+              {!hasPremium ? (
+                <button
+                  type="button"
+                  onClick={() => openProUpgrade()}
+                  className="mt-1 flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-400 opacity-65 dark:text-gray-500"
+                >
+                  <span className="inline-flex items-center">
+                    Tools
+                    <ProLockMark />
+                  </span>
+                </button>
+              ) : (
                 <Link
                   href="/tools"
                   onMouseEnter={() => kickToolsEarlyFetch()}
@@ -487,7 +496,7 @@ export default function LeftSidebar({
                 >
                   Tools
                 </Link>
-              ) : null}
+              )}
               {CHAT_UNDER_MAINTENANCE ? (
                 <div
                   className="mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed"

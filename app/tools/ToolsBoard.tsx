@@ -7,21 +7,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
+import { openProUpgrade } from '@/components/ProFeatureLock';
 import { TOOLS_SOFT_BOOKS, displayBook } from '@/lib/tools/books';
 import { readToolsOpsCache, writeToolsOpsCache } from '@/lib/tools/clientCache';
 import { clientNbaLogo, clientNblLogo } from '@/lib/tools/mediaClient';
 import type { ToolsBonusFlip, ToolsOpportunity } from '@/lib/tools/types';
 import { supabase } from '@/lib/supabaseClient';
 
-/** Cached bare "Over 16.5" / "Over 16.5 games" → "Total games Over 16.5". */
+/**
+ * Match totals only: bare "Over 16.5" → "Total games Over 16.5".
+ * Do not prepend player-prop markets (those already include the line → "Assists 4.5 Under 4.5").
+ */
 function legSelectionLabel(selection: string, market: string): string {
   const sel = String(selection || '').trim();
   const mkt = String(market || '').trim();
   if (!sel) return mkt || '—';
   if (!mkt) return sel;
   if (sel.toLowerCase().startsWith(mkt.toLowerCase())) return sel;
+  if (!/^total\b/i.test(mkt)) return sel;
   const bare = sel.match(/^(over|under)\s+([\d.]+)(?:\s+\w+)?$/i);
-  if (bare) return `${mkt} ${bare[1]} ${bare[2]}`;
+  if (bare) return `${mkt.replace(/\s+[\d.]+$/, '')} ${bare[1]} ${bare[2]}`.replace(/\s+/g, ' ').trim();
   return sel;
 }
 
@@ -71,7 +76,7 @@ const TOOL_CARDS: { id: ToolCardId; short: string; title: string }[] = [
 
 const KIND_META = {
   arb: {
-    label: 'ARB',
+    label: 'Arbitrage',
     chip: 'bg-emerald-500/15 text-emerald-300',
     chipLight: 'bg-emerald-50 text-emerald-800',
     edge: 'text-emerald-300',
@@ -82,7 +87,7 @@ const KIND_META = {
     legLight: 'border-gray-100 bg-gray-50',
   },
   ev: {
-    label: 'EV',
+    label: 'Positive EV',
     chip: 'bg-amber-500/15 text-amber-300',
     chipLight: 'bg-amber-50 text-amber-900',
     edge: 'text-amber-300',
@@ -93,7 +98,7 @@ const KIND_META = {
     legLight: 'border-gray-100 bg-gray-50',
   },
   middles: {
-    label: 'MID',
+    label: 'Middles',
     chip: 'bg-sky-500/15 text-sky-300',
     chipLight: 'bg-sky-50 text-sky-900',
     edge: 'text-sky-300',
@@ -307,10 +312,12 @@ function MatchHeader({
 export function ToolsBoard({
   isDark,
   isAdmin,
+  isPro = false,
   authReady = true,
 }: {
   isDark: boolean;
   isAdmin: boolean;
+  isPro?: boolean;
   authReady?: boolean;
 }) {
   const [tab, setTab] = useState<BoardTab>('all');
@@ -320,15 +327,19 @@ export function ToolsBoard({
   const [boardLoading, setBoardLoading] = useState(() => !(readToolsOpsCache()?.length));
   const [bonusLoading, setBonusLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [adminRequired, setAdminRequired] = useState(false);
+  const [proRequired, setProRequired] = useState(false);
   const bootstrappedRef = useRef(false);
   const opsLenRef = useRef(0);
   opsLenRef.current = ops.length;
 
   const [bonusAmount, setBonusAmount] = useState('50');
   const [bonusBook, setBonusBook] = useState<string>('sportsbet');
-  const [heldBooks, setHeldBooks] = useState<string[]>(['sportsbet', 'pointsbet', 'tab', 'unibet']);
+  const [heldBooks, setHeldBooks] = useState<string[]>(() => [...TOOLS_SOFT_BOOKS]);
   const [bonusScanned, setBonusScanned] = useState(false);
+  const [bonusBoardStale, setBonusBoardStale] = useState(false);
+  const [bonusBoardAgeMs, setBonusBoardAgeMs] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(30);
 
   const muted = isDark ? 'text-slate-400' : 'text-gray-500';
   const card = isDark ? 'border-white/10 bg-[#0a1524]' : 'border-gray-200 bg-white';
@@ -336,12 +347,22 @@ export function ToolsBoard({
     ? 'bg-white/5 text-slate-300 hover:bg-white/10'
     : 'bg-gray-100 text-gray-700 hover:bg-gray-200';
 
+  // Desktop (sm+) shows 30 cards / page; mobile 15 — matches the 2-col grid.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(min-width: 640px)');
+    const sync = () => setPageSize(mq.matches ? 30 : 15);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
   // Always pull the full board once; tabs only filter client-side so switches stay instant.
   const loadOpportunities = useCallback(async (opts?: { quiet?: boolean; fresh?: boolean }) => {
     const quiet = opts?.quiet === true;
     if (!quiet) setBoardLoading(true);
     setError(null);
-    setAdminRequired(false);
+    setProRequired(false);
     try {
       const qs = new URLSearchParams({ sport: 'all', kind: 'all' });
       if (opts?.fresh) qs.set('fresh', '1');
@@ -351,7 +372,7 @@ export function ToolsBoard({
       });
       const json = await res.json().catch(() => null);
       if (res.status === 403 && (json?.adminRequired || json?.proRequired)) {
-        setAdminRequired(true);
+        setProRequired(true);
         setOps([]);
         return;
       }
@@ -372,7 +393,7 @@ export function ToolsBoard({
   const loadBonus = useCallback(async () => {
     setBonusLoading(true);
     setError(null);
-    setAdminRequired(false);
+    setProRequired(false);
     try {
       const res = await fetch('/api/tools/bonus', {
         method: 'POST',
@@ -387,16 +408,23 @@ export function ToolsBoard({
       });
       const json = await res.json().catch(() => null);
       if (res.status === 403 && (json?.adminRequired || json?.proRequired)) {
-        setAdminRequired(true);
+        setProRequired(true);
         setFlips([]);
+        setBonusBoardStale(false);
+        setBonusBoardAgeMs(null);
         return;
       }
       if (!res.ok || !json?.success) throw new Error(json?.error || 'Could not load bonus flips.');
       setFlips(Array.isArray(json.flips) ? json.flips : []);
+      const cov = json?.meta?.bonusCoverage;
+      setBonusBoardStale(Boolean(cov?.stale));
+      setBonusBoardAgeMs(typeof cov?.ageMs === 'number' ? cov.ageMs : null);
       setBonusScanned(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load bonus flips.');
       setFlips([]);
+      setBonusBoardStale(false);
+      setBonusBoardAgeMs(null);
       setBonusScanned(true);
     } finally {
       setBonusLoading(false);
@@ -405,14 +433,14 @@ export function ToolsBoard({
 
   useEffect(() => {
     if (!authReady) return;
-    if (!isAdmin) {
-      setAdminRequired(true);
+    if (!isPro) {
+      setProRequired(true);
       return;
     }
     if (bootstrappedRef.current) return;
     bootstrappedRef.current = true;
     void loadOpportunities({ quiet: opsLenRef.current > 0 });
-  }, [authReady, isAdmin, loadOpportunities]);
+  }, [authReady, isPro, loadOpportunities]);
 
   const boardOps = useMemo(() => {
     if (tab === 'bonus') return [];
@@ -429,8 +457,43 @@ export function ToolsBoard({
     return ranked(ops.filter((o) => o.kind === 'arb' || o.kind === 'middles' || o.kind === 'ev'));
   }, [ops, tab, middleSort]);
 
+  const listCount = tab === 'bonus' ? flips.length : boardOps.length;
+  const totalPages = Math.max(1, Math.ceil(listCount / pageSize));
+  const pageSafe = Math.min(Math.max(1, page), totalPages);
+  const pageStart = (pageSafe - 1) * pageSize;
+  const pagedOps = useMemo(
+    () => (tab === 'bonus' ? [] : boardOps.slice(pageStart, pageStart + pageSize)),
+    [tab, boardOps, pageStart, pageSize]
+  );
+  const pagedFlips = useMemo(
+    () => (tab === 'bonus' ? flips.slice(pageStart, pageStart + pageSize) : []),
+    [tab, flips, pageStart, pageSize]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [tab, middleSort, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   const toggleHeld = (book: string) => {
     setHeldBooks((prev) => (prev.includes(book) ? prev.filter((b) => b !== book) : [...prev, book]));
+  };
+
+  const selectBonusBook = (book: string) => {
+    setBonusBook(book);
+    // Hedge list stays fully selected — every other soft book.
+    setHeldBooks(TOOLS_SOFT_BOOKS.filter((b) => b !== book));
+  };
+
+  const selectAllHedgeBooks = () => {
+    setHeldBooks(TOOLS_SOFT_BOOKS.filter((b) => b !== bonusBook));
+  };
+
+  const clearHedgeBooks = () => {
+    setHeldBooks([]);
   };
 
   const toggleToolCard = (id: ToolCardId) => {
@@ -452,13 +515,24 @@ export function ToolsBoard({
     );
   }
 
-  if (!isAdmin || adminRequired) {
+  if (!isPro || proRequired) {
     return (
       <div className={`rounded-xl border px-6 py-14 text-center ${card}`}>
-        <p className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Admin only</p>
-        <p className={`mx-auto mt-2 max-w-md text-sm ${muted}`}>
-          Betting tools are limited to StatTrackr admin accounts for now.
+        <p className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Betting Tools is Pro
         </p>
+        <p className={`mx-auto mt-2 max-w-md text-sm ${muted}`}>
+          Arbitrage, positive EV, middles, and bonus flips are available on Pro.
+        </p>
+        <button
+          type="button"
+          onClick={() => openProUpgrade()}
+          className={`mt-5 rounded-md px-4 py-2 text-sm font-semibold ${
+            isDark ? 'bg-white text-gray-900 hover:bg-slate-100' : 'bg-gray-900 text-white hover:bg-gray-800'
+          }`}
+        >
+          Upgrade to Pro
+        </button>
       </div>
     );
   }
@@ -543,18 +617,23 @@ export function ToolsBoard({
       {tab === 'bonus' ? (
         <BonusFlipper
           isDark={isDark}
+          isAdmin={isAdmin}
           card={card}
           muted={muted}
-          pillIdle={pillIdle}
           amount={bonusAmount}
           setAmount={setBonusAmount}
           bonusBook={bonusBook}
-          setBonusBook={setBonusBook}
+          selectBonusBook={selectBonusBook}
           heldBooks={heldBooks}
           toggleHeld={toggleHeld}
-          flips={flips}
+          selectAllHedgeBooks={selectAllHedgeBooks}
+          clearHedgeBooks={clearHedgeBooks}
+          flips={pagedFlips}
+          flipsTotal={flips.length}
           loading={loading}
           scanned={bonusScanned}
+          boardStale={bonusBoardStale}
+          boardAgeMs={bonusBoardAgeMs}
           onScan={() => void loadBonus()}
         />
       ) : loading && !boardOps.length ? (
@@ -567,11 +646,42 @@ export function ToolsBoard({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
-          {boardOps.map((op) => (
+          {pagedOps.map((op) => (
             <OpportunityCard key={op.id} op={op} isDark={isDark} />
           ))}
         </div>
       )}
+
+      {listCount > pageSize ? (
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <p className={`text-xs ${muted}`}>
+            {pageStart + 1}–{Math.min(pageStart + pageSize, listCount)} of {listCount}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={pageSafe <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${pillIdle}`}
+            >
+              Previous
+            </button>
+            <span className={`text-xs tabular-nums ${muted}`}>
+              {pageSafe} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={pageSafe >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                isDark ? 'bg-white text-gray-900 hover:bg-slate-100' : 'bg-gray-900 text-white hover:bg-gray-800'
+              }`}
+            >
+              Next page
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -667,10 +777,11 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
       <div className="mt-3 grid gap-1.5">
         {op.legs.map((leg) => {
           const selection = legSelectionLabel(leg.selection || '', op.market || '');
+          // EV edge lives in the stats tiles — don't repeat it under the book row.
           const subtitle =
             leg.stake != null
               ? `Stake $${Number(leg.stake).toFixed(0)}`
-              : leg.edge != null
+              : op.kind !== 'ev' && leg.edge != null
                 ? `${leg.edge >= 0 ? '+' : ''}${(leg.edge * 100).toFixed(1)}% edge`
                 : null;
           return (
@@ -720,41 +831,169 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
   );
 }
 
+function BookPickTile({
+  book,
+  selected,
+  mode,
+  isDark,
+  onClick,
+}: {
+  book: string;
+  selected: boolean;
+  mode: 'single' | 'multi';
+  isDark: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition ${
+        selected
+          ? isDark
+            ? 'border-white/40 bg-white/10'
+            : 'border-gray-900 bg-gray-900 text-white'
+          : isDark
+            ? 'border-white/10 bg-black/20 hover:border-white/25 hover:bg-white/5'
+            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+      }`}
+    >
+      <BookmakerLogo bookKey={book} className="h-7 w-7 shrink-0 rounded object-contain" />
+      <span className={`min-w-0 flex-1 truncate text-sm font-medium ${selected && !isDark ? 'text-white' : isDark ? 'text-white' : 'text-gray-900'}`}>
+        {displayBook(book)}
+      </span>
+      <span
+        className={`flex h-5 w-5 shrink-0 items-center justify-center text-[11px] font-semibold ${
+          mode === 'single' ? 'rounded-full' : 'rounded'
+        } ${
+          selected
+            ? isDark
+              ? 'bg-white text-gray-900'
+              : 'bg-white text-gray-900'
+            : isDark
+              ? 'border border-white/25 text-transparent'
+              : 'border border-gray-300 text-transparent'
+        }`}
+        aria-hidden
+      >
+        {selected ? '✓' : ''}
+      </span>
+    </button>
+  );
+}
+
+function bonusBoardAgeLabel(ageMs: number | null): string | null {
+  if (ageMs == null || !(ageMs >= 0)) return null;
+  const mins = Math.max(0, Math.round(ageMs / 60_000));
+  if (mins <= 0) return 'Odds as of just now';
+  if (mins === 1) return 'Odds as of 1m ago';
+  return `Odds as of ${mins}m ago`;
+}
+
 function BonusFlipper({
   isDark,
+  isAdmin,
   card,
   muted,
-  pillIdle,
   amount,
   setAmount,
   bonusBook,
-  setBonusBook,
+  selectBonusBook,
   heldBooks,
   toggleHeld,
+  selectAllHedgeBooks,
+  clearHedgeBooks,
   flips,
+  flipsTotal,
   loading,
   scanned,
+  boardStale,
+  boardAgeMs,
   onScan,
 }: {
   isDark: boolean;
+  isAdmin: boolean;
   card: string;
   muted: string;
-  pillIdle: string;
   amount: string;
   setAmount: (v: string) => void;
   bonusBook: string;
-  setBonusBook: (v: string) => void;
+  selectBonusBook: (book: string) => void;
   heldBooks: string[];
   toggleHeld: (book: string) => void;
+  selectAllHedgeBooks: () => void;
+  clearHedgeBooks: () => void;
   flips: ToolsBonusFlip[];
+  flipsTotal: number;
   loading: boolean;
   scanned: boolean;
+  boardStale: boolean;
+  boardAgeMs: number | null;
   onScan: () => void;
 }) {
   const field = isDark
     ? 'border-white/15 bg-black/25 text-white focus:border-white/35'
     : 'border-gray-200 bg-white text-gray-900 focus:border-gray-400';
-  const canScan = Number(amount) > 0 && heldBooks.some((b) => b !== bonusBook);
+  const hedgeOptions = TOOLS_SOFT_BOOKS.filter((b) => b !== bonusBook);
+  const hedgeSelected = heldBooks.filter((b) => b !== bonusBook);
+  const canScan = Number(amount) > 0 && hedgeSelected.length > 0;
+  const ageLabel = !boardStale ? bonusBoardAgeLabel(boardAgeMs) : null;
+  const linkBtn = isDark
+    ? 'text-slate-300 hover:text-white'
+    : 'text-gray-600 hover:text-gray-900';
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestBook, setRequestBook] = useState('');
+  const [requestSaving, setRequestSaving] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [requestSaved, setRequestSaved] = useState(false);
+  const [viewRequests, setViewRequests] = useState(false);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [savedRequests, setSavedRequests] = useState<
+    { id: number; bookmaker_name: string; user_email: string | null; status: string; created_at: string }[]
+  >([]);
+
+  const submitBookRequest = async () => {
+    const name = requestBook.trim();
+    if (!name || requestSaving) return;
+    setRequestSaving(true);
+    setRequestError(null);
+    setRequestSaved(false);
+    try {
+      const res = await fetch('/api/tools/bookmaker-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+        body: JSON.stringify({ bookmaker: name }),
+        cache: 'no-store',
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) throw new Error(json?.error || 'Could not save the request.');
+      setRequestBook('');
+      setRequestSaved(true);
+      if (viewRequests) void loadSavedRequests();
+    } catch (e) {
+      setRequestError(e instanceof Error ? e.message : 'Could not save the request.');
+    } finally {
+      setRequestSaving(false);
+    }
+  };
+
+  const loadSavedRequests = async () => {
+    setRequestsLoading(true);
+    try {
+      const res = await fetch('/api/tools/bookmaker-request', {
+        headers: await authHeaders(),
+        cache: 'no-store',
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) throw new Error(json?.error || 'Could not load requests.');
+      setSavedRequests(Array.isArray(json.requests) ? json.requests : []);
+    } catch {
+      setSavedRequests([]);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -762,7 +1001,10 @@ function BonusFlipper({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Bonus setup</h2>
-            <p className={`mt-0.5 text-sm ${muted}`}>Amount, bonus book, then hedge books.</p>
+            <p className={`mt-0.5 text-sm ${muted}`}>
+              Choose the bonus bookmaker, then which books you can use to hedge.
+            </p>
+            {ageLabel ? <p className={`mt-1 text-xs ${muted}`}>{ageLabel}</p> : null}
           </div>
           <button
             type="button"
@@ -776,65 +1018,210 @@ function BonusFlipper({
           </button>
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <label className="block sm:col-span-1">
-            <span className={`text-[10px] font-medium uppercase tracking-wide ${muted}`}>Bonus $</span>
+        <label className="mt-4 block max-w-[12rem]">
+          <span className={`text-[10px] font-medium uppercase tracking-wide ${muted}`}>Bonus amount</span>
+          <div className="relative mt-1.5">
+            <span className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm ${muted}`}>$</span>
             <input
               type="number"
               min={1}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm outline-none ${field}`}
+              className={`w-full rounded-lg border py-2.5 pl-7 pr-3 text-sm outline-none ${field}`}
             />
-          </label>
-          <label className="block sm:col-span-1">
-            <span className={`text-[10px] font-medium uppercase tracking-wide ${muted}`}>Bonus book</span>
-            <select
-              value={bonusBook}
-              onChange={(e) => setBonusBook(e.target.value)}
-              className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm outline-none ${field}`}
-            >
-              {TOOLS_SOFT_BOOKS.map((b) => (
-                <option key={b} value={b} className={isDark ? 'bg-slate-900' : undefined}>
-                  {displayBook(b)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="block sm:col-span-1">
-            <span className={`text-[10px] font-medium uppercase tracking-wide ${muted}`}>
-              Hedge books · {heldBooks.filter((b) => b !== bonusBook).length} selected
-            </span>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {TOOLS_SOFT_BOOKS.filter((b) => b !== bonusBook).map((book) => {
-                const on = heldBooks.includes(book);
-                return (
-                  <button
-                    key={book}
-                    type="button"
-                    onClick={() => toggleHeld(book)}
-                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-                      on
-                        ? isDark
-                          ? 'bg-white/15 text-white'
-                          : 'bg-gray-900 text-white'
-                        : pillIdle
-                    }`}
-                  >
-                    {displayBook(book)}
-                  </button>
-                );
-              })}
+          </div>
+        </label>
+
+        <div className="mt-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                1. Bookmaker your bonus bet is on
+              </div>
+            </div>
+            <span className={`text-xs ${muted}`}>{displayBook(bonusBook)}</span>
+          </div>
+          <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {TOOLS_SOFT_BOOKS.map((book) => (
+              <BookPickTile
+                key={book}
+                book={book}
+                selected={bonusBook === book}
+                mode="single"
+                isDark={isDark}
+                onClick={() => selectBonusBook(book)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                2. Bookmakers you can use
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-xs font-medium">
+              <span className={muted}>
+                {hedgeSelected.length} of {hedgeOptions.length}
+              </span>
+              <button type="button" onClick={selectAllHedgeBooks} className={linkBtn}>
+                Select all
+              </button>
+              <button type="button" onClick={clearHedgeBooks} className={linkBtn}>
+                Clear
+              </button>
             </div>
           </div>
+          <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {hedgeOptions.map((book) => (
+              <BookPickTile
+                key={book}
+                book={book}
+                selected={heldBooks.includes(book)}
+                mode="multi"
+                isDark={isDark}
+                onClick={() => toggleHeld(book)}
+              />
+            ))}
+          </div>
+          {!hedgeSelected.length ? (
+            <p className={`mt-2 text-xs ${isDark ? 'text-amber-300/90' : 'text-amber-700'}`}>
+              Select at least one hedge book to find flips.
+            </p>
+          ) : null}
+        </div>
+
+        <div
+          className={`mt-5 border-t pt-4 ${isDark ? 'border-white/10' : 'border-gray-100'}`}
+        >
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {!requestOpen ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setRequestOpen(true);
+                  setRequestSaved(false);
+                  setRequestError(null);
+                }}
+                className={`text-sm font-medium underline-offset-2 hover:underline ${linkBtn}`}
+              >
+                Request a bookmaker to be added
+              </button>
+            ) : null}
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !viewRequests;
+                  setViewRequests(next);
+                  if (next) void loadSavedRequests();
+                }}
+                className={`text-xs font-medium underline-offset-2 hover:underline ${linkBtn}`}
+              >
+                {viewRequests ? 'Hide requests' : 'View requests'}
+              </button>
+            ) : null}
+          </div>
+
+          {requestOpen ? (
+            <div className="mt-3 space-y-2">
+              <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Request a bookmaker to be added
+              </div>
+              <p className={`text-xs ${muted}`}>Saved so you can review it anytime.</p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  type="text"
+                  value={requestBook}
+                  onChange={(e) => {
+                    setRequestBook(e.target.value);
+                    setRequestSaved(false);
+                    setRequestError(null);
+                  }}
+                  placeholder="Bookmaker name"
+                  className={`w-full flex-1 rounded-lg border px-3 py-2.5 text-sm outline-none sm:max-w-xs ${field}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void submitBookRequest();
+                  }}
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={!requestBook.trim() || requestSaving}
+                    onClick={() => void submitBookRequest()}
+                    className={`rounded-md px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isDark
+                        ? 'bg-white text-gray-900 hover:bg-slate-100'
+                        : 'bg-gray-900 text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    {requestSaving ? 'Saving…' : 'Submit'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRequestOpen(false);
+                      setRequestBook('');
+                      setRequestSaved(false);
+                      setRequestError(null);
+                    }}
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${linkBtn}`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              {requestError ? <p className="text-xs text-red-400">{requestError}</p> : null}
+              {requestSaved ? (
+                <p className={`text-xs ${isDark ? 'text-emerald-300/90' : 'text-emerald-700'}`}>
+                  Saved.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {isAdmin && viewRequests ? (
+            <div className={`mt-3 rounded-lg border px-3 py-2.5 ${isDark ? 'border-white/10 bg-black/20' : 'border-gray-100 bg-gray-50'}`}>
+              {requestsLoading ? (
+                <p className={`text-xs ${muted}`}>Loading requests…</p>
+              ) : savedRequests.length === 0 ? (
+                <p className={`text-xs ${muted}`}>No bookmaker requests yet.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {savedRequests.map((row) => (
+                    <li
+                      key={row.id}
+                      className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-sm ${
+                        isDark ? 'text-slate-200' : 'text-gray-800'
+                      }`}
+                    >
+                      <span className="font-medium">{row.bookmaker_name}</span>
+                      <span className={`text-xs ${muted}`}>
+                        {row.status}
+                        {' · '}
+                        {new Date(row.created_at).toLocaleDateString()}
+                        {row.user_email ? ` · ${row.user_email}` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : null}
         </div>
       </section>
 
-      {loading && !flips.length ? (
+      {loading && flipsTotal === 0 ? (
         <div className={`rounded-xl border border-dashed px-6 py-12 text-center text-sm ${muted}`}>Finding flips…</div>
-      ) : flips.length === 0 ? (
+      ) : flipsTotal === 0 ? (
         <div className={`rounded-xl border border-dashed px-6 py-12 text-center text-sm ${muted}`}>
-          {scanned ? 'No flips with those hedge books right now.' : 'Set your bonus and tap Find flips.'}
+          {scanned
+            ? boardStale
+              ? 'Odds board updating — try again in a minute.'
+              : 'No flips with those hedge books right now.'
+            : 'Set your bonus and tap Find flips.'}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
@@ -850,7 +1237,7 @@ function BonusFlipper({
                         isDark ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-50 text-violet-900'
                       }`}
                     >
-                      BF
+                      Bonus Flipper
                     </span>
                     <span className={`text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                       {sportLabel(flip.league || flip.sport)}

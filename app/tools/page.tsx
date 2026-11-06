@@ -111,7 +111,12 @@ export default function ToolsPage() {
               style={{ scrollbarGutter: 'stable', paddingLeft: 0, paddingRight: 0 }}
             >
               <div className={`h-full px-2 lg:px-1 ${shellDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
-                <ToolsBoard isDark={shellDark} isAdmin={isAdmin} authReady={subscriptionChecked} />
+                <ToolsBoard
+                  isDark={shellDark}
+                  isAdmin={isAdmin}
+                  isPro={isPro || isAdmin}
+                  authReady={subscriptionChecked}
+                />
               </div>
             </div>
           </div>

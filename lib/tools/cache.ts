@@ -48,7 +48,7 @@ export type BonusPayload = {
 };
 
 export function opportunitiesCacheKey(sports: ToolsSport[]): string {
-  return `opp:v30:${[...sports].sort().join(',')}`;
+  return `opp:v31:${[...sports].sort().join(',')}`;
 }
 
 type StoredOpportunities = { at: number; payload: OpportunitiesPayload };
@@ -86,6 +86,13 @@ export async function opportunitiesCacheWrite(key: string, payload: Opportunitie
   }
 }
 
-export function bonusCacheKey(sports: ToolsSport[], bonus: number, book: string, held: string[]): string {
-  return `bonus:v13:${[...sports].sort().join(',')}:${bonus}:${book}:${[...held].sort().join(',')}`;
+/** Include warmAt so a cron refresh invalidates prior flip results immediately. */
+export function bonusCacheKey(
+  sports: ToolsSport[],
+  bonus: number,
+  book: string,
+  held: string[],
+  warmAt: number
+): string {
+  return `bonus:v14:${[...sports].sort().join(',')}:${bonus}:${book}:${[...held].sort().join(',')}:${warmAt}`;
 }

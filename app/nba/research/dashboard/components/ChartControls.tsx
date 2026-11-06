@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect, memo, useCallback } from 'react';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import { getBookmakerInfo as getBookmakerInfoFromLib } from '@/lib/bookmakers';
+import { writeLineInputValue } from '@/lib/bettingLineInput';
 import { HomeAwaySelect, OverRatePill, StatLineCountBadge } from './ui';
 import { SECOND_AXIS_FILTER_OPTIONS } from '../constants';
 import { updateBettingLinePosition } from '../utils/chartUtils';
@@ -383,12 +384,10 @@ const ChartControls = function ChartControls({
   };
 
   // Sync input and dashed line to the committed bettingLine value.
-  // Only track bettingLine/yAxisConfig to avoid racing with timeframe updates.
+  // Never rewrite the DOM while focused — that ate digits mid-keystroke.
   useEffect(() => {
-    const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
-    if (!input) return;
     const val = Number.isFinite(bettingLine) ? bettingLine : 0;
-    input.value = String(val);
+    writeLineInputValue(val);
     if (yAxisConfig) {
       updateBettingLinePosition(val, yAxisConfig);
     }
@@ -2249,60 +2248,34 @@ const ChartControls = function ChartControls({
                       const v = parseFloat((e.currentTarget as HTMLInputElement).value);
                       if (!Number.isFinite(v)) return;
                       transientLineRef.current = v;
-                      hasManuallySetLineRef.current = true; // Mark as manually set to prevent auto-updates
-                      
-                      // Update displayLine immediately for instant bookmaker detection
+                      hasManuallySetLineRef.current = true;
+                      // Local preview only — parent commit on blur (debounced parent sync fought keystrokes).
                       setDisplayLine(v);
-                      
-                      // Update visual elements immediately (no lag)
                       if (yAxisConfig) {
                         updateBettingLinePosition(v, yAxisConfig);
                       }
                       recolorBarsFast(v);
                       updateOverRatePillFast(v);
-                      try { window.dispatchEvent(new CustomEvent('transient-line', { detail: { value: v } })); } catch {}
-                      
-                      // Debounce state update to reduce re-renders (bookmaker detection will run after debounce)
-                      if (bettingLineDebounceRef.current) {
-                        clearTimeout(bettingLineDebounceRef.current);
-                      }
-                      bettingLineDebounceRef.current = setTimeout(() => {
-                        onChangeBettingLine(v);
-                        bettingLineDebounceRef.current = null;
-                      }, 300);
                     }}
                     onBlur={(e) => {
                       const v = parseFloat((e.currentTarget as HTMLInputElement).value);
                       if (Number.isFinite(v)) {
                         transientLineRef.current = v;
-                        hasManuallySetLineRef.current = true; // Mark as manually set
-                        
-                        // Only update if value actually changed to prevent unnecessary re-renders
-                        if (Math.abs(bettingLine - v) < 0.01) {
-                          // Value hasn't changed, just update displayLine if needed
-                          setDisplayLine((prev: number) => {
-                            if (Math.abs(prev - v) < 0.01) return prev;
-                            return v;
-                          });
-                          // Clear any pending debounce
-                          if (bettingLineDebounceRef.current) {
-                            clearTimeout(bettingLineDebounceRef.current);
-                            bettingLineDebounceRef.current = null;
-                          }
-                          return; // Skip state update since value hasn't changed
-                        }
-                        
-                        // Update displayLine immediately
+                        hasManuallySetLineRef.current = true;
+                        writeLineInputValue(v, 'betting-line-input', { force: true });
                         setDisplayLine(v);
-                        
-                        // Clear any pending debounce and update immediately
                         if (bettingLineDebounceRef.current) {
                           clearTimeout(bettingLineDebounceRef.current);
                           bettingLineDebounceRef.current = null;
                         }
+                        try { window.dispatchEvent(new CustomEvent('transient-line', { detail: { value: v } })); } catch {}
                         onChangeBettingLine(v);
-                        // selectedBookmaker will be auto-updated by useEffect if a matching bookmaker is found
+                      } else {
+                        writeLineInputValue(bettingLine, 'betting-line-input', { force: true });
                       }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                     }}
                     className="w-20 sm:w-16 md:w-18 lg:w-20 px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-sm sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   />

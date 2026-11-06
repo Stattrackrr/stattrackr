@@ -1,6 +1,6 @@
 /**
- * Warm Bonus Flipper live odds board every ~15m (~100–120 odds-api credits / run).
- * Find flips then reads Redis instead of waiting on a cold sweep.
+ * Sole odds-api.net writer for Bonus Flipper (~100–120 credits / run, */15).
+ * Find flips is cache-only — it never calls odds-api; it only reads this board.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
