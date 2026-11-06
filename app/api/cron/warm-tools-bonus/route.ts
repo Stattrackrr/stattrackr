@@ -1,5 +1,5 @@
 /**
- * Sole odds-api.net writer for Bonus Flipper (~100–120 credits / run, */15).
+ * Sole odds-api.net writer for Bonus Flipper (~100-120 credits / run, every 15m).
  * Find flips is cache-only — it never calls odds-api; it only reads this board.
  */
 
