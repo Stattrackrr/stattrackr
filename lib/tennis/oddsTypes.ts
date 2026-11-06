@@ -227,8 +227,7 @@ function lineIsHalfPoint(line: string | null | undefined): boolean {
 export function tennisOuLinePlausible(stat: string, line: string | number | null | undefined): boolean {
   const n = parseFloat(String(line ?? '').replace(/[^0-9.+-]/g, ''));
   if (!Number.isFinite(n)) return false;
-  // BO3 match totals sit ~19.5–25; lower bands are player games (and were leaking into Tools middles).
-  if (stat === 'totalGames') return n >= 19.5 && n <= 79.5;
+  if (stat === 'totalGames') return n >= 14.5 && n <= 79.5;
   if (stat === 'gamesWon' || stat === 'gamesLost') return n >= 5.5 && n <= 45.5;
   // Match set totals are 2.5 (BO3) or 3.5/4.5 (BO5). 1.5 is player sets won O/U.
   if (stat === 'totalSets') return n >= 2.5 && n <= 4.5;
@@ -259,7 +258,21 @@ export function filterTennisOuLines(stat: string, lines: TennisOuLine[]): Tennis
       under: prev.under !== 'N/A' ? prev.under : row.under,
     });
   }
-  return [...byLine.values()].sort((a, b) => Number.parseFloat(a.line) - Number.parseFloat(b.line));
+  const deduped = [...byLine.values()].sort((a, b) => Number.parseFloat(a.line) - Number.parseFloat(b.line));
+  // Match-total alts cluster near the median; player-games leaks sit far below and get dropped.
+  return stat === 'totalGames' ? clusterTennisMatchTotals(deduped) : deduped;
+}
+
+/**
+ * Keep match-total lines near the ladder median (not a hard floor).
+ * Stops player-games lines (~16.5) that leaked into totals from sitting next to real ~22.5 mains.
+ */
+export function clusterTennisMatchTotals(lines: TennisOuLine[]): TennisOuLine[] {
+  if (lines.length <= 1) return lines;
+  const median = medianLineNumber(lines);
+  if (!(median > 0)) return lines;
+  const near = lines.filter((row) => Math.abs(ouLineNumber(row) - median) <= 4);
+  return near.length ? near : lines;
 }
 
 /** Keep a .5 line only when every posted over/under price is in 1.65–2.50 decimal. */

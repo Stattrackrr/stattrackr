@@ -212,8 +212,21 @@ function overUnderSide(item: NetItem): 'over' | 'under' | null {
 
 function playerOf(item: NetItem): string {
   if (item.player_name) return item.player_name;
-  const m = String(item.market_key || '').match(/^player prop\/[^/]+\/(.+?) (?:over|under) /i);
-  return m ? m[1] : '';
+  const key = String(item.market_key || '');
+  const fromProp = key.match(/^player prop\/[^/]+\/(.+?) (?:over|under) /i);
+  if (fromProp?.[1]) return fromProp[1];
+  // Some feeds keep player totals under bet_type=total with a player market_key.
+  const fromTotal = key.match(/player[^/]*\/(?:total\s*)?games?\/([^/]+)/i);
+  if (fromTotal?.[1]) return fromTotal[1].replace(/\s+(?:over|under).*$/i, '').trim();
+  return '';
+}
+
+function looksLikePlayerTotal(item: NetItem): boolean {
+  if (playerOf(item)) return true;
+  const metric = String(item.metric || '').toLowerCase();
+  if (metric.includes('player')) return true;
+  const key = String(item.market_key || '').toLowerCase();
+  return key.includes('player prop') || key.includes('player total') || /\/player\//.test(key);
 }
 
 /** Every full-match market one non-bet365 book prices on odds-api.net, in odds-api.net home/away order. */
@@ -243,8 +256,8 @@ export function tennisOddsApiNetSourceFromItems(items: NetItem[], book: string, 
       const kind = metric === 'sets' ? 'sets' : metric === 'games' || metric === 'standard' ? 'games' : null;
       if (!ou || !kind) {
         /* skip */
-      } else if (playerOf(item)) {
-        // Named-player totals often arrive as bet_type=total (not player prop). Do not treat as match total.
+      } else if (looksLikePlayerTotal(item)) {
+        // Player games/sets often arrive as bet_type=total. Never put them in match totals.
         const who = sideOf(playerOf(item), src);
         if (who) put(`team|${kind}|${who}|${line}`, ou === 'over' ? 'a' : 'b', item.odds);
       } else {

@@ -45,8 +45,6 @@ const MAX_MIDDLE_RISK = 25;
 /** Soft prices outside this band are dog/fav alt junk, not a playable middle. */
 const MIDDLE_ODDS_MIN = 1.4;
 const MIDDLE_ODDS_MAX = 3.2;
-/** Tennis match total games (BO3) — below this is almost always player games mislabeled. */
-const TENNIS_MATCH_TOTAL_GAMES_MIN = 19.5;
 /** Caps raised — Redis board now feeds player props as well as game lines. */
 const MAX_MIDDLES_PER_MATCH = 8;
 const MAX_ARB_PER_MATCH = 40;
@@ -403,9 +401,6 @@ function scanMiddles(
   for (const [base, rows] of byBase) {
     const info0 = meta.get(rows[0]!.key);
     if (info0?.family === 'total') {
-      const tennisGames =
-        event.sport === 'tennis' &&
-        (String(info0.metric || '').toLowerCase() === 'games' || /\bgames?\b/i.test(String(info0.metric || '')));
       for (let i = 0; i < rows.length; i += 1) {
         for (let j = 0; j < rows.length; j += 1) {
           if (i === j) continue;
@@ -413,10 +408,6 @@ function scanMiddles(
           const underRow = rows[j]!;
           if (!overRow.over || !underRow.under) continue;
           if (overRow.over.book === underRow.under.book) continue;
-          // Player-games leaks (e.g. Over 16.5 @ 1.85) must not middle against real match Unders.
-          if (tennisGames && (overRow.line < TENNIS_MATCH_TOTAL_GAMES_MIN || underRow.line < TENNIS_MATCH_TOTAL_GAMES_MIN)) {
-            continue;
-          }
           const win = middleWindow(overRow.line, underRow.line);
           if (!win) continue;
           const width = win.high - win.low;
