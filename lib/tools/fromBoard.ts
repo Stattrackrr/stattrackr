@@ -14,7 +14,7 @@ import {
 import { getNblOddsCache } from '@/lib/nbl/refreshNblOdds';
 import type { NblBookRow, NblGameOdds } from '@/lib/nbl/oddsTypes';
 import { listTennisOddsIndex, readTennisOddsSnapshot } from '@/lib/tennis/odds';
-import type { TennisBookRow } from '@/lib/tennis/oddsTypes';
+import { filterTennisOuLines, type TennisBookRow } from '@/lib/tennis/oddsTypes';
 import { expandTennisDisplayName } from '@/lib/tennis/playerNames';
 import { decimalFromBook } from '@/lib/tennisAi/availability';
 import { canonBook, TOOLS_BOOK_SET } from './books';
@@ -323,10 +323,16 @@ function tennisBooksToItems(books: TennisBookRow[]): OddsNetItem[] {
     pushMoneyline(items, book, row.H2H);
     pushHandicap(items, book, row.Spread, 'games');
     for (const alt of row.SpreadLines ?? []) pushHandicap(items, book, alt, 'games');
-    pushTotal(items, book, row.Total, 'games');
-    for (const alt of row.TotalLines ?? []) pushTotal(items, book, alt, 'games');
-    pushTotal(items, book, row.TotalSets, 'sets');
-    for (const alt of row.TotalSetsLines ?? []) pushTotal(items, book, alt, 'sets');
+    const matchTotals = filterTennisOuLines('totalGames', [
+      ...(row.Total ? [row.Total] : []),
+      ...(row.TotalLines ?? []),
+    ]);
+    for (const alt of matchTotals) pushTotal(items, book, alt, 'games');
+    const matchSetTotals = filterTennisOuLines('totalSets', [
+      ...(row.TotalSets ? [row.TotalSets] : []),
+      ...(row.TotalSetsLines ?? []),
+    ]);
+    for (const alt of matchSetTotals) pushTotal(items, book, alt, 'sets');
     pushTeamTotal(items, book, 'home', row.GamesWon, 'games');
     for (const alt of row.GamesWonLines ?? []) pushTeamTotal(items, book, 'home', alt, 'games');
     pushTeamTotal(items, book, 'away', row.GamesLost, 'games');

@@ -241,7 +241,15 @@ export function tennisOddsApiNetSourceFromItems(items: NetItem[], book: string, 
     } else if (item.bet_type === 'total' && line != null) {
       const ou = overUnderSide(item);
       const kind = metric === 'sets' ? 'sets' : metric === 'games' || metric === 'standard' ? 'games' : null;
-      if (ou && kind) put(`tot|${kind}|${line}`, ou === 'over' ? 'a' : 'b', item.odds);
+      if (!ou || !kind) {
+        /* skip */
+      } else if (playerOf(item)) {
+        // Named-player totals often arrive as bet_type=total (not player prop). Do not treat as match total.
+        const who = sideOf(playerOf(item), src);
+        if (who) put(`team|${kind}|${who}|${line}`, ou === 'over' ? 'a' : 'b', item.odds);
+      } else {
+        put(`tot|${kind}|${line}`, ou === 'over' ? 'a' : 'b', item.odds);
+      }
     } else if (item.bet_type === 'team total' && line != null && (side === 'home' || side === 'away')) {
       const ou = overUnderSide(item);
       if (ou && (metric === 'games' || metric === 'sets')) put(`team|${metric}|${side}|${line}`, ou === 'over' ? 'a' : 'b', item.odds);

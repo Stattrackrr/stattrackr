@@ -13,6 +13,18 @@ import { clientNbaLogo, clientNblLogo } from '@/lib/tools/mediaClient';
 import type { ToolsBonusFlip, ToolsOpportunity } from '@/lib/tools/types';
 import { supabase } from '@/lib/supabaseClient';
 
+/** Cached bare "Over 16.5" / "Over 16.5 games" → "Total games Over 16.5". */
+function legSelectionLabel(selection: string, market: string): string {
+  const sel = String(selection || '').trim();
+  const mkt = String(market || '').trim();
+  if (!sel) return mkt || '—';
+  if (!mkt) return sel;
+  if (sel.toLowerCase().startsWith(mkt.toLowerCase())) return sel;
+  const bare = sel.match(/^(over|under)\s+([\d.]+)(?:\s+\w+)?$/i);
+  if (bare) return `${mkt} ${bare[1]} ${bare[2]}`;
+  return sel;
+}
+
 /** Mirror scan qualityScore so All can re-rank cached payloads client-side. */
 function clientQuality(op: ToolsOpportunity): number {
   if (op.kind === 'arb') return 0.12 + op.edge * 8;
@@ -654,6 +666,7 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
 
       <div className="mt-3 grid gap-1.5">
         {op.legs.map((leg) => {
+          const selection = legSelectionLabel(leg.selection || '', op.market || '');
           const subtitle =
             leg.stake != null
               ? `Stake $${Number(leg.stake).toFixed(0)}`
@@ -668,8 +681,12 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
               <div className="flex items-center justify-between gap-3">
                 <span className="flex min-w-0 items-center gap-2">
                   <BookmakerLogo bookKey={leg.bookKey || leg.book} className="h-5 w-5 shrink-0 rounded object-contain" />
-                  <span className={`truncate text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {leg.book} {leg.selection || op.market}
+                  <span className="min-w-0 truncate text-sm">
+                    <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>{leg.book}</span>
+                    <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {' '}
+                      {selection}
+                    </span>
                   </span>
                 </span>
                 <span className={`shrink-0 text-base font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -889,8 +906,12 @@ function BonusFlipper({
                           bookKey={flip.bonusLeg.bookKey || flip.bonusLeg.book}
                           className="h-5 w-5 shrink-0 rounded object-contain"
                         />
-                        <span className={`truncate text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {flip.bonusLeg.book} {flip.bonusLeg.selection}
+                        <span className="min-w-0 truncate text-sm">
+                          <span className={muted}>{flip.bonusLeg.book}</span>
+                          <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {' '}
+                            {flip.bonusLeg.selection}
+                          </span>
                         </span>
                       </span>
                       <span className={`shrink-0 text-base font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -909,8 +930,12 @@ function BonusFlipper({
                           bookKey={flip.hedgeLeg.bookKey || flip.hedgeLeg.book}
                           className="h-5 w-5 shrink-0 rounded object-contain"
                         />
-                        <span className={`truncate text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {flip.hedgeLeg.book} {flip.hedgeLeg.selection}
+                        <span className="min-w-0 truncate text-sm">
+                          <span className={muted}>{flip.hedgeLeg.book}</span>
+                          <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {' '}
+                            {flip.hedgeLeg.selection}
+                          </span>
                         </span>
                       </span>
                       <span className={`shrink-0 text-base font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>

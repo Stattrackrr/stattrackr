@@ -227,7 +227,8 @@ function lineIsHalfPoint(line: string | null | undefined): boolean {
 export function tennisOuLinePlausible(stat: string, line: string | number | null | undefined): boolean {
   const n = parseFloat(String(line ?? '').replace(/[^0-9.+-]/g, ''));
   if (!Number.isFinite(n)) return false;
-  if (stat === 'totalGames') return n >= 14.5 && n <= 79.5;
+  // BO3 match totals sit ~19.5–25; lower bands are player games (and were leaking into Tools middles).
+  if (stat === 'totalGames') return n >= 19.5 && n <= 79.5;
   if (stat === 'gamesWon' || stat === 'gamesLost') return n >= 5.5 && n <= 45.5;
   // Match set totals are 2.5 (BO3) or 3.5/4.5 (BO5). 1.5 is player sets won O/U.
   if (stat === 'totalSets') return n >= 2.5 && n <= 4.5;
