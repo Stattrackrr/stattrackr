@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { NextProjectSurvey } from '@/components/props/NextProjectSurvey';
+import { ToolsUpdateAnnouncement } from '@/components/props/ToolsUpdateAnnouncement';
 import { CombinedPropsPrefetch } from './CombinedPropsPrefetch';
 
 export const metadata: Metadata = {
@@ -14,7 +14,7 @@ export default function PropsLayout({ children }: { children: React.ReactNode })
       <link rel="preload" href="/api/props/combined" as="fetch" crossOrigin="use-credentials" />
       <CombinedPropsPrefetch />
       {children}
-      <NextProjectSurvey />
+      <ToolsUpdateAnnouncement />
     </div>
   );
 }

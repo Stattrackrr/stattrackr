@@ -19,16 +19,6 @@ function reply(payload) {
   process.stdout.write(`${JSON.stringify(payload)}\n`);
 }
 
-function getCurrentBranch() {
-  try {
-    const head = readFileSync(join(process.cwd(), '.git', 'HEAD'), 'utf8').trim();
-    const prefix = 'ref: refs/heads/';
-    return head.startsWith(prefix) ? head.slice(prefix.length) : '';
-  } catch {
-    return '';
-  }
-}
-
 function getDirtyGeneratedFiles() {
   const candidates = [
     '.next',
@@ -48,14 +38,6 @@ function getDirtyGeneratedFiles() {
   }
 
   return found.slice(0, 8);
-}
-
-function isMasterLike(branch) {
-  return branch === 'master' || branch === 'main';
-}
-
-function isBlockedOnMaster(command) {
-  return /^git\s+(commit|push|merge|cherry-pick)\b/i.test(command);
 }
 
 function isBroadStage(command) {
@@ -78,17 +60,8 @@ async function main() {
     return;
   }
 
-  const branch = getCurrentBranch();
-
-  if (isMasterLike(branch) && isBlockedOnMaster(command)) {
-    reply({
-      permission: 'deny',
-      user_message: `Blocked: \`${command}\` on \`${branch}\`. Create or switch to a task branch before committing or pushing.`,
-      agent_message: 'This repo should not commit or push directly from master/main except for deliberate sync workflows.',
-    });
-    return;
-  }
-
+  // Direct master/main commit + push is allowed (see git-branch-guardrails.mdc).
+  // Only warn on broad staging when generated artifacts are present.
   if (isBroadStage(command)) {
     const generatedFiles = getDirtyGeneratedFiles();
     if (generatedFiles.length > 0) {
