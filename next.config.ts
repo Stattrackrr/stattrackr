@@ -49,6 +49,47 @@ const AFL_PROPS_CWD_EXCLUDES = [
   './data/player_positions/**/*',
 ] as const;
 
+/**
+ * AI picks cron scans NBL + tennis (must keep those), but cwd tracing packs the full NBL cache (~214MB).
+ * Keep logs/pbp/shot-charts/lineups; drop engine-picks + prop-line archives.
+ */
+const AI_PICKS_RUN_TRACE = [
+  './data/nbl-roster-*.json',
+  './data/nbl-injuries.json',
+  './data/nbl-schedule-*.json',
+  './data/nbl-league-player-stats-*.json',
+  './data/nbl-next-matches*.json',
+  './data/nbl-model/cache/player-logs/**/*',
+  './data/nbl-model/cache/pbp/**/*',
+  './data/nbl-model/cache/pbp-chem/**/*',
+  './data/nbl-model/cache/shot-charts/**/*',
+  './data/nbl-model/cache/shot-chart-players/**/*',
+  './data/nbl-model/cache/shot-chart-defense/**/*',
+  './data/nbl-model/cache/shot-chart-manifest-*.json',
+  './data/nbl-model/cache/lineups/**/*',
+  ...TENNIS_RUNTIME_DATA,
+  './data/tennis/tournament-surfaces.json',
+] as const;
+const AI_PICKS_RUN_EXCLUDES = [
+  './data/nbl-model/cache/engine-picks/**/*',
+  './data/nbl-model/cache/player-prop-lines/**/*',
+  './data/nbl-model/cache/player-prop-history/**/*',
+  './data/nbl-model/cache/game-odds-history/**/*',
+  './data/nbl-model/cache/assist-shots/**/*',
+  './data/nbl-model/cache/assist-chart-players/**/*',
+  './data/nbl-model/cache/assist-defense/**/*',
+  './data/nbl-model/cache/period-scores/**/*',
+  './data/nbl-model/cache/player-props-list.json',
+  './data/tennis/api-tennis/**/*',
+  './data/tennis/rank-raw/**/*',
+  './data/tennis/surface-raw/**/*',
+  './data/soccer*/**/*',
+  './data/soccerway-*.json',
+  './data/rotogrinders-*.html',
+  './data/sportsline-*.json',
+  './data/player_positions/**/*',
+] as const;
+
 const NBL_SCHEDULE_TRACE = ['./data/nbl-schedule-*.json', './data/nbl-roster-*.json'] as const;
 const NBL_LINEUP_TRACE = [
   ...NBL_SCHEDULE_TRACE,
@@ -175,6 +216,8 @@ const nextConfig: NextConfig = {
     '/api/afl/player-props/list/route': [...AFL_PROPS_CWD_TRACE],
     '/api/afl/props-stats/warm': [...AFL_PROPS_CWD_TRACE],
     '/api/afl/props-stats/warm/route': [...AFL_PROPS_CWD_TRACE],
+    '/api/cron/ai-picks-run': [...AI_PICKS_RUN_TRACE],
+    '/api/cron/ai-picks-run/route': [...AI_PICKS_RUN_TRACE],
     '/api/afl/cron/league-player-stats': [
       './data/afl-league-player-stats-2026.json',
       './data/afl-league-player-stats-2025.json',
@@ -226,6 +269,8 @@ const nextConfig: NextConfig = {
     '/api/afl/player-props/list/route': [...AFL_PROPS_CWD_EXCLUDES],
     '/api/afl/props-stats/warm': [...AFL_PROPS_CWD_EXCLUDES],
     '/api/afl/props-stats/warm/route': [...AFL_PROPS_CWD_EXCLUDES],
+    '/api/cron/ai-picks-run': [...AI_PICKS_RUN_EXCLUDES],
+    '/api/cron/ai-picks-run/route': [...AI_PICKS_RUN_EXCLUDES],
   },
   // Only suppress known Supabase auth errors during build phase (not runtime)
   // These are expected errors when Supabase client initializes during static generation
