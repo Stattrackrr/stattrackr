@@ -1,0 +1,133 @@
+{
+  "gameId": "1523111907",
+  "gameKey": "2026-11-08_perth-wildcats_vs_cairns-taipans",
+  "homeTeam": "Perth Wildcats",
+  "awayTeam": "Cairns Taipans",
+  "commenceTime": "2026-11-08T06:00:00.000Z",
+  "capturedAt": "2026-11-06T07:01:09.525Z",
+  "closing": false,
+  "source": "odds-api-net",
+  "books": [
+    "Palmerbet"
+  ],
+  "lineCount": 9,
+  "lines": [
+    {
+      "player": "Alex Higgins-Titsha",
+      "playerKey": "alex higgins titsha",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-455",
+      "under": "N/A",
+      "overDecimal": 1.22,
+      "underDecimal": null
+    },
+    {
+      "player": "Anthony Dell'Orso",
+      "playerKey": "anthony dell orso",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
+      "underDecimal": null
+    },
+    {
+      "player": "Dylan Windler",
+      "playerKey": "dylan windler",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "Jesse Wagstaff",
+      "playerKey": "jesse wagstaff",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-278",
+      "under": "N/A",
+      "overDecimal": 1.36,
+      "underDecimal": null
+    },
+    {
+      "player": "Jonah Bolden",
+      "playerKey": "jonah bolden",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-833",
+      "under": "N/A",
+      "overDecimal": 1.12,
+      "underDecimal": null
+    },
+    {
+      "player": "Keanu Pinder",
+      "playerKey": "keanu pinder",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
+      "underDecimal": null
+    },
+    {
+      "player": "Malique Lewis",
+      "playerKey": "malique lewis",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-1667",
+      "under": "N/A",
+      "overDecimal": 1.06,
+      "underDecimal": null
+    },
+    {
+      "player": "Reyne Smith",
+      "playerKey": "reyne smith",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-1250",
+      "under": "N/A",
+      "overDecimal": 1.08,
+      "underDecimal": null
+    }
+  ]
+}
