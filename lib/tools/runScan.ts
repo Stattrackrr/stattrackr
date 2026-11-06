@@ -19,7 +19,7 @@ import { BONUS_BOARD_MAX_AGE_MS, readBonusLiveBoard } from './bonusWarm';
 import { canonBook } from './books';
 import type { ToolsSnapshot } from './fetch';
 import { loadToolsSnapshotsFromBoards } from './fromBoard';
-import { qualityScore, scanBonusFlips, scanOpportunities } from './scan';
+import { interleaveBoardKinds, qualityScore, scanBonusFlips, scanOpportunities } from './scan';
 import type { ToolsOpportunity, ToolsSport } from './types';
 
 /** Keep each tool tab populated — a flat top-N by quality can wipe EV under ARB/MID. */
@@ -42,13 +42,15 @@ function takeBoardOpportunities(ops: ToolsOpportunity[], limit = 150): ToolsOppo
       out.push(op);
     }
   }
-  for (const op of ops) {
+  // Fill remaining slots by quality, but still keep kind quotas from starving All.
+  const byQuality = [...ops].sort((a, b) => qualityScore(b) - qualityScore(a) || a.startMs - b.startMs);
+  for (const op of byQuality) {
     if (out.length >= limit) break;
     if (picked.has(op.id)) continue;
     picked.add(op.id);
     out.push(op);
   }
-  return out.sort((a, b) => qualityScore(b) - qualityScore(a) || a.startMs - b.startMs);
+  return interleaveBoardKinds(out);
 }
 
 const refreshInFlight = new Map<string, Promise<OpportunitiesPayload>>();

@@ -589,6 +589,40 @@ export function qualityScore(op: ToolsOpportunity): number {
   return op.edge;
 }
 
+/**
+ * All board order: round-robin best arb / EV / middle.
+ * Pure quality sort lets wide middles (+$30–80 expected) bury everything else.
+ */
+export function interleaveBoardKinds(ops: ToolsOpportunity[]): ToolsOpportunity[] {
+  const buckets: Record<'arb' | 'middles' | 'ev', ToolsOpportunity[]> = {
+    arb: [],
+    middles: [],
+    ev: [],
+  };
+  for (const op of ops) {
+    if (op.kind === 'arb' || op.kind === 'middles' || op.kind === 'ev') buckets[op.kind].push(op);
+  }
+  for (const list of Object.values(buckets)) {
+    list.sort((a, b) => qualityScore(b) - qualityScore(a) || a.startMs - b.startMs);
+  }
+  const order: Array<'arb' | 'ev' | 'middles'> = ['arb', 'ev', 'middles'];
+  const out: ToolsOpportunity[] = [];
+  let i = 0;
+  for (;;) {
+    let added = false;
+    for (const kind of order) {
+      const next = buckets[kind][i];
+      if (next) {
+        out.push(next);
+        added = true;
+      }
+    }
+    if (!added) break;
+    i += 1;
+  }
+  return out;
+}
+
 export function scanBonusFlips(
   snapshots: ToolsSnapshot[],
   opts: { bonus: number; bonusBook: string; heldBooks: string[] }

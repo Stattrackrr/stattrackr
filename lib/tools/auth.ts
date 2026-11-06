@@ -45,13 +45,4 @@ export async function allowToolsAdmin(request: Request): Promise<boolean> {
   return allowToolsAccess(request);
 }
 
-/** Tools admin emails only (e.g. view bookmaker request inbox). */
-export async function allowToolsInboxAdmin(request: Request): Promise<boolean> {
-  if (process.env.TOOLS_DEV_OPEN === '1') return true;
-  const admin = await authorizeAdminRequest(request);
-  if (admin.authorized) return true;
-  const user = await bearerUser(request);
-  return Boolean(user?.email && isToolsAdminEmail(user.email));
-}
-
 export { bearerUser as toolsBearerUser };

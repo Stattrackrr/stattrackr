@@ -113,7 +113,6 @@ export default function ToolsPage() {
               <div className={`h-full px-2 lg:px-1 ${shellDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
                 <ToolsBoard
                   isDark={shellDark}
-                  isAdmin={isAdmin}
                   isPro={isPro || isAdmin}
                   authReady={subscriptionChecked}
                 />

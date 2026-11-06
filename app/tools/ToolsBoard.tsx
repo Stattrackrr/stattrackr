@@ -40,6 +40,37 @@ function clientQuality(op: ToolsOpportunity): number {
   return op.edge;
 }
 
+/** Round-robin best arb / EV / middle so All is not a Middles dump. */
+function interleaveBoardKindsClient(ops: ToolsOpportunity[]): ToolsOpportunity[] {
+  const buckets: Record<'arb' | 'middles' | 'ev', ToolsOpportunity[]> = {
+    arb: [],
+    middles: [],
+    ev: [],
+  };
+  for (const op of ops) {
+    if (op.kind === 'arb' || op.kind === 'middles' || op.kind === 'ev') buckets[op.kind].push(op);
+  }
+  for (const list of Object.values(buckets)) {
+    list.sort((a, b) => clientQuality(b) - clientQuality(a) || a.startMs - b.startMs);
+  }
+  const order: Array<'arb' | 'ev' | 'middles'> = ['arb', 'ev', 'middles'];
+  const out: ToolsOpportunity[] = [];
+  let i = 0;
+  for (;;) {
+    let added = false;
+    for (const kind of order) {
+      const next = buckets[kind][i];
+      if (next) {
+        out.push(next);
+        added = true;
+      }
+    }
+    if (!added) break;
+    i += 1;
+  }
+  return out;
+}
+
 type BoardTab = 'all' | 'arb' | 'middles' | 'ev' | 'bonus';
 type ToolCardId = 'all' | 'arb' | 'ev' | 'middles' | 'bonus';
 type MiddleSort = 'best' | 'gap' | 'risk' | 'profit';
@@ -311,12 +342,10 @@ function MatchHeader({
 
 export function ToolsBoard({
   isDark,
-  isAdmin,
   isPro = false,
   authReady = true,
 }: {
   isDark: boolean;
-  isAdmin: boolean;
   isPro?: boolean;
   authReady?: boolean;
 }) {
@@ -454,7 +483,9 @@ export function ToolsBoard({
     if (tab === 'arb' || tab === 'ev') {
       return ranked(ops.filter((o) => o.kind === tab));
     }
-    return ranked(ops.filter((o) => o.kind === 'arb' || o.kind === 'middles' || o.kind === 'ev'));
+    return interleaveBoardKindsClient(
+      ops.filter((o) => o.kind === 'arb' || o.kind === 'middles' || o.kind === 'ev')
+    );
   }, [ops, tab, middleSort]);
 
   const listCount = tab === 'bonus' ? flips.length : boardOps.length;
@@ -617,7 +648,6 @@ export function ToolsBoard({
       {tab === 'bonus' ? (
         <BonusFlipper
           isDark={isDark}
-          isAdmin={isAdmin}
           card={card}
           muted={muted}
           amount={bonusAmount}
@@ -893,7 +923,6 @@ function bonusBoardAgeLabel(ageMs: number | null): string | null {
 
 function BonusFlipper({
   isDark,
-  isAdmin,
   card,
   muted,
   amount,
@@ -913,7 +942,6 @@ function BonusFlipper({
   onScan,
 }: {
   isDark: boolean;
-  isAdmin: boolean;
   card: string;
   muted: string;
   amount: string;
@@ -947,11 +975,6 @@ function BonusFlipper({
   const [requestSaving, setRequestSaving] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [requestSaved, setRequestSaved] = useState(false);
-  const [viewRequests, setViewRequests] = useState(false);
-  const [requestsLoading, setRequestsLoading] = useState(false);
-  const [savedRequests, setSavedRequests] = useState<
-    { id: number; bookmaker_name: string; user_email: string | null; status: string; created_at: string }[]
-  >([]);
 
   const submitBookRequest = async () => {
     const name = requestBook.trim();
@@ -970,28 +993,10 @@ function BonusFlipper({
       if (!res.ok || !json?.success) throw new Error(json?.error || 'Could not save the request.');
       setRequestBook('');
       setRequestSaved(true);
-      if (viewRequests) void loadSavedRequests();
     } catch (e) {
       setRequestError(e instanceof Error ? e.message : 'Could not save the request.');
     } finally {
       setRequestSaving(false);
-    }
-  };
-
-  const loadSavedRequests = async () => {
-    setRequestsLoading(true);
-    try {
-      const res = await fetch('/api/tools/bookmaker-request', {
-        headers: await authHeaders(),
-        cache: 'no-store',
-      });
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.success) throw new Error(json?.error || 'Could not load requests.');
-      setSavedRequests(Array.isArray(json.requests) ? json.requests : []);
-    } catch {
-      setSavedRequests([]);
-    } finally {
-      setRequestsLoading(false);
     }
   };
 
@@ -1096,41 +1101,24 @@ function BonusFlipper({
         <div
           className={`mt-5 border-t pt-4 ${isDark ? 'border-white/10' : 'border-gray-100'}`}
         >
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            {!requestOpen ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setRequestOpen(true);
-                  setRequestSaved(false);
-                  setRequestError(null);
-                }}
-                className={`text-sm font-medium underline-offset-2 hover:underline ${linkBtn}`}
-              >
-                Request a bookmaker to be added
-              </button>
-            ) : null}
-            {isAdmin ? (
-              <button
-                type="button"
-                onClick={() => {
-                  const next = !viewRequests;
-                  setViewRequests(next);
-                  if (next) void loadSavedRequests();
-                }}
-                className={`text-xs font-medium underline-offset-2 hover:underline ${linkBtn}`}
-              >
-                {viewRequests ? 'Hide requests' : 'View requests'}
-              </button>
-            ) : null}
-          </div>
-
-          {requestOpen ? (
-            <div className="mt-3 space-y-2">
+          {!requestOpen ? (
+            <button
+              type="button"
+              onClick={() => {
+                setRequestOpen(true);
+                setRequestSaved(false);
+                setRequestError(null);
+              }}
+              className={`text-sm font-medium underline-offset-2 hover:underline ${linkBtn}`}
+            >
+              Request a bookmaker to be added
+            </button>
+          ) : (
+            <div className="space-y-2">
               <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 Request a bookmaker to be added
               </div>
-              <p className={`text-xs ${muted}`}>Saved so you can review it anytime.</p>
+              <p className={`text-xs ${muted}`}>We'll look at adding it.</p>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   type="text"
@@ -1176,40 +1164,11 @@ function BonusFlipper({
               {requestError ? <p className="text-xs text-red-400">{requestError}</p> : null}
               {requestSaved ? (
                 <p className={`text-xs ${isDark ? 'text-emerald-300/90' : 'text-emerald-700'}`}>
-                  Saved.
+                  Request sent.
                 </p>
               ) : null}
             </div>
-          ) : null}
-
-          {isAdmin && viewRequests ? (
-            <div className={`mt-3 rounded-lg border px-3 py-2.5 ${isDark ? 'border-white/10 bg-black/20' : 'border-gray-100 bg-gray-50'}`}>
-              {requestsLoading ? (
-                <p className={`text-xs ${muted}`}>Loading requests…</p>
-              ) : savedRequests.length === 0 ? (
-                <p className={`text-xs ${muted}`}>No bookmaker requests yet.</p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {savedRequests.map((row) => (
-                    <li
-                      key={row.id}
-                      className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-sm ${
-                        isDark ? 'text-slate-200' : 'text-gray-800'
-                      }`}
-                    >
-                      <span className="font-medium">{row.bookmaker_name}</span>
-                      <span className={`text-xs ${muted}`}>
-                        {row.status}
-                        {' · '}
-                        {new Date(row.created_at).toLocaleDateString()}
-                        {row.user_email ? ` · ${row.user_email}` : ''}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ) : null}
+          )}
         </div>
       </section>
 
