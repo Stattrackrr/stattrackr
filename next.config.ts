@@ -25,6 +25,27 @@ const AFL_ODDS_REFRESH_TRACE = [
 /** The combined-props warm in this route reads tennis and NBL data, so only drop what it never touches. */
 const AFL_ODDS_REFRESH_EXCLUDES = ['./data/nbl-model/cache/engine-picks/**/*'] as const;
 
+/** List reads AFL JSON via process.cwd(); without excludes NFT packs NBL/tennis caches (~214MB) and blows the 250MB limit. */
+const AFL_LIST_TRACE = [
+  './data/afl-league-player-stats-*.json',
+  './data/afl-dvp-*.json',
+  './data/afl-dvp-depth-*.json',
+  './data/afl-team-rankings-*-oa.json',
+  './data/afl-dfs-role-map-latest.json',
+  './data/afl-model/latest-disposals-projections.json',
+  './data/afl-model/history/**/*',
+] as const;
+const AFL_LIST_TRACE_EXCLUDES = [
+  './data/nbl-model/**/*',
+  './data/nbl-*.json',
+  './data/tennis/**/*',
+  './data/soccer*/**/*',
+  './data/soccerway-*.json',
+  './data/rotogrinders-*.html',
+  './data/sportsline-*.json',
+  './data/player_positions/**/*',
+] as const;
+
 const NBL_SCHEDULE_TRACE = ['./data/nbl-schedule-*.json', './data/nbl-roster-*.json'] as const;
 const NBL_LINEUP_TRACE = [
   ...NBL_SCHEDULE_TRACE,
@@ -147,6 +168,8 @@ const nextConfig: NextConfig = {
     '/api/props/combined/route': [...TENNIS_RUNTIME_DATA],
     '/api/afl/odds/refresh': [...AFL_ODDS_REFRESH_TRACE],
     '/api/afl/odds/refresh/route': [...AFL_ODDS_REFRESH_TRACE],
+    '/api/afl/player-props/list': [...AFL_LIST_TRACE],
+    '/api/afl/player-props/list/route': [...AFL_LIST_TRACE],
     '/api/afl/cron/league-player-stats': [
       './data/afl-league-player-stats-2026.json',
       './data/afl-league-player-stats-2025.json',
@@ -194,6 +217,8 @@ const nextConfig: NextConfig = {
     ],
     '/api/afl/odds/refresh': [...AFL_ODDS_REFRESH_EXCLUDES],
     '/api/afl/odds/refresh/route': [...AFL_ODDS_REFRESH_EXCLUDES],
+    '/api/afl/player-props/list': [...AFL_LIST_TRACE_EXCLUDES],
+    '/api/afl/player-props/list/route': [...AFL_LIST_TRACE_EXCLUDES],
   },
   // Only suppress known Supabase auth errors during build phase (not runtime)
   // These are expected errors when Supabase client initializes during static generation
