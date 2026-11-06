@@ -4,7 +4,7 @@
   "homeTeam": "Melbourne United",
   "awayTeam": "Brisbane Bullets",
   "commenceTime": "2026-11-07T08:30:00.000Z",
-  "capturedAt": "2026-11-06T16:01:23.025Z",
+  "capturedAt": "2026-11-06T20:03:56.802Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -27,7 +27,7 @@
     "Bet Right",
     "Bet365"
   ],
-  "lineCount": 3027,
+  "lineCount": 3029,
   "lines": [
     {
       "player": "Chris Goulding",
@@ -39378,6 +39378,32 @@
       "over": "+3500",
       "under": "N/A",
       "overDecimal": 36,
+      "underDecimal": null
+    },
+    {
+      "player": "Sam Waardenburg",
+      "playerKey": "sam waardenburg",
+      "book": "Ladbrokes",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 24.5,
+      "label": "25+",
+      "over": "+290",
+      "under": "N/A",
+      "overDecimal": 3.9,
+      "underDecimal": null
+    },
+    {
+      "player": "Tyrell Harrison",
+      "playerKey": "tyrell harrison",
+      "book": "Ladbrokes",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 39.5,
+      "label": "40+",
+      "over": "+600",
+      "under": "N/A",
+      "overDecimal": 7,
       "underDecimal": null
     }
   ]

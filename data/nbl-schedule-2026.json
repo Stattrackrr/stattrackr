@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-05T20:36:27.300Z",
+  "generatedAt": "2026-11-06T19:57:23.550Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2100,7 +2100,7 @@
       "externalId": "3723d8e8-58ad-11f1-b04c-17c1a1f1f487",
       "startTime": "2026-11-06T08:30:00.000Z",
       "round": "8",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Tasmania JackJumpers",
       "homeTeamCode": "TAS",
       "homeTeamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
@@ -2109,8 +2109,8 @@
       "awayTeamCode": "NZL",
       "awayTeamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "awayLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 79,
+      "awayScore": 77,
       "venue": "Silverdome",
       "matchSlug": "tasmania-jackjumpers-v-nz-breakers-men-06-11-2026"
     },
