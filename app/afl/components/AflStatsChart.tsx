@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { AflGameFilterDataItem } from '@/app/afl/components/AflGameFilters';
+import { writeLineInputValue } from '@/lib/bettingLineInput';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
@@ -1189,21 +1190,20 @@ export function AflStatsChart({
       : Math.round(statAverage * 2) / 2;
     setLineValue(next);
     emitTransientLine(next);
-    const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
-    if (input) input.value = String(next);
+    writeLineInputValue(next);
   }, [selectedStat, externalLineValue, hasDecimalValues, emitTransientLine]);
 
-  // When external line (e.g. from selected bookmaker) changes, sync chart line to it. Do NOT depend on yAxisConfig.domain so that changing timeframe (which changes domain) doesn't overwrite the user's manual line.
+  // When external line (e.g. from selected bookmaker) changes, sync chart line to it.
+  // Never rewrite the DOM while focused — that ate digits mid-keystroke.
   useEffect(() => {
     if (externalLineValue == null || !Number.isFinite(externalLineValue)) return;
     const [min, max] = yAxisConfig.domain;
     const clamped = Math.max(min, Math.min(max, externalLineValue));
     const next = hasDecimalValues ? Math.round(clamped * 10) / 10 : Math.round(clamped * 2) / 2;
     setLineValue(next);
-    emitTransientLine(next);
-    const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
-    if (input) input.value = String(next);
-  }, [externalLineValue, hasDecimalValues, emitTransientLine]);
+    writeLineInputValue(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- omit domain so timeframe zoom doesn't fight typing
+  }, [externalLineValue, hasDecimalValues]);
 
   const timeframeLabels: Record<(typeof TIMEFRAME_OPTIONS)[number], string> = {
     last5: 'L5',
@@ -1390,25 +1390,25 @@ export function AflStatsChart({
             onChange={(e) => {
               const raw = Number((e.target as HTMLInputElement).value);
               if (!Number.isFinite(raw)) return;
-              const next = normalizeLineValue(raw);
-              // Keep chart movement immediate; debounce expensive parent sync work.
-              setLineValue(next);
-              if (lineSyncDebounceRef.current) clearTimeout(lineSyncDebounceRef.current);
-              lineSyncDebounceRef.current = setTimeout(() => {
-                emitTransientLine(next);
-                lineSyncDebounceRef.current = null;
-              }, 120);
+              setLineValue(normalizeLineValue(raw));
             }}
             onBlur={(e) => {
               const raw = Number((e.target as HTMLInputElement).value);
-              if (!Number.isFinite(raw)) return;
+              if (!Number.isFinite(raw)) {
+                writeLineInputValue(lineValue, 'betting-line-input', { force: true });
+                return;
+              }
               const next = normalizeLineValue(raw);
               setLineValue(next);
+              writeLineInputValue(next, 'betting-line-input', { force: true });
               if (lineSyncDebounceRef.current) {
                 clearTimeout(lineSyncDebounceRef.current);
                 lineSyncDebounceRef.current = null;
               }
               emitTransientLine(next);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
             }}
             className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             aria-label={`Set line value for ${selectedStatLabel}`}

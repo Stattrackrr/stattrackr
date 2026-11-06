@@ -6,7 +6,6 @@ import { usePicksUnread } from '@/lib/aiPicks/unread';
 import { usePathname, useRouter } from 'next/navigation';
 import { CHAT_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
 import { openProUpgrade } from '@/components/ProFeatureLock';
-import { isToolsAdminEmail } from '@/lib/adminEmail';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { kickToolsEarlyFetch } from '@/lib/tools/prefetch';
 import { getLocalStorage, setSessionStorage } from '../../utils/storageUtils';
@@ -72,8 +71,6 @@ export function MobileBottomNavigation({
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const unreadPicksCount = usePicksUnread(hasPremium);
   const unreadPicksLabel = unreadPicksCount > 9 ? '9+' : unreadPicksCount.toString();
-  const canUseTools = isToolsAdminEmail(userEmail);
-
   useEffect(() => {
     if (!showBoardMenu) return;
     const onPointer = (e: MouseEvent | TouchEvent) => {
@@ -150,9 +147,10 @@ export function MobileBottomNavigation({
   };
 
   const isPropsActive = pathname?.startsWith('/props');
-  const isToolsActive = canUseTools && pathname?.startsWith('/tools');
-  const isBoardActive = isPropsActive || isToolsActive || (canUseTools && showBoardMenu);
+  const isToolsActive = Boolean(pathname?.startsWith('/tools'));
+  const isBoardActive = isPropsActive || isToolsActive || showBoardMenu;
   const boardLabel = isToolsActive ? 'Tools' : 'Props';
+  const boardAltLabel = isToolsActive ? 'Props' : 'Tools';
   const isChatActive = pathname?.startsWith('/chat');
   const isPicksActive = pathname?.startsWith('/picks');
   const isProfileActive = showProfileDropdown;
@@ -171,6 +169,10 @@ export function MobileBottomNavigation({
     setShowBoardMenu(false);
     setShowProfileDropdown(false);
     setShowSettingsDropdown(false);
+    if (!hasPremium) {
+      openProUpgrade();
+      return;
+    }
     if (pathname?.startsWith('/tools')) return;
     kickToolsEarlyFetch();
     router.prefetch('/tools');
@@ -224,8 +226,8 @@ export function MobileBottomNavigation({
         />
       )}
       
-      {/* Props / Tools switcher — Tools only for admin */}
-      {canUseTools && showBoardMenu ? (
+      {/* Props / Tools switcher */}
+      {showBoardMenu ? (
         <div
           ref={boardMenuRef}
           className="absolute bottom-[calc(100%+10px)] left-3 z-50 w-[168px] overflow-hidden rounded-2xl border border-white/30 bg-white/95 shadow-xl backdrop-blur-md dark:border-white/15 dark:bg-[#0a1929]/95"
@@ -252,7 +254,14 @@ export function MobileBottomNavigation({
                 : 'text-gray-800 hover:bg-purple-500/8 dark:text-white dark:hover:bg-white/5'
             }`}
           >
-            Tools
+            <span className="inline-flex items-center gap-1.5">
+              Tools
+              {!hasPremium ? (
+                <span className="rounded bg-purple-500/15 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-600 dark:text-purple-300">
+                  Pro
+                </span>
+              ) : null}
+            </span>
             {isToolsActive ? <span className="text-[10px] uppercase tracking-wide opacity-70">Now</span> : null}
           </button>
         </div>
@@ -261,7 +270,7 @@ export function MobileBottomNavigation({
       {/* Mobile Navigation */}
       <div className="relative grid grid-cols-5 h-14 lg:hidden rounded-full border border-white/40 dark:border-white/25 bg-white/20 dark:bg-white/10 shadow-[0_10px_28px_rgba(0,0,0,0.22)] backdrop-blur-md overflow-visible px-1">
         <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/20" />
-        {/* Props / Tools (shared slot) */}
+        {/* Props / Tools (shared slot) — centered; alt name hints the switcher */}
         <button
           type="button"
           data-board-button
@@ -269,15 +278,13 @@ export function MobileBottomNavigation({
           onClick={() => {
             setShowProfileDropdown(false);
             setShowSettingsDropdown(false);
-            if (!canUseTools) {
-              goProps();
-              return;
-            }
             setShowBoardMenu((open) => !open);
           }}
           className={navButtonClass(!!isBoardActive)}
-          aria-expanded={canUseTools ? showBoardMenu : undefined}
-          aria-haspopup={canUseTools ? 'menu' : undefined}
+          aria-expanded={showBoardMenu}
+          aria-haspopup="menu"
+          aria-label={`${boardLabel}, switch to ${boardAltLabel}`}
+          title={`${boardLabel} · tap for ${boardAltLabel}`}
         >
           <span className={iconChipClass(!!isBoardActive)}>
             {isToolsActive ? (
@@ -293,7 +300,10 @@ export function MobileBottomNavigation({
               </svg>
             )}
           </span>
-          <span className="text-[10px] font-semibold tracking-[0.01em]">{boardLabel}</span>
+          <span className="flex flex-col items-center leading-none">
+            <span className="text-[10px] font-semibold tracking-[0.01em]">{boardLabel}</span>
+            <span className="mt-[2px] text-[8px] font-medium tracking-wide opacity-50">{boardAltLabel}</span>
+          </span>
         </button>
         
         <button

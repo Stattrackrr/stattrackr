@@ -1,35 +1,57 @@
 /**
- * Admin gate for /api/tools/*.
- * Tools client sends Authorization: Bearer <supabase access token>,
- * which authorizeAdminRequest treats as ADMIN_SECRET — so we also
- * resolve the JWT to a user and match admin emails.
+ * Auth gate for /api/tools/*.
+ * Public feature, Pro (premium) subscription required.
+ * Tools admin emails and site admins also allowed.
+ * Client sends Authorization: Bearer <supabase access token>.
  */
 
 import { authorizeAdminRequest } from '@/lib/adminAuth';
 import { isToolsAdminEmail } from '@/lib/adminEmail';
+import { requestIsPro } from '@/lib/server/proRouteAuth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
-export async function allowToolsAdmin(request: Request): Promise<boolean> {
-  if (process.env.TOOLS_DEV_OPEN === '1') return true;
-
-  // Full site admins (ADMIN_EMAILS / secret) still get Tools.
-  const admin = await authorizeAdminRequest(request);
-  if (admin.authorized) return true;
-
-  const authHeader = request.headers.get('Authorization') || '';
-  if (!authHeader.startsWith('Bearer ')) return false;
+async function bearerUser(request: Request): Promise<{ id: string; email: string | null } | null> {
+  const authHeader = request.headers.get('Authorization') || request.headers.get('authorization') || '';
+  if (!authHeader.startsWith('Bearer ')) return null;
   const token = authHeader.slice(7).trim();
-  if (!token) return false;
-
-  // Bearer may be ADMIN_SECRET (already checked) or a user JWT.
+  if (!token) return null;
   try {
     const {
       data: { user },
       error,
     } = await supabaseAdmin.auth.getUser(token);
-    if (error || !user?.email) return false;
-    return isToolsAdminEmail(user.email);
+    if (error || !user) return null;
+    return { id: user.id, email: user.email ?? null };
   } catch {
-    return false;
+    return null;
   }
 }
+
+/** Pro subscribers (or Tools/site admin) may use Tools APIs. */
+export async function allowToolsAccess(request: Request): Promise<boolean> {
+  if (process.env.TOOLS_DEV_OPEN === '1') return true;
+
+  const admin = await authorizeAdminRequest(request);
+  if (admin.authorized) return true;
+
+  const user = await bearerUser(request);
+  if (user?.email && isToolsAdminEmail(user.email)) return true;
+
+  return requestIsPro(request);
+}
+
+/** @deprecated Use allowToolsAccess. */
+export async function allowToolsAdmin(request: Request): Promise<boolean> {
+  return allowToolsAccess(request);
+}
+
+/** Tools admin emails only (e.g. view bookmaker request inbox). */
+export async function allowToolsInboxAdmin(request: Request): Promise<boolean> {
+  if (process.env.TOOLS_DEV_OPEN === '1') return true;
+  const admin = await authorizeAdminRequest(request);
+  if (admin.authorized) return true;
+  const user = await bearerUser(request);
+  return Boolean(user?.email && isToolsAdminEmail(user.email));
+}
+
+export { bearerUser as toolsBearerUser };

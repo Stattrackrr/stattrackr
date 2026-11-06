@@ -1,6 +1,6 @@
 /**
  * Orchestrates tools scans from cron-backed Redis boards (ARB/EV/MID).
- * Bonus Flipper may add a capped all-sports live pull (odds-api.net credits).
+ * Bonus Flipper Find is cache-only — odds-api.net only via warm-tools-bonus cron.
  */
 
 import {
@@ -15,12 +15,41 @@ import {
   type BonusPayload,
   type OpportunitiesPayload,
 } from './cache';
-import { getBonusLiveSnapshots } from './bonusWarm';
+import { BONUS_BOARD_MAX_AGE_MS, readBonusLiveBoard } from './bonusWarm';
 import { canonBook } from './books';
 import type { ToolsSnapshot } from './fetch';
 import { loadToolsSnapshotsFromBoards } from './fromBoard';
-import { scanBonusFlips, scanOpportunities } from './scan';
-import type { ToolsSport } from './types';
+import { qualityScore, scanBonusFlips, scanOpportunities } from './scan';
+import type { ToolsOpportunity, ToolsSport } from './types';
+
+/** Keep each tool tab populated — a flat top-N by quality can wipe EV under ARB/MID. */
+function takeBoardOpportunities(ops: ToolsOpportunity[], limit = 150): ToolsOpportunity[] {
+  const minEach = 35;
+  const byKind: Record<'arb' | 'middles' | 'ev', ToolsOpportunity[]> = {
+    arb: [],
+    middles: [],
+    ev: [],
+  };
+  for (const op of ops) {
+    if (op.kind === 'arb' || op.kind === 'middles' || op.kind === 'ev') byKind[op.kind].push(op);
+  }
+  const picked = new Set<string>();
+  const out: ToolsOpportunity[] = [];
+  for (const list of [byKind.arb, byKind.middles, byKind.ev]) {
+    for (const op of list.slice(0, minEach)) {
+      if (picked.has(op.id)) continue;
+      picked.add(op.id);
+      out.push(op);
+    }
+  }
+  for (const op of ops) {
+    if (out.length >= limit) break;
+    if (picked.has(op.id)) continue;
+    picked.add(op.id);
+    out.push(op);
+  }
+  return out.sort((a, b) => qualityScore(b) - qualityScore(a) || a.startMs - b.startMs);
+}
 
 const refreshInFlight = new Map<string, Promise<OpportunitiesPayload>>();
 
@@ -59,7 +88,7 @@ async function snapshotsForSports(sports: ToolsSport[]): Promise<{
 
 async function buildOpportunitiesPayload(sports: ToolsSport[]): Promise<OpportunitiesPayload> {
   const { snapshots, fromBoard, asOfMs } = await snapshotsForSports(sports);
-  const opportunities = scanOpportunities(snapshots).slice(0, 100);
+  const opportunities = takeBoardOpportunities(scanOpportunities(snapshots));
   return {
     opportunities,
     meta: {
@@ -135,52 +164,72 @@ export async function runBonusScan(
   opts: { bonus: number; bonusBook: string; heldBooks: string[] }
 ): Promise<BonusPayload> {
   const { snapshots: boardSnaps, fromBoard } = await snapshotsForSports(sports);
-  const key = bonusCacheKey(sports, opts.bonus, opts.bonusBook, opts.heldBooks);
-  const cached = toolsCacheGet<BonusPayload>(key);
-  // Wall TTL (~15m) — reuse live sweeps so repeat clicks don't re-burn credits.
-  if (cached) return cached;
-
   const bonusBook = canonBook(opts.bonusBook);
   const held = [...new Set(opts.heldBooks.map(canonBook).filter((b) => b && b !== bonusBook))];
-  let snapshots = boardSnaps;
-  let usedLive = false;
-  let coverage: BonusPayload['meta']['bonusCoverage'];
 
-  if (bonusBook && held.length) {
-    try {
-      // Prefer the 15m warm board (all soft books); cold path still pulls live.
-      const live = await getBonusLiveSnapshots({ bonusBook, heldBooks: held });
-      if (live.snapshots.length) {
-        snapshots = mergeSnapshots(boardSnaps, live.snapshots);
-        usedLive = true;
-      }
-      coverage = {
-        sports: live.sports,
-        liveEvents: live.eventsSnapshotted,
-        listedEvents: live.eventsListed,
-        leagues: live.leaguesTried,
-        flips: 0,
-        bestRetention: null,
-      };
-    } catch (err) {
-      console.error('[tools/bonus] live sweep failed', err);
-    }
+  const warm = await readBonusLiveBoard();
+  const warmOk =
+    Boolean(warm?.live.snapshots.length) && warm!.ageMs < BONUS_BOARD_MAX_AGE_MS;
+
+  if (!warmOk) {
+    return {
+      flips: [],
+      meta: {
+        scannedEvents: boardSnaps.length,
+        scannedAt: new Date().toISOString(),
+        sports,
+        truncated: false,
+        oddsSource: { board: fromBoard, live: [] },
+        note: 'Odds board updating — try again in a minute.',
+        bonusCoverage: {
+          sports: warm?.live.sports ?? [],
+          liveEvents: warm?.live.eventsSnapshotted ?? 0,
+          listedEvents: warm?.live.eventsListed ?? 0,
+          leagues: warm?.live.leaguesTried ?? 0,
+          flips: 0,
+          bestRetention: null,
+          stale: true,
+          ageMs: warm?.ageMs,
+          warmAt: warm?.at,
+        },
+      },
+    };
   }
+
+  const key = bonusCacheKey(sports, opts.bonus, opts.bonusBook, held, warm!.at);
+  const cached = toolsCacheGet<BonusPayload>(key);
+  if (cached) return cached;
+
+  let snapshots = boardSnaps;
+  if (bonusBook && held.length) {
+    snapshots = mergeSnapshots(boardSnaps, warm!.live.snapshots);
+  }
+
+  const coverage: NonNullable<BonusPayload['meta']['bonusCoverage']> = {
+    sports: warm!.live.sports,
+    liveEvents: warm!.live.eventsSnapshotted,
+    listedEvents: warm!.live.eventsListed,
+    leagues: warm!.live.leaguesTried,
+    flips: 0,
+    bestRetention: null,
+    stale: false,
+    ageMs: warm!.ageMs,
+    warmAt: warm!.at,
+  };
 
   const flips = scanBonusFlips(snapshots, opts).slice(0, 80);
-  if (coverage) {
-    coverage.flips = flips.length;
-    coverage.bestRetention = flips[0]?.retention ?? null;
-  }
+  coverage.flips = flips.length;
+  coverage.bestRetention = flips[0]?.retention ?? null;
 
   const payload: BonusPayload = {
     flips,
     meta: {
       scannedEvents: snapshots.length,
-      scannedAt: new Date().toISOString(),
+      scannedAt: new Date(warm!.at).toISOString(),
       sports,
-      truncated: Boolean(coverage && coverage.listedEvents > coverage.liveEvents),
-      oddsSource: { board: fromBoard, live: usedLive ? fromBoard : [] },
+      truncated: coverage.listedEvents > coverage.liveEvents,
+      // Warm board is cache — never report a user-facing live odds pull.
+      oddsSource: { board: fromBoard, live: [] },
       bonusCoverage: coverage,
     },
   };

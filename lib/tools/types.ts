@@ -80,7 +80,7 @@ export type ToolsScanMeta = {
   oddsSource?: { board: ToolsSport[]; live: ToolsSport[] };
   /** Human hint when the scan returned nothing useful (e.g. bonus book missing from board). */
   note?: string;
-  /** Bonus Flip live footprint — what we actually priced this Find. */
+  /** Bonus Flip warm-board footprint — what we priced this Find (cache only). */
   bonusCoverage?: {
     sports: string[];
     liveEvents: number;
@@ -88,5 +88,11 @@ export type ToolsScanMeta = {
     leagues: number;
     flips: number;
     bestRetention: number | null;
+    /** True when warm board missing or older than serve window — no live pull. */
+    stale?: boolean;
+    /** Warm board age at scan time (ms). */
+    ageMs?: number;
+    /** Warm board write timestamp — used to key flip cache. */
+    warmAt?: number;
   };
 };

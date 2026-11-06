@@ -406,6 +406,7 @@ export function SoccerPlayerPropsTestCard({
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const [isCompetitionDropdownOpen, setIsCompetitionDropdownOpen] = useState(false);
   const [manualLineValue, setManualLineValue] = useState<number | null>(null);
+  const [lineDraft, setLineDraft] = useState<string | null>(null);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const competitionDropdownRef = useRef<HTMLDivElement>(null);
   const previousPlayerIdentityRef = useRef<string | null>(null);
@@ -699,11 +700,21 @@ export function SoccerPlayerPropsTestCard({
                 id="soccer-player-betting-line-input"
                 type="number"
                 step={0.5}
-                value={lineValue}
+                value={lineDraft ?? String(lineValue)}
                 min={0}
                 onChange={(e) => {
-                  const next = Number(e.target.value);
+                  const text = e.target.value;
+                  setLineDraft(text);
+                  const next = Number(text);
                   if (Number.isFinite(next)) setManualLineValue(next);
+                }}
+                onBlur={() => {
+                  const parsed = Number(lineDraft ?? lineValue);
+                  if (Number.isFinite(parsed)) setManualLineValue(parsed);
+                  setLineDraft(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                 }}
                 className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 aria-label={`Set line value for ${selectedStatMeta.label}`}

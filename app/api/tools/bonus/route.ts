@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TOOLS_SOFT_BOOKS, canonBook, isSoftBook } from '@/lib/tools/books';
 import { apiRateLimiter, checkRateLimit } from '@/lib/rateLimit';
-import { allowToolsAdmin } from '@/lib/tools/auth';
+import { allowToolsAccess } from '@/lib/tools/auth';
 import { resolveSports, runBonusScan } from '@/lib/tools/runScan';
 
 export const runtime = 'nodejs';
@@ -11,9 +11,9 @@ export const maxDuration = 180;
 export async function POST(request: NextRequest) {
   const rate = checkRateLimit(request, apiRateLimiter);
   if (!rate.allowed && rate.response) return rate.response;
-  if (!(await allowToolsAdmin(request))) {
+  if (!(await allowToolsAccess(request))) {
     return NextResponse.json(
-      { success: false, adminRequired: true, error: 'Betting Tools is admin-only.' },
+      { success: false, proRequired: true, error: 'Betting Tools is a Pro feature.' },
       { status: 403 }
     );
   }

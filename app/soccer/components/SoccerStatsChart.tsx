@@ -8,6 +8,7 @@ import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTe
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import { DEFAULT_ODDS_FORMAT } from '@/lib/currencyUtils';
 import { countPostedOddsLines } from '@/lib/dashboardStatLineCounts';
+import { writeLineInputValue } from '@/lib/bettingLineInput';
 
 export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'h2h' | 'all' | `season:${number}`;
 type SoccerVenueFilter = 'all' | 'HOME' | 'AWAY';
@@ -1083,6 +1084,8 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
   const [selectedStatTeamScope, setSelectedStatTeamScope] = useState<SoccerStatTeamScope>(storedTeamScopeRef.current ?? 'team');
   const [selectedCompetition, setSelectedCompetition] = useState('all');
   const [lineValue, setLineValue] = useState(0);
+  /** String draft while typing — avoids controlled Number() eating mid-keystroke digits. */
+  const [lineDraft, setLineDraft] = useState<string | null>(null);
   const [oddsBooks, setOddsBooks] = useState<SoccerOddsBookRow[]>([]);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [selectedBookIndex, setSelectedBookIndex] = useState(0);
@@ -1456,6 +1459,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
   useEffect(() => {
     if (previousSelectedStatRef.current === selectedStat) return;
     previousSelectedStatRef.current = selectedStat;
+    setLineDraft(null);
     if (selectedStat === 'total_goals') {
       setSelectedStatTeamScope('all');
       setLineValue(2.5);
@@ -1469,6 +1473,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     const selectedBook = oddsBooks[selectedBookIndex];
     const preferredLine = getPreferredSoccerTotalLine(selectedBook?.totalGoals ?? []);
     if (preferredLine != null) {
+      setLineDraft(null);
       setLineValue(preferredLine);
       return;
     }
@@ -1477,7 +1482,10 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     if (firstBookWithTotal >= 0) {
       setSelectedBookIndex(firstBookWithTotal);
       const firstLine = getPreferredSoccerTotalLine(oddsBooks[firstBookWithTotal].totalGoals);
-      if (firstLine != null) setLineValue(firstLine);
+      if (firstLine != null) {
+        setLineDraft(null);
+        setLineValue(firstLine);
+      }
     }
   }, [oddsBooks, selectedStat]);
 
@@ -1520,6 +1528,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
 
   const selectMoneylineResult = (result: SoccerResultLabel) => {
     if (!doubleChanceMode) {
+      setLineDraft(null);
       setLineValue(result === 'W' ? 0.5 : result === 'D' ? 0 : -0.5);
       return;
     }
@@ -1670,13 +1679,28 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
                 key={`soccer-line-${selectedStat}`}
                 type="number"
                 step={0.5}
-                value={lineValue}
+                value={lineDraft ?? String(lineValue)}
                 min={lineInputBounds.min}
                 onChange={(e) => {
-                  const next = Number(e.target.value);
+                  const text = e.target.value;
+                  setLineDraft(text);
+                  const next = Number(text);
                   if (Number.isFinite(next)) {
                     setLineValue(clampSoccerLineValue(next, selectedStat === 'moneyline' ? -1 : 0));
                   }
+                }}
+                onBlur={() => {
+                  const floor = selectedStat === 'moneyline' ? -1 : 0;
+                  const parsed = Number(lineDraft ?? lineValue);
+                  const next = Number.isFinite(parsed)
+                    ? clampSoccerLineValue(parsed, floor)
+                    : clampSoccerLineValue(lineValue, floor);
+                  setLineValue(next);
+                  setLineDraft(null);
+                  writeLineInputValue(next, 'soccer-betting-line-input', { force: true });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                 }}
                 className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 aria-label={`Set line value for ${statLabels.get(selectedStat) || formatStatLabel(selectedStat)}`}
