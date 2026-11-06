@@ -12,6 +12,7 @@ import { usePicksUnread } from "@/lib/aiPicks/unread";
 import { supabase } from "@/lib/supabaseClient";
 import { invalidateViewerProfileCache } from '@/lib/profileSubscriptionGate';
 import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
+import { kickToolsEarlyFetch } from '@/lib/tools/prefetch';
 import { isToolsAdminEmail } from '@/lib/adminEmail';
 import { ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
 
@@ -476,6 +477,8 @@ export default function LeftSidebar({
               {canUseTools ? (
                 <Link
                   href="/tools"
+                  onMouseEnter={() => kickToolsEarlyFetch()}
+                  onFocus={() => kickToolsEarlyFetch()}
                   className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     pathname?.startsWith('/tools')
                       ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'

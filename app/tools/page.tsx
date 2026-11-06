@@ -20,7 +20,7 @@ import { ToolsBoard } from './ToolsBoard';
 export default function ToolsPage() {
   const router = useRouter();
   const { isDark, theme, setTheme } = useTheme();
-  const { username, avatarUrl, userEmail, isPro } = useViewerProfile();
+  const { username, avatarUrl, userEmail, isPro, subscriptionChecked } = useViewerProfile();
   const isAdmin = isToolsAdminEmail(userEmail);
   const [mounted, setMounted] = useState(false);
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>(DEFAULT_ODDS_FORMAT);
@@ -111,7 +111,7 @@ export default function ToolsPage() {
               style={{ scrollbarGutter: 'stable', paddingLeft: 0, paddingRight: 0 }}
             >
               <div className={`h-full px-2 lg:px-1 ${shellDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
-                <ToolsBoard isDark={shellDark} isAdmin={isAdmin} />
+                <ToolsBoard isDark={shellDark} isAdmin={isAdmin} authReady={subscriptionChecked} />
               </div>
             </div>
           </div>

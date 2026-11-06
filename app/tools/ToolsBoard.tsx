@@ -4,12 +4,13 @@
  * Betting Tools board — arb / middles / EV / bonus flipper from Redis odds boards.
  */
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { TOOLS_SOFT_BOOKS, displayBook } from '@/lib/tools/books';
+import { readToolsOpsCache, writeToolsOpsCache } from '@/lib/tools/clientCache';
 import { clientNbaLogo, clientNblLogo } from '@/lib/tools/mediaClient';
-import type { ToolsBonusFlip, ToolsOpportunity, ToolsSport } from '@/lib/tools/types';
+import type { ToolsBonusFlip, ToolsOpportunity } from '@/lib/tools/types';
 import { supabase } from '@/lib/supabaseClient';
 
 /** Mirror scan qualityScore so All can re-rank cached payloads client-side. */
@@ -56,125 +57,39 @@ const TOOL_CARDS: { id: ToolCardId; short: string; title: string }[] = [
   { id: 'bonus', short: 'BF', title: 'Bonus Flipper' },
 ];
 
-/** Per-tool palette so ALL / ARB / EV / MID / BF read as different products. */
-const TOOL_THEME: Record<
-  ToolCardId,
-  {
-    activeLight: string;
-    idleHoverLight: string;
-    glow: { bg: string; border: string; shadow: string };
-    subtitleActive: string;
-  }
-> = {
-  all: {
-    activeLight: 'bg-slate-200 text-slate-900 border-slate-400 ring-2 ring-slate-300',
-    idleHoverLight: 'hover:bg-slate-100 hover:border-slate-300',
-    glow: {
-      bg: '#1e293b',
-      border: '#94a3b8',
-      shadow: '0 0 0 2px #94a3b8, 0 0 22px rgba(148,163,184,0.9), 0 0 48px rgba(100,116,139,0.65)',
-    },
-    subtitleActive: 'text-slate-200',
-  },
-  arb: {
-    activeLight: 'bg-emerald-100 text-emerald-900 border-emerald-400 ring-2 ring-emerald-300',
-    idleHoverLight: 'hover:bg-emerald-50 hover:border-emerald-300',
-    glow: {
-      bg: '#064e3b',
-      border: '#6ee7b7',
-      shadow: '0 0 0 2px #6ee7b7, 0 0 22px rgba(52,211,153,0.95), 0 0 48px rgba(16,185,129,0.7)',
-    },
-    subtitleActive: 'text-emerald-100',
-  },
-  ev: {
-    activeLight: 'bg-amber-100 text-amber-950 border-amber-400 ring-2 ring-amber-300',
-    idleHoverLight: 'hover:bg-amber-50 hover:border-amber-300',
-    glow: {
-      bg: '#78350f',
-      border: '#fcd34d',
-      shadow: '0 0 0 2px #fcd34d, 0 0 22px rgba(251,191,36,0.95), 0 0 48px rgba(245,158,11,0.7)',
-    },
-    subtitleActive: 'text-amber-100',
-  },
-  middles: {
-    activeLight: 'bg-sky-100 text-sky-950 border-sky-400 ring-2 ring-sky-300',
-    idleHoverLight: 'hover:bg-sky-50 hover:border-sky-300',
-    glow: {
-      bg: '#0c4a6e',
-      border: '#7dd3fc',
-      shadow: '0 0 0 2px #7dd3fc, 0 0 22px rgba(56,189,248,0.95), 0 0 48px rgba(14,165,233,0.7)',
-    },
-    subtitleActive: 'text-sky-100',
-  },
-  bonus: {
-    activeLight: 'bg-fuchsia-100 text-fuchsia-950 border-fuchsia-400 ring-2 ring-fuchsia-300',
-    idleHoverLight: 'hover:bg-fuchsia-50 hover:border-fuchsia-300',
-    glow: {
-      bg: '#701a75',
-      border: '#f0abfc',
-      shadow: '0 0 0 2px #f0abfc, 0 0 22px rgba(232,121,249,0.95), 0 0 48px rgba(217,70,239,0.7)',
-    },
-    subtitleActive: 'text-fuchsia-100',
-  },
-};
-
-function toolCardClass(id: ToolCardId, active: boolean, isDark: boolean): string {
-  const theme = TOOL_THEME[id];
-  const base =
-    'flex-1 min-w-0 px-3 py-2.5 lg:min-w-[140px] lg:px-6 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border transition-all duration-200 flex flex-col items-center justify-center gap-0.5';
-  if (active) {
-    return isDark
-      ? `${base} text-white border-transparent scale-[1.04] z-[1]`
-      : `${base} ${theme.activeLight}`;
-  }
-  return isDark
-    ? `${base} bg-[#152238] text-gray-300 border-white/15 opacity-90 hover:opacity-100 hover:border-white/30 hover:bg-[#1a2c44]`
-    : `${base} bg-white text-gray-600 border-gray-300 ${theme.idleHoverLight}`;
-}
-
-function toolCardGlow(id: ToolCardId, active: boolean): CSSProperties | undefined {
-  if (!active) return undefined;
-  const g = TOOL_THEME[id].glow;
-  return {
-    backgroundColor: g.bg,
-    borderColor: g.border,
-    boxShadow: g.shadow,
-  };
-}
-
 const KIND_META = {
   arb: {
     label: 'ARB',
-    chip: 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/45',
-    chipLight: 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200',
+    chip: 'bg-emerald-500/15 text-emerald-300',
+    chipLight: 'bg-emerald-50 text-emerald-800',
     edge: 'text-emerald-300',
     edgeLight: 'text-emerald-700',
-    card: 'border-emerald-500/25 bg-gradient-to-b from-emerald-500/12 to-white/[0.03]',
-    cardLight: 'border-emerald-200 bg-gradient-to-b from-emerald-50 to-white shadow-sm',
-    leg: 'border-emerald-400/20 bg-emerald-950/30',
-    legLight: 'border-emerald-100 bg-emerald-50/70',
+    card: 'border-white/10 bg-[#0a1524]',
+    cardLight: 'border-gray-200 bg-white',
+    leg: 'border-white/10 bg-black/25',
+    legLight: 'border-gray-100 bg-gray-50',
   },
   ev: {
     label: 'EV',
-    chip: 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-400/45',
-    chipLight: 'bg-amber-50 text-amber-900 ring-1 ring-amber-200',
+    chip: 'bg-amber-500/15 text-amber-300',
+    chipLight: 'bg-amber-50 text-amber-900',
     edge: 'text-amber-300',
     edgeLight: 'text-amber-700',
-    card: 'border-amber-500/25 bg-gradient-to-b from-amber-500/12 to-white/[0.03]',
-    cardLight: 'border-amber-200 bg-gradient-to-b from-amber-50 to-white shadow-sm',
-    leg: 'border-amber-400/20 bg-amber-950/25',
-    legLight: 'border-amber-100 bg-amber-50/70',
+    card: 'border-white/10 bg-[#0a1524]',
+    cardLight: 'border-gray-200 bg-white',
+    leg: 'border-white/10 bg-black/25',
+    legLight: 'border-gray-100 bg-gray-50',
   },
   middles: {
     label: 'MID',
-    chip: 'bg-sky-500/20 text-sky-200 ring-1 ring-sky-400/45',
-    chipLight: 'bg-sky-50 text-sky-900 ring-1 ring-sky-200',
+    chip: 'bg-sky-500/15 text-sky-300',
+    chipLight: 'bg-sky-50 text-sky-900',
     edge: 'text-sky-300',
     edgeLight: 'text-sky-700',
-    card: 'border-sky-500/25 bg-gradient-to-b from-sky-500/12 to-white/[0.03]',
-    cardLight: 'border-sky-200 bg-gradient-to-b from-sky-50 to-white shadow-sm',
-    leg: 'border-sky-400/20 bg-sky-950/30',
-    legLight: 'border-sky-100 bg-sky-50/70',
+    card: 'border-white/10 bg-[#0a1524]',
+    cardLight: 'border-gray-200 bg-white',
+    leg: 'border-white/10 bg-black/25',
+    legLight: 'border-gray-100 bg-gray-50',
   },
 } as const;
 
@@ -347,7 +262,7 @@ function MatchHeader({
   // Player props: one headshot + player market title; match stays as context.
   if (subjectName) {
     return (
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-3 flex items-center gap-3">
         <ToolsSideAvatarRetry
           sport={sport}
           name={subjectName}
@@ -355,7 +270,7 @@ function MatchHeader({
           isDark={isDark}
         />
         <div className="min-w-0 flex-1">
-          <h2 className={`truncate text-lg font-semibold tracking-tight sm:text-xl ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <h2 className={`truncate text-base font-semibold tracking-tight sm:text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
             {market}
           </h2>
           <p className={`mt-0.5 truncate text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{match}</p>
@@ -364,10 +279,10 @@ function MatchHeader({
     );
   }
   return (
-    <div className="mt-4 flex items-center gap-3">
+    <div className="mt-3 flex items-center gap-3">
       <ToolsSideAvatarRetry sport={sport} name={homeName} provided={homeImageUrl} isDark={isDark} />
       <div className="min-w-0 flex-1">
-        <h2 className={`truncate text-lg font-semibold tracking-tight sm:text-xl ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        <h2 className={`truncate text-base font-semibold tracking-tight sm:text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
           {match}
         </h2>
         <p className={`mt-0.5 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{market}</p>
@@ -377,15 +292,26 @@ function MatchHeader({
   );
 }
 
-export function ToolsBoard({ isDark, isAdmin }: { isDark: boolean; isAdmin: boolean }) {
+export function ToolsBoard({
+  isDark,
+  isAdmin,
+  authReady = true,
+}: {
+  isDark: boolean;
+  isAdmin: boolean;
+  authReady?: boolean;
+}) {
   const [tab, setTab] = useState<BoardTab>('all');
   const [middleSort, setMiddleSort] = useState<MiddleSort>('best');
-  const [ops, setOps] = useState<ToolsOpportunity[]>([]);
+  const [ops, setOps] = useState<ToolsOpportunity[]>(() => readToolsOpsCache() ?? []);
   const [flips, setFlips] = useState<ToolsBonusFlip[]>([]);
-  const [boardLoading, setBoardLoading] = useState(false);
+  const [boardLoading, setBoardLoading] = useState(() => !(readToolsOpsCache()?.length));
   const [bonusLoading, setBonusLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [adminRequired, setAdminRequired] = useState(false);
+  const bootstrappedRef = useRef(false);
+  const opsLenRef = useRef(0);
+  opsLenRef.current = ops.length;
 
   const [bonusAmount, setBonusAmount] = useState('50');
   const [bonusBook, setBonusBook] = useState<string>('sportsbet');
@@ -393,20 +319,20 @@ export function ToolsBoard({ isDark, isAdmin }: { isDark: boolean; isAdmin: bool
   const [bonusScanned, setBonusScanned] = useState(false);
 
   const muted = isDark ? 'text-slate-400' : 'text-gray-500';
-  const card = isDark
-    ? 'border-fuchsia-500/25 bg-gradient-to-b from-fuchsia-500/12 to-white/[0.03]'
-    : 'border-fuchsia-200 bg-gradient-to-b from-fuchsia-50 to-white shadow-sm';
+  const card = isDark ? 'border-white/10 bg-[#0a1524]' : 'border-gray-200 bg-white';
   const pillIdle = isDark
-    ? 'bg-fuchsia-500/10 text-fuchsia-100 ring-1 ring-fuchsia-400/25 hover:bg-fuchsia-500/20'
-    : 'bg-fuchsia-50 text-fuchsia-900 ring-1 ring-fuchsia-200 hover:bg-fuchsia-100';
+    ? 'bg-white/5 text-slate-300 hover:bg-white/10'
+    : 'bg-gray-100 text-gray-700 hover:bg-gray-200';
 
   // Always pull the full board once; tabs only filter client-side so switches stay instant.
-  const loadOpportunities = useCallback(async () => {
-    setBoardLoading(true);
+  const loadOpportunities = useCallback(async (opts?: { quiet?: boolean; fresh?: boolean }) => {
+    const quiet = opts?.quiet === true;
+    if (!quiet) setBoardLoading(true);
     setError(null);
     setAdminRequired(false);
     try {
       const qs = new URLSearchParams({ sport: 'all', kind: 'all' });
+      if (opts?.fresh) qs.set('fresh', '1');
       const res = await fetch(`/api/tools/opportunities?${qs}`, {
         headers: await authHeaders(),
         cache: 'no-store',
@@ -418,10 +344,14 @@ export function ToolsBoard({ isDark, isAdmin }: { isDark: boolean; isAdmin: bool
         return;
       }
       if (!res.ok || !json?.success) throw new Error(json?.error || 'Could not load tools.');
-      setOps(Array.isArray(json.opportunities) ? json.opportunities : []);
+      const next = Array.isArray(json.opportunities) ? (json.opportunities as ToolsOpportunity[]) : [];
+      setOps(next);
+      writeToolsOpsCache(next);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load tools.');
-      setOps([]);
+      if (!quiet || !opsLenRef.current) {
+        setError(e instanceof Error ? e.message : 'Could not load tools.');
+      }
+      if (!quiet) setOps([]);
     } finally {
       setBoardLoading(false);
     }
@@ -462,12 +392,15 @@ export function ToolsBoard({ isDark, isAdmin }: { isDark: boolean; isAdmin: bool
   }, [bonusAmount, bonusBook, heldBooks]);
 
   useEffect(() => {
+    if (!authReady) return;
     if (!isAdmin) {
       setAdminRequired(true);
       return;
     }
-    void loadOpportunities();
-  }, [isAdmin, loadOpportunities]);
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
+    void loadOpportunities({ quiet: opsLenRef.current > 0 });
+  }, [authReady, isAdmin, loadOpportunities]);
 
   const boardOps = useMemo(() => {
     if (tab === 'bonus') return [];
@@ -499,10 +432,18 @@ export function ToolsBoard({ isDark, isAdmin }: { isDark: boolean; isAdmin: bool
 
   const loading = tab === 'bonus' ? bonusLoading : boardLoading;
 
+  if (!authReady) {
+    return (
+      <div className={`rounded-xl border px-6 py-14 text-center text-sm ${card} ${muted}`}>
+        Opening tools…
+      </div>
+    );
+  }
+
   if (!isAdmin || adminRequired) {
     return (
-      <div className={`rounded-3xl border px-6 py-16 text-center ${card}`}>
-        <p className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Admin only</p>
+      <div className={`rounded-xl border px-6 py-14 text-center ${card}`}>
+        <p className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Admin only</p>
         <p className={`mx-auto mt-2 max-w-md text-sm ${muted}`}>
           Betting tools are limited to StatTrackr admin accounts for now.
         </p>
@@ -512,51 +453,56 @@ export function ToolsBoard({ isDark, isAdmin }: { isDark: boolean; isAdmin: bool
 
   return (
     <div className="pb-24 lg:pb-8">
-      {/* Header selectors — same single-row layout as sport cards on /props */}
       <div
-        className={`mb-4 flex gap-2 lg:gap-3 py-3 px-1 rounded-2xl lg:rounded-none border lg:border-0 overflow-visible ${
-          isDark ? 'bg-[#050d1a] border-white/10 lg:border-transparent' : 'bg-gray-50 border-gray-200'
+        className={`mb-5 flex flex-wrap items-end justify-between gap-3 border-b pb-3 ${
+          isDark ? 'border-white/10' : 'border-gray-200'
         }`}
       >
-        {TOOL_CARDS.map((t) => {
-          const active = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => toggleToolCard(t.id)}
-              className={toolCardClass(t.id, active, isDark)}
-              style={toolCardGlow(t.id, active)}
-              aria-label={t.title}
-              aria-pressed={active}
-              title={t.title}
-            >
-              <span className="text-base font-bold tracking-[0.1em] lg:text-lg">{t.short}</span>
-              <span
-                className={`text-[10px] font-medium tracking-wide ${
-                  active ? TOOL_THEME[t.id].subtitleActive : 'opacity-70'
+        <nav className="-mb-px flex flex-wrap gap-1" aria-label="Tools">
+          {TOOL_CARDS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggleToolCard(t.id)}
+                className={`relative px-3 py-2 text-sm font-medium transition-colors ${
+                  active
+                    ? isDark
+                      ? 'text-white'
+                      : 'text-gray-900'
+                    : isDark
+                      ? 'text-slate-400 hover:text-slate-200'
+                      : 'text-gray-500 hover:text-gray-800'
                 }`}
+                aria-label={t.title}
+                aria-pressed={active}
+                title={t.title}
               >
-                {t.title}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mb-4 flex justify-end">
+                <span className="tracking-wide">{t.short}</span>
+                {active ? (
+                  <span
+                    className={`absolute inset-x-2 -bottom-px h-0.5 rounded-full ${
+                      isDark ? 'bg-white' : 'bg-gray-900'
+                    }`}
+                  />
+                ) : null}
+              </button>
+            );
+          })}
+        </nav>
         <button
           type="button"
           disabled={loading}
-          onClick={() => (tab === 'bonus' ? void loadBonus() : void loadOpportunities())}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${pillIdle} disabled:opacity-50`}
+          onClick={() => (tab === 'bonus' ? void loadBonus() : void loadOpportunities({ fresh: true }))}
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${pillIdle} disabled:opacity-50`}
         >
-          {loading ? 'Scanning…' : 'Refresh'}
+          {loading ? 'Updating…' : 'Refresh'}
         </button>
       </div>
 
       {tab === 'middles' ? (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap gap-1.5">
           {MIDDLE_SORTS.map((s) => {
             const active = middleSort === s.id;
             return (
@@ -564,11 +510,11 @@ export function ToolsBoard({ isDark, isAdmin }: { isDark: boolean; isAdmin: bool
                 key={s.id}
                 type="button"
                 onClick={() => setMiddleSort(s.id)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
                   active
                     ? isDark
-                      ? 'bg-sky-400/20 text-sky-100 ring-1 ring-sky-300/50'
-                      : 'bg-sky-100 text-sky-900 ring-1 ring-sky-300'
+                      ? 'bg-white/15 text-white'
+                      : 'bg-gray-900 text-white'
                     : pillIdle
                 }`}
                 aria-pressed={active}
@@ -600,23 +546,15 @@ export function ToolsBoard({ isDark, isAdmin }: { isDark: boolean; isAdmin: bool
           onScan={() => void loadBonus()}
         />
       ) : loading && !boardOps.length ? (
-        <div
-          className={`rounded-3xl border border-dashed px-6 py-16 text-center text-sm ${
-            isDark ? 'border-purple-500/20 text-slate-500' : 'border-purple-200 text-gray-500'
-          }`}
-        >
-          Loading opportunities from the odds board…
+        <div className={`rounded-xl border border-dashed px-6 py-14 text-center text-sm ${muted}`}>
+          Loading board…
         </div>
       ) : boardOps.length === 0 ? (
-        <div
-          className={`rounded-3xl border border-dashed px-6 py-16 text-center text-sm ${
-            isDark ? 'border-purple-500/20 text-slate-500' : 'border-purple-200 text-gray-500'
-          }`}
-        >
+        <div className={`rounded-xl border border-dashed px-6 py-14 text-center text-sm ${muted}`}>
           No opportunities right now. Try Refresh.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
           {boardOps.map((op) => (
             <OpportunityCard key={op.id} op={op} isDark={isDark} />
           ))}
@@ -626,29 +564,12 @@ export function ToolsBoard({ isDark, isAdmin }: { isDark: boolean; isAdmin: bool
   );
 }
 
-const STAT_TILE: Record<
-  ToolsOpportunity['kind'],
-  { borderDark: string; borderLight: string; labelDark: string; labelLight: string }
-> = {
-  arb: {
-    borderDark: 'border-emerald-400/15 bg-emerald-400/[0.06]',
-    borderLight: 'border-emerald-200 bg-emerald-50',
-    labelDark: 'text-emerald-200/70',
-    labelLight: 'text-emerald-700/70',
-  },
-  ev: {
-    borderDark: 'border-amber-400/15 bg-amber-400/[0.06]',
-    borderLight: 'border-amber-200 bg-amber-50',
-    labelDark: 'text-amber-200/70',
-    labelLight: 'text-amber-800/70',
-  },
-  middles: {
-    borderDark: 'border-sky-400/15 bg-sky-400/[0.06]',
-    borderLight: 'border-sky-200 bg-sky-50',
-    labelDark: 'text-sky-200/70',
-    labelLight: 'text-sky-700/70',
-  },
-};
+const STAT_TILE = {
+  borderDark: 'border-white/10 bg-black/20',
+  borderLight: 'border-gray-100 bg-gray-50',
+  labelDark: 'text-slate-400',
+  labelLight: 'text-gray-500',
+} as const;
 
 function cardStats(op: ToolsOpportunity): { label: string; value: string }[] {
   if (op.kind === 'middles' && op.middleCollect != null && op.middleRisk != null) {
@@ -681,24 +602,19 @@ function cardStats(op: ToolsOpportunity): { label: string; value: string }[] {
 
 function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean }) {
   const meta = KIND_META[op.kind];
-  const tile = STAT_TILE[op.kind];
   const stats = cardStats(op);
   return (
-    <article className={`rounded-3xl border p-5 sm:p-6 ${isDark ? meta.card : meta.cardLight}`}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <article className={`rounded-xl border p-4 sm:p-5 ${isDark ? meta.card : meta.cardLight}`}>
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold tracking-[0.12em] ${isDark ? meta.chip : meta.chipLight}`}>
+          <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide ${isDark ? meta.chip : meta.chipLight}`}>
             {meta.label}
           </span>
-          <span
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide ring-1 ${
-              isDark ? 'bg-white/5 text-slate-300 ring-white/10' : 'bg-gray-50 text-gray-600 ring-gray-200'
-            }`}
-          >
+          <span className={`text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             {sportLabel(op.sport)}
           </span>
         </div>
-        <div className={`text-sm font-semibold ${isDark ? meta.edge : meta.edgeLight}`}>{op.edgeLabel}</div>
+        <div className={`text-sm font-semibold tabular-nums ${isDark ? meta.edge : meta.edgeLight}`}>{op.edgeLabel}</div>
       </div>
 
       <MatchHeader
@@ -719,16 +635,16 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className={`rounded-2xl border px-3 py-2.5 ${isDark ? tile.borderDark : tile.borderLight}`}
+              className={`rounded-lg border px-3 py-2 ${isDark ? STAT_TILE.borderDark : STAT_TILE.borderLight}`}
             >
               <div
-                className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${
-                  isDark ? tile.labelDark : tile.labelLight
+                className={`text-[10px] font-medium uppercase tracking-wide ${
+                  isDark ? STAT_TILE.labelDark : STAT_TILE.labelLight
                 }`}
               >
                 {stat.label}
               </div>
-              <div className={`mt-1 text-base font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <div className={`mt-0.5 text-sm font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {stat.value}
               </div>
             </div>
@@ -736,7 +652,7 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
         </div>
       ) : null}
 
-      <div className="mt-3 grid gap-2">
+      <div className="mt-3 grid gap-1.5">
         {op.legs.map((leg) => {
           const subtitle =
             leg.stake != null
@@ -747,16 +663,16 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
           return (
             <div
               key={`${leg.bookKey}-${leg.selection}-${leg.odds}`}
-              className={`rounded-2xl border px-4 py-3 ${isDark ? meta.leg : meta.legLight}`}
+              className={`rounded-lg border px-3 py-2.5 ${isDark ? meta.leg : meta.legLight}`}
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="flex min-w-0 items-center gap-2">
                   <BookmakerLogo bookKey={leg.bookKey || leg.book} className="h-5 w-5 shrink-0 rounded object-contain" />
-                  <span className={`truncate text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <span className={`truncate text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {leg.book} {leg.selection || op.market}
                   </span>
                 </span>
-                <span className={`shrink-0 text-lg font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <span className={`shrink-0 text-base font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {leg.odds.toFixed(2)}
                 </span>
               </div>
@@ -819,47 +735,47 @@ function BonusFlipper({
   onScan: () => void;
 }) {
   const field = isDark
-    ? 'border-fuchsia-400/25 bg-black/25 text-white focus:border-fuchsia-400/60'
-    : 'border-fuchsia-200 bg-white text-gray-900 focus:border-fuchsia-400';
-  const tileDark = 'border-fuchsia-400/15 bg-fuchsia-400/[0.06]';
-  const tileLight = 'border-fuchsia-200 bg-fuchsia-50';
+    ? 'border-white/15 bg-black/25 text-white focus:border-white/35'
+    : 'border-gray-200 bg-white text-gray-900 focus:border-gray-400';
   const canScan = Number(amount) > 0 && heldBooks.some((b) => b !== bonusBook);
 
   return (
-    <div className="space-y-5">
-      <section className={`rounded-3xl border p-5 sm:p-6 ${card}`}>
+    <div className="space-y-4">
+      <section className={`rounded-xl border p-4 sm:p-5 ${card}`}>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Bonus setup</h2>
-            <p className={`mt-1 text-sm ${muted}`}>Amount, bonus book, then hedge books.</p>
+            <h2 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Bonus setup</h2>
+            <p className={`mt-0.5 text-sm ${muted}`}>Amount, bonus book, then hedge books.</p>
           </div>
           <button
             type="button"
             disabled={loading || !canScan}
             onClick={onScan}
-            className="rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className={`rounded-md px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${
+              isDark ? 'bg-white text-gray-900 hover:bg-slate-100' : 'bg-gray-900 text-white hover:bg-gray-800'
+            }`}
           >
             {loading ? 'Finding…' : 'Find flips'}
           </button>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <label className="block sm:col-span-1">
-            <span className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${muted}`}>Bonus $</span>
+            <span className={`text-[10px] font-medium uppercase tracking-wide ${muted}`}>Bonus $</span>
             <input
               type="number"
               min={1}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className={`mt-2 w-full rounded-2xl border px-4 py-3 text-sm outline-none ${field}`}
+              className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm outline-none ${field}`}
             />
           </label>
           <label className="block sm:col-span-1">
-            <span className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${muted}`}>Bonus book</span>
+            <span className={`text-[10px] font-medium uppercase tracking-wide ${muted}`}>Bonus book</span>
             <select
               value={bonusBook}
               onChange={(e) => setBonusBook(e.target.value)}
-              className={`mt-2 w-full rounded-2xl border px-4 py-3 text-sm outline-none ${field}`}
+              className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm outline-none ${field}`}
             >
               {TOOLS_SOFT_BOOKS.map((b) => (
                 <option key={b} value={b} className={isDark ? 'bg-slate-900' : undefined}>
@@ -869,10 +785,10 @@ function BonusFlipper({
             </select>
           </label>
           <div className="block sm:col-span-1">
-            <span className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${muted}`}>
+            <span className={`text-[10px] font-medium uppercase tracking-wide ${muted}`}>
               Hedge books · {heldBooks.filter((b) => b !== bonusBook).length} selected
             </span>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
               {TOOLS_SOFT_BOOKS.filter((b) => b !== bonusBook).map((book) => {
                 const on = heldBooks.includes(book);
                 return (
@@ -880,11 +796,11 @@ function BonusFlipper({
                     key={book}
                     type="button"
                     onClick={() => toggleHeld(book)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
                       on
                         ? isDark
-                          ? 'bg-fuchsia-500/25 text-fuchsia-100 ring-1 ring-fuchsia-400/50'
-                          : 'bg-fuchsia-100 text-fuchsia-900 ring-1 ring-fuchsia-300'
+                          ? 'bg-white/15 text-white'
+                          : 'bg-gray-900 text-white'
                         : pillIdle
                     }`}
                   >
@@ -898,38 +814,32 @@ function BonusFlipper({
       </section>
 
       {loading && !flips.length ? (
-        <div className={`rounded-3xl border border-dashed px-6 py-12 text-center text-sm ${muted}`}>Finding flips…</div>
+        <div className={`rounded-xl border border-dashed px-6 py-12 text-center text-sm ${muted}`}>Finding flips…</div>
       ) : flips.length === 0 ? (
-        <div className={`rounded-3xl border border-dashed px-6 py-12 text-center text-sm ${muted}`}>
+        <div className={`rounded-xl border border-dashed px-6 py-12 text-center text-sm ${muted}`}>
           {scanned ? 'No flips with those hedge books right now.' : 'Set your bonus and tap Find flips.'}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
           {flips.map((flip) => {
             const hedgeStake = flip.hedgeLeg.stake ?? 0;
             const bonusStake = flip.bonusLeg.stake ?? (Number(amount) || 0);
             return (
-              <article key={flip.id} className={`rounded-3xl border p-5 sm:p-6 ${card}`}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
+              <article key={flip.id} className={`rounded-xl border p-4 sm:p-5 ${card}`}>
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-bold tracking-[0.12em] ${
-                        isDark
-                          ? 'bg-fuchsia-500/20 text-fuchsia-200 ring-1 ring-fuchsia-400/40'
-                          : 'bg-fuchsia-50 text-fuchsia-900 ring-1 ring-fuchsia-200'
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide ${
+                        isDark ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-50 text-violet-900'
                       }`}
                     >
                       BF
                     </span>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide ring-1 ${
-                        isDark ? 'bg-white/5 text-slate-300 ring-white/10' : 'bg-gray-50 text-gray-600 ring-gray-200'
-                      }`}
-                    >
+                    <span className={`text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                       {sportLabel(flip.league || flip.sport)}
                     </span>
                   </div>
-                  <div className={`text-sm font-semibold ${isDark ? 'text-fuchsia-300' : 'text-fuchsia-800'}`}>
+                  <div className={`text-sm font-semibold tabular-nums ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
                     {(flip.retention * 100).toFixed(1)}% convert
                   </div>
                 </div>
@@ -955,63 +865,55 @@ function BonusFlipper({
                   ].map((stat) => (
                     <div
                       key={stat.label}
-                      className={`rounded-2xl border px-3 py-2.5 ${isDark ? tileDark : tileLight}`}
+                      className={`rounded-lg border px-3 py-2 ${isDark ? STAT_TILE.borderDark : STAT_TILE.borderLight}`}
                     >
                       <div
-                        className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${
-                          isDark ? 'text-fuchsia-200/70' : 'text-fuchsia-800/70'
+                        className={`text-[10px] font-medium uppercase tracking-wide ${
+                          isDark ? STAT_TILE.labelDark : STAT_TILE.labelLight
                         }`}
                       >
                         {stat.label}
                       </div>
-                      <div className={`mt-1 text-base font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <div className={`mt-0.5 text-sm font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {stat.value}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-3 grid gap-2">
-                  <div
-                    className={`rounded-2xl border px-4 py-3 ${
-                      isDark ? 'border-fuchsia-400/25 bg-fuchsia-500/15' : 'border-fuchsia-200 bg-fuchsia-50'
-                    }`}
-                  >
+                <div className="mt-3 grid gap-1.5">
+                  <div className={`rounded-lg border px-3 py-2.5 ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-100 bg-gray-50'}`}>
                     <div className="flex items-center justify-between gap-3">
                       <span className="flex min-w-0 items-center gap-2">
                         <BookmakerLogo
                           bookKey={flip.bonusLeg.bookKey || flip.bonusLeg.book}
                           className="h-5 w-5 shrink-0 rounded object-contain"
                         />
-                        <span className={`truncate text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        <span className={`truncate text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                           {flip.bonusLeg.book} {flip.bonusLeg.selection}
                         </span>
                       </span>
-                      <span className={`shrink-0 text-lg font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <span className={`shrink-0 text-base font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {flip.bonusLeg.odds.toFixed(2)}
                       </span>
                     </div>
-                    <div className={`mt-1 text-xs tabular-nums ${isDark ? 'text-fuchsia-100/70' : 'text-fuchsia-800/80'}`}>
+                    <div className={`mt-1 text-xs tabular-nums ${muted}`}>
                       Bonus stake ${Number(bonusStake).toFixed(0)}
                     </div>
                   </div>
 
-                  <div
-                    className={`rounded-2xl border px-4 py-3 ${
-                      isDark ? 'border-fuchsia-400/15 bg-black/25' : 'border-fuchsia-100 bg-white'
-                    }`}
-                  >
+                  <div className={`rounded-lg border px-3 py-2.5 ${isDark ? 'border-white/10 bg-black/25' : 'border-gray-100 bg-white'}`}>
                     <div className="flex items-center justify-between gap-3">
                       <span className="flex min-w-0 items-center gap-2">
                         <BookmakerLogo
                           bookKey={flip.hedgeLeg.bookKey || flip.hedgeLeg.book}
                           className="h-5 w-5 shrink-0 rounded object-contain"
                         />
-                        <span className={`truncate text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        <span className={`truncate text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                           {flip.hedgeLeg.book} {flip.hedgeLeg.selection}
                         </span>
                       </span>
-                      <span className={`shrink-0 text-lg font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <span className={`shrink-0 text-base font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {flip.hedgeLeg.odds.toFixed(2)}
                       </span>
                     </div>

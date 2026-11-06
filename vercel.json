@@ -83,6 +83,14 @@
       "schedule": "*/20 * * * *"
     },
     {
+      "path": "/api/cron/warm-tools",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/warm-tools-bonus",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/refresh-tennis-upcoming",
       "schedule": "*/5 * * * *"
     },
@@ -161,6 +169,12 @@
     },
     "app/api/cron/warm-nba-dashboard/route.ts": {
       "maxDuration": 300
+    },
+    "app/api/cron/warm-tools/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/cron/warm-tools-bonus/route.ts": {
+      "maxDuration": 120
     },
     "app/api/cron/sync-nba-bdl/route.ts": {
       "maxDuration": 300

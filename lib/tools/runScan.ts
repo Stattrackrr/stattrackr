@@ -5,18 +5,24 @@
 
 import {
   bonusCacheKey,
+  OPPORTUNITIES_HOT_MS,
+  OPPORTUNITIES_SOFT_MS,
   opportunitiesCacheKey,
+  opportunitiesCacheRead,
+  opportunitiesCacheWrite,
   toolsCacheGet,
   toolsCacheSet,
   type BonusPayload,
   type OpportunitiesPayload,
 } from './cache';
-import { fetchBonusLiveSnapshots } from './bonusLive';
+import { getBonusLiveSnapshots } from './bonusWarm';
 import { canonBook } from './books';
 import type { ToolsSnapshot } from './fetch';
 import { loadToolsSnapshotsFromBoards } from './fromBoard';
 import { scanBonusFlips, scanOpportunities } from './scan';
 import type { ToolsSport } from './types';
+
+const refreshInFlight = new Map<string, Promise<OpportunitiesPayload>>();
 
 const ALL_SPORTS: ToolsSport[] = ['tennis', 'nbl', 'nba'];
 
@@ -51,17 +57,10 @@ async function snapshotsForSports(sports: ToolsSport[]): Promise<{
   };
 }
 
-export async function runOpportunitiesScan(sports: ToolsSport[]): Promise<OpportunitiesPayload> {
+async function buildOpportunitiesPayload(sports: ToolsSport[]): Promise<OpportunitiesPayload> {
   const { snapshots, fromBoard, asOfMs } = await snapshotsForSports(sports);
-  const key = opportunitiesCacheKey(sports);
-  const cached = toolsCacheGet<OpportunitiesPayload>(key);
-  // Keep serving the last scan until the underlying boards move.
-  if (cached && asOfMs > 0 && Date.parse(cached.meta.scannedAt) >= asOfMs) {
-    return cached;
-  }
-
-  const opportunities = scanOpportunities(snapshots);
-  const payload: OpportunitiesPayload = {
+  const opportunities = scanOpportunities(snapshots).slice(0, 100);
+  return {
     opportunities,
     meta: {
       scannedEvents: snapshots.length,
@@ -71,8 +70,45 @@ export async function runOpportunitiesScan(sports: ToolsSport[]): Promise<Opport
       oddsSource: { board: fromBoard, live: [] },
     },
   };
-  toolsCacheSet(key, payload);
-  return payload;
+}
+
+async function refreshOpportunities(sports: ToolsSport[], key: string): Promise<OpportunitiesPayload> {
+  const existing = refreshInFlight.get(key);
+  if (existing) return existing;
+  const run = (async () => {
+    const payload = await buildOpportunitiesPayload(sports);
+    await opportunitiesCacheWrite(key, payload);
+    return payload;
+  })().finally(() => {
+    refreshInFlight.delete(key);
+  });
+  refreshInFlight.set(key, run);
+  return run;
+}
+
+export async function runOpportunitiesScan(
+  sports: ToolsSport[],
+  opts?: { force?: boolean }
+): Promise<OpportunitiesPayload> {
+  const key = opportunitiesCacheKey(sports);
+  if (opts?.force) {
+    return refreshOpportunities(sports, key);
+  }
+
+  const cached = await opportunitiesCacheRead(key);
+
+  // Instant: memory or Redis still hot — no board load.
+  if (cached && cached.ageMs < OPPORTUNITIES_HOT_MS) {
+    return cached.payload;
+  }
+
+  // Soft: serve immediately, refresh boards in the background.
+  if (cached && cached.ageMs < OPPORTUNITIES_SOFT_MS) {
+    void refreshOpportunities(sports, key).catch(() => {});
+    return cached.payload;
+  }
+
+  return refreshOpportunities(sports, key);
 }
 
 function mergeSnapshots(board: ToolsSnapshot[], live: ToolsSnapshot[]): ToolsSnapshot[] {
@@ -112,7 +148,8 @@ export async function runBonusScan(
 
   if (bonusBook && held.length) {
     try {
-      const live = await fetchBonusLiveSnapshots({ bonusBook, heldBooks: held });
+      // Prefer the 15m warm board (all soft books); cold path still pulls live.
+      const live = await getBonusLiveSnapshots({ bonusBook, heldBooks: held });
       if (live.snapshots.length) {
         snapshots = mergeSnapshots(boardSnaps, live.snapshots);
         usedLive = true;

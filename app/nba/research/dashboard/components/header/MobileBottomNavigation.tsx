@@ -8,6 +8,7 @@ import { CHAT_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
 import { openProUpgrade } from '@/components/ProFeatureLock';
 import { isToolsAdminEmail } from '@/lib/adminEmail';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
+import { kickToolsEarlyFetch } from '@/lib/tools/prefetch';
 import { getLocalStorage, setSessionStorage } from '../../utils/storageUtils';
 import { ProfileAvatar } from './ProfileAvatar';
 import { ProfileDropdown } from './ProfileDropdown';
@@ -171,6 +172,8 @@ export function MobileBottomNavigation({
     setShowProfileDropdown(false);
     setShowSettingsDropdown(false);
     if (pathname?.startsWith('/tools')) return;
+    kickToolsEarlyFetch();
+    router.prefetch('/tools');
     router.push('/tools');
   };
 

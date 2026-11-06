@@ -20,10 +20,11 @@ export async function GET(request: NextRequest) {
 
   const sportParam = request.nextUrl.searchParams.get('sport');
   const kindParam = (request.nextUrl.searchParams.get('kind') || 'all').toLowerCase();
+  const force = request.nextUrl.searchParams.get('fresh') === '1';
   const sports = resolveSports(sportParam);
 
   try {
-    const payload = await runOpportunitiesScan(sports);
+    const payload = await runOpportunitiesScan(sports, { force });
     let opportunities = payload.opportunities;
     if (kindParam === 'arb' || kindParam === 'middles' || kindParam === 'ev') {
       opportunities = opportunities.filter((o) => o.kind === (kindParam as Exclude<ToolsKind, 'bonus'>));
