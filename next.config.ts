@@ -15,6 +15,36 @@ const TENNIS_RUNTIME_DATA = [
   './data/tennis/player-names.json',
 ] as const;
 
+/** Shared junk that no API route should pack (scripts / local scrapes only). */
+const DATA_JUNK_EXCLUDES = [
+  './data/soccer*/**/*',
+  './data/soccerway-*.json',
+  './data/rotogrinders-*.html',
+  './data/sportsline-*.json',
+  './data/player_positions/**/*',
+  './data/tennis/api-tennis/**/*',
+  './data/tennis/rank-raw/**/*',
+  './data/tennis/surface-raw/**/*',
+] as const;
+
+/** Fat NBL cache dirs most routes never read (engine picks / history / charts). */
+const NBL_HEAVY_UNUSED_EXCLUDES = [
+  './data/nbl-model/cache/engine-picks/**/*',
+  './data/nbl-model/cache/player-prop-history/**/*',
+  './data/nbl-model/cache/game-odds-history/**/*',
+  './data/nbl-model/cache/shot-charts/**/*',
+  './data/nbl-model/cache/shot-chart-players/**/*',
+  './data/nbl-model/cache/shot-chart-defense/**/*',
+  './data/nbl-model/cache/shot-chart-manifest-*.json',
+  './data/nbl-model/cache/assist-shots/**/*',
+  './data/nbl-model/cache/assist-chart-players/**/*',
+  './data/nbl-model/cache/assist-defense/**/*',
+  './data/nbl-model/cache/period-scores/**/*',
+  './data/nbl-model/cache/pbp/**/*',
+  './data/nbl-model/cache/pbp-chem/**/*',
+  './data/nbl-model/cache/lineups/**/*',
+] as const;
+
 /** build-afl-dvp.js is spawned via process.cwd(), so tracing pulls in the whole repo unless trimmed. */
 const AFL_ODDS_REFRESH_TRACE = [
   './scripts/build-afl-dvp.js',
@@ -22,12 +52,10 @@ const AFL_ODDS_REFRESH_TRACE = [
   './data/afl-team-rankings-*.json',
   './data/afl-dfs-role-map-latest.json',
 ] as const;
-/** The combined-props warm in this route reads tennis and NBL data, so only drop what it never touches. */
-const AFL_ODDS_REFRESH_EXCLUDES = ['./data/nbl-model/cache/engine-picks/**/*'] as const;
 
 /**
- * AFL props routes read JSON via process.cwd(); without excludes NFT packs NBL/tennis caches (~214MB)
- * and blows the 250MB limit (list, props-stats/warm, …).
+ * AFL-only props routes read JSON via process.cwd(); without excludes NFT packs NBL/tennis (~214MB+)
+ * and blows the 250MB limit.
  */
 const AFL_PROPS_CWD_TRACE = [
   './data/afl-league-player-stats-*.json',
@@ -42,15 +70,31 @@ const AFL_PROPS_CWD_EXCLUDES = [
   './data/nbl-model/**/*',
   './data/nbl-*.json',
   './data/tennis/**/*',
-  './data/soccer*/**/*',
-  './data/soccerway-*.json',
-  './data/rotogrinders-*.html',
-  './data/sportsline-*.json',
-  './data/player_positions/**/*',
+  ...DATA_JUNK_EXCLUDES,
 ] as const;
 
 /**
- * AI picks cron scans NBL + tennis (must keep those), but cwd tracing packs the full NBL cache (~214MB).
+ * Combined props / AFL odds refresh: need AFL + tennis runtime + NBL prop lines/logs,
+ * but not the full NBL cache (engine-picks alone is ~102MB).
+ */
+const COMBINED_PROPS_CWD_TRACE = [
+  ...AFL_PROPS_CWD_TRACE,
+  ...AFL_ODDS_REFRESH_TRACE,
+  ...TENNIS_RUNTIME_DATA,
+  './data/tennis/tournament-surfaces.json',
+  './data/nbl-roster-*.json',
+  './data/nbl-league-player-stats-*.json',
+  './data/nbl-model/cache/player-prop-lines/**/*',
+  './data/nbl-model/cache/player-props-list.json',
+  './data/nbl-model/cache/player-logs/**/*',
+] as const;
+const COMBINED_PROPS_CWD_EXCLUDES = [
+  ...NBL_HEAVY_UNUSED_EXCLUDES,
+  ...DATA_JUNK_EXCLUDES,
+] as const;
+
+/**
+ * AI picks cron scans NBL + tennis (must keep those), but cwd tracing packs the full NBL cache.
  * Keep logs/pbp/shot-charts/lineups; drop engine-picks + prop-line archives.
  */
 const AI_PICKS_RUN_TRACE = [
@@ -80,14 +124,89 @@ const AI_PICKS_RUN_EXCLUDES = [
   './data/nbl-model/cache/assist-defense/**/*',
   './data/nbl-model/cache/period-scores/**/*',
   './data/nbl-model/cache/player-props-list.json',
-  './data/tennis/api-tennis/**/*',
-  './data/tennis/rank-raw/**/*',
-  './data/tennis/surface-raw/**/*',
-  './data/soccer*/**/*',
-  './data/soccerway-*.json',
-  './data/rotogrinders-*.html',
-  './data/sportsline-*.json',
-  './data/player_positions/**/*',
+  ...DATA_JUNK_EXCLUDES,
+] as const;
+
+/** NBL props/odds: need lines + logs; drop engine-picks and chart/pbp archives. */
+const NBL_PROPS_CWD_TRACE = [
+  './data/nbl-roster-*.json',
+  './data/nbl-league-player-stats-*.json',
+  './data/nbl-schedule-*.json',
+  './data/nbl-model/cache/player-prop-lines/**/*',
+  './data/nbl-model/cache/player-props-list.json',
+  './data/nbl-model/cache/player-logs/**/*',
+] as const;
+const NBL_PROPS_CWD_EXCLUDES = [
+  './data/nbl-model/cache/engine-picks/**/*',
+  './data/nbl-model/cache/player-prop-history/**/*',
+  './data/nbl-model/cache/game-odds-history/**/*',
+  './data/nbl-model/cache/shot-charts/**/*',
+  './data/nbl-model/cache/shot-chart-players/**/*',
+  './data/nbl-model/cache/shot-chart-defense/**/*',
+  './data/nbl-model/cache/shot-chart-manifest-*.json',
+  './data/nbl-model/cache/assist-shots/**/*',
+  './data/nbl-model/cache/assist-chart-players/**/*',
+  './data/nbl-model/cache/assist-defense/**/*',
+  './data/nbl-model/cache/period-scores/**/*',
+  './data/nbl-model/cache/pbp/**/*',
+  './data/nbl-model/cache/pbp-chem/**/*',
+  './data/nbl-model/cache/lineups/**/*',
+  './data/tennis/**/*',
+  ...DATA_JUNK_EXCLUDES,
+] as const;
+
+const NBL_LINE_MOVEMENT_TRACE = [
+  ...NBL_PROPS_CWD_TRACE,
+  './data/nbl-model/cache/player-prop-history/**/*',
+] as const;
+const NBL_LINE_MOVEMENT_EXCLUDES = [
+  './data/nbl-model/cache/engine-picks/**/*',
+  './data/nbl-model/cache/game-odds-history/**/*',
+  './data/nbl-model/cache/shot-charts/**/*',
+  './data/nbl-model/cache/shot-chart-players/**/*',
+  './data/nbl-model/cache/shot-chart-defense/**/*',
+  './data/nbl-model/cache/shot-chart-manifest-*.json',
+  './data/nbl-model/cache/assist-shots/**/*',
+  './data/nbl-model/cache/assist-chart-players/**/*',
+  './data/nbl-model/cache/assist-defense/**/*',
+  './data/nbl-model/cache/period-scores/**/*',
+  './data/nbl-model/cache/pbp/**/*',
+  './data/nbl-model/cache/pbp-chem/**/*',
+  './data/nbl-model/cache/lineups/**/*',
+  './data/tennis/**/*',
+  ...DATA_JUNK_EXCLUDES,
+] as const;
+
+/** Drop prop-line archives from analytics routes that only need logs/charts. */
+const NBL_ANALYTICS_EXCLUDES = [
+  './data/nbl-model/cache/engine-picks/**/*',
+  './data/nbl-model/cache/player-prop-lines/**/*',
+  './data/nbl-model/cache/player-prop-history/**/*',
+  './data/nbl-model/cache/game-odds-history/**/*',
+  './data/nbl-model/cache/player-props-list.json',
+  './data/tennis/**/*',
+  ...DATA_JUNK_EXCLUDES,
+] as const;
+
+const NBL_ENGINE_TRACE = [
+  './data/nbl-roster-*.json',
+  './data/nbl-model/cache/engine-picks/**/*',
+  './data/nbl-model/cache/player-logs/**/*',
+] as const;
+const NBL_ENGINE_EXCLUDES = [
+  './data/nbl-model/cache/player-prop-lines/**/*',
+  './data/nbl-model/cache/player-prop-history/**/*',
+  './data/nbl-model/cache/game-odds-history/**/*',
+  './data/nbl-model/cache/player-props-list.json',
+  './data/nbl-model/cache/shot-charts/**/*',
+  './data/nbl-model/cache/shot-chart-players/**/*',
+  './data/nbl-model/cache/shot-chart-defense/**/*',
+  './data/nbl-model/cache/assist-shots/**/*',
+  './data/nbl-model/cache/assist-chart-players/**/*',
+  './data/nbl-model/cache/assist-defense/**/*',
+  './data/nbl-model/cache/period-scores/**/*',
+  './data/tennis/**/*',
+  ...DATA_JUNK_EXCLUDES,
 ] as const;
 
 const NBL_SCHEDULE_TRACE = ['./data/nbl-schedule-*.json', './data/nbl-roster-*.json'] as const;
@@ -124,6 +243,75 @@ const NBL_STATS_TRACE = [
   './data/nbl-league-player-stats-*.json',
   './data/nbl-next-matches*.json',
   './data/nbl-player-game-logs-index-*.json',
+] as const;
+
+/** Register both `/api/foo` and `/api/foo/route` keys (Vercel / Next disagree on which NFT uses). */
+function routeTrace(
+  paths: readonly string[],
+  files: readonly string[]
+): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const p of paths) {
+    out[p] = [...files];
+    out[`${p}/route`] = [...files];
+  }
+  return out;
+}
+
+const AFL_PROPS_ROUTES = [
+  '/api/afl/player-props/list',
+  '/api/afl/props-stats/warm',
+  '/api/afl/props-stats/batch',
+  '/api/afl/props-stats/clear',
+  '/api/afl/player-props',
+  '/api/afl/player-props/refresh',
+  '/api/afl/players',
+  '/api/afl/next-game',
+  '/api/afl/dfs-role',
+  '/api/afl/dvp',
+  '/api/afl/dvp/batch',
+  '/api/afl/league-player-stats',
+  '/api/afl/footywire-lineup',
+  '/api/afl/team-roster',
+  '/api/afl/team-rankings',
+  '/api/afl/team-game-logs',
+  '/api/afl/role-leaders',
+  '/api/afl/player-portraits',
+  '/api/afl/cron/league-player-stats',
+] as const;
+
+const COMBINED_PROPS_ROUTES = [
+  '/api/cron/refresh-combined-props',
+  '/api/afl/odds/refresh',
+  '/api/props/combined',
+] as const;
+
+const NBL_PROPS_ROUTES = [
+  '/api/nbl/player-props/list',
+  '/api/nbl/player-props',
+  '/api/nbl/odds',
+  '/api/nbl/odds/refresh',
+  '/api/cron/refresh-nbl-odds',
+] as const;
+
+const NBL_ANALYTICS_ROUTES = [
+  '/api/nbl/lineups',
+  '/api/nbl/predicted-starters',
+  '/api/nbl/player-game-logs',
+  '/api/nbl/shot-chart',
+  '/api/nbl/team-game-logs',
+  '/api/nbl/play-types',
+  '/api/nbl/player-ratings',
+  '/api/nbl/chemistry',
+  '/api/nbl/team-usage',
+  '/api/nbl/team-ste-stats',
+  '/api/nbl/team-ratings',
+  '/api/nbl/similar-players',
+  '/api/nbl/ladder',
+  '/api/nbl/schedule',
+  '/api/nbl/league-player-stats',
+  '/api/nbl/next-game',
+  '/api/nbl/players',
 ] as const;
 
 const nextConfig: NextConfig = {
@@ -184,16 +372,9 @@ const nextConfig: NextConfig = {
     '/api/nbl/next-game/route': [...NBL_STATS_TRACE],
     '/api/nbl/players': [...NBL_STATS_TRACE],
     '/api/nbl/players/route': [...NBL_STATS_TRACE],
-    '/api/nbl/player-props/list': [
-      ...NBL_PLAYER_LOG_TRACE,
-      './data/nbl-model/cache/player-prop-lines/**/*',
-      './data/nbl-model/cache/player-props-list.json',
-    ],
-    '/api/nbl/player-props/list/route': [
-      ...NBL_PLAYER_LOG_TRACE,
-      './data/nbl-model/cache/player-prop-lines/**/*',
-      './data/nbl-model/cache/player-props-list.json',
-    ],
+    ...routeTrace(NBL_PROPS_ROUTES, NBL_PROPS_CWD_TRACE),
+    ...routeTrace(['/api/nbl/line-movement'], NBL_LINE_MOVEMENT_TRACE),
+    ...routeTrace(['/api/nbl/model', '/api/nbl/ask'], NBL_ENGINE_TRACE),
     '/api/tennis/matches': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/matches/route': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/player-matchup': [...TENNIS_RUNTIME_DATA],
@@ -208,14 +389,8 @@ const nextConfig: NextConfig = {
     '/api/tennis/player-props/list/route': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/headshot/[id]': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/headshot/[id]/route': [...TENNIS_RUNTIME_DATA],
-    '/api/props/combined': [...TENNIS_RUNTIME_DATA],
-    '/api/props/combined/route': [...TENNIS_RUNTIME_DATA],
-    '/api/afl/odds/refresh': [...AFL_ODDS_REFRESH_TRACE],
-    '/api/afl/odds/refresh/route': [...AFL_ODDS_REFRESH_TRACE],
-    '/api/afl/player-props/list': [...AFL_PROPS_CWD_TRACE],
-    '/api/afl/player-props/list/route': [...AFL_PROPS_CWD_TRACE],
-    '/api/afl/props-stats/warm': [...AFL_PROPS_CWD_TRACE],
-    '/api/afl/props-stats/warm/route': [...AFL_PROPS_CWD_TRACE],
+    ...routeTrace(COMBINED_PROPS_ROUTES, COMBINED_PROPS_CWD_TRACE),
+    ...routeTrace(AFL_PROPS_ROUTES, AFL_PROPS_CWD_TRACE),
     '/api/cron/ai-picks-run': [...AI_PICKS_RUN_TRACE],
     '/api/cron/ai-picks-run/route': [...AI_PICKS_RUN_TRACE],
     '/api/afl/cron/league-player-stats': [
@@ -262,13 +437,17 @@ const nextConfig: NextConfig = {
       './data/sportsline-*.html',
       './nbl-engine/**/*',
       './tsconfig.tsbuildinfo',
+      // Local-only tennis scrapes (~580MB). Never needed in serverless functions.
+      './data/tennis/rank-raw/**/*',
+      './data/tennis/surface-raw/**/*',
+      './data/tennis/api-tennis/cache.json',
     ],
-    '/api/afl/odds/refresh': [...AFL_ODDS_REFRESH_EXCLUDES],
-    '/api/afl/odds/refresh/route': [...AFL_ODDS_REFRESH_EXCLUDES],
-    '/api/afl/player-props/list': [...AFL_PROPS_CWD_EXCLUDES],
-    '/api/afl/player-props/list/route': [...AFL_PROPS_CWD_EXCLUDES],
-    '/api/afl/props-stats/warm': [...AFL_PROPS_CWD_EXCLUDES],
-    '/api/afl/props-stats/warm/route': [...AFL_PROPS_CWD_EXCLUDES],
+    ...routeTrace(AFL_PROPS_ROUTES, AFL_PROPS_CWD_EXCLUDES),
+    ...routeTrace(COMBINED_PROPS_ROUTES, COMBINED_PROPS_CWD_EXCLUDES),
+    ...routeTrace(NBL_PROPS_ROUTES, NBL_PROPS_CWD_EXCLUDES),
+    ...routeTrace(['/api/nbl/line-movement'], NBL_LINE_MOVEMENT_EXCLUDES),
+    ...routeTrace(['/api/nbl/model', '/api/nbl/ask'], NBL_ENGINE_EXCLUDES),
+    ...routeTrace(NBL_ANALYTICS_ROUTES, NBL_ANALYTICS_EXCLUDES),
     '/api/cron/ai-picks-run': [...AI_PICKS_RUN_EXCLUDES],
     '/api/cron/ai-picks-run/route': [...AI_PICKS_RUN_EXCLUDES],
   },
