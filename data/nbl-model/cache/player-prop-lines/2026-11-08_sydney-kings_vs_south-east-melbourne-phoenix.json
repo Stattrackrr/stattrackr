@@ -4,7 +4,7 @@
   "homeTeam": "Sydney Kings",
   "awayTeam": "South East Melbourne Phoenix",
   "commenceTime": "2026-11-08T04:00:00.000Z",
-  "capturedAt": "2026-11-06T21:38:43.806Z",
+  "capturedAt": "2026-11-07T02:02:50.386Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -17,7 +17,7 @@
     "Picklebet",
     "BetMGM"
   ],
-  "lineCount": 1726,
+  "lineCount": 1727,
   "lines": [
     {
       "player": "Andrew Carr",
@@ -22455,6 +22455,19 @@
       "over": "+1000",
       "under": "N/A",
       "overDecimal": 11,
+      "underDecimal": null
+    },
+    {
+      "player": "Torrey Craig",
+      "playerKey": "torrey craig",
+      "book": "Betr",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 29.5,
+      "label": "30+",
+      "over": "+650",
+      "under": "N/A",
+      "overDecimal": 7.5,
       "underDecimal": null
     }
   ]
