@@ -6,7 +6,7 @@
 
 import { alternateBooks } from '@/lib/aiPicks/books';
 import { scanAiCandidates, type CandidateScan } from '@/lib/aiPicks/candidates';
-import { fetchLiveNbaGames, repriceNbaCandidate, type NbaLiveGame } from '@/lib/aiPicks/candidates/nbaLive';
+import { fetchLiveNbaGames, keepNbaAfterLivePull, repriceNbaCandidate, type NbaLiveGame } from '@/lib/aiPicks/candidates/nbaLive';
 import { NBA_LIVE_INJURY_LEAD_MS } from '@/lib/aiPicks/candidates/nbaScan';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
 import { closingIndex, closingPrice } from '@/lib/aiPicks/closing';
@@ -67,8 +67,8 @@ import {
 
 /** An NBL props board (or the NBA odds board) older than this is not trusted for posting. */
 const MAX_BOARD_AGE_MS = 45 * 60 * 1000;
-/** NBA AU prices are pulled every 25 minutes; three missed pulls and they are stale. */
-const MAX_NBA_AU_AGE_MS = 75 * 60 * 1000;
+/** NBA AU prices are pulled every 15 minutes; three missed pulls and they are stale. */
+const MAX_NBA_AU_AGE_MS = 45 * 60 * 1000;
 /** The scan pulls the injury report live within 3h of tip; older than this means that pull failed. */
 const MAX_NBA_INJURY_AGE_MS = 45 * 60 * 1000;
 /** Leg prices are recorded from this long before the start; each scan overwrites, so the last one is the close. */
@@ -301,7 +301,7 @@ const LIVE_PRICE_ROUNDS = 3;
 /**
  * Selection on live prices: NBA games behind the chosen picks are pulled fresh and their candidates
  * repriced, then selection reruns, since a price that moved can change what posts. A game the pull
- * couldn't find keeps the board's prices.
+ * couldn't find is dropped — board prices are never posted for NBA.
  */
 async function chooseLivePriced(
   watched: Watched[],
@@ -340,9 +340,13 @@ async function chooseLivePriced(
     }
     for (const id of games.keys()) checked.add(id);
     list = list.flatMap((w) => {
+      if (!keepNbaAfterLivePull(w.c.sport, live.has(w.c.eventKey))) {
+        if (proposed.has(w.c.key)) (summary.priceMoves ??= []).push(`${pickTitle([w.c])}: live prices unavailable`);
+        return [];
+      }
       const game = w.c.sport === 'nba' ? live.get(w.c.eventKey) : undefined;
       if (!game) return [w];
-      const next = repriceNbaCandidate(w.c, game, sportParams(params, 'nba'));
+      const next = repriceNbaCandidate(w.c, game, sportParams(params, 'nba'), nowMs);
       if (proposed.has(w.c.key) && (!next || next.bestPrice !== w.c.bestPrice || next.bestBook !== w.c.bestBook)) {
         const title = pickTitle([w.c]);
         (summary.priceMoves ??= []).push(

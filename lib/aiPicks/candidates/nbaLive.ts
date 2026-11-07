@@ -1,7 +1,7 @@
 /**
- * The AU prices on the NBA board refresh every 25 minutes (9 near tip), so a soft book's price can
- * be gone by the time a pick posts. Before a pick goes up, its game is pulled fresh from
- * odds-api.net and the candidate repriced from that pull.
+ * The AU prices on the NBA board refresh every 15 minutes (faster near tip), so a soft book's price
+ * can be gone by the time a pick posts. Before a pick goes up, its game is pulled fresh from
+ * odds-api.net and the candidate repriced from that pull. Board prices are never posted.
  */
 
 import { isNbaAchievementMarket } from '@/lib/aiPicks/markets';
@@ -16,11 +16,44 @@ import { normalizeNbaPropPlayerName } from '@/lib/nba/dash/odds';
 import { fetchNbaOddsNetProps, isNbaOddsNetBook, isNbaOddsNetGameBook } from '@/lib/nba/dash/oddsApiNet';
 import type { NbaBookRow, NbaGameOdds, NbaPlayerPropsByBook } from '@/lib/nba/dash/oddsTypes';
 
-export type NbaLiveGame = { props: NbaPlayerPropsByBook; lines: NbaBookRow[] };
+/** Posted book's odds-api.net as_of must be this fresh, or the quote is dropped. */
+export const MAX_LIVE_BOOK_AGE_MS = 20 * 60 * 1000;
+
+export type NbaLiveGame = {
+  props: NbaPlayerPropsByBook;
+  lines: NbaBookRow[];
+  /** odds-api.net bookmaker_as_of per stored book name. */
+  bookTimes: Record<string, string>;
+};
 
 /** Books whose NBA prices come from odds-api.net (the ones the live pull can confirm). */
 export function isLiveCheckedBook(book: string): boolean {
   return isNbaOddsNetBook(book) || isNbaOddsNetGameBook(book);
+}
+
+/** Missing as_of is treated as fresh (feed sometimes omits a book); a parsed old stamp is not. */
+export function isFreshBook(asOf: string | null | undefined, nowMs: number, maxAgeMs = MAX_LIVE_BOOK_AGE_MS): boolean {
+  if (asOf == null || asOf === '') return true;
+  const t = Date.parse(asOf);
+  if (!Number.isFinite(t)) return true;
+  return nowMs - t <= maxAgeMs;
+}
+
+/** NBA must have a successful live pull; other sports keep scan prices. */
+export function keepNbaAfterLivePull(sport: string, liveHit: boolean): boolean {
+  return sport !== 'nba' || liveHit;
+}
+
+function bookTimeLookup(bookTimes: Record<string, string> | undefined, book: string): string | undefined {
+  if (!bookTimes) return undefined;
+  const raw = book.toLowerCase().trim();
+  if (bookTimes[raw]) return bookTimes[raw];
+  const compact = raw.replace(/[^a-z0-9]/g, '');
+  for (const [key, iso] of Object.entries(bookTimes)) {
+    const k = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (k === compact || k === `${compact}au` || `${k}au` === compact) return iso;
+  }
+  return undefined;
 }
 
 /** This selection's prices in a fresh pull; empty when the books no longer offer it. */
@@ -62,10 +95,13 @@ export function liveNbaQuotes(c: AiCandidate, live: NbaLiveGame): CandidateQuote
 
 /**
  * The candidate at the live prices: the odds-api.net books' quotes are swapped for the fresh ones
- * (a book that dropped the line drops out), others are kept. Null when no Australian book is left.
+ * (a book that dropped the line or has a stale as_of drops out). Null when no fresh Australian book is left.
  */
-export function repriceNbaCandidate(c: AiCandidate, live: NbaLiveGame, params: AiSportParams): AiCandidate | null {
-  const fresh = liveNbaQuotes(c, live).filter((q) => isAussieBook(q.book));
+export function repriceNbaCandidate(c: AiCandidate, live: NbaLiveGame, params: AiSportParams, nowMs = Date.now()): AiCandidate | null {
+  const fresh = liveNbaQuotes(c, live).filter((q) => {
+    if (!isAussieBook(q.book)) return false;
+    return isFreshBook(bookTimeLookup(live.bookTimes, q.book), nowMs);
+  });
   const quotes = [...c.quotes.filter((q) => !isLiveCheckedBook(q.book)), ...fresh];
   const picked = bettableQuote(quotes);
   if (!picked) return null;
@@ -104,7 +140,11 @@ export async function fetchLiveNbaGames(
   for (const g of games) {
     const props = res.props.get(g.gameId);
     if (res.failed.has(g.gameId) || !props || !Object.keys(props).length) continue;
-    live.set(g.gameId, { props, lines: res.gameLines.get(g.gameId) ?? [] });
+    live.set(g.gameId, {
+      props,
+      lines: res.gameLines.get(g.gameId) ?? [],
+      bookTimes: res.bookTimes.get(g.gameId) ?? {},
+    });
   }
   return { live, requests: res.requests };
 }

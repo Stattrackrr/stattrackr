@@ -20,11 +20,11 @@ const DAYS_AHEAD = 6;
 const PROPS_WINDOW_MS = (DAYS_AHEAD + 1) * 24 * 60 * 60 * 1000;
 /**
  * odds-api.net costs 1 credit per request (250k/month on Starter, shared with NBL): the soonest
- * games every 25 minutes, the day's slate every run inside 6 hours of tip, and the last 90 minutes
- * every 3 minutes (refreshNbaNearTipOdds). About 60k a month for NBA.
+ * games every 15 minutes, the day's slate every run inside 6 hours of tip, and the last 90 minutes
+ * every 3 minutes (refreshNbaNearTipOdds).
  */
 const ODDS_NET_MAX_GAMES = 15;
-const ODDS_NET_MIN_INTERVAL_MS = 25 * 60 * 1000;
+const ODDS_NET_MIN_INTERVAL_MS = 15 * 60 * 1000;
 /** Games inside this of tip are pulled every cron run (10 minutes; a little under so jitter never skips one). */
 const ODDS_NET_NEAR_TIP_MS = 6 * 60 * 60 * 1000;
 const ODDS_NET_NEAR_INTERVAL_MS = 9 * 60 * 1000;

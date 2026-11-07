@@ -9,7 +9,14 @@ import {
   resolveNbaBoardName,
   saneSpreads,
 } from './candidates/nba';
-import { liveNbaQuotes, repriceNbaCandidate, type NbaLiveGame } from './candidates/nbaLive';
+import {
+  isFreshBook,
+  keepNbaAfterLivePull,
+  liveNbaQuotes,
+  MAX_LIVE_BOOK_AGE_MS,
+  repriceNbaCandidate,
+  type NbaLiveGame,
+} from './candidates/nbaLive';
 import { cleanLadder, isNormalLine, mainLineFlags, propSelections } from './candidates/nbl';
 import { postable } from './params';
 import type { NblSnapLine } from '@/lib/nbl/playerPropSnapshots';
@@ -728,7 +735,7 @@ test('live price check: a soft price that moved is repriced from the fresh pull,
     sportsbet: { 'D White': { PTS: [{ line: '15.5', over: '-110', under: '-120' }] } },
     ladbrokes: { 'Derrick Jones': { PTS: [{ line: '15.5', over: '-110', under: '+150' }] } },
   };
-  const live: NbaLiveGame = { props, lines: [] };
+  const live: NbaLiveGame = { props, lines: [], bookTimes: {} };
   assert.deepEqual(liveNbaQuotes(white, live), [
     { book: 'dabble', price: 1.88 },
     { book: 'tab', price: 1.87 },
@@ -750,9 +757,64 @@ test('live price check: a soft price that moved is repriced from the fresh pull,
     { name: 'Sportsbet', H2H: { home: '-150', away: '+130' }, Spread: { line: '-3.5', over: '-110', under: '-110' }, Total: { line: '221.5', over: '-105', under: '-115' } } as NbaBookRow,
   ];
   const total = cand({ player: null, playerId: null, team: null, market: 'total', side: 'under', line: 221.5, bestBook: 'Sportsbet', bestPrice: 1.95, quotes: [{ book: 'Sportsbet', price: 1.95 }], context: {} });
-  assert.deepEqual(liveNbaQuotes(total, { props: {}, lines }), [{ book: 'Sportsbet', price: 1.87 }]);
+  assert.deepEqual(liveNbaQuotes(total, { props: {}, lines, bookTimes: {} }), [{ book: 'Sportsbet', price: 1.87 }]);
   const away = cand({ player: null, playerId: null, team: 'Boston Celtics', market: 'spread', side: 'away', line: 3.5, context: {} });
-  assert.deepEqual(liveNbaQuotes(away, { props: {}, lines }), [{ book: 'Sportsbet', price: 1.91 }]);
+  assert.deepEqual(liveNbaQuotes(away, { props: {}, lines, bookTimes: {} }), [{ book: 'Sportsbet', price: 1.91 }]);
+});
+
+test('live price check: stale book as_of is dropped; missing live pull never keeps board prices', () => {
+  const now = Date.parse('2026-11-07T14:10:00.000Z');
+  assert.equal(isFreshBook(new Date(now - 5 * 60_000).toISOString(), now), true);
+  assert.equal(isFreshBook(new Date(now - MAX_LIVE_BOOK_AGE_MS - 1).toISOString(), now), false);
+  assert.equal(isFreshBook(undefined, now), true, 'missing as_of is allowed');
+  assert.equal(keepNbaAfterLivePull('nba', false), false);
+  assert.equal(keepNbaAfterLivePull('nba', true), true);
+  assert.equal(keepNbaAfterLivePull('nbl', false), true);
+
+  const white = cand({
+    player: 'Derrick White',
+    playerId: '473',
+    side: 'under',
+    line: 15.5,
+    bestBook: 'dabble',
+    bestPrice: 1.95,
+    quotes: [
+      { book: 'dabble', price: 1.95 },
+      { book: 'tab', price: 1.87 },
+      { book: 'sportsbet', price: 1.8 },
+    ],
+    prob: 0.532,
+    ev: 0.037,
+    context: { boardNames: ['Derrick White'] },
+  });
+  const props = {
+    dabble: { 'Derrick White': { PTS: [{ line: '15.5', over: '-118', under: '-105' }] } },
+    tab: { 'Derrick White': { PTS: [{ line: '15.5', over: '-110', under: '-115' }] } },
+    sportsbet: { 'Derrick White': { PTS: [{ line: '15.5', over: '-110', under: '+100' }] } },
+  };
+  const staleSportsbet: NbaLiveGame = {
+    props,
+    lines: [],
+    bookTimes: {
+      dabble: new Date(now - 5 * 60_000).toISOString(),
+      tab: new Date(now - 5 * 60_000).toISOString(),
+      sportsbet: new Date(now - 6 * 60 * 60_000).toISOString(),
+    },
+  };
+  const next = repriceNbaCandidate(white, staleSportsbet, P.nba, now)!;
+  assert.ok(!next.quotes.some((q) => q.book === 'sportsbet'), 'stale Sportsbet quote excluded');
+  assert.notEqual(next.bestBook, 'sportsbet');
+
+  const allStale: NbaLiveGame = {
+    props,
+    lines: [],
+    bookTimes: {
+      dabble: new Date(now - 6 * 60 * 60_000).toISOString(),
+      tab: new Date(now - 6 * 60 * 60_000).toISOString(),
+      sportsbet: new Date(now - 6 * 60 * 60_000).toISOString(),
+    },
+  };
+  assert.equal(repriceNbaCandidate(white, allStale, P.nba, now), null, 'only stale AU books → no post');
 });
 
 test('NBA props: the model keeps its say near the market and hands over to it when far off', () => {
