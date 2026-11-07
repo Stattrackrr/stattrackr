@@ -5,11 +5,11 @@
 
 import { DEFAULT_DEVIG, devigTwoWay } from '@/lib/tennis/log/devig';
 
-/** Implied stake split for a $100 two-way arb; null when not an arb. */
+/** Implied stake split for a $1000 two-way arb; null when not an arb. */
 export function arbStakes(
   oddsA: number,
   oddsB: number,
-  bankroll = 100
+  bankroll = 1000
 ): { stakeA: number; stakeB: number; profit: number; roi: number } | null {
   if (!(oddsA > 1 && oddsB > 1)) return null;
   const inv = 1 / oddsA + 1 / oddsB;

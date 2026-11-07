@@ -251,7 +251,7 @@ function scanEventOpportunities(
     const softA = bestSoft(byOutcome.get(oA)!);
     const softB = bestSoft(byOutcome.get(oB)!);
     if (softA && softB && softA.book !== softB.book) {
-      const stakes = arbStakes(softA.odds, softB.odds, 100);
+      const stakes = arbStakes(softA.odds, softB.odds, 1000);
       if (stakes && stakes.roi >= MIN_ARB_ROI && saneTwoWay(softA.odds, softB.odds) && freshEnough(asOf, [softA.book, softB.book], now)) {
         arb.push({
           id: marketId(event.sport, event.eventId, key, 'arb', `${softA.book}-${softB.book}`),

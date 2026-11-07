@@ -48,7 +48,7 @@ export type BonusPayload = {
 };
 
 export function opportunitiesCacheKey(sports: ToolsSport[]): string {
-  return `opp:v31:${[...sports].sort().join(',')}`;
+  return `opp:v32:${[...sports].sort().join(',')}`;
 }
 
 type StoredOpportunities = { at: number; payload: OpportunitiesPayload };

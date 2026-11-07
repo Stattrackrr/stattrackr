@@ -733,7 +733,7 @@ function cardStats(op: ToolsOpportunity): { label: string; value: string }[] {
   }
   if (op.kind === 'arb') {
     // Use edge (equalised ROI) so Profit matches the locked % — not rounded leg stakes.
-    const stakeTotal = op.legs.reduce((s, l) => s + (l.stake ?? 0), 0) || 100;
+    const stakeTotal = op.legs.reduce((s, l) => s + (l.stake ?? 0), 0) || 1000;
     const profit = Math.max(0, op.edge * stakeTotal);
     return [
       { label: 'Profit', value: `$${profit.toFixed(2)}` },
