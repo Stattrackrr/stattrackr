@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T20:02:19.695Z",
+  "generatedAt": "2026-11-07T18:03:53.116Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
@@ -30,6 +30,15 @@
       "injury": "ACL",
       "returning": "TBC",
       "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "Adelaide 36ers",
+      "player": "Mangok Mathiang",
+      "injury": "Personal reasons",
+      "returning": "Round 9",
+      "status": "Out",
+      "note": "Out of the game against the Illawarra Hawks on Saturday 7 November 2026 for personal reasons, the club confirmed (reported by Fox Sports). The 36ers say he will return to the club next week, which points to Thursday 12 November against Melbourne United, Adelaide’s next game.",
       "listedByNbl": true
     },
     {
@@ -189,15 +198,6 @@
       "injury": "ACL",
       "returning": "Season",
       "status": "Out for the season",
-      "listedByNbl": true
-    },
-    {
-      "team": "Tasmania JackJumpers",
-      "player": "Ben Ayre",
-      "injury": "Hip flexor",
-      "returning": "Round 9",
-      "status": "Out",
-      "note": "WIN News Tasmania’s Brent Costelloe reported from the JackJumpers press conference on Wednesday 17 September that Ayre was \"still a few weeks away from returning\". He has not played in NBL27 and missed both Round 7 games. The NBL’s latest list still has him back in Round 9.",
       "listedByNbl": true
     },
     {

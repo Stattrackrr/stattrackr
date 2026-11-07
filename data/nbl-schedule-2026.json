@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-06T19:57:23.550Z",
+  "generatedAt": "2026-11-07T18:02:47.902Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2062,7 +2062,7 @@
       "externalId": "3723d03c-58ad-11f1-9032-15ea51636534",
       "startTime": "2026-11-07T08:30:00.000Z",
       "round": "8",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Melbourne United",
       "homeTeamCode": "MEL",
       "homeTeamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
@@ -2071,8 +2071,8 @@
       "awayTeamCode": "BRI",
       "awayTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 120,
+      "awayScore": 92,
       "venue": "John Cain Arena",
       "matchSlug": "melbourne-united-v-brisbane-bullets-men-07-11-2026"
     },
@@ -2081,7 +2081,7 @@
       "externalId": "37256511-58ad-11f1-b841-b5c487635207",
       "startTime": "2026-11-07T06:30:00.000Z",
       "round": "8",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Adelaide 36ers",
       "homeTeamCode": "ADL",
       "homeTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
@@ -2090,8 +2090,8 @@
       "awayTeamCode": "ILL",
       "awayTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 106,
+      "awayScore": 78,
       "venue": "Adelaide Entertainment Centre",
       "matchSlug": "adelaide-36ers-v-illawarra-hawks-men-07-11-2026"
     },
@@ -2207,7 +2207,7 @@
       "homeScore": 89,
       "awayScore": 98,
       "venue": "John Cain Arena",
-      "matchSlug": "south-east-melbourne-phoenix-v-tasmania-jackjumpers-men-01-11-2026"
+      "matchSlug": "bf90ae8e-410c-11f0-adfd-1b3c55488bbb374fd3d1-58ad-11f1-945e-cbcb1725dbfe-v-tasmania-jackjumpers-men-01-11-2026"
     },
     {
       "id": "37214b47-58ad-11f1-9b38-e78395b5c13c",

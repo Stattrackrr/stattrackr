@@ -4,7 +4,7 @@
   "homeTeam": "Sydney Kings",
   "awayTeam": "South East Melbourne Phoenix",
   "commenceTime": "2026-11-08T04:00:00.000Z",
-  "capturedAt": "2026-11-07T16:33:02.768Z",
+  "capturedAt": "2026-11-07T18:04:31.523Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -19,7 +19,7 @@
     "Betrivers",
     "Ballybet"
   ],
-  "lineCount": 2059,
+  "lineCount": 2060,
   "lines": [
     {
       "player": "Andrew Carr",
@@ -26786,6 +26786,19 @@
       "over": "+138",
       "under": "N/A",
       "overDecimal": 2.38,
+      "underDecimal": null
+    },
+    {
+      "player": "Xavier Cooks",
+      "playerKey": "xavier cooks",
+      "book": "Picklebet",
+      "stat": "pa",
+      "kind": "milestone",
+      "line": 21.5,
+      "label": "22+",
+      "over": "+210",
+      "under": "N/A",
+      "overDecimal": 3.1,
       "underDecimal": null
     }
   ]

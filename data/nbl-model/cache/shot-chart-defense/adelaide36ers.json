@@ -4,7 +4,7 @@
   "years": [
     2026
   ],
-  "gamesUsed": 11,
+  "gamesUsed": 12,
   "fixturesFetched": 0,
   "fixturesCached": 11,
   "shotCount": 784,
@@ -120,14 +120,14 @@
       "teamsCompared": 10
     }
   ],
-  "pointsAllowed": 1031,
+  "pointsAllowed": 1109,
   "ftDefense": {
-    "ftm": 130,
-    "fta": 170,
-    "ftPct": 76.47058823529412,
-    "games": 11,
+    "ftm": 141,
+    "fta": 186,
+    "ftPct": 75.80645161290323,
+    "games": 12,
     "rank": 8,
     "teamsCompared": 10
   },
-  "generatedAt": "2026-11-06T20:02:49.928Z"
+  "generatedAt": "2026-11-07T18:03:54.187Z"
 }
