@@ -527,6 +527,105 @@ function getConsensusImpliedProbabilities(
   return { overProb, underProb };
 }
 
+type ColumnSortDir = 'none' | 'asc' | 'desc';
+type ColumnSortMap = Record<string, ColumnSortDir>;
+
+const EMPTY_COLUMN_SORT: ColumnSortMap = {
+  dvp: 'none',
+  l5: 'none',
+  l10: 'none',
+  h2h: 'none',
+  season: 'none',
+  streak: 'none',
+  ip: 'none',
+};
+
+function hitRatePercent(hitRate?: { hits: number; total: number } | null): number | null {
+  return hitRate && hitRate.total > 0 ? (hitRate.hits / hitRate.total) * 100 : null;
+}
+
+/** Compare two props for one sort column. asc = "best first" for that metric. */
+function comparePropsBySortColumn(
+  a: PlayerProp,
+  b: PlayerProp,
+  column: string,
+  direction: 'asc' | 'desc'
+): number {
+  let aVal: number | null = null;
+  let bVal: number | null = null;
+
+  if (column === 'dvp') {
+    aVal = a.dvpRating ?? null;
+    bVal = b.dvpRating ?? null;
+    if (aVal === null && bVal === null) return 0;
+    if (aVal === null) return 1;
+    if (bVal === null) return -1;
+    // First click (asc) = easiest/best DvP first (higher rank number first in existing UX).
+    return direction === 'asc' ? bVal - aVal : aVal - bVal;
+  }
+  if (column === 'l5') {
+    aVal = hitRatePercent(a.last5HitRate);
+    bVal = hitRatePercent(b.last5HitRate);
+  } else if (column === 'l10') {
+    aVal = hitRatePercent(a.last10HitRate);
+    bVal = hitRatePercent(b.last10HitRate);
+  } else if (column === 'h2h') {
+    aVal = hitRatePercent(a.h2hHitRate);
+    bVal = hitRatePercent(b.h2hHitRate);
+  } else if (column === 'season') {
+    aVal = hitRatePercent(a.seasonHitRate);
+    bVal = hitRatePercent(b.seasonHitRate);
+  } else if (column === 'streak') {
+    aVal = a.streak ?? null;
+    bVal = b.streak ?? null;
+  } else if (column === 'ip') {
+    aVal = getConsensusImpliedProbabilities(a).overProb;
+    bVal = getConsensusImpliedProbabilities(b).overProb;
+  }
+
+  if (aVal === null && bVal === null) return 0;
+  if (aVal === null) return 1;
+  if (bVal === null) return -1;
+  if (aVal === bVal && column === 'l10') {
+    const aL5 = hitRatePercent(a.last5HitRate) ?? -1;
+    const bL5 = hitRatePercent(b.last5HitRate) ?? -1;
+    return direction === 'asc' ? bL5 - aL5 : aL5 - bL5;
+  }
+  return direction === 'asc' ? bVal - aVal : aVal - bVal;
+}
+
+/** Active sorts in click order (primary → secondary → …). */
+function activeColumnSorts(
+  columnSort: ColumnSortMap,
+  priority: string[]
+): Array<[string, 'asc' | 'desc']> {
+  const out: Array<[string, 'asc' | 'desc']> = [];
+  for (const col of priority) {
+    const dir = columnSort[col];
+    if (dir === 'asc' || dir === 'desc') out.push([col, dir]);
+  }
+  for (const [col, dir] of Object.entries(columnSort)) {
+    if ((dir === 'asc' || dir === 'desc') && !out.some(([c]) => c === col)) out.push([col, dir]);
+  }
+  return out;
+}
+
+function sortPropsByActiveColumns<T extends PlayerProp>(
+  rows: T[],
+  columnSort: ColumnSortMap,
+  priority: string[]
+): T[] {
+  const active = activeColumnSorts(columnSort, priority);
+  if (!active.length) return rows;
+  return [...rows].sort((a, b) => {
+    for (const [column, direction] of active) {
+      const cmp = comparePropsBySortColumn(a, b, column, direction);
+      if (cmp !== 0) return cmp;
+    }
+    return 0;
+  });
+}
+
 /** AFL game from list API (for props page games filter). */
 interface AflGameForProps {
   gameId: string;
@@ -2795,32 +2894,32 @@ export default function NBALandingPage() {
       bookmakerPopupClosingRef.current = false;
     }, 450);
   };
-  // Column sorting state: column name -> 'none' | 'asc' | 'desc'
-  const [columnSort, setColumnSort] = useState<Record<string, 'none' | 'asc' | 'desc'>>({
-    dvp: 'none',
-    l5: 'none',
-    l10: 'none',
-    h2h: 'none',
-    season: 'none',
-    streak: 'none',
-    ip: 'none',
-  });
+  // Column sorting: multi-column combine only on a single-sport filter (not Combined).
+  const [columnSort, setColumnSort] = useState<ColumnSortMap>({ ...EMPTY_COLUMN_SORT });
+  const [columnSortPriority, setColumnSortPriority] = useState<string[]>([]);
   const handleColumnSort = (column: string) => {
-    setColumnSort((prev) => {
-      const current = prev[column] || 'none';
-      const next = current === 'none' ? 'asc' : current === 'asc' ? 'desc' : 'none';
-      const newSort: Record<string, 'none' | 'asc' | 'desc'> = {
-        dvp: 'none',
-        l5: 'none',
-        l10: 'none',
-        h2h: 'none',
-        season: 'none',
-        streak: 'none',
-        ip: 'none',
-      };
-      newSort[column] = next;
-      return newSort;
+    const current = columnSort[column] || 'none';
+    const next: ColumnSortDir = current === 'none' ? 'asc' : current === 'asc' ? 'desc' : 'none';
+    // Combined board stays one-at-a-time; NBA/AFL/NBL/tennis can stack sorts.
+    if (propsSport === 'combined') {
+      const cleared: ColumnSortMap = { ...EMPTY_COLUMN_SORT };
+      cleared[column] = next;
+      setColumnSort(cleared);
+      setColumnSortPriority(next === 'none' ? [] : [column]);
+      return;
+    }
+    setColumnSort((prev) => ({ ...prev, [column]: next }));
+    setColumnSortPriority((prev) => {
+      if (next === 'none') return prev.filter((c) => c !== column);
+      if (prev.includes(column)) return prev;
+      return [...prev, column];
     });
+  };
+  const columnSortRank = (column: string): number | null => {
+    if (propsSport === 'combined') return null;
+    if ((columnSort[column] || 'none') === 'none') return null;
+    const idx = columnSortPriority.indexOf(column);
+    return idx >= 0 ? idx + 1 : null;
   };
 
   // Odds format state - load from localStorage or default to 'american'
@@ -5548,6 +5647,22 @@ export default function NBALandingPage() {
   const effectiveBookmakers = isSecondaryPropsSport(propsSport) ? availableAflBookmakers : availableBookmakers;
   const effectivePropTypes = isSecondaryPropsSport(propsSport) ? availableAflPropTypes : availablePropTypes;
   const isCombinedMode = propsSport === 'combined';
+
+  // Combined is one sort at a time — drop stacked sorts when returning to it.
+  useEffect(() => {
+    if (!isCombinedMode) return;
+    setColumnSortPriority((prev) => {
+      if (prev.length <= 1) return prev;
+      const primary = prev[0]!;
+      setColumnSort((dirs) => {
+        const cleared: ColumnSortMap = { ...EMPTY_COLUMN_SORT };
+        const dir = dirs[primary];
+        if (dir === 'asc' || dir === 'desc') cleared[primary] = dir;
+        return cleared;
+      });
+      return [primary];
+    });
+  }, [isCombinedMode]);
   const isSecondaryListMode = isSecondaryPropsSport(propsSport);
   const showH2hColumn = true;
   /** Combined keeps the same desktop column count as NBA/AFL-only; sport is an inline badge on the prop cell. */
@@ -6824,8 +6939,6 @@ export default function NBALandingPage() {
   }, [playerProps, aflProps, tennisCombinedProps, nblCombinedProps, debouncedSearchQuery, getStatLabel, propsSport]);
 
   const displaySortedCombinedProps = useMemo(() => {
-    const percent = (hitRate?: { hits: number; total: number } | null) =>
-      hitRate && hitRate.total > 0 ? (hitRate.hits / hitRate.total) * 100 : null;
     const out = [...filteredCombinedProps.rows];
 
     if (propLineSort === 'high') {
@@ -6837,40 +6950,8 @@ export default function NBALandingPage() {
       return out;
     }
 
-    const activeColumnSort = Object.entries(columnSort).find(([_, dir]) => dir !== 'none');
-    if (activeColumnSort) {
-      const [column, direction] = activeColumnSort;
-      out.sort((a, b) => {
-        let aVal: number | null = null;
-        let bVal: number | null = null;
-        if (column === 'dvp') {
-          aVal = a.dvpRating ?? null;
-          bVal = b.dvpRating ?? null;
-          if (aVal === null && bVal === null) return 0;
-          if (aVal === null) return 1;
-          if (bVal === null) return -1;
-          return direction === 'asc' ? bVal - aVal : aVal - bVal;
-        }
-        if (column === 'l5') { aVal = percent(a.last5HitRate); bVal = percent(b.last5HitRate); }
-        else if (column === 'l10') { aVal = percent(a.last10HitRate); bVal = percent(b.last10HitRate); }
-        else if (column === 'h2h') { aVal = percent(a.h2hHitRate); bVal = percent(b.h2hHitRate); }
-        else if (column === 'season') { aVal = percent(a.seasonHitRate); bVal = percent(b.seasonHitRate); }
-        else if (column === 'streak') { aVal = a.streak ?? null; bVal = b.streak ?? null; }
-        else if (column === 'ip') {
-          aVal = getConsensusImpliedProbabilities(a).overProb;
-          bVal = getConsensusImpliedProbabilities(b).overProb;
-        }
-        if (aVal === null && bVal === null) return 0;
-        if (aVal === null) return 1;
-        if (bVal === null) return -1;
-        if (aVal === bVal && column === 'l10') {
-          const aL5 = percent(a.last5HitRate) ?? -1;
-          const bL5 = percent(b.last5HitRate) ?? -1;
-          return direction === 'asc' ? bL5 - aL5 : aL5 - bL5;
-        }
-        return direction === 'asc' ? bVal - aVal : aVal - bVal;
-      });
-      return out;
+    if (activeColumnSorts(columnSort, columnSortPriority).length) {
+      return sortPropsByActiveColumns(out, columnSort, columnSortPriority);
     }
 
     out.sort((a, b) => {
@@ -6879,9 +6960,9 @@ export default function NBALandingPage() {
       const aHasFullL10 = aL10Total >= 10;
       const bHasFullL10 = bL10Total >= 10;
       if (aHasFullL10 !== bHasFullL10) return aHasFullL10 ? -1 : 1;
-      const l10Diff = (percent(b.last10HitRate) ?? -1) - (percent(a.last10HitRate) ?? -1);
+      const l10Diff = (hitRatePercent(b.last10HitRate) ?? -1) - (hitRatePercent(a.last10HitRate) ?? -1);
       if (l10Diff !== 0) return l10Diff;
-      const l5Diff = (percent(b.last5HitRate) ?? -1) - (percent(a.last5HitRate) ?? -1);
+      const l5Diff = (hitRatePercent(b.last5HitRate) ?? -1) - (hitRatePercent(a.last5HitRate) ?? -1);
       if (l5Diff !== 0) return l5Diff;
       const aDvp = a.dvpRating != null && a.dvpRating > 0 ? a.dvpRating : null;
       const bDvp = b.dvpRating != null && b.dvpRating > 0 ? b.dvpRating : null;
@@ -6897,7 +6978,7 @@ export default function NBALandingPage() {
       return bP - aP;
     });
     return out;
-  }, [filteredCombinedProps, propLineSort, columnSort]);
+  }, [filteredCombinedProps, propLineSort, columnSort, columnSortPriority]);
 
   const freePropsPreview = knownPro === true ? false : subscriptionChecked ? !isPro : true;
   const rankedCombinedProps = useMemo(() => {
@@ -6910,10 +6991,8 @@ export default function NBALandingPage() {
     return next;
   }, [displaySortedCombinedProps, freePropsPreview]);
 
-  // AFL: same "best to worst" default sort as NBA (DvP best first, then L10%, L5%, prob); column sort when active
+  // AFL: same "best to worst" default sort as NBA; multi-column sort when active.
   const displaySortedAflProps = useMemo(() => {
-    const percent = (hitRate?: { hits: number; total: number } | null) =>
-      hitRate && hitRate.total > 0 ? (hitRate.hits / hitRate.total) * 100 : null;
     const out = [...filteredAflProps];
     if (propLineSort === 'high') {
       out.sort((a, b) => b.line - a.line);
@@ -6923,55 +7002,21 @@ export default function NBALandingPage() {
       out.sort((a, b) => a.line - b.line);
       return out;
     }
-    const activeColumnSort = Object.entries(columnSort).find(([_, dir]) => dir !== 'none');
-    if (activeColumnSort) {
-      const [column, direction] = activeColumnSort;
-      out.sort((a, b) => {
-        let aVal: number | null = null;
-        let bVal: number | null = null;
-        if (column === 'dvp') {
-          aVal = a.dvpRating ?? null;
-          bVal = b.dvpRating ?? null;
-          if (aVal === null && bVal === null) return 0;
-          if (aVal === null) return 1;
-          if (bVal === null) return -1;
-          return direction === 'asc' ? bVal - aVal : aVal - bVal;
-        }
-        if (column === 'l5') { aVal = percent(a.last5HitRate); bVal = percent(b.last5HitRate); }
-        else if (column === 'l10') { aVal = percent(a.last10HitRate); bVal = percent(b.last10HitRate); }
-        else if (column === 'h2h') { aVal = percent(a.h2hHitRate); bVal = percent(b.h2hHitRate); }
-        else if (column === 'season') { aVal = percent(a.seasonHitRate); bVal = percent(b.seasonHitRate); }
-        else if (column === 'streak') { aVal = a.streak ?? null; bVal = b.streak ?? null; }
-        else if (column === 'ip') {
-          aVal = getConsensusImpliedProbabilities(a).overProb;
-          bVal = getConsensusImpliedProbabilities(b).overProb;
-        }
-        if (aVal === null && bVal === null) return 0;
-        if (aVal === null) return 1;
-        if (bVal === null) return -1;
-        if (aVal === bVal && column === 'l10') {
-          const aL5 = percent(a.last5HitRate) ?? -1;
-          const bL5 = percent(b.last5HitRate) ?? -1;
-          return direction === 'asc' ? bL5 - aL5 : aL5 - bL5;
-        }
-        return direction === 'asc' ? bVal - aVal : aVal - bVal;
-      });
-      return out;
+    if (activeColumnSorts(columnSort, columnSortPriority).length) {
+      return sortPropsByActiveColumns(out, columnSort, columnSortPriority);
     }
     // Default (AFL): best from L10 first, then L5, then DvP, then implied prob.
-    // This matches the manual "best from last 10" user action.
     out.sort((a, b) => {
       const aL10Total = a.last10HitRate?.total ?? 0;
       const bL10Total = b.last10HitRate?.total ?? 0;
       const aHasFullL10 = aL10Total >= 10;
       const bHasFullL10 = bL10Total >= 10;
-      // Prioritize props with a full 10-game sample; smaller samples stay visible but rank later.
       if (aHasFullL10 !== bHasFullL10) return aHasFullL10 ? -1 : 1;
 
-      const l10Diff = (percent(b.last10HitRate) ?? -1) - (percent(a.last10HitRate) ?? -1);
+      const l10Diff = (hitRatePercent(b.last10HitRate) ?? -1) - (hitRatePercent(a.last10HitRate) ?? -1);
       if (l10Diff !== 0) return l10Diff;
 
-      const l5Diff = (percent(b.last5HitRate) ?? -1) - (percent(a.last5HitRate) ?? -1);
+      const l5Diff = (hitRatePercent(b.last5HitRate) ?? -1) - (hitRatePercent(a.last5HitRate) ?? -1);
       if (l5Diff !== 0) return l5Diff;
 
       const aDvp = a.dvpRating != null && a.dvpRating > 0 ? a.dvpRating : null;
@@ -6988,7 +7033,7 @@ export default function NBALandingPage() {
       return bP - aP;
     });
     return out;
-  }, [filteredAflProps, propLineSort, columnSort]);
+  }, [filteredAflProps, propLineSort, columnSort, columnSortPriority]);
 
   const rankedAflProps = useMemo(() => {
     if (!freePropsPreview) {
@@ -7224,89 +7269,18 @@ export default function NBALandingPage() {
   }, [sortedPlayerProps]);
 
   // Sort for display
-  // - If prop line sort is active, keep the line-based order (already applied)
-  // - If column sort is active, sort by that column
-  // - Otherwise, sort by L10% (fallback to L5% then overall prob)
+  // - Prop line sort wins when set
+  // - Else multi-column sort (DvP + L10 etc. stack in click order)
+  // - Else default L10 → L5 → DvP → IP
   const displaySortedProps = useMemo(() => {
-    const percent = (hitRate?: { hits: number; total: number } | null) =>
-      hitRate && hitRate.total > 0 ? (hitRate.hits / hitRate.total) * 100 : null;
-
-    // Use deduplicated props
     const propsToSort = uniquePlayerProps;
 
-    // Check if any column sort is active
-    const activeColumnSort = Object.entries(columnSort).find(([_, dir]) => dir !== 'none');
-    
     if (propLineSort !== 'none') {
-      // Prop line sort takes precedence
       return [...propsToSort];
     }
 
-    if (activeColumnSort) {
-      const [column, direction] = activeColumnSort;
-      const sorted = [...propsToSort].sort((a, b) => {
-        let aValue: number | null = null;
-        let bValue: number | null = null;
-
-        switch (column) {
-          case 'dvp':
-            // Sort by DvP rank (higher rank = easier matchup)
-            aValue = a.dvpRating ?? null;
-            bValue = b.dvpRating ?? null;
-            // First click uses "asc", which means best/easiest DvP first.
-            if (aValue === null && bValue === null) return 0;
-            if (aValue === null) return 1;
-            if (bValue === null) return -1;
-            return direction === 'asc' ? bValue - aValue : aValue - bValue;
-          
-          case 'l5':
-            aValue = percent(a.last5HitRate);
-            bValue = percent(b.last5HitRate);
-            break;
-          
-          case 'ip':
-            // Sort by bookmaker implied over probability (highest = best)
-            aValue = getConsensusImpliedProbabilities(a).overProb;
-            bValue = getConsensusImpliedProbabilities(b).overProb;
-            break;
-          
-          case 'l10':
-            aValue = percent(a.last10HitRate);
-            bValue = percent(b.last10HitRate);
-            break;
-          
-          case 'h2h':
-            aValue = percent(a.h2hHitRate);
-            bValue = percent(b.h2hHitRate);
-            break;
-
-          case 'season':
-            aValue = percent(a.seasonHitRate);
-            bValue = percent(b.seasonHitRate);
-            break;
-          
-          case 'streak':
-            aValue = a.streak ?? null;
-            bValue = b.streak ?? null;
-            break;
-        }
-
-        // Handle null values
-        if (aValue === null && bValue === null) return 0;
-        if (aValue === null) return 1; // nulls go to end
-        if (bValue === null) return -1;
-        if (aValue === bValue && column === 'l10') {
-          const aL5 = percent(a.last5HitRate) ?? -1;
-          const bL5 = percent(b.last5HitRate) ?? -1;
-          return direction === 'asc' ? bL5 - aL5 : aL5 - bL5;
-        }
-        
-        // Sort based on direction
-        // For hit rates, IP, and streak: "asc" (best) = highest values first (descending sort)
-        // DvP is handled separately above
-        return direction === 'asc' ? bValue - aValue : aValue - bValue;
-      });
-      return sorted;
+    if (activeColumnSorts(columnSort, columnSortPriority).length) {
+      return sortPropsByActiveColumns(propsToSort, columnSort, columnSortPriority);
     }
 
     // Default: best from true L10 sample first, then L5, then DvP, then implied probability.
@@ -7315,31 +7289,28 @@ export default function NBALandingPage() {
       const bL10Total = b.last10HitRate?.total ?? 0;
       const aHasFullL10 = aL10Total >= 10;
       const bHasFullL10 = bL10Total >= 10;
-      // Keep partial samples (e.g. 2/2) visible, but rank them after full 10-game samples.
       if (aHasFullL10 !== bHasFullL10) return aHasFullL10 ? -1 : 1;
 
-      const l10Diff = (percent(b.last10HitRate) ?? -1) - (percent(a.last10HitRate) ?? -1);
+      const l10Diff = (hitRatePercent(b.last10HitRate) ?? -1) - (hitRatePercent(a.last10HitRate) ?? -1);
       if (l10Diff !== 0) return l10Diff;
 
-      const l5Diff = (percent(b.last5HitRate) ?? -1) - (percent(a.last5HitRate) ?? -1);
+      const l5Diff = (hitRatePercent(b.last5HitRate) ?? -1) - (hitRatePercent(a.last5HitRate) ?? -1);
       if (l5Diff !== 0) return l5Diff;
 
       const aDvp = a.dvpRating != null && a.dvpRating > 0 ? a.dvpRating : null;
       const bDvp = b.dvpRating != null && b.dvpRating > 0 ? b.dvpRating : null;
       if (aDvp !== null || bDvp !== null) {
-        // Lower rank = better; nulls go to end
         const aRank = aDvp ?? 999;
         const bRank = bDvp ?? 999;
         if (aRank !== bRank) return aRank - bRank;
       }
-      // Use consensus implied probabilities for sorting (median across books)
       const aConsensus = getConsensusImpliedProbabilities(a);
       const bConsensus = getConsensusImpliedProbabilities(b);
       const aProb = Math.max(aConsensus.overProb ?? 0, aConsensus.underProb ?? 0);
       const bProb = Math.max(bConsensus.overProb ?? 0, bConsensus.underProb ?? 0);
       return bProb - aProb;
     });
-  }, [uniquePlayerProps, propLineSort, columnSort]);
+  }, [uniquePlayerProps, propLineSort, columnSort, columnSortPriority]);
 
   const rankedNbaProps = useMemo(() => {
     if (!freePropsPreview) {
@@ -11393,9 +11364,18 @@ export default function NBALandingPage() {
                       </table>
                       </div>
                       
-                      {/* Mobile Column Sort Filters - Scrollable row above player props */}
+                      {/* Mobile Column Sort Filters - single-sport only (not Combined) */}
                       {!isCombinedMode && (
                       <div className="2xl:hidden mb-4 w-full px-0.5">
+                        {columnSortPriority.length > 1 ? (
+                          <p className={`mb-1.5 px-2 text-[11px] ${mounted && isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                            Combined sort: {columnSortPriority.map((c) => c.toUpperCase()).join(' → ')}
+                          </p>
+                        ) : columnSortPriority.length === 0 ? (
+                          <p className={`mb-1.5 px-2 text-[11px] ${mounted && isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                            Tap more than one to combine (e.g. DvP + L10)
+                          </p>
+                        ) : null}
                         <div 
                           className="overflow-x-auto mobile-filter-scroll rounded-2xl px-0.5 py-1.5"
                           style={{ 
@@ -11419,6 +11399,9 @@ export default function NBALandingPage() {
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
+                              {columnSortRank('ip') != null && columnSortPriority.length > 1 ? (
+                                <span className="text-[10px] opacity-80">{columnSortRank('ip')}</span>
+                              ) : null}
                               <span>IP</span>
                               <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
                                 columnSort.ip !== 'none'
@@ -11438,7 +11421,6 @@ export default function NBALandingPage() {
                             {/* DvP Sort */}
                             <button
                               onClick={() => handleColumnSort('dvp')}
-                              title={undefined}
                               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
                                 columnSort.dvp !== 'none'
                                   ? mounted && isDark
@@ -11449,6 +11431,9 @@ export default function NBALandingPage() {
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
+                              {columnSortRank('dvp') != null && columnSortPriority.length > 1 ? (
+                                <span className="text-[10px] opacity-80">{columnSortRank('dvp')}</span>
+                              ) : null}
                               <span>DvP</span>
                               <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
                                 columnSort.dvp !== 'none'
@@ -11507,6 +11492,9 @@ export default function NBALandingPage() {
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
+                              {columnSortRank('l10') != null && columnSortPriority.length > 1 ? (
+                                <span className="text-[10px] opacity-80">{columnSortRank('l10')}</span>
+                              ) : null}
                               <span>L10</span>
                               <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
                                 columnSort.l10 !== 'none'

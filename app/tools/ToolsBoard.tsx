@@ -10,9 +10,33 @@ import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { openProUpgrade } from '@/components/ProFeatureLock';
 import { TOOLS_SOFT_BOOKS, displayBook } from '@/lib/tools/books';
 import { readToolsOpsCache, writeToolsOpsCache } from '@/lib/tools/clientCache';
+import { arbStakes } from '@/lib/tools/math';
 import { clientNbaLogo, clientNblLogo } from '@/lib/tools/mediaClient';
 import type { ToolsBonusFlip, ToolsOpportunity } from '@/lib/tools/types';
 import { supabase } from '@/lib/supabaseClient';
+
+const ARB_BANKROLL = 1000;
+
+/** Recompute arb leg stakes on $1000 so stale $100 cache/API payloads don't paint tiny numbers. */
+function withArbBankroll(op: ToolsOpportunity): ToolsOpportunity {
+  if (op.kind !== 'arb' || op.legs.length < 2) return op;
+  const [a, b] = op.legs;
+  if (!(a?.odds > 1 && b?.odds > 1)) return op;
+  const stakes = arbStakes(a.odds, b.odds, ARB_BANKROLL);
+  if (!stakes) return op;
+  return {
+    ...op,
+    legs: [
+      { ...a, stake: stakes.stakeA },
+      { ...b, stake: stakes.stakeB },
+      ...op.legs.slice(2),
+    ],
+  };
+}
+
+function normalizeOps(list: ToolsOpportunity[]): ToolsOpportunity[] {
+  return list.map(withArbBankroll);
+}
 
 /**
  * Match totals only: bare "Over 16.5" → "Total games Over 16.5".
@@ -351,7 +375,7 @@ export function ToolsBoard({
 }) {
   const [tab, setTab] = useState<BoardTab>('all');
   const [middleSort, setMiddleSort] = useState<MiddleSort>('best');
-  const [ops, setOps] = useState<ToolsOpportunity[]>(() => readToolsOpsCache() ?? []);
+  const [ops, setOps] = useState<ToolsOpportunity[]>(() => normalizeOps(readToolsOpsCache() ?? []));
   const [flips, setFlips] = useState<ToolsBonusFlip[]>([]);
   const [boardLoading, setBoardLoading] = useState(() => !(readToolsOpsCache()?.length));
   const [bonusLoading, setBonusLoading] = useState(false);
@@ -406,7 +430,9 @@ export function ToolsBoard({
         return;
       }
       if (!res.ok || !json?.success) throw new Error(json?.error || 'Could not load tools.');
-      const next = Array.isArray(json.opportunities) ? (json.opportunities as ToolsOpportunity[]) : [];
+      const next = normalizeOps(
+        Array.isArray(json.opportunities) ? (json.opportunities as ToolsOpportunity[]) : []
+      );
       setOps(next);
       writeToolsOpsCache(next);
     } catch (e) {
@@ -468,7 +494,8 @@ export function ToolsBoard({
     }
     if (bootstrappedRef.current) return;
     bootstrappedRef.current = true;
-    void loadOpportunities({ quiet: opsLenRef.current > 0 });
+    // Force a rebuild so local/shared Redis can't keep serving old $100 arb stakes.
+    void loadOpportunities({ quiet: opsLenRef.current > 0, fresh: true });
   }, [authReady, isPro, loadOpportunities]);
 
   const boardOps = useMemo(() => {
@@ -733,7 +760,7 @@ function cardStats(op: ToolsOpportunity): { label: string; value: string }[] {
   }
   if (op.kind === 'arb') {
     // Use edge (equalised ROI) so Profit matches the locked % — not rounded leg stakes.
-    const stakeTotal = op.legs.reduce((s, l) => s + (l.stake ?? 0), 0) || 1000;
+    const stakeTotal = op.legs.reduce((s, l) => s + (l.stake ?? 0), 0) || ARB_BANKROLL;
     const profit = Math.max(0, op.edge * stakeTotal);
     return [
       { label: 'Profit', value: `$${profit.toFixed(2)}` },

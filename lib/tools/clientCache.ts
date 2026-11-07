@@ -4,7 +4,7 @@
 
 import type { ToolsOpportunity } from './types';
 
-const OPS_KEY = 'stattrackr:tools:ops:v3';
+const OPS_KEY = 'stattrackr:tools:ops:v4';
 const MAX_AGE_MS = 10 * 60_000;
 
 type StoredOps = {
