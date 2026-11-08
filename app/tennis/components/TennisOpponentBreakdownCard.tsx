@@ -84,7 +84,7 @@ export default function TennisOpponentBreakdownCard({
           No completed matches vs {tennisLastName(opponent)}
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y custom-scrollbar">
+        <div className="custom-scrollbar">
           <table className="w-full text-xs">
             <thead className="sticky top-0">
               <tr className={isDark ? 'bg-[#0f172a] text-gray-300' : 'bg-gray-100 text-gray-700'}>

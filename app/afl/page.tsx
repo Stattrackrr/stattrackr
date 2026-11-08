@@ -5284,7 +5284,7 @@ export default function AFLPage() {
                 )}
                 {/* 4.5. DVP | Opponent Breakdown - mobile only; same container for Player and Game Props (desktop uses right panel) */}
                 {(aflPropsMode === 'player' || aflPropsMode === 'team') && (
-                  <div className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 h-[60vh] max-h-[60vh] min-h-0 overflow-hidden`}>
+                  <div className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 h-[60vh] max-h-[60vh] overflow-hidden`}>
                     <div className="flex gap-2 sm:gap-2 mb-2 flex-shrink-0">
                       {aflPropsMode === 'player' && (
                         <>
@@ -5297,7 +5297,7 @@ export default function AFLPage() {
                               setAflRightTab('dvp');
                               setAflRightTabsVisited((prev) => new Set(prev).add('dvp'));
                             }}
-                            className={`relative flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                            className={`relative flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                               !freeTier && aflRightTab === 'dvp'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -5311,7 +5311,7 @@ export default function AFLPage() {
                               setAflRightTab('breakdown');
                               setAflRightTabsVisited((prev) => new Set(prev).add('breakdown'));
                             }}
-                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                               aflRightTab === 'breakdown'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -5324,7 +5324,7 @@ export default function AFLPage() {
                               setAflRightTab('team_matchup');
                               setAflRightTabsVisited((prev) => new Set(prev).add('team_matchup'));
                             }}
-                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                               aflRightTab === 'team_matchup'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -5338,7 +5338,7 @@ export default function AFLPage() {
                         <>
                           <button
                             onClick={() => setAflRightTab('breakdown')}
-                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                               aflRightTab === 'breakdown'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -5348,7 +5348,7 @@ export default function AFLPage() {
                           </button>
                           <button
                             onClick={() => setAflRightTab('team_matchup')}
-                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                               aflRightTab === 'team_matchup'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -5364,9 +5364,9 @@ export default function AFLPage() {
                         <div className={`text-sm ${emptyText}`}>Select a player to view</div>
                       </div>
                     ) : (
-                      <div className="relative flex-1 min-h-0 w-full min-w-0 flex flex-col overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+                      <div className="relative w-full min-w-0 flex-1 min-h-0 overflow-y-auto">
                         {aflRightTab === 'breakdown' && (
-                          <div className="flex flex-col min-h-0">
+                          <div className="w-full">
                             <AflOpponentBreakdownCard
                               key={`${selectedHeaderTeamName ?? 'no-team'}-${displayOpponent ?? 'no-opponent'}-mobile`}
                               isDark={!!mounted && isDark}
@@ -5381,7 +5381,7 @@ export default function AFLPage() {
                           </div>
                         )}
                         {aflPropsMode === 'player' && aflRightTab === 'dvp' && (
-                          <div className="flex flex-col min-h-0">
+                          <div className="w-full">
                             <AflDvpCard
                               isDark={!!mounted && isDark}
                               season={Math.min(season, 2026)}
@@ -5397,7 +5397,7 @@ export default function AFLPage() {
                           </div>
                         )}
                         {((aflPropsMode === 'team' && aflRightTab === 'team_matchup') || (aflPropsMode === 'player' && aflRightTabsVisited.has('team_matchup'))) && (
-                          <div className={aflRightTab === 'team_matchup' ? 'flex flex-col min-h-0' : 'hidden'}>
+                          <div className={aflRightTab === 'team_matchup' ? 'w-full' : 'hidden'}>
                             <AflTeamMatchupCard
                               isDark={!!mounted && isDark}
                               season={season}

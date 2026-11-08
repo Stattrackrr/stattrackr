@@ -119,7 +119,7 @@ export default function NbaOpponentBreakdownCard({
               key={y}
               type="button"
               onClick={() => setSelectedSeason(y)}
-              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+              className={`px-2.5 py-1 text-xs font-medium transition-colors touch-manipulation ${
                 selectedSeason === y
                   ? 'bg-purple-600 text-white'
                   : isDark
@@ -174,7 +174,7 @@ export default function NbaOpponentBreakdownCard({
                 Showing {payload.seasonLabel} until {selectedSeason}/{String(selectedSeason + 1).slice(-2)} tips off.
               </div>
             ) : null}
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y space-y-2">
+            <div className="space-y-2">
               {NBA_STE_STAT_KEYS.map((statKey) => {
                 const val = teamSlice.allowed[statKey];
                 const r = payload?.metrics?.[statKey]?.ranks?.[opponentCode] ?? null;

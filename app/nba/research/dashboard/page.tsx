@@ -2126,12 +2126,12 @@ export default function NbaDashboardPage() {
                   </div>
                 )}
 
-                {/* 4.5 DVP | Breakdown | Matchup — mobile (fixed height; body scrolls inside) */}
+                {/* 4.5 DVP | Breakdown | Matchup — mobile (tabs pinned; body scrolls) */}
                 <div
                   className={`order-5 lg:hidden w-full min-w-0 flex flex-col rounded-lg ${NBA_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 ${
                     nbaRightTab === 'dvp'
                       ? 'overflow-visible pb-4'
-                      : 'h-[60vh] max-h-[60vh] min-h-0 overflow-hidden'
+                      : 'h-[60vh] max-h-[60vh] overflow-hidden'
                   }`}
                 >
                   {showEmptyShell ? (
@@ -2158,7 +2158,7 @@ export default function NbaDashboardPage() {
                             }
                             visitRightTab('dvp');
                           }}
-                          className={`relative flex-1 overflow-visible px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 ${
+                          className={`relative flex-1 overflow-visible px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 touch-manipulation ${
                             nbaRightTab === 'dvp'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2170,7 +2170,7 @@ export default function NbaDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('breakdown')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                             nbaRightTab === 'breakdown'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2181,7 +2181,7 @@ export default function NbaDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('team_matchup')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                             nbaRightTab === 'team_matchup'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2196,7 +2196,7 @@ export default function NbaDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('breakdown')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                             nbaRightTab === 'breakdown'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2207,7 +2207,7 @@ export default function NbaDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('team_matchup')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                             nbaRightTab === 'team_matchup'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2219,11 +2219,11 @@ export default function NbaDashboardPage() {
                     )}
                   </div>
                   <div
-                    className={`relative w-full min-w-0 flex flex-col ${
+                    className={
                       nbaRightTab === 'dvp'
-                        ? 'overflow-visible'
-                        : 'flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]'
-                    }`}
+                        ? 'relative w-full min-w-0'
+                        : 'relative w-full min-w-0 flex-1 min-h-0 overflow-y-auto'
+                    }
                   >
                     {nbaPropsMode === 'player' && nbaRightTabsVisited.has('dvp') && (
                       <div className={nbaRightTab === 'dvp' ? 'w-full' : 'hidden'}>
@@ -2236,11 +2236,7 @@ export default function NbaDashboardPage() {
                       </div>
                     )}
                     {nbaRightTabsVisited.has('breakdown') && (
-                      <div
-                        className={
-                          nbaRightTab === 'breakdown' ? 'flex flex-col min-h-0' : 'hidden'
-                        }
-                      >
+                      <div className={nbaRightTab === 'breakdown' ? 'w-full' : 'hidden'}>
                         <NbaOpponentBreakdownCard
                           isDark={!!mounted && isDark}
                           playerName={
@@ -2255,11 +2251,7 @@ export default function NbaDashboardPage() {
                       </div>
                     )}
                     {nbaRightTabsVisited.has('team_matchup') && (
-                      <div
-                        className={
-                          nbaRightTab === 'team_matchup' ? 'flex flex-col min-h-0' : 'hidden'
-                        }
-                      >
+                      <div className={nbaRightTab === 'team_matchup' ? 'w-full' : 'hidden'}>
                         <NbaTeamMatchupCard
                           isDark={!!mounted && isDark}
                           teamName={matchupLeft}
@@ -2637,7 +2629,7 @@ export default function NbaDashboardPage() {
                         className={`relative w-full min-w-0 flex flex-col min-h-0 ${
                           nbaPropsMode === 'player' && nbaRightTab === 'dvp'
                             ? 'overflow-visible'
-                            : 'h-[380px] xl:h-[420px] overflow-y-auto overscroll-contain touch-pan-y'
+                            : 'h-[380px] xl:h-[420px] overflow-y-auto'
                         }`}
                       >
                         {((nbaPropsMode === 'team' && nbaRightTab === 'breakdown') ||

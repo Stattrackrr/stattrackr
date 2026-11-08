@@ -134,7 +134,7 @@ export function AflOpponentBreakdownCard({
               key={y}
               type="button"
               onClick={() => setSelectedSeason(y)}
-              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+              className={`px-2.5 py-1 text-xs font-medium transition-colors touch-manipulation ${
                 selectedSeason === y
                   ? 'bg-purple-600 text-white'
                   : isDark
@@ -170,7 +170,7 @@ export function AflOpponentBreakdownCard({
           </div>
         ) : (
           <>
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y space-y-2">
+            <div className="space-y-2">
               {DISPLAY_STATS.map((statKey) => {
               const val = teamRow.stats?.[statKey];
               const r = getRankForStat(statKey);

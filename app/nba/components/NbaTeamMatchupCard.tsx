@@ -188,7 +188,7 @@ export default function NbaTeamMatchupCard({
                 type="button"
                 disabled={disabled}
                 onClick={() => setWindowN(option.id)}
-                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                className={`px-2.5 py-1 text-xs font-medium transition-colors touch-manipulation ${
                   active
                     ? 'bg-purple-600 text-white'
                     : disabled
@@ -223,7 +223,7 @@ export default function NbaTeamMatchupCard({
         </h4>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pr-0.5 custom-scrollbar">
+      <div className="pr-0.5">
         {!teamName ? (
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Select a team to see the matchup.

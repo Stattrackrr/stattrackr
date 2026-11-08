@@ -2114,12 +2114,12 @@ export default function NblDashboardPage() {
                   </div>
                 )}
 
-                {/* 4.5 DVP | Breakdown | Matchup — mobile (fixed height; body scrolls inside) */}
+                {/* 4.5 DVP | Breakdown | Matchup — mobile (tabs pinned; body scrolls) */}
                 <div
                   className={`order-5 lg:hidden w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 ${
                     nblRightTab === 'dvp'
                       ? 'overflow-visible pb-4'
-                      : 'h-[60vh] max-h-[60vh] min-h-0 overflow-hidden'
+                      : 'h-[60vh] max-h-[60vh] overflow-hidden'
                   }`}
                 >
                   {showEmptyShell ? (
@@ -2146,7 +2146,7 @@ export default function NblDashboardPage() {
                             }
                             visitRightTab('dvp');
                           }}
-                          className={`relative flex-1 overflow-visible px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 ${
+                          className={`relative flex-1 overflow-visible px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 touch-manipulation ${
                             nblRightTab === 'dvp'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2164,7 +2164,7 @@ export default function NblDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('breakdown')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                             nblRightTab === 'breakdown'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2175,7 +2175,7 @@ export default function NblDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('team_matchup')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                             nblRightTab === 'team_matchup'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2190,7 +2190,7 @@ export default function NblDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('breakdown')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                             nblRightTab === 'breakdown'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2201,7 +2201,7 @@ export default function NblDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('team_matchup')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                             nblRightTab === 'team_matchup'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2213,11 +2213,11 @@ export default function NblDashboardPage() {
                     )}
                   </div>
                   <div
-                    className={`relative w-full min-w-0 flex flex-col ${
+                    className={
                       nblRightTab === 'dvp'
-                        ? 'overflow-visible'
-                        : 'flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]'
-                    }`}
+                        ? 'relative w-full min-w-0'
+                        : 'relative w-full min-w-0 flex-1 min-h-0 overflow-y-auto'
+                    }
                   >
                     {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
                       <div className={nblRightTab === 'dvp' ? 'w-full' : 'hidden'}>
@@ -2236,11 +2236,7 @@ export default function NblDashboardPage() {
                       </div>
                     )}
                     {nblRightTabsVisited.has('breakdown') && (
-                      <div
-                        className={
-                          nblRightTab === 'breakdown' ? 'flex flex-col min-h-0' : 'hidden'
-                        }
-                      >
+                      <div className={nblRightTab === 'breakdown' ? 'w-full' : 'hidden'}>
                         <NblOpponentBreakdownCard
                           isDark={!!mounted && isDark}
                           playerName={
@@ -2255,11 +2251,7 @@ export default function NblDashboardPage() {
                       </div>
                     )}
                     {nblRightTabsVisited.has('team_matchup') && (
-                      <div
-                        className={
-                          nblRightTab === 'team_matchup' ? 'flex flex-col min-h-0' : 'hidden'
-                        }
-                      >
+                      <div className={nblRightTab === 'team_matchup' ? 'w-full' : 'hidden'}>
                         <NblTeamMatchupCard
                           isDark={!!mounted && isDark}
                           teamName={matchupLeft}
@@ -2633,7 +2625,7 @@ export default function NblDashboardPage() {
                         className={`relative w-full min-w-0 flex flex-col min-h-0 ${
                           nblPropsMode === 'player' && nblRightTab === 'dvp'
                             ? 'overflow-visible'
-                            : 'h-[380px] xl:h-[420px] overflow-y-auto overscroll-contain touch-pan-y'
+                            : 'h-[380px] xl:h-[420px] overflow-y-auto'
                         }`}
                       >
                         {((nblPropsMode === 'team' && nblRightTab === 'breakdown') ||

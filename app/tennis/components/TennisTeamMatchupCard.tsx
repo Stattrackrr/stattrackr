@@ -301,7 +301,7 @@ export default function TennisTeamMatchupCard({
                 <button
                   type="button"
                   onClick={() => setWindowN(option.id)}
-                  className={`px-0.5 text-[10px] font-medium tracking-wide transition-colors ${
+                  className={`px-0.5 text-[10px] font-medium tracking-wide transition-colors touch-manipulation ${
                     active
                       ? isDark
                         ? 'text-gray-300 underline decoration-gray-500 underline-offset-2'
@@ -377,7 +377,7 @@ export default function TennisTeamMatchupCard({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pr-0.5 custom-scrollbar">
+      <div className="pr-0.5">
         {!player ? (
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Select a player to see the matchup.

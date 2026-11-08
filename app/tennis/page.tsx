@@ -2059,9 +2059,9 @@ export default function TennisDashboardPage() {
                   </div>
                 )}
 
-                {/* 4.5 DVP | Breakdown | Matchup — mobile (fixed height; body scrolls inside) */}
+                {/* 4.5 DVP | Breakdown | Matchup — mobile (tabs pinned; body scrolls) */}
                 <div
-                  className={`lg:hidden w-full min-w-0 flex flex-col flex-shrink-0 overflow-hidden rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 h-[60vh] max-h-[60vh] min-h-0`}
+                  className={`lg:hidden w-full min-w-0 flex flex-col flex-shrink-0 rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 h-[60vh] max-h-[60vh] overflow-hidden`}
                 >
                   {showEmptyShell ? (
                     <div className="min-h-[280px]" />
@@ -2080,7 +2080,7 @@ export default function TennisDashboardPage() {
                           <button
                             type="button"
                             onClick={() => visitRightTab('dvp')}
-                            className={`relative inline-flex flex-1 items-center justify-center gap-1.5 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                            className={`relative inline-flex flex-1 items-center justify-center gap-1.5 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                               !freeTier && nblRightTab === 'dvp'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2093,7 +2093,7 @@ export default function TennisDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('team_matchup')}
-                          className={`flex-1 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 text-[11px] sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 text-[11px] sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                             nblRightTab === 'team_matchup'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2104,7 +2104,7 @@ export default function TennisDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('match_info')}
-                          className={`flex-1 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 text-[11px] sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 text-[11px] sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
                             nblRightTab === 'match_info'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2113,9 +2113,9 @@ export default function TennisDashboardPage() {
                           Match Info
                         </button>
                       </div>
-                      <div className="relative w-full min-w-0 flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+                      <div className="relative w-full min-w-0 flex-1 min-h-0 overflow-y-auto">
                         {showMobileDashCards && nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
-                          <div className={nblRightTab === 'dvp' ? 'w-full flex flex-col min-h-0' : 'hidden'}>
+                          <div className={nblRightTab === 'dvp' ? 'w-full' : 'hidden'}>
                             <TennisDvpCard
                               isDark={!!mounted && isDark}
                               playerName={matchupLeft}
@@ -2136,7 +2136,7 @@ export default function TennisDashboardPage() {
                         {nblRightTabsVisited.has('team_matchup') && (
                           <div
                             className={
-                              nblRightTab === 'team_matchup' ? 'flex flex-col min-h-0' : 'hidden'
+                              nblRightTab === 'team_matchup' ? 'w-full' : 'hidden'
                             }
                           >
                             <TennisTeamMatchupCard
@@ -2155,7 +2155,7 @@ export default function TennisDashboardPage() {
                         {nblRightTabsVisited.has('match_info') && (
                           <div
                             className={
-                              nblRightTab === 'match_info' ? 'flex flex-col min-h-0' : 'hidden'
+                              nblRightTab === 'match_info' ? 'w-full' : 'hidden'
                             }
                           >
                             <TennisMatchInfoCard
@@ -2398,7 +2398,7 @@ export default function TennisDashboardPage() {
                           nblPropsMode === 'player' &&
                           (nblRightTab === 'dvp' || nblRightTab === 'team_matchup')
                             ? 'overflow-visible h-[380px] xl:h-[420px]'
-                            : 'h-[380px] xl:h-[420px] overflow-y-auto overscroll-contain touch-pan-y'
+                            : 'h-[380px] xl:h-[420px] overflow-y-auto'
                         }`}
                       >
                         {showDesktopDashCards && nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
