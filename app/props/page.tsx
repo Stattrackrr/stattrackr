@@ -43,6 +43,7 @@ import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
 import { formatAflFantasyDfsPositionLabel } from '@/lib/aflDfsRoleLabels';
 import { formatNblPropsPositionLabel } from '@/lib/nbl/playTypesShared';
+import { formatNbaPropsPositionLabel } from '@/lib/nba/dash/playTypesShared';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';
@@ -172,6 +173,8 @@ interface PlayerProp {
   aflDfsRole?: string | null;
   nblPosition?: string | null;
   nblPlayType?: string | null;
+  nbaPosition?: string | null;
+  nbaPlayType?: string | null;
   /** Player's actual club when home/away on the odds row may be swapped. */
   playerTeam?: string | null;
   playerIoc?: string | null;
@@ -3148,6 +3151,8 @@ export default function NBALandingPage() {
       aflDfsRole?: string | null;
       nblPosition?: string | null;
       nblPlayType?: string | null;
+      nbaPosition?: string | null;
+      nbaPlayType?: string | null;
       playerIoc?: string | null;
       playerRank?: number | null;
       opponentId?: string | null;
@@ -3197,6 +3202,12 @@ export default function NBALandingPage() {
         if (!existing.nblPlayType && r.nblPlayType) {
           existing.nblPlayType = r.nblPlayType;
         }
+        if (!existing.nbaPosition && r.nbaPosition) {
+          existing.nbaPosition = r.nbaPosition;
+        }
+        if (!existing.nbaPlayType && r.nbaPlayType) {
+          existing.nbaPlayType = r.nbaPlayType;
+        }
         if (!existing.opponentId && r.opponentId != null) {
           existing.opponentId = String(r.opponentId);
         }
@@ -3240,6 +3251,8 @@ export default function NBALandingPage() {
           aflDfsRole: r.aflDfsRole ?? null,
           nblPosition: r.nblPosition ?? null,
           nblPlayType: r.nblPlayType ?? null,
+          nbaPosition: r.nbaPosition ?? null,
+          nbaPlayType: r.nbaPlayType ?? null,
           playerIoc: r.playerIoc ?? null,
           playerRank: r.playerRank ?? null,
           opponentId: r.opponentId != null ? String(r.opponentId) : null,
@@ -3320,6 +3333,8 @@ export default function NBALandingPage() {
         aflDfsRole: a.aflDfsRole ?? null,
         nblPosition: a.nblPosition ?? null,
         nblPlayType: a.nblPlayType ?? null,
+        nbaPosition: a.nbaPosition ?? null,
+        nbaPlayType: a.nbaPlayType ?? null,
         playerTeam,
         playerIoc: a.playerIoc ?? null,
         playerRank: a.playerRank ?? null,
@@ -10470,6 +10485,16 @@ export default function NBALandingPage() {
                                           </div>
                                         ) : null;
                                       })()}
+                                      {rowSport === 'nba' && (() => {
+                                        const nbaPosLine = formatNbaPropsPositionLabel(prop.nbaPosition, prop.nbaPlayType);
+                                        return nbaPosLine ? (
+                                          <div
+                                            className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                                          >
+                                            {nbaPosLine}
+                                          </div>
+                                        ) : null;
+                                      })()}
                                       
                                       {isTennisPropsSport(rowSport) && (
                                         <div
@@ -12064,6 +12089,16 @@ export default function NBALandingPage() {
                                           className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
                                         >
                                           {nblPosLine}
+                                        </div>
+                                      ) : null;
+                                    })()}
+                                    {rowSport === 'nba' && (() => {
+                                      const nbaPosLine = formatNbaPropsPositionLabel(prop.nbaPosition, prop.nbaPlayType);
+                                      return nbaPosLine ? (
+                                        <div
+                                          className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                                        >
+                                          {nbaPosLine}
                                         </div>
                                       ) : null;
                                     })()}

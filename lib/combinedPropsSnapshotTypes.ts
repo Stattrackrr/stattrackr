@@ -70,6 +70,8 @@ export type CombinedPlayerProp = {
   nblPlayType?: string | null;
   /** NBA roster slot (G / F / C / G-F / F-C). */
   nbaPosition?: string | null;
+  /** NBA play type id (primary_bh, three_shooter, …). */
+  nbaPlayType?: string | null;
   /** Set on server-built lists whose stat keys overlap another sport (NBA vs NBL). */
   sportSource?: 'nba';
 };

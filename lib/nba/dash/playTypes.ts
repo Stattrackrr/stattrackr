@@ -414,6 +414,22 @@ export async function lookupNbaPlayerPlayType(opts: { playerId?: string | null; 
   return tagged.find((p) => p.row.name.toLowerCase() === name)?.type ?? null;
 }
 
+/** One map load for the props list — keyed by playerId, with lowercase name fallbacks. */
+export async function loadNbaPlayerPlayTypeIndex(): Promise<{
+  byId: Map<string, NbaPlayTypeId>;
+  byName: Map<string, NbaPlayTypeId>;
+}> {
+  const season = await resolveNbaDataSeason();
+  const tagged = await tagSeason(season);
+  const byId = new Map<string, NbaPlayTypeId>();
+  const byName = new Map<string, NbaPlayTypeId>();
+  for (const p of tagged) {
+    byId.set(String(p.row.playerId), p.type);
+    byName.set(p.row.name.toLowerCase(), p.type);
+  }
+  return { byId, byName };
+}
+
 export async function buildNbaPlayTypesPayload(options: {
   year?: number;
   stat?: string;

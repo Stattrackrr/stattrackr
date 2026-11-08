@@ -27,6 +27,8 @@ import {
   writeNbaPlayerPropsListCache,
   type NbaListCachePayload,
 } from './playerPropsListCache';
+import { loadNbaPlayerPlayTypeIndex } from './playTypes';
+import type { NbaPlayTypeId } from './playTypesShared';
 import { BOX_COLUMNS, selectAllParallel, toNbaGameLogRow } from './season';
 import { loadNbaRoster, type NbaRosterPlayer } from './server';
 import { NBA_CHART_HISTORY_YEARS, NBA_CURRENT_SEASON_YEAR, normalizeTeamKey, resolveNbaClub } from './teams';
@@ -236,6 +238,7 @@ function toCombinedRow(opts: {
   books: NbaBookRow[];
   logs: PlayerLogs;
   dvpIndex: NbaPropDvpIndex;
+  playType: NbaPlayTypeId | null;
 }): CombinedPlayerProp | null {
   const filteredBooks = opts.books
     .map((book) => {
@@ -302,6 +305,7 @@ function toCombinedRow(opts: {
     ...opts.dvpIndex.lookup({ opponentCode: opts.opponentCode, position, stat: opts.stat }),
     position,
     nbaPosition: opts.player.position || null,
+    nbaPlayType: opts.playType,
     bookmakerLines: booksAtLine
       .map(({ book, match }) => ({ bookmaker: book.name, line, overOdds: match.over, underOdds: match.under }))
       .sort((a, b) => {
@@ -406,16 +410,25 @@ async function buildNbaPlayerPropsList(): Promise<NbaPlayerPropsListPayload> {
   }
 
   const teamCodes = [...new Set(candidates.map((c) => c.player.teamCode).filter((c): c is string => !!c))];
-  const [logsByPlayer, dvpIndex] = await Promise.all([
+  const [logsByPlayer, dvpIndex, playTypeIndex] = await Promise.all([
     loadLogsByPlayer(candidates.map((c) => String(c.player.playerId))),
     buildNbaPropDvpIndex(teamCodes),
+    loadNbaPlayerPlayTypeIndex().catch(() => ({
+      byId: new Map<string, NbaPlayTypeId>(),
+      byName: new Map<string, NbaPlayTypeId>(),
+    })),
   ]);
   const noLogs: PlayerLogs = { form: [], season: [], career: [] };
+  const playTypeFor = (player: NbaRosterPlayer): NbaPlayTypeId | null =>
+    playTypeIndex.byId.get(String(player.playerId)) ??
+    playTypeIndex.byName.get(player.name.toLowerCase()) ??
+    null;
 
   const props: CombinedPlayerProp[] = [];
   for (const c of candidates) {
     const byStat = nbaPlayerPropsByStat(c.game, c.propName);
     const logs = logsByPlayer.get(String(c.player.playerId)) ?? noLogs;
+    const playType = playTypeFor(c.player);
     for (const stat of LIST_STATS) {
       const row = toCombinedRow({
         player: c.player,
@@ -427,6 +440,7 @@ async function buildNbaPlayerPropsList(): Promise<NbaPlayerPropsListPayload> {
         books: byStat[stat] ?? [],
         logs,
         dvpIndex,
+        playType,
       });
       if (row) props.push(row);
     }
