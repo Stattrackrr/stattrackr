@@ -11396,10 +11396,6 @@ export default function NBALandingPage() {
                           <p className={`mb-1.5 px-2 text-[11px] ${mounted && isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                             Combined sort: {columnSortPriority.map((c) => c.toUpperCase()).join(' → ')}
                           </p>
-                        ) : columnSortPriority.length === 0 ? (
-                          <p className={`mb-1.5 px-2 text-[11px] ${mounted && isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                            Tap more than one to combine (e.g. DvP + L10)
-                          </p>
                         ) : null}
                         <div 
                           className="overflow-x-auto mobile-filter-scroll rounded-2xl px-0.5 py-1.5"
