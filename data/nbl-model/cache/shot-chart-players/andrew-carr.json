@@ -5,26 +5,26 @@
   "years": [
     2026
   ],
-  "gamesUsed": 10,
+  "gamesUsed": 11,
   "fixturesFetched": 0,
-  "fixturesCached": 10,
-  "shotCount": 75,
+  "fixturesCached": 11,
+  "shotCount": 81,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 34,
-      "fgm": 27,
-      "fgPct": 79.41176470588235,
-      "share": 45.33333333333333
+      "fga": 35,
+      "fgm": 28,
+      "fgPct": 80,
+      "share": 43.20987654320987
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 13,
+      "fga": 15,
       "fgm": 3,
-      "fgPct": 23.076923076923077,
-      "share": 17.333333333333336
+      "fgPct": 20,
+      "share": 18.51851851851852
     },
     {
       "zone": "midRange",
@@ -37,18 +37,18 @@
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 2,
+      "fga": 3,
       "fgm": 2,
-      "fgPct": 100,
-      "share": 2.666666666666667
+      "fgPct": 66.66666666666666,
+      "share": 3.7037037037037033
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 13,
+      "fga": 15,
       "fgm": 4,
-      "fgPct": 30.76923076923077,
-      "share": 17.333333333333336
+      "fgPct": 26.666666666666668,
+      "share": 18.51851851851852
     },
     {
       "zone": "aboveBreak3",
@@ -56,7 +56,7 @@
       "fga": 13,
       "fgm": 4,
       "fgPct": 30.76923076923077,
-      "share": 17.333333333333336
+      "share": 16.049382716049383
     }
   ],
   "points": [
@@ -509,7 +509,43 @@
       2.25,
       0,
       0
+    ],
+    [
+      7.92,
+      3.02,
+      0,
+      0
+    ],
+    [
+      7.71,
+      3.38,
+      0,
+      0
+    ],
+    [
+      14.12,
+      4.65,
+      0,
+      1
+    ],
+    [
+      0.52,
+      2.56,
+      0,
+      1
+    ],
+    [
+      7.29,
+      2.7,
+      1,
+      0
+    ],
+    [
+      13.55,
+      5.78,
+      0,
+      1
     ]
   ],
-  "generatedAt": "2026-11-07T18:03:54.118Z"
+  "generatedAt": "2026-11-08T18:20:28.009Z"
 }

@@ -1,0 +1,503 @@
+{
+  "fixtureId": "3723d8e8-58ad-11f1-b04c-17c1a1f1f487",
+  "homeTeam": "Tasmania JackJumpers",
+  "awayTeam": "NZ Breakers",
+  "homeTeamCode": "TAS",
+  "awayTeamCode": "NZL",
+  "lineupValid": false,
+  "players": [
+    {
+      "personId": "6be49392-410d-11f0-b2dd-9dbbf7342624",
+      "name": "Anzac Rissetto",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+      "name": "Carlin Davison",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 3,
+      "assistedMakes": 1,
+      "assists": 9,
+      "ptsCreated": 16,
+      "finds": [
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 3,
+          "pts": 6
+        },
+        {
+          "personId": "50cb4bdd-410d-11f0-aa4b-9dbbf7342624",
+          "name": "Kouat Noi",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+          "name": "Reuben Te Rangi",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6be49392-410d-11f0-b2dd-9dbbf7342624",
+          "name": "Anzac Rissetto",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
+          "name": "Mojave King",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+          "name": "Nelson Weidemann",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+      "name": "Charles Bediako",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+      "name": "Dakota Mathias",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 6,
+      "assistedMakes": 5,
+      "assists": 2,
+      "ptsCreated": 4,
+      "finds": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 4,
+          "pts": 11
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+      "name": "Dejan Vasiljevic",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75b6b600-410d-11f0-b796-2902fc2f936f",
+          "name": "Parker Jackson-Cartwright",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+      "name": "Josh Bannan",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 5,
+      "assistedMakes": 3,
+      "assists": 7,
+      "ptsCreated": 18,
+      "finds": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 4,
+          "pts": 11
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+      "name": "Kody Stattmann",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 2,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "50cb4bdd-410d-11f0-aa4b-9dbbf7342624",
+      "name": "Kouat Noi",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 3,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
+      "name": "Mojave King",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75b6b600-410d-11f0-b796-2902fc2f936f",
+          "name": "Parker Jackson-Cartwright",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+      "name": "Nelson Weidemann",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+      "name": "Nicholas Stoddart",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+      "name": "Nick Marshall",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 5,
+      "ptsCreated": 10,
+      "finds": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "75b6b600-410d-11f0-b796-2902fc2f936f",
+      "name": "Parker Jackson-Cartwright",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 1,
+      "assistedMakes": 0,
+      "assists": 4,
+      "ptsCreated": 10,
+      "finds": [
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+          "name": "Dejan Vasiljevic",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
+          "name": "Mojave King",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+      "name": "Reuben Te Rangi",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+      "name": "Sam Mennenga",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 13,
+      "assistedMakes": 5,
+      "assists": 2,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+          "name": "Nelson Weidemann",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 3,
+          "pts": 6
+        },
+        {
+          "personId": "75b6b600-410d-11f0-b796-2902fc2f936f",
+          "name": "Parker Jackson-Cartwright",
+          "count": 2,
+          "pts": 4
+        }
+      ]
+    },
+    {
+      "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+      "name": "Taran Armstrong",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 3,
+      "assistedMakes": 1,
+      "assists": 4,
+      "ptsCreated": 4,
+      "finds": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 2,
+          "pts": 4
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+      "name": "Will Magnay",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 6,
+      "assistedMakes": 6,
+      "assists": 3,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6acd2470-410d-11f0-855a-9dbbf7342624",
+          "name": "Nick Marshall",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    }
+  ],
+  "onOff": [],
+  "fetchedAt": "2026-11-08T18:20:36.651Z"
+}

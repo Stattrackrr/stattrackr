@@ -1,10 +1,10 @@
 {
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-11-07T18:02:00.263Z",
+  "generatedAt": "2026-11-08T18:19:08.937Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 139,
-  "gameRows": 2801,
+  "gameRows": 2830,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -915,7 +915,7 @@
       "name": "Sam Mennenga",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 0,
+      "gameCount": 29,
       "cacheFile": "nbl-model/cache/player-logs/6096f09f-0ba7-4981-bb32-d62f287b9f96-2024.json"
     },
     {

@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-07T18:03:53.116Z",
+  "generatedAt": "2026-11-08T18:20:25.398Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "October 33, 5:00pm AEDT (their stamp as printed, which is not a real date)",
-  "injuryCount": 26,
+  "injuryCount": 25,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -181,15 +181,6 @@
       "injury": "Knee",
       "returning": "TBC",
       "status": "Out",
-      "listedByNbl": true
-    },
-    {
-      "team": "Sydney Kings",
-      "player": "Matthew Dellavedova",
-      "injury": "Calf",
-      "returning": "Possibly 8 November",
-      "status": "Out",
-      "note": "The Sydney Kings said on 27 October 2026 that Dellavedova would miss both Round 7 games (Perth and Tasmania) as he recovers from a calf injury. The club named a potential return against the South East Melbourne Phoenix on Sunday 8 November. Lachlan Bofinger replaces him in the squad. The NBL’s list of 30 October has his return as TBC.",
       "listedByNbl": true
     },
     {
