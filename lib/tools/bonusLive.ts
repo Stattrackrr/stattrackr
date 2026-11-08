@@ -37,8 +37,8 @@ const PRIORITY_SPORTS = [
 const PRIORITY_LEAGUE =
   /^(NFL|NBA|NBL|NCAAF|NHL|MLB|EPL|Premier League|La Liga|Bundesliga|Serie A|Ligue 1|UEFA|UFC|ATP|WTA|AFL|NRL|A-League|Big Bash|WNBA)/i;
 
-/** Game lines only — player props blow the warm board past Upstash's 8MB SET limit. */
-const SNAPSHOT_TYPES = 'moneyline,handicap,total,team total';
+/** Bonus Flipper needs player props too — Redis size is handled in bonusWarm slim/trim only. */
+const SNAPSHOT_TYPES = 'moneyline,handicap,total,team total,player prop';
 
 function apiKey(): string {
   return String(process.env.ODDS_API_NET_KEY || process.env.ODDS_API_NET || '').trim();

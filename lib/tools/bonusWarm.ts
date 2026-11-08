@@ -1,6 +1,10 @@
 /**
  * Shared Bonus Flipper odds board — cron writes every ~15m (~100–120 credits);
  * Find only reads Redis/memory (zero odds-api.net).
+ *
+ * Size control is Bonus Flipper Redis only: slim item fields, keep player props,
+ * and if still over Upstash's 8MB cap drop props on farther-out events first
+ * (then whole events). Other tools boards are untouched.
  */
 
 import { gzipSync } from 'zlib';
@@ -8,6 +12,7 @@ import sharedCache from '@/lib/sharedCache';
 import { TOOLS_SOFT_BOOKS } from './books';
 import { fetchBonusLiveSnapshots, type BonusLiveResult } from './bonusLive';
 import type { ToolsSnapshot } from './fetch';
+import type { OddsNetItem } from './markets';
 import { toolsCacheGetEntry, toolsCacheSet } from './cache';
 
 const MEM_KEY = 'bonus-live-board:v1';
@@ -23,6 +28,10 @@ type Stored = { at: number; live: BonusLiveResult };
 /** Coverage seed book — sportsbet lists the widest AU slate. */
 const WARM_SEED_BOOK = 'sportsbet';
 
+function isPlayerProp(it: OddsNetItem): boolean {
+  return String(it.bet_type || '').toLowerCase() === 'player prop';
+}
+
 /** Packed size as sharedCache would send to Upstash. */
 export function bonusBoardRedisBytes(live: BonusLiveResult, at = Date.now()): number {
   const json = JSON.stringify({ at, live } satisfies Stored);
@@ -34,14 +43,14 @@ export function bonusBoardRedisBytes(live: BonusLiveResult, at = Date.now()): nu
   return Math.min(json.length, packed.length);
 }
 
-/** Drop player props and unused item fields so the board fits in Redis. */
+/** Strip unused item fields; keep player props (+ player_name) for Bonus Flipper. */
 export function slimBonusLive(live: BonusLiveResult): BonusLiveResult {
   const snapshots: ToolsSnapshot[] = live.snapshots.map((s) => ({
     event: s.event,
     asOf: s.asOf,
-    items: s.items
-      .filter((it) => String(it.bet_type || '').toLowerCase() !== 'player prop')
-      .map((it) => ({
+    items: s.items.map((it) => {
+      const prop = isPlayerProp(it);
+      const row: OddsNetItem = {
         bookmaker: it.bookmaker,
         bet_type: it.bet_type,
         metric: it.metric,
@@ -50,7 +59,13 @@ export function slimBonusLive(live: BonusLiveResult): BonusLiveResult {
         line: it.line,
         odds: it.odds,
         is_available: it.is_available,
-      })),
+      };
+      if (prop) {
+        const name = String(it.player_name || '').trim();
+        if (name) row.player_name = name;
+      }
+      return row;
+    }),
   }));
   return {
     ...live,
@@ -59,9 +74,40 @@ export function slimBonusLive(live: BonusLiveResult): BonusLiveResult {
   };
 }
 
+/** Keep player props only on the first `keepPropsOn` events (by start time). */
+export function limitPlayerPropsByEvent(live: BonusLiveResult, keepPropsOn: number): BonusLiveResult {
+  const order = live.snapshots
+    .map((s, index) => ({ index, startMs: s.event.startMs }))
+    .sort((a, b) => a.startMs - b.startMs || a.index - b.index);
+  const keep = new Set(order.slice(0, Math.max(0, keepPropsOn)).map((o) => o.index));
+  const snapshots = live.snapshots.map((s, i) =>
+    keep.has(i)
+      ? s
+      : {
+          ...s,
+          items: s.items.filter((it) => !isPlayerProp(it)),
+        }
+  );
+  return {
+    ...live,
+    snapshots,
+    eventsSnapshotted: snapshots.length,
+  };
+}
+
 function trimToRedisLimit(live: BonusLiveResult): { live: BonusLiveResult; bytes: number } {
-  let next = slimBonusLive(live);
+  const slimmed = slimBonusLive(live);
+  let keepPropsOn = slimmed.snapshots.length;
+  let next = slimmed;
   let bytes = bonusBoardRedisBytes(next);
+
+  // Prefer nearer tipoffs for player props; drop farther events' props first (not game lines).
+  while (bytes > REDIS_SAFE_MAX_BYTES && keepPropsOn > 0) {
+    keepPropsOn = Math.max(0, Math.floor(keepPropsOn * 0.7));
+    next = limitPlayerPropsByEvent(slimmed, keepPropsOn);
+    bytes = bonusBoardRedisBytes(next);
+  }
+
   while (bytes > REDIS_SAFE_MAX_BYTES && next.snapshots.length > 8) {
     const keep = Math.max(8, Math.floor(next.snapshots.length * 0.7));
     next = {

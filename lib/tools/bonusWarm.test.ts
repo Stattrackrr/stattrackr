@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { bonusBoardRedisBytes, slimBonusLive } from './bonusWarm';
+import { bonusBoardRedisBytes, limitPlayerPropsByEvent, slimBonusLive } from './bonusWarm';
 import type { BonusLiveResult } from './bonusLive';
 
-test('slimBonusLive drops player props and unused item fields', () => {
-  const live: BonusLiveResult = {
+function sampleLive(): BonusLiveResult {
+  const now = Date.now();
+  return {
     requests: 1,
     leaguesTried: 1,
-    eventsListed: 1,
-    eventsSnapshotted: 1,
+    eventsListed: 2,
+    eventsSnapshotted: 2,
     sports: ['basketball'],
     snapshots: [
       {
@@ -16,12 +17,12 @@ test('slimBonusLive drops player props and unused item fields', () => {
           sport: 'nba',
           apiSport: 'basketball',
           league: 'NBA',
-          eventId: '1',
+          eventId: 'near',
           home: 'A',
           away: 'B',
-          startMs: Date.now() + 3600_000,
+          startMs: now + 3600_000,
         },
-        asOf: { sportsbet: Date.now() },
+        asOf: { sportsbet: now },
         items: [
           {
             bookmaker: 'sportsbet',
@@ -36,15 +37,62 @@ test('slimBonusLive drops player props and unused item fields', () => {
             bet_type: 'player prop',
             odds: 1.8,
             metric: 'player points',
+            line: 'over 24.5',
             player_name: 'Oso Ighodaro',
+            market_key: 'prop-near',
+          },
+        ],
+      },
+      {
+        event: {
+          sport: 'nba',
+          apiSport: 'basketball',
+          league: 'NBA',
+          eventId: 'far',
+          home: 'C',
+          away: 'D',
+          startMs: now + 48 * 3600_000,
+        },
+        asOf: { sportsbet: now },
+        items: [
+          {
+            bookmaker: 'sportsbet',
+            bet_type: 'total',
+            odds: 1.91,
+            line: 'over 220.5',
+          },
+          {
+            bookmaker: 'sportsbet',
+            bet_type: 'player prop',
+            odds: 1.85,
+            metric: 'player points',
+            line: 'over 20.5',
+            player_name: 'Later Player',
           },
         ],
       },
     ],
   };
-  const slim = slimBonusLive(live);
-  assert.equal(slim.snapshots[0]!.items.length, 1);
-  assert.equal(slim.snapshots[0]!.items[0]!.bet_type, 'moneyline');
-  assert.equal(slim.snapshots[0]!.items[0]!.player_name, undefined);
-  assert.ok(bonusBoardRedisBytes(slim) < bonusBoardRedisBytes(live));
+}
+
+test('slimBonusLive keeps player props and strips unused fields', () => {
+  const slim = slimBonusLive(sampleLive());
+  const near = slim.snapshots[0]!.items;
+  assert.equal(near.length, 2);
+  assert.equal(near[0]!.bet_type, 'moneyline');
+  assert.equal(near[0]!.player_name, undefined);
+  assert.equal(near[0]!.market_key, undefined);
+  assert.equal(near[1]!.bet_type, 'player prop');
+  assert.equal(near[1]!.player_name, 'Oso Ighodaro');
+  assert.ok(bonusBoardRedisBytes(slim) < bonusBoardRedisBytes(sampleLive()));
+});
+
+test('limitPlayerPropsByEvent drops props on farther tipoffs first', () => {
+  const slim = slimBonusLive(sampleLive());
+  const limited = limitPlayerPropsByEvent(slim, 1);
+  const nearItems = limited.snapshots.find((s) => s.event.eventId === 'near')!.items;
+  const farItems = limited.snapshots.find((s) => s.event.eventId === 'far')!.items;
+  assert.ok(nearItems.some((it) => it.bet_type === 'player prop'));
+  assert.ok(farItems.every((it) => it.bet_type !== 'player prop'));
+  assert.ok(farItems.some((it) => it.bet_type === 'total'));
 });
