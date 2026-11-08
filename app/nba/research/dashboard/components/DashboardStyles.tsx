@@ -55,6 +55,38 @@ export function DashboardStyles() {
         .dashboard-container { --gap: 8px; --inner-padding-left: 4px; --inner-padding-right: 4px; }
       }
 
+      /*
+       * Scroll model:
+       * - Touch / phones (incl. "Request desktop site"): document scrolls — h-screen + nested
+       *   overflow traps block touch pan on iOS/Android.
+       * - Real desktop (wide + mouse): locked viewport, main/side panes scroll.
+       */
+      .dashboard-scroll-root {
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      .dashboard-scroll-main,
+      .dashboard-scroll-side {
+        min-width: 0;
+      }
+      @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+        .dashboard-scroll-root {
+          height: 100vh;
+          max-height: 100vh;
+          overflow-y: hidden;
+          overflow-x: auto;
+        }
+        .dashboard-scroll-main,
+        .dashboard-scroll-side {
+          height: 100vh;
+          max-height: 100vh;
+          overflow-x: hidden;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+        }
+      }
+
       /* Custom scrollbar colors for light/dark mode - force always visible */
       .custom-scrollbar {
         scrollbar-width: thin;

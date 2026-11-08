@@ -4390,7 +4390,7 @@ export default function AFLPage() {
   );
 
   return (
-    <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
+    <div className="dashboard-scroll-root min-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors">
       <LoadingBar isLoading={navigatingToProps} isDark={isDark} showImmediately={navigatingToProps} mobileOffset={0} />
       <DashboardStyles />
       <div className="px-0 dashboard-container" style={containerStyle}>
@@ -5772,7 +5772,7 @@ export default function AFLPage() {
                 )}
               </div>
               {/* Right panel - Filter By (Player / Game props) + Opponent Breakdown & Injuries (same as NBA DashboardRightPanel) */}
-              <div className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-2 sm:px-2 md:px-0 fade-scrollbar custom-scrollbar min-w-0 ${
+              <div className={`dashboard-scroll-side relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 px-2 sm:px-2 md:px-0 fade-scrollbar custom-scrollbar min-w-0 ${
                 sidebarOpen ? 'lg:flex-[2.6] xl:flex-[2.9]' : 'lg:flex-[3.2] xl:flex-[3.2]'
               }`}>
                 {/* Filter By - Player Props / Game Props (desktop only; mobile uses the one at top of main content) */}

@@ -113,7 +113,7 @@ export function DashboardRightPanel(props: DashboardRightPanelProps) {
 
   return (
     <div 
-      className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-2 sm:px-2 md:px-0 fade-scrollbar custom-scrollbar ${
+      className={`dashboard-scroll-side relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 px-2 sm:px-2 md:px-0 fade-scrollbar custom-scrollbar ${
         sidebarOpen ? 'lg:flex-[3] xl:flex-[3.3]' : 'lg:flex-[4] xl:flex-[4]'
       }`}
     >
