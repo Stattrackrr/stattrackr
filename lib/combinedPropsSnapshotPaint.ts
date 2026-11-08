@@ -71,21 +71,24 @@ export function slimCombinedPropsSnapshotForClient(
   snapshot: CombinedPropsSnapshot
 ): CombinedPropsSnapshot {
   const mapProps = (props: CombinedPlayerProp[]) => props.map(slimCombinedPlayerPropForPaint);
+  const tennisBase = snapshot.tennis
+    ? withAggregatedTennisSlice({ ...snapshot, tennis: snapshot.tennis }).tennis
+    : null;
   return {
     ...snapshot,
     nba: { ...snapshot.nba, props: mapProps(snapshot.nba.props) },
     afl: { ...snapshot.afl, props: mapProps(snapshot.afl.props) },
-    tennis: snapshot.tennis
+    tennis: tennisBase
       ? (() => {
           const cut = applyLiveTennisPropsCutoff(
-            stripJunkTennisPlayerGameRows(snapshot.tennis.props || []),
-            snapshot.tennis.games || []
+            stripJunkTennisPlayerGameRows(tennisBase.props || []),
+            tennisBase.games || []
           );
           return {
-            ...snapshot.tennis,
+            ...tennisBase,
             props: mapProps(cut.props),
             games: cut.games,
-            noTennisOdds: cut.props.length === 0 ? true : snapshot.tennis.noTennisOdds,
+            noTennisOdds: cut.props.length === 0 ? true : tennisBase.noTennisOdds,
           };
         })()
       : snapshot.tennis,
@@ -109,7 +112,8 @@ export async function getCombinedPropsSnapshot(): Promise<CombinedPropsSnapshot 
 }
 
 export async function getCombinedPropsPaintSnapshot(): Promise<CombinedPropsSnapshot | null> {
-  return firstCachedSnapshot(COMBINED_PAINT_READ_KEYS);
+  const snapshot = await firstCachedSnapshot(COMBINED_PAINT_READ_KEYS);
+  return snapshot ? withAggregatedTennisSlice(snapshot) : null;
 }
 
 function withAggregatedTennisSlice(snapshot: CombinedPropsSnapshot): CombinedPropsSnapshot {

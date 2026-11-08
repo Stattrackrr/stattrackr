@@ -856,17 +856,13 @@ let listBuildInflight: Promise<NblPlayerPropsListPayload> | null = null;
 
 /**
  * User/combined path: cache only. Pass refresh to rebuild from odds-api.net/disk cache.
+ * Never rebuilds inline on a cache miss — that made /api/props/combined wait seconds.
  */
 export async function getNblPlayerPropsList(opts?: {
   refresh?: boolean;
 }): Promise<NblPlayerPropsListPayload> {
   if (!opts?.refresh) {
     const cached = await readUsableNblListCache();
-    if (cached?.data?.length && Number(cached.listSchema) === NBL_LIST_SCHEMA) {
-      return payloadFromCache(cached);
-    }
-    const rebuilt = await getNblPlayerPropsList({ refresh: true });
-    if (rebuilt.data.length > 0) return rebuilt;
     if (cached?.data?.length && Number(cached.listSchema) === NBL_LIST_SCHEMA) {
       return payloadFromCache(cached);
     }

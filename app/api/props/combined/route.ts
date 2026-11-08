@@ -11,7 +11,6 @@ import type { CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
 import { getNbaPlayerPropsList } from '@/lib/nba/dash/playerPropsList';
 import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { getNblPlayerPropsList } from '@/lib/nbl/playerPropsList';
-import { applyTennisListLiveOverlay, type TennisPlayerPropsListPayload } from '@/lib/tennis/playerPropsList';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -61,9 +60,17 @@ function emptyCombinedShell(): CombinedPropsSnapshot {
   };
 }
 
+function sportSliceHasProps(
+  slice: { props?: unknown[] | null } | null | undefined
+): boolean {
+  return Array.isArray(slice?.props) && slice.props.length > 0;
+}
+
+/** Cache-only fill when the paint snapshot is missing NBL. Never rebuilds on miss. */
 async function attachCachedNblList(
   snapshot: CombinedPropsSnapshot
 ): Promise<CombinedPropsSnapshot> {
+  if (sportSliceHasProps(snapshot.nbl)) return snapshot;
   const payload = await getNblPlayerPropsList();
   if (!payload.data.length) return snapshot;
   return {
@@ -96,6 +103,7 @@ async function attachCachedNbaList(
     games: [],
   };
   if (!NBA_PUBLIC_ENABLED) return { ...snapshot, nba: empty };
+  if (sportSliceHasProps(snapshot.nba)) return snapshot;
   const payload = await getNbaPlayerPropsList();
   if (payload.data.length) {
     return {
@@ -119,34 +127,8 @@ async function attachCachedNbaList(
 }
 
 /**
- * The stored slice keeps whatever tournament it was built with. Apply the same read overlay as the
- * tennis list so a player shows their next unplayed match, not an event they already left.
- */
-async function withLiveTennisOverlay(snapshot: CombinedPropsSnapshot): Promise<CombinedPropsSnapshot> {
-  const tennis = snapshot.tennis;
-  if (!tennis?.props?.length) return snapshot;
-  try {
-    const healed = await applyTennisListLiveOverlay({
-      ...(tennis as unknown as TennisPlayerPropsListPayload),
-      data: tennis.props as unknown as TennisPlayerPropsListPayload['data'],
-      games: (tennis.games || []) as unknown as TennisPlayerPropsListPayload['games'],
-    });
-    return {
-      ...snapshot,
-      tennis: {
-        ...tennis,
-        props: healed.data as unknown as typeof tennis.props,
-        games: healed.games as unknown as typeof tennis.games,
-        noTennisOdds: healed.data.length === 0 ? true : tennis.noTennisOdds,
-      },
-    };
-  } catch {
-    return snapshot;
-  }
-}
-
-/**
- * Cache-only. Crons write Redis; this route never rebuilds from Odds/API-Tennis.
+ * Cache-only. Crons write Redis; this route never rebuilds or live-overlays.
+ * Live tennis overlay used to run on every GET (~1s+) and made the props page feel cold.
  */
 export async function GET(request: NextRequest) {
   const wantsFull =
@@ -162,10 +144,14 @@ export async function GET(request: NextRequest) {
       : filterCombinedSnapshotAflEligibility(
           paintSnapshot || slimCombinedPropsSnapshotForClient(source)
         );
+    // Only hit sport list caches when the paint snapshot is missing that slice.
+    const needTennis = !sportSliceHasProps(painted.tennis);
+    const needNbl = !sportSliceHasProps(painted.nbl);
+    const needNba = NBA_PUBLIC_ENABLED && !sportSliceHasProps(painted.nba);
     const [withTennis, withNbl, withNba] = await Promise.all([
-      attachCachedTennisSlice(painted).then(withLiveTennisOverlay),
-      attachCachedNblList(painted),
-      attachCachedNbaList(painted),
+      needTennis ? attachCachedTennisSlice(painted) : Promise.resolve(painted),
+      needNbl ? attachCachedNblList(painted) : Promise.resolve(painted),
+      needNba ? attachCachedNbaList(painted) : Promise.resolve(painted),
     ]);
     const merged: CombinedPropsSnapshot = {
       ...painted,
