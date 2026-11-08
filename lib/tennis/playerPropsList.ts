@@ -85,6 +85,7 @@ import {
   readTennisPlayerPropsListCache,
   writeTennisPlayerPropsListCache,
   deleteTennisPlayerPropsListCache,
+  stripJunkTennisPlayerGameRows,
 } from '@/lib/tennis/playerPropsListCache';
 
 export { TENNIS_LIST_CACHE_KEY } from '@/lib/tennis/playerPropsListCache';
@@ -1615,7 +1616,8 @@ export async function applyTennisListLiveOverlay(
   }
   next = { ...next, data: fillMissingTennisOpponentIoc(fillRosterFlags(next.data)) };
   // Last: one world-rank pass so player and opponent badges match (Redis standings first).
-  return applyListWorldRanks(next, roster);
+  const ranked = applyListWorldRanks(next, roster);
+  return { ...ranked, data: stripJunkTennisPlayerGameRows(ranked.data) };
 }
 
 let listBuildInflight: Promise<TennisPlayerPropsListPayload> | null = null;

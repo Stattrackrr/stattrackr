@@ -6,7 +6,10 @@ import {
   filterAflPropsEligibleGames,
 } from '@/lib/combinedPropsSnapshotTypes';
 import { applyLiveTennisPropsCutoff, tennisCommenceTimeStillOnBoard } from '@/lib/tennis/oddsBoard';
-import { readTennisPlayerPropsListCache } from '@/lib/tennis/playerPropsListCache';
+import {
+  readTennisPlayerPropsListCache,
+  stripJunkTennisPlayerGameRows,
+} from '@/lib/tennis/playerPropsListCache';
 import {
   aggregateTennisPropsForPaint,
   tennisPropsNeedPaintAggregation,
@@ -75,7 +78,7 @@ export function slimCombinedPropsSnapshotForClient(
     tennis: snapshot.tennis
       ? (() => {
           const cut = applyLiveTennisPropsCutoff(
-            snapshot.tennis.props || [],
+            stripJunkTennisPlayerGameRows(snapshot.tennis.props || []),
             snapshot.tennis.games || []
           );
           return {
@@ -112,12 +115,21 @@ export async function getCombinedPropsPaintSnapshot(): Promise<CombinedPropsSnap
 function withAggregatedTennisSlice(snapshot: CombinedPropsSnapshot): CombinedPropsSnapshot {
   const tennis = snapshot.tennis;
   if (!tennis?.props?.length) return snapshot;
-  if (!tennisPropsNeedPaintAggregation(tennis.props)) return snapshot;
+  const props = stripJunkTennisPlayerGameRows(tennis.props);
+  if (!props.length) {
+    return {
+      ...snapshot,
+      tennis: { ...tennis, props, noTennisOdds: true },
+    };
+  }
+  if (!tennisPropsNeedPaintAggregation(props)) {
+    return props === tennis.props ? snapshot : { ...snapshot, tennis: { ...tennis, props } };
+  }
   return {
     ...snapshot,
     tennis: {
       ...tennis,
-      props: aggregateTennisPropsForPaint(tennis.props),
+      props: aggregateTennisPropsForPaint(props),
     },
   };
 }

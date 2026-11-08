@@ -1,5 +1,6 @@
 import { tennisPlayerIdentityKey } from '@/lib/tennis/aggregatePropsForPaint';
 import { tennisOuEvenness } from '@/lib/tennis/oddsTypes';
+import { stripJunkTennisPlayerGameRows } from '@/lib/tennis/playerPropsListCache';
 
 type TennisMarketLineRow = {
   playerName?: string | null;
@@ -66,7 +67,7 @@ export function collapseTennisRowsToPrimaryMarketLine<T extends TennisMarketLine
 ): T[] {
   const keepAll = opts?.keepAllWinningLineRows === true;
   const groups = new Map<string, T[]>();
-  for (const row of rows) {
+  for (const row of stripJunkTennisPlayerGameRows(rows)) {
     const key = tennisMarketCollapseKey(row);
     const list = groups.get(key);
     if (list) list.push(row);

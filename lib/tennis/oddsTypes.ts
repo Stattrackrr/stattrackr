@@ -228,7 +228,9 @@ export function tennisOuLinePlausible(stat: string, line: string | number | null
   const n = parseFloat(String(line ?? '').replace(/[^0-9.+-]/g, ''));
   if (!Number.isFinite(n)) return false;
   if (stat === 'totalGames') return n >= 14.5 && n <= 79.5;
-  if (stat === 'gamesWon' || stat === 'gamesLost') return n >= 5.5 && n <= 45.5;
+  // Match player-game totals sit ~9.5–20. Sub-9.5 is set/alt junk (BetGoodwin team totals)
+  // that used to survive merge with older snapshot ladders and win the juice band.
+  if (stat === 'gamesWon' || stat === 'gamesLost') return n >= 9.5 && n <= 45.5;
   // Match set totals are 2.5 (BO3) or 3.5/4.5 (BO5). 1.5 is player sets won O/U.
   if (stat === 'totalSets') return n >= 2.5 && n <= 4.5;
   if (stat === 'setsWon' || stat === 'setsLost') return n >= 0.5 && n <= 2.5;

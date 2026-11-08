@@ -53,3 +53,11 @@ test('lone sub-9.5 gamesWon ladder is rejected (not a match total)', () => {
   assert.equal(tennisOuLinesForStat(row, 'gamesWon').length, 0);
   assert.equal(tennisMainLineForStat(row, 'gamesWon'), undefined);
 });
+
+test('plausible floor rejects sub-9.5 even when it is the only line', () => {
+  const row = book({
+    GamesWon: { line: '5.5', over: '-133', under: '-110' },
+    GamesWonLines: [{ line: '5.5', over: '-133', under: '-110' }],
+  });
+  assert.equal(tennisMainLineForStat(row, 'gamesWon'), undefined);
+});
