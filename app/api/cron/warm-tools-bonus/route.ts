@@ -17,6 +17,23 @@ export async function GET(request: NextRequest) {
 
   try {
     const live = await warmBonusLiveBoard();
+    if (live.snapshots.length && !live.persisted) {
+      console.error('[cron/warm-tools-bonus] board not persisted to Redis', {
+        redisBytes: live.redisBytes,
+        events: live.eventsSnapshotted,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'bonus board too large for Redis',
+          requests: live.requests,
+          eventsSnapshotted: live.eventsSnapshotted,
+          redisBytes: live.redisBytes,
+          persisted: false,
+        },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({
       success: true,
       requests: live.requests,
@@ -24,6 +41,8 @@ export async function GET(request: NextRequest) {
       eventsListed: live.eventsListed,
       leaguesTried: live.leaguesTried,
       sports: live.sports,
+      redisBytes: live.redisBytes,
+      persisted: live.persisted,
     });
   } catch (err) {
     console.error('[cron/warm-tools-bonus]', err);
