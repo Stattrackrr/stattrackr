@@ -125,7 +125,7 @@ export function AflOpponentBreakdownCard({
   }
 
   return (
-    <div className="w-full min-w-0 h-full flex flex-col">
+    <div className="w-full min-w-0 flex flex-col">
       <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
         <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
@@ -148,7 +148,7 @@ export function AflOpponentBreakdownCard({
         </div>
       </div>
 
-      <div className={`rounded-lg border p-3 flex-1 min-h-0 flex flex-col ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
+      <div className={`rounded-lg border p-3 flex flex-col ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
         <div className="flex items-center gap-2 mb-3">
           <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
           <h4 className={`text-sm font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>

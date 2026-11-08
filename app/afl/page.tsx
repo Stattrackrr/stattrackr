@@ -5284,7 +5284,7 @@ export default function AFLPage() {
                 )}
                 {/* 4.5. DVP | Opponent Breakdown - mobile only; same container for Player and Game Props (desktop uses right panel) */}
                 {(aflPropsMode === 'player' || aflPropsMode === 'team') && (
-                  <div className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 overflow-visible`}>
+                  <div className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 h-[60vh] max-h-[60vh] min-h-0 overflow-hidden`}>
                     <div className="flex gap-2 sm:gap-2 mb-2 flex-shrink-0">
                       {aflPropsMode === 'player' && (
                         <>
@@ -5364,9 +5364,9 @@ export default function AFLPage() {
                         <div className={`text-sm ${emptyText}`}>Select a player to view</div>
                       </div>
                     ) : (
-                      <div className="relative w-full min-w-0 flex flex-col overflow-visible">
+                      <div className="relative flex-1 min-h-0 w-full min-w-0 flex flex-col overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
                         {aflRightTab === 'breakdown' && (
-                          <div className="flex flex-col w-full min-w-0">
+                          <div className="flex flex-col min-h-0">
                             <AflOpponentBreakdownCard
                               key={`${selectedHeaderTeamName ?? 'no-team'}-${displayOpponent ?? 'no-opponent'}-mobile`}
                               isDark={!!mounted && isDark}
@@ -5381,7 +5381,7 @@ export default function AFLPage() {
                           </div>
                         )}
                         {aflPropsMode === 'player' && aflRightTab === 'dvp' && (
-                          <div className="flex flex-col w-full min-w-0">
+                          <div className="flex flex-col min-h-0">
                             <AflDvpCard
                               isDark={!!mounted && isDark}
                               season={Math.min(season, 2026)}
@@ -5397,7 +5397,7 @@ export default function AFLPage() {
                           </div>
                         )}
                         {((aflPropsMode === 'team' && aflRightTab === 'team_matchup') || (aflPropsMode === 'player' && aflRightTabsVisited.has('team_matchup'))) && (
-                          <div className={aflRightTab === 'team_matchup' ? 'flex flex-col w-full min-w-0' : 'hidden'}>
+                          <div className={aflRightTab === 'team_matchup' ? 'flex flex-col min-h-0' : 'hidden'}>
                             <AflTeamMatchupCard
                               isDark={!!mounted && isDark}
                               season={season}

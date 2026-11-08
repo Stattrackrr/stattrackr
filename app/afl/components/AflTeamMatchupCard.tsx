@@ -172,7 +172,7 @@ export default function AflTeamMatchupCard({
   }
 
   return (
-    <div className="w-full min-w-0 h-full flex flex-col">
+    <div className="w-full min-w-0 flex flex-col">
       <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Team Matchup</h3>
         <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">

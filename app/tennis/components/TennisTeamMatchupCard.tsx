@@ -246,7 +246,7 @@ export default function TennisTeamMatchupCard({
   );
 
   return (
-    <div className="w-full min-w-0 h-full flex flex-col px-1.5 py-1">
+    <div className="w-full min-w-0 flex flex-col px-1.5 py-1">
       <div className="relative z-20 mb-2 grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Player Matchup</h3>

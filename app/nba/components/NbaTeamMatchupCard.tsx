@@ -169,7 +169,7 @@ export default function NbaTeamMatchupCard({
     rows.every((r) => r.attackValue == null && r.defenseValue == null);
 
   return (
-    <div className="w-full min-w-0 h-full flex flex-col px-1.5 py-1">
+    <div className="w-full min-w-0 flex flex-col px-1.5 py-1">
       <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Team Matchup</h3>
         <div

@@ -70,7 +70,7 @@ export default function TennisOpponentBreakdownCard({
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col min-h-0">
       <div className="flex items-center justify-between mb-2 flex-shrink-0">
         <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
           vs {tennisLastName(opponent)}
