@@ -169,7 +169,7 @@ export default function NblOpponentBreakdownCard({
           </div>
         ) : (
           <>
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y space-y-2">
               {NBL_STE_STAT_KEYS.map((statKey) => {
                 const val = teamSlice.allowed[statKey];
                 const r = payload?.metrics?.[statKey]?.ranks?.[opponentCode] ?? null;

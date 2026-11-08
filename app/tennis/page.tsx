@@ -2059,9 +2059,9 @@ export default function TennisDashboardPage() {
                   </div>
                 )}
 
-                {/* 4.5 DVP | Breakdown | Matchup — mobile */}
+                {/* 4.5 DVP | Breakdown | Matchup — mobile (grow with content; page scrolls) */}
                 <div
-                  className={`lg:hidden w-full min-w-0 flex flex-col flex-shrink-0 overflow-hidden rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 h-[60vh] max-h-[60vh]`}
+                  className={`lg:hidden w-full min-w-0 flex flex-col flex-shrink-0 overflow-visible rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4`}
                 >
                   {showEmptyShell ? (
                     <div className="min-h-[280px]" />
@@ -2113,9 +2113,9 @@ export default function TennisDashboardPage() {
                           Match Info
                         </button>
                       </div>
-                      <div className="relative w-full min-w-0 flex flex-col flex-1 min-h-0 overflow-hidden">
+                      <div className="relative w-full min-w-0 flex flex-col overflow-visible">
                         {showMobileDashCards && nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
-                          <div className={nblRightTab === 'dvp' ? 'w-full h-full flex flex-col min-h-0' : 'hidden'}>
+                          <div className={nblRightTab === 'dvp' ? 'w-full flex flex-col min-w-0' : 'hidden'}>
                             <TennisDvpCard
                               isDark={!!mounted && isDark}
                               playerName={matchupLeft}
@@ -2136,7 +2136,7 @@ export default function TennisDashboardPage() {
                         {nblRightTabsVisited.has('team_matchup') && (
                           <div
                             className={
-                              nblRightTab === 'team_matchup' ? 'flex flex-col h-full min-h-0' : 'hidden'
+                              nblRightTab === 'team_matchup' ? 'flex flex-col w-full min-w-0' : 'hidden'
                             }
                           >
                             <TennisTeamMatchupCard
@@ -2155,7 +2155,7 @@ export default function TennisDashboardPage() {
                         {nblRightTabsVisited.has('match_info') && (
                           <div
                             className={
-                              nblRightTab === 'match_info' ? 'flex flex-col h-full min-h-0' : 'hidden'
+                              nblRightTab === 'match_info' ? 'flex flex-col w-full min-w-0' : 'hidden'
                             }
                           >
                             <TennisMatchInfoCard
@@ -2398,7 +2398,7 @@ export default function TennisDashboardPage() {
                           nblPropsMode === 'player' &&
                           (nblRightTab === 'dvp' || nblRightTab === 'team_matchup')
                             ? 'overflow-visible h-[380px] xl:h-[420px]'
-                            : 'overflow-hidden h-[380px] xl:h-[420px]'
+                            : 'h-[380px] xl:h-[420px] overflow-y-auto overscroll-contain touch-pan-y'
                         }`}
                       >
                         {showDesktopDashCards && nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (

@@ -223,7 +223,7 @@ export default function NbaTeamMatchupCard({
         </h4>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto pr-0.5 custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pr-0.5 custom-scrollbar">
         {!teamName ? (
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Select a team to see the matchup.

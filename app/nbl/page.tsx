@@ -2114,12 +2114,10 @@ export default function NblDashboardPage() {
                   </div>
                 )}
 
-                {/* 4.5 DVP | Breakdown | Matchup — mobile */}
+                {/* 4.5 DVP | Breakdown | Matchup — mobile (grow with content; page scrolls) */}
                 <div
-                  className={`order-5 lg:hidden w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 ${
-                    nblRightTab === 'dvp'
-                      ? 'overflow-visible pb-4'
-                      : 'max-h-[60vh] min-h-0 overflow-hidden'
+                  className={`order-5 lg:hidden w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 overflow-visible ${
+                    nblRightTab === 'dvp' ? 'pb-4' : ''
                   }`}
                 >
                   {showEmptyShell ? (
@@ -2212,13 +2210,7 @@ export default function NblDashboardPage() {
                       </>
                     )}
                   </div>
-                  <div
-                    className={`relative w-full min-w-0 flex flex-col ${
-                      nblRightTab === 'dvp'
-                        ? 'overflow-visible'
-                        : 'overflow-hidden flex-1 min-h-[280px]'
-                    }`}
-                  >
+                  <div className="relative w-full min-w-0 flex flex-col overflow-visible">
                     {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
                       <div className={nblRightTab === 'dvp' ? 'w-full' : 'hidden'}>
                         <NblDvpCard
@@ -2238,7 +2230,7 @@ export default function NblDashboardPage() {
                     {nblRightTabsVisited.has('breakdown') && (
                       <div
                         className={
-                          nblRightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'
+                          nblRightTab === 'breakdown' ? 'flex flex-col w-full min-w-0' : 'hidden'
                         }
                       >
                         <NblOpponentBreakdownCard
@@ -2257,7 +2249,7 @@ export default function NblDashboardPage() {
                     {nblRightTabsVisited.has('team_matchup') && (
                       <div
                         className={
-                          nblRightTab === 'team_matchup' ? 'flex flex-col h-full min-h-0' : 'hidden'
+                          nblRightTab === 'team_matchup' ? 'flex flex-col w-full min-w-0' : 'hidden'
                         }
                       >
                         <NblTeamMatchupCard
@@ -2633,14 +2625,14 @@ export default function NblDashboardPage() {
                         className={`relative w-full min-w-0 flex flex-col min-h-0 ${
                           nblPropsMode === 'player' && nblRightTab === 'dvp'
                             ? 'overflow-visible'
-                            : 'overflow-hidden h-[380px] xl:h-[420px]'
+                            : 'h-[380px] xl:h-[420px] overflow-y-auto overscroll-contain touch-pan-y'
                         }`}
                       >
                         {((nblPropsMode === 'team' && nblRightTab === 'breakdown') ||
                           (nblPropsMode === 'player' && nblRightTabsVisited.has('breakdown'))) && (
                           <div
                             className={
-                              nblRightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'
+                              nblRightTab === 'breakdown' ? 'flex flex-col w-full min-w-0' : 'hidden'
                             }
                           >
                             <NblOpponentBreakdownCard

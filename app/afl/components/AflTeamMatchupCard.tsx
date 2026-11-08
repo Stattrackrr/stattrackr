@@ -216,7 +216,7 @@ export default function AflTeamMatchupCard({
             No matchup stats available for this team/opponent.
           </div>
         ) : (
-          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pr-1 space-y-2">
             <div className="grid grid-cols-2 gap-1">
               {MATCHUP_STATS.map((stat) => (
                 <button

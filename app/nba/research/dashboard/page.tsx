@@ -2126,12 +2126,10 @@ export default function NbaDashboardPage() {
                   </div>
                 )}
 
-                {/* 4.5 DVP | Breakdown | Matchup — mobile */}
+                {/* 4.5 DVP | Breakdown | Matchup — mobile (grow with content; page scrolls) */}
                 <div
-                  className={`order-5 lg:hidden w-full min-w-0 flex flex-col rounded-lg ${NBA_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 ${
-                    nbaRightTab === 'dvp'
-                      ? 'overflow-visible pb-4'
-                      : 'max-h-[60vh] min-h-0 overflow-hidden'
+                  className={`order-5 lg:hidden w-full min-w-0 flex flex-col rounded-lg ${NBA_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 overflow-visible ${
+                    nbaRightTab === 'dvp' ? 'pb-4' : ''
                   }`}
                 >
                   {showEmptyShell ? (
@@ -2218,13 +2216,7 @@ export default function NbaDashboardPage() {
                       </>
                     )}
                   </div>
-                  <div
-                    className={`relative w-full min-w-0 flex flex-col ${
-                      nbaRightTab === 'dvp'
-                        ? 'overflow-visible'
-                        : 'overflow-hidden flex-1 min-h-[280px]'
-                    }`}
-                  >
+                  <div className="relative w-full min-w-0 flex flex-col overflow-visible">
                     {nbaPropsMode === 'player' && nbaRightTabsVisited.has('dvp') && (
                       <div className={nbaRightTab === 'dvp' ? 'w-full' : 'hidden'}>
                         <PositionDefenseCard
@@ -2236,11 +2228,7 @@ export default function NbaDashboardPage() {
                       </div>
                     )}
                     {nbaRightTabsVisited.has('breakdown') && (
-                      <div
-                        className={
-                          nbaRightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'
-                        }
-                      >
+                      <div className={nbaRightTab === 'breakdown' ? 'flex flex-col w-full min-w-0' : 'hidden'}>
                         <NbaOpponentBreakdownCard
                           isDark={!!mounted && isDark}
                           playerName={
@@ -2255,11 +2243,7 @@ export default function NbaDashboardPage() {
                       </div>
                     )}
                     {nbaRightTabsVisited.has('team_matchup') && (
-                      <div
-                        className={
-                          nbaRightTab === 'team_matchup' ? 'flex flex-col h-full min-h-0' : 'hidden'
-                        }
-                      >
+                      <div className={nbaRightTab === 'team_matchup' ? 'flex flex-col w-full min-w-0' : 'hidden'}>
                         <NbaTeamMatchupCard
                           isDark={!!mounted && isDark}
                           teamName={matchupLeft}
@@ -2637,7 +2621,7 @@ export default function NbaDashboardPage() {
                         className={`relative w-full min-w-0 flex flex-col min-h-0 ${
                           nbaPropsMode === 'player' && nbaRightTab === 'dvp'
                             ? 'overflow-visible'
-                            : 'overflow-hidden h-[380px] xl:h-[420px]'
+                            : 'h-[380px] xl:h-[420px] overflow-y-auto overscroll-contain touch-pan-y'
                         }`}
                       >
                         {((nbaPropsMode === 'team' && nbaRightTab === 'breakdown') ||
