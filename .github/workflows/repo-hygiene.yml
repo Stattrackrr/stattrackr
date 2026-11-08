@@ -26,13 +26,21 @@ jobs:
         id: changes
         shell: bash
         run: |
+          set +e
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             base_ref="origin/${{ github.base_ref }}"
-            git fetch origin "${{ github.base_ref }}" --depth=1
-            files=$(git diff --name-status "$base_ref"...HEAD | awk '{ if ($1 == "D") print "D:" $2; else print $2 }' | tr '\n' ' ')
+            # Shallow PR checkouts sometimes lack the base tip; don't hard-fail the job on fetch.
+            git fetch --no-tags origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}" --depth=1 2>/dev/null \
+              || git fetch --no-tags origin "${{ github.base_ref }}" --depth=1 2>/dev/null \
+              || true
+            if git rev-parse --verify "$base_ref" >/dev/null 2>&1; then
+              files=$(git diff --name-status "$base_ref"...HEAD | awk '{ if ($1 == "D") print "D:" $2; else print $2 }' | tr '\n' ' ')
+            else
+              files=$(git diff-tree --no-commit-id --name-status -r HEAD | awk '{ if ($1 == "D") print "D:" $2; else print $2 }' | tr '\n' ' ')
+            fi
           else
             before="${{ github.event.before }}"
-            if [[ -n "$before" && "$before" != "0000000000000000000000000000000000000000" ]]; then
+            if [[ -n "$before" && "$before" != "0000000000000000000000000000000000000000" ]] && git cat-file -e "$before^{commit}" 2>/dev/null; then
               files=$(git diff --name-status "$before"...HEAD | awk '{ if ($1 == "D") print "D:" $2; else print $2 }' | tr '\n' ' ')
             else
               files=$(git diff-tree --no-commit-id --name-status -r HEAD | awk '{ if ($1 == "D") print "D:" $2; else print $2 }' | tr '\n' ' ')

@@ -21,7 +21,8 @@ env:
 jobs:
   refresh_odds:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    # Route maxDuration is 300s; allow one transport retry after a hang.
+    timeout-minutes: 15
     steps:
       - name: Check PROD_URL and CRON_SECRET
         id: check
@@ -33,58 +34,17 @@ jobs:
             echo "configured=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Checkout curl helper
+        if: steps.check.outputs.configured == 'true'
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            scripts/ci-curl-prod-cron.sh
+          sparse-checkout-cone-mode: false
+
       - name: Refresh tennis odds and bake DVP
         if: steps.check.outputs.configured == 'true'
         env:
           PROD_URL: ${{ secrets.PROD_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          PROD="${PROD_URL%/}"
-          case "$PROD" in
-            http://*) PROD="https://${PROD#http://}" ;;
-          esac
-          EFFECTIVE=$(curl -sS -o /dev/null -w "%{url_effective}" -L --max-time 20 "${PROD}/" || true)
-          ORIGIN=$(printf '%s' "$EFFECTIVE" | sed -E 's#(https?://[^/]+).*#\1#')
-          case "$ORIGIN" in
-            http://*|https://*) ;;
-            *) ORIGIN="$PROD" ;;
-          esac
-          URL="${ORIGIN}/api/cron/refresh-tennis-odds?force=1"
-          echo "Canonical cron URL: $URL"
-          echo "Refreshing tennis odds snapshots and DVP..."
-
-          call_cron() {
-            local target="$1"
-            local timeout="$2"
-            local hdr body
-            hdr=$(mktemp)
-            body=$(mktemp)
-            HTTP_STATUS=$(curl -sS -D "$hdr" -o "$body" --max-time "$timeout" \
-              -H "Authorization: Bearer ${CRON_SECRET}" \
-              -H "X-Cron-Secret: ${CRON_SECRET}" \
-              -H "Accept: application/json" \
-              -w "%{http_code}" \
-              "$target" || true)
-            HTTP_STATUS="${HTTP_STATUS:-000}"
-            BODY=$(cat "$body")
-            LOCATION=$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]+:[[:space:]]*/,""); print}' "$hdr" | tr -d '\r' | tail -1)
-            rm -f "$hdr" "$body"
-          }
-
-          call_cron "$URL" 280
-          if [ "$HTTP_STATUS" = "301" ] || [ "$HTTP_STATUS" = "302" ] || [ "$HTTP_STATUS" = "307" ] || [ "$HTTP_STATUS" = "308" ]; then
-            echo "Edge redirect $HTTP_STATUS -> $LOCATION"
-            case "$LOCATION" in
-              http://*|https://*) TARGET="$LOCATION" ;;
-              /*) TARGET="${ORIGIN}${LOCATION}" ;;
-              *) TARGET="${ORIGIN}/${LOCATION}" ;;
-            esac
-            call_cron "$TARGET" 280
-          fi
-          echo "Response ($HTTP_STATUS): $BODY"
-          OK=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(j.success === true ? 'true' : 'false'); } catch { process.stdout.write('false'); }" "$BODY")
-          if [ "$HTTP_STATUS" != "200" ] || [ "$OK" != "true" ]; then
-            echo "Tennis odds ingest failed (HTTP ${HTTP_STATUS:-unknown})"
-            exit 1
-          fi
-          echo "Tennis odds + DVP ingest ok"
+        run: bash scripts/ci-curl-prod-cron.sh /api/cron/refresh-tennis-odds?force=1 280 2

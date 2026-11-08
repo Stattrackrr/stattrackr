@@ -25,6 +25,8 @@ concurrency:
 
 env:
   TZ: Australia/Melbourne
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+  PUPPETEER_SKIP_DOWNLOAD: '1'
 
 jobs:
   process_stats:

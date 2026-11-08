@@ -30,6 +30,10 @@ concurrency:
   group: nba-sync
   cancel-in-progress: false
 
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+  PUPPETEER_SKIP_DOWNLOAD: '1'
+
 jobs:
   sync:
     runs-on: ubuntu-latest

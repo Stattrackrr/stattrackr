@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Hit a production cron route with CRON_SECRET. Follows host redirects.
+# Retries once on transport timeout / empty response (HTTP 000) — common when
+# Vercel is cold or the cron is near maxDuration.
 #
 # Usage:
 #   PROD_URL=... CRON_SECRET=... ./scripts/ci-curl-prod-cron.sh /api/cron/refresh-nbl-odds 280
@@ -10,6 +12,7 @@ set -euo pipefail
 
 PATH_AND_QUERY="${1:?cron path required, e.g. /api/cron/refresh-nbl-odds}"
 TIMEOUT="${2:-280}"
+RETRIES="${3:-2}"
 
 if [ -z "${PROD_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
   echo "PROD_URL or CRON_SECRET not set; skipping prod cron"
@@ -53,21 +56,36 @@ call_cron() {
   rm -f "$hdr" "$body"
 }
 
-call_cron "$URL" "$TIMEOUT"
-if [ "$HTTP_STATUS" = "301" ] || [ "$HTTP_STATUS" = "302" ] || [ "$HTTP_STATUS" = "307" ] || [ "$HTTP_STATUS" = "308" ]; then
-  echo "Edge redirect $HTTP_STATUS -> $LOCATION"
-  case "$LOCATION" in
-    http://*|https://*) TARGET="$LOCATION" ;;
-    /*) TARGET="${ORIGIN}${LOCATION}" ;;
-    *) TARGET="${ORIGIN}/${LOCATION}" ;;
-  esac
-  call_cron "$TARGET" "$TIMEOUT"
-fi
+attempt=1
+while [ "$attempt" -le "$RETRIES" ]; do
+  echo "Attempt ${attempt}/${RETRIES} (timeout ${TIMEOUT}s)…"
+  call_cron "$URL" "$TIMEOUT"
+  if [ "$HTTP_STATUS" = "301" ] || [ "$HTTP_STATUS" = "302" ] || [ "$HTTP_STATUS" = "307" ] || [ "$HTTP_STATUS" = "308" ]; then
+    echo "Edge redirect $HTTP_STATUS -> $LOCATION"
+    case "$LOCATION" in
+      http://*|https://*) TARGET="$LOCATION" ;;
+      /*) TARGET="${ORIGIN}${LOCATION}" ;;
+      *) TARGET="${ORIGIN}/${LOCATION}" ;;
+    esac
+    call_cron "$TARGET" "$TIMEOUT"
+  fi
 
-echo "Response ($HTTP_STATUS): $BODY"
-OK=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(j.success === true ? 'true' : 'false'); } catch { process.stdout.write('false'); }" "$BODY")
-if [ "$HTTP_STATUS" != "200" ] || [ "$OK" != "true" ]; then
-  echo "Prod cron failed (HTTP ${HTTP_STATUS:-unknown})"
-  exit 1
-fi
-echo "Prod cron ok"
+  echo "Response ($HTTP_STATUS): $BODY"
+  OK=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(j.success === true ? 'true' : 'false'); } catch { process.stdout.write('false'); }" "$BODY")
+  if [ "$HTTP_STATUS" = "200" ] && [ "$OK" = "true" ]; then
+    echo "Prod cron ok"
+    exit 0
+  fi
+
+  # Retry only transport/timeout empties — real 4xx/5xx JSON failures should fail fast.
+  if [ "$HTTP_STATUS" != "000" ] && [ -n "$BODY" ]; then
+    break
+  fi
+  if [ "$attempt" -lt "$RETRIES" ]; then
+    sleep $((attempt * 15))
+  fi
+  attempt=$((attempt + 1))
+done
+
+echo "Prod cron failed (HTTP ${HTTP_STATUS:-unknown})"
+exit 1

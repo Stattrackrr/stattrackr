@@ -29,6 +29,9 @@ concurrency:
 
 env:
   TZ: Australia/Brisbane
+  # react-devtools pulls Electron; CI never needs the binary and download 504s flake npm ci.
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+  PUPPETEER_SKIP_DOWNLOAD: '1'
 
 jobs:
   snapshot:
