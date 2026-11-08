@@ -264,6 +264,9 @@ export function tennisOddsApiNetSourceFromItems(items: NetItem[], book: string, 
         put(`tot|${kind}|${line}`, ou === 'over' ? 'a' : 'b', item.odds);
       }
     } else if (item.bet_type === 'team total' && line != null && (side === 'home' || side === 'away')) {
+      // Do NOT hard-skip main_line_eligible=false here: BetGoodwin marks the entire
+      // team-total games ladder false (junk 0.5–5.5 AND real ~12.5+). pruneMatchPlayerGameLines
+      // drops the set/alt junk after pairing.
       const ou = overUnderSide(item);
       if (ou && (metric === 'games' || metric === 'sets')) put(`team|${metric}|${side}|${line}`, ou === 'over' ? 'a' : 'b', item.odds);
     } else if (item.bet_type === 'player prop' && line != null) {
@@ -289,7 +292,19 @@ export function tennisOddsApiNetSourceFromItems(items: NetItem[], book: string, 
       }
     }
   }
+  // If a match player-games ladder exists (~9.5+), drop the low set/alt leftovers that
+  // some books still leave eligible (or unflagged) beside it.
+  src.homeGames = pruneMatchPlayerGameLines(src.homeGames);
+  src.awayGames = pruneMatchPlayerGameLines(src.awayGames);
   return src;
+}
+
+/** Match player-games mains sit ~9.5–20; a lone 5.5 ladder is not a real match total. */
+function pruneMatchPlayerGameLines<T extends { line: number }>(rows: T[]): T[] {
+  if (!rows.length) return rows;
+  const max = Math.max(...rows.map((r) => r.line).filter(Number.isFinite));
+  if (!(max >= 9.5)) return [];
+  return rows.filter((r) => r.line >= 9.5);
 }
 
 export type TennisOddsNetEvent = NetEvent;

@@ -212,6 +212,80 @@ test('PointsBet: several lines per market paired by side and points', () => {
   assert.deepEqual(src.homeWinSet, { yes: 2.1, no: 1.71 });
 });
 
+test('odds-api.net: BetGoodwin team-total junk (all mle=false) keeps real 9.5+ ladder only', () => {
+  // Live BetGoodwin marks EVERY team-total games line main_line_eligible=false,
+  // including real match player totals — so we prune by line height, not that flag.
+  const it = (
+    bet_type: string,
+    metric: string,
+    side: string | undefined,
+    line: string,
+    odds: number,
+    extra: object = {}
+  ) => ({
+    bookmaker: 'betgoodwin',
+    bet_type,
+    metric,
+    side,
+    line,
+    odds,
+    period: 'full time',
+    is_available: true,
+    main_line_eligible: false,
+    ...extra,
+  });
+  const src = tennisOddsApiNetSourceFromItems(
+    [
+      it('team total', 'games', 'away', 'over 5.5', 1.75),
+      it('team total', 'games', 'away', 'under 5.5', 1.909091),
+      it('team total', 'games', 'away', 'over 1.5', 2.2),
+      it('team total', 'games', 'away', 'under 1.5', 1.6),
+      it('team total', 'games', 'away', 'over 12.5', 1.5),
+      it('team total', 'games', 'away', 'under 12.5', 2.4),
+      it('team total', 'games', 'away', 'over 13.5', 2.375),
+      it('team total', 'games', 'away', 'under 13.5', 1.533333),
+      it('team total', 'games', 'home', 'over 10.5', 1.8),
+      it('team total', 'games', 'home', 'under 10.5', 1.85),
+      it('team total', 'games', 'home', 'over 5.5', 2.0),
+      it('team total', 'games', 'home', 'under 5.5', 1.7),
+      it('team total', 'games', 'home', 'over 6.5', 1.3),
+      it('team total', 'games', 'home', 'under 6.5', 3.0),
+    ],
+    'betgoodwin',
+    { home: 'Ben Shelton', away: 'Carlos Alcaraz' }
+  );
+  assert.deepEqual(src.awayGames, [
+    { line: 12.5, over: 1.5, under: 2.4 },
+    { line: 13.5, over: 2.375, under: 1.533333 },
+  ]);
+  assert.deepEqual(src.homeGames, [{ line: 10.5, over: 1.8, under: 1.85 }]);
+});
+
+test('odds-api.net: lone BetGoodwin sub-9.5 team-total games ladder is dropped', () => {
+  const it = (side: string, line: string, odds: number) => ({
+    bookmaker: 'betgoodwin',
+    bet_type: 'team total',
+    metric: 'games',
+    side,
+    line,
+    odds,
+    period: 'full time',
+    is_available: true,
+    main_line_eligible: false,
+  });
+  const src = tennisOddsApiNetSourceFromItems(
+    [
+      it('away', 'over 5.5', 1.75),
+      it('away', 'under 5.5', 1.909091),
+      it('away', 'over 1.5', 2.2),
+      it('away', 'under 1.5', 1.6),
+    ],
+    'betgoodwin',
+    { home: 'Ben Shelton', away: 'Carlos Alcaraz' }
+  );
+  assert.deepEqual(src.awayGames, []);
+});
+
 test('odds-api.net: one book, games vs sets markets, player props by name', () => {
   const it = (bet_type: string, metric: string, side: string | undefined, line: string, odds: number, extra: object = {}) => ({
     bookmaker: 'sportsbet', bet_type, metric, side, line, odds, period: 'full time', is_available: true, ...extra,

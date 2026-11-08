@@ -369,7 +369,15 @@ export function tennisOuLinesForStat(
     return stat === 'totalSets' ? lines : lines.filter((line) => line.over !== 'N/A');
   }
   const plausible = filterTennisOuLines(stat, rawLinesForStat(book, stat));
-  return dropMisleadingPlayerTotalAlts(stat, plausible.filter(tennisOuLineInSelectorBand), book);
+  // Drop set/alt leaks using the full ladder first — juice-band filter alone can leave a
+  // lone junk 5.5 (in band) while the real 12.5+ mains are short-priced out of band.
+  const cleaned = dropMisleadingPlayerTotalAlts(stat, plausible, book);
+  const inBand = cleaned.filter(tennisOuLineInSelectorBand);
+  if (inBand.length) return inBand;
+  // Heavy favorites: real match player-game totals often sit outside 1.65–2.50. Once junk
+  // is stripped, keep the cleaned ladder rather than posting nothing (or a fake alt).
+  if ((stat === 'gamesWon' || stat === 'gamesLost') && cleaned.length) return cleaned;
+  return inBand;
 }
 
 function ouLineNumber(line: TennisOuLine): number {
@@ -418,7 +426,8 @@ function dropInvertedTotalAlts(lines: TennisOuLine[]): TennisOuLine[] {
 
 /**
  * Player match-game totals sit around 9–20. 6.5/7.5/8.5 next to a 9.5+ ladder are
- * set totals or handicaps — and their juice will not move like a real alt ladder.
+ * set totals or handicaps. A book that only posts sub-9.5 "player games" (BetGoodwin
+ * team-total junk) is not a match ladder — drop it rather than promoting 5.5.
  */
 function dropMisleadingPlayerTotalAlts(
   stat: string,
@@ -430,13 +439,14 @@ function dropMisleadingPlayerTotalAlts(
   const withoutSpread = spreadAbs.size
     ? lines.filter((row) => !spreadAbs.has(Math.abs(ouLineNumber(row))))
     : lines;
-  const pool = withoutSpread.length ? withoutSpread : lines;
-  if (!pool.length) return pool;
+  // Never fall back to handicap-colliding lines — that reintroduces fake player totals.
+  const pool = withoutSpread;
+  if (!pool.length) return [];
   const nums = pool.map(ouLineNumber).filter(Number.isFinite);
   const max = Math.max(...nums);
-  const matchLike = Number.isFinite(max) && max >= 9.5 ? pool.filter((row) => ouLineNumber(row) >= 9.5) : pool;
-  const ranked = matchLike.length ? matchLike : pool;
-  return dropInvertedTotalAlts(ranked);
+  if (!(Number.isFinite(max) && max >= 9.5)) return [];
+  const matchLike = pool.filter((row) => ouLineNumber(row) >= 9.5);
+  return dropInvertedTotalAlts(matchLike);
 }
 
 function medianLineNumber(lines: TennisOuLine[]): number {
