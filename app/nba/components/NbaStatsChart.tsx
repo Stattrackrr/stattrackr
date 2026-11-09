@@ -1756,7 +1756,8 @@ export function NbaStatsChart({
   };
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+    // mousedown only — touchstart-before-click races make H/A/Rest option taps flaky on mobile.
+    const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
       if (timeframeDropdownRef.current && !timeframeDropdownRef.current.contains(target)) {
         setIsTimeframeDropdownOpen(false);
@@ -1775,11 +1776,7 @@ export function NbaStatsChart({
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -1903,8 +1900,8 @@ export function NbaStatsChart({
           ? '2+'
           : 'Rest';
 
-  const rightChartControls = (
-    <div className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto flex-shrink-0 min-w-0">
+  const rightChartControls = (mlAuto = true) => (
+    <div className={`flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0 min-w-0 ${mlAuto ? 'ml-auto' : ''}`}>
       {setShowAdvancedFilters != null && (
         <button
           type="button"
@@ -1926,7 +1923,7 @@ export function NbaStatsChart({
             }
             setShowAdvancedFilters(next);
           }}
-          className={`w-[4.5rem] sm:w-20 px-1.5 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 ${
+          className={`w-16 sm:w-20 px-1 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 ${
             splitsToggleActive
               ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
               : ''
@@ -1945,7 +1942,7 @@ export function NbaStatsChart({
               setIsRestDaysDropdownOpen(false);
               setIsQuarterDropdownOpen(!isQuarterDropdownOpen);
             }}
-            className={`px-2 sm:px-2.5 py-1.5 h-[32px] min-w-[4.5rem] sm:min-w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+            className={`px-1.5 sm:px-2.5 py-1.5 h-[32px] w-16 sm:w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
               selectedQuarter != null
                 ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
                 : ''
@@ -1953,7 +1950,7 @@ export function NbaStatsChart({
             aria-label={`Choose quarter for ${quarterParent || 'stat'}`}
             aria-expanded={isQuarterDropdownOpen}
           >
-            <span className="truncate">{selectedQuarter != null ? `Q${selectedQuarter}` : 'Quarter'}</span>
+            <span className="truncate">{selectedQuarter != null ? `Q${selectedQuarter}` : 'Q'}</span>
             <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -2005,7 +2002,7 @@ export function NbaStatsChart({
 
   return (
     <div
-      className="h-full w-full pt-3 pb-2 flex flex-col px-0 sm:px-1 md:px-2"
+      className="h-full w-full pt-3 pb-2 flex flex-col px-2 box-border max-w-full min-w-0"
     >
       <div className="mb-4 sm:mb-5 md:mb-4 mt-0 w-full max-w-full">
         <div
@@ -2117,11 +2114,11 @@ export function NbaStatsChart({
               </>
             )}
           </div>
-          {!showAdvancedFilters && rightChartControls}
+          {!showAdvancedFilters && rightChartControls(true)}
         </div>
 
         {showAdvancedFilters && (
-          <div className="relative z-40 flex items-center flex-nowrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1 min-w-0 w-full">
+          <div className="relative z-40 flex items-center flex-nowrap gap-1 sm:gap-2 md:gap-3 min-w-0 w-full max-w-full overflow-visible">
             <div className={`relative flex-shrink-0 ${isHomeAwayDropdownOpen ? 'z-[60]' : ''}`} ref={homeAwayDropdownRef}>
               <button
                 type="button"
@@ -2131,7 +2128,7 @@ export function NbaStatsChart({
                   setIsRestDaysDropdownOpen(false);
                   setIsHomeAwayDropdownOpen((prev) => !prev);
                 }}
-                className={`w-[4.5rem] sm:w-20 px-1.5 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                className={`w-16 sm:w-20 px-1 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
                   splitVenueFilter === 'Home' || splitVenueFilter === 'Away'
                     ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600'
                     : ''
@@ -2152,7 +2149,10 @@ export function NbaStatsChart({
                     <button
                       key={option.key}
                       type="button"
-                      onClick={() => {
+                      onPointerDown={(e) => {
+                        // Apply on pointerdown so the option wins before any outside/mousedown close.
+                        e.preventDefault();
+                        e.stopPropagation();
                         setSplitVenueFilter(option.key);
                         setIsHomeAwayDropdownOpen(false);
                       }}
@@ -2177,7 +2177,7 @@ export function NbaStatsChart({
                   setIsHomeAwayDropdownOpen(false);
                   setIsRestDaysDropdownOpen((prev) => !prev);
                 }}
-                className={`w-[4.5rem] sm:w-20 px-1.5 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                className={`w-16 sm:w-20 px-1 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
                   restDaysMode !== 'all'
                     ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600'
                     : ''
@@ -2199,7 +2199,9 @@ export function NbaStatsChart({
                     <button
                       key={option.key}
                       type="button"
-                      onClick={() => {
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setRestDaysMode(option.key);
                         setIsRestDaysDropdownOpen(false);
                       }}
@@ -2215,7 +2217,7 @@ export function NbaStatsChart({
                 </div>
               )}
             </div>
-            {rightChartControls}
+            {rightChartControls(true)}
           </div>
         )}
       </div>

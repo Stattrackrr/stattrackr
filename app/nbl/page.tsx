@@ -1557,11 +1557,6 @@ export default function NblDashboardPage() {
                       Game Props
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
-                    {nblPropsMode === 'player'
-                      ? 'Analyze individual player statistics and props'
-                      : 'Analyze game totals, spreads, and game-based props'}
-                  </p>
                 </div>
 
                 {/* 2. Header */}
@@ -1925,7 +1920,7 @@ export default function NblDashboardPage() {
                           <button
                             type="button"
                             onClick={() => setTeamFilterDropdownOpen((v) => !v)}
-                            className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600"
+                            className="w-16 sm:w-20 px-1 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-600"
                           >
                             <span className="flex items-center gap-1 min-w-0">
                               {nblTeamFilter !== 'All' && resolveNblTeamLogo(nblTeamFilter, logoByTeam) ? (
@@ -2561,11 +2556,6 @@ export default function NblDashboardPage() {
                           Game Props
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
-                        {nblPropsMode === 'player'
-                          ? 'Analyze individual player statistics and props'
-                          : 'Analyze game totals, spreads, and game-based props'}
-                      </p>
                     </>
                   )}
                 </div>
