@@ -1807,7 +1807,9 @@ export default function NblDashboardPage() {
 
                 {/* 3. Chart container — AFL heights */}
                 <div
-                  className={`order-3 lg:order-none chart-container-no-focus relative z-10 rounded-lg p-0 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden ${NBL_DASH_CARD_GLOW} ${
+                  className={`order-3 lg:order-none chart-container-no-focus relative z-10 rounded-lg p-0 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 ${
+                    showAdvancedFilters ? 'overflow-visible' : 'overflow-hidden'
+                  } ${NBL_DASH_CARD_GLOW} ${
                     showAdvancedFilters
                       ? 'sm:pt-0 sm:pr-0 sm:pb-0 sm:pl-0 md:pt-1 md:pr-0 md:pb-0 md:pl-0 lg:pt-2 lg:pr-0 lg:pb-0 lg:pl-0'
                       : 'sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0'

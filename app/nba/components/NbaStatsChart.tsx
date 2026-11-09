@@ -1756,22 +1756,30 @@ export function NbaStatsChart({
   };
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (timeframeDropdownRef.current && !timeframeDropdownRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (timeframeDropdownRef.current && !timeframeDropdownRef.current.contains(target)) {
         setIsTimeframeDropdownOpen(false);
       }
-      if (venueDropdownRef.current && !venueDropdownRef.current.contains(e.target as Node)) {
+      if (venueDropdownRef.current && !venueDropdownRef.current.contains(target)) {
         setIsVenueDropdownOpen(false);
       }
-      if (homeAwayDropdownRef.current && !homeAwayDropdownRef.current.contains(e.target as Node)) {
+      if (homeAwayDropdownRef.current && !homeAwayDropdownRef.current.contains(target)) {
         setIsHomeAwayDropdownOpen(false);
       }
-      if (restDaysDropdownRef.current && !restDaysDropdownRef.current.contains(e.target as Node)) {
+      if (restDaysDropdownRef.current && !restDaysDropdownRef.current.contains(target)) {
         setIsRestDaysDropdownOpen(false);
+      }
+      if (quarterDropdownRef.current && !quarterDropdownRef.current.contains(target)) {
+        setIsQuarterDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -1928,11 +1936,13 @@ export function NbaStatsChart({
         </button>
       )}
       {showQuarterPicker && (
-        <div className="relative flex-shrink-0" ref={quarterDropdownRef}>
+        <div className={`relative flex-shrink-0 ${isQuarterDropdownOpen ? 'z-[60]' : ''}`} ref={quarterDropdownRef}>
           <button
             type="button"
             onClick={() => {
               setIsTimeframeDropdownOpen(false);
+              setIsHomeAwayDropdownOpen(false);
+              setIsRestDaysDropdownOpen(false);
               setIsQuarterDropdownOpen(!isQuarterDropdownOpen);
             }}
             className={`px-2 sm:px-2.5 py-1.5 h-[32px] min-w-[4.5rem] sm:min-w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
@@ -1949,36 +1959,39 @@ export function NbaStatsChart({
             </svg>
           </button>
           {isQuarterDropdownOpen && (
-            <>
-              <div className="absolute top-full right-0 mt-1 w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+            <div className="absolute top-full right-0 mt-1 w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[70] overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  applySelectedStat(quarterParent || 'points');
+                  setIsQuarterDropdownOpen(false);
+                }}
+                className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                  selectedStat === quarterParent
+                    ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                    : 'text-gray-900 dark:text-white'
+                }`}
+              >
+                All
+              </button>
+              {quarterParent && quarterPickerOptions(quarterParent).map((opt) => (
                 <button
+                  key={opt.key}
                   type="button"
-                  onClick={() => applySelectedStat(quarterParent || 'points')}
+                  onClick={() => {
+                    applySelectedStat(opt.key);
+                    setIsQuarterDropdownOpen(false);
+                  }}
                   className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                    selectedStat === quarterParent
+                    selectedStat === opt.key
                       ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                       : 'text-gray-900 dark:text-white'
                   }`}
                 >
-                  All
+                  {opt.n}
                 </button>
-                {quarterParent && quarterPickerOptions(quarterParent).map((opt) => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => applySelectedStat(opt.key)}
-                    className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                      selectedStat === opt.key
-                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                        : 'text-gray-900 dark:text-white'
-                    }`}
-                  >
-                    {opt.n}
-                  </button>
-                ))}
-              </div>
-              <div className="fixed inset-0 z-40" onClick={() => setIsQuarterDropdownOpen(false)} aria-hidden />
-            </>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -2108,12 +2121,13 @@ export function NbaStatsChart({
         </div>
 
         {showAdvancedFilters && (
-          <div className="relative z-30 flex items-center flex-nowrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1 min-w-0 w-full overflow-x-auto overscroll-x-contain">
-            <div className={`relative flex-shrink-0 ${isHomeAwayDropdownOpen ? 'z-50' : ''}`} ref={homeAwayDropdownRef}>
+          <div className="relative z-40 flex items-center flex-nowrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1 min-w-0 w-full">
+            <div className={`relative flex-shrink-0 ${isHomeAwayDropdownOpen ? 'z-[60]' : ''}`} ref={homeAwayDropdownRef}>
               <button
                 type="button"
                 onClick={() => {
                   setIsTimeframeDropdownOpen(false);
+                  setIsQuarterDropdownOpen(false);
                   setIsRestDaysDropdownOpen(false);
                   setIsHomeAwayDropdownOpen((prev) => !prev);
                 }}
@@ -2129,48 +2143,37 @@ export function NbaStatsChart({
                 </svg>
               </button>
               {isHomeAwayDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      setIsHomeAwayDropdownOpen(false);
-                    }}
-                    aria-hidden
-                  />
-                  <div className="absolute top-full left-0 mt-1 w-24 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
-                    {([
-                      { key: 'all', label: 'All' },
-                      { key: 'Home', label: 'Home' },
-                      { key: 'Away', label: 'Away' },
-                    ] as const).map((option) => (
-                      <button
-                        key={option.key}
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSplitVenueFilter(option.key);
-                          setIsHomeAwayDropdownOpen(false);
-                        }}
-                        className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                          splitVenueFilter === option.key
-                            ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                            : 'text-gray-900 dark:text-white'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
+                <div className="absolute top-full left-0 mt-1 w-24 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[70] overflow-hidden">
+                  {([
+                    { key: 'all', label: 'All' },
+                    { key: 'Home', label: 'Home' },
+                    { key: 'Away', label: 'Away' },
+                  ] as const).map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => {
+                        setSplitVenueFilter(option.key);
+                        setIsHomeAwayDropdownOpen(false);
+                      }}
+                      className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                        splitVenueFilter === option.key
+                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                          : 'text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
-            <div className={`relative flex-shrink-0 ${isRestDaysDropdownOpen ? 'z-50' : ''}`} ref={restDaysDropdownRef}>
+            <div className={`relative flex-shrink-0 ${isRestDaysDropdownOpen ? 'z-[60]' : ''}`} ref={restDaysDropdownRef}>
               <button
                 type="button"
                 onClick={() => {
                   setIsTimeframeDropdownOpen(false);
+                  setIsQuarterDropdownOpen(false);
                   setIsHomeAwayDropdownOpen(false);
                   setIsRestDaysDropdownOpen((prev) => !prev);
                 }}
@@ -2186,42 +2189,30 @@ export function NbaStatsChart({
                 </svg>
               </button>
               {isRestDaysDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      setIsRestDaysDropdownOpen(false);
-                    }}
-                    aria-hidden
-                  />
-                  <div className="absolute top-full left-0 mt-1 w-28 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
-                    {([
-                      { key: 'all', label: 'All' },
-                      { key: '0', label: 'B2B' },
-                      { key: '1', label: '1 day' },
-                      { key: '2plus', label: '2+ days' },
-                    ] as const).map((option) => (
-                      <button
-                        key={option.key}
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setRestDaysMode(option.key);
-                          setIsRestDaysDropdownOpen(false);
-                        }}
-                        className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                          restDaysMode === option.key
-                            ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                            : 'text-gray-900 dark:text-white'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
+                <div className="absolute top-full left-0 mt-1 w-28 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[70] overflow-hidden">
+                  {([
+                    { key: 'all', label: 'All' },
+                    { key: '0', label: 'B2B' },
+                    { key: '1', label: '1 day' },
+                    { key: '2plus', label: '2+ days' },
+                  ] as const).map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => {
+                        setRestDaysMode(option.key);
+                        setIsRestDaysDropdownOpen(false);
+                      }}
+                      className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                        restDaysMode === option.key
+                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                          : 'text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
             {rightChartControls}
