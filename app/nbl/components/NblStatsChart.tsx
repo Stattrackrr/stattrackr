@@ -1857,7 +1857,7 @@ export function NblStatsChart({
             }
             setShowAdvancedFilters(next);
           }}
-          className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 ${
+          className={`w-[4.75rem] sm:w-20 px-1.5 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 ${
             advancedToggleActive
               ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
               : ''
@@ -1867,14 +1867,14 @@ export function NblStatsChart({
         </button>
       )}
       {showQuarterPicker && (
-        <div className="relative" ref={quarterDropdownRef}>
+        <div className="relative flex-shrink-0" ref={quarterDropdownRef}>
           <button
             type="button"
             onClick={() => {
               setIsTimeframeDropdownOpen(false);
               setIsQuarterDropdownOpen(!isQuarterDropdownOpen);
             }}
-            className={`px-2.5 py-1.5 h-[32px] min-w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+            className={`px-2 sm:px-2.5 py-1.5 h-[32px] min-w-[4.5rem] sm:min-w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
               selectedQuarter != null
                 ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
                 : ''
@@ -2049,8 +2049,8 @@ export function NblStatsChart({
         </div>
 
         {showAdvancedFilters && (
-          <div className="relative z-30 flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1">
-            <div className={`relative ${isHomeAwayDropdownOpen ? 'z-50' : ''}`} ref={homeAwayDropdownRef}>
+          <div className="relative z-30 flex items-center flex-nowrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1 min-w-0 w-full overflow-x-auto overscroll-x-contain">
+            <div className={`relative flex-shrink-0 ${isHomeAwayDropdownOpen ? 'z-50' : ''}`} ref={homeAwayDropdownRef}>
               <button
                 type="button"
                 onClick={() => {
@@ -2058,7 +2058,7 @@ export function NblStatsChart({
                   setIsQuarterDropdownOpen(false);
                   setIsHomeAwayDropdownOpen((prev) => !prev);
                 }}
-                className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                className={`w-[4.5rem] sm:w-20 px-1.5 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
                   splitVenueFilter === 'Home' || splitVenueFilter === 'Away'
                     ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600'
                     : ''
