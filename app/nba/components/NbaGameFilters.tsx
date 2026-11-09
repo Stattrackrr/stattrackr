@@ -46,6 +46,9 @@ export const DEFAULT_NBA_GAME_FILTERS: NbaGameFiltersState = {
 
 export type NbaGameFilterDataItem = {
   gameIndex: number;
+  matchId?: string | null;
+  date?: string | null;
+  opponentCode?: string | null;
   opponent: string;
   dvpRank: number | null;
   dvpRankSource?: 'tipoff' | 'live' | null;

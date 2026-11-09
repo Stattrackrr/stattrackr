@@ -23,6 +23,11 @@ import { NblBoxScore } from '@/app/nbl/components/NblBoxScore';
 import { NblShotChart } from '@/app/nbl/components/NblShotChart';
 import NblDvpCard, { PlayTypesInfoButton } from '@/app/nbl/components/NblDvpCard';
 import NblOpponentBreakdownCard from '@/app/nbl/components/NblOpponentBreakdownCard';
+import type { NblGameFilterDataItem } from '@/app/nbl/components/NblGameFilters';
+import {
+  buildNblPerGameDefenseRanks,
+  nblChartStatToSteMetric,
+} from '@/lib/nbl/chartDefenseRanks';
 import NblTeamMatchupCard from '@/app/nbl/components/NblTeamMatchupCard';
 import { NblTeamSelectionsCard } from '@/app/nbl/components/NblTeamSelectionsCard';
 import { NblLineSelector } from '@/app/nbl/components/NblLineSelector';
@@ -450,6 +455,7 @@ export default function NblDashboardPage() {
   const [chartTimeframe, setChartTimeframe] = useState<NblChartTimeframe>('last10');
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('minutes');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [nblPerGameFilterData, setNblPerGameFilterData] = useState<NblGameFilterDataItem[] | null>(null);
   const [nblGameFilters, setNblGameFilters] = useState<NblGameFiltersState>(() => ({
     ...DEFAULT_NBL_GAME_FILTERS,
   }));
@@ -946,6 +952,26 @@ export default function NblDashboardPage() {
     };
   }, [nblPropsMode, selectedPlayer?.playerId]);
 
+  // Advanced chart: per-game opponent D ranks (STE allowed).
+  useEffect(() => {
+    if (nblPropsMode !== 'player' || !selectedPlayerGameLogs.length) {
+      setNblPerGameFilterData(null);
+      return;
+    }
+    let cancelled = false;
+    const metric = nblChartStatToSteMetric(mainChartStat);
+    void buildNblPerGameDefenseRanks({
+      logs: selectedPlayerGameLogs,
+      year: NBL_CURRENT_SEASON_YEAR,
+      metric,
+    }).then((rows) => {
+      if (!cancelled) setNblPerGameFilterData(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [nblPropsMode, selectedPlayerGameLogs, mainChartStat]);
+
   // Game Props: team score logs (schedule + cached quarter scores).
   useEffect(() => {
     if (nblPropsMode !== 'team') {
@@ -1330,29 +1356,28 @@ export default function NblDashboardPage() {
   }, [mainChartStat]);
 
   const chartGameLogsForPlayer = useMemo(() => {
-    const base =
-      !nblTeamFilter || nblTeamFilter === 'All' || nblTeamFilter.trim() === ''
-        ? selectedPlayerGameLogs
-        : selectedPlayerGameLogs.filter((g) => {
-            const opp = g.opponent;
-            if (!opp) return false;
-            const resolved = resolveNblClubName(opp) || opp.trim();
-            return resolved === nblTeamFilter.trim() || opp.trim() === nblTeamFilter.trim();
-          });
-    return base.map((g, idx) => ({ ...g, __nblGameIndex: idx }));
+    const indexed = selectedPlayerGameLogs.map((g, idx) => ({ ...g, __nblGameIndex: idx }));
+    if (!nblTeamFilter || nblTeamFilter === 'All' || nblTeamFilter.trim() === '') return indexed;
+    return indexed.filter((g) => {
+      const opp = g.opponent;
+      if (!opp) return false;
+      const resolved = resolveNblClubName(opp) || opp.trim();
+      return resolved === nblTeamFilter.trim() || opp.trim() === nblTeamFilter.trim();
+    });
   }, [selectedPlayerGameLogs, nblTeamFilter]);
 
   const chartGameLogsForTeam = useMemo(() => {
-    const base =
-      !nblTeamFilter || nblTeamFilter === 'All' || nblTeamFilter.trim() === ''
-        ? selectedTeamGameLogs
-        : selectedTeamGameLogs.filter((g) => {
-            const opp = String(g.opponent ?? '');
-            if (!opp) return false;
-            const resolved = resolveNblClubName(opp) || opp.trim();
-            return resolved === nblTeamFilter.trim() || opp.trim() === nblTeamFilter.trim();
-          });
-    return base.map((g, idx) => ({ ...g, __nblGameIndex: idx }));
+    const indexed = selectedTeamGameLogs.map((g, idx) => ({
+      ...(g as Record<string, unknown>),
+      __nblGameIndex: idx,
+    }));
+    if (!nblTeamFilter || nblTeamFilter === 'All' || nblTeamFilter.trim() === '') return indexed;
+    return indexed.filter((g) => {
+      const opp = String((g as Record<string, unknown>).opponent ?? '');
+      if (!opp) return false;
+      const resolved = resolveNblClubName(opp) || opp.trim();
+      return resolved === nblTeamFilter.trim() || opp.trim() === nblTeamFilter.trim();
+    });
   }, [selectedTeamGameLogs, nblTeamFilter]);
 
   const chartGameLogs =
@@ -1849,7 +1874,7 @@ export default function NblDashboardPage() {
                     setShowAdvancedFilters={nblPropsMode === 'player' ? setShowAdvancedFilters : undefined}
                     nblGameFilters={nblPropsMode === 'player' ? nblGameFilters : undefined}
                     setNblGameFilters={nblPropsMode === 'player' ? setNblGameFilters : undefined}
-                    perGameFilterData={null}
+                    perGameFilterData={nblPropsMode === 'player' ? nblPerGameFilterData : null}
                     nextOpponent={displayOpponent}
                     gamePropsTeam={nblPropsMode === 'team' ? selectedTeam : null}
                     uiResetToken={chartUiResetToken}

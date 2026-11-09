@@ -7,8 +7,13 @@ import { writeLineInputValue } from '@/lib/bettingLineInput';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import NbaXAxisTick from '@/app/nba/components/NbaXAxisTick';
-import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
+import {
+  matchesRestDaysMode,
+  restDaysBySourceIndex,
+  type ChartRestDaysMode,
+} from '@/lib/chartRestDays';
 import { NBA_CURRENT_SEASON_YEAR, resolveNbaClubName, normalizeTeamKey } from '@/lib/nba/dash/teams';
+import { normalizeAbbr } from '@/lib/nbaAbbr';
 import {
   NBA_TEAM_QUARTER_STAT_KEYS,
   NBA_TEAM_STAT_OPTIONS,
@@ -818,6 +823,8 @@ interface NbaStatsChartProps {
   lockOtherStats?: boolean;
   /** Distinct odds lines per stat pill. Hidden when a stat has none. */
   statLineCounts?: Record<string, number>;
+  /** Games currently plotted (after splits + timeframe), oldest→newest — keeps Supporting stats aligned. */
+  onVisibleGameLogsChange?: (logs: Array<Record<string, unknown>>) => void;
 }
 
 export function NbaStatsChart({
@@ -853,6 +860,7 @@ export function NbaStatsChart({
   uiResetToken,
   lockOtherStats = false,
   statLineCounts,
+  onVisibleGameLogsChange,
 }: NbaStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
@@ -1077,10 +1085,15 @@ export function NbaStatsChart({
   const [showSplitsFilters, setShowSplitsFilters] = useState(false);
   const [splitResultFilter, setSplitResultFilter] = useState<NbaSplitResultFilter>('all');
   const [splitVenueFilter, setSplitVenueFilter] = useState<string>('all');
+  const [restDaysMode, setRestDaysMode] = useState<ChartRestDaysMode>('all');
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const quarterDropdownRef = useRef<HTMLDivElement>(null);
   const venueDropdownRef = useRef<HTMLDivElement>(null);
+  const homeAwayDropdownRef = useRef<HTMLDivElement>(null);
+  const restDaysDropdownRef = useRef<HTMLDivElement>(null);
   const [isVenueDropdownOpen, setIsVenueDropdownOpen] = useState(false);
+  const [isHomeAwayDropdownOpen, setIsHomeAwayDropdownOpen] = useState(false);
+  const [isRestDaysDropdownOpen, setIsRestDaysDropdownOpen] = useState(false);
   const lineSyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutoSyncedStatRef = useRef<string | null>(null);
 
@@ -1107,48 +1120,23 @@ export function NbaStatsChart({
     }
   }, [selectedStat]);
 
-  // When Advanced is open, keep opponent-rank advanced selection in sync with the
-  // currently selected main stat (for supported AFL opponent-rank stats).
+  // NBA Splits is H/A + Rest only (no Opp D slider / second axis). Keep opponentStat
+  // wiring available via perGameFilterData, but do not auto-select a rank filter.
   useEffect(() => {
-    if (!showAdvancedFilters) return;
-    const mapped = CHART_STAT_TO_ADVANCED_OPPONENT_FILTER[selectedStat || ''];
-    if (!mapped) return;
-
-    // Only auto-sync when the main selected stat has actually changed.
-    if (lastAutoSyncedStatRef.current === selectedStat) return;
-    lastAutoSyncedStatRef.current = selectedStat || null;
-
-    // Only auto-sync opponent-rank filters (or when nothing is selected). Never override DVP/Minutes.
-    if (selectedAdvancedFilter != null && !isOpponentRankAdvancedFilter(selectedAdvancedFilter)) return;
-
-    if (selectedAdvancedFilter !== mapped) {
-      setSelectedAdvancedFilter(mapped);
+    if (!showAdvancedFilters) {
+      lastAutoSyncedStatRef.current = null;
+      return;
     }
     if (nbaGameFilters && setNbaGameFilters) {
-      const option = NBA_ADVANCED_OPPONENT_RANK_FILTERS.find((o) => o.key === mapped);
+      const mapped = CHART_STAT_TO_ADVANCED_OPPONENT_FILTER[selectedStat || ''];
+      const option = mapped
+        ? NBA_ADVANCED_OPPONENT_RANK_FILTERS.find((o) => o.key === mapped)
+        : null;
       if (option && nbaGameFilters.opponentStat !== option.oaStatCode) {
         setNbaGameFilters({ ...nbaGameFilters, opponentStat: option.oaStatCode });
       }
     }
-  }, [
-    showAdvancedFilters,
-    selectedStat,
-    selectedAdvancedFilter,
-    nbaGameFilters,
-    setNbaGameFilters,
-  ]);
-
-  // Always derive opponentStat code from the active advanced opponent-rank pill.
-  // This prevents stale opponentStat values when switching between rank pills.
-  useEffect(() => {
-    if (!showAdvancedFilters) return;
-    if (!selectedAdvancedFilter || !isOpponentRankAdvancedFilter(selectedAdvancedFilter)) return;
-    if (!nbaGameFilters || !setNbaGameFilters) return;
-    const option = NBA_ADVANCED_OPPONENT_RANK_FILTERS.find((o) => o.key === selectedAdvancedFilter);
-    if (!option) return;
-    if (nbaGameFilters.opponentStat === option.oaStatCode) return;
-    setNbaGameFilters({ ...nbaGameFilters, opponentStat: option.oaStatCode });
-  }, [showAdvancedFilters, selectedAdvancedFilter, nbaGameFilters, setNbaGameFilters]);
+  }, [showAdvancedFilters, selectedStat, nbaGameFilters, setNbaGameFilters]);
 
   // Ensure we always have a valid selected stat. When the parent controls the stat,
   // ask it to adopt the preferred default; otherwise, fall back to internal state.
@@ -1241,6 +1229,8 @@ export function NbaStatsChart({
 
   useEffect(() => {
     if (splitVenueFilter === 'all') return;
+    // H/A splits are always valid (Splits dropdown), even when venue options are stadium names.
+    if (splitVenueFilter === 'Home' || splitVenueFilter === 'Away') return;
     if (!(visibleVenueOptions as readonly string[]).includes(splitVenueFilter)) {
       setSplitVenueFilter('all');
     }
@@ -1249,8 +1239,11 @@ export function NbaStatsChart({
   useEffect(() => {
     setShowSplitsFilters(false);
     setIsVenueDropdownOpen(false);
+    setIsHomeAwayDropdownOpen(false);
+    setIsRestDaysDropdownOpen(false);
     setSplitResultFilter('all');
     setSplitVenueFilter('all');
+    setRestDaysMode('all');
     setIsTimeframeDropdownOpen(false);
     setSelectedAdvancedFilter(null);
     if (showAdvancedFilters && setShowAdvancedFilters) {
@@ -1259,26 +1252,86 @@ export function NbaStatsChart({
     resetAdvancedRanges();
   }, [uiResetToken]);
 
+  const restDaysByIndex = useMemo(
+    () => restDaysBySourceIndex(filteredGameLogs as Array<{ date?: string | null; game_date?: string | null }>),
+    [filteredGameLogs]
+  );
+
+  const opponentRankByGameKey = useMemo(() => {
+    const map = new Map<string, number | null>();
+    for (const row of perGameFilterData ?? []) {
+      const matchId = String((row as { matchId?: string | null }).matchId || '').trim();
+      const date = String((row as { date?: string | null }).date || '').trim().slice(0, 10);
+      const code = String((row as { opponentCode?: string | null }).opponentCode || row.opponent || '')
+        .trim();
+      const norm = code ? normalizeAbbr(code) : '';
+      if (matchId) map.set(`id:${matchId}`, row.opponentRank);
+      if (date && norm) map.set(`d:${date}|${norm}`, row.opponentRank);
+    }
+    return map;
+  }, [perGameFilterData]);
+
   const splitFilteredGameLogs = useMemo(() => {
-    const filtered = filteredGameLogs.filter((g) => {
+    const oppMin = nbaGameFilters?.opponentRankMin ?? null;
+    const oppMax = nbaGameFilters?.opponentRankMax ?? null;
+    const hasTipTimeRanks = Array.from(opponentRankByGameKey.values()).some(
+      (r) => typeof r === 'number' && r > 0
+    );
+    // Full 1–30 range is a no-op. Missing tip-time ranks must not wipe the chart.
+    const hasOppRankFilter =
+      (oppMin != null || oppMax != null) &&
+      !(oppMin === 1 && oppMax === 30) &&
+      hasTipTimeRanks;
+    const filtered = filteredGameLogs.filter((g, idx) => {
       // Minutes advanced filter applies from game logs even without perGameFilterData
       if (nbaGameFilters) {
         const mins = toNumericValue((g as Record<string, unknown>).minutes);
         if (nbaGameFilters.minutesMin != null && (mins == null || mins < nbaGameFilters.minutesMin)) return false;
         if (nbaGameFilters.minutesMax != null && (mins == null || mins > nbaGameFilters.minutesMax)) return false;
+        if (hasOppRankFilter) {
+          const matchId = String(g.matchId ?? '').trim();
+          const date = String(g.date ?? (g as { game_date?: string }).game_date ?? '')
+            .trim()
+            .slice(0, 10);
+          const code = normalizeAbbr(String(g.opponentCode || g.opponent || ''));
+          const rank =
+            (matchId ? opponentRankByGameKey.get(`id:${matchId}`) : undefined) ??
+            (date && code ? opponentRankByGameKey.get(`d:${date}|${code}`) : undefined) ??
+            null;
+          // No tip-time rank yet → don't drop the game; only constrain ranked ones.
+          if (rank != null) {
+            if (oppMin != null && rank < oppMin) return false;
+            if (oppMax != null && rank > oppMax) return false;
+          }
+        }
       }
       if (splitResultFilter !== 'all') {
         const outcome = getGameOutcome(g.result);
         if (outcome !== splitResultFilter) return false;
       }
       if (splitVenueFilter !== 'all') {
-        const venue = extractVenueFromGameLog(g as Record<string, unknown>);
-        if (venue !== splitVenueFilter) return false;
+        if (splitVenueFilter === 'Home' || splitVenueFilter === 'Away') {
+          const isHome = (g as Record<string, unknown>).isHome;
+          if (typeof isHome !== 'boolean') return false;
+          if (splitVenueFilter === 'Home' ? !isHome : isHome) return false;
+        } else {
+          const venue = extractVenueFromGameLog(g as Record<string, unknown>);
+          if (venue !== splitVenueFilter) return false;
+        }
       }
+      if (!matchesRestDaysMode(restDaysByIndex.get(idx) ?? null, restDaysMode)) return false;
       return true;
     });
     return dedupeNbaGames(filtered as Record<string, unknown>[]) as typeof filteredGameLogs;
-  }, [filteredGameLogs, splitResultFilter, splitVenueFilter, nbaGameFilters]);
+  }, [
+    filteredGameLogs,
+    splitResultFilter,
+    splitVenueFilter,
+    nbaGameFilters,
+    restDaysByIndex,
+    restDaysMode,
+    opponentRankByGameKey,
+  ]);
 
   const chartSourceLogs = useMemo(() => {
     if (mode === 'team' && NBA_TEAM_QUARTER_STAT_KEYS.has(selectedStat)) {
@@ -1298,6 +1351,8 @@ export function NbaStatsChart({
     const opponent = String(g.opponent ?? '-');
     const result = String(g.result ?? '-');
     const gameDate = String(g.date ?? g.game_date ?? '');
+    const matchId = String(g.matchId ?? g.id ?? '').trim() || null;
+    const opponentCode = normalizeAbbr(String(g.opponentCode || g.opponent || '')) || null;
     const venue = extractVenueFromGameLog(g);
     const pts = toNumericValue(g.points) ?? 0;
     const reb = toNumericValue(g.rebounds) ?? 0;
@@ -1345,6 +1400,8 @@ export function NbaStatsChart({
       minutes,
       stats,
       gameId: key,
+      matchId,
+      opponentCode,
       gameDate,
       venue,
       gameSeason,
@@ -1444,6 +1501,42 @@ export function NbaStatsChart({
     return ordered;
   }, [baseChartData, selectedTimeframe, season, nextOpponent, filteredGameLogs, gameToChartRow, effectiveSeason]);
 
+  // Keep Supporting stats on the exact same game set / order as the main chart (incl. H/A + Rest).
+  useEffect(() => {
+    if (!onVisibleGameLogsChange) return;
+    if (!chartData.length) {
+      onVisibleGameLogsChange([]);
+      return;
+    }
+    const byMatchId = new Map<string, Record<string, unknown>>();
+    const byDateOpp = new Map<string, Record<string, unknown>>();
+    const byIndex = new Map<number, Record<string, unknown>>();
+    for (const g of chartSourceLogs as Array<Record<string, unknown>>) {
+      const matchId = String(g.matchId ?? g.id ?? '').trim();
+      const date = String(g.date ?? g.game_date ?? '').trim().slice(0, 10);
+      const opp = String(g.opponent ?? '').trim();
+      const idx = typeof g.__nbaGameIndex === 'number' ? g.__nbaGameIndex : null;
+      if (matchId) byMatchId.set(matchId, g);
+      if (date && opp) byDateOpp.set(`${date}|${opp}`, g);
+      if (idx != null) byIndex.set(idx, g);
+    }
+    const logs: Array<Record<string, unknown>> = [];
+    for (const row of chartData) {
+      const matchId = String((row as { matchId?: string | null }).matchId ?? '').trim();
+      const date = String(row.gameDate ?? '').trim().slice(0, 10);
+      const opp = String(row.opponent ?? '').trim();
+      const idx = typeof (row as { sourceGameIndex?: number }).sourceGameIndex === 'number'
+        ? (row as { sourceGameIndex: number }).sourceGameIndex
+        : null;
+      const found =
+        (matchId ? byMatchId.get(matchId) : undefined) ??
+        (date && opp ? byDateOpp.get(`${date}|${opp}`) : undefined) ??
+        (idx != null ? byIndex.get(idx) : undefined);
+      if (found) logs.push(found);
+    }
+    onVisibleGameLogsChange(logs);
+  }, [chartData, chartSourceLogs, onVisibleGameLogsChange]);
+
   const secondAxisData = useMemo(() => {
     if (!showAdvancedFilters || !selectedAdvancedFilter) return null;
 
@@ -1461,6 +1554,8 @@ export function NbaStatsChart({
     if (!perGameFilterData?.length) return null;
 
     const byGameIndex = new Map<number, number | null>();
+    const byMatchId = new Map<string, number | null>();
+    const byDateOpp = new Map<string, number | null>();
     for (const row of perGameFilterData) {
       const value =
         selectedAdvancedFilter === 'dvp_rank'
@@ -1468,17 +1563,31 @@ export function NbaStatsChart({
           : isOpponentRankAdvancedFilter(selectedAdvancedFilter)
             ? row.opponentRank
             : row.minutes;
-      byGameIndex.set(row.gameIndex, value ?? null);
+      const v = value ?? null;
+      byGameIndex.set(row.gameIndex, v);
+      const matchId = String((row as { matchId?: string | null }).matchId || '').trim();
+      if (matchId) byMatchId.set(matchId, v);
+      const date = String((row as { date?: string | null }).date || '').trim().slice(0, 10);
+      const code = normalizeAbbr(String((row as { opponentCode?: string | null }).opponentCode || row.opponent || ''));
+      if (date && code) byDateOpp.set(`d:${date}|${code}`, v);
     }
 
     return baseChartData.map((row) => {
       const gameIndex = typeof (row as { sourceGameIndex?: unknown }).sourceGameIndex === 'number'
         ? (row as { sourceGameIndex: number }).sourceGameIndex
         : null;
+      const matchId = String((row as { matchId?: string | null }).matchId || '').trim();
+      const date = String(row.gameDate || '').trim().slice(0, 10);
+      const code = normalizeAbbr(String((row as { opponentCode?: string | null }).opponentCode || row.opponent || ''));
+      const value =
+        (matchId ? byMatchId.get(matchId) : undefined) ??
+        (date && code ? byDateOpp.get(`d:${date}|${code}`) : undefined) ??
+        (gameIndex != null ? byGameIndex.get(gameIndex) : undefined) ??
+        null;
       return {
         gameId: row.xKey,
         gameDate: row.gameDate,
-        value: gameIndex != null ? (byGameIndex.get(gameIndex) ?? null) : null,
+        value,
       };
     });
   }, [showAdvancedFilters, selectedAdvancedFilter, perGameFilterData, baseChartData]);
@@ -1654,6 +1763,12 @@ export function NbaStatsChart({
       if (venueDropdownRef.current && !venueDropdownRef.current.contains(e.target as Node)) {
         setIsVenueDropdownOpen(false);
       }
+      if (homeAwayDropdownRef.current && !homeAwayDropdownRef.current.contains(e.target as Node)) {
+        setIsHomeAwayDropdownOpen(false);
+      }
+      if (restDaysDropdownRef.current && !restDaysDropdownRef.current.contains(e.target as Node)) {
+        setIsRestDaysDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -1764,11 +1879,120 @@ export function NbaStatsChart({
     );
   }
 
+  const splitsToggleActive =
+    showAdvancedFilters ||
+    restDaysMode !== 'all' ||
+    (splitVenueFilter !== 'all' && (splitVenueFilter === 'Home' || splitVenueFilter === 'Away'));
+
+  const homeAwayButtonLabel =
+    splitVenueFilter === 'Home' || splitVenueFilter === 'Away' ? splitVenueFilter : 'H/A';
+  const restDaysButtonLabel =
+    restDaysMode === '0'
+      ? 'B2B'
+      : restDaysMode === '1'
+        ? '1d'
+        : restDaysMode === '2plus'
+          ? '2+'
+          : 'Rest';
+
+  const rightChartControls = (
+    <div className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto flex-shrink-0">
+      {setShowAdvancedFilters != null && (
+        <button
+          type="button"
+          onClick={() => {
+            const next = !showAdvancedFilters;
+            if (!next) {
+              setSelectedAdvancedFilter(null);
+              setRestDaysMode('all');
+              setSplitVenueFilter('all');
+              setIsHomeAwayDropdownOpen(false);
+              setIsRestDaysDropdownOpen(false);
+              resetAdvancedRanges();
+            } else {
+              setShowSplitsFilters(false);
+              setIsHomeAwayDropdownOpen(false);
+              setIsRestDaysDropdownOpen(false);
+              // Keep opponent-rank data wiring for later; no slider UI on NBA for now.
+              setSelectedAdvancedFilter(null);
+            }
+            setShowAdvancedFilters(next);
+          }}
+          className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 ${
+            splitsToggleActive
+              ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
+              : ''
+          }`}
+        >
+          Splits
+        </button>
+      )}
+      {showQuarterPicker && (
+        <div className="relative" ref={quarterDropdownRef}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsTimeframeDropdownOpen(false);
+              setIsQuarterDropdownOpen(!isQuarterDropdownOpen);
+            }}
+            className={`px-2.5 py-1.5 h-[32px] min-w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+              selectedQuarter != null
+                ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
+                : ''
+            }`}
+            aria-label={`Choose quarter for ${quarterParent || 'stat'}`}
+            aria-expanded={isQuarterDropdownOpen}
+          >
+            <span className="truncate">{selectedQuarter != null ? `Q${selectedQuarter}` : 'Quarter'}</span>
+            <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {isQuarterDropdownOpen && (
+            <>
+              <div className="absolute top-full right-0 mt-1 w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => applySelectedStat(quarterParent || 'points')}
+                  className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                    selectedStat === quarterParent
+                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                      : 'text-gray-900 dark:text-white'
+                  }`}
+                >
+                  All
+                </button>
+                {quarterParent && quarterPickerOptions(quarterParent).map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => applySelectedStat(opt.key)}
+                    className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                      selectedStat === opt.key
+                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    {opt.n}
+                  </button>
+                ))}
+              </div>
+              <div className="fixed inset-0 z-40" onClick={() => setIsQuarterDropdownOpen(false)} aria-hidden />
+            </>
+          )}
+        </div>
+      )}
+      {slotRightOfControls != null && (
+        <div className="flex items-center flex-shrink-0">
+          {slotRightOfControls}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div
-      className={`h-full w-full pt-3 pb-2 flex flex-col ${
-        showAdvancedFilters ? 'px-0 sm:px-0 md:px-1' : 'px-0 sm:px-1 md:px-2'
-      }`}
+      className="h-full w-full pt-3 pb-2 flex flex-col px-0 sm:px-1 md:px-2"
     >
       <div className="mb-4 sm:mb-5 md:mb-4 mt-0 w-full max-w-full">
         <div
@@ -1796,7 +2020,7 @@ export function NbaStatsChart({
         </div>
       </div>
 
-      {/* One row: Line input + Timeframe dropdown next to each other */}
+      {/* Line / timeframe row. When Advanced is open, Splits+Rest share the Advanced row below. */}
       <div
         className={`space-y-2 sm:space-y-3 md:space-y-4 ${
           showAdvancedFilters || showSplitsFilters
@@ -1880,69 +2104,129 @@ export function NbaStatsChart({
               </>
             )}
           </div>
-          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto flex-shrink-0">
-            {showQuarterPicker && (
-              <div className="relative" ref={quarterDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsTimeframeDropdownOpen(false);
-                    setIsQuarterDropdownOpen(!isQuarterDropdownOpen);
-                  }}
-                  className={`px-2.5 py-1.5 h-[32px] min-w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
-                    selectedQuarter != null
-                      ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
-                      : ''
-                  }`}
-                  aria-label={`Choose quarter for ${quarterParent || 'stat'}`}
-                  aria-expanded={isQuarterDropdownOpen}
-                >
-                  <span className="truncate">{selectedQuarter != null ? `Q${selectedQuarter}` : 'Quarter'}</span>
-                  <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {isQuarterDropdownOpen && (
-                  <>
-                    <div className="absolute top-full right-0 mt-1 w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+          {!showAdvancedFilters && rightChartControls}
+        </div>
+
+        {showAdvancedFilters && (
+          <div className="relative z-30 flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1">
+            <div className={`relative ${isHomeAwayDropdownOpen ? 'z-50' : ''}`} ref={homeAwayDropdownRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTimeframeDropdownOpen(false);
+                  setIsRestDaysDropdownOpen(false);
+                  setIsHomeAwayDropdownOpen((prev) => !prev);
+                }}
+                className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                  splitVenueFilter === 'Home' || splitVenueFilter === 'Away'
+                    ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600'
+                    : ''
+                }`}
+              >
+                <span className="truncate">{homeAwayButtonLabel}</span>
+                <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isHomeAwayDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setIsHomeAwayDropdownOpen(false);
+                    }}
+                    aria-hidden
+                  />
+                  <div className="absolute top-full left-0 mt-1 w-24 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                    {([
+                      { key: 'all', label: 'All' },
+                      { key: 'Home', label: 'Home' },
+                      { key: 'Away', label: 'Away' },
+                    ] as const).map((option) => (
                       <button
+                        key={option.key}
                         type="button"
-                        onClick={() => applySelectedStat(quarterParent || 'points')}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSplitVenueFilter(option.key);
+                          setIsHomeAwayDropdownOpen(false);
+                        }}
                         className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                          selectedStat === quarterParent
+                          splitVenueFilter === option.key
                             ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                             : 'text-gray-900 dark:text-white'
                         }`}
                       >
-                        All
+                        {option.label}
                       </button>
-                      {quarterParent && quarterPickerOptions(quarterParent).map((opt) => (
-                        <button
-                          key={opt.key}
-                          type="button"
-                          onClick={() => applySelectedStat(opt.key)}
-                          className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                            selectedStat === opt.key
-                              ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                              : 'text-gray-900 dark:text-white'
-                          }`}
-                        >
-                          {opt.n}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsQuarterDropdownOpen(false)} aria-hidden />
-                  </>
-                )}
-              </div>
-            )}
-            {slotRightOfControls != null && (
-              <div className="flex items-center flex-shrink-0">
-                {slotRightOfControls}
-              </div>
-            )}
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className={`relative ${isRestDaysDropdownOpen ? 'z-50' : ''}`} ref={restDaysDropdownRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTimeframeDropdownOpen(false);
+                  setIsHomeAwayDropdownOpen(false);
+                  setIsRestDaysDropdownOpen((prev) => !prev);
+                }}
+                className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                  restDaysMode !== 'all'
+                    ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600'
+                    : ''
+                }`}
+              >
+                <span className="truncate">{restDaysButtonLabel}</span>
+                <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isRestDaysDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setIsRestDaysDropdownOpen(false);
+                    }}
+                    aria-hidden
+                  />
+                  <div className="absolute top-full left-0 mt-1 w-28 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                    {([
+                      { key: 'all', label: 'All' },
+                      { key: '0', label: 'B2B' },
+                      { key: '1', label: '1 day' },
+                      { key: '2plus', label: '2+ days' },
+                    ] as const).map((option) => (
+                      <button
+                        key={option.key}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setRestDaysMode(option.key);
+                          setIsRestDaysDropdownOpen(false);
+                        }}
+                        className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                          restDaysMode === option.key
+                            ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                            : 'text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            {rightChartControls}
           </div>
-        </div>
+        )}
       </div>
 
       {showSplitsFilters && (
@@ -2028,135 +2312,6 @@ export function NbaStatsChart({
         </div>
       )}
 
-      {showAdvancedFilters && (
-        <>
-          <div className="mb-1 sm:mb-2 flex items-center gap-3 flex-wrap">
-            {nbaGameFilters != null && setNbaGameFilters != null && (
-            <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar min-w-0">
-              <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
-                {NBA_ADVANCED_FILTER_OPTIONS.map((option) => (
-                  <button
-                    key={option.key ?? 'none'}
-                    type="button"
-                    onClick={() => {
-                      const next = selectedAdvancedFilter === option.key ? null : option.key;
-                      // Switching advanced mode always starts fresh (no stale ranges).
-                      resetAdvancedRanges();
-                      if (next && isOpponentRankAdvancedFilter(next)) {
-                        const selectedOption = NBA_ADVANCED_OPPONENT_RANK_FILTERS.find((row) => row.key === next);
-                        if (selectedOption && nbaGameFilters && setNbaGameFilters) {
-                          setNbaGameFilters({ ...nbaGameFilters, opponentStat: selectedOption.oaStatCode });
-                        }
-                      }
-                      setSelectedAdvancedFilter(next);
-                    }}
-                    className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer border ${
-                      selectedAdvancedFilter === option.key
-                        ? 'bg-purple-600 text-white border-purple-400/30'
-                        : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300/40 dark:border-gray-600/30'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            )}
-            {selectedAdvancedFilter && nbaGameFilters != null && setNbaGameFilters != null && (() => {
-              const f = nbaGameFilters;
-              const data = perGameFilterData ?? [];
-              let min = 1;
-              let max = 10;
-              let valueMin = 1;
-              let valueMax = 10;
-              let step = 1;
-              let formatValue = (v: number) => Math.round(v).toString();
-              if (selectedAdvancedFilter === 'dvp_rank') {
-                min = 1;
-                max = 10;
-                valueMin = f.dvpRankMin != null ? Math.max(min, Math.min(max, f.dvpRankMin)) : min;
-                valueMax = f.dvpRankMax != null ? Math.max(min, Math.min(max, f.dvpRankMax)) : max;
-              } else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) {
-                min = 1;
-                max = 10;
-                valueMin = f.opponentRankMin != null ? Math.max(min, Math.min(max, f.opponentRankMin)) : min;
-                valueMax = f.opponentRankMax != null ? Math.max(min, Math.min(max, f.opponentRankMax)) : max;
-              } else if (selectedAdvancedFilter === 'minutes') {
-                min = 0;
-                max = 100;
-                valueMin = f.minutesMin != null ? Math.max(min, Math.min(max, f.minutesMin)) : min;
-                valueMax = f.minutesMax != null ? Math.max(min, Math.min(max, f.minutesMax)) : max;
-                formatValue = (v) => Math.round(v).toString();
-              }
-              const slider = (
-                <RangeSlider
-                  min={min}
-                  max={max}
-                  valueMin={valueMin}
-                  valueMax={valueMax}
-                  onChange={(newMin, newMax) => {
-                    if (selectedAdvancedFilter === 'dvp_rank') setNbaGameFilters({ ...f, dvpRankMin: newMin, dvpRankMax: newMax });
-                    else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) setNbaGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
-                    else if (selectedAdvancedFilter === 'minutes') setNbaGameFilters({ ...f, minutesMin: newMin, minutesMax: newMax });
-                  }}
-                  step={step}
-                  formatValue={formatValue}
-                />
-              );
-              return (
-                <>
-                  <div className="hidden sm:flex flex-shrink-0 ml-2 pr-2">{slider}</div>
-                </>
-              );
-            })()}
-          </div>
-          {selectedAdvancedFilter && nbaGameFilters && setNbaGameFilters && (() => {
-            const f = nbaGameFilters;
-            const data = perGameFilterData ?? [];
-            let min = 1;
-            let max = 10;
-            let valueMin = 1;
-            let valueMax = 10;
-            let step = 1;
-            let formatValue = (v: number) => Math.round(v).toString();
-            if (selectedAdvancedFilter === 'dvp_rank') {
-              min = 1;
-              max = 10;
-              valueMin = f.dvpRankMin != null ? Math.max(min, Math.min(max, f.dvpRankMin)) : min;
-              valueMax = f.dvpRankMax != null ? Math.max(min, Math.min(max, f.dvpRankMax)) : max;
-            } else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) {
-              min = 1;
-              max = 10;
-              valueMin = f.opponentRankMin != null ? Math.max(min, Math.min(max, f.opponentRankMin)) : min;
-              valueMax = f.opponentRankMax != null ? Math.max(min, Math.min(max, f.opponentRankMax)) : max;
-            } else if (selectedAdvancedFilter === 'minutes') {
-              min = 0;
-              max = 100;
-              valueMin = f.minutesMin != null ? Math.max(min, Math.min(max, f.minutesMin)) : min;
-              valueMax = f.minutesMax != null ? Math.max(min, Math.min(max, f.minutesMax)) : max;
-              formatValue = (v) => Math.round(v).toString();
-            }
-            return (
-              <div className="sm:hidden mb-2 flex justify-center px-4">
-                <RangeSlider
-                  min={min}
-                  max={max}
-                  valueMin={valueMin}
-                  valueMax={valueMax}
-                  onChange={(newMin, newMax) => {
-                    if (selectedAdvancedFilter === 'dvp_rank') setNbaGameFilters({ ...f, dvpRankMin: newMin, dvpRankMax: newMax });
-                    else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) setNbaGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
-                    else if (selectedAdvancedFilter === 'minutes') setNbaGameFilters({ ...f, minutesMin: newMin, minutesMax: newMax });
-                  }}
-                  step={step}
-                  formatValue={formatValue}
-                />
-              </div>
-            );
-          })()}
-        </>
-      )}
-
       <div className="flex-1 min-h-0 relative">
         {chartData.length === 0 && selectedTimeframe === 'h2h' ? (
           <div className="h-full w-full flex items-center justify-center p-4">
@@ -2182,7 +2337,7 @@ export function NbaStatsChart({
             selectedTimeframe={selectedTimeframe}
             secondAxisData={showAdvancedFilters ? secondAxisData : null}
             selectedFilterForAxis={showAdvancedFilters ? selectedAdvancedFilter : null}
-            secondaryRankAxisMax={10}
+            secondaryRankAxisMax={30}
             customTooltip={customTooltip}
             customXAxisTick={nbaXAxisTick}
             yAxisTickFormatter={(value) => String(Math.round(value))}
@@ -2197,13 +2352,13 @@ export function NbaStatsChart({
             clearTeammateFilter={clearTeammateFilter}
             centerAverageOverlay={true}
             averageOverlayLowerOnMobile={true}
-            averageOverlayLower={showAdvancedFilters}
-            averageOverlayLowerExtra={showAdvancedFilters && !selectedAdvancedFilter}
+            averageOverlayLower={false}
+            averageOverlayLowerExtra={false}
             desktopChartLeftInset={24}
-            desktopChartRightInset={showAdvancedFilters ? 2 : 8}
-            desktopChartRightInsetWithSecondAxis={showAdvancedFilters ? 28 : 64}
-            desktopChartRightMargin={showAdvancedFilters ? 2 : 8}
-            desktopChartRightMarginWithSecondAxis={showAdvancedFilters ? 0 : 4}
+            desktopChartRightInset={8}
+            desktopChartRightInsetWithSecondAxis={64}
+            desktopChartRightMargin={8}
+            desktopChartRightMarginWithSecondAxis={4}
             yAxisWidth={26}
           />
         )}

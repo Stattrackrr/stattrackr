@@ -959,8 +959,10 @@ const SimpleChart = memo(function SimpleChart({
             ? '-top-9 sm:-top-10'
             : averageOverlayLowerOnMobile
               ? (
+                // Mobile: keep clear of controls. Desktop: keep the usual lift so Advanced
+                // (Opp D / second axis) does not shove the hit-rate pill into the plot.
                 hasSecondAxis || averageOverlayLower
-                  ? (averageOverlayLowerExtra ? 'top-0 sm:top-0' : 'top-0 sm:top-0')
+                  ? (averageOverlayLowerExtra ? 'top-0 sm:-top-4' : 'top-0 sm:-top-5')
                   : 'top-0 sm:-top-5'
               )
               : (

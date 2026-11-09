@@ -311,3 +311,75 @@ export function buildNblSteStatsPayload(options: {
     teams,
   };
 }
+
+export type NblSteRankHistorySnapshot = {
+  snapshotDate: string;
+  ranks: Record<string, number>;
+};
+
+/**
+ * Tip-time STE allowed ranks: after each game date, recompute league allowed ranks
+ * from all games strictly before that date. Chart games look up the latest snapshot
+ * with snapshotDate <= tip date (so same opponent can move over the season).
+ */
+export function buildNblSteAllowedRankHistory(options: {
+  year: number;
+  metric: NblSteStatKey;
+}): { year: number; metric: NblSteStatKey; snapshots: NblSteRankHistorySnapshot[] } {
+  const year = options.year;
+  const metric = options.metric;
+  const allGames = loadTeamGamesForYear(year)
+    .map((g) => ({ ...g, date: String(g.date || '').trim().slice(0, 10) }))
+    .filter((g) => /^\d{4}-\d{2}-\d{2}$/.test(g.date))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.matchId.localeCompare(b.matchId));
+
+  const byMatch = new Map<string, Map<string, TeamGame>>();
+  for (const g of allGames) {
+    if (!byMatch.has(g.matchId)) byMatch.set(g.matchId, new Map());
+    byMatch.get(g.matchId)!.set(g.teamCode, g);
+  }
+
+  const dates = [...new Set(allGames.map((g) => g.date))];
+  const snapshots: NblSteRankHistorySnapshot[] = [];
+
+  // Running allowed totals per defensive team (points/reb/etc their opponents scored).
+  const allowedSum = new Map<string, RawTotals>();
+  const allowedGames = new Map<string, number>();
+  let cursor = 0;
+
+  const emitRanks = (snapshotDate: string) => {
+    const values: Record<string, number> = {};
+    for (const club of NBL_CLUBS) {
+      const gamesN = allowedGames.get(club.code) || 0;
+      const sum = allowedSum.get(club.code);
+      if (!gamesN || !sum) continue;
+      const avg = averagesFromTotals(sum, gamesN);
+      if (!avg) continue;
+      values[club.code] = avg[metric];
+    }
+    if (Object.keys(values).length < 2) return;
+    snapshots.push({ snapshotDate, ranks: rankValues(values, false) });
+  };
+
+  for (const date of dates) {
+    // Tip-time for games on `date` uses only prior nights.
+    emitRanks(date);
+
+    while (cursor < allGames.length && allGames[cursor].date === date) {
+      const g = allGames[cursor];
+      cursor += 1;
+      const oppCode =
+        g.opponentCode ||
+        [...(byMatch.get(g.matchId)?.keys() || [])].find((c) => c !== g.teamCode) ||
+        '';
+      const opp = oppCode ? byMatch.get(g.matchId)?.get(oppCode) : null;
+      if (!opp) continue;
+      // `g` is the defensive team; `opp` is what they allowed that night.
+      if (!allowedSum.has(g.teamCode)) allowedSum.set(g.teamCode, emptyTotals());
+      addTotals(allowedSum.get(g.teamCode)!, opp);
+      allowedGames.set(g.teamCode, (allowedGames.get(g.teamCode) || 0) + 1);
+    }
+  }
+
+  return { year, metric, snapshots };
+}

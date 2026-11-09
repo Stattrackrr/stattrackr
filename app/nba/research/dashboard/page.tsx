@@ -26,6 +26,11 @@ import { PositionDefenseCard } from '@/app/nba/research/dashboard/components/dvp
 import { fetchTeamDepthChart } from '@/app/nba/research/dashboard/utils/depthChartUtils';
 import { calculateSelectedPosition } from '@/app/nba/research/dashboard/utils/positionUtils';
 import NbaOpponentBreakdownCard from '@/app/nba/components/NbaOpponentBreakdownCard';
+import type { NbaGameFilterDataItem } from '@/app/nba/components/NbaGameFilters';
+import {
+  buildNbaPerGameDefenseRanks,
+  nbaChartStatToDvpMetric,
+} from '@/lib/nba/dash/chartDefenseRanks';
 import NbaTeamMatchupCard from '@/app/nba/components/NbaTeamMatchupCard';
 import { NbaPredictedLineupsCard } from '@/app/nba/components/NbaPredictedLineupsCard';
 import { NbaLineSelector } from '@/app/nba/components/NbaLineSelector';
@@ -464,6 +469,8 @@ export default function NbaDashboardPage() {
   const [chartTimeframe, setChartTimeframe] = useState<NbaChartTimeframe>('last10');
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('minutes');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [alignedSupportingGameLogs, setAlignedSupportingGameLogs] = useState<Array<Record<string, unknown>> | null>(null);
+  const [nbaPerGameFilterData, setNbaPerGameFilterData] = useState<NbaGameFilterDataItem[] | null>(null);
   const [nbaGameFilters, setNbaGameFilters] = useState<NbaGameFiltersState>(() => ({
     ...DEFAULT_NBA_GAME_FILTERS,
   }));
@@ -965,6 +972,26 @@ export default function NbaDashboardPage() {
     };
   }, [nbaPropsMode, selectedPlayer?.name, selectedPlayer?.position, selectedPlayer?.teamCode, selectedPlayer?.team, selectedPlayer?.playerId]);
 
+  // Advanced chart: per-game opponent D ranks (historical tip when available).
+  useEffect(() => {
+    if (nbaPropsMode !== 'player' || !dvpPosition || !selectedPlayerGameLogs.length) {
+      setNbaPerGameFilterData(null);
+      return;
+    }
+    let cancelled = false;
+    const metric = nbaChartStatToDvpMetric(mainChartStat);
+    void buildNbaPerGameDefenseRanks({
+      logs: selectedPlayerGameLogs,
+      position: dvpPosition,
+      metric,
+    }).then((rows) => {
+      if (!cancelled) setNbaPerGameFilterData(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [nbaPropsMode, dvpPosition, selectedPlayerGameLogs, mainChartStat]);
+
   // Game Props: team score logs (schedule + cached quarter scores).
   useEffect(() => {
     if (nbaPropsMode !== 'team') {
@@ -1348,30 +1375,33 @@ export default function NbaDashboardPage() {
     setSupportingStatKind(defaultSupportingStatForMain(mainChartStat));
   }, [mainChartStat]);
 
+  useEffect(() => {
+    setAlignedSupportingGameLogs(null);
+  }, [chartUiResetToken]);
+
   const chartGameLogsForPlayer = useMemo(() => {
-    const base =
-      !nbaTeamFilter || nbaTeamFilter === 'All' || nbaTeamFilter.trim() === ''
-        ? selectedPlayerGameLogs
-        : selectedPlayerGameLogs.filter((g) => {
-            const opp = g.opponent;
-            if (!opp) return false;
-            const resolved = resolveNbaClubName(opp) || opp.trim();
-            return resolved === nbaTeamFilter.trim() || opp.trim() === nbaTeamFilter.trim();
-          });
-    return base.map((g, idx) => ({ ...g, __nbaGameIndex: idx }));
+    const indexed = selectedPlayerGameLogs.map((g, idx) => ({ ...g, __nbaGameIndex: idx }));
+    if (!nbaTeamFilter || nbaTeamFilter === 'All' || nbaTeamFilter.trim() === '') return indexed;
+    return indexed.filter((g) => {
+      const opp = g.opponent;
+      if (!opp) return false;
+      const resolved = resolveNbaClubName(opp) || opp.trim();
+      return resolved === nbaTeamFilter.trim() || opp.trim() === nbaTeamFilter.trim();
+    });
   }, [selectedPlayerGameLogs, nbaTeamFilter]);
 
   const chartGameLogsForTeam = useMemo(() => {
-    const base =
-      !nbaTeamFilter || nbaTeamFilter === 'All' || nbaTeamFilter.trim() === ''
-        ? selectedTeamGameLogs
-        : selectedTeamGameLogs.filter((g) => {
-            const opp = String(g.opponent ?? '');
-            if (!opp) return false;
-            const resolved = resolveNbaClubName(opp) || opp.trim();
-            return resolved === nbaTeamFilter.trim() || opp.trim() === nbaTeamFilter.trim();
-          });
-    return base.map((g, idx) => ({ ...g, __nbaGameIndex: idx }));
+    const indexed = selectedTeamGameLogs.map((g, idx) => ({
+      ...(g as Record<string, unknown>),
+      __nbaGameIndex: idx,
+    }));
+    if (!nbaTeamFilter || nbaTeamFilter === 'All' || nbaTeamFilter.trim() === '') return indexed;
+    return indexed.filter((g) => {
+      const opp = String((g as Record<string, unknown>).opponent ?? '');
+      if (!opp) return false;
+      const resolved = resolveNbaClubName(opp) || opp.trim();
+      return resolved === nbaTeamFilter.trim() || opp.trim() === nbaTeamFilter.trim();
+    });
   }, [selectedTeamGameLogs, nbaTeamFilter]);
 
   const chartGameLogs =
@@ -1794,11 +1824,7 @@ export default function NbaDashboardPage() {
 
                 {/* 3. Chart container — AFL heights */}
                 <div
-                  className={`order-3 lg:order-none chart-container-no-focus relative z-10 rounded-lg p-0 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden ${NBA_DASH_CARD_GLOW} ${
-                    showAdvancedFilters
-                      ? 'sm:pt-0 sm:pr-0 sm:pb-0 sm:pl-0 md:pt-1 md:pr-0 md:pb-0 md:pl-0 lg:pt-2 lg:pr-0 lg:pb-0 lg:pl-0'
-                      : 'sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0'
-                  }`}
+                  className={`order-3 lg:order-none chart-container-no-focus relative z-10 rounded-lg p-0 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden ${NBA_DASH_CARD_GLOW} sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0`}
                   style={{ outline: 'none' }}
                 >
                   {showEmptyShell ? (
@@ -1861,10 +1887,13 @@ export default function NbaDashboardPage() {
                     setShowAdvancedFilters={nbaPropsMode === 'player' ? setShowAdvancedFilters : undefined}
                     nbaGameFilters={nbaPropsMode === 'player' ? nbaGameFilters : undefined}
                     setNbaGameFilters={nbaPropsMode === 'player' ? setNbaGameFilters : undefined}
-                    perGameFilterData={null}
+                    perGameFilterData={nbaPropsMode === 'player' ? nbaPerGameFilterData : null}
                     nextOpponent={displayOpponent}
                     gamePropsTeam={nbaPropsMode === 'team' ? selectedTeam : null}
                     uiResetToken={chartUiResetToken}
+                    onVisibleGameLogsChange={
+                      nbaPropsMode === 'player' ? setAlignedSupportingGameLogs : undefined
+                    }
                     season={NBA_SHOT_CHART_SEASON_YEAR}
                     teammateFilterName={nbaPropsMode === 'player' ? teammateFilterName : null}
                     withWithoutMode={withWithoutMode}
@@ -1999,9 +2028,7 @@ export default function NbaDashboardPage() {
                 {/* 4. Supporting stats (player mode) */}
                 {nbaPropsMode === 'player' && (
                   <div
-                    className={`order-4 lg:order-none w-full min-w-0 flex flex-col rounded-lg ${NBA_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 ${
-                      showAdvancedFilters ? 'lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-7' : 'lg:px-3 xl:px-4'
-                    }`}
+                    className={`order-4 lg:order-none w-full min-w-0 flex flex-col rounded-lg ${NBA_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}
                   >
                     {showEmptyShell ? (
                       <div className="min-h-[220px]" />
@@ -2024,9 +2051,7 @@ export default function NbaDashboardPage() {
                     ) : (
                       <>
                         <h3
-                          className={`text-sm font-semibold mb-1 ${
-                            showAdvancedFilters ? 'pl-3 pr-4 sm:pl-4 sm:pr-6' : 'px-3 sm:px-4'
-                          } ${isDark ? 'text-gray-200' : 'text-gray-800'}`}
+                          className={`text-sm font-semibold mb-1 px-3 sm:px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}
                         >
                           Supporting stats
                         </h3>
@@ -2039,7 +2064,8 @@ export default function NbaDashboardPage() {
                           supportingStatKind={supportingStatKind}
                           onSupportingStatKindChange={setSupportingStatKind}
                           isDark={!!mounted && isDark}
-                          alignRightTight={showAdvancedFilters}
+                          alignRightTight={false}
+                          alignedGameLogs={alignedSupportingGameLogs}
                         />
                       </>
                     )}

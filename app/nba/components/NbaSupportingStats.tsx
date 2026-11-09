@@ -513,6 +513,11 @@ interface NbaSupportingStatsProps {
   onSupportingStatKindChange: (kind: SupportingStatKind) => void;
   isDark: boolean;
   alignRightTight?: boolean;
+  /**
+   * When set (from main chart after splits + timeframe), use this exact game set/order
+   * so supporting bars stay aligned with the top chart.
+   */
+  alignedGameLogs?: Array<Record<string, unknown>> | null;
 }
 
 export function NbaSupportingStats({
@@ -525,6 +530,7 @@ export function NbaSupportingStats({
   onSupportingStatKindChange,
   isDark,
   alignRightTight = false,
+  alignedGameLogs = null,
 }: NbaSupportingStatsProps) {
   const supportingOptions = useMemo(() => {
     const opts = supportingOptionsForMain(mainChartStat);
@@ -545,21 +551,30 @@ export function NbaSupportingStats({
   const showSupportingToggle = true;
   const toggleRailPaddingClass = alignRightTight ? 'pl-3 pr-4 sm:pl-4 sm:pr-6' : 'px-3 sm:px-4';
 
-  // All games sorted oldest → newest (newest on the right)
+  const useAlignedLogs = Array.isArray(alignedGameLogs);
+  const sourceLogs = useMemo(() => {
+    if (useAlignedLogs) return alignedGameLogs as Array<Record<string, unknown>>;
+    return gameLogs;
+  }, [useAlignedLogs, alignedGameLogs, gameLogs]);
+
+  // All games sorted oldest → newest (newest on the right). When aligned to the main
+  // chart, preserve that exact order (already oldest→newest after splits + timeframe).
   const baseData = useMemo(() => {
-    if (!Array.isArray(gameLogs) || gameLogs.length === 0) return [];
-    const sorted = [...gameLogs].sort((a, b) => {
-      const aDate = new Date(String(a.date ?? a.game_date ?? '')).getTime();
-      const bDate = new Date(String(b.date ?? b.game_date ?? '')).getTime();
-      if (Number.isFinite(aDate) && Number.isFinite(bDate) && aDate !== bDate) return aDate - bDate;
-      const aRound = parseRoundIndex(a.round);
-      const bRound = parseRoundIndex(b.round);
-      if (Number.isFinite(aRound) && Number.isFinite(bRound) && aRound !== bRound) return aRound - bRound;
-      const aNum = typeof a.game_number === 'number' ? a.game_number : Number(a.game_number ?? 0);
-      const bNum = typeof b.game_number === 'number' ? b.game_number : Number(b.game_number ?? 0);
-      if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) return aNum - bNum;
-      return 0;
-    });
+    if (!Array.isArray(sourceLogs) || sourceLogs.length === 0) return [];
+    const sorted = useAlignedLogs
+      ? sourceLogs
+      : [...sourceLogs].sort((a, b) => {
+          const aDate = new Date(String(a.date ?? a.game_date ?? '')).getTime();
+          const bDate = new Date(String(b.date ?? b.game_date ?? '')).getTime();
+          if (Number.isFinite(aDate) && Number.isFinite(bDate) && aDate !== bDate) return aDate - bDate;
+          const aRound = parseRoundIndex(a.round);
+          const bRound = parseRoundIndex(b.round);
+          if (Number.isFinite(aRound) && Number.isFinite(bRound) && aRound !== bRound) return aRound - bRound;
+          const aNum = typeof a.game_number === 'number' ? a.game_number : Number(a.game_number ?? 0);
+          const bNum = typeof b.game_number === 'number' ? b.game_number : Number(b.game_number ?? 0);
+          if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) return aNum - bNum;
+          return 0;
+        });
     return sorted.map((g, idx) => {
       const gameNum = typeof g.game_number === 'number' ? g.game_number : idx + 1;
       const round = String(g.round ?? '-');
@@ -588,14 +603,17 @@ export function NbaSupportingStats({
         gameSeason,
       };
     });
-  }, [gameLogs, supportingStatKind, season]);
+  }, [sourceLogs, useAlignedLogs, supportingStatKind, season]);
 
   const chartData = useMemo(() => {
-    const data = applyTimeframe(baseData, timeframe, season, nextOpponent) as (BaseRow & { value: number; isPercent: boolean; gameDate: string })[];
+    const data = (
+      useAlignedLogs
+        ? baseData
+        : applyTimeframe(baseData, timeframe, season, nextOpponent)
+    ) as (BaseRow & { value: number; isPercent: boolean; gameDate: string })[];
     // Ensure unique keys per bar so Recharts doesn't merge (e.g. same game_number across seasons)
     return data.map((row, idx) => ({ ...row, key: `supporting-${idx}`, xKey: `supporting-${idx}` }));
-  }, [baseData, timeframe, season, nextOpponent]);
-
+  }, [baseData, useAlignedLogs, timeframe, season, nextOpponent]);
   const baseDataAll = useMemo(() => {
     if (!Array.isArray(gameLogs) || gameLogs.length === 0) return [];
     const sorted = [...gameLogs].sort((a, b) => {

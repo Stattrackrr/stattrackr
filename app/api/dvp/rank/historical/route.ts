@@ -48,8 +48,8 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const gameDate = new Date(dateParam);
-    if (isNaN(gameDate.getTime())) {
+    const dateTrim = String(dateParam).trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateTrim) || isNaN(Date.parse(`${dateTrim}T00:00:00Z`))) {
       return NextResponse.json(
         { error: 'Invalid date format. Use YYYY-MM-DD' },
         { status: 400 }
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     // EGRESS OPTIMIZATION: Use RPC function with DISTINCT ON to get only latest snapshot per team
     // This reduces data transfer from potentially thousands of rows to just 30 rows (one per team)
     // Instead of fetching all snapshots and filtering in JS, PostgreSQL does it efficiently
-    const gameDateStr = gameDate.toISOString().split('T')[0];
+    const gameDateStr = dateTrim;
     const { data, error } = await supabase.rpc('get_latest_dvp_snapshots', {
       p_season: season,
       p_position: normalizedPos,
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
       success: true,
       ranks: ranksByTeam,
       snapshot_date: latestSnapshotDate,
-      game_date: gameDate.toISOString().split('T')[0],
+      game_date: gameDateStr,
       season,
       position: normalizedPos,
       metric: normalizedMetric,

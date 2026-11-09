@@ -9,6 +9,7 @@ import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import NblXAxisTick from '@/app/nbl/components/NblXAxisTick';
 import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
 import { NBL_CURRENT_SEASON_YEAR, resolveNblClubName, normalizeTeamKey } from '@/lib/nblTeamCanonical';
+import { resolveNblSteTeamCode } from '@/lib/nbl/teamSteStatsShared';
 import {
   NBL_TEAM_QUARTER_STAT_KEYS,
   NBL_TEAM_STAT_OPTIONS,
@@ -1031,7 +1032,9 @@ export function NblStatsChart({
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const quarterDropdownRef = useRef<HTMLDivElement>(null);
   const venueDropdownRef = useRef<HTMLDivElement>(null);
+  const homeAwayDropdownRef = useRef<HTMLDivElement>(null);
   const [isVenueDropdownOpen, setIsVenueDropdownOpen] = useState(false);
+  const [isHomeAwayDropdownOpen, setIsHomeAwayDropdownOpen] = useState(false);
   const lineSyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutoSyncedStatRef = useRef<string | null>(null);
 
@@ -1192,6 +1195,8 @@ export function NblStatsChart({
 
   useEffect(() => {
     if (splitVenueFilter === 'all') return;
+    // H/A splits are always valid (Advanced dropdown), even when venue options are stadium names.
+    if (splitVenueFilter === 'Home' || splitVenueFilter === 'Away') return;
     if (!(visibleVenueOptions as readonly string[]).includes(splitVenueFilter)) {
       setSplitVenueFilter('all');
     }
@@ -1200,6 +1205,7 @@ export function NblStatsChart({
   useEffect(() => {
     setShowSplitsFilters(false);
     setIsVenueDropdownOpen(false);
+    setIsHomeAwayDropdownOpen(false);
     setSplitResultFilter('all');
     setSplitVenueFilter('all');
     setIsTimeframeDropdownOpen(false);
@@ -1210,26 +1216,80 @@ export function NblStatsChart({
     resetAdvancedRanges();
   }, [uiResetToken]);
 
+  const opponentRankByGameKey = useMemo(() => {
+    const map = new Map<string, number | null>();
+    for (const row of perGameFilterData ?? []) {
+      const matchId = String((row as { matchId?: string | null }).matchId || '').trim();
+      const date = String((row as { date?: string | null }).date || '').trim().slice(0, 10);
+      const code =
+        resolveNblSteTeamCode((row as { opponentCode?: string | null }).opponentCode) ||
+        resolveNblSteTeamCode(row.opponent);
+      if (matchId) map.set(`id:${matchId}`, row.opponentRank);
+      if (date && code) map.set(`d:${date}|${code}`, row.opponentRank);
+    }
+    return map;
+  }, [perGameFilterData]);
+
   const splitFilteredGameLogs = useMemo(() => {
+    const oppMin = nblGameFilters?.opponentRankMin ?? null;
+    const oppMax = nblGameFilters?.opponentRankMax ?? null;
+    const hasTipTimeRanks = Array.from(opponentRankByGameKey.values()).some(
+      (r) => typeof r === 'number' && r > 0
+    );
+    // Full 1–10 range is a no-op. Missing tip-time ranks must not wipe the chart.
+    const hasOppRankFilter =
+      (oppMin != null || oppMax != null) &&
+      !(oppMin === 1 && oppMax === 10) &&
+      hasTipTimeRanks;
     const filtered = filteredGameLogs.filter((g) => {
       // Minutes advanced filter applies from game logs even without perGameFilterData
       if (nblGameFilters) {
         const mins = toNumericValue((g as Record<string, unknown>).minutes);
         if (nblGameFilters.minutesMin != null && (mins == null || mins < nblGameFilters.minutesMin)) return false;
         if (nblGameFilters.minutesMax != null && (mins == null || mins > nblGameFilters.minutesMax)) return false;
+        if (hasOppRankFilter) {
+          const matchId = String(g.matchId ?? '').trim();
+          const date = String(g.date ?? (g as { game_date?: string }).game_date ?? '')
+            .trim()
+            .slice(0, 10);
+          const code =
+            resolveNblSteTeamCode(g.opponentCode != null ? String(g.opponentCode) : null) ||
+            resolveNblSteTeamCode(g.opponent != null ? String(g.opponent) : null);
+          const rank =
+            (matchId ? opponentRankByGameKey.get(`id:${matchId}`) : undefined) ??
+            (date && code ? opponentRankByGameKey.get(`d:${date}|${code}`) : undefined) ??
+            null;
+          // No tip-time rank yet → don't drop the game; only constrain ranked ones.
+          if (rank != null) {
+            if (oppMin != null && rank < oppMin) return false;
+            if (oppMax != null && rank > oppMax) return false;
+          }
+        }
       }
       if (splitResultFilter !== 'all') {
         const outcome = getGameOutcome(g.result);
         if (outcome !== splitResultFilter) return false;
       }
       if (splitVenueFilter !== 'all') {
-        const venue = extractVenueFromGameLog(g as Record<string, unknown>);
-        if (venue !== splitVenueFilter) return false;
+        if (splitVenueFilter === 'Home' || splitVenueFilter === 'Away') {
+          const isHome = (g as Record<string, unknown>).isHome;
+          if (typeof isHome !== 'boolean') return false;
+          if (splitVenueFilter === 'Home' ? !isHome : isHome) return false;
+        } else {
+          const venue = extractVenueFromGameLog(g as Record<string, unknown>);
+          if (venue !== splitVenueFilter) return false;
+        }
       }
       return true;
     });
     return dedupeNblGames(filtered as Record<string, unknown>[]) as typeof filteredGameLogs;
-  }, [filteredGameLogs, splitResultFilter, splitVenueFilter, nblGameFilters]);
+  }, [
+    filteredGameLogs,
+    splitResultFilter,
+    splitVenueFilter,
+    nblGameFilters,
+    opponentRankByGameKey,
+  ]);
 
   const chartSourceLogs = useMemo(() => {
     if (mode === 'team' && NBL_TEAM_QUARTER_STAT_KEYS.has(selectedStat)) {
@@ -1249,6 +1309,8 @@ export function NblStatsChart({
     const opponent = String(g.opponent ?? '-');
     const result = String(g.result ?? '-');
     const gameDate = String(g.date ?? g.game_date ?? '');
+    const matchId = String(g.matchId ?? g.id ?? '').trim() || null;
+    const opponentCode = resolveNblSteTeamCode(String(g.opponentCode || g.opponent || '')) || null;
     const venue = extractVenueFromGameLog(g);
     const pts = toNumericValue(g.points) ?? 0;
     const reb = toNumericValue(g.rebounds) ?? 0;
@@ -1293,6 +1355,8 @@ export function NblStatsChart({
       minutes,
       stats,
       gameId: key,
+      matchId,
+      opponentCode,
       gameDate,
       venue,
       gameSeason,
@@ -1409,6 +1473,8 @@ export function NblStatsChart({
     if (!perGameFilterData?.length) return null;
 
     const byGameIndex = new Map<number, number | null>();
+    const byMatchId = new Map<string, number | null>();
+    const byDateOpp = new Map<string, number | null>();
     for (const row of perGameFilterData) {
       const value =
         selectedAdvancedFilter === 'dvp_rank'
@@ -1416,17 +1482,35 @@ export function NblStatsChart({
           : isOpponentRankAdvancedFilter(selectedAdvancedFilter)
             ? row.opponentRank
             : row.minutes;
-      byGameIndex.set(row.gameIndex, value ?? null);
+      const v = value ?? null;
+      byGameIndex.set(row.gameIndex, v);
+      const matchId = String((row as { matchId?: string | null }).matchId || '').trim();
+      if (matchId) byMatchId.set(matchId, v);
+      const date = String((row as { date?: string | null }).date || '').trim().slice(0, 10);
+      const code = resolveNblSteTeamCode(
+        String((row as { opponentCode?: string | null }).opponentCode || row.opponent || '')
+      );
+      if (date && code) byDateOpp.set(`d:${date}|${code}`, v);
     }
 
     return baseChartData.map((row) => {
       const gameIndex = typeof (row as { sourceGameIndex?: unknown }).sourceGameIndex === 'number'
         ? (row as { sourceGameIndex: number }).sourceGameIndex
         : null;
+      const matchId = String((row as { matchId?: string | null }).matchId || '').trim();
+      const date = String(row.gameDate || '').trim().slice(0, 10);
+      const code = resolveNblSteTeamCode(
+        String((row as { opponentCode?: string | null }).opponentCode || row.opponent || '')
+      );
+      const value =
+        (matchId ? byMatchId.get(matchId) : undefined) ??
+        (date && code ? byDateOpp.get(`d:${date}|${code}`) : undefined) ??
+        (gameIndex != null ? byGameIndex.get(gameIndex) : undefined) ??
+        null;
       return {
         gameId: row.xKey,
         gameDate: row.gameDate,
-        value: gameIndex != null ? (byGameIndex.get(gameIndex) ?? null) : null,
+        value,
       };
     });
   }, [showAdvancedFilters, selectedAdvancedFilter, perGameFilterData, baseChartData]);
@@ -1592,6 +1676,9 @@ export function NblStatsChart({
       if (venueDropdownRef.current && !venueDropdownRef.current.contains(e.target as Node)) {
         setIsVenueDropdownOpen(false);
       }
+      if (homeAwayDropdownRef.current && !homeAwayDropdownRef.current.contains(e.target as Node)) {
+        setIsHomeAwayDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -1702,6 +1789,146 @@ export function NblStatsChart({
     );
   }
 
+  const advancedToggleActive =
+    showAdvancedFilters ||
+    hasActiveAdvancedRangeFilter ||
+    (splitVenueFilter !== 'all' && (splitVenueFilter === 'Home' || splitVenueFilter === 'Away'));
+
+  const homeAwayButtonLabel =
+    splitVenueFilter === 'Home' || splitVenueFilter === 'Away' ? splitVenueFilter : 'H/A';
+
+  const oppDSliderDesktop =
+    showAdvancedFilters && nblGameFilters != null && setNblGameFilters != null
+      ? (() => {
+          const f = nblGameFilters;
+          const min = 1;
+          const max = 10;
+          const valueMin = f.opponentRankMin != null ? Math.max(min, Math.min(max, f.opponentRankMin)) : min;
+          const valueMax = f.opponentRankMax != null ? Math.max(min, Math.min(max, f.opponentRankMax)) : max;
+          return (
+            <div className="hidden sm:flex items-center gap-2 flex-shrink-0 pb-3">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                Opp D
+              </span>
+              <div className="w-44 md:w-48">
+                <RangeSlider
+                  min={min}
+                  max={max}
+                  valueMin={valueMin}
+                  valueMax={valueMax}
+                  onChange={(newMin, newMax) => {
+                    const clear = newMin <= min && newMax >= max;
+                    setNblGameFilters({
+                      ...f,
+                      opponentRankMin: clear ? null : newMin,
+                      opponentRankMax: clear ? null : newMax,
+                    });
+                  }}
+                  step={1}
+                  formatValue={(v) => `#${Math.round(v)}`}
+                />
+              </div>
+            </div>
+          );
+        })()
+      : null;
+
+  const rightChartControls = (mlAuto = true) => (
+    <div className={`flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0 ${mlAuto ? 'ml-auto' : ''}`}>
+      {setShowAdvancedFilters != null && (
+        <button
+          type="button"
+          onClick={() => {
+            const next = !showAdvancedFilters;
+            if (!next) {
+              setSelectedAdvancedFilter(null);
+              setSplitVenueFilter('all');
+              setIsHomeAwayDropdownOpen(false);
+              resetAdvancedRanges();
+            } else {
+              setShowSplitsFilters(false);
+              setIsHomeAwayDropdownOpen(false);
+              const mapped = CHART_STAT_TO_ADVANCED_OPPONENT_FILTER[selectedStat] ?? 'rank_points';
+              setSelectedAdvancedFilter(mapped);
+              const opt = NBL_ADVANCED_OPPONENT_RANK_FILTERS.find((o) => o.key === mapped);
+              if (opt && nblGameFilters && setNblGameFilters) {
+                setNblGameFilters({ ...nblGameFilters, opponentStat: opt.oaStatCode });
+              }
+            }
+            setShowAdvancedFilters(next);
+          }}
+          className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 ${
+            advancedToggleActive
+              ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
+              : ''
+          }`}
+        >
+          Advanced
+        </button>
+      )}
+      {showQuarterPicker && (
+        <div className="relative" ref={quarterDropdownRef}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsTimeframeDropdownOpen(false);
+              setIsQuarterDropdownOpen(!isQuarterDropdownOpen);
+            }}
+            className={`px-2.5 py-1.5 h-[32px] min-w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+              selectedQuarter != null
+                ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
+                : ''
+            }`}
+            aria-label={`Choose quarter for ${quarterParent || 'stat'}`}
+            aria-expanded={isQuarterDropdownOpen}
+          >
+            <span className="truncate">{selectedQuarter != null ? `Q${selectedQuarter}` : 'Quarter'}</span>
+            <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {isQuarterDropdownOpen && (
+            <>
+              <div className="absolute top-full right-0 mt-1 w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => applySelectedStat(quarterParent || 'points')}
+                  className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                    selectedStat === quarterParent
+                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                      : 'text-gray-900 dark:text-white'
+                  }`}
+                >
+                  All
+                </button>
+                {quarterParent && quarterPickerOptions(quarterParent).map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => applySelectedStat(opt.key)}
+                    className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                      selectedStat === opt.key
+                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    {opt.n}
+                  </button>
+                ))}
+              </div>
+              <div className="fixed inset-0 z-40" onClick={() => setIsQuarterDropdownOpen(false)} aria-hidden />
+            </>
+          )}
+        </div>
+      )}
+      {slotRightOfControls != null && (
+        <div className="flex items-center flex-shrink-0">
+          {slotRightOfControls}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div
       className={`h-full w-full pt-3 pb-2 flex flex-col ${
@@ -1734,11 +1961,11 @@ export function NblStatsChart({
         </div>
       </div>
 
-      {/* One row: Line input + Timeframe dropdown next to each other */}
+      {/* Line / timeframe row. When Advanced is open, H/A shares that row. */}
       <div
-        className={`space-y-2 sm:space-y-3 md:space-y-4 ${
+        className={`space-y-2 sm:space-y-3 ${
           showAdvancedFilters || showSplitsFilters
-            ? 'mb-1 sm:mb-2 md:mb-2 lg:mb-3'
+            ? 'mb-1 sm:mb-1 md:mb-2'
             : 'mb-2 sm:mb-3 md:mb-4 lg:mb-6'
         }`}
       >
@@ -1783,6 +2010,7 @@ export function NblStatsChart({
               type="button"
               onClick={() => {
                 setIsQuarterDropdownOpen(false);
+                setIsHomeAwayDropdownOpen(false);
                 setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen);
               }}
               className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600"
@@ -1817,69 +2045,76 @@ export function NblStatsChart({
               </>
             )}
           </div>
-          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto flex-shrink-0">
-            {showQuarterPicker && (
-              <div className="relative" ref={quarterDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsTimeframeDropdownOpen(false);
-                    setIsQuarterDropdownOpen(!isQuarterDropdownOpen);
-                  }}
-                  className={`px-2.5 py-1.5 h-[32px] min-w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
-                    selectedQuarter != null
-                      ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]'
-                      : ''
-                  }`}
-                  aria-label={`Choose quarter for ${quarterParent || 'stat'}`}
-                  aria-expanded={isQuarterDropdownOpen}
-                >
-                  <span className="truncate">{selectedQuarter != null ? `Q${selectedQuarter}` : 'Quarter'}</span>
-                  <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {isQuarterDropdownOpen && (
-                  <>
-                    <div className="absolute top-full right-0 mt-1 w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+          {!showAdvancedFilters && rightChartControls(true)}
+        </div>
+
+        {showAdvancedFilters && (
+          <div className="relative z-30 flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1">
+            <div className={`relative ${isHomeAwayDropdownOpen ? 'z-50' : ''}`} ref={homeAwayDropdownRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTimeframeDropdownOpen(false);
+                  setIsQuarterDropdownOpen(false);
+                  setIsHomeAwayDropdownOpen((prev) => !prev);
+                }}
+                className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                  splitVenueFilter === 'Home' || splitVenueFilter === 'Away'
+                    ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600'
+                    : ''
+                }`}
+              >
+                <span className="truncate">{homeAwayButtonLabel}</span>
+                <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isHomeAwayDropdownOpen && (
+                <>
+                  {/* Backdrop behind the menu so Opp D / chart below cannot steal clicks. */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setIsHomeAwayDropdownOpen(false);
+                    }}
+                    aria-hidden
+                  />
+                  <div className="absolute top-full left-0 mt-1 w-24 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                    {([
+                      { key: 'all', label: 'All' },
+                      { key: 'Home', label: 'Home' },
+                      { key: 'Away', label: 'Away' },
+                    ] as const).map((option) => (
                       <button
+                        key={option.key}
                         type="button"
-                        onClick={() => applySelectedStat(quarterParent || 'points')}
+                        onMouseDown={(e) => {
+                          // Apply on mousedown so the backdrop / outside handler cannot win the race.
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSplitVenueFilter(option.key);
+                          setIsHomeAwayDropdownOpen(false);
+                        }}
                         className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                          selectedStat === quarterParent
+                          splitVenueFilter === option.key
                             ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                             : 'text-gray-900 dark:text-white'
                         }`}
                       >
-                        All
+                        {option.label}
                       </button>
-                      {quarterParent && quarterPickerOptions(quarterParent).map((opt) => (
-                        <button
-                          key={opt.key}
-                          type="button"
-                          onClick={() => applySelectedStat(opt.key)}
-                          className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                            selectedStat === opt.key
-                              ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                              : 'text-gray-900 dark:text-white'
-                          }`}
-                        >
-                          {opt.n}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsQuarterDropdownOpen(false)} aria-hidden />
-                  </>
-                )}
-              </div>
-            )}
-            {slotRightOfControls != null && (
-              <div className="flex items-center flex-shrink-0">
-                {slotRightOfControls}
-              </div>
-            )}
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="ml-auto flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
+              {oppDSliderDesktop}
+              {rightChartControls(false)}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {showSplitsFilters && (
@@ -1965,134 +2200,41 @@ export function NblStatsChart({
         </div>
       )}
 
-      {showAdvancedFilters && (
-        <>
-          <div className="mb-1 sm:mb-2 flex items-center gap-3 flex-wrap">
-            {nblGameFilters != null && setNblGameFilters != null && (
-            <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar min-w-0">
-              <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
-                {NBL_ADVANCED_FILTER_OPTIONS.map((option) => (
-                  <button
-                    key={option.key ?? 'none'}
-                    type="button"
-                    onClick={() => {
-                      const next = selectedAdvancedFilter === option.key ? null : option.key;
-                      // Switching advanced mode always starts fresh (no stale ranges).
-                      resetAdvancedRanges();
-                      if (next && isOpponentRankAdvancedFilter(next)) {
-                        const selectedOption = NBL_ADVANCED_OPPONENT_RANK_FILTERS.find((row) => row.key === next);
-                        if (selectedOption && nblGameFilters && setNblGameFilters) {
-                          setNblGameFilters({ ...nblGameFilters, opponentStat: selectedOption.oaStatCode });
-                        }
-                      }
-                      setSelectedAdvancedFilter(next);
-                    }}
-                    className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer border ${
-                      selectedAdvancedFilter === option.key
-                        ? 'bg-purple-600 text-white border-purple-400/30'
-                        : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300/40 dark:border-gray-600/30'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+      {/* Mobile-only Opp D row — desktop keeps the slider on the Advanced controls row. */}
+      {showAdvancedFilters && nblGameFilters != null && setNblGameFilters != null && (() => {
+        const f = nblGameFilters;
+        const min = 1;
+        const max = 10;
+        const valueMin = f.opponentRankMin != null ? Math.max(min, Math.min(max, f.opponentRankMin)) : min;
+        const valueMax = f.opponentRankMax != null ? Math.max(min, Math.min(max, f.opponentRankMax)) : max;
+        return (
+          <div className="mb-2 px-2 sm:hidden">
+            <div className="flex items-center justify-center gap-3 w-full pb-3 px-3">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                Opp D
+              </span>
+              <div className="w-[70vw] max-w-[18rem]">
+                <RangeSlider
+                  min={min}
+                  max={max}
+                  valueMin={valueMin}
+                  valueMax={valueMax}
+                  onChange={(newMin, newMax) => {
+                    const clear = newMin <= min && newMax >= max;
+                    setNblGameFilters({
+                      ...f,
+                      opponentRankMin: clear ? null : newMin,
+                      opponentRankMax: clear ? null : newMax,
+                    });
+                  }}
+                  step={1}
+                  formatValue={(v) => `#${Math.round(v)}`}
+                />
               </div>
             </div>
-            )}
-            {selectedAdvancedFilter && nblGameFilters != null && setNblGameFilters != null && (() => {
-              const f = nblGameFilters;
-              const data = perGameFilterData ?? [];
-              let min = 1;
-              let max = 10;
-              let valueMin = 1;
-              let valueMax = 10;
-              let step = 1;
-              let formatValue = (v: number) => Math.round(v).toString();
-              if (selectedAdvancedFilter === 'dvp_rank') {
-                min = 1;
-                max = 10;
-                valueMin = f.dvpRankMin != null ? Math.max(min, Math.min(max, f.dvpRankMin)) : min;
-                valueMax = f.dvpRankMax != null ? Math.max(min, Math.min(max, f.dvpRankMax)) : max;
-              } else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) {
-                min = 1;
-                max = 10;
-                valueMin = f.opponentRankMin != null ? Math.max(min, Math.min(max, f.opponentRankMin)) : min;
-                valueMax = f.opponentRankMax != null ? Math.max(min, Math.min(max, f.opponentRankMax)) : max;
-              } else if (selectedAdvancedFilter === 'minutes') {
-                min = 0;
-                max = 100;
-                valueMin = f.minutesMin != null ? Math.max(min, Math.min(max, f.minutesMin)) : min;
-                valueMax = f.minutesMax != null ? Math.max(min, Math.min(max, f.minutesMax)) : max;
-                formatValue = (v) => Math.round(v).toString();
-              }
-              const slider = (
-                <RangeSlider
-                  min={min}
-                  max={max}
-                  valueMin={valueMin}
-                  valueMax={valueMax}
-                  onChange={(newMin, newMax) => {
-                    if (selectedAdvancedFilter === 'dvp_rank') setNblGameFilters({ ...f, dvpRankMin: newMin, dvpRankMax: newMax });
-                    else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) setNblGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
-                    else if (selectedAdvancedFilter === 'minutes') setNblGameFilters({ ...f, minutesMin: newMin, minutesMax: newMax });
-                  }}
-                  step={step}
-                  formatValue={formatValue}
-                />
-              );
-              return (
-                <>
-                  <div className="hidden sm:flex flex-shrink-0 ml-2 pr-2">{slider}</div>
-                </>
-              );
-            })()}
           </div>
-          {selectedAdvancedFilter && nblGameFilters && setNblGameFilters && (() => {
-            const f = nblGameFilters;
-            const data = perGameFilterData ?? [];
-            let min = 1;
-            let max = 10;
-            let valueMin = 1;
-            let valueMax = 10;
-            let step = 1;
-            let formatValue = (v: number) => Math.round(v).toString();
-            if (selectedAdvancedFilter === 'dvp_rank') {
-              min = 1;
-              max = 10;
-              valueMin = f.dvpRankMin != null ? Math.max(min, Math.min(max, f.dvpRankMin)) : min;
-              valueMax = f.dvpRankMax != null ? Math.max(min, Math.min(max, f.dvpRankMax)) : max;
-            } else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) {
-              min = 1;
-              max = 10;
-              valueMin = f.opponentRankMin != null ? Math.max(min, Math.min(max, f.opponentRankMin)) : min;
-              valueMax = f.opponentRankMax != null ? Math.max(min, Math.min(max, f.opponentRankMax)) : max;
-            } else if (selectedAdvancedFilter === 'minutes') {
-              min = 0;
-              max = 100;
-              valueMin = f.minutesMin != null ? Math.max(min, Math.min(max, f.minutesMin)) : min;
-              valueMax = f.minutesMax != null ? Math.max(min, Math.min(max, f.minutesMax)) : max;
-              formatValue = (v) => Math.round(v).toString();
-            }
-            return (
-              <div className="sm:hidden mb-2 flex justify-center px-4">
-                <RangeSlider
-                  min={min}
-                  max={max}
-                  valueMin={valueMin}
-                  valueMax={valueMax}
-                  onChange={(newMin, newMax) => {
-                    if (selectedAdvancedFilter === 'dvp_rank') setNblGameFilters({ ...f, dvpRankMin: newMin, dvpRankMax: newMax });
-                    else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) setNblGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
-                    else if (selectedAdvancedFilter === 'minutes') setNblGameFilters({ ...f, minutesMin: newMin, minutesMax: newMax });
-                  }}
-                  step={step}
-                  formatValue={formatValue}
-                />
-              </div>
-            );
-          })()}
-        </>
-      )}
+        );
+      })()}
 
       <div className="flex-1 min-h-0 relative">
         {chartData.length === 0 && selectedTimeframe === 'h2h' ? (
@@ -2133,8 +2275,8 @@ export function NblStatsChart({
             clearTeammateFilter={clearTeammateFilter}
             centerAverageOverlay={true}
             averageOverlayLowerOnMobile={true}
-            averageOverlayLower={showAdvancedFilters}
-            averageOverlayLowerExtra={showAdvancedFilters && !selectedAdvancedFilter}
+            averageOverlayLower={false}
+            averageOverlayLowerExtra={false}
             desktopChartLeftInset={24}
             desktopChartRightInset={showAdvancedFilters ? 2 : 8}
             desktopChartRightInsetWithSecondAxis={showAdvancedFilters ? 28 : 64}

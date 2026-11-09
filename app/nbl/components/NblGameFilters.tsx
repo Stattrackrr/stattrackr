@@ -46,6 +46,9 @@ export const DEFAULT_NBL_GAME_FILTERS: NblGameFiltersState = {
 
 export type NblGameFilterDataItem = {
   gameIndex: number;
+  matchId?: string | null;
+  date?: string | null;
+  opponentCode?: string | null;
   opponent: string;
   dvpRank: number | null;
   dvpRankSource?: 'tipoff' | 'live' | null;
