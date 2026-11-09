@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { invalidateViewerProfileCache } from '@/lib/profileSubscriptionGate';
 import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
 import { kickToolsEarlyFetch } from '@/lib/tools/prefetch';
+import { pushBoardRoute } from '@/lib/boardNavTransition';
 import { ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
 
 type OddsFormat = 'american' | 'decimal';
@@ -57,6 +58,7 @@ export default function LeftSidebar({
   showDashboardNavLinks = false,
 }: LeftSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const unreadChatCount = useChatUnread();
   const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const unreadPicksCount = usePicksUnread(hasPremium);
@@ -464,6 +466,12 @@ export default function LeftSidebar({
               <Link
                 href="/props"
                 onMouseEnter={() => kickCombinedPropsEarlyFetch()}
+                onClick={(e) => {
+                  if (pathname?.startsWith('/props')) return;
+                  e.preventDefault();
+                  kickCombinedPropsEarlyFetch();
+                  void pushBoardRoute(router.push.bind(router), '/props', 'to-props');
+                }}
                 className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   pathname?.startsWith('/props')
                     ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
@@ -488,6 +496,12 @@ export default function LeftSidebar({
                   href="/tools"
                   onMouseEnter={() => kickToolsEarlyFetch()}
                   onFocus={() => kickToolsEarlyFetch()}
+                  onClick={(e) => {
+                    if (pathname?.startsWith('/tools')) return;
+                    e.preventDefault();
+                    kickToolsEarlyFetch();
+                    void pushBoardRoute(router.push.bind(router), '/tools', 'to-tools');
+                  }}
                   className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     pathname?.startsWith('/tools')
                       ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'

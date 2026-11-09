@@ -72,6 +72,68 @@ html.dark body {
   }
 }
 
+/* Props ↔ Tools — veil lift + content settle (instant nav, no leave lag). */
+@keyframes board-shell-veil-lift {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -10%, 0);
+  }
+}
+@keyframes board-shell-enter-to-tools {
+  0% {
+    opacity: 0;
+    transform: translate3d(14px, 22px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes board-shell-enter-to-props {
+  0% {
+    opacity: 0;
+    transform: translate3d(-14px, 22px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.board-shell-veil {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--brand-bg) 88%, transparent) 0%,
+      color-mix(in srgb, var(--brand-bg) 35%, transparent) 42%,
+      transparent 72%
+    );
+  animation: board-shell-veil-lift 460ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.board-shell-enter {
+  will-change: opacity, transform;
+}
+.board-shell-enter--to-tools {
+  animation: board-shell-enter-to-tools 440ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.board-shell-enter--to-props {
+  animation: board-shell-enter-to-props 440ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .board-shell-veil,
+  .board-shell-enter--to-tools,
+  .board-shell-enter--to-props {
+    animation: none !important;
+  }
+}
+
 @keyframes blob {
   0% {
     transform: translate(0px, 0px) scale(1);

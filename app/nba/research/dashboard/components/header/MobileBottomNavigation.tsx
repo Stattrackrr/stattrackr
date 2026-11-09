@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useChatUnread } from '@/lib/chatUnread';
 import { usePicksUnread } from '@/lib/aiPicks/unread';
 import { usePathname, useRouter } from 'next/navigation';
@@ -8,10 +9,14 @@ import { CHAT_UNDER_MAINTENANCE } from '@/lib/nbaConstants';
 import { openProUpgrade } from '@/components/ProFeatureLock';
 import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { kickToolsEarlyFetch } from '@/lib/tools/prefetch';
-import { getLocalStorage, setSessionStorage } from '../../utils/storageUtils';
+import { pushBoardRoute } from '@/lib/boardNavTransition';
+import { getLocalStorage } from '../../utils/storageUtils';
 import { ProfileAvatar } from './ProfileAvatar';
 import { ProfileDropdown } from './ProfileDropdown';
 import { SettingsDropdown } from './SettingsDropdown';
+
+/** Matches Tailwind `bottom-2` — gap above the visual viewport bottom edge. */
+const NAV_VIEWPORT_GAP_PX = 8;
 
 interface MobileBottomNavigationProps {
   hasPremium: boolean;
@@ -95,51 +100,103 @@ export function MobileBottomNavigation({
     setShowReadMeBadge(!dismissed);
   }, []);
 
-  // iOS (Safari and home-screen app) can leave fixed elements at a stale height after the app comes
-  // back from the background or the keyboard closes, floating this bar mid-screen until a reload.
-  // Re-laying out the page and re-compositing the bar puts it back on the bottom edge.
+  // iOS Safari / PWA resolves `position: fixed; bottom: …` against a stale layout viewport after
+  // client-side Tools↔Props navigations, keyboard dismiss, and app resume — leaving this bar
+  // mid-screen. Pin against visualViewport (which stays accurate) and portal to <body> so no
+  // page transform/filter can form a containing block.
   const barRef = useRef<HTMLDivElement>(null);
+  const [portalReady, setPortalReady] = useState(false);
   useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
     let frame = 0;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    // Scrolling in place stops a flick mid-scroll, so it only runs on coming back to the app or rotating.
-    const reanchor = (relayout: boolean) => {
+    const retryTimers: ReturnType<typeof setTimeout>[] = [];
+
+    const pinToVisualViewport = () => {
+      const bar = barRef.current;
+      if (!bar) return;
+      // lg:hidden — skip work while the desktop shell is showing.
+      if (window.matchMedia('(min-width: 1024px)').matches) {
+        bar.style.top = '';
+        bar.style.bottom = '';
+        bar.style.transform = '';
+        bar.style.position = '';
+        return;
+      }
+      const vv = window.visualViewport;
+      // How far the visual viewport bottom sits above the layout viewport bottom.
+      // When Safari leaves a stale fixed bottom mid-screen, this inset is non-zero and
+      // re-homes the bar to the visible edge without waiting for a reload.
+      const inset = vv
+        ? Math.max(0, Math.round(window.innerHeight - (vv.offsetTop + vv.height)))
+        : 0;
+      bar.style.top = 'auto';
+      bar.style.bottom = `${inset + NAV_VIEWPORT_GAP_PX}px`;
+      bar.style.transform = 'translateZ(0)';
+    };
+
+    const nudgeWebKitViewport = () => {
+      const bar = barRef.current;
+      const x = window.scrollX;
+      const y = window.scrollY;
+      window.scrollTo(x, y + 1);
+      window.scrollTo(x, y);
+      // Dropping fixed→absolute→fixed forces WebKit to re-resolve the containing block
+      // after CSR / resume when translateZ alone is not enough.
+      if (bar) {
+        bar.style.position = 'absolute';
+        void bar.offsetHeight;
+        bar.style.position = 'fixed';
+      }
+    };
+
+    const schedulePin = (hard: boolean) => {
       cancelAnimationFrame(frame);
+      while (retryTimers.length) {
+        const t = retryTimers.pop();
+        if (t != null) clearTimeout(t);
+      }
       frame = requestAnimationFrame(() => {
-        if (relayout) window.scrollTo(window.scrollX, window.scrollY);
-        const bar = barRef.current;
-        if (!bar) return;
-        bar.style.transform = 'translateZ(0)';
-        frame = requestAnimationFrame(() => {
-          bar.style.transform = '';
-        });
+        if (hard) nudgeWebKitViewport();
+        pinToVisualViewport();
+        // iOS often reports stale metrics for a few hundred ms after CSR / resume.
+        for (const ms of hard ? [50, 150, 400, 900] : [120]) {
+          retryTimers.push(setTimeout(pinToVisualViewport, ms));
+        }
       });
     };
-    const soon = (relayout: boolean) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => reanchor(relayout), 150);
-    };
-    const onReturn = () => soon(true);
-    const onResize = () => soon(false);
+
+    const onReturn = () => schedulePin(true);
+    const onViewportChange = () => schedulePin(false);
     const onVisible = () => {
       if (document.visibilityState === 'visible') onReturn();
     };
+
+    // Hard pin on mount / route change / portal attach — covers Tools↔Props CSR.
+    schedulePin(true);
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('pageshow', onReturn);
-    window.addEventListener('focus', onReturn);
     window.addEventListener('orientationchange', onReturn);
-    window.visualViewport?.addEventListener('resize', onResize);
+    window.addEventListener('resize', onViewportChange);
+    window.visualViewport?.addEventListener('resize', onViewportChange);
+    window.visualViewport?.addEventListener('scroll', onViewportChange);
     return () => {
       cancelAnimationFrame(frame);
-      clearTimeout(timer);
+      while (retryTimers.length) {
+        const t = retryTimers.pop();
+        if (t != null) clearTimeout(t);
+      }
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('pageshow', onReturn);
-      window.removeEventListener('focus', onReturn);
       window.removeEventListener('orientationchange', onReturn);
-      window.visualViewport?.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', onViewportChange);
+      window.visualViewport?.removeEventListener('resize', onViewportChange);
+      window.visualViewport?.removeEventListener('scroll', onViewportChange);
     };
-  }, []);
+  }, [pathname, portalReady]);
   const prefetchProps = () => {
     router.prefetch('/props');
     void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
@@ -162,7 +219,7 @@ export function MobileBottomNavigation({
     setShowSettingsDropdown(false);
     if (pathname?.startsWith('/props')) return;
     prefetchProps();
-    router.push(consumePropsReturnPath('combined'));
+    void pushBoardRoute(router.push.bind(router), consumePropsReturnPath('combined'), 'to-props');
   };
 
   const goTools = () => {
@@ -176,7 +233,7 @@ export function MobileBottomNavigation({
     if (pathname?.startsWith('/tools')) return;
     kickToolsEarlyFetch();
     router.prefetch('/tools');
-    router.push('/tools');
+    void pushBoardRoute(router.push.bind(router), '/tools', 'to-tools');
   };
 
   const navButtonClass = (active: boolean, disabled = false) =>
@@ -197,8 +254,13 @@ export function MobileBottomNavigation({
           : 'scale-100'
     }`;
 
-  return (
-    <div ref={barRef} className="lg:hidden fixed bottom-2 left-0 right-0 z-50 pb-safe flex justify-center px-3 pointer-events-none">
+  const nav = (
+    <div
+      ref={barRef}
+      data-mobile-bottom-nav
+      className="lg:hidden fixed left-0 right-0 z-50 pb-safe flex justify-center px-3 pointer-events-none"
+      style={{ bottom: NAV_VIEWPORT_GAP_PX }}
+    >
       <div className="relative w-full max-w-[460px] pointer-events-auto">
       {/* Profile Dropdown Menu - Shows above bottom nav */}
       {showProfileDropdown && (
@@ -410,5 +472,8 @@ export function MobileBottomNavigation({
       </div>
     </div>
   );
+
+  if (!portalReady || typeof document === 'undefined') return nav;
+  return createPortal(nav, document.body);
 }
 

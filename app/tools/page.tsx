@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LeftSidebar from '@/components/LeftSidebar';
+import { BoardPageShell } from '@/components/BoardPageShell';
 import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
 import { ProUpgradeHost } from '@/components/ProFeatureLock';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -39,7 +40,43 @@ export default function ToolsPage() {
   const shellDark = !mounted || isDark;
 
   return (
-    <div className={`min-h-screen lg:h-screen ${shellDark ? 'bg-[#050d1a]' : 'bg-gray-50'} lg:overflow-x-auto lg:overflow-y-hidden`}>
+    <BoardPageShell
+      className={`min-h-screen lg:h-screen ${shellDark ? 'bg-[#050d1a]' : 'bg-gray-50'} lg:overflow-x-auto lg:overflow-y-hidden`}
+      chrome={
+        <MobileBottomNavigation
+          hasPremium={isPro}
+          username={username}
+          userEmail={userEmail}
+          avatarUrl={avatarUrl}
+          showJournalDropdown={showJournalDropdown}
+          showProfileDropdown={showProfileDropdown}
+          showSettingsDropdown={showSettingsDropdown}
+          setShowJournalDropdown={setShowJournalDropdown}
+          setShowProfileDropdown={setShowProfileDropdown}
+          setShowSettingsDropdown={setShowSettingsDropdown}
+          profileDropdownRef={profileDropdownRef}
+          journalDropdownRef={journalDropdownRef}
+          settingsDropdownRef={settingsDropdownRef}
+          onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
+          onSubscription={() => router.push('/subscription')}
+          onLogout={async () => {
+            await supabase.auth.signOut({ scope: 'local' });
+            router.push('/');
+          }}
+          theme={theme}
+          oddsFormat={oddsFormat}
+          setTheme={setTheme}
+          setOddsFormat={(fmt) => {
+            setOddsFormat(fmt);
+            try {
+              localStorage.setItem('oddsFormat', fmt);
+            } catch {
+              /* ignore */
+            }
+          }}
+        />
+      }
+    >
       <style jsx global>{`
         .dashboard-container {
           --sidebar-margin: 0px;
@@ -123,39 +160,6 @@ export default function ToolsPage() {
       </div>
 
       <ProUpgradeHost />
-
-      <MobileBottomNavigation
-        hasPremium={isPro}
-        username={username}
-        userEmail={userEmail}
-        avatarUrl={avatarUrl}
-        showJournalDropdown={showJournalDropdown}
-        showProfileDropdown={showProfileDropdown}
-        showSettingsDropdown={showSettingsDropdown}
-        setShowJournalDropdown={setShowJournalDropdown}
-        setShowProfileDropdown={setShowProfileDropdown}
-        setShowSettingsDropdown={setShowSettingsDropdown}
-        profileDropdownRef={profileDropdownRef}
-        journalDropdownRef={journalDropdownRef}
-        settingsDropdownRef={settingsDropdownRef}
-        onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
-        onSubscription={() => router.push('/subscription')}
-        onLogout={async () => {
-          await supabase.auth.signOut({ scope: 'local' });
-          router.push('/');
-        }}
-        theme={theme}
-        oddsFormat={oddsFormat}
-        setTheme={setTheme}
-        setOddsFormat={(fmt) => {
-          setOddsFormat(fmt);
-          try {
-            localStorage.setItem('oddsFormat', fmt);
-          } catch {
-            /* ignore */
-          }
-        }}
-      />
-    </div>
+    </BoardPageShell>
   );
 }

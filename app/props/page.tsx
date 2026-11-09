@@ -1,6 +1,7 @@
 'use client';
 
 import LeftSidebar from "@/components/LeftSidebar";
+import { BoardPageShell } from "@/components/BoardPageShell";
 import { MobileBottomNavigation } from "@/app/nba/research/dashboard/components/header";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from 'next/navigation';
@@ -8575,7 +8576,43 @@ export default function NBALandingPage() {
   const shellDark = !mounted || isDark;
 
   return (
-    <div className={`min-h-screen lg:h-screen ${shellDark ? 'bg-[#050d1a]' : 'bg-gray-50'} lg:overflow-x-auto lg:overflow-y-hidden`}>
+    <BoardPageShell
+      className={`min-h-screen lg:h-screen ${shellDark ? 'bg-[#050d1a]' : 'bg-gray-50'} lg:overflow-x-auto lg:overflow-y-hidden`}
+      chrome={
+        <MobileBottomNavigation
+          hasPremium={isPro}
+          username={username}
+          userEmail={userEmail}
+          avatarUrl={avatarUrl}
+          showJournalDropdown={showJournalDropdown}
+          showProfileDropdown={showProfileDropdown}
+          showSettingsDropdown={showSettingsDropdown}
+          setShowJournalDropdown={setShowJournalDropdown}
+          setShowProfileDropdown={setShowProfileDropdown}
+          setShowSettingsDropdown={setShowSettingsDropdown}
+          profileDropdownRef={profileDropdownRef}
+          journalDropdownRef={journalDropdownRef}
+          settingsDropdownRef={settingsDropdownRef}
+          onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
+          onSubscription={() => router.push('/subscription')}
+          onLogout={async () => {
+            await supabase.auth.signOut({ scope: 'local' });
+            router.push('/');
+          }}
+          theme={theme}
+          oddsFormat={oddsFormat}
+          setTheme={setTheme}
+          setOddsFormat={(fmt) => {
+            setOddsFormat(fmt);
+            try {
+              localStorage.setItem('oddsFormat', fmt);
+            } catch {
+              // ignore
+            }
+          }}
+        />
+      }
+    >
       {/* Loading bar at top when navigating to dashboard - must be at root level */}
       <LoadingBar isLoading={navigatingToPlayer} isDark={isDark} showImmediately={navigatingToPlayer} mobileOffset={0} />
       <style jsx global>{`
@@ -12980,41 +13017,7 @@ export default function NBALandingPage() {
         </div>
       )}
 
-      {/* Mobile Bottom Navigation - Only visible on mobile */}
-      <MobileBottomNavigation
-        hasPremium={isPro}
-        username={username}
-        userEmail={userEmail}
-        avatarUrl={avatarUrl}
-        showJournalDropdown={showJournalDropdown}
-        showProfileDropdown={showProfileDropdown}
-        showSettingsDropdown={showSettingsDropdown}
-        setShowJournalDropdown={setShowJournalDropdown}
-        setShowProfileDropdown={setShowProfileDropdown}
-        setShowSettingsDropdown={setShowSettingsDropdown}
-        profileDropdownRef={profileDropdownRef}
-        journalDropdownRef={journalDropdownRef}
-        settingsDropdownRef={settingsDropdownRef}
-        onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
-        onSubscription={() => router.push('/subscription')}
-        onLogout={async () => {
-          await supabase.auth.signOut({ scope: 'local' });
-          router.push('/');
-        }}
-        theme={theme}
-        oddsFormat={oddsFormat}
-        setTheme={setTheme}
-        setOddsFormat={(fmt) => {
-          setOddsFormat(fmt);
-          try {
-            localStorage.setItem('oddsFormat', fmt);
-          } catch {
-            // ignore
-          }
-        }}
-      />
-
-    </div>
+    </BoardPageShell>
   );
 }
 
