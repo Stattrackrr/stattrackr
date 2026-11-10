@@ -176,9 +176,8 @@ export async function POST(request: NextRequest) {
     };
 
     if (referrerUserId) {
-      // Referral wins: attach friend 20% coupon; disable marketing promo field.
+      // Stripe forbids allow_promotion_codes together with discounts — omit it entirely.
       sessionParams.discounts = [{ coupon: REFERRAL_COUPON_IDS[20] }];
-      sessionParams.allow_promotion_codes = false;
     } else {
       sessionParams.allow_promotion_codes = true;
     }
