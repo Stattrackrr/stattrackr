@@ -127,6 +127,37 @@ const AI_PICKS_RUN_EXCLUDES = [
   ...DATA_JUNK_EXCLUDES,
 ] as const;
 
+/**
+ * Grade imports playerPropSnapshots → oddsHistory, which joins process.cwd()/data/nbl-model/cache.
+ * NFT then packs the whole cache (engine-picks alone ~116MB) and blows the 250MB limit.
+ * Keep closing prop-line snapshots; drop the heavy unused siblings.
+ */
+const AI_PICKS_GRADE_TRACE = [
+  './data/nbl-model/cache/player-prop-lines/**/*',
+  ...TENNIS_RUNTIME_DATA,
+] as const;
+const AI_PICKS_GRADE_EXCLUDES = [
+  './data/nbl-model/cache/engine-picks/**/*',
+  './data/nbl-model/cache/player-prop-history/**/*',
+  './data/nbl-model/cache/game-odds-history/**/*',
+  './data/nbl-model/cache/shot-charts/**/*',
+  './data/nbl-model/cache/shot-chart-players/**/*',
+  './data/nbl-model/cache/shot-chart-defense/**/*',
+  './data/nbl-model/cache/shot-chart-manifest-*.json',
+  './data/nbl-model/cache/assist-shots/**/*',
+  './data/nbl-model/cache/assist-chart-players/**/*',
+  './data/nbl-model/cache/assist-defense/**/*',
+  './data/nbl-model/cache/period-scores/**/*',
+  './data/nbl-model/cache/pbp/**/*',
+  './data/nbl-model/cache/pbp-chem/**/*',
+  './data/nbl-model/cache/lineups/**/*',
+  './data/nbl-model/cache/player-logs/**/*',
+  './data/nbl-model/cache/player-props-list.json',
+  './data/afl-model/**/*',
+  './data/nbl-engine/**/*',
+  ...DATA_JUNK_EXCLUDES,
+] as const;
+
 /** NBL props/odds: need lines + logs; drop engine-picks and chart/pbp archives. */
 const NBL_PROPS_CWD_TRACE = [
   './data/nbl-roster-*.json',
@@ -393,6 +424,8 @@ const nextConfig: NextConfig = {
     ...routeTrace(AFL_PROPS_ROUTES, AFL_PROPS_CWD_TRACE),
     '/api/cron/ai-picks-run': [...AI_PICKS_RUN_TRACE],
     '/api/cron/ai-picks-run/route': [...AI_PICKS_RUN_TRACE],
+    '/api/cron/ai-picks-grade': [...AI_PICKS_GRADE_TRACE],
+    '/api/cron/ai-picks-grade/route': [...AI_PICKS_GRADE_TRACE],
     '/api/afl/cron/league-player-stats': [
       './data/afl-league-player-stats-2026.json',
       './data/afl-league-player-stats-2025.json',
@@ -450,7 +483,10 @@ const nextConfig: NextConfig = {
     ...routeTrace(NBL_ANALYTICS_ROUTES, NBL_ANALYTICS_EXCLUDES),
     '/api/cron/ai-picks-run': [...AI_PICKS_RUN_EXCLUDES],
     '/api/cron/ai-picks-run/route': [...AI_PICKS_RUN_EXCLUDES],
+    '/api/cron/ai-picks-grade': [...AI_PICKS_GRADE_EXCLUDES],
+    '/api/cron/ai-picks-grade/route': [...AI_PICKS_GRADE_EXCLUDES],
   },
+
   // Only suppress known Supabase auth errors during build phase (not runtime)
   // These are expected errors when Supabase client initializes during static generation
   webpack: (config, { isServer }) => {
