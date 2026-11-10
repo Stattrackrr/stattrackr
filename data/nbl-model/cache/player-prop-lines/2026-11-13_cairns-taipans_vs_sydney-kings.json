@@ -1,0 +1,133 @@
+{
+  "gameId": "937063999",
+  "gameKey": "2026-11-13_cairns-taipans_vs_sydney-kings",
+  "homeTeam": "Cairns Taipans",
+  "awayTeam": "Sydney Kings",
+  "commenceTime": "2026-11-13T08:30:00.000Z",
+  "capturedAt": "2026-11-10T04:12:47.263Z",
+  "closing": false,
+  "source": "odds-api-net",
+  "books": [
+    "Palmerbet"
+  ],
+  "lineCount": 9,
+  "lines": [
+    {
+      "player": "Andrew Carr",
+      "playerKey": "andrew carr",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-2000",
+      "under": "N/A",
+      "overDecimal": 1.05,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "Jonah Bolden",
+      "playerKey": "jonah bolden",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-833",
+      "under": "N/A",
+      "overDecimal": 1.12,
+      "underDecimal": null
+    },
+    {
+      "player": "Keanu Pinder",
+      "playerKey": "keanu pinder",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "Makuach Maluach",
+      "playerKey": "makuach maluach",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "Malique Lewis",
+      "playerKey": "malique lewis",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-1667",
+      "under": "N/A",
+      "overDecimal": 1.06,
+      "underDecimal": null
+    },
+    {
+      "player": "Matthew Dellavedova",
+      "playerKey": "matthew dellavedova",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-357",
+      "under": "N/A",
+      "overDecimal": 1.28,
+      "underDecimal": null
+    },
+    {
+      "player": "Reyne Smith",
+      "playerKey": "reyne smith",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-1250",
+      "under": "N/A",
+      "overDecimal": 1.08,
+      "underDecimal": null
+    },
+    {
+      "player": "Xavier Cooks",
+      "playerKey": "xavier cooks",
+      "book": "Palmerbet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 4.5,
+      "label": "5+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    }
+  ]
+}
