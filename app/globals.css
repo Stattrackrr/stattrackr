@@ -686,3 +686,88 @@ html.dark body {
   transform-box: fill-box;
   transform-origin: center bottom;
 }
+/* -- Referral page design tokens --------------------------------------- */
+.referral-page {
+  --ref-bg: #0b0f17;
+  --ref-surface: #111723;
+  --ref-raised: #161d2b;
+  --ref-border: rgba(255, 255, 255, 0.07);
+  --ref-border-strong: rgba(255, 255, 255, 0.1);
+  --ref-text: #e8ecf4;
+  --ref-text-secondary: #9aa4b5;
+  --ref-text-tertiary: #6b7588;
+  --ref-accent: #2dd4bf;
+  --ref-accent-muted: rgba(45, 212, 191, 0.14);
+  --ref-accent-hover: #5eead4;
+  --ref-danger-bg: rgba(239, 68, 68, 0.1);
+  --ref-danger-border: rgba(239, 68, 68, 0.25);
+  --ref-danger-text: #fca5a5;
+  --ref-radius-control: 8px;
+  --ref-radius-surface: 12px;
+  --ref-font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --ref-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  background: var(--ref-bg);
+  color: var(--ref-text);
+  font-family: var(--ref-font);
+  min-height: 100vh;
+}
+
+.referral-page .ref-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.referral-page .ref-focus:focus-visible {
+  outline: 2px solid var(--ref-accent);
+  outline-offset: 2px;
+}
+
+.referral-page .ref-back-link {
+  color: var(--ref-text-secondary);
+}
+.referral-page .ref-back-link:hover {
+  color: var(--ref-text);
+}
+
+.referral-page .ref-btn-primary {
+  background: var(--ref-accent);
+  color: #042f2e;
+  border-radius: var(--ref-radius-control);
+}
+.referral-page .ref-btn-primary:hover {
+  background: var(--ref-accent-hover);
+}
+.referral-page .ref-btn-primary.is-copied {
+  background: var(--ref-accent-muted);
+  color: var(--ref-accent);
+}
+.referral-page .ref-btn-primary.is-copied:hover {
+  background: var(--ref-accent-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .referral-page *,
+  .referral-page *::before,
+  .referral-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes ref-skeleton-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+
+.referral-page .ref-skeleton {
+  background: var(--ref-raised);
+  border-radius: var(--ref-radius-control);
+  animation: ref-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .referral-page .ref-skeleton {
+    animation: none;
+    opacity: 0.55;
+  }
+}

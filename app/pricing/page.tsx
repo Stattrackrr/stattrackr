@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import Navigation from '@/components/navigation';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
@@ -10,7 +10,16 @@ import { StatTrackrSplash } from '@/components/StatTrackrSplash';
 import { trackMetaEvent } from '@/lib/metaPixel';
 
 export default function PricingPage() {
+  return (
+    <Suspense fallback={<StatTrackrSplash />}>
+      <PricingPageInner />
+    </Suspense>
+  );
+}
+
+function PricingPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
   const [activeTab, setActiveTab] = useState<'charts' | 'dvp' | 'journal' | 'calendar'>('charts');
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
@@ -24,7 +33,54 @@ export default function PricingPage() {
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralDiscountPercent, setReferralDiscountPercent] = useState<number | null>(null);
   const isLoggedIn = Boolean(user);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (!ref) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/referral/resolve?code=${encodeURIComponent(ref)}`);
+        const json = await res.json();
+        if (!cancelled && json.valid) {
+          setReferralCode(json.code);
+          setReferralDiscountPercent(json.discountPercent ?? 20);
+          try {
+            localStorage.setItem('st_ref', json.code);
+          } catch {
+            /* ignore */
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (referralCode) return;
+    try {
+      const stored = localStorage.getItem('st_ref');
+      if (!stored) return;
+      fetch(`/api/referral/resolve?code=${encodeURIComponent(stored)}`)
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.valid) {
+            setReferralCode(json.code);
+            setReferralDiscountPercent(json.discountPercent ?? 20);
+          }
+        })
+        .catch(() => {});
+    } catch {
+      /* ignore */
+    }
+  }, [referralCode]);
 
   useEffect(() => {
     // Check initial session
@@ -187,7 +243,11 @@ export default function PricingPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ priceId, billingCycle }),
+        body: JSON.stringify({
+          priceId,
+          billingCycle,
+          ...(referralCode ? { referralCode } : {}),
+        }),
       });
       
       const data = await response.json();
@@ -215,6 +275,12 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden">
+      {referralCode && referralDiscountPercent != null && (
+        <div className="relative z-[60] border-b border-white/10 bg-slate-900/90 px-4 py-2.5 text-center text-sm text-slate-200">
+          Referral applied: {referralDiscountPercent}% off while subscribed. Can&apos;t be combined
+          with other promo codes.
+        </div>
+      )}
       {/* Top fade overlay */}
       <div className="fixed top-0 left-0 right-0 h-20 bg-gradient-to-b from-slate-900/60 via-slate-900/30 to-transparent z-50 pointer-events-none"></div>
       {/* Bottom fade overlay */}

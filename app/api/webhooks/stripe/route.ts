@@ -10,6 +10,14 @@ import {
   findProfileForStripeCustomer,
   reconcileUserSubscription,
 } from '@/lib/stripeCustomer';
+import {
+  activateReferralForSubscription,
+  endReferral,
+  markSubscriptionEnded,
+  maybeExpirePastDueReferral,
+  reconcileUserReferralDiscount,
+  recordPendingReferral,
+} from '@/lib/referral/reconcile';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
@@ -165,6 +173,18 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        await handleChargeRefunded(charge);
+        break;
+      }
+
+      case 'charge.dispute.created': {
+        const dispute = event.data.object as Stripe.Dispute;
+        await handleDispute(dispute);
+        break;
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -265,6 +285,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     );
   } catch (reconcileError) {
     console.error('⚠️ Checkout completed but reconcile failed:', reconcileError);
+  }
+
+  // Referral attribution (pending until first paid invoice activates).
+  try {
+    const referrerUserId = session.metadata?.referrer_user_id;
+    const referralCode = session.metadata?.referral_code;
+    if (referrerUserId && referralCode && userId) {
+      await recordPendingReferral(supabaseAdmin, {
+        referrerUserId,
+        referredUserId: userId,
+        referralCode,
+        stripeSubscriptionId: subscriptionId,
+      });
+    }
+  } catch (referralErr) {
+    console.error('⚠️ Checkout referral attribution failed:', referralErr);
   }
 
   // Fire-and-forget signup push notification (never block or fail webhook flow)
@@ -374,6 +410,28 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     console.log(
       `Subscription reconciled for user ${profile.id}: status=${reconciled.profileUpdates.subscription_status}, tier=${reconciled.profileUpdates.subscription_tier}, kept=${reconciled.subscription?.id}, canceledDuplicates=${reconciled.canceledDuplicateIds.length}`
     );
+
+    // Referral: paused / canceled period-end / past_due grace
+    try {
+      if (subscription.status === 'paused') {
+        await endReferral(supabaseAdmin, stripe, {
+          stripeSubscriptionId: subscription.id,
+          reason: 'paused',
+        });
+      } else if (subscription.status === 'past_due') {
+        await maybeExpirePastDueReferral(supabaseAdmin, stripe, subscription);
+      } else if (
+        reconciled.entitling &&
+        !subscription.cancel_at_period_end &&
+        !subscription.cancel_at
+      ) {
+        await reconcileUserReferralDiscount(supabaseAdmin, stripe, profile.id, {
+          reason: 'subscription_updated',
+        });
+      }
+    } catch (referralErr) {
+      console.error('Referral subscription.updated hook failed:', referralErr);
+    }
   } catch (error) {
     console.error('Error reconciling subscription:', error);
   }
@@ -408,28 +466,193 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     console.log(
       `Subscription deleted reconciled for user ${profile.id}: entitling=${reconciled.entitling}, status=${reconciled.profileUpdates.subscription_status}`
     );
+
+    try {
+      await endReferral(supabaseAdmin, stripe, {
+        stripeSubscriptionId: subscription.id,
+        reason: 'subscription_deleted',
+      });
+      if (!reconciled.entitling) {
+        await markSubscriptionEnded(supabaseAdmin, profile.id);
+      }
+    } catch (referralErr) {
+      console.error('Referral subscription.deleted hook failed:', referralErr);
+    }
   } catch (error) {
     console.error('Error canceling subscription:', error);
   }
 }
 
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
-  // Optional: Log successful payment, send receipt email, etc.
   console.log('Invoice payment succeeded:', invoice.id);
+  const stripe = getStripe();
+  const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
+  const subscriptionId =
+    typeof (invoice as any).subscription === 'string'
+      ? (invoice as any).subscription
+      : (invoice as any).subscription?.id;
+
+  if (!customerId) return;
+
+  const profile = await findProfileForStripeCustomer(supabaseAdmin, stripe, customerId);
+  if (!profile?.id) return;
+
+  // Apply deferred tier decreases at renewal (subscription_cycle invoices).
+  const billingReason = (invoice as any).billing_reason as string | undefined;
+  if (billingReason === 'subscription_cycle') {
+    try {
+      await reconcileUserReferralDiscount(supabaseAdmin, stripe, profile.id, {
+        forceApplyPending: true,
+        reason: 'renewal',
+      });
+    } catch (err) {
+      console.error('Referral renew reconcile failed:', err);
+    }
+  }
+
+  if (!subscriptionId) return;
+
+  // Activate referral on first successful payment for this subscription.
+  try {
+    let cardFingerprint: string | null = null;
+    const paymentIntentId =
+      typeof (invoice as any).payment_intent === 'string'
+        ? (invoice as any).payment_intent
+        : (invoice as any).payment_intent?.id;
+    if (paymentIntentId) {
+      try {
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
+          expand: ['payment_method'],
+        });
+        const pm = pi.payment_method;
+        if (pm && typeof pm !== 'string' && pm.card?.fingerprint) {
+          cardFingerprint = pm.card.fingerprint;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // Self-referral via card fingerprint vs referrer cards (best-effort).
+    const { data: referral } = await supabaseAdmin
+      .from('referrals')
+      .select('id, referrer_user_id, status')
+      .eq('referred_user_id', profile.id)
+      .maybeSingle();
+
+    if (referral && referral.status === 'pending' && cardFingerprint) {
+      const { data: referrerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('stripe_customer_id')
+        .eq('id', referral.referrer_user_id)
+        .maybeSingle();
+      if (referrerProfile?.stripe_customer_id) {
+        try {
+          const pms = await stripe.paymentMethods.list({
+            customer: referrerProfile.stripe_customer_id,
+            type: 'card',
+            limit: 20,
+          });
+          const match = pms.data.some((p) => p.card?.fingerprint === cardFingerprint);
+          if (match) {
+            await supabaseAdmin
+              .from('referrals')
+              .update({
+                status: 'disqualified',
+                end_reason: 'same_card_fingerprint',
+                ended_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', referral.id);
+            console.warn(`[referral] disqualified ${referral.id}: same card fingerprint`);
+            return;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    await activateReferralForSubscription(supabaseAdmin, stripe, {
+      referredUserId: profile.id,
+      stripeSubscriptionId: subscriptionId,
+      cardFingerprint,
+    });
+  } catch (err) {
+    console.error('Referral activate failed:', err);
+  }
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   const customerId = invoice.customer as string;
+  const stripe = getStripe();
 
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, email')
+    .select('id, email, stripe_subscription_id')
     .eq('stripe_customer_id', customerId)
     .single();
 
   if (profile) {
-    // Optional: Send payment failed notification
     console.log('Payment failed for user:', profile.id);
+    try {
+      if (profile.stripe_subscription_id) {
+        const sub = await stripe.subscriptions.retrieve(profile.stripe_subscription_id);
+        await maybeExpirePastDueReferral(supabaseAdmin, stripe, sub);
+      }
+    } catch (err) {
+      console.error('past_due referral check failed:', err);
+    }
+  }
+}
+
+function invoiceIdFromCharge(charge: Stripe.Charge | Record<string, unknown>): string | null {
+  const inv = (charge as any).invoice;
+  if (typeof inv === 'string') return inv;
+  if (inv && typeof inv === 'object' && typeof inv.id === 'string') return inv.id;
+  return null;
+}
+
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  const stripe = getStripe();
+  const invoiceId = invoiceIdFromCharge(charge);
+  if (!invoiceId) return;
+  try {
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+    const subscriptionId =
+      typeof (invoice as any).subscription === 'string'
+        ? (invoice as any).subscription
+        : (invoice as any).subscription?.id;
+    if (!subscriptionId) return;
+    await endReferral(supabaseAdmin, stripe, {
+      stripeSubscriptionId: subscriptionId,
+      reason: 'refund',
+    });
+  } catch (err) {
+    console.error('Refund referral end failed:', err);
+  }
+}
+
+async function handleDispute(dispute: Stripe.Dispute) {
+  const stripe = getStripe();
+  const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id;
+  if (!chargeId) return;
+  try {
+    const charge = await stripe.charges.retrieve(chargeId);
+    const invoiceId = invoiceIdFromCharge(charge as any);
+    if (!invoiceId) return;
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+    const subscriptionId =
+      typeof (invoice as any).subscription === 'string'
+        ? (invoice as any).subscription
+        : (invoice as any).subscription?.id;
+    if (!subscriptionId) return;
+    await endReferral(supabaseAdmin, stripe, {
+      stripeSubscriptionId: subscriptionId,
+      reason: 'dispute',
+    });
+  } catch (err) {
+    console.error('Dispute referral end failed:', err);
   }
 }
 

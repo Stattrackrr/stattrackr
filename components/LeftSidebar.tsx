@@ -663,6 +663,19 @@ export default function LeftSidebar({
                   Subscription
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileDropdown(false);
+                  router.push('/referral');
+                }}
+                className="w-full px-3 py-2.5 text-left text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Refer and Earn
+              </button>
               {onSignOutClick && (
                 <button
                   type="button"
@@ -684,22 +697,20 @@ export default function LeftSidebar({
       )}
 
       {!suppressDashboardNav ? (
-        <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-black dark:text-white mt-auto">
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Coming Soon</p>
-          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-            <li className="flex items-center gap-2">
-              <span className="text-lg" aria-hidden>🏟️</span>
-              <span>More Sports</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-lg" aria-hidden="true">
-                <svg className="w-5 h-5 fill-current text-[#5865F2]" viewBox="0 0 24 24">
-                  <path d="M20.317 4.369a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.078.037c-.211.375-.444.864-.608 1.249a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.249.077.077 0 00-.078-.037 19.736 19.736 0 00-4.885 1.515.07.07 0 00-.032.024C.533 9.045-.319 13.58.099 18.058a.082.082 0 00.031.057 19.9 19.9 0 005.99 3.034.077.077 0 00.084-.028c.461-.63.873-1.295 1.226-1.994a.076.076 0 00-.041-.105 12.267 12.267 0 01-1.753-.83.077.077 0 01-.008-.128c.118-.089.236-.18.349-.272a.074.074 0 01.077-.01c3.668 1.672 7.625 1.672 11.253 0a.074.074 0 01.078.009c.114.093.231.184.35.273a.077.077 0 01-.006.126 11.9 11.9 0 01-1.754.83.076.076 0 00-.04.105c.36.699.773 1.364 1.225 1.993a.076.076 0 00.084.029 19.876 19.876 0 005.993-3.033.079.079 0 00.031-.056c.5-5.177-.838-9.674-3.549-13.666a.061.061 0 00-.03-.025zM8.02 15.331c-1.183 0-2.157-1.097-2.157-2.445 0-1.348.955-2.445 2.157-2.445 1.211 0 2.175 1.106 2.158 2.445 0 1.348-.955 2.445-2.158 2.445zm7.974 0c-1.183 0-2.157-1.097-2.157-2.445 0-1.348.955-2.445 2.157-2.445 1.211 0 2.175 1.106 2.158 2.445 0 1.348-.947 2.445-2.158 2.445z" />
-                </svg>
-              </span>
-              <span>Discord</span>
-            </li>
-          </ul>
+        <div className="p-3 border-t border-gray-200/60 dark:border-gray-700/50 mt-auto">
+          <button
+            type="button"
+            onClick={() => router.push('/referral')}
+            className="w-full flex items-center gap-2 rounded-lg border border-gray-200/70 dark:border-gray-700/60 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="min-w-0 text-left">
+              <span className="block font-medium text-gray-900 dark:text-white">Refer a friend</span>
+              <span className="block text-xs text-gray-500 dark:text-gray-400">Share your link for subscription discounts</span>
+            </span>
+          </button>
         </div>
       ) : null}
 
@@ -838,6 +849,22 @@ export default function LeftSidebar({
                     placeholder="Phone number"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   />
+                </div>
+
+                <div className="pt-1 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowProfileModal(false);
+                      router.push('/referral');
+                    }}
+                    className="w-full px-3 py-2.5 rounded-lg text-left text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Refer and Earn
+                  </button>
                 </div>
               </div>
 

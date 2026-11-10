@@ -207,13 +207,24 @@ function UpgradePrompt({ onClose }: { onClose: () => void }) {
         return;
       }
 
+      let referralCode: string | undefined;
+      try {
+        referralCode = localStorage.getItem('st_ref') || undefined;
+      } catch {
+        /* ignore */
+      }
+
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ priceId: PRICE_IDS.pro[cycle], billingCycle: cycle }),
+        body: JSON.stringify({
+          priceId: PRICE_IDS.pro[cycle],
+          billingCycle: cycle,
+          ...(referralCode ? { referralCode } : {}),
+        }),
       });
       const data = await response.json().catch(() => ({}));
 

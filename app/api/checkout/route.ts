@@ -8,6 +8,12 @@ import {
   reconcileUserSubscription,
   resolveOrCreateStripeCustomer,
 } from '@/lib/stripeCustomer';
+import { REFERRAL_COUPON_IDS } from '@/lib/referral/constants';
+import { findReferrerByCode, normalizeReferralCode } from '@/lib/referral/codes';
+import {
+  checkFriendReferralEligibility,
+  isSelfReferral,
+} from '@/lib/referral/eligibility';
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -43,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { priceId, billingCycle } = body;
+    const { priceId, billingCycle, referralCode: rawReferralCode } = body;
 
     const validPriceIds = Object.values(PRICE_IDS.pro);
     if (!validPriceIds.includes(priceId)) {
@@ -69,8 +75,6 @@ export async function POST(request: NextRequest) {
       knownCustomerId: profile?.stripe_customer_id,
     };
 
-    // Reconcile across every Stripe customer for this user before allowing checkout.
-    // Restores access if an entitling sub exists on a non-linked customer and cancels duplicates.
     const reconciled = await reconcileUserSubscription(serviceSupabase, identity, {
       stripe,
       cancelDuplicates: true,
@@ -101,7 +105,41 @@ export async function POST(request: NextRequest) {
       knownCustomerId: reconciled.customerId || identity.knownCustomerId,
     });
 
-    const session = await stripe.checkout.sessions.create({
+    const referralCode = normalizeReferralCode(rawReferralCode);
+    let referrerUserId: string | null = null;
+    let appliedReferralCode: string | null = null;
+
+    if (referralCode) {
+      const referrer = await findReferrerByCode(serviceSupabase, referralCode);
+      if (!referrer) {
+        return NextResponse.json({ error: 'Invalid referral code' }, { status: 400 });
+      }
+
+      const self = isSelfReferral({
+        referrerUserId: referrer.id,
+        referredUserId: user.id,
+        referrerEmail: referrer.email,
+        referredEmail: user.email,
+      });
+      if (!self.ok) {
+        return NextResponse.json({ error: self.reason }, { status: 400 });
+      }
+
+      // Referrer pending cancel / not active: still allow friend 20%, but we'll freeze referrer tier later.
+      const eligibility = await checkFriendReferralEligibility(serviceSupabase, {
+        userId: user.id,
+        stripe,
+        stripeCustomerId: customerId,
+      });
+      if (!eligibility.ok) {
+        return NextResponse.json({ error: eligibility.reason }, { status: 400 });
+      }
+
+      referrerUserId = referrer.id;
+      appliedReferralCode = referrer.referral_code;
+    }
+
+    const sessionParams: Record<string, unknown> = {
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [
@@ -117,11 +155,41 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         billing_cycle: billingCycle,
         has_trial: 'false',
+        ...(referrerUserId
+          ? {
+              referrer_user_id: referrerUserId,
+              referral_code: appliedReferralCode,
+            }
+          : {}),
       },
-      allow_promotion_codes: true,
-    });
+      subscription_data: {
+        metadata: {
+          user_id: user.id,
+          ...(referrerUserId
+            ? {
+                referrer_user_id: referrerUserId,
+                referral_code: appliedReferralCode,
+              }
+            : {}),
+        },
+      },
+    };
 
-    return NextResponse.json({ sessionId: session.id, url: session.url });
+    if (referrerUserId) {
+      // Referral wins: attach friend 20% coupon; disable marketing promo field.
+      sessionParams.discounts = [{ coupon: REFERRAL_COUPON_IDS[20] }];
+      sessionParams.allow_promotion_codes = false;
+    } else {
+      sessionParams.allow_promotion_codes = true;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams as any);
+
+    return NextResponse.json({
+      sessionId: session.id,
+      url: session.url,
+      referralApplied: Boolean(referrerUserId),
+    });
   } catch (error: any) {
     console.error('Checkout error:', error);
     return NextResponse.json(
