@@ -15,6 +15,9 @@ import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
 import { kickToolsEarlyFetch } from '@/lib/tools/prefetch';
 import { pushBoardRoute } from '@/lib/boardNavTransition';
 import { ProLockMark, ProUpgradeHost, openProUpgrade } from '@/components/ProFeatureLock';
+import { BadgeStrip } from '@/components/badges/BadgeStrip';
+import { BadgePicker } from '@/components/badges/BadgePicker';
+import type { EvaluatedBadge } from '@/lib/badges/evaluate';
 
 type OddsFormat = 'american' | 'decimal';
 interface LeftSidebarProps {
@@ -77,6 +80,10 @@ export default function LeftSidebar({
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
   const [profileAvatarFile, setProfileAvatarFile] = useState<File | null>(null);
   const [profileAvatarPreviewUrl, setProfileAvatarPreviewUrl] = useState<string | null>(null);
+  const [profileBadges, setProfileBadges] = useState<EvaluatedBadge[]>([]);
+  const [displayedBadgeIds, setDisplayedBadgeIds] = useState<string[]>([]);
+  const [profileBadgesLoading, setProfileBadgesLoading] = useState(false);
+  const [savingBadges, setSavingBadges] = useState(false);
   const profileAvatarInputRef = useRef<HTMLInputElement>(null);
   const [showUnitSettingsModal, setShowUnitSettingsModal] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -199,6 +206,111 @@ export default function LeftSidebar({
   const fallbackInitial = displayName?.trim().charAt(0)?.toUpperCase() || 'P';
   const membershipLabel = isPro ? 'Pro Member' : 'Member';
   const showProfileCard = Boolean(avatarUrl || username || userEmail || onSubscriptionClick || onSignOutClick);
+
+  // Prefetch badges + equipped selection for the name row and profile picker
+  useEffect(() => {
+    if (!showProfileCard) return;
+    let cancelled = false;
+    const loadBadges = async () => {
+      setProfileBadgesLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) {
+          if (!cancelled) {
+            setProfileBadges([]);
+            setDisplayedBadgeIds([]);
+          }
+          return;
+        }
+        const res = await fetch('/api/badges/me', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        if (!res.ok) {
+          if (!cancelled) {
+            setProfileBadges([]);
+            setDisplayedBadgeIds([]);
+          }
+          return;
+        }
+        const json = (await res.json()) as {
+          badges?: EvaluatedBadge[];
+          displayedBadgeIds?: string[];
+        };
+        if (!cancelled) {
+          setProfileBadges(Array.isArray(json.badges) ? json.badges : []);
+          let nextIds = Array.isArray(json.displayedBadgeIds) ? json.displayedBadgeIds : [];
+          // Prefer local customization when API still returns the auto default
+          // (column missing / not yet migrated).
+          try {
+            const raw = localStorage.getItem('stattrackr_displayed_badges');
+            if (raw != null) {
+              const local = JSON.parse(raw) as unknown;
+              if (Array.isArray(local) && local.every((x) => typeof x === 'string')) {
+                nextIds = local.slice(0, 2);
+              }
+            }
+          } catch {
+            // ignore
+          }
+          setDisplayedBadgeIds(nextIds);
+        }
+      } catch {
+        if (!cancelled) {
+          setProfileBadges([]);
+          setDisplayedBadgeIds([]);
+        }
+      } finally {
+        if (!cancelled) setProfileBadgesLoading(false);
+      }
+    };
+    loadBadges();
+    return () => {
+      cancelled = true;
+    };
+  }, [showProfileCard, userEmail]);
+
+  const saveDisplayedBadges = async (nextIds: string[]) => {
+    setDisplayedBadgeIds(nextIds);
+    try {
+      localStorage.setItem('stattrackr_displayed_badges', JSON.stringify(nextIds));
+    } catch {
+      // ignore
+    }
+    setSavingBadges(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      const res = await fetch('/api/badges/me', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ displayedBadgeIds: nextIds }),
+      });
+      if (!res.ok) return; // keep optimistic selection (e.g. column not migrated yet)
+      const json = (await res.json()) as {
+        badges?: EvaluatedBadge[];
+        displayedBadgeIds?: string[];
+      };
+      if (Array.isArray(json.badges)) setProfileBadges(json.badges);
+      if (Array.isArray(json.displayedBadgeIds)) {
+        setDisplayedBadgeIds(json.displayedBadgeIds);
+        try {
+          localStorage.setItem('stattrackr_displayed_badges', JSON.stringify(json.displayedBadgeIds));
+        } catch {
+          // ignore
+        }
+      }
+    } catch {
+      // keep optimistic selection
+    } finally {
+      setSavingBadges(false);
+    }
+  };
   const isAflDashboard = pathname === '/afl';
   const suppressDashboardNav = isAflDashboard && !showDashboardNavLinks;
   
@@ -604,7 +716,15 @@ export default function LeftSidebar({
               )}
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-semibold text-slate-700 dark:text-white truncate">{displayName}</p>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className="text-sm font-semibold text-slate-700 dark:text-white truncate">{displayName}</p>
+                <BadgeStrip
+                  badges={profileBadges}
+                  selectedIds={displayedBadgeIds}
+                  loading={profileBadgesLoading}
+                  className="shrink-0"
+                />
+              </div>
               <p className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">{membershipLabel}</p>
             </div>
             <svg
@@ -728,13 +848,25 @@ export default function LeftSidebar({
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700">
               {/* Header */}
               <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Profile</h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">View your account details</p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                      {profileName?.trim() || displayName}
+                    </h2>
+                    <BadgeStrip
+                      badges={profileBadges}
+                      selectedIds={displayedBadgeIds}
+                      loading={profileBadgesLoading}
+                      className="shrink-0"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                    {profileUsername?.trim() ? `@${profileUsername.trim()}` : 'Account details'}
+                  </p>
                 </div>
                 <button
                   onClick={() => setShowProfileModal(false)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -851,7 +983,7 @@ export default function LeftSidebar({
                   />
                 </div>
 
-                <div className="pt-1 border-t border-gray-200 dark:border-gray-700">
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -865,11 +997,21 @@ export default function LeftSidebar({
                     </svg>
                     Refer and Earn
                   </button>
+
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <BadgePicker
+                      badges={profileBadges}
+                      selectedIds={displayedBadgeIds}
+                      loading={profileBadgesLoading}
+                      saving={savingBadges}
+                      onChange={saveDisplayedBadges}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <div className="px-5 py-3 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowProfileModal(false)}
