@@ -1,10 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-09T22:59:31.271Z",
+  "generatedAt": "2026-11-10T20:27:05.892Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 162,
-  "gameRows": 1202,
+  "playerCount": 158,
+  "gameRows": 1201,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -61,14 +61,6 @@
       "teamCode": "PER",
       "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/a9125673-5d09-4a1b-aac1-b403f5bf372a-2026.json"
-    },
-    {
-      "playerId": "265433cd-8c84-4b96-a22d-ec1912b9b785",
-      "name": "Anthony Drmic",
-      "team": "Tasmania JackJumpers",
-      "teamCode": "TAS",
-      "gameCount": 0,
-      "cacheFile": "nbl-model/cache/player-logs/265433cd-8c84-4b96-a22d-ec1912b9b785-2026.json"
     },
     {
       "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
@@ -303,14 +295,6 @@
       "cacheFile": "nbl-model/cache/player-logs/27ab462f-634a-4809-a40e-f102be36c282-2026.json"
     },
     {
-      "playerId": "28a843e9-a597-4c1c-8b6a-10aac0b2ae4e",
-      "name": "Darius Days",
-      "team": "Illawarra Hawks",
-      "teamCode": "ILL",
-      "gameCount": 1,
-      "cacheFile": "nbl-model/cache/player-logs/28a843e9-a597-4c1c-8b6a-10aac0b2ae4e-2026.json"
-    },
-    {
       "playerId": "d92ec6d5-b731-476a-b4a4-10cc36211bf5",
       "name": "Dash Daniels",
       "team": "South East Melbourne Phoenix",
@@ -391,14 +375,6 @@
       "cacheFile": "nbl-model/cache/player-logs/06116392-133b-4cac-93a5-a6aefc375717-2026.json"
     },
     {
-      "playerId": "62a66658-e332-4f12-bbbd-8f1c3c442f93",
-      "name": "Harry Neilson",
-      "team": "Melbourne United",
-      "teamCode": "MEL",
-      "gameCount": 0,
-      "cacheFile": "nbl-model/cache/player-logs/62a66658-e332-4f12-bbbd-8f1c3c442f93-2026.json"
-    },
-    {
       "playerId": "2d1e9f7f-e241-4797-8b2f-70472f07f4c8",
       "name": "Harry Rouhliadeff",
       "team": "Brisbane Bullets",
@@ -429,14 +405,6 @@
       "teamCode": "SEM",
       "gameCount": 3,
       "cacheFile": "nbl-model/cache/player-logs/0a5486ee-953a-4fae-920d-4a77de1bdf03-2026.json"
-    },
-    {
-      "playerId": "830330b0-c5e1-4218-ad3a-c1503bb905ad",
-      "name": "Isaac Humphries",
-      "team": "Adelaide 36ers",
-      "teamCode": "ADL",
-      "gameCount": 0,
-      "cacheFile": "nbl-model/cache/player-logs/830330b0-c5e1-4218-ad3a-c1503bb905ad-2026.json"
     },
     {
       "playerId": "0994d5da-21ea-4720-8dad-71020a214700",

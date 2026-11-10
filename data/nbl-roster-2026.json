@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-09T22:59:10.408Z",
+  "generatedAt": "2026-11-10T20:26:42.898Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 162,
+  "playerCount": 158,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -74,16 +74,6 @@
       "position": "G",
       "jersey": "2",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/dd570850b59d4340afcb3178dd0866a7?size=800&format=webp"
-    },
-    {
-      "playerId": "265433cd-8c84-4b96-a22d-ec1912b9b785",
-      "name": "Anthony Drmic",
-      "team": "Tasmania JackJumpers",
-      "teamCode": "TAS",
-      "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-      "position": "G",
-      "jersey": "3",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/77d467a4e7354260b3cd134d60536b5c?size=800&format=webp"
     },
     {
       "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
@@ -376,16 +366,6 @@
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f85c82cc0d2f44c9b9256482a56c221b?size=800&format=webp"
     },
     {
-      "playerId": "28a843e9-a597-4c1c-8b6a-10aac0b2ae4e",
-      "name": "Darius Days",
-      "team": "Illawarra Hawks",
-      "teamCode": "ILL",
-      "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-      "position": "C",
-      "jersey": "7",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6936d1c02ffd42908b6369c459f5e680?size=800&format=webp"
-    },
-    {
       "playerId": "d92ec6d5-b731-476a-b4a4-10cc36211bf5",
       "name": "Dash Daniels",
       "team": "South East Melbourne Phoenix",
@@ -486,16 +466,6 @@
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6625d956babc43d984f6892fcf614b29?size=800&format=webp"
     },
     {
-      "playerId": "62a66658-e332-4f12-bbbd-8f1c3c442f93",
-      "name": "Harry Neilson",
-      "team": "Melbourne United",
-      "teamCode": "MEL",
-      "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-      "position": "C",
-      "jersey": "16",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/480321ea7ea34147b202e6a5c2d43713?size=800&format=webp"
-    },
-    {
       "playerId": "2d1e9f7f-e241-4797-8b2f-70472f07f4c8",
       "name": "Harry Rouhliadeff",
       "team": "Brisbane Bullets",
@@ -534,16 +504,6 @@
       "position": "F",
       "jersey": "10",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/13429ee31d6543ba9101d3a7bd5261da?size=800&format=webp"
-    },
-    {
-      "playerId": "830330b0-c5e1-4218-ad3a-c1503bb905ad",
-      "name": "Isaac Humphries",
-      "team": "Adelaide 36ers",
-      "teamCode": "ADL",
-      "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-      "position": "C",
-      "jersey": "8",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aebad727186040a8bf900bb61af3f5cf?size=800&format=webp"
     },
     {
       "playerId": "0994d5da-21ea-4720-8dad-71020a214700",

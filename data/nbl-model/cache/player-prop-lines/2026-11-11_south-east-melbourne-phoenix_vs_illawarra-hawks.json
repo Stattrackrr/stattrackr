@@ -4,7 +4,7 @@
   "homeTeam": "South East Melbourne Phoenix",
   "awayTeam": "Illawarra Hawks",
   "commenceTime": "2026-11-11T08:30:00.000Z",
-  "capturedAt": "2026-11-10T12:48:22.948Z",
+  "capturedAt": "2026-11-10T20:27:41.398Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -27,7 +27,7 @@
     "TABtouch",
     "Unibet"
   ],
-  "lineCount": 3308,
+  "lineCount": 3309,
   "lines": [
     {
       "player": "Angus Glover",
@@ -43031,6 +43031,19 @@
       "over": "+3500",
       "under": "N/A",
       "overDecimal": 36,
+      "underDecimal": null
+    },
+    {
+      "player": "Wani Swaka Lo Buluk",
+      "playerKey": "wani swaka lo buluk",
+      "book": "Betr",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "+300",
+      "under": "N/A",
+      "overDecimal": 4,
       "underDecimal": null
     }
   ]

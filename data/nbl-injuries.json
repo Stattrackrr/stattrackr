@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-09T22:59:58.099Z",
+  "generatedAt": "2026-11-10T20:27:29.535Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
-  "sourceUpdatedText": "Sunday, November 8, 2:00pm AEDT",
+  "sourceUpdatedText": "Monday, November 9, 5pm AEDT",
   "injuryCount": 26,
   "injuries": [
     {
@@ -179,7 +179,7 @@
       "team": "South East Melbourne Phoenix",
       "player": "Hunter Goodrick",
       "injury": "Knee",
-      "returning": "TBC",
+      "returning": "Round 9",
       "status": "Out",
       "listedByNbl": true
     },

@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-09T22:59:09.746Z",
+  "generatedAt": "2026-11-10T20:26:42.384Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -670,7 +670,7 @@
           "team": "Illawarra Hawks",
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "position": "C",
+          "position": null,
           "jersey": "7",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6936d1c02ffd42908b6369c459f5e680?size=800&format=webp",
           "trackerStatus": "incoming",
