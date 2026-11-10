@@ -149,8 +149,8 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin')}/props?success=true&billing=${billingCycle}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin')}/props`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin')}/props?sport=all&success=true&billing=${billingCycle}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin')}/props?sport=all`,
       metadata: {
         user_id: user.id,
         billing_cycle: billingCycle,

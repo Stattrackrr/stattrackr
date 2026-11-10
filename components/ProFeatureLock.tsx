@@ -96,7 +96,7 @@ export function FreePlayerLimitPrompt({
           </div>
           <button
             type="button"
-            onClick={() => router.push('/props')}
+            onClick={() => router.push('/props?sport=all')}
             className="rounded-lg px-2 py-1 text-sm text-gray-400 hover:bg-white/10 hover:text-white"
           >
             Back to props
@@ -122,7 +122,7 @@ export function FreePlayerLimitPrompt({
           {!freePicks.length ? (
             <button
               type="button"
-              onClick={() => router.push('/props')}
+              onClick={() => router.push('/props?sport=all')}
               className="w-full rounded-lg border border-purple-500/40 bg-purple-600/10 px-3 py-2.5 text-sm font-semibold text-white hover:bg-purple-600/20"
             >
               Go to props
@@ -229,7 +229,7 @@ function UpgradePrompt({ onClose }: { onClose: () => void }) {
       const data = await response.json().catch(() => ({}));
 
       if (response.status === 409 && data.alreadySubscribed) {
-        window.location.href = '/props';
+        window.location.href = '/props?sport=all';
         return;
       }
       if (!response.ok || !data.url) {

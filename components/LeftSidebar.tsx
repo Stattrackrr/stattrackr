@@ -464,13 +464,13 @@ export default function LeftSidebar({
 
             <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
               <Link
-                href="/props"
+                href="/props?sport=all"
                 onMouseEnter={() => kickCombinedPropsEarlyFetch()}
                 onClick={(e) => {
                   if (pathname?.startsWith('/props')) return;
                   e.preventDefault();
                   kickCombinedPropsEarlyFetch();
-                  void pushBoardRoute(router.push.bind(router), '/props', 'to-props');
+                  void pushBoardRoute(router.push.bind(router), '/props?sport=all', 'to-props');
                 }}
                 className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   pathname?.startsWith('/props')

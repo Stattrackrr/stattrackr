@@ -95,7 +95,7 @@ export default function ReferralPage() {
     <div className="referral-page">
       <div className="mx-auto w-full max-w-[1100px] px-4 sm:px-6 py-10 sm:py-16">
         <Link
-          href="/props"
+            href="/props?sport=all"
           className="ref-focus ref-back-link inline-flex items-center gap-1.5 rounded-[8px] px-1 py-1 -ml-1 text-[13px] transition-colors duration-150 ease-out"
         >
           <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />

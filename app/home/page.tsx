@@ -346,11 +346,7 @@ function TryFreeMenu({
 }
 
 function buildPropsHref(): string {
-  const search = typeof window !== 'undefined' ? window.location.search : '';
-  const params = new URLSearchParams(search);
-  if (!params.has('sport')) params.set('sport', 'all');
-  const qs = params.toString();
-  return qs ? `/props?${qs}` : '/props';
+  return '/props?sport=all';
 }
 
 export default function HomePage() {
@@ -777,7 +773,7 @@ export default function HomePage() {
           onContinueFree={(email) => {
             setEntryIntent('free');
             const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
-            router.push(`/login?signup=1&redirect=/props${emailQuery}`);
+            router.push(`/login?signup=1&redirect=${encodeURIComponent('/props?sport=all')}${emailQuery}`);
           }}
         />
       )}

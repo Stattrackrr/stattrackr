@@ -14,7 +14,6 @@ import {
   bindPropsPageSnapshotGetter,
   clearPropsPageWarmSnapshot,
   clearPropsReturnSport,
-  consumePropsReturnSport,
   snapshotPropsPageBeforeLeave,
   takePropsBackNavWarmSnapshot,
 } from '@/lib/propsPageSessionCache';
@@ -4153,13 +4152,14 @@ export default function NBALandingPage() {
     setKnownPro(peeked ? peeked.isPro === true : false);
     const url = new URL(window.location.href);
     let sportParam = url.searchParams.get('sport');
+    // Bare /props (e.g. after login) must open All — do not revive a leftover dashboard
+    // return-sport like nbl. Explicit Back-to-Props buttons set sport= in the URL themselves.
     if (sportParam == null) {
-      const storedReturn = consumePropsReturnSport();
-      if (storedReturn) {
-        const returnPath = propsPathForSport(storedReturn);
-        window.history.replaceState(null, '', returnPath);
-        sportParam = new URL(returnPath, window.location.origin).searchParams.get('sport');
-      }
+      clearPropsReturnSport();
+      const params = new URLSearchParams(url.search);
+      params.set('sport', 'all');
+      window.history.replaceState(null, '', `/props?${params.toString()}`);
+      sportParam = 'all';
     }
     const requiresCombinedFirstPaint =
       sportParam === null || sportParam === 'combined' || sportParam === 'all';
@@ -4205,14 +4205,8 @@ export default function NBALandingPage() {
         noNblOdds: warmSnapshot.noNblOdds === true,
         nbaSettled: (warmSnapshot.playerProps as PlayerProp[]).length > 0 || !NBA_PUBLIC_ENABLED,
       };
-      if (!urlSpecifiesSport) {
-        const restoredSport = resolvePropsSportParam(String(warmSnapshot.propsSport));
-        setPropsSport(restoredSport);
-        if (restoredSport === 'afl') secondaryListSportRef.current = 'afl';
-        if (isTennisPropsSport(restoredSport)) secondaryListSportRef.current = restoredSport;
-        if (restoredSport === 'nbl') secondaryListSportRef.current = 'nbl';
-        
-      }
+      // Keep the URL sport (including All). Only reuse cached rows — don't switch tabs.
+
       setPlayerProps(warmSnapshot.playerProps as PlayerProp[]);
       setAflProps(warmSnapshot.aflProps as PlayerProp[]);
       setTennisCombinedProps(
