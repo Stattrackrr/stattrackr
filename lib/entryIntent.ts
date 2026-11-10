@@ -1,3 +1,5 @@
+import { readReferralCode } from '@/lib/referral/storage';
+
 const INTENT_KEY = 'stattrackr_entry_intent';
 const CYCLE_KEY = 'stattrackr_entry_cycle';
 const LOGIN_REDIRECT_KEY = 'stattrackr_login_redirect';
@@ -58,14 +60,7 @@ export async function startProCheckout(
   billingCycle: EntryBillingCycle,
   referralCode?: string | null
 ) {
-  let code = referralCode?.trim() || null;
-  if (!code && typeof window !== 'undefined') {
-    try {
-      code = localStorage.getItem('st_ref');
-    } catch {
-      /* ignore */
-    }
-  }
+  const code = referralCode?.trim() || readReferralCode();
 
   const response = await fetch('/api/checkout', {
     method: 'POST',

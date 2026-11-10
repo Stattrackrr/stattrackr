@@ -17,6 +17,7 @@ import { StatTrackrSplash } from '@/components/StatTrackrSplash';
 import HomeQuizLanding from '@/components/HomeQuizLanding';
 import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { readEntryIntent, redirectForEntryIntent, setEntryIntent, startProCheckout } from '@/lib/entryIntent';
+import { readReferralCode, saveReferralCode } from '@/lib/referral/storage';
 import { 
   CheckCircle2,
   Check,
@@ -406,18 +407,14 @@ export default function HomePage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     let cancelled = false;
-    const apply = async (raw: string) => {
+    const apply = async (raw: string, persist: boolean) => {
       try {
         const res = await fetch(`/api/referral/resolve?code=${encodeURIComponent(raw)}`);
         const json = await res.json();
         if (cancelled || !json.valid) return;
         setReferralCode(json.code);
         setReferralDiscountPercent(json.discountPercent ?? 20);
-        try {
-          localStorage.setItem('st_ref', json.code);
-        } catch {
-          /* ignore */
-        }
+        if (persist) saveReferralCode(json.code);
       } catch {
         /* ignore */
       }
@@ -425,7 +422,7 @@ export default function HomePage() {
 
     const fromQuery = new URLSearchParams(window.location.search).get('ref');
     if (fromQuery) {
-      void apply(fromQuery);
+      void apply(fromQuery, true);
       // Land friends on the current plans section after the quiz intro paints.
       requestAnimationFrame(() => {
         const el = document.getElementById('pricing');
@@ -436,12 +433,8 @@ export default function HomePage() {
       };
     }
 
-    try {
-      const stored = localStorage.getItem('st_ref');
-      if (stored) void apply(stored);
-    } catch {
-      /* ignore */
-    }
+    const stored = readReferralCode();
+    if (stored) void apply(stored, false);
     return () => {
       cancelled = true;
     };

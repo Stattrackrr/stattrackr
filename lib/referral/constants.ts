@@ -13,7 +13,8 @@ export const REFERRAL_MAX_PERCENT = 35;
 export const REFERRAL_FRIEND_PERCENT = 20;
 
 export const REFERRAL_COOKIE = 'st_ref';
-export const REFERRAL_COOKIE_MAX_AGE_SEC = 60 * 60 * 24 * 30; // 30 days
+/** How long a clicked referral link sticks for checkout attribution / banner. */
+export const REFERRAL_COOKIE_MAX_AGE_SEC = 60 * 60; // 1 hour
 
 export function couponIdForPercent(percent: ReferralCouponPercent): string | null {
   if (percent === 0) return null;

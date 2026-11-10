@@ -7,6 +7,7 @@ import { Check, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { PRICE_IDS, type BillingCycle } from '@/lib/stripe';
 import type { FreePlayerPick } from '@/lib/freePlayers';
+import { readReferralCode } from '@/lib/referral/storage';
 
 const PLANS: { cycle: BillingCycle; label: string; price: string; cadence: string; note: string }[] = [
   { cycle: 'monthly', label: 'Monthly', price: '$20', cadence: '/month', note: 'Billed monthly' },
@@ -207,12 +208,7 @@ function UpgradePrompt({ onClose }: { onClose: () => void }) {
         return;
       }
 
-      let referralCode: string | undefined;
-      try {
-        referralCode = localStorage.getItem('st_ref') || undefined;
-      } catch {
-        /* ignore */
-      }
+      const referralCode = readReferralCode() || undefined;
 
       const response = await fetch('/api/checkout', {
         method: 'POST',
