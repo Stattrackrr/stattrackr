@@ -16,7 +16,7 @@ import type { User } from '@supabase/supabase-js';
 import { StatTrackrSplash } from '@/components/StatTrackrSplash';
 import HomeQuizLanding from '@/components/HomeQuizLanding';
 import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
-import { redirectForEntryIntent, setEntryIntent, startProCheckout } from '@/lib/entryIntent';
+import { readEntryIntent, redirectForEntryIntent, setEntryIntent, startProCheckout } from '@/lib/entryIntent';
 import { 
   CheckCircle2,
   Check,
