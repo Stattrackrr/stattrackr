@@ -30,11 +30,18 @@ export async function GET(request: NextRequest) {
 
     const service = getServiceSupabase();
     const code = await ensureReferralCode(service, user.id);
-    const origin =
-      process.env.NEXT_PUBLIC_APP_URL ||
+    // Prefer the live request host so share links match the site (.co), not a stale APP_URL.
+    const host =
+      request.headers.get('x-forwarded-host') || request.headers.get('host');
+    const proto = request.headers.get('x-forwarded-proto') || 'https';
+    const origin = (
       request.headers.get('origin') ||
-      'https://stattrackr.com';
-    const link = `${origin.replace(/\/$/, '')}/pricing?ref=${encodeURIComponent(code)}`;
+      (host ? `${proto}://${host}` : null) ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      'https://www.stattrackr.co'
+    ).replace(/\/$/, '');
+    const link = `${origin}/pricing?ref=${encodeURIComponent(code)}`;
 
     const { data: profile } = await service
       .from('profiles')

@@ -29,7 +29,7 @@ export async function emailFriendSignedUp(to: string, friendLabel: string) {
     subject: 'Your friend just signed up with your referral',
     html: `<p>Good news — <strong>${friendLabel}</strong> signed up with your referral link.</p>
 <p>Once their first payment clears, they’ll count toward your discount tier.</p>
-<p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stattrackr.com'}/referral">View your referrals</a></p>`,
+<p><a href="${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.stattrackr.co'}/referral">View your referrals</a></p>`,
   });
 }
 
@@ -47,7 +47,7 @@ export async function emailFriendBecameActive(
         ? ' (a credit for the rest of this billing period has been applied; the new rate continues from your next renewal)'
         : ''
     }.</p>
-<p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stattrackr.com'}/referral">View your referrals</a></p>`,
+<p><a href="${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.stattrackr.co'}/referral">View your referrals</a></p>`,
   });
 }
 
@@ -57,6 +57,6 @@ export async function emailFriendEnded(to: string, friendLabel: string, nextPerc
     subject: 'A referral ended — your discount may drop at renewal',
     html: `<p><strong>${friendLabel}</strong> is no longer an active referral.</p>
 <p>At your next renewal your referral discount will be <strong>${nextPercent}% off</strong> (no mid-cycle clawback).</p>
-<p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stattrackr.com'}/referral">View your referrals</a></p>`,
+<p><a href="${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.stattrackr.co'}/referral">View your referrals</a></p>`,
   });
 }
