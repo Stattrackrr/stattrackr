@@ -16,7 +16,7 @@ import type { User } from '@supabase/supabase-js';
 import { StatTrackrSplash } from '@/components/StatTrackrSplash';
 import HomeQuizLanding from '@/components/HomeQuizLanding';
 import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
-import { readEntryIntent, redirectForEntryIntent, startProCheckout } from '@/lib/entryIntent';
+import { redirectForEntryIntent, setEntryIntent, startProCheckout } from '@/lib/entryIntent';
 import { 
   CheckCircle2,
   Check,
@@ -712,7 +712,8 @@ export default function HomePage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.push('/login?redirect=/home');
+        setEntryIntent('pro', billingCycle);
+        router.push('/login?signup=1&redirect=/home');
         return;
       }
 
@@ -767,17 +768,16 @@ export default function HomePage() {
             if (phase !== 'intro') keepSurveyRef.current = true;
             setEntryPhase(phase);
           }}
-          onSignIn={() => router.push('/login')}
+          onSignIn={() => router.push('/login?redirect=/home')}
           onStartPro={(cycle, email) => {
-            sessionStorage.setItem('stattrackr_entry_intent', 'pro');
-            sessionStorage.setItem('stattrackr_entry_cycle', cycle ?? 'monthly');
+            setEntryIntent('pro', cycle ?? 'monthly');
             const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
-            router.push(`/login?signup=1${emailQuery}`);
+            router.push(`/login?signup=1&redirect=/home${emailQuery}`);
           }}
           onContinueFree={(email) => {
-            sessionStorage.setItem('stattrackr_entry_intent', 'free');
+            setEntryIntent('free');
             const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
-            router.push(`/login?signup=1${emailQuery}`);
+            router.push(`/login?signup=1&redirect=/props${emailQuery}`);
           }}
         />
       )}

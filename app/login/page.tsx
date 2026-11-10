@@ -125,6 +125,8 @@ export default function LoginPage() {
         if (await redirectForEntryIntent(session.access_token)) return;
       } catch (checkoutError) {
         console.error("Entry checkout error:", checkoutError);
+        router.replace('/home');
+        return;
       }
       router.replace(pathAfterLogin());
     };
@@ -177,8 +179,12 @@ export default function LoginPage() {
         const { data: { session } } = await supabase.auth.getSession();
         try {
           if (session?.access_token && await redirectForEntryIntent(session.access_token)) return;
-        } catch (checkoutError) {
+        } catch (checkoutError: any) {
           console.error("Entry checkout error:", checkoutError);
+          // Subscribe / referral flow: stay on home pricing, don't fall through to a stale /props redirect.
+          setError(checkoutError?.message || 'Could not start checkout. Try Subscribe again from the home page.');
+          router.replace('/home');
+          return;
         }
         router.replace(pathAfterLogin());
       }

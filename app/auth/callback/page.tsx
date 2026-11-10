@@ -71,6 +71,11 @@ function AuthCallbackContent() {
           if (redirected) return;
         } catch (checkoutError) {
           console.error("Entry checkout error:", checkoutError);
+          if (readEntryIntent() === "pro") {
+            setStatus("ok");
+            router.replace("/home");
+            return;
+          }
         }
         setStatus("ok");
         router.replace(next);

@@ -1,5 +1,6 @@
 const INTENT_KEY = 'stattrackr_entry_intent';
 const CYCLE_KEY = 'stattrackr_entry_cycle';
+const LOGIN_REDIRECT_KEY = 'stattrackr_login_redirect';
 
 const PRO_PRICE_IDS = {
   monthly: 'price_1TlWpPF0aO6V0EHjEZcvzlEE',
@@ -11,6 +12,7 @@ export type EntryIntent = 'pro' | 'free';
 export type EntryBillingCycle = keyof typeof PRO_PRICE_IDS;
 
 const PROPS_HREF = '/props?sport=all';
+const HOME_HREF = '/home';
 
 let entryRedirectStarted = false;
 
@@ -31,6 +33,24 @@ export function clearEntryIntent() {
   if (typeof window === 'undefined') return;
   sessionStorage.removeItem(INTENT_KEY);
   sessionStorage.removeItem(CYCLE_KEY);
+}
+
+/** Reset the one-shot guard whenever the user picks a new plan path. */
+export function setEntryIntent(intent: EntryIntent, billingCycle?: EntryBillingCycle) {
+  if (typeof window === 'undefined') return;
+  entryRedirectStarted = false;
+  sessionStorage.setItem(INTENT_KEY, intent);
+  if (intent === 'pro') {
+    sessionStorage.setItem(CYCLE_KEY, billingCycle ?? 'monthly');
+    // Subscribe flows must return to home/checkout, not a stale /props redirect.
+    try {
+      localStorage.setItem(LOGIN_REDIRECT_KEY, HOME_HREF);
+    } catch {
+      /* ignore */
+    }
+  } else {
+    sessionStorage.removeItem(CYCLE_KEY);
+  }
 }
 
 export async function startProCheckout(
@@ -63,6 +83,7 @@ export async function startProCheckout(
   const data = await response.json().catch(() => ({}));
 
   if (response.status === 409 && data.alreadySubscribed) {
+    clearEntryIntent();
     window.location.replace(PROPS_HREF);
     return;
   }
@@ -71,13 +92,14 @@ export async function startProCheckout(
     throw new Error(data.error || 'Failed to start checkout. Please try again.');
   }
 
+  clearEntryIntent();
   window.location.href = data.url;
 }
 
 /**
  * After an account exists, honor the plan picked on the home survey.
  * Pro goes to Stripe. Free goes into the app. Returns true when that
- * redirect has started so callers do not also send the user to /home.
+ * redirect has started so callers do not also send the user elsewhere.
  */
 export async function redirectForEntryIntent(accessToken: string): Promise<boolean> {
   if (entryRedirectStarted) return true;
@@ -94,10 +116,15 @@ export async function redirectForEntryIntent(accessToken: string): Promise<boole
 
     const billingCycle = readEntryBillingCycle();
     await startProCheckout(accessToken, billingCycle);
-    clearEntryIntent();
     return true;
   } catch (error) {
     entryRedirectStarted = false;
+    // Keep pro intent so /home can retry checkout; never dump subscribe users on /props.
+    try {
+      localStorage.setItem(LOGIN_REDIRECT_KEY, HOME_HREF);
+    } catch {
+      /* ignore */
+    }
     throw error;
   }
 }
