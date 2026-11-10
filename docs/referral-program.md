@@ -26,7 +26,7 @@ Creates:
 ## User flows
 
 - Referrers: `/referral` (also Profile → Refer a friend)
-- Friends: `/pricing?ref=CODE` → Checkout applies 20% and disables marketing promo codes
+- Friends: `/home?ref=CODE` (legacy `/pricing?ref=CODE` redirects here) → Checkout applies 20% and disables marketing promo codes
 
 ## Admin
 

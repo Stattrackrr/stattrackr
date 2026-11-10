@@ -379,6 +379,8 @@ export default function HomePage() {
     }
   };
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralDiscountPercent, setReferralDiscountPercent] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
   // Always show logo splash until auth resolves, then marketing or /props.
@@ -404,6 +406,50 @@ export default function HomePage() {
     bootReadyRef.current = true;
     setBootReady(true);
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let cancelled = false;
+    const apply = async (raw: string) => {
+      try {
+        const res = await fetch(`/api/referral/resolve?code=${encodeURIComponent(raw)}`);
+        const json = await res.json();
+        if (cancelled || !json.valid) return;
+        setReferralCode(json.code);
+        setReferralDiscountPercent(json.discountPercent ?? 20);
+        try {
+          localStorage.setItem('st_ref', json.code);
+        } catch {
+          /* ignore */
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const fromQuery = new URLSearchParams(window.location.search).get('ref');
+    if (fromQuery) {
+      void apply(fromQuery);
+      // Land friends on the current plans section after the quiz intro paints.
+      requestAnimationFrame(() => {
+        const el = document.getElementById('pricing');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    try {
+      const stored = localStorage.getItem('st_ref');
+      if (stored) void apply(stored);
+    } catch {
+      /* ignore */
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const goProToProps = () => {
     if (redirectingRef.current) return;
@@ -709,6 +755,12 @@ export default function HomePage() {
 
   return (
     <div className={introScroll ? 'h-dvh overflow-y-auto bg-[#050d1a] text-white' : undefined}>
+      {referralCode && referralDiscountPercent != null && (
+        <div className="sticky top-0 z-[70] border-b border-white/10 bg-slate-900/95 px-4 py-2.5 text-center text-sm text-slate-200 backdrop-blur-sm">
+          Referral applied: {referralDiscountPercent}% off while subscribed. Can&apos;t be combined
+          with other promo codes.
+        </div>
+      )}
       {!user && (
         <HomeQuizLanding
           onPhaseChange={(phase) => {

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-// /pricing must stay public so referral links (?ref=) work for signed-out friends.
+// /pricing redirects server-side to /home (kept public for old referral links).
 const PUBLIC_PATHS = new Set(['/', '/home', '/login', '/pricing', '/terms', '/privacy']);
 
 function isPublicPath(pathname: string) {

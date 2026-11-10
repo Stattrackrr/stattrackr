@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SITE_URL ||
       'https://www.stattrackr.co'
     ).replace(/\/$/, '');
-    const link = `${origin}/pricing?ref=${encodeURIComponent(code)}`;
+    const link = `${origin}/home?ref=${encodeURIComponent(code)}`;
 
     const { data: profile } = await service
       .from('profiles')

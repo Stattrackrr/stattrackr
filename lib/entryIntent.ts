@@ -33,7 +33,20 @@ export function clearEntryIntent() {
   sessionStorage.removeItem(CYCLE_KEY);
 }
 
-export async function startProCheckout(accessToken: string, billingCycle: EntryBillingCycle) {
+export async function startProCheckout(
+  accessToken: string,
+  billingCycle: EntryBillingCycle,
+  referralCode?: string | null
+) {
+  let code = referralCode?.trim() || null;
+  if (!code && typeof window !== 'undefined') {
+    try {
+      code = localStorage.getItem('st_ref');
+    } catch {
+      /* ignore */
+    }
+  }
+
   const response = await fetch('/api/checkout', {
     method: 'POST',
     headers: {
@@ -43,6 +56,7 @@ export async function startProCheckout(accessToken: string, billingCycle: EntryB
     body: JSON.stringify({
       priceId: PRO_PRICE_IDS[billingCycle],
       billingCycle,
+      ...(code ? { referralCode: code } : {}),
     }),
   });
 
