@@ -213,8 +213,8 @@ function PricingPageInner() {
       // Check if user is logged in
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        // Redirect to login with return path
-        router.push('/login?redirect=/home');
+        // Return here after login so checkout can pick up st_ref / ?ref=
+        router.push('/login?redirect=/pricing');
         return;
       }
       
