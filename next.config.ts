@@ -455,8 +455,15 @@ const nextConfig: NextConfig = {
     turbopackFileSystemCacheForDev: true,
   },
   outputFileTracingExcludes: {
+    /**
+     * Default-deny fat on-disk caches for EVERY serverless function.
+     * Any import that joins process.cwd()/data/nbl-model/cache (e.g. oddsHistory CACHE_ROOT)
+     * otherwise packs ~240MB of NBL cache into unrelated crons like log-nba-lineups and
+     * blows Vercel's 250MB uncompressed limit. Routes that need a cache re-add it via
+     * outputFileTracingIncludes above.
+     */
     '/*': [
-      './data/afl-model/cache/player-logs/**/*',
+      './data/afl-model/cache/**/*',
       './data/afl-model/models/**/*',
       './data/afl-model/datasets/**/*',
       // Accidental nested duplicate player-log cache committed under data/afl-model/afl-model/
@@ -470,10 +477,29 @@ const nextConfig: NextConfig = {
       './data/sportsline-*.html',
       './nbl-engine/**/*',
       './tsconfig.tsbuildinfo',
-      // Local-only tennis scrapes (~580MB). Never needed in serverless functions.
+      // Local-only tennis scrapes / API dumps (~595MB). TENNIS_RUNTIME_DATA re-includes the small JSON needed.
       './data/tennis/rank-raw/**/*',
       './data/tennis/surface-raw/**/*',
-      './data/tennis/api-tennis/cache.json',
+      './data/tennis/api-tennis/**/*',
+      // Entire NBL model cache (~240MB). Re-included per-route where needed.
+      './data/nbl-model/cache/engine-picks/**/*',
+      './data/nbl-model/cache/player-prop-lines/**/*',
+      './data/nbl-model/cache/player-prop-history/**/*',
+      './data/nbl-model/cache/game-odds-history/**/*',
+      './data/nbl-model/cache/player-logs/**/*',
+      './data/nbl-model/cache/shot-charts/**/*',
+      './data/nbl-model/cache/shot-chart-players/**/*',
+      './data/nbl-model/cache/shot-chart-defense/**/*',
+      './data/nbl-model/cache/shot-chart-manifest-*.json',
+      './data/nbl-model/cache/assist-shots/**/*',
+      './data/nbl-model/cache/assist-chart-players/**/*',
+      './data/nbl-model/cache/assist-defense/**/*',
+      './data/nbl-model/cache/period-scores/**/*',
+      './data/nbl-model/cache/pbp/**/*',
+      './data/nbl-model/cache/pbp-chem/**/*',
+      './data/nbl-model/cache/lineups/**/*',
+      './data/nbl-model/cache/player-props-list.json',
+      ...DATA_JUNK_EXCLUDES,
     ],
     ...routeTrace(AFL_PROPS_ROUTES, AFL_PROPS_CWD_EXCLUDES),
     ...routeTrace(COMBINED_PROPS_ROUTES, COMBINED_PROPS_CWD_EXCLUDES),
@@ -485,6 +511,8 @@ const nextConfig: NextConfig = {
     '/api/cron/ai-picks-run/route': [...AI_PICKS_RUN_EXCLUDES],
     '/api/cron/ai-picks-grade': [...AI_PICKS_GRADE_EXCLUDES],
     '/api/cron/ai-picks-grade/route': [...AI_PICKS_GRADE_EXCLUDES],
+    '/api/cron/ai-picks-learn': [...AI_PICKS_GRADE_EXCLUDES],
+    '/api/cron/ai-picks-learn/route': [...AI_PICKS_GRADE_EXCLUDES],
   },
 
   // Only suppress known Supabase auth errors during build phase (not runtime)
