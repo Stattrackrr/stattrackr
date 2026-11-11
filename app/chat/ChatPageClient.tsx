@@ -22,14 +22,47 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import { useSiteOnlineCount } from '@/lib/sitePresence';
 import { useRouter } from 'next/navigation';
-import { ChangeEvent, ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChatViewer } from '@/components/chat/useChatViewer';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
-import { CornerUpLeft, ImagePlus, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
+import { CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Trash2, X } from 'lucide-react';
 import { BackToPropsButton } from '@/components/BackToPropsButton';
+import { BadgeStrip } from '@/components/badges/BadgeStrip';
+import { displayBadgesFromIds } from '@/lib/badges/evaluate';
+import {
+  ChatMemberProfileCard,
+  type ChatMemberProfileCardData,
+} from '@/components/chat/ChatMemberProfileCard';
+import { ChatComposer, type ChatComposerHandle } from '@/components/chat/ChatComposer';
+import type { EvaluatedBadge } from '@/lib/badges/evaluate';
+import {
+  splitMentionSegments,
+  toMentionHandle,
+  type ChatMentionCandidate,
+} from '@/lib/chatMentions';
 
 type OddsFormat = 'american' | 'decimal';
 const CHAT_ROOM_LAST_READ_PREFIX = 'chat:room-last-read:';
+
+type ChatMemberProfile = {
+  avatarUrl: string | null;
+  displayedBadgeIds: string[];
+  badges: EvaluatedBadge[];
+  username: string | null;
+  displayName: string | null;
+  createdAt: string | null;
+  membership: 'admin' | 'pro' | 'free' | null;
+};
+
+type MemberProfileApiRow = {
+  avatarUrl?: string | null;
+  displayedBadgeIds?: string[];
+  badges?: EvaluatedBadge[];
+  username?: string | null;
+  displayName?: string | null;
+  createdAt?: string | null;
+  membership?: 'admin' | 'pro' | 'free' | null;
+};
 
 type ChatTimelineItem =
   | { type: 'divider'; key: string; label: string }
@@ -186,36 +219,48 @@ function ChatAvatar({
   name,
   avatarUrl,
   size = 'sm',
+  onClick,
 }: {
   name: string;
   avatarUrl: string | null;
   size?: 'sm' | 'md';
+  onClick?: () => void;
 }) {
   const dimension = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
   const initial = name.trim().charAt(0).toUpperCase() || 'C';
+  const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
+  const showImage = Boolean(avatarUrl) && avatarUrl !== brokenUrl;
+  const className = `${dimension} rounded-full overflow-hidden flex items-center justify-center font-semibold text-white shrink-0 ${
+    onClick ? 'cursor-pointer transition-opacity hover:opacity-90' : ''
+  }`;
+  const style = showImage ? undefined : { backgroundColor: getAvatarColor(name) };
+  const content =
+    showImage && avatarUrl ? (
+      <img
+        key={avatarUrl}
+        src={avatarUrl}
+        alt={name}
+        className="w-full h-full object-cover"
+        referrerPolicy="no-referrer"
+        onError={() => setBrokenUrl(avatarUrl)}
+      />
+    ) : (
+      <span>{initial}</span>
+    );
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className} style={style} aria-label={`View ${name}'s profile`}>
+        {content}
+      </button>
+    );
+  }
 
   return (
-    <div
-      className={`${dimension} rounded-full overflow-hidden flex items-center justify-center font-semibold text-white shrink-0`}
-      style={avatarUrl ? undefined : { backgroundColor: getAvatarColor(name) }}
-    >
-      {avatarUrl ? (
-        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-      ) : (
-        <span>{initial}</span>
-      )}
+    <div className={className} style={style}>
+      {content}
     </div>
   );
-}
-
-function moveCaretToEnd(element: HTMLElement) {
-  const range = document.createRange();
-  range.selectNodeContents(element);
-  range.collapse(false);
-
-  const selection = window.getSelection();
-  selection?.removeAllRanges();
-  selection?.addRange(range);
 }
 
 function getChatRoomLastReadKey(userId: string, roomId: string): string {
@@ -271,16 +316,17 @@ export default function ChatPageClient() {
   const [threadError, setThreadError] = useState<string | null>(null);
   const [composerError, setComposerError] = useState<string | null>(null);
   const [messageCooldownUntil, setMessageCooldownUntil] = useState<number | null>(null);
-  const [composerValue, setComposerValue] = useState('');
   const [composerImage, setComposerImage] = useState<{ file: File; preview: string } | null>(null);
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
   const onlineCount = useSiteOnlineCount();
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
+  const [memberProfiles, setMemberProfiles] = useState<Record<string, ChatMemberProfile>>({});
+  const [profileCard, setProfileCard] = useState<ChatMemberProfileCardData | null>(null);
+  const memberProfilesFetchedRef = useRef<Set<string>>(new Set());
 
   const messageListRef = useRef<HTMLDivElement>(null);
-  const mobileComposerRef = useRef<HTMLDivElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
+  const composerRef = useRef<ChatComposerHandle>(null);
   const messageCooldownTimeoutRef = useRef<number | null>(null);
   const isMessageListNearBottomRef = useRef(true);
   const shouldScrollToBottomRef = useRef(true);
@@ -312,6 +358,48 @@ export default function ChatPageClient() {
         .filter((message) => message.pinned_at)
         .sort((left, right) => new Date(right.pinned_at ?? 0).getTime() - new Date(left.pinned_at ?? 0).getTime()),
     [messages]
+  );
+  const mentionCandidates = useMemo(() => {
+    const byId = new Map<string, ChatMentionCandidate>();
+    for (const message of messages) {
+      const profile = memberProfiles[message.user_id];
+      const label = profile?.displayName || message.display_name || profile?.username || 'Member';
+      const handle = toMentionHandle(profile?.username || message.display_name || profile?.displayName);
+      if (!handle) continue;
+      const existing = byId.get(message.user_id);
+      const messagedAt = new Date(message.created_at).getTime();
+      byId.set(message.user_id, {
+        userId: message.user_id,
+        handle: profile?.username ? handle : existing?.handle ?? handle,
+        label,
+        avatarUrl: profile?.avatarUrl ?? message.avatar_url ?? existing?.avatarUrl ?? null,
+        lastMessagedAt: Math.max(existing?.lastMessagedAt ?? 0, Number.isFinite(messagedAt) ? messagedAt : 0),
+      });
+    }
+    for (const [userId, profile] of Object.entries(memberProfiles)) {
+      const handle = toMentionHandle(profile.username || profile.displayName);
+      if (!handle) continue;
+      const existing = byId.get(userId);
+      byId.set(userId, {
+        userId,
+        handle: profile.username ? handle : existing?.handle ?? handle,
+        label: profile.displayName || profile.username || existing?.label || handle,
+        avatarUrl: profile.avatarUrl ?? existing?.avatarUrl ?? null,
+        lastMessagedAt: existing?.lastMessagedAt ?? 0,
+      });
+    }
+    return Array.from(byId.values());
+  }, [memberProfiles, messages]);
+  const mentionHandleMap = useMemo(() => {
+    const map = new Map<string, ChatMentionCandidate>();
+    for (const candidate of mentionCandidates) {
+      map.set(candidate.handle.toLowerCase(), candidate);
+    }
+    return map;
+  }, [mentionCandidates]);
+  const knownMentionHandles = useMemo(
+    () => new Set(Array.from(mentionHandleMap.keys())),
+    [mentionHandleMap]
   );
   const isMessageCooldownActive = Boolean(messageCooldownUntil && messageCooldownUntil > Date.now());
   const timelineItems = useMemo(() => {
@@ -354,6 +442,302 @@ export default function ChatPageClient() {
     setReactions(loadedReactions);
     return loadedReactions;
   }, []);
+
+  const readOwnDisplayedBadgeIds = useCallback((): string[] | null => {
+    try {
+      const raw = localStorage.getItem('stattrackr_displayed_badges');
+      if (raw == null) return null;
+      const local = JSON.parse(raw) as unknown;
+      if (!Array.isArray(local) || !local.every((x) => typeof x === 'string')) return null;
+      return local.slice(0, 2);
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Own equipped badges: same source as the sidebar (localStorage + /api/badges/me).
+  useEffect(() => {
+    if (!viewer.userId || viewer.loading) return;
+
+    let cancelled = false;
+
+    const applyOwnBadges = (ids: string[], inventory?: EvaluatedBadge[]) => {
+      setMemberProfiles((current) => {
+        const existing = current[viewer.userId!];
+        const nextBadges = inventory ?? existing?.badges ?? [];
+        if (
+          existing &&
+          existing.displayedBadgeIds.length === ids.length &&
+          existing.displayedBadgeIds.every((id, index) => id === ids[index]) &&
+          (!inventory || existing.badges === nextBadges)
+        ) {
+          return current;
+        }
+        return {
+          ...current,
+          [viewer.userId!]: {
+            avatarUrl: existing?.avatarUrl ?? viewer.avatarUrl,
+            displayedBadgeIds: ids,
+            badges: nextBadges,
+            username: existing?.username ?? viewer.username,
+            displayName: existing?.displayName ?? viewer.username,
+            createdAt: existing?.createdAt ?? null,
+            membership:
+              existing?.membership ??
+              (viewer.isAdmin ? 'admin' : viewer.hasPremium ? 'pro' : 'free'),
+          },
+        };
+      });
+    };
+
+    const localIds = readOwnDisplayedBadgeIds();
+    if (localIds) applyOwnBadges(localIds);
+
+    const loadOwnBadges = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) return;
+
+        const res = await fetch('/api/badges/me', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+
+        const json = (await res.json()) as {
+          displayedBadgeIds?: string[];
+          badges?: EvaluatedBadge[];
+        };
+        if (cancelled) return;
+
+        // Match LeftSidebar: local customization wins when present (column may lag).
+        const fromLocal = readOwnDisplayedBadgeIds();
+        const nextIds = fromLocal ?? (Array.isArray(json.displayedBadgeIds) ? json.displayedBadgeIds : []);
+        applyOwnBadges(nextIds, Array.isArray(json.badges) ? json.badges : undefined);
+      } catch (error) {
+        console.warn('Chat page: failed to load own badges', error);
+      }
+    };
+
+    void loadOwnBadges();
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== 'stattrackr_displayed_badges') return;
+      const ids = readOwnDisplayedBadgeIds();
+      if (ids) applyOwnBadges(ids);
+    };
+    const onLocalBadges = (event: Event) => {
+      const detail = (event as CustomEvent<{ displayedBadgeIds?: string[] }>).detail;
+      if (Array.isArray(detail?.displayedBadgeIds)) {
+        applyOwnBadges(detail.displayedBadgeIds.slice(0, 2));
+        return;
+      }
+      const ids = readOwnDisplayedBadgeIds();
+      if (ids) applyOwnBadges(ids);
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('stattrackr:displayed-badges', onLocalBadges);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('stattrackr:displayed-badges', onLocalBadges);
+    };
+  }, [readOwnDisplayedBadgeIds, viewer.avatarUrl, viewer.loading, viewer.userId]);
+
+  // Live avatars + profile fields for message authors (avatar_url is snapshotted at send time).
+  useEffect(() => {
+    if (!canChat || viewer.loading) return;
+
+    const uniqueIds = [
+      ...new Set(messages.map((message) => message.user_id).filter((id): id is string => Boolean(id))),
+    ];
+    const missingIds = uniqueIds.filter((id) => !memberProfilesFetchedRef.current.has(id));
+    if (missingIds.length === 0) return;
+
+    for (const id of missingIds) {
+      memberProfilesFetchedRef.current.add(id);
+    }
+
+    let cancelled = false;
+
+    const loadMemberProfiles = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (session?.access_token) {
+          headers.Authorization = `Bearer ${session.access_token}`;
+        }
+
+        const res = await fetch('/api/chat/member-profiles', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ userIds: missingIds }),
+        });
+        if (!res.ok) {
+          throw new Error(`member-profiles ${res.status}`);
+        }
+
+        const json = (await res.json()) as {
+          profiles?: Record<string, MemberProfileApiRow>;
+        };
+        if (cancelled) return;
+
+        const next = json.profiles ?? {};
+        const ownBadgeOverride = readOwnDisplayedBadgeIds();
+        setMemberProfiles((current) => {
+          const merged = { ...current };
+          for (const [id, profile] of Object.entries(next)) {
+            const existing = merged[id];
+            const isSelf = id === viewer.userId;
+            merged[id] = {
+              avatarUrl: profile.avatarUrl ?? existing?.avatarUrl ?? null,
+              displayedBadgeIds: isSelf
+                ? ownBadgeOverride ?? existing?.displayedBadgeIds ?? (Array.isArray(profile.displayedBadgeIds) ? profile.displayedBadgeIds : [])
+                : Array.isArray(profile.displayedBadgeIds)
+                  ? profile.displayedBadgeIds
+                  : [],
+              badges: Array.isArray(profile.badges) ? profile.badges : existing?.badges ?? [],
+              username: profile.username ?? existing?.username ?? null,
+              displayName: profile.displayName ?? existing?.displayName ?? null,
+              createdAt: profile.createdAt ?? existing?.createdAt ?? null,
+              membership: profile.membership ?? existing?.membership ?? null,
+            };
+          }
+          return merged;
+        });
+      } catch (error) {
+        console.warn('Chat page: failed to load member profiles', error);
+        for (const id of missingIds) {
+          memberProfilesFetchedRef.current.delete(id);
+        }
+      }
+    };
+
+    void loadMemberProfiles();
+    return () => {
+      cancelled = true;
+      // Allow a remount / dependency change to retry (React Strict Mode safe).
+      for (const id of missingIds) {
+        memberProfilesFetchedRef.current.delete(id);
+      }
+    };
+  }, [canChat, messages, readOwnDisplayedBadgeIds, viewer.loading, viewer.userId]);
+
+  // Keep the viewer's own chat avatar in sync when they change it in the sidebar.
+  useEffect(() => {
+    if (!viewer.userId || viewer.loading) return;
+    setMemberProfiles((current) => {
+      const existing = current[viewer.userId!];
+      if (existing && existing.avatarUrl === viewer.avatarUrl) return current;
+      return {
+        ...current,
+        [viewer.userId!]: {
+          avatarUrl: viewer.avatarUrl,
+          displayedBadgeIds: existing?.displayedBadgeIds ?? readOwnDisplayedBadgeIds() ?? [],
+          badges: existing?.badges ?? [],
+          username: existing?.username ?? viewer.username,
+          displayName: existing?.displayName ?? viewer.username,
+          createdAt: existing?.createdAt ?? null,
+          membership:
+            existing?.membership ??
+            (viewer.isAdmin ? 'admin' : viewer.hasPremium ? 'pro' : 'free'),
+        },
+      };
+    });
+  }, [
+    readOwnDisplayedBadgeIds,
+    viewer.avatarUrl,
+    viewer.hasPremium,
+    viewer.isAdmin,
+    viewer.loading,
+    viewer.userId,
+    viewer.username,
+  ]);
+
+  const openMemberProfile = useCallback(
+    (userId: string, fallbackName: string, fallbackAvatar: string | null) => {
+      const profile = memberProfiles[userId];
+      const card: ChatMemberProfileCardData = {
+        userId,
+        displayName: profile?.displayName || fallbackName || 'Member',
+        username: profile?.username ?? null,
+        avatarUrl: profile?.avatarUrl ?? fallbackAvatar,
+        displayedBadgeIds:
+          userId === viewer.userId
+            ? profile?.displayedBadgeIds ?? readOwnDisplayedBadgeIds() ?? []
+            : profile?.displayedBadgeIds ?? [],
+        badges: profile?.badges ?? [],
+        createdAt: profile?.createdAt ?? null,
+        membership: profile?.membership ?? null,
+      };
+      setProfileCard(card);
+
+      // If join date / badge inventory hasn't loaded yet, fetch this member on demand.
+      if (profile?.createdAt && profile.membership && (profile.badges?.length ?? 0) > 0) return;
+
+      void (async () => {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          const headers: HeadersInit = { 'Content-Type': 'application/json' };
+          if (session?.access_token) {
+            headers.Authorization = `Bearer ${session.access_token}`;
+          }
+          const res = await fetch('/api/chat/member-profiles', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ userIds: [userId] }),
+          });
+          if (!res.ok) return;
+          const json = (await res.json()) as { profiles?: Record<string, MemberProfileApiRow> };
+          const row = json.profiles?.[userId];
+          if (!row) return;
+
+          const ownBadges =
+            userId === viewer.userId ? readOwnDisplayedBadgeIds() : null;
+          const nextProfile: ChatMemberProfile = {
+            avatarUrl: row.avatarUrl ?? profile?.avatarUrl ?? fallbackAvatar,
+            displayedBadgeIds:
+              ownBadges ??
+              (Array.isArray(row.displayedBadgeIds)
+                ? row.displayedBadgeIds
+                : profile?.displayedBadgeIds ?? []),
+            badges: Array.isArray(row.badges) ? row.badges : profile?.badges ?? [],
+            username: row.username ?? profile?.username ?? null,
+            displayName: row.displayName ?? profile?.displayName ?? fallbackName,
+            createdAt: row.createdAt ?? profile?.createdAt ?? null,
+            membership: row.membership ?? profile?.membership ?? null,
+          };
+          setMemberProfiles((current) => ({ ...current, [userId]: nextProfile }));
+          memberProfilesFetchedRef.current.add(userId);
+          setProfileCard((current) =>
+            current?.userId === userId
+              ? {
+                  userId,
+                  displayName: nextProfile.displayName || fallbackName || 'Member',
+                  username: nextProfile.username,
+                  avatarUrl: nextProfile.avatarUrl,
+                  displayedBadgeIds: nextProfile.displayedBadgeIds,
+                  badges: nextProfile.badges,
+                  createdAt: nextProfile.createdAt,
+                  membership: nextProfile.membership,
+                }
+              : current
+          );
+        } catch (error) {
+          console.warn('Chat page: failed to load clicked member profile', error);
+        }
+      })();
+    },
+    [memberProfiles, readOwnDisplayedBadgeIds, viewer.userId]
+  );
 
   const loadMessages = useCallback(
     async (roomId: string, options?: { silent?: boolean; preserveError?: boolean }) => {
@@ -594,12 +978,6 @@ export default function ChatPageClient() {
   }, []);
 
   useEffect(() => {
-    if (composerValue === '' && mobileComposerRef.current) {
-      mobileComposerRef.current.textContent = '';
-    }
-  }, [composerValue]);
-
-  useEffect(() => {
     if (!canChat || !selectedRoomId) return;
 
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -797,7 +1175,7 @@ export default function ChatPageClient() {
     }, durationMs);
   }, []);
 
-  const submitMessage = useCallback(async () => {
+  const submitMessage = useCallback(async (rawBody: string) => {
     if (!selectedRoomId || !canChat || sendingMessage) {
       return;
     }
@@ -811,7 +1189,7 @@ export default function ChatPageClient() {
       setMessageCooldownUntil(null);
     }
 
-    const trimmedMessage = composerValue.trim();
+    const trimmedMessage = rawBody.trim();
     const image = viewer.isAdmin ? composerImage : null;
     if (!trimmedMessage && !image) {
       return;
@@ -839,7 +1217,7 @@ export default function ChatPageClient() {
         }
         return [...current, createdMessage];
       });
-      setComposerValue('');
+      composerRef.current?.clear();
       setReplyTargetId(null);
       void loadMessages(selectedRoomId, { silent: true, preserveError: true });
     } catch (error) {
@@ -862,7 +1240,6 @@ export default function ChatPageClient() {
     }
   }, [
     composerImage,
-    composerValue,
     loadMessages,
     messageCooldownUntil,
     replyTargetId,
@@ -913,50 +1290,9 @@ export default function ChatPageClient() {
     });
   }, []);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await submitMessage();
-  };
-
-  const handleComposerKeyDown = async (event: KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
-    if (event.key !== 'Enter' || event.shiftKey) {
-      return;
-    }
-
-    event.preventDefault();
-    await submitMessage();
-  };
-
-  const handleMobileComposerInput = useCallback(
-    (event: FormEvent<HTMLDivElement>) => {
-      const nextValue = event.currentTarget.innerText.replace(/\u00a0/g, ' ');
-      const limitedValue = nextValue.slice(0, CHAT_MAX_MESSAGE_LENGTH);
-
-      if (nextValue !== limitedValue) {
-        event.currentTarget.innerText = limitedValue;
-        moveCaretToEnd(event.currentTarget);
-      }
-
-      setComposerValue(limitedValue);
-      if (composerError) {
-        setComposerError(null);
-      }
-    },
-    [composerError]
-  );
-
-  const handleMobileComposerPaste = useCallback((event: ClipboardEvent<HTMLDivElement>) => {
-    event.preventDefault();
-
-    const pastedText = event.clipboardData.getData('text/plain');
-    if (!pastedText) return;
-
-    document.execCommand('insertText', false, pastedText.slice(0, CHAT_MAX_MESSAGE_LENGTH));
-  }, []);
-
   const handleSelectRoom = useCallback((roomId: string) => {
     setSelectedRoomId(roomId);
-    setComposerValue('');
+    composerRef.current?.clear();
     setComposerError(null);
     setReplyTargetId(null);
     setReactionPickerMessageId(null);
@@ -1160,11 +1496,32 @@ export default function ChatPageClient() {
         onSubscriptionClick={handleSubscriptionClick}
         onSignOutClick={handleLogout}
         onProfileUpdated={({ username, full_name, avatar_url }) => {
+          const nextUsername = username ?? full_name ?? null;
           setViewer((current) => ({
             ...current,
-            username: username ?? full_name ?? current.username,
+            username: nextUsername ?? current.username,
             avatarUrl: avatar_url ?? current.avatarUrl,
           }));
+          if (viewer.userId) {
+            setMemberProfiles((current) => {
+              const existing = current[viewer.userId!];
+              return {
+                ...current,
+                [viewer.userId!]: {
+                  avatarUrl: avatar_url !== undefined ? avatar_url ?? null : existing?.avatarUrl ?? null,
+                  displayedBadgeIds:
+                    existing?.displayedBadgeIds ?? readOwnDisplayedBadgeIds() ?? [],
+                  badges: existing?.badges ?? [],
+                  username: username ?? existing?.username ?? null,
+                  displayName: nextUsername ?? existing?.displayName ?? null,
+                  createdAt: existing?.createdAt ?? null,
+                  membership:
+                    existing?.membership ??
+                    (viewer.isAdmin ? 'admin' : viewer.hasPremium ? 'pro' : 'free'),
+                },
+              };
+            });
+          }
         }}
       />
 
@@ -1354,6 +1711,10 @@ export default function ChatPageClient() {
                         const isEditingMessage = editingMessageId === message.id;
                         const isEditedMessage = Boolean(message.edited_at);
                         const authorName = message.display_name || 'Member';
+                        const memberProfile = memberProfiles[message.user_id];
+                        const liveAvatarUrl = memberProfile?.avatarUrl ?? message.avatar_url;
+                        const authorBadgeIds = memberProfile?.displayedBadgeIds ?? [];
+                        const authorBadges = displayBadgesFromIds(authorBadgeIds);
                         const messageReactions = reactionsByMessage.get(message.id) ?? [];
                         const repliedToMessage = message.reply_to_message_id
                           ? messages.find((entry) => entry.id === message.reply_to_message_id) ?? null
@@ -1365,7 +1726,13 @@ export default function ChatPageClient() {
                             key={item.key}
                             className={`group flex gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                           >
-                            {!isOwnMessage && <ChatAvatar name={authorName} avatarUrl={message.avatar_url} />}
+                            {!isOwnMessage && (
+                              <ChatAvatar
+                                name={authorName}
+                                avatarUrl={liveAvatarUrl}
+                                onClick={() => openMemberProfile(message.user_id, authorName, liveAvatarUrl)}
+                              />
+                            )}
                             <div className={isEditingMessage ? 'w-[92%] max-w-[720px] sm:w-[78%]' : 'max-w-[76%] sm:max-w-[78%]'}>
                               <div
                                 className={`rounded-2xl px-2.5 py-1.5 sm:px-3 sm:py-2 ${
@@ -1392,9 +1759,22 @@ export default function ChatPageClient() {
                                 ) : null}
 
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className={`text-[13px] font-semibold ${isOwnMessage ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                  <button
+                                    type="button"
+                                    onClick={() => openMemberProfile(message.user_id, authorName, liveAvatarUrl)}
+                                    className={`text-[13px] font-semibold transition-opacity hover:opacity-80 ${
+                                      isOwnMessage ? 'text-white' : 'text-gray-900 dark:text-white'
+                                    }`}
+                                  >
                                     {authorName}
-                                  </span>
+                                  </button>
+                                  {authorBadgeIds.length > 0 ? (
+                                    <BadgeStrip
+                                      badges={authorBadges}
+                                      selectedIds={authorBadgeIds}
+                                      className="shrink-0"
+                                    />
+                                  ) : null}
                                   <span className={`text-xs ${isOwnMessage ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'}`}>
                                     {formatMessageTime(message.created_at)}
                                   </span>
@@ -1470,7 +1850,33 @@ export default function ChatPageClient() {
                                     ) : null}
                                     {message.body ? (
                                       <p className={`mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-snug ${isOwnMessage ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
-                                        {message.body}
+                                        {splitMentionSegments(message.body, knownMentionHandles).map((segment, index) => {
+                                          if (segment.type === 'text') {
+                                            return <span key={`t-${index}`}>{segment.value}</span>;
+                                          }
+                                          const mentioned = mentionHandleMap.get(segment.value.toLowerCase());
+                                          return (
+                                            <button
+                                              key={`m-${index}-${segment.value}`}
+                                              type="button"
+                                              onClick={() => {
+                                                if (!mentioned) return;
+                                                openMemberProfile(
+                                                  mentioned.userId,
+                                                  mentioned.label,
+                                                  mentioned.avatarUrl
+                                                );
+                                              }}
+                                              className={`rounded px-0.5 font-semibold ${
+                                                isOwnMessage
+                                                  ? 'bg-white/20 text-white hover:bg-white/30'
+                                                  : 'bg-purple-500/15 text-purple-700 hover:bg-purple-500/25 dark:bg-purple-400/15 dark:text-purple-200 dark:hover:bg-purple-400/25'
+                                              }`}
+                                            >
+                                              @{segment.value}
+                                            </button>
+                                          );
+                                        })}
                                       </p>
                                     ) : null}
                                     {isEditedMessage ? (
@@ -1709,7 +2115,13 @@ export default function ChatPageClient() {
                                 </div>
                               ) : null}
                             </div>
-                            {isOwnMessage && <ChatAvatar name={authorName} avatarUrl={message.avatar_url} />}
+                            {isOwnMessage && (
+                              <ChatAvatar
+                                name={authorName}
+                                avatarUrl={liveAvatarUrl}
+                                onClick={() => openMemberProfile(message.user_id, authorName, liveAvatarUrl)}
+                              />
+                            )}
                           </div>
                         );
                       })}
@@ -1718,126 +2130,23 @@ export default function ChatPageClient() {
                 </div>
 
                 <div className="shrink-0 border-t border-gray-200 px-5 pb-3 pt-1 dark:border-gray-700 sm:py-4">
-                  <form onSubmit={handleSubmit} className="space-y-1 sm:space-y-3">
-                    {replyTarget ? (
-                      <div className="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-[#111c2d]">
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold text-purple-600 dark:text-purple-300">
-                            Replying to {replyTarget.display_name || 'Member'}
-                          </div>
-                          <p className="mt-0.5 truncate text-xs text-gray-600 dark:text-gray-300">
-                            {replyTarget.body || (replyTarget.image_url ? 'Photo' : '')}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setReplyTargetId(null)}
-                          className="rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                          aria-label="Cancel reply"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : null}
-                    {viewer.isAdmin && composerImage ? (
-                      <div className="relative inline-block">
-                        <img
-                          src={composerImage.preview}
-                          alt="Photo to send"
-                          className="max-h-32 rounded-xl border border-gray-200 object-contain dark:border-gray-700"
-                        />
-                        <button
-                          type="button"
-                          onClick={clearComposerImage}
-                          disabled={sendingMessage}
-                          className="absolute -right-2 -top-2 rounded-full bg-gray-900/80 p-1 text-white transition-colors hover:bg-gray-900 disabled:opacity-60"
-                          aria-label="Remove photo"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ) : null}
-                    <div className="relative">
-                      <div
-                        ref={mobileComposerRef}
-                        contentEditable
-                        role="textbox"
-                        aria-label="Message"
-                        aria-multiline="true"
-                        tabIndex={0}
-                        onInput={handleMobileComposerInput}
-                        onPaste={handleMobileComposerPaste}
-                        onKeyDown={handleComposerKeyDown}
-                        className="chat-scrollbar h-16 w-full touch-manipulation overflow-y-auto whitespace-pre-wrap break-words rounded-2xl border border-gray-300 bg-white px-4 py-2.5 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:hidden"
-                      />
-                      {!composerValue ? (
-                        <span className="pointer-events-none absolute left-4 top-2.5 text-sm text-gray-500 dark:text-gray-400 sm:hidden">
-                          Message...
-                        </span>
-                      ) : null}
-                      <textarea
-                        value={composerValue}
-                        onChange={(event) => {
-                          setComposerValue(event.target.value);
-                          if (composerError) {
-                            setComposerError(null);
-                          }
-                        }}
-                        onKeyDown={handleComposerKeyDown}
-                        placeholder="Message..."
-                        maxLength={CHAT_MAX_MESSAGE_LENGTH}
-                        rows={3}
-                        className="hidden h-16 w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-2.5 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:block sm:h-auto sm:py-3 sm:pr-4"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!selectedRoomId || (!composerValue.trim() && !composerImage) || sendingMessage || isMessageCooldownActive}
-                        className="absolute bottom-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400 sm:hidden"
-                        aria-label="Send message"
-                      >
-                        {sendingMessage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                      <div className="order-2 mt-1 text-[10px] leading-none text-gray-500 dark:text-gray-400 sm:order-1 sm:mt-0 sm:text-xs sm:leading-normal">
-                        {composerValue.trim().length}/{CHAT_MAX_MESSAGE_LENGTH} characters
-                      </div>
-                      <div className="order-1 flex items-center gap-3 sm:order-2">
-                        {composerError ? (
-                          <span className="text-xs text-red-600 dark:text-red-300">{composerError}</span>
-                        ) : null}
-                        {viewer.isAdmin ? (
-                          <>
-                            <input
-                              ref={imageInputRef}
-                              type="file"
-                              accept={CHAT_IMAGE_TYPES.join(',')}
-                              onChange={handlePickImage}
-                              className="hidden"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => imageInputRef.current?.click()}
-                              disabled={sendingMessage}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-[#162338] sm:py-2.5 sm:text-sm"
-                              aria-label="Add photo"
-                            >
-                              <ImagePlus className="h-4 w-4" />
-                              Photo
-                            </button>
-                          </>
-                        ) : null}
-                        <button
-                          type="submit"
-                          disabled={!selectedRoomId || (!composerValue.trim() && !composerImage) || sendingMessage || isMessageCooldownActive}
-                          className="hidden items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400 sm:inline-flex"
-                        >
-                          {sendingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                          Send message
-                        </button>
-                      </div>
-                    </div>
-                  </form>
+                  <ChatComposer
+                    ref={composerRef}
+                    mentionCandidates={mentionCandidates}
+                    knownMentionHandles={knownMentionHandles}
+                    replyTarget={replyTarget}
+                    onCancelReply={() => setReplyTargetId(null)}
+                    onSend={submitMessage}
+                    sending={sendingMessage}
+                    disabled={!selectedRoomId || !canChat}
+                    isAdmin={viewer.isAdmin}
+                    composerImage={composerImage}
+                    onPickImage={handlePickImage}
+                    onClearImage={clearComposerImage}
+                    error={composerError}
+                    onClearError={() => setComposerError(null)}
+                    isCooldown={isMessageCooldownActive}
+                  />
                 </div>
               </div>
             </section>
@@ -1868,6 +2177,17 @@ export default function ChatPageClient() {
             className="max-h-[90vh] max-w-[95vw] cursor-default rounded-xl object-contain shadow-2xl"
           />
         </div>
+      ) : null}
+      {profileCard ? (
+        <ChatMemberProfileCard
+          profile={profileCard}
+          onClose={() => setProfileCard(null)}
+          onMention={(username) => {
+            composerRef.current?.insertMention(username);
+            setProfileCard(null);
+            composerRef.current?.focus();
+          }}
+        />
       ) : null}
     </div>
   );

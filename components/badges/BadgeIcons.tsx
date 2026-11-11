@@ -153,24 +153,50 @@ function BadgeFree({ className, silhouette }: Props) {
 
 function BadgePro({ className, silhouette }: Props) {
   const g = useSafeId();
-  const d = 'M4.8 16.2L6.6 7.5l3.5 3.8L12 5.2l1.9 6.1 3.5-3.8 1.8 8.7H4.8zm1.2 1.4h12v1.7H6z';
+  // Faceted diamond — clearly not the admin crown.
+  const gem = 'M12 2.6L19.4 9.2 12 21.4 4.6 9.2 12 2.6z';
+  const facetL = 'M12 2.6L4.6 9.2h7.4V2.6z';
+  const facetR = 'M12 2.6L19.4 9.2H12V2.6z';
+  const facetBL = 'M4.6 9.2L12 21.4V9.2H4.6z';
+  const facetBR = 'M19.4 9.2L12 21.4V9.2h7.4z';
   if (silhouette) {
     return (
       <svg viewBox="0 0 24 24" className={className} aria-hidden>
-        <path d={d} {...silProps()} />
+        <path d={gem} {...silProps()} />
       </svg>
     );
   }
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
       <defs>
-        <linearGradient id={g} x1="0.2" y1="0" x2="0.8" y2="1">
-          <stop offset="0%" stopColor="#F7C948" />
-          <stop offset="55%" stopColor="#F0B232" />
-          <stop offset="100%" stopColor="#C98918" />
+        <linearGradient id={`${g}a`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#7DD3FC" />
+          <stop offset="100%" stopColor="#38BDF8" />
+        </linearGradient>
+        <linearGradient id={`${g}b`} x1="1" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#38BDF8" />
+          <stop offset="100%" stopColor="#0284C7" />
+        </linearGradient>
+        <linearGradient id={`${g}c`} x1="0.2" y1="0" x2="0.8" y2="1">
+          <stop offset="0%" stopColor="#0EA5E9" />
+          <stop offset="100%" stopColor="#0369A1" />
+        </linearGradient>
+        <linearGradient id={`${g}d`} x1="0.8" y1="0" x2="0.2" y2="1">
+          <stop offset="0%" stopColor="#0284C7" />
+          <stop offset="100%" stopColor="#0C4A6E" />
         </linearGradient>
       </defs>
-      <path fill={`url(#${g})`} d={d} />
+      <path fill={`url(#${g}a)`} d={facetL} />
+      <path fill={`url(#${g}b)`} d={facetR} />
+      <path fill={`url(#${g}c)`} d={facetBL} />
+      <path fill={`url(#${g}d)`} d={facetBR} />
+      <path
+        d={gem}
+        fill="none"
+        stroke="#075985"
+        strokeWidth="0.6"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

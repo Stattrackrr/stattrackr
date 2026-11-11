@@ -157,3 +157,14 @@ export function sanitizeDisplayedBadgeIds(
 export function describeBadge(id: string): BadgeDef | undefined {
   return badgeById(id);
 }
+
+/** Build earned stubs for name-row rendering when only equipped ids are known (e.g. chat). */
+export function displayBadgesFromIds(ids: string[]): EvaluatedBadge[] {
+  const out: EvaluatedBadge[] = [];
+  for (const id of ids) {
+    const def = badgeById(id);
+    if (!def) continue;
+    out.push({ ...def, earned: true, earnedAt: null });
+  }
+  return out;
+}

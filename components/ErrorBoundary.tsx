@@ -14,9 +14,11 @@ interface State {
 
 /**
  * Error Boundary Component
- * Catches React errors and displays a fallback UI instead of crashing the entire app
+ * Catches React errors and displays a fallback UI instead of crashing the entire app.
+ * Class lives behind a function export — Turbopack HMR can break class default exports
+ * ("Component is not a function").
  */
-export class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundaryInner extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -105,6 +107,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
+}
+
+export function ErrorBoundary(props: Props) {
+  return <ErrorBoundaryInner {...props} />;
 }
 
 export default ErrorBoundary;

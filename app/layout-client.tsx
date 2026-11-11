@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import ErrorBoundary from "@/components/ErrorBoundary";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TrackedBetsProvider } from "@/contexts/TrackedBetsContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import NavigationLoader from "@/components/NavigationLoader";

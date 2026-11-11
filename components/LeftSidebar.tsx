@@ -275,6 +275,9 @@ export default function LeftSidebar({
     setDisplayedBadgeIds(nextIds);
     try {
       localStorage.setItem('stattrackr_displayed_badges', JSON.stringify(nextIds));
+      window.dispatchEvent(
+        new CustomEvent('stattrackr:displayed-badges', { detail: { displayedBadgeIds: nextIds } })
+      );
     } catch {
       // ignore
     }
