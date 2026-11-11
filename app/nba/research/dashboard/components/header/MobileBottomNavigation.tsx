@@ -114,6 +114,15 @@ export function MobileBottomNavigation({
     if (typeof window === 'undefined') return;
     let frame = 0;
     const retryTimers: ReturnType<typeof setTimeout>[] = [];
+    // Tallest recent layout height (keyboard closed). Used to detect soft keyboard open.
+    let baselineHeight = Math.max(window.innerHeight, window.visualViewport?.height ?? 0);
+
+    const clearKeyboardHide = (bar: HTMLDivElement) => {
+      bar.style.opacity = '';
+      bar.style.visibility = '';
+      bar.style.pointerEvents = '';
+      bar.removeAttribute('aria-hidden');
+    };
 
     const pinToVisualViewport = () => {
       const bar = barRef.current;
@@ -124,14 +133,34 @@ export function MobileBottomNavigation({
         bar.style.bottom = '';
         bar.style.transform = '';
         bar.style.position = '';
+        clearKeyboardHide(bar);
         return;
       }
       const vv = window.visualViewport;
+      const layoutH = window.innerHeight;
+      const visualH = vv?.height ?? layoutH;
+      // Soft keyboard: visual viewport shrinks a lot vs the closed-keyboard baseline.
+      // Without this, pinning to vv puts the bar just above the keyboard on search / line inputs.
+      const keyboardOpen = baselineHeight - visualH > 140;
+      if (!keyboardOpen) {
+        baselineHeight = Math.max(baselineHeight, layoutH, visualH);
+      }
+      if (keyboardOpen) {
+        bar.style.top = 'auto';
+        bar.style.bottom = `${NAV_VIEWPORT_GAP_PX}px`;
+        bar.style.transform = 'translateZ(0)';
+        bar.style.opacity = '0';
+        bar.style.visibility = 'hidden';
+        bar.style.pointerEvents = 'none';
+        bar.setAttribute('aria-hidden', 'true');
+        return;
+      }
+      clearKeyboardHide(bar);
       // How far the visual viewport bottom sits above the layout viewport bottom.
       // When Safari leaves a stale fixed bottom mid-screen, this inset is non-zero and
       // re-homes the bar to the visible edge without waiting for a reload.
       const inset = vv
-        ? Math.max(0, Math.round(window.innerHeight - (vv.offsetTop + vv.height)))
+        ? Math.max(0, Math.round(layoutH - (vv.offsetTop + vv.height)))
         : 0;
       bar.style.top = 'auto';
       bar.style.bottom = `${inset + NAV_VIEWPORT_GAP_PX}px`;
@@ -169,15 +198,41 @@ export function MobileBottomNavigation({
       });
     };
 
-    const onReturn = () => schedulePin(true);
+    const onReturn = () => {
+      baselineHeight = Math.max(window.innerHeight, window.visualViewport?.height ?? 0);
+      schedulePin(true);
+    };
     const onViewportChange = () => schedulePin(false);
     const onVisible = () => {
       if (document.visibilityState === 'visible') onReturn();
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      const tag = t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || t.isContentEditable) {
+        // Hide immediately on text focus — covers Android cases where vv metrics lag.
+        const bar = barRef.current;
+        if (bar && !window.matchMedia('(min-width: 1024px)').matches) {
+          bar.style.opacity = '0';
+          bar.style.visibility = 'hidden';
+          bar.style.pointerEvents = 'none';
+          bar.setAttribute('aria-hidden', 'true');
+        }
+        schedulePin(false);
+      }
+    };
+    const onFocusOut = () => {
+      // Re-pin after blur; keyboard dismiss can lag a beat behind focusout.
+      schedulePin(false);
+      retryTimers.push(setTimeout(pinToVisualViewport, 280));
     };
 
     // Hard pin on mount / route change / portal attach — covers Tools↔Props CSR.
     schedulePin(true);
     document.addEventListener('visibilitychange', onVisible);
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
     window.addEventListener('pageshow', onReturn);
     window.addEventListener('orientationchange', onReturn);
     window.addEventListener('resize', onViewportChange);
@@ -190,6 +245,8 @@ export function MobileBottomNavigation({
         if (t != null) clearTimeout(t);
       }
       document.removeEventListener('visibilitychange', onVisible);
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
       window.removeEventListener('pageshow', onReturn);
       window.removeEventListener('orientationchange', onReturn);
       window.removeEventListener('resize', onViewportChange);
