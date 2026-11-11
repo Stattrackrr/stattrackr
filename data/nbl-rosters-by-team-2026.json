@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-10T20:26:42.384Z",
+  "generatedAt": "2026-11-11T20:09:13.709Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -1631,7 +1631,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
           "jersey": "3",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a5ce8c9efc5445a6a0caf61770e0384e?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/dbb57e7a62a34354acd045ce5f7cb1f3?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Dandenong Rangers - NBL1 South",
           "idSource": "rosetta"

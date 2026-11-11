@@ -1,17 +1,17 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-10T20:27:05.892Z",
+  "generatedAt": "2026-11-11T20:09:36.138Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 158,
-  "gameRows": 1201,
+  "gameRows": 1222,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
       "name": "Akech Aliir",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/92012cd9-65dd-47f1-a51e-a6b5169bf359-2026.json"
     },
     {
@@ -51,7 +51,7 @@
       "name": "Angus Glover",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/79fe0730-aca0-4167-97cc-1ef09514cc66-2026.json"
     },
     {
@@ -267,7 +267,7 @@
       "name": "D'Shawn Schwartz",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/6c3024b9-ffb8-4a9d-bb23-1e99191f98b9-2026.json"
     },
     {
@@ -291,7 +291,7 @@
       "name": "Daniel Grida",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/27ab462f-634a-4809-a40e-f102be36c282-2026.json"
     },
     {
@@ -299,7 +299,7 @@
       "name": "Dash Daniels",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/d92ec6d5-b731-476a-b4a4-10cc36211bf5-2026.json"
     },
     {
@@ -563,7 +563,7 @@
       "name": "Johny Narkle",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 12,
+      "gameCount": 13,
       "cacheFile": "nbl-model/cache/player-logs/1db6c57b-a7f5-43a3-aaaa-4731f2bc57f5-2026.json"
     },
     {
@@ -579,7 +579,7 @@
       "name": "Jordan Hunter",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 10,
+      "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9-2026.json"
     },
     {
@@ -651,7 +651,7 @@
       "name": "Kelan Martin",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/76536695-6c04-4c8a-b104-5ebbabb95879-2026.json"
     },
     {
@@ -739,7 +739,7 @@
       "name": "Lamar Patterson",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/72703b55-4db2-4e14-b7a4-a38f31c32388-2026.json"
     },
     {
@@ -803,7 +803,7 @@
       "name": "Makur Maker",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/37a78ca5-710d-42d4-8754-028ac9c8ba2b-2026.json"
     },
     {
@@ -883,7 +883,7 @@
       "name": "Milton Doyle",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/ade09c69-e9b3-46d1-8202-2b778e96409a-2026.json"
     },
     {
@@ -915,7 +915,7 @@
       "name": "Nathan Sobey",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/7f6e18b2-6494-41c7-9791-d72c632317d5-2026.json"
     },
     {
@@ -963,7 +963,7 @@
       "name": "Patrick Ryan",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 7,
+      "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/9b71131b-787a-475d-aa1b-00dc4394f5e2-2026.json"
     },
     {
@@ -1035,7 +1035,7 @@
       "name": "Sam Davidson",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 4,
+      "gameCount": 5,
       "cacheFile": "nbl-model/cache/player-logs/6a6983d4-e83e-403a-9b3e-04a8535ab545-2026.json"
     },
     {
@@ -1043,7 +1043,7 @@
       "name": "Sam Froling",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/5bc7a4df-bd9f-4177-ab25-a1de3e4cb0a1-2026.json"
     },
     {
@@ -1131,7 +1131,7 @@
       "name": "Tanner Krebs",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 10,
+      "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/a793b9cb-fb83-4554-8672-f35ccd77d6b1-2026.json"
     },
     {
@@ -1147,7 +1147,7 @@
       "name": "Todd Blanchfield",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 7,
+      "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/f1f3155a-4ff7-445f-9c59-f0f9a9be8a8c-2026.json"
     },
     {
@@ -1179,7 +1179,7 @@
       "name": "Tyler Harvey",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/7efc81c9-d26e-4950-97e1-1b9b03b1bacd-2026.json"
     },
     {
@@ -1211,7 +1211,7 @@
       "name": "Wani Swaka Lo Buluk",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/6c6c60a2-caa9-4b1e-ba1d-6c61dccf2592-2026.json"
     },
     {
@@ -1243,7 +1243,7 @@
       "name": "William Hickey",
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/3af27cad-ac89-4122-842c-2772197168c5-2026.json"
     },
     {
@@ -1259,7 +1259,7 @@
       "name": "Yannis Morin",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/5f85917c-1552-4800-b64a-48cf1023c60c-2026.json"
     },
     {

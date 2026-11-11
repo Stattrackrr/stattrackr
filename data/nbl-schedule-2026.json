@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-10T20:26:33.079Z",
+  "generatedAt": "2026-11-11T20:09:03.086Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2005,7 +2005,7 @@
       "externalId": "37541928-58ad-11f1-86bd-87c06d92085a",
       "startTime": "2026-11-11T08:30:00.000Z",
       "round": "9",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
       "homeTeamCode": "SEM",
       "homeTeamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
@@ -2014,8 +2014,8 @@
       "awayTeamCode": "ILL",
       "awayTeamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 110,
+      "awayScore": 120,
       "venue": "State Basketball Centre",
       "matchSlug": "south-east-melbourne-phoenix-v-illawarra-hawks-men-11-11-2026"
     },

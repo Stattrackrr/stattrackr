@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-10T20:26:34.065Z",
+  "generatedAt": "2026-11-11T20:09:04.618Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-      "name": "South East Melbourne Phoenix",
-      "team_code": "SEM",
-      "nextMatches": [
-        {
-          "id": "18b16fc0-7f53-488f-8dce-40daf82891dc",
-          "match_slug": "south-east-melbourne-phoenix-v-illawarra-hawks-men-11-11-2026",
-          "match_title": "South East Melbourne Phoenix v Illawarra Hawks men 11-11-2026",
-          "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
-          "external_id": "37541928-58ad-11f1-86bd-87c06d92085a",
-          "start_time_datetime": "2026-11-11T08:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "opponent_name": "Illawarra Hawks",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-          "venue": "State Basketball Centre",
-          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
-        }
-      ]
-    },
-    {
-      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-      "name": "Illawarra Hawks",
-      "team_code": "ILL",
-      "nextMatches": [
-        {
-          "id": "18b16fc0-7f53-488f-8dce-40daf82891dc",
-          "match_slug": "south-east-melbourne-phoenix-v-illawarra-hawks-men-11-11-2026",
-          "match_title": "South East Melbourne Phoenix v Illawarra Hawks men 11-11-2026",
-          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
-          "external_id": "37541928-58ad-11f1-86bd-87c06d92085a",
-          "start_time_datetime": "2026-11-11T08:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-          "opponent_name": "South East Melbourne Phoenix",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
-          "venue": "State Basketball Centre",
-          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
-        }
-      ]
-    },
     {
       "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "name": "Adelaide 36ers",
@@ -212,6 +170,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
           "venue": "Cairns Convention Centre",
           "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
+      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+      "name": "South East Melbourne Phoenix",
+      "team_code": "SEM",
+      "nextMatches": [
+        {
+          "id": "f626aa92-bd45-4b22-858f-fe1f66da5853",
+          "match_slug": "melbourne-united-v-south-east-melbourne-phoenix-men-14-11-2026",
+          "match_title": "Melbourne United v South East Melbourne Phoenix men 14-11-2026",
+          "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
+          "external_id": "377ccd38-58ad-11f1-9384-d30081aaf8c6",
+          "start_time_datetime": "2026-11-14T08:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "opponent_name": "Melbourne United",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
+        }
+      ]
+    },
+    {
+      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "name": "Illawarra Hawks",
+      "team_code": "ILL",
+      "nextMatches": [
+        {
+          "id": "98b2033f-2676-4a76-bfa6-d03eb57de902",
+          "match_slug": "perth-wildcats-v-illawarra-hawks-men-14-11-2026",
+          "match_title": "Perth Wildcats v Illawarra Hawks men 14-11-2026",
+          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
+          "external_id": "3743885e-58ad-11f1-b2f7-c9ba3efad88d",
+          "start_time_datetime": "2026-11-14T10:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "opponent_name": "Perth Wildcats",
+          "opponent_logo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
+          "venue": "RAC Arena",
+          "opponent_logo_blurhash": "LDH_Pv_N1b?HHrkCTJD%1v?HD456"
         }
       ]
     }
