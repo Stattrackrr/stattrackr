@@ -4,7 +4,7 @@
   "homeTeam": "Cairns Taipans",
   "awayTeam": "Sydney Kings",
   "commenceTime": "2026-11-13T08:30:00.000Z",
-  "capturedAt": "2026-11-10T20:56:00.252Z",
+  "capturedAt": "2026-11-11T02:01:00.489Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -16,7 +16,7 @@
     "Picklebet",
     "TAB"
   ],
-  "lineCount": 1638,
+  "lineCount": 1644,
   "lines": [
     {
       "player": "Andrew Carr",
@@ -21310,6 +21310,84 @@
       "over": "+2000",
       "under": "N/A",
       "overDecimal": 21,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Bet Right",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "+333",
+      "under": "N/A",
+      "overDecimal": 4.33,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Betr",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "+330",
+      "under": "N/A",
+      "overDecimal": 4.3,
+      "underDecimal": null
+    },
+    {
+      "player": "Jaylon Brown",
+      "playerKey": "jaylon brown",
+      "book": "Picklebet",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 19.5,
+      "label": "20+",
+      "over": "+333",
+      "under": "N/A",
+      "overDecimal": 4.33,
+      "underDecimal": null
+    },
+    {
+      "player": "Makuach Maluach",
+      "playerKey": "makuach maluach",
+      "book": "Bet Right",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-909",
+      "under": "N/A",
+      "overDecimal": 1.11,
+      "underDecimal": null
+    },
+    {
+      "player": "Makuach Maluach",
+      "playerKey": "makuach maluach",
+      "book": "Betr",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-909",
+      "under": "N/A",
+      "overDecimal": 1.11,
+      "underDecimal": null
+    },
+    {
+      "player": "Makuach Maluach",
+      "playerKey": "makuach maluach",
+      "book": "Picklebet",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 11.5,
+      "label": "12+",
+      "over": "-909",
+      "under": "N/A",
+      "overDecimal": 1.11,
       "underDecimal": null
     }
   ]
