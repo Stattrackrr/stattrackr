@@ -246,7 +246,7 @@ export default function TennisTeamMatchupCard({
   );
 
   return (
-    <div className="w-full min-w-0 flex flex-col px-1.5 py-1">
+    <div className="w-full min-w-0 h-full min-h-0 flex flex-col px-1.5 py-1">
       <div className="relative z-20 mb-2 grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Player Matchup</h3>
@@ -377,7 +377,10 @@ export default function TennisTeamMatchupCard({
         </div>
       </div>
 
-      <div className="pr-0.5">
+      <div
+        className="pr-0.5 flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar"
+        onWheel={(e) => e.stopPropagation()}
+      >
         {!player ? (
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Select a player to see the matchup.

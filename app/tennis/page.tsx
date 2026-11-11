@@ -2394,11 +2394,10 @@ export default function TennisDashboardPage() {
                         </button>
                       </div>
                       <div
-                        className={`relative w-full min-w-0 flex flex-col min-h-0 ${
-                          nblPropsMode === 'player' &&
-                          (nblRightTab === 'dvp' || nblRightTab === 'team_matchup')
-                            ? 'overflow-visible h-[380px] xl:h-[420px]'
-                            : 'h-[380px] xl:h-[420px] overflow-y-auto'
+                        className={`relative w-full min-w-0 flex flex-col min-h-0 h-[380px] xl:h-[420px] ${
+                          nblPropsMode === 'player' && nblRightTab === 'dvp'
+                            ? 'overflow-visible'
+                            : 'overflow-hidden'
                         }`}
                       >
                         {showDesktopDashCards && nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
