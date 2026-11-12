@@ -1,10 +1,10 @@
 {
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-11-11T20:08:36.026Z",
+  "generatedAt": "2026-11-12T20:46:01.829Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 139,
-  "gameRows": 2830,
+  "gameRows": 2829,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -163,7 +163,7 @@
       "name": "Chris Goulding",
       "team": "Melbourne United",
       "teamCode": "MEL",
-      "gameCount": 31,
+      "gameCount": 30,
       "cacheFile": "nbl-model/cache/player-logs/f243749f-0174-4255-b6ff-d0a9896899e8-2024.json"
     },
     {

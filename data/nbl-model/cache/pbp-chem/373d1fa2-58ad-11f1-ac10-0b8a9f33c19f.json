@@ -1,0 +1,2293 @@
+{
+  "fixtureId": "373d1fa2-58ad-11f1-ac10-0b8a9f33c19f",
+  "homeTeam": "Perth Wildcats",
+  "awayTeam": "Tasmania JackJumpers",
+  "homeTeamCode": "PER",
+  "awayTeamCode": "TAS",
+  "lineupValid": true,
+  "players": [
+    {
+      "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+      "name": "Angus Brandt",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 5,
+      "assistedMakes": 3,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+      "name": "Anthony Dell'Orso",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 1,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+      "name": "Ben Ayre",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+      "name": "Brandon Knight",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 6,
+      "assistedMakes": 0,
+      "assists": 5,
+      "ptsCreated": 9,
+      "finds": [
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 2,
+          "pts": 4
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+      "name": "Cameron Huefner",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+      "name": "Dakota Mathias",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 5,
+      "assistedMakes": 5,
+      "assists": 2,
+      "ptsCreated": 6,
+      "finds": [
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+          "name": "Ben Ayre",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+      "name": "Dylan Windler",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 8,
+      "assistedMakes": 4,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "count": 2,
+          "pts": 4
+        }
+      ]
+    },
+    {
+      "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+      "name": "Elijah Pepper",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+      "name": "Jaron Rillie",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 4,
+      "assistedMakes": 2,
+      "assists": 4,
+      "ptsCreated": 9,
+      "finds": [
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+      "name": "Jesse Wagstaff",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+      "name": "Josh Bannan",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 8,
+      "assistedMakes": 4,
+      "assists": 5,
+      "ptsCreated": 12,
+      "finds": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+          "name": "Ben Ayre",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+          "name": "Ben Ayre",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+      "name": "Kody Stattmann",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+      "name": "Kristian Doolittle",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "madeFg": 7,
+      "assistedMakes": 3,
+      "assists": 5,
+      "ptsCreated": 6,
+      "finds": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+      "name": "Nicholas Stoddart",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+      "name": "Taran Armstrong",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 7,
+      "assistedMakes": 2,
+      "assists": 7,
+      "ptsCreated": 14,
+      "finds": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 4,
+          "pts": 9
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 2,
+          "pts": 5
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+      "name": "Will Magnay",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "madeFg": 7,
+      "assistedMakes": 5,
+      "assists": 5,
+      "ptsCreated": 11,
+      "finds": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "count": 4,
+          "pts": 9
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    }
+  ],
+  "onOff": [
+    {
+      "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+      "name": "Angus Brandt",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 15.1,
+      "teammates": [
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 15.1,
+          "offMin": 0,
+          "onPoss": 52,
+          "offPoss": 0,
+          "onPts": 10,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 13.2,
+          "offMin": 1.9,
+          "onPoss": 47,
+          "offPoss": 5,
+          "onPts": 8,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 7.4,
+          "offMin": 7.8,
+          "onPoss": 25,
+          "offPoss": 27,
+          "onPts": 4,
+          "offPts": 6,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 9.3,
+          "offMin": 5.8,
+          "onPoss": 30,
+          "offPoss": 22,
+          "onPts": 6,
+          "offPts": 4,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 5.8,
+          "offMin": 9.3,
+          "onPoss": 22,
+          "offPoss": 30,
+          "onPts": 4,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 0,
+          "offMin": 15.1,
+          "onPoss": 0,
+          "offPoss": 52,
+          "onPts": 0,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 6.5,
+          "offMin": 8.6,
+          "onPoss": 23,
+          "offPoss": 29,
+          "onPts": 6,
+          "offPts": 4,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 3.1,
+          "offMin": 12,
+          "onPoss": 9,
+          "offPoss": 43,
+          "onPts": 2,
+          "offPts": 8,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+      "name": "Anthony Dell'Orso",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 19.1,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 3.1,
+          "offMin": 15.9,
+          "onPoss": 9,
+          "offPoss": 45,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 12.7,
+          "offMin": 6.4,
+          "onPoss": 36,
+          "offPoss": 18,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 15.8,
+          "offMin": 3.2,
+          "onPoss": 45,
+          "offPoss": 9,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 4,
+          "offMin": 15.1,
+          "onPoss": 11,
+          "offPoss": 43,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 1,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 9.6,
+          "offMin": 9.5,
+          "onPoss": 23,
+          "offPoss": 31,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 9.5,
+          "offMin": 9.6,
+          "onPoss": 31,
+          "offPoss": 23,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 2,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 12,
+          "offMin": 7.1,
+          "onPoss": 34,
+          "offPoss": 20,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 9.6,
+          "offMin": 9.4,
+          "onPoss": 27,
+          "offPoss": 27,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+      "name": "Ben Ayre",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 10.1,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 4.2,
+          "offMin": 5.9,
+          "onPoss": 10,
+          "offPoss": 18,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 10.1,
+          "offMin": 0,
+          "onPoss": 28,
+          "offPoss": 0,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 5.2,
+          "offMin": 4.9,
+          "onPoss": 14,
+          "offPoss": 14,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 10.1,
+          "offMin": 0,
+          "onPoss": 28,
+          "offPoss": 0,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 5.9,
+          "offMin": 4.2,
+          "onPoss": 18,
+          "offPoss": 10,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 4.9,
+          "offMin": 5.2,
+          "onPoss": 14,
+          "offPoss": 14,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+      "name": "Brandon Knight",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 20.8,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 5.8,
+          "offMin": 15,
+          "onPoss": 22,
+          "offPoss": 49,
+          "onPts": 4,
+          "offPts": 19,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 14.4,
+          "offMin": 6.4,
+          "onPoss": 53,
+          "offPoss": 18,
+          "onPts": 12,
+          "offPts": 11,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 1
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 20.8,
+          "offMin": 0,
+          "onPoss": 71,
+          "offPoss": 0,
+          "onPts": 23,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 3,
+          "offMin": 17.7,
+          "onPoss": 10,
+          "offPoss": 61,
+          "onPts": 3,
+          "offPts": 20,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 5
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 3.6,
+          "offMin": 17.1,
+          "onPoss": 12,
+          "offPoss": 59,
+          "onPts": 5,
+          "offPts": 18,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 5
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 15,
+          "offMin": 5.8,
+          "onPoss": 49,
+          "offPoss": 22,
+          "onPts": 19,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 11,
+          "offMin": 9.8,
+          "onPoss": 36,
+          "offPoss": 35,
+          "onPts": 13,
+          "offPts": 10,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 1
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 9.5,
+          "offMin": 11.3,
+          "onPoss": 31,
+          "offPoss": 40,
+          "onPts": 13,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+      "name": "Cameron Huefner",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 16.6,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 7.4,
+          "offMin": 9.3,
+          "onPoss": 25,
+          "offPoss": 30,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 16.6,
+          "offMin": 0,
+          "onPoss": 55,
+          "offPoss": 0,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 15.3,
+          "offMin": 1.3,
+          "onPoss": 51,
+          "offPoss": 4,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 13.6,
+          "offMin": 3,
+          "onPoss": 45,
+          "offPoss": 10,
+          "onPts": 2,
+          "offPts": 0,
+          "onReb": 3,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 3,
+          "offMin": 13.6,
+          "onPoss": 10,
+          "offPoss": 45,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 3,
+          "offMin": 13.6,
+          "onPoss": 10,
+          "offPoss": 45,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 3.6,
+          "offMin": 13,
+          "onPoss": 13,
+          "offPoss": 42,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 4,
+          "offMin": 12.7,
+          "onPoss": 11,
+          "offPoss": 44,
+          "onPts": 0,
+          "offPts": 2,
+          "onReb": 2,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+      "name": "Dakota Mathias",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 40,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 34.1,
+          "offMin": 5.9,
+          "onPoss": 110,
+          "offPoss": 18,
+          "onPts": 17,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 30.7,
+          "offMin": 9.3,
+          "onPoss": 104,
+          "offPoss": 24,
+          "onPts": 12,
+          "offPts": 5,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 37.1,
+          "offMin": 2.9,
+          "onPoss": 115,
+          "offPoss": 13,
+          "onPts": 17,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 31.5,
+          "offMin": 8.5,
+          "onPoss": 100,
+          "offPoss": 28,
+          "onPts": 11,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 16.5,
+          "offMin": 23.5,
+          "onPoss": 55,
+          "offPoss": 73,
+          "onPts": 8,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+          "name": "Ben Ayre",
+          "onMin": 10.1,
+          "offMin": 29.9,
+          "onPoss": 28,
+          "offPoss": 100,
+          "onPts": 3,
+          "offPts": 14,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+      "name": "Dylan Windler",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 33.6,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 15.1,
+          "offMin": 18.5,
+          "onPoss": 52,
+          "offPoss": 58,
+          "onPts": 13,
+          "offPts": 8,
+          "onReb": 6,
+          "offReb": 4,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 30.4,
+          "offMin": 3.2,
+          "onPoss": 101,
+          "offPoss": 9,
+          "onPts": 16,
+          "offPts": 5,
+          "onReb": 7,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 16.6,
+          "offMin": 17,
+          "onPoss": 55,
+          "offPoss": 55,
+          "onPts": 7,
+          "offPts": 14,
+          "onReb": 4,
+          "offReb": 6,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 22.9,
+          "offMin": 10.7,
+          "onPoss": 69,
+          "offPoss": 41,
+          "onPts": 16,
+          "offPts": 5,
+          "onReb": 7,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 14.4,
+          "offMin": 19.2,
+          "onPoss": 53,
+          "offPoss": 57,
+          "onPts": 7,
+          "offPts": 14,
+          "onReb": 5,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 12.2,
+          "offMin": 21.4,
+          "onPoss": 38,
+          "offPoss": 72,
+          "onPts": 8,
+          "offPts": 13,
+          "onReb": 3,
+          "offReb": 7,
+          "onAst": 1,
+          "offAst": 1
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 10.1,
+          "offMin": 23.5,
+          "onPoss": 36,
+          "offPoss": 74,
+          "onPts": 7,
+          "offPts": 14,
+          "onReb": 5,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 2
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 12.7,
+          "offMin": 20.9,
+          "onPoss": 36,
+          "offPoss": 74,
+          "onPts": 10,
+          "offPts": 11,
+          "onReb": 3,
+          "offReb": 7,
+          "onAst": 2,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+      "name": "Elijah Pepper",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 16.5,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 6.5,
+          "offMin": 10,
+          "onPoss": 23,
+          "offPoss": 31,
+          "onPts": 1,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 10.1,
+          "offMin": 6.4,
+          "onPoss": 36,
+          "offPoss": 18,
+          "onPts": 1,
+          "offPts": 0,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 13.3,
+          "offMin": 3.2,
+          "onPoss": 45,
+          "offPoss": 9,
+          "onPts": 1,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 3.6,
+          "offMin": 12.9,
+          "onPoss": 13,
+          "offPoss": 41,
+          "onPts": 0,
+          "offPts": 1,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 5.5,
+          "offMin": 11,
+          "onPoss": 18,
+          "offPoss": 36,
+          "onPts": 0,
+          "offPts": 1,
+          "onReb": 2,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 11,
+          "offMin": 5.5,
+          "onPoss": 36,
+          "offPoss": 18,
+          "onPts": 1,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 6.4,
+          "offMin": 10.1,
+          "onPoss": 18,
+          "offPoss": 36,
+          "onPts": 0,
+          "offPts": 1,
+          "onReb": 0,
+          "offReb": 2,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 9.6,
+          "offMin": 6.9,
+          "onPoss": 27,
+          "offPoss": 27,
+          "onPts": 0,
+          "offPts": 1,
+          "onReb": 1,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+      "name": "Jaron Rillie",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 22.9,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 9.3,
+          "offMin": 13.6,
+          "onPoss": 30,
+          "offPoss": 39,
+          "onPts": 3,
+          "offPts": 9,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 2,
+          "offAst": 2
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 22.9,
+          "offMin": 0,
+          "onPoss": 69,
+          "offPoss": 0,
+          "onPts": 12,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 0
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 19.6,
+          "offMin": 3.2,
+          "onPoss": 60,
+          "offPoss": 9,
+          "onPts": 12,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 4,
+          "offAst": 0
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 13.6,
+          "offMin": 9.3,
+          "onPoss": 45,
+          "offPoss": 24,
+          "onPts": 8,
+          "offPts": 4,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 3,
+          "offAst": 1
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 3.6,
+          "offMin": 19.2,
+          "onPoss": 12,
+          "offPoss": 57,
+          "onPts": 2,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 7.3,
+          "offMin": 15.5,
+          "onPoss": 19,
+          "offPoss": 50,
+          "onPts": 4,
+          "offPts": 8,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 3
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 5.5,
+          "offMin": 17.3,
+          "onPoss": 18,
+          "offPoss": 51,
+          "onPts": 2,
+          "offPts": 10,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 4
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 9.6,
+          "offMin": 13.3,
+          "onPoss": 23,
+          "offPoss": 46,
+          "onPts": 5,
+          "offPts": 7,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 2,
+          "offAst": 2
+        }
+      ]
+    },
+    {
+      "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+      "name": "Jesse Wagstaff",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 18.6,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 0,
+          "offMin": 18.6,
+          "onPoss": 0,
+          "offPoss": 56,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 12.2,
+          "offMin": 6.4,
+          "onPoss": 38,
+          "offPoss": 18,
+          "onPts": 8,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "onMin": 18.6,
+          "offMin": 0,
+          "onPoss": 56,
+          "offPoss": 0,
+          "onPts": 11,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 3,
+          "offMin": 15.6,
+          "onPoss": 10,
+          "offPoss": 46,
+          "onPts": 0,
+          "offPts": 11,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 7.3,
+          "offMin": 11.3,
+          "onPoss": 19,
+          "offPoss": 37,
+          "onPts": 8,
+          "offPts": 3,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 15,
+          "offMin": 3.7,
+          "onPoss": 49,
+          "offPoss": 7,
+          "onPts": 5,
+          "offPts": 6,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 6.4,
+          "offMin": 12.2,
+          "onPoss": 18,
+          "offPoss": 38,
+          "onPts": 3,
+          "offPts": 8,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 12,
+          "offMin": 6.7,
+          "onPoss": 34,
+          "offPoss": 22,
+          "onPts": 9,
+          "offPts": 2,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+      "name": "Josh Bannan",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 37.1,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 31.2,
+          "offMin": 5.9,
+          "onPoss": 97,
+          "offPoss": 18,
+          "onPts": 16,
+          "offPts": 2,
+          "onReb": 9,
+          "offReb": 3,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 37.1,
+          "offMin": 0,
+          "onPoss": 115,
+          "offPoss": 0,
+          "onPts": 18,
+          "offPts": 0,
+          "onReb": 12,
+          "offReb": 0,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 27.8,
+          "offMin": 9.3,
+          "onPoss": 91,
+          "offPoss": 24,
+          "onPts": 14,
+          "offPts": 4,
+          "onReb": 6,
+          "offReb": 6,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 28.6,
+          "offMin": 8.5,
+          "onPoss": 87,
+          "offPoss": 28,
+          "onPts": 11,
+          "offPts": 7,
+          "onReb": 9,
+          "offReb": 3,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 13.6,
+          "offMin": 23.5,
+          "onPoss": 42,
+          "offPoss": 73,
+          "onPts": 8,
+          "offPts": 10,
+          "onReb": 9,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+          "name": "Ben Ayre",
+          "onMin": 10.1,
+          "offMin": 27,
+          "onPoss": 28,
+          "offPoss": 87,
+          "onPts": 5,
+          "offPts": 13,
+          "onReb": 3,
+          "offReb": 9,
+          "onAst": 2,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+      "name": "Kody Stattmann",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 31.5,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 25.6,
+          "offMin": 5.9,
+          "onPoss": 82,
+          "offPoss": 18,
+          "onPts": 7,
+          "offPts": 4,
+          "onReb": 5,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 31.5,
+          "offMin": 0,
+          "onPoss": 100,
+          "offPoss": 0,
+          "onPts": 11,
+          "offPts": 0,
+          "onReb": 6,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 22.2,
+          "offMin": 9.3,
+          "onPoss": 76,
+          "offPoss": 24,
+          "onPts": 6,
+          "offPts": 5,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 28.6,
+          "offMin": 2.9,
+          "onPoss": 87,
+          "offPoss": 13,
+          "onPts": 8,
+          "offPts": 3,
+          "onReb": 6,
+          "offReb": 0,
+          "onAst": 1,
+          "offAst": 0
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 12.2,
+          "offMin": 19.3,
+          "onPoss": 37,
+          "offPoss": 63,
+          "onPts": 8,
+          "offPts": 3,
+          "onReb": 3,
+          "offReb": 3,
+          "onAst": 0,
+          "offAst": 1
+        },
+        {
+          "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+          "name": "Ben Ayre",
+          "onMin": 5.9,
+          "offMin": 25.6,
+          "onPoss": 18,
+          "offPoss": 82,
+          "onPts": 4,
+          "offPts": 7,
+          "onReb": 1,
+          "offReb": 5,
+          "onAst": 0,
+          "offAst": 1
+        }
+      ]
+    },
+    {
+      "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+      "name": "Kristian Doolittle",
+      "teamCode": "PER",
+      "teamName": "Perth Wildcats",
+      "minutes": 36.8,
+      "teammates": [
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "onMin": 13.2,
+          "offMin": 23.6,
+          "onPoss": 47,
+          "offPoss": 72,
+          "onPts": 10,
+          "offPts": 6,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "onMin": 30.4,
+          "offMin": 6.4,
+          "onPoss": 101,
+          "offPoss": 18,
+          "onPts": 16,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 4,
+          "offAst": 1
+        },
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "onMin": 15.3,
+          "offMin": 21.4,
+          "onPoss": 51,
+          "offPoss": 68,
+          "onPts": 7,
+          "offPts": 9,
+          "onReb": 2,
+          "offReb": 3,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "onMin": 19.6,
+          "offMin": 17.1,
+          "onPoss": 60,
+          "offPoss": 59,
+          "onPts": 7,
+          "offPts": 9,
+          "onReb": 1,
+          "offReb": 4,
+          "onAst": 4,
+          "offAst": 1
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "onMin": 20.8,
+          "offMin": 16,
+          "onPoss": 71,
+          "offPoss": 48,
+          "onPts": 9,
+          "offPts": 7,
+          "onReb": 4,
+          "offReb": 1,
+          "onAst": 1,
+          "offAst": 4
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "onMin": 18.6,
+          "offMin": 18.1,
+          "onPoss": 56,
+          "offPoss": 63,
+          "onPts": 4,
+          "offPts": 12,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "onMin": 13.3,
+          "offMin": 23.5,
+          "onPoss": 45,
+          "offPoss": 74,
+          "onPts": 7,
+          "offPts": 9,
+          "onReb": 1,
+          "offReb": 4,
+          "onAst": 2,
+          "offAst": 3
+        },
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "onMin": 15.8,
+          "offMin": 20.9,
+          "onPoss": 45,
+          "offPoss": 74,
+          "onPts": 4,
+          "offPts": 12,
+          "onReb": 3,
+          "offReb": 2,
+          "onAst": 2,
+          "offAst": 3
+        }
+      ]
+    },
+    {
+      "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+      "name": "Nicholas Stoddart",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 16.5,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 11.6,
+          "offMin": 4.9,
+          "onPoss": 41,
+          "offPoss": 14,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 16.5,
+          "offMin": 0,
+          "onPoss": 55,
+          "offPoss": 0,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 7.2,
+          "offMin": 9.3,
+          "onPoss": 31,
+          "offPoss": 24,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 13.6,
+          "offMin": 2.9,
+          "onPoss": 42,
+          "offPoss": 13,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 1,
+          "offReb": 0,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 12.2,
+          "offMin": 4.3,
+          "onPoss": 37,
+          "offPoss": 18,
+          "onPts": 5,
+          "offPts": 0,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        },
+        {
+          "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+          "name": "Ben Ayre",
+          "onMin": 4.9,
+          "offMin": 11.6,
+          "onPoss": 14,
+          "offPoss": 41,
+          "onPts": 0,
+          "offPts": 5,
+          "onReb": 0,
+          "offReb": 1,
+          "onAst": 0,
+          "offAst": 0
+        }
+      ]
+    },
+    {
+      "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+      "name": "Taran Armstrong",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 30.7,
+      "teammates": [
+        {
+          "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+          "name": "Will Magnay",
+          "onMin": 29.7,
+          "offMin": 1,
+          "onPoss": 100,
+          "offPoss": 4,
+          "onPts": 20,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 7,
+          "offAst": 0
+        },
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 30.7,
+          "offMin": 0,
+          "onPoss": 104,
+          "offPoss": 0,
+          "onPts": 20,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 7,
+          "offAst": 0
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 27.8,
+          "offMin": 2.9,
+          "onPoss": 91,
+          "offPoss": 13,
+          "onPts": 20,
+          "offPts": 0,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 6,
+          "offAst": 1
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 22.2,
+          "offMin": 8.5,
+          "onPoss": 76,
+          "offPoss": 28,
+          "onPts": 17,
+          "offPts": 3,
+          "onReb": 4,
+          "offReb": 0,
+          "onAst": 5,
+          "offAst": 2
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 7.2,
+          "offMin": 23.5,
+          "onPoss": 31,
+          "offPoss": 73,
+          "onPts": 2,
+          "offPts": 18,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 2,
+          "offAst": 5
+        },
+        {
+          "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+          "name": "Ben Ayre",
+          "onMin": 5.2,
+          "offMin": 25.5,
+          "onPoss": 14,
+          "offPoss": 90,
+          "onPts": 1,
+          "offPts": 19,
+          "onReb": 0,
+          "offReb": 4,
+          "onAst": 1,
+          "offAst": 6
+        }
+      ]
+    },
+    {
+      "personId": "503613bd-410d-11f0-86d2-9dbbf7342624",
+      "name": "Will Magnay",
+      "teamCode": "TAS",
+      "teamName": "Tasmania JackJumpers",
+      "minutes": 34.1,
+      "teammates": [
+        {
+          "personId": "2c961a5e-b0a7-11f0-a50c-29696256d6d9",
+          "name": "Dakota Mathias",
+          "onMin": 34.1,
+          "offMin": 0,
+          "onPoss": 110,
+          "offPoss": 0,
+          "onPts": 19,
+          "offPts": 0,
+          "onReb": 12,
+          "offReb": 0,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "50da5c2e-410d-11f0-b4c1-9dbbf7342624",
+          "name": "Taran Armstrong",
+          "onMin": 29.7,
+          "offMin": 4.4,
+          "onPoss": 100,
+          "offPoss": 10,
+          "onPts": 17,
+          "offPts": 2,
+          "onReb": 7,
+          "offReb": 5,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "6c291b79-410d-11f0-a3af-9dbbf7342624",
+          "name": "Josh Bannan",
+          "onMin": 31.2,
+          "offMin": 2.9,
+          "onPoss": 97,
+          "offPoss": 13,
+          "onPts": 17,
+          "offPts": 2,
+          "onReb": 9,
+          "offReb": 3,
+          "onAst": 5,
+          "offAst": 0
+        },
+        {
+          "personId": "6b99c9fc-410d-11f0-ba5e-9dbbf7342624",
+          "name": "Kody Stattmann",
+          "onMin": 25.6,
+          "offMin": 8.5,
+          "onPoss": 82,
+          "offPoss": 28,
+          "onPts": 13,
+          "offPts": 6,
+          "onReb": 10,
+          "offReb": 2,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "505a76d2-410d-11f0-a8c2-9dbbf7342624",
+          "name": "Nicholas Stoddart",
+          "onMin": 11.6,
+          "offMin": 22.5,
+          "onPoss": 41,
+          "offPoss": 69,
+          "onPts": 6,
+          "offPts": 13,
+          "onReb": 10,
+          "offReb": 2,
+          "onAst": 3,
+          "offAst": 2
+        },
+        {
+          "personId": "51027b14-410d-11f0-a609-9dbbf7342624",
+          "name": "Ben Ayre",
+          "onMin": 4.2,
+          "offMin": 29.9,
+          "onPoss": 10,
+          "offPoss": 100,
+          "onPts": 4,
+          "offPts": 15,
+          "onReb": 0,
+          "offReb": 12,
+          "onAst": 1,
+          "offAst": 4
+        }
+      ]
+    }
+  ],
+  "fetchedAt": "2026-11-12T20:47:52.188Z"
+}

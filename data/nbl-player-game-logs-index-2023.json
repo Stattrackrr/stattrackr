@@ -1,10 +1,10 @@
 {
   "year": 2023,
   "seasonLabel": "NBL24",
-  "generatedAt": "2026-11-11T20:09:01.274Z",
+  "generatedAt": "2026-11-12T20:46:41.411Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 141,
-  "gameRows": 2833,
+  "gameRows": 2832,
   "players": [
     {
       "playerId": "3af8bb38-1c97-4b43-99f0-378a95dfdd79",
@@ -523,7 +523,7 @@
       "name": "Jesse Wagstaff",
       "team": "Perth Wildcats",
       "teamCode": "PER",
-      "gameCount": 24,
+      "gameCount": 23,
       "cacheFile": "nbl-model/cache/player-logs/4a3d7bc9-18a9-4106-a201-79643586e4c3-2023.json"
     },
     {

@@ -1,20 +1,11 @@
 {
-  "generatedAt": "2026-11-11T20:09:59.763Z",
+  "generatedAt": "2026-11-12T20:47:48.152Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
-  "sourceUpdatedText": "Monday, November 9, 5pm AEDT",
-  "injuryCount": 26,
+  "sourceUpdatedText": "Thursday, November 12, 5pm AEDT",
+  "injuryCount": 24,
   "injuries": [
-    {
-      "team": "Adelaide 36ers",
-      "player": "Flynn Cameron",
-      "injury": "Ankle",
-      "returning": "Possibly 12 November",
-      "status": "Day-to-Day",
-      "note": "Hurt his right ankle in Adelaide’s opener on 19 September 2026 and has missed 11 games. He was available for the game against the Illawarra Hawks on 7 November but was rested as a precaution, ABC Sport’s Aaron Bryans reported. Coach Trevor Gleeson said he would “go through the checklist this week” before Thursday’s game against Melbourne United, and the club is hopeful (NBL.com.au). The NBL’s list still has his return as TBC.",
-      "listedByNbl": true
-    },
     {
       "team": "Adelaide 36ers",
       "player": "Isaac Humphries (retired)",
@@ -30,15 +21,6 @@
       "injury": "ACL",
       "returning": "TBC",
       "status": "Out",
-      "listedByNbl": true
-    },
-    {
-      "team": "Adelaide 36ers",
-      "player": "Mangok Mathiang",
-      "injury": "Personal reasons",
-      "returning": "Round 9",
-      "status": "Out",
-      "note": "Out of the game against the Illawarra Hawks on Saturday 7 November 2026 for personal reasons, the club confirmed (reported by Fox Sports). The 36ers say he will return to the club next week, which points to Thursday 12 November against Melbourne United, Adelaide’s next game. ABC Sport’s Aaron Bryans also reported on 7 November that he will return from Africa next week.",
       "listedByNbl": true
     },
     {
@@ -142,15 +124,6 @@
     },
     {
       "team": "Perth Wildcats",
-      "player": "Brandon Knight",
-      "injury": "Soreness",
-      "returning": "Round 9",
-      "status": "Out",
-      "note": "Ruled out of Perth’s game against the Brisbane Bullets at Nissan Arena on Wednesday 4 November with soreness, the Perth Wildcats confirmed on Tuesday 3 November 2026, as reported by Fox Sports. The NBL’s list of 8 November has him back in Round 9. He made his NBL debut against the New Zealand Breakers on Saturday 10 October after missing Perth’s first four games.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Perth Wildcats",
       "player": "Jo Lual-Acuil Jr",
       "injury": "Calf",
       "returning": "Round 11",
@@ -234,6 +207,15 @@
       "returning": "Round 11",
       "status": "Out",
       "note": "Johnson left Tasmania’s loss to the Sydney Kings on Friday 30 October 2026 in the second quarter and did not return. Head coach Scott Roth said afterwards the calf injury “is going to be quite a while”.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Tasmania JackJumpers",
+      "player": "Nick Marshall",
+      "injury": "Ankle",
+      "returning": "Round 11",
+      "status": "Out",
+      "note": "Tasmania have confirmed he will miss Rounds 9 and 10 and be reassessed during the FIBA break, Fox Sports reported on 10 November 2026. Their next game after the break is at Adelaide on 5 December.",
       "listedByNbl": true
     }
   ]

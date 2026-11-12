@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-11T20:09:03.086Z",
+  "generatedAt": "2026-11-12T20:46:43.615Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -1967,7 +1967,7 @@
       "externalId": "373d1fa2-58ad-11f1-ac10-0b8a9f33c19f",
       "startTime": "2026-11-12T10:30:00.000Z",
       "round": "9",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Perth Wildcats",
       "homeTeamCode": "PER",
       "homeTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
@@ -1976,8 +1976,8 @@
       "awayTeamCode": "TAS",
       "awayTeamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 98,
+      "awayScore": 92,
       "venue": "RAC Arena",
       "matchSlug": "perth-wildcats-v-tasmania-jackjumpers-men-12-11-2026"
     },
@@ -1986,7 +1986,7 @@
       "externalId": "375813e7-58ad-11f1-8c9c-2572c13c410b",
       "startTime": "2026-11-12T08:30:00.000Z",
       "round": "9",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Adelaide 36ers",
       "homeTeamCode": "ADL",
       "homeTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
@@ -1995,8 +1995,8 @@
       "awayTeamCode": "MEL",
       "awayTeamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 101,
+      "awayScore": 93,
       "venue": "Adelaide Entertainment Centre",
       "matchSlug": "adelaide-36ers-v-melbourne-united-men-12-11-2026"
     },
