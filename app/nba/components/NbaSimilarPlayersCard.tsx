@@ -9,6 +9,11 @@ function fmtInt(n: number | null | undefined): string {
   return String(Math.round(n));
 }
 
+function fmtLine(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '—';
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
 function fmtDate(raw: string | null | undefined): string {
   if (!raw) return '—';
   const d = new Date(raw);
@@ -22,7 +27,7 @@ function fmtDate(raw: string | null | undefined): string {
   });
 }
 
-/** Green = over the line, red = under. Neutral when no line. */
+/** Green = over the line, red = under. */
 function statVsLineClass(
   value: number | null | undefined,
   line: number | null | undefined,
@@ -102,9 +107,9 @@ export function NbaSimilarPlayersCard({
   const oppLabel = payload?.opponent?.name || opponentName || 'opponent';
   const statLabel = payload?.statLabel || selectedStat || 'Points';
 
-  // Hard rule: each player appears at most once (their most recent vs-opponent game).
+  // Only players with a logged line; newest games first; one row per player.
   const rows = useMemo(() => {
-    const list = payload?.similar || [];
+    const list = (payload?.similar || []).filter((row) => row.line != null && Number.isFinite(row.line));
     const byPlayer = new Map<string, (typeof list)[number]>();
     for (const row of list) {
       const key =
@@ -121,7 +126,9 @@ export function NbaSimilarPlayersCard({
         byPlayer.set(key, row);
       }
     }
-    return [...byPlayer.values()];
+    return [...byPlayer.values()].sort((a, b) =>
+      String(b.date || '').localeCompare(String(a.date || ''))
+    );
   }, [payload?.similar]);
 
   const muted = isDark ? 'text-gray-400' : 'text-gray-500';
@@ -154,7 +161,7 @@ export function NbaSimilarPlayersCard({
         <div className="text-xs text-red-500 dark:text-red-400 py-6 text-center">{error}</div>
       ) : !rows.length ? (
         <div className={`text-xs ${muted} py-6 text-center`}>
-          No similar players found vs {oppLabel}.
+          No similar players with a line vs {oppLabel}.
         </div>
       ) : (
         <div>
@@ -178,7 +185,7 @@ export function NbaSimilarPlayersCard({
             </span>
           </div>
 
-          <div>
+          <div className="max-h-[220px] overflow-y-auto overscroll-contain custom-scrollbar pr-0.5">
             {rows.map((row) => (
               <div
                 key={row.playerId || row.name}
@@ -220,7 +227,7 @@ export function NbaSimilarPlayersCard({
                   {fmtInt(row.value)}
                 </div>
                 <div className={`text-xs font-medium tabular-nums text-right ${muted}`}>
-                  {row.line != null ? fmtInt(row.line) : '—'}
+                  {fmtLine(row.line)}
                 </div>
               </div>
             ))}

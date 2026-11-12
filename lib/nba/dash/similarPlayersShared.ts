@@ -47,7 +47,7 @@ export type NbaSimilarPlayerRow = {
   minutes: number | null;
   /** Selected-stat value for this game. */
   value: number | null;
-  /** Bookmaker prop line for this game — null until an odds feed is wired. */
+  /** Aussie-book consensus prop line for this game. Null when none logged. */
   line: number | null;
   book: string | null;
 };

@@ -12,6 +12,7 @@ import {
   type NbaSimilarPlayersPayload,
   type NbaSimilarStatKey,
 } from './similarPlayersShared';
+import { lookupNbaSimilarPlayerLines } from './similarPlayerLines';
 
 const numOrNull = (v: unknown): number | null => {
   const n = Number(v);
@@ -164,14 +165,41 @@ export async function buildNbaSimilarPlayers(options: {
     })
     .sort((a, b) => a.distance - b.distance);
 
-  const out: Array<NbaSimilarPlayerRow & { distance: number }> = [];
-  for (const { player, distance } of scored.slice(0, Math.max(limit * 3, 20))) {
-    if (out.length >= limit) break;
+  /** Recent vs-opponent games to consider so we can prefer one that has a logged line. */
+  const GAME_CANDIDATES = 8;
+  type PeerGames = {
+    player: (typeof scored)[number]['player'];
+    distance: number;
+    games: NbaGameLogRow[];
+  };
+  const peers: PeerGames[] = [];
+  for (const { player, distance } of scored.slice(0, Math.max(limit * 8, 40))) {
     const logs = [data, ...olderSets].flatMap((d) => d.logsByPlayer.get(player.playerId) ?? []);
-    const g = logs
+    const games = logs
       .filter((x) => x.opponentCode === opponentCode && (numOrNull(x.minutes) ?? 0) >= 8)
-      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))[0];
+      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+      .slice(0, GAME_CANDIDATES);
+    if (!games.length) continue;
+    peers.push({ player, distance, games });
+  }
+
+  const lines = await lookupNbaSimilarPlayerLines(
+    peers.flatMap(({ player, games }) =>
+      games.map((g) => ({
+        playerId: player.playerId,
+        gameId: g.matchId,
+        stat,
+        playerName: player.name,
+      }))
+    )
+  );
+
+  const out: Array<NbaSimilarPlayerRow & { distance: number }> = [];
+  for (const { player, distance, games } of peers) {
+    if (out.length >= limit) break;
+    const g = games.find((game) => lines.has(`${game.matchId}|${player.playerId}|${stat}`));
     if (!g) continue;
+    const hit = lines.get(`${g.matchId}|${player.playerId}|${stat}`)!;
     const value = STAT_FROM_LOG[stat](g);
     out.push({
       matchId: g.matchId,
@@ -185,14 +213,17 @@ export async function buildNbaSimilarPlayers(options: {
       similarity: round1(100 / (1 + distance)),
       minutes: g.minutes != null ? Math.round(g.minutes) : null,
       value: value != null ? round1(value) : null,
-      line: null,
-      book: null,
+      line: hit.line,
+      book: hit.book,
       distance,
     });
   }
+
   return {
     ...empty,
-    similar: out.sort((a, b) => a.distance - b.distance).map(({ distance: _d, ...row }) => row),
+    similar: out
+      .sort((a, b) => a.distance - b.distance)
+      .map(({ distance: _d, ...row }) => row),
   };
 }
 

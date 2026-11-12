@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const limit = Number.isFinite(limitRaw) ? limitRaw : 8;
     const payload = await nbaDashCached(
       'similar-players',
-      [playerId, opponent.toLowerCase(), stat.toLowerCase(), year, limit],
+      [playerId, opponent.toLowerCase(), stat.toLowerCase(), 'lined', year, limit],
       NBA_DASH_CACHE.league,
       () => buildNbaSimilarPlayers({ playerId, opponent, stat, years: [year, year - 1], limit })
     );
