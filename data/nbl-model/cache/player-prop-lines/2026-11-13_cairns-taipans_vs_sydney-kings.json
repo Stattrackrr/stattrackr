@@ -4,7 +4,7 @@
   "homeTeam": "Cairns Taipans",
   "awayTeam": "Sydney Kings",
   "commenceTime": "2026-11-13T08:30:00.000Z",
-  "capturedAt": "2026-11-11T20:10:16.575Z",
+  "capturedAt": "2026-11-12T00:52:44.126Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -25,7 +25,7 @@
     "TABtouch",
     "Unibet"
   ],
-  "lineCount": 2719,
+  "lineCount": 2720,
   "lines": [
     {
       "player": "Andrew Carr",
@@ -35372,6 +35372,19 @@
       "over": "+110",
       "under": "N/A",
       "overDecimal": 2.1,
+      "underDecimal": null
+    },
+    {
+      "player": "Xavier Cooks",
+      "playerKey": "xavier cooks",
+      "book": "Betr",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
       "underDecimal": null
     }
   ]
