@@ -48,26 +48,64 @@ function formatTenure(value: string | null): string | null {
   return `${years}y ${remMonths}mo on StatTrackr`;
 }
 
-const MEMBERSHIP_META: Record<
-  'admin' | 'pro' | 'free',
-  { label: string; chip: string; banner: string }
-> = {
+const MEMBERSHIP_META: Record<'admin' | 'pro' | 'free', { label: string; chip: string }> = {
   admin: {
     label: 'Admin',
     chip: 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-400/40',
-    banner: 'from-amber-700 via-yellow-700 to-orange-800',
   },
   pro: {
     label: 'Pro',
     chip: 'bg-sky-500/20 text-sky-200 ring-1 ring-sky-400/40',
-    banner: 'from-sky-700 via-cyan-700 to-blue-900',
   },
   free: {
     label: 'Free',
     chip: 'bg-slate-500/20 text-slate-200 ring-1 ring-slate-400/30',
-    banner: 'from-slate-700 via-slate-800 to-[#0b1524]',
   },
 };
+
+/** Average colour from a profile image for the card banner. */
+function sampleAvatarColor(url: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const size = 24;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, size, size);
+        const { data } = ctx.getImageData(0, 0, size, size);
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let n = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          const a = data[i + 3] ?? 0;
+          if (a < 128) continue;
+          r += data[i] ?? 0;
+          g += data[i + 1] ?? 0;
+          b += data[i + 2] ?? 0;
+          n += 1;
+        }
+        if (!n) {
+          resolve(null);
+          return;
+        }
+        resolve(`rgb(${Math.round(r / n)}, ${Math.round(g / n)}, ${Math.round(b / n)})`);
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
 
 type Props = {
   profile: ChatMemberProfileCardData;
@@ -78,8 +116,11 @@ type Props = {
 export function ChatMemberProfileCard({ profile, onClose, onMention }: Props) {
   const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [imageBannerColor, setImageBannerColor] = useState<string | null>(null);
   const name = profile.displayName || profile.username || 'Member';
   const showImage = Boolean(profile.avatarUrl) && profile.avatarUrl !== brokenUrl;
+  const avatarColor = useMemo(() => getAvatarColor(name), [name]);
+  const bannerColor = showImage && imageBannerColor ? imageBannerColor : avatarColor;
   const stripBadges = useMemo(
     () =>
       profile.badges && profile.badges.length > 0
@@ -93,6 +134,20 @@ export function ChatMemberProfileCard({ profile, onClose, onMention }: Props) {
   const membershipMeta = MEMBERSHIP_META[membership];
   const tenure = formatTenure(profile.createdAt);
   const handle = profile.username ? `@${profile.username}` : null;
+
+  useEffect(() => {
+    if (!showImage || !profile.avatarUrl) {
+      setImageBannerColor(null);
+      return;
+    }
+    let cancelled = false;
+    void sampleAvatarColor(profile.avatarUrl).then((color) => {
+      if (!cancelled) setImageBannerColor(color);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showImage, profile.avatarUrl]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -115,7 +170,7 @@ export function ChatMemberProfileCard({ profile, onClose, onMention }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/55 px-4 py-6 backdrop-blur-[2px] sm:items-center"
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-[2px]"
       onClick={onClose}
       role="presentation"
     >
@@ -123,10 +178,15 @@ export function ChatMemberProfileCard({ profile, onClose, onMention }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={`${name} profile`}
-        className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0d1726] shadow-2xl shadow-black/50"
+        className="w-full max-w-sm max-h-[min(85dvh,720px)] overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#0d1726] shadow-2xl shadow-black/50 custom-scrollbar"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className={`relative h-24 overflow-hidden rounded-t-2xl bg-gradient-to-br ${membershipMeta.banner}`}>
+        <div
+          className="relative h-24 overflow-hidden rounded-t-2xl"
+          style={{
+            background: `linear-gradient(135deg, ${bannerColor} 0%, color-mix(in srgb, ${bannerColor} 72%, #020617) 100%)`,
+          }}
+        >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_45%)]" />
           <button
             type="button"
@@ -142,7 +202,7 @@ export function ChatMemberProfileCard({ profile, onClose, onMention }: Props) {
           <div className="-mt-9 flex items-end justify-between gap-3">
             <div
               className="relative z-10 flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-[#0d1726] text-xl font-semibold text-white shadow-lg"
-              style={showImage ? undefined : { backgroundColor: getAvatarColor(name) }}
+              style={showImage ? undefined : { backgroundColor: avatarColor }}
             >
               {showImage && profile.avatarUrl ? (
                 <img
