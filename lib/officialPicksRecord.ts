@@ -14,6 +14,8 @@ export type OfficialPickBet = {
   bookmaker: string | null;
   created_at: string;
   updated_at: string;
+  /** Graded P/L when the source already settled the bet (AI picks). Prefer over odds reconstruction. */
+  profit_units?: number | null;
 };
 
 export type OfficialPickBetInsert = {

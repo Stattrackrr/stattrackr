@@ -12,16 +12,13 @@ import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordM
 import { useChatViewer } from '@/components/chat/useChatViewer';
 import { openProUpgrade } from '@/components/ProFeatureLock';
 import { useTheme } from '@/contexts/ThemeContext';
-import { aiPicksAsRecordBets, fetchAiPicks, fetchAiPicksPublic } from '@/lib/aiPicks/client';
+import { fetchAiPicksPublic, fetchAiRecordBets } from '@/lib/aiPicks/client';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
 import { useSiteOnlineCount } from '@/lib/sitePresence';
 import { supabase } from '@/lib/supabaseClient';
 
 type OddsFormat = 'american' | 'decimal';
 
-async function loadAiRecordBets() {
-  return aiPicksAsRecordBets(await fetchAiPicks(1000));
-}
 
 export default function PicksPageClient() {
   const router = useRouter();
@@ -246,7 +243,7 @@ export default function PicksPageClient() {
         onClose={() => setShowRecordModal(false)}
         isAdmin={viewer.isAdmin}
         isDark={isDark}
-        loadBets={loadAiRecordBets}
+        loadBets={fetchAiRecordBets}
         subtitle="Stattrackr AI units performance. Every pick is graded automatically at the price shown when it was posted, which may no longer be available by the time you bet."
       />
     </div>

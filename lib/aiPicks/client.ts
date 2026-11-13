@@ -15,17 +15,25 @@ export async function fetchAiPicksSettings(): Promise<AiPicksSettings> {
   return { isPublic: Boolean(data.is_public), publicSince: data.public_since ?? null };
 }
 
+/** Enough history for the units strip and View record to stay in sync (feed cards still paginate client-side). */
+export const AI_PICKS_RECORD_LIMIT = 1000;
+
 /**
  * Newest first, without picks settled before the public record's start date (admin sees the same record
  * as everyone else). RLS returns nothing unless the viewer is admin, or picks are public and the viewer is premium.
  */
-export async function fetchAiPicks(limit = 200): Promise<AiPick[]> {
+export async function fetchAiPicks(limit = AI_PICKS_RECORD_LIMIT): Promise<AiPick[]> {
   const { publicSince } = await fetchAiPicksSettings();
   let query = db().from('ai_picks').select('*, ai_pick_legs(*)');
   if (publicSince) query = query.or(`settled_at.is.null,settled_at.gte."${publicSince}"`);
   const { data, error } = await query.order('posted_at', { ascending: false }).limit(limit);
   if (error) throw new Error(error.message);
   return ((data ?? []) as AiPickRow[]).map(aiPickFromRow);
+}
+
+/** Same dataset the View record modal and the live Units strip both use. */
+export async function fetchAiRecordBets(limit = AI_PICKS_RECORD_LIMIT): Promise<OfficialPickBet[]> {
+  return aiPicksAsRecordBets(await fetchAiPicks(limit));
 }
 
 /** Picks the signed-in member marked "Added"; null when signed out or the table is not there yet. */
@@ -68,5 +76,6 @@ export function aiPicksAsRecordBets(picks: AiPick[]): OfficialPickBet[] {
     bookmaker: p.bookmaker,
     created_at: p.postedAt,
     updated_at: p.settledAt ?? p.postedAt,
+    profit_units: p.status === 'pending' ? null : p.profitUnits,
   }));
 }

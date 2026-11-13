@@ -4,11 +4,12 @@ import { ArrowUpDown, Check, Clock, Highlighter, Loader2, Minus, Sparkles, X } f
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { supabase } from '@/lib/supabaseClient';
-import { aiPicksAsRecordBets, fetchAddedPickIds, fetchAiPicks, setPickAdded } from '@/lib/aiPicks/client';
+import { fetchAddedPickIds, fetchAiPicks, fetchAiRecordBets, setPickAdded } from '@/lib/aiPicks/client';
 import { legBet, legSubject } from '@/lib/aiPicks/format';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import type { AiPick, AiPickLeg, AiPickStatus } from '@/lib/aiPicks/types';
 import type { TennisTour } from '@/lib/tennis/types';
+import type { OfficialPickBet } from '@/lib/officialPicksRecord';
 import { computePickRecordStats, formatUnits } from '@/lib/officialPicksRecordStats';
 
 export const AI_PICKS_NAME = 'Stattrackr AI';
@@ -428,14 +429,40 @@ function PickCard({
   );
 }
 
-function RecordStrip({ picks }: { picks: AiPick[] }) {
-  const stats = useMemo(() => computePickRecordStats(aiPicksAsRecordBets(picks)), [picks]);
-  const pending = picks.filter((p) => p.status === 'pending').length;
+function RecordStrip({ pendingCount }: { pendingCount: number }) {
+  const [bets, setBets] = useState<OfficialPickBet[]>([]);
+  const load = useCallback(async () => {
+    try {
+      setBets(await fetchAiRecordBets());
+    } catch {
+      /* keep last good strip; feed error banner covers hard failures */
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const channel = supabase
+      .channel('ai-picks-record-strip')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_picks' }, () => {
+        // Debounce: pending start-time tweaks and settle bursts used to rebuild from a short
+        // feed window and make Units jump even when View record stayed correct.
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => void load(), 400);
+      })
+      .subscribe();
+    return () => {
+      if (timer) clearTimeout(timer);
+      void supabase.removeChannel(channel);
+    };
+  }, [load]);
+
+  const stats = useMemo(() => computePickRecordStats(bets), [bets]);
   const cells: Array<{ label: string; value: string; tone?: number }> = [
     { label: 'Units', value: formatUnits(stats.totalPL, { showSign: true }), tone: stats.totalPL },
     { label: 'ROI', value: `${stats.roi.toFixed(1)}%`, tone: stats.roi },
     { label: 'Record', value: `${stats.wins}-${stats.losses}${stats.voids ? `-${stats.voids}` : ''}` },
-    { label: 'Pending', value: String(pending) },
+    { label: 'Pending', value: String(pendingCount) },
   ];
   return (
     <div className="grid grid-cols-4 divide-x divide-gray-200/80 rounded-2xl border border-gray-200/80 bg-white shadow-sm dark:divide-white/[0.07] dark:border-white/[0.07] dark:bg-[#0f1a2b]">
@@ -685,11 +712,16 @@ export function AiPicksFeed() {
 
   useEffect(() => {
     void load();
+    let timer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
       .channel('ai-picks-feed')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_picks' }, () => void load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_picks' }, () => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => void load(), 400);
+      })
       .subscribe();
     return () => {
+      if (timer) clearTimeout(timer);
       void supabase.removeChannel(channel);
     };
   }, [load]);
@@ -798,7 +830,7 @@ export function AiPicksFeed() {
   return (
     <div ref={topRef} className="flex min-h-full flex-col gap-3">
       <div className="-mx-5 -mt-4 space-y-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur dark:bg-[#0f1a2b]/95 relative z-10 sm:sticky sm:-top-4">
-        <RecordStrip picks={picks} />
+        <RecordStrip pendingCount={pendingCount} />
 
         <div role="tablist" aria-label="Picks" className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1 dark:bg-white/[0.04]">
           {tabs.map((t) => {

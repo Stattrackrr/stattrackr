@@ -30,6 +30,7 @@ function getSettledBets(bets: OfficialPickBet[]): OfficialPickBet[] {
 }
 
 function getBetProfitUnits(bet: OfficialPickBet): number {
+  if (bet.profit_units != null && Number.isFinite(bet.profit_units)) return bet.profit_units;
   const stake = bet.stake_units;
   if (bet.result === 'win') {
     return stake * (bet.odds - 1);
