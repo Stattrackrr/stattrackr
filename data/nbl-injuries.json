@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-12T20:47:48.152Z",
+  "generatedAt": "2026-11-13T20:29:13.177Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
@@ -115,6 +115,15 @@
     },
     {
       "team": "New Zealand Breakers",
+      "player": "Parker Jackson-Cartwright",
+      "injury": "Tibia (stress fracture)",
+      "returning": "Season",
+      "status": "Out for the season",
+      "note": "The New Zealand Breakers announced on 10 November 2026 that scans revealed a stress fracture in his tibia and he will miss the rest of NBL27. He had been managing a lower-leg injury, played 11 minutes at Tasmania on 6 November and was listed day-to-day after it.",
+      "listedByNbl": true
+    },
+    {
+      "team": "New Zealand Breakers",
       "player": "Josiah-Jordan James",
       "injury": "Hamstring",
       "returning": "TBC",
@@ -162,15 +171,6 @@
       "injury": "ACL",
       "returning": "Season",
       "status": "Out for the season",
-      "listedByNbl": true
-    },
-    {
-      "team": "Sydney Kings",
-      "player": "Jayden Stone",
-      "injury": "Illness",
-      "returning": "Possibly 15 November",
-      "status": "Out",
-      "note": "Out of the Sydney Kings’ game against the South East Melbourne Phoenix on Sunday 8 November 2026 with illness, basketball.com.au understands. Expected back for the next game, against the New Zealand Breakers on Sunday 15 November.",
       "listedByNbl": true
     },
     {

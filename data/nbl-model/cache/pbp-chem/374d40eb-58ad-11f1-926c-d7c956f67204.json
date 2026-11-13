@@ -1,0 +1,603 @@
+{
+  "fixtureId": "374d40eb-58ad-11f1-926c-d7c956f67204",
+  "homeTeam": "NZ Breakers",
+  "awayTeam": "Brisbane Bullets",
+  "homeTeamCode": "NZL",
+  "awayTeamCode": "BRI",
+  "lineupValid": false,
+  "players": [
+    {
+      "personId": "6be49392-410d-11f0-b2dd-9dbbf7342624",
+      "name": "Anzac Rissetto",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "6ae51b44-410d-11f0-b4e3-9dbbf7342624",
+      "name": "Archie Woodhill",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 2,
+      "ptsCreated": 4,
+      "finds": [
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+          "name": "Mitch Norton",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+          "name": "Mitch Norton",
+          "count": 2,
+          "pts": 6
+        }
+      ]
+    },
+    {
+      "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+      "name": "Carlin Davison",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 7,
+      "assistedMakes": 1,
+      "assists": 13,
+      "ptsCreated": 25,
+      "finds": [
+        {
+          "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+          "name": "Dejan Vasiljevic",
+          "count": 5,
+          "pts": 11
+        },
+        {
+          "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+          "name": "Charles Bediako",
+          "count": 3,
+          "pts": 6
+        },
+        {
+          "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+          "name": "Nelson Weidemann",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+          "name": "Reuben Te Rangi",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+          "name": "Charles Bediako",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+      "name": "Charles Bediako",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 5,
+      "assistedMakes": 4,
+      "assists": 3,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+          "name": "Dejan Vasiljevic",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 3,
+          "pts": 6
+        },
+        {
+          "personId": "50cb4bdd-410d-11f0-aa4b-9dbbf7342624",
+          "name": "Kouat Noi",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+      "name": "Dejan Vasiljevic",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 12,
+      "assistedMakes": 10,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 5,
+          "pts": 11
+        },
+        {
+          "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+          "name": "Charles Bediako",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+          "name": "Nelson Weidemann",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+          "name": "Reuben Te Rangi",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "77506203-410d-11f0-8a9c-2902fc2f936f",
+      "name": "Harry Rouhliadeff",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "5188b88d-410d-11f0-8e81-9dbbf7342624",
+      "name": "Izayah Le'Afa",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+      "name": "Jaylin Williams",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 3,
+      "assistedMakes": 3,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "3d90487d-78c8-11f0-97f8-a75e0a32dc9a",
+          "name": "Mawot Mag",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6ae51b44-410d-11f0-b4e3-9dbbf7342624",
+          "name": "Archie Woodhill",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "f977e1ef-c862-11f1-a3fc-9d7c168b0fe9",
+          "name": "Raul Neto",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "50cb4bdd-410d-11f0-aa4b-9dbbf7342624",
+      "name": "Kouat Noi",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "7eee2482-95e4-11f1-8ed8-4322d5a3aa7f",
+          "name": "Charles Bediako",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "506a8485-410d-11f0-8bae-9dbbf7342624",
+      "name": "Lat Mayen",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5176def2-410d-11f0-8117-9dbbf7342624",
+          "name": "Taine Murray",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "3d90487d-78c8-11f0-97f8-a75e0a32dc9a",
+      "name": "Mawot Mag",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+      "name": "Mitch Norton",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 3,
+      "assistedMakes": 1,
+      "assists": 3,
+      "ptsCreated": 9,
+      "finds": [
+        {
+          "personId": "6ae51b44-410d-11f0-b4e3-9dbbf7342624",
+          "name": "Archie Woodhill",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "f977e1ef-c862-11f1-a3fc-9d7c168b0fe9",
+          "name": "Raul Neto",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "6ae51b44-410d-11f0-b4e3-9dbbf7342624",
+          "name": "Archie Woodhill",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "5164dd0c-410d-11f0-9505-9dbbf7342624",
+      "name": "Mojave King",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 1,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+      "name": "Nate Hinton",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 7,
+      "assistedMakes": 3,
+      "assists": 6,
+      "ptsCreated": 10,
+      "finds": [
+        {
+          "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
+          "name": "Tyrell Harrison",
+          "count": 3,
+          "pts": 6
+        },
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "506a8485-410d-11f0-8bae-9dbbf7342624",
+          "name": "Lat Mayen",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "f977e1ef-c862-11f1-a3fc-9d7c168b0fe9",
+          "name": "Raul Neto",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "506a8485-410d-11f0-8bae-9dbbf7342624",
+          "name": "Lat Mayen",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+      "name": "Nelson Weidemann",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+          "name": "Dejan Vasiljevic",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "f977e1ef-c862-11f1-a3fc-9d7c168b0fe9",
+      "name": "Raul Neto",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 6,
+      "assistedMakes": 1,
+      "assists": 10,
+      "ptsCreated": 21,
+      "finds": [
+        {
+          "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
+          "name": "Tyrell Harrison",
+          "count": 4,
+          "pts": 8
+        },
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "5176def2-410d-11f0-8117-9dbbf7342624",
+          "name": "Taine Murray",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "bb900f37-8ba8-11f1-a10c-65253084e076",
+          "name": "Jaylin Williams",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2bb2e532-410d-11f0-9e4a-975350631782",
+          "name": "Mitch Norton",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+      "name": "Reuben Te Rangi",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+          "name": "Dejan Vasiljevic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+          "name": "Sam Mennenga",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "6c2d0390-410d-11f0-aa86-9dbbf7342624",
+      "name": "Sam Mennenga",
+      "teamCode": "NZL",
+      "teamName": "NZ Breakers",
+      "madeFg": 4,
+      "assistedMakes": 1,
+      "assists": 3,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "4ac42900-c6b9-11f1-b4ce-e5a03ab1f922",
+          "name": "Nelson Weidemann",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2bcfd1fa-410d-11f0-a65e-975350631782",
+          "name": "Reuben Te Rangi",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "514b4d49-410d-11f0-8ea0-9dbbf7342624",
+          "name": "Dejan Vasiljevic",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "75e6392b-410d-11f0-a450-2902fc2f936f",
+          "name": "Carlin Davison",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "5176def2-410d-11f0-8117-9dbbf7342624",
+      "name": "Taine Murray",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 3,
+      "assistedMakes": 3,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "f977e1ef-c862-11f1-a3fc-9d7c168b0fe9",
+          "name": "Raul Neto",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "506a8485-410d-11f0-8bae-9dbbf7342624",
+          "name": "Lat Mayen",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "501ecdb9-410d-11f0-82fa-9dbbf7342624",
+      "name": "Tyrell Harrison",
+      "teamCode": "BRI",
+      "teamName": "Brisbane Bullets",
+      "madeFg": 10,
+      "assistedMakes": 7,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "f977e1ef-c862-11f1-a3fc-9d7c168b0fe9",
+          "name": "Raul Neto",
+          "count": 4,
+          "pts": 8
+        },
+        {
+          "personId": "92068945-7e79-11f1-8300-03da7d40c682",
+          "name": "Nate Hinton",
+          "count": 3,
+          "pts": 6
+        }
+      ]
+    }
+  ],
+  "onOff": [],
+  "fetchedAt": "2026-11-13T20:29:17.914Z"
+}

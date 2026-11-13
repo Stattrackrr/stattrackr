@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-12T20:46:56.147Z",
+  "generatedAt": "2026-11-13T20:28:24.167Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 158,
+  "playerCount": 159,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -1424,6 +1424,16 @@
       "position": "G",
       "jersey": "1",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f738f8a18950480f873f0617c8049bfd?size=800&format=webp"
+    },
+    {
+      "playerId": "c7400e7a-1480-4b06-9cd3-382a2ffdfbe1",
+      "name": "Tobias Cameron",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "position": null,
+      "jersey": "37",
+      "imageUrl": null
     },
     {
       "playerId": "f1f3155a-4ff7-445f-9c59-f0f9a9be8a8c",
