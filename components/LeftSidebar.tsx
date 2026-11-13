@@ -155,6 +155,30 @@ export default function LeftSidebar({
       setProfileAvatarPreviewUrl(null);
     }
   }, [showProfileModal]); // eslint-disable-line react-hooks/exhaustive-deps -- only run on modal close, intentionally omit profileAvatarPreviewUrl to avoid revoking while open
+
+  // Lock background scroll while the profile modal is open (mobile was scrolling the page behind it).
+  useEffect(() => {
+    if (!showProfileModal || typeof document === 'undefined') return;
+    const scrollY = window.scrollY;
+    const { style } = document.body;
+    const prev = {
+      position: style.position,
+      top: style.top,
+      width: style.width,
+      overflow: style.overflow,
+    };
+    style.position = 'fixed';
+    style.top = `-${scrollY}px`;
+    style.width = '100%';
+    style.overflow = 'hidden';
+    return () => {
+      style.position = prev.position;
+      style.top = prev.top;
+      style.width = prev.width;
+      style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [showProfileModal]);
   const { theme, setTheme, isDark } = useTheme();
   
   const loadUnitSize = async () => {
@@ -846,11 +870,16 @@ export default function LeftSidebar({
             onClick={() => setShowProfileModal(false)}
           />
           
-          {/* Modal */}
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700">
+          {/* Modal — floating popup on all sizes (not a full-bleed sheet) */}
+          <div
+            className="fixed inset-0 z-[150] flex items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowProfileModal(false);
+            }}
+          >
+            <div className="flex max-h-[min(85dvh,720px)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-slate-900">
               {/* Header */}
-              <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
@@ -877,8 +906,8 @@ export default function LeftSidebar({
                 </button>
               </div>
 
-              {/* Body */}
-              <div className="px-5 py-4 space-y-4 text-sm">
+              {/* Body — scrolls inside the sheet; page behind stays locked */}
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4 text-sm">
                 {/* Profile picture - editable; upload happens on Save */}
                 <div className="flex flex-col items-center gap-3">
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 w-full text-left">
@@ -1014,7 +1043,7 @@ export default function LeftSidebar({
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-3 flex justify-end gap-2">
+              <div className="flex shrink-0 justify-end gap-2 border-t border-gray-200 px-5 py-3 dark:border-gray-700">
                 <button
                   type="button"
                   onClick={() => setShowProfileModal(false)}
