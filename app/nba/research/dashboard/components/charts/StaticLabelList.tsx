@@ -32,10 +32,6 @@ export default memo(function StaticLabelList({
         
         const value = props?.value ?? props?.payload?.value;
         const isQ1 = selectedStat === 'q1_pts' || selectedStat === 'q1_reb' || selectedStat === 'q1_ast';
-        // Hide label if missing (except Q1: show em dash when BDL has no quarter row)
-        if ((value === null || value === undefined) && !isQ1) {
-          return null;
-        }
         
         // In Recharts LabelList, props.payload is the data object
         // But we should also check props directly as it might be structured differently
@@ -54,6 +50,13 @@ export default memo(function StaticLabelList({
         if (!dataObject) {
           dataObject = props;
         }
+
+        const isUpcoming = Boolean(dataObject?.isUpcoming);
+
+        // Hide label if missing (except Q1 / upcoming ghost "?")
+        if ((value === null || value === undefined) && !isQ1 && !isUpcoming) {
+          return null;
+        }
         
         // Ensure we have valid positioning props - if not, don't render (Recharts will call again)
         if (x === undefined || y === undefined || width === undefined) {
@@ -62,7 +65,7 @@ export default memo(function StaticLabelList({
         
         const numericValue =
           value === null || value === undefined || !Number.isFinite(Number(value)) ? NaN : Number(value);
-        const isMissingQ1 = isQ1 && (value === null || value === undefined);
+        const isMissingQ1 = isQ1 && (value === null || value === undefined) && !isUpcoming;
         const isZero = Number.isFinite(numericValue) && numericValue === 0;
         const heightNum = Number(height ?? viewBox?.height ?? 0);
         const yNum = Number(y ?? 0);
@@ -79,6 +82,11 @@ export default memo(function StaticLabelList({
         }
         
         // Composite stats (PR, PRA, RA, PA) - numbers are inside each segment, hide default label
+        // Upcoming ghost bar uses an in-bar NEXT badge — skip the top label.
+        if (isUpcoming) {
+          return null;
+        }
+
         if (['pra', 'pr', 'pa', 'ra'].includes(selectedStat || '')) {
           return null;
         }
@@ -93,12 +101,12 @@ export default memo(function StaticLabelList({
         // Special handling for fg3m (3PM/A) - show made/attempted format
         let displayText = isMissingQ1 ? '—' : formatChartLabel(labelValue);
 
-        if (!isMissingQ1 && selectedStat === 'moneyline' && dataObject?.moneylineLabel != null) {
+        if (!isUpcoming && !isMissingQ1 && selectedStat === 'moneyline' && dataObject?.moneylineLabel != null) {
           displayText = String(dataObject.moneylineLabel);
         }
         
         // Always check for fg3m - try multiple ways to access the data
-        if (!isMissingQ1 && selectedStat === 'fg3m') {
+        if (!isUpcoming && !isMissingQ1 && selectedStat === 'fg3m') {
           // Try dataObject.stats (from chartData lookup by index)
           const stats = dataObject?.stats;
           if (stats && (stats.fg3m !== undefined || stats.fg3a !== undefined)) {

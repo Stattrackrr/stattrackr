@@ -1,6 +1,6 @@
 /**
- * NBL similar-players: find production peers and aggregate their games vs an opponent.
- * Bookmaker lines are reserved for a future odds feed (returned as null for now).
+ * NBL similar-players: find production peers and their games vs an opponent.
+ * Only peers with a logged Aussie-book prop line for the selected game/stat are returned.
  */
 
 import fs from 'fs';
@@ -12,6 +12,7 @@ import {
 } from '@/lib/nblTeamCanonical';
 import { resolveNblSteTeamCode } from '@/lib/nbl/teamSteStatsShared';
 import type { NblGameLogRow, NblLeaguePlayerStatRow } from '@/lib/nbl/rosettaTypes';
+import { lookupNblSimilarPlayerLines } from '@/lib/nbl/similarPlayerLines';
 import {
   NBL_SIMILAR_STAT_LABELS,
   type NblSimilarPlayerRow,
@@ -221,25 +222,31 @@ function meanStd(values: number[]): { mean: number; std: number } {
 
 /**
  * Find similar players and how they performed vs the given opponent for `stat`.
+ * Only returns peers whose selected vs-opponent game has a logged prop line.
  */
-export function buildNblSimilarPlayers(options: {
+export async function buildNblSimilarPlayers(options: {
   playerId: string;
   opponent: string;
   stat?: string;
   year?: number;
+  years?: number[];
   limit?: number;
-}): NblSimilarPlayersPayload {
+}): Promise<NblSimilarPlayersPayload> {
   const year =
     options.year && Number.isFinite(options.year)
       ? Number(options.year)
       : NBL_SHOT_CHART_SEASON_YEAR;
+  const years =
+    options.years?.filter((y) => Number.isFinite(y)) ??
+    [year, year - 1].filter((y) => Number.isFinite(y));
+  const [season, ...older] = years.length ? years : [year];
   const stat = normalizeNblSimilarStat(options.stat);
   const limit = Math.min(Math.max(Number(options.limit) || 8, 1), 12);
   const opponentCode = resolveNblSteTeamCode(options.opponent);
   const opponentName =
     resolveNblClubName(options.opponent) || String(options.opponent || '').trim() || null;
 
-  const players = loadLeaguePlayers(year);
+  const players = loadLeaguePlayers(season!);
   const target =
     players.find((p) => p.playerId === options.playerId) ||
     players.find(
@@ -248,7 +255,7 @@ export function buildNblSimilarPlayers(options: {
     null;
 
   const empty: NblSimilarPlayersPayload = {
-    year,
+    year: season!,
     stat,
     statLabel: NBL_SIMILAR_STAT_LABELS[stat],
     player: target
@@ -310,49 +317,85 @@ export function buildNblSimilarPlayers(options: {
     })
     .sort((a, b) => a.distance - b.distance);
 
-  type CandidateGame = NblSimilarPlayerRow & { distance: number };
-  const byPlayerId = new Map<string, CandidateGame>();
-
-  // Closest same-position peers only; then keep this-season games vs the opponent.
-  const peerWindow = scored.slice(0, Math.max(limit * 2, 12));
-  for (const { player, distance } of peerWindow) {
-    if (byPlayerId.size >= limit) break;
-    if (byPlayerId.has(player.playerId)) continue;
-
-    const games = loadPlayerGames(player.playerId, year)
+  /** Recent vs-opponent games so we can prefer one that has a logged line. */
+  const GAME_CANDIDATES = 4;
+  type PeerGames = {
+    player: (typeof scored)[number]['player'];
+    distance: number;
+    games: NblGameLogRow[];
+  };
+  const peers: PeerGames[] = [];
+  for (const { player, distance } of scored.slice(0, Math.max(limit * 6, 24))) {
+    const logs = [season!, ...older].flatMap((y) => loadPlayerGames(player.playerId, y));
+    const games = logs
       .filter((g) => opponentMatches(g, opponentCode, opponentName))
-      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-    const g = games[0];
-    if (!g) continue;
-    const gameMins = numOrNull(g.minutes);
-    if (gameMins != null && gameMins < 8) continue;
+      .filter((g) => (numOrNull(g.minutes) ?? 0) >= 8)
+      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+      .slice(0, GAME_CANDIDATES);
+    if (!games.length) continue;
+    peers.push({ player, distance, games });
+  }
 
+  const lineKey = (matchId: string, playerId: string) => `${matchId}|${playerId}|${stat}`;
+  const toLineKeys = (rows: Array<{ player: PeerGames['player']; games: NblGameLogRow[] }>) =>
+    rows.flatMap(({ player, games }) =>
+      games.map((g) => ({
+        playerId: player.playerId,
+        matchId: String(g.matchId || '').trim(),
+        stat,
+        playerName: player.name,
+        date: g.date,
+        team: g.team || player.team,
+        opponent: g.opponent,
+        isHome: Boolean(g.isHome),
+      }))
+    );
+
+  const lines = await lookupNblSimilarPlayerLines(
+    toLineKeys(peers.map((p) => ({ player: p.player, games: p.games.slice(0, 1) })))
+  );
+  const needMore = peers.filter(
+    (p) => !lines.has(lineKey(String(p.games[0]!.matchId || '').trim(), p.player.playerId))
+  );
+  if (needMore.length) {
+    const extra = await lookupNblSimilarPlayerLines(
+      toLineKeys(needMore.map((p) => ({ player: p.player, games: p.games.slice(1) })))
+    );
+    for (const [k, v] of extra) lines.set(k, v);
+  }
+
+  const out: Array<NblSimilarPlayerRow & { distance: number }> = [];
+  for (const { player, distance, games } of peers) {
+    if (out.length >= limit) break;
+    const g = games.find((game) =>
+      lines.has(lineKey(String(game.matchId || '').trim(), player.playerId))
+    );
+    if (!g) continue;
     const matchId = String(g.matchId || '').trim();
-    if (!matchId) continue;
-    const mins = gameMins;
+    const hit = lines.get(lineKey(matchId, player.playerId))!;
     const value = STAT_FROM_LOG[stat](g);
-    byPlayerId.set(player.playerId, {
+    out.push({
       matchId,
       date: g.date,
       playerId: player.playerId,
       name: player.name,
-      team: player.team,
-      teamCode: player.teamCode,
+      team: g.team || player.team,
+      teamCode: g.teamCode || player.teamCode,
       position: player.position,
       imageUrl: player.imageUrl,
       similarity: round1(100 / (1 + distance)),
-      minutes: mins != null ? Math.round(mins) : null,
-      value: value != null ? Math.round(value * 10) / 10 : null,
-      line: null,
-      book: null,
+      minutes: g.minutes != null ? Math.round(g.minutes) : null,
+      value: value != null ? round1(value) : null,
+      line: hit.line,
+      book: hit.book,
       distance,
     });
   }
 
-  const similar: NblSimilarPlayerRow[] = [...byPlayerId.values()]
-    .sort((a, b) => a.distance - b.distance)
-    .slice(0, limit)
-    .map(({ distance: _distance, ...row }) => row);
-
-  return { ...empty, similar };
+  return {
+    ...empty,
+    similar: out
+      .sort((a, b) => a.distance - b.distance)
+      .map(({ distance: _d, ...row }) => row),
+  };
 }

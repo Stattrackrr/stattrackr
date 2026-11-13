@@ -47,7 +47,7 @@ export type FeatureRow = {
   main_line: number;
   fair_over_all: number | null;
   market_spread: number | null;
-  injury_report: Array<{ player_id: number; team_id: number | null; status: string }>;
+  injury_report: Array<{ player_id: number; team_id: number | null; status: string; updated_at?: string | null }>;
   starter_basis: string | null;
   role_changed_recently?: boolean | null;
   features: Record<string, unknown>;
@@ -240,6 +240,16 @@ export async function addModelFeatures(rows: FeatureRow[], ctx: FeatureContext =
       const parts = PARTS[stat];
       const home = typeof row.features.home === 'boolean' ? (row.features.home as boolean) : null;
       const out: Record<string, unknown> = {};
+      const tipMs = Date.parse(row.tip_at);
+      const newsAgeLn = (playerId: string) => {
+        const inj = row.injury_report.find((r) => String(r.player_id) === playerId);
+        const at = inj?.updated_at ? Date.parse(inj.updated_at) : NaN;
+        if (!Number.isFinite(at) || !(tipMs > at)) return null;
+        return Math.log1p(Math.max(0, (tipMs - at) / 60_000));
+      };
+      const teammateAges = others.map((o) => newsAgeLn(o.id)).filter((v): v is number => v != null);
+      out.teammate_news_age_ln = teammateAges.length ? r4(Math.min(...teammateAges)) : null;
+      out.player_news_age_ln = newsAgeLn(pid);
 
       if (row.opponent) {
         const oppSched = schedule(row.opponent, day);

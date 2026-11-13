@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  NBA_STE_STAT_KEYS,
+  NBA_STE_CARD_STAT_KEYS,
   NBA_STE_STAT_LABELS,
   resolveNbaSteTeamCode,
   type NbaSteStatKey,
@@ -175,7 +175,7 @@ export default function NbaOpponentBreakdownCard({
               </div>
             ) : null}
             <div className="space-y-2">
-              {NBA_STE_STAT_KEYS.map((statKey) => {
+              {NBA_STE_CARD_STAT_KEYS.map((statKey) => {
                 const val = teamSlice.allowed[statKey];
                 const r = payload?.metrics?.[statKey]?.ranks?.[opponentCode] ?? null;
                 const label = NBA_STE_STAT_LABELS[statKey];

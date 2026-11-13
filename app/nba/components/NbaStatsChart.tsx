@@ -12,7 +12,15 @@ import {
   restDaysBySourceIndex,
   type ChartRestDaysMode,
 } from '@/lib/chartRestDays';
-import { NBA_CURRENT_SEASON_YEAR, resolveNbaClubName, normalizeTeamKey } from '@/lib/nba/dash/teams';
+import {
+  NBA_CURRENT_SEASON_YEAR,
+  NBA_SHOT_CHART_SEASON_YEAR,
+  getNbaClubByCode,
+  resolveNbaClub,
+  resolveNbaClubName,
+  normalizeTeamKey,
+  nbaTeamCode,
+} from '@/lib/nba/dash/teams';
 import { normalizeAbbr } from '@/lib/nbaAbbr';
 import {
   NBA_TEAM_QUARTER_STAT_KEYS,
@@ -26,6 +34,32 @@ import {
   parseNbaPlayerQuarterStat,
   type NbaQuarterParentStat,
 } from '@/lib/nba/dash/pbpShared';
+import {
+  resolveNbaSteTeamCode,
+  type NbaSteStatsPayload,
+} from '@/lib/nba/dash/teamSteStatsShared';
+import {
+  buildUpcomingOpponentRanks,
+  buildUpcomingTeamAllowed,
+  buildSteReboundSplitTeamAllowed,
+  dvpMetricsForStat,
+  estimateUpcomingFromLogs,
+  familyOfStat,
+  formatDvpAllowedValue,
+  pickHighestScoringShotZone,
+  steMetricForSelectedStat,
+  type UpcomingGameBarContext,
+  type UpcomingRankRow,
+  type UpcomingTeamAllowed,
+} from '@/lib/charts/upcomingGameBar';
+import {
+  UpcomingGameTooltipCard,
+  upcomingGhostBarValue,
+} from '@/components/charts/UpcomingGameTooltip';
+import {
+  fetchNbaDvpAllowedForOpponent,
+  fetchNbaDvpRanksForOpponent,
+} from '@/lib/nba/dvpRankClient';
 
 type NbaAdvancedFilterKey =
   | 'dvp_rank'
@@ -334,6 +368,9 @@ function NbaChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
   const winColor = isDark ? '#10b981' : '#059669';
   const lossColor = isDark ? '#ef4444' : '#dc2626';
 
+  const upcomingCtx = (point as { upcomingContext?: UpcomingGameBarContext }).upcomingContext;
+  const isUpcomingPoint = Boolean((point as { isUpcoming?: boolean }).isUpcoming);
+
   let minutesVal: number | null = null;
   if (Array.isArray(perGameFilterData) && typeof point.sourceGameIndex === 'number') {
     const match = perGameFilterData.find((row) => row.gameIndex === point.sourceGameIndex);
@@ -379,6 +416,28 @@ function NbaChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
   };
 
   const position = getTooltipPosition();
+
+  if (isUpcomingPoint && upcomingCtx) {
+    const upcomingTooltip = (
+      <UpcomingGameTooltipCard
+        ctx={upcomingCtx}
+        isDark={isDark}
+        isMobile={isMobile}
+        style={{
+          zIndex: 999999,
+          position: 'fixed',
+          left: position.left,
+          top: position.top,
+          transform: 'none',
+        }}
+      />
+    );
+    const shouldRenderUpcoming =
+      typeof window !== 'undefined' && active && (mousePosition ?? (isMobile && coordinate));
+    if (shouldRenderUpcoming) return createPortal(upcomingTooltip, document.body);
+    return null;
+  }
+
   const isWin = point.result?.toLowerCase().startsWith('w');
   const resultColor = point.result ? (isWin ? winColor : lossColor) : labelColor;
 
@@ -815,6 +874,16 @@ interface NbaStatsChartProps {
   externalLineValue?: number | null;
   /** Upcoming opponent (official name). When H2H is selected, chart shows only games vs this opponent. */
   nextOpponent?: string | null;
+  /** ISO tipoff for the dashed upcoming bar. */
+  nextGameTipoff?: string | Date | null;
+  /** true = player's/team's next game is at home. */
+  nextGameIsHome?: boolean | null;
+  /** Team/player spread for upcoming game tooltip. */
+  nextGameSpread?: number | null;
+  /** Game total for upcoming game tooltip. */
+  nextGameTotal?: number | null;
+  /** Selected team name (for STE lookups / home-away context). */
+  selectedTeamName?: string | null;
   /** In team (game props) mode, chart is for this team vs various opponents. Used for Team dropdown + H2H. */
   gamePropsTeam?: string | null;
   /** Increment/change to force-close chart UI controls (splits/advanced) on context changes. */
@@ -856,6 +925,11 @@ export function NbaStatsChart({
   slotRightOfControls = null,
   externalLineValue = null,
   nextOpponent = null,
+  nextGameTipoff = null,
+  nextGameIsHome = null,
+  nextGameSpread = null,
+  nextGameTotal = null,
+  selectedTeamName = null,
   gamePropsTeam = null,
   uiResetToken,
   lockOtherStats = false,
@@ -864,6 +938,9 @@ export function NbaStatsChart({
 }: NbaStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
+  const [upcomingRanks, setUpcomingRanks] = useState<UpcomingRankRow[]>([]);
+  const [upcomingTeamAllowedRows, setUpcomingTeamAllowedRows] = useState<UpcomingTeamAllowed[]>([]);
+  const [upcomingExpectedPace, setUpcomingExpectedPace] = useState<number | null>(null);
   const [internalTimeframe, setInternalTimeframe] =
     useState<NbaChartTimeframe>('last10');
   const [selectedAdvancedFilter, setSelectedAdvancedFilter] = useState<NbaAdvancedFilterKey>(null);
@@ -1343,6 +1420,239 @@ export function NbaStatsChart({
     return splitFilteredGameLogs;
   }, [mode, selectedStat, splitFilteredGameLogs]);
 
+  // AI matchup expected pace (same projectNbaGame pace the props model uses).
+  useEffect(() => {
+    const opp = nextOpponent?.trim();
+    const team = String(selectedTeamName || gamePropsTeam || '').trim();
+    const oppClub = resolveNbaClub(opp);
+    const teamClub = resolveNbaClub(team);
+    if (!oppClub || !teamClub) {
+      setUpcomingExpectedPace(null);
+      return;
+    }
+    const homeCode = nextGameIsHome === false ? oppClub.code : teamClub.code;
+    const awayCode = nextGameIsHome === false ? teamClub.code : oppClub.code;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/nba/dash/expected-pace?home=${encodeURIComponent(homeCode)}&away=${encodeURIComponent(
+            awayCode
+          )}&year=${season || NBA_CURRENT_SEASON_YEAR}`
+        );
+        const json = await res.json();
+        if (cancelled) return;
+        const pace = typeof json?.pace === 'number' && Number.isFinite(json.pace) ? json.pace : null;
+        setUpcomingExpectedPace(pace);
+      } catch {
+        if (!cancelled) setUpcomingExpectedPace(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [nextOpponent, nextGameIsHome, selectedTeamName, gamePropsTeam, season]);
+
+  // Team allowed/g (STE) for the selected chart stat (+ OReb/DReb on rebound props).
+  useEffect(() => {
+    const opp = nextOpponent?.trim();
+    const metric = steMetricForSelectedStat(selectedStat);
+    const code = resolveNbaSteTeamCode(opp);
+    if (!opp || !metric || !code) {
+      setUpcomingTeamAllowedRows([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/nba/dash/team-ste-stats?year=${season || NBA_CURRENT_SEASON_YEAR}&window=0`
+        );
+        const json = (await res.json()) as NbaSteStatsPayload;
+        if (!res.ok || cancelled) {
+          if (!cancelled) setUpcomingTeamAllowedRows([]);
+          return;
+        }
+        const block = json?.metrics?.[metric as keyof typeof json.metrics];
+        const shortName =
+          getNbaClubByCode(code)?.shortName ||
+          json?.names?.[code]?.split(' ').pop() ||
+          code;
+        const primary = buildUpcomingTeamAllowed({
+          shortName,
+          metric,
+          value: typeof block?.values?.[code] === 'number' ? block.values[code] : null,
+          rank: typeof block?.ranks?.[code] === 'number' ? block.ranks[code] : null,
+        });
+        const rows: UpcomingTeamAllowed[] = primary ? [primary] : [];
+        if (familyOfStat(selectedStat) === 'rebounds') {
+          rows.push(
+            ...buildSteReboundSplitTeamAllowed({
+              shortName,
+              opponentCode: code,
+              metrics: json?.metrics ?? null,
+            })
+          );
+        }
+        if (cancelled) return;
+        setUpcomingTeamAllowedRows(rows);
+      } catch {
+        if (!cancelled) setUpcomingTeamAllowedRows([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [nextOpponent, selectedStat, season]);
+
+  // Position DVP ranks for the dashed upcoming-bar tooltip — same client as Defense vs Position.
+  useEffect(() => {
+    const opp = nextOpponent?.trim();
+    if (!opp || !playerPositionForFilters) {
+      setUpcomingRanks([]);
+      return;
+    }
+
+    const playerName = String(_stats?.name || '').trim();
+    const teamName = String(selectedTeamName || gamePropsTeam || '').trim();
+    const metricsList = dvpMetricsForStat(selectedStat);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [dvpRanks, dvpAllowed] = await Promise.all([
+          fetchNbaDvpRanksForOpponent({
+            position: playerPositionForFilters,
+            opponent: opp,
+            metrics: metricsList,
+          }),
+          fetchNbaDvpAllowedForOpponent({
+            position: playerPositionForFilters,
+            opponent: opp,
+            metrics: metricsList,
+          }),
+        ]);
+
+        let shotZone: {
+          key: string;
+          label: string;
+          rank: number | null;
+          allowed?: string | null;
+        } | null = null;
+        let assistZone: {
+          key: string;
+          label: string;
+          rank: number | null;
+          allowed?: string | null;
+        } | null = null;
+
+        try {
+          const [defenseRes, playerRes] = await Promise.all([
+            fetch(`/api/nba/dash/shot-chart?mode=defense&team=${encodeURIComponent(opp)}`),
+            playerName
+              ? fetch(
+                  `/api/nba/dash/shot-chart?mode=player&playerName=${encodeURIComponent(playerName)}${
+                    teamName ? `&team=${encodeURIComponent(teamName)}` : ''
+                  }`
+                )
+              : Promise.resolve(null),
+          ]);
+          const defenseJson = defenseRes.ok ? await defenseRes.json() : null;
+          const playerJson = playerRes && playerRes.ok ? await playerRes.json() : null;
+          const defenseGames = Math.max(0, Number(defenseJson?.gamesUsed || 0));
+
+          const topZone = pickHighestScoringShotZone(playerJson?.zones);
+          if (topZone && Array.isArray(defenseJson?.ranks)) {
+            const match = defenseJson.ranks.find(
+              (z: { zone?: string; fgPct?: number; fgm?: number; fga?: number }) =>
+                String(z.zone || '') === topZone.key
+            );
+            const fgPct =
+              typeof match?.fgPct === 'number' && Number.isFinite(match.fgPct)
+                ? match.fgPct
+                : match?.fga
+                  ? ((Number(match.fgm) || 0) / Number(match.fga)) * 100
+                  : null;
+            shotZone = {
+              key: topZone.key,
+              label: `${topZone.label} Def`,
+              rank: typeof match?.rank === 'number' ? match.rank : null,
+              allowed: formatDvpAllowedValue('fg_pct', fgPct),
+            };
+          }
+
+          if (Array.isArray(defenseJson?.assistRanks) && defenseJson.assistRanks.length) {
+            let best: {
+              key: string;
+              label: string;
+              rank: number | null;
+              rate: number;
+            } | null = null;
+            for (const z of defenseJson.assistRanks as Array<{
+              zone?: string;
+              label?: string;
+              rank?: number | null;
+              astPerGame?: number;
+              fga?: number;
+            }>) {
+              const key = String(z.zone || '').trim();
+              if (!key) continue;
+              const rate =
+                typeof z.astPerGame === 'number'
+                  ? z.astPerGame
+                  : defenseGames > 0
+                    ? (Number(z.fga) || 0) / defenseGames
+                    : 0;
+              if (!best || rate > best.rate) {
+                best = {
+                  key,
+                  label: String(z.label || key),
+                  rank: typeof z.rank === 'number' ? z.rank : null,
+                  rate,
+                };
+              }
+            }
+            if (best) {
+              assistZone = {
+                key: best.key,
+                label: best.label,
+                rank: best.rank,
+                allowed: best.rate > 0 ? `${(Math.round(best.rate * 10) / 10).toFixed(1)}/g` : null,
+              };
+            }
+          }
+        } catch {
+          // Shot-chart enrichment is optional.
+        }
+
+        if (cancelled) return;
+        setUpcomingRanks(
+          buildUpcomingOpponentRanks({
+            selectedStat,
+            position: playerPositionForFilters,
+            dvpRanks,
+            dvpAllowed,
+            shotZone,
+            assistZone,
+          })
+        );
+      } catch {
+        if (!cancelled) setUpcomingRanks([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    nextOpponent,
+    selectedStat,
+    playerPositionForFilters,
+    _stats?.name,
+    selectedTeamName,
+    gamePropsTeam,
+  ]);
+
   const effectiveSeason = useCallback((g: Record<string, unknown>) => resolveGameSeason(g) ?? 0, [resolveGameSeason]);
 
   const gameToChartRow = useCallback((g: Record<string, unknown>, idx: number) => {
@@ -1498,8 +1808,127 @@ export function NbaStatsChart({
       if (aRi !== bRi) return aRi - bRi;
       return 0;
     });
+
+    const opp = nextOpponent?.trim();
+    if (!opp || ordered.length === 0) return ordered;
+
+    const tipIso =
+      nextGameTipoff instanceof Date
+        ? nextGameTipoff.toISOString()
+        : typeof nextGameTipoff === 'string' && nextGameTipoff
+          ? nextGameTipoff
+          : null;
+    const estimates = estimateUpcomingFromLogs(
+      chartSourceLogs as Array<Record<string, unknown>>
+    );
+    const finiteVals = ordered
+      .map((row) => row.value)
+      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    const isMoneyline =
+      selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat || '');
+    // Match the tallest plotted bar so the ghost outline sits at peak chart height.
+    const ghostValue = upcomingGhostBarValue(finiteVals, {
+      isMoneyline,
+      fallback: 20,
+    });
+    const maxOverlayAttempts = Math.max(
+      0,
+      ...ordered.map((row) => {
+        const stats = (row as { stats?: Record<string, unknown> }).stats;
+        if (!stats) return 0;
+        const fg3a = Number(stats.fg3a);
+        const rebChancesBar = Number(stats.rebChancesBar);
+        return Math.max(
+          Number.isFinite(fg3a) ? fg3a : 0,
+          Number.isFinite(rebChancesBar) ? rebChancesBar : 0
+        );
+      })
+    );
+    const upcomingContext: UpcomingGameBarContext = {
+      opponent: opp,
+      tipoff: tipIso,
+      isHome: nextGameIsHome,
+      spread: nextGameSpread,
+      total: nextGameTotal,
+      expectedMinutes: estimates.expectedMinutes,
+      expectedMinutesLow: estimates.expectedMinutesLow,
+      expectedMinutesHigh: estimates.expectedMinutesHigh,
+      usagePct: estimates.usagePct,
+      pace: upcomingExpectedPace ?? estimates.pace,
+      avgPotentialRebounds:
+        familyOfStat(selectedStat) === 'rebounds' ? estimates.avgPotentialRebounds : null,
+      teamAllowedRows: upcomingTeamAllowedRows,
+      ranks: upcomingRanks,
+    };
+    ordered.push({
+      key: 'upcoming-next',
+      xKey: 'upcoming-next',
+      tickLabel: opp,
+      round: 'Next',
+      opponent: opp,
+      result: '',
+      value: ghostValue,
+      minutes: estimates.expectedMinutes,
+      stats: {
+        pts: 0,
+        reb: 0,
+        ast: 0,
+        stl: 0,
+        blk: 0,
+        min: estimates.expectedMinutes ?? 0,
+        oreb: 0,
+        dreb: 0,
+        fgm: 0,
+        fga: 0,
+        fg3m: 0,
+        fg3a: maxOverlayAttempts || ghostValue,
+        ftm: 0,
+        fta: 0,
+        turnover: 0,
+        pf: 0,
+        fg_pct: 0,
+        fg3_pct: 0,
+        ft_pct: 0,
+        rebChances: null,
+        rebChancesBar: maxOverlayAttempts || ghostValue,
+      },
+      gameId: 'upcoming-next',
+      matchId: null,
+      opponentCode: normalizeAbbr(opp) || null,
+      gameDate: tipIso || '',
+      venue: nextGameIsHome === true ? 'Home' : nextGameIsHome === false ? 'Away' : '',
+      gameSeason: season,
+      sourceGameIndex: null,
+      isUpcoming: true,
+      upcomingContext,
+      game: {
+        id: 'upcoming-next',
+        date: tipIso || '',
+        home_team: { abbreviation: opp.toUpperCase() },
+        visitor_team: { abbreviation: opp.toUpperCase() },
+      },
+    } as unknown as (typeof ordered)[number]);
+
     return ordered;
-  }, [baseChartData, selectedTimeframe, season, nextOpponent, filteredGameLogs, gameToChartRow, effectiveSeason]);
+  }, [
+    baseChartData,
+    selectedTimeframe,
+    season,
+    nextOpponent,
+    nextGameTipoff,
+    nextGameIsHome,
+    nextGameSpread,
+    nextGameTotal,
+    upcomingRanks,
+    upcomingTeamAllowedRows,
+    upcomingExpectedPace,
+    externalLineValue,
+    selectedStat,
+    chartSourceLogs,
+    filteredGameLogs,
+    gameToChartRow,
+    effectiveSeason,
+  ]);
 
   // Keep Supporting stats on the exact same game set / order as the main chart (incl. H/A + Rest).
   useEffect(() => {
@@ -1522,6 +1951,7 @@ export function NbaStatsChart({
     }
     const logs: Array<Record<string, unknown>> = [];
     for (const row of chartData) {
+      if ((row as { isUpcoming?: boolean }).isUpcoming) continue;
       const matchId = String((row as { matchId?: string | null }).matchId ?? '').trim();
       const date = String(row.gameDate ?? '').trim().slice(0, 10);
       const opp = String(row.opponent ?? '').trim();
@@ -1593,13 +2023,16 @@ export function NbaStatsChart({
   }, [showAdvancedFilters, selectedAdvancedFilter, perGameFilterData, baseChartData]);
 
   const statAverage = useMemo(() => {
-    if (!chartData.length) return 0;
-    const total = chartData.reduce((sum, row) => sum + row.value, 0);
-    return total / chartData.length;
+    const played = chartData.filter((row) => !(row as { isUpcoming?: boolean }).isUpcoming);
+    if (!played.length) return 0;
+    const total = played.reduce((sum, row) => sum + row.value, 0);
+    return total / played.length;
   }, [chartData]);
 
   const hasDecimalValues = useMemo(() => (
-    chartData.some((d) => Math.abs(d.value - Math.round(d.value)) > 0.001)
+    chartData
+      .filter((d) => !(d as { isUpcoming?: boolean }).isUpcoming)
+      .some((d) => Math.abs(d.value - Math.round(d.value)) > 0.001)
   ), [chartData]);
 
   const sliderStep = hasDecimalValues ? 0.1 : 0.5;

@@ -494,6 +494,8 @@ export default function NbaDashboardPage() {
   const [nbaOddsLoading, setNbaOddsLoading] = useState(false);
   const [nbaOddsHomeTeam, setNbaOddsHomeTeam] = useState('');
   const [nbaOddsAwayTeam, setNbaOddsAwayTeam] = useState('');
+  const [upcomingGameSpread, setUpcomingGameSpread] = useState<number | null>(null);
+  const [upcomingGameTotal, setUpcomingGameTotal] = useState<number | null>(null);
   const [selectedNbaBookIndex, setSelectedNbaBookIndex] = useState(0);
   const [nbaGameLineValue, setNbaGameLineValue] = useState<number | null>(null);
   const nbaOddsBoardKeyRef = useRef('');
@@ -1269,6 +1271,60 @@ export default function NbaDashboardPage() {
     };
   }, [nbaOddsTeam, nbaOddsOpponent, nbaPropsMode, selectedPlayer?.name]);
 
+  // Game spread / total for the upcoming-bar tooltip (works in player + team mode).
+  useEffect(() => {
+    const team = nbaOddsTeam ? resolveNbaClubName(nbaOddsTeam) || nbaOddsTeam : null;
+    const opponent = nbaOddsOpponent ? resolveNbaClubName(nbaOddsOpponent) || nbaOddsOpponent : null;
+    if (!team || !opponent) {
+      setUpcomingGameSpread(null);
+      setUpcomingGameTotal(null);
+      return;
+    }
+    if (nbaPropsMode === 'team' && nbaOddsBooks.length) {
+      const book = nbaOddsBooks[selectedNbaBookIndex] || nbaOddsBooks[0];
+      setUpcomingGameSpread(parseNbaOddsLine(book?.Spread?.line));
+      setUpcomingGameTotal(parseNbaOddsLine(book?.Total?.line));
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/nba/dash/odds?team=${encodeURIComponent(team)}&opponent=${encodeURIComponent(opponent)}`,
+          { cache: 'no-store' }
+        );
+        const data = await res.json();
+        if (cancelled) return;
+        const books = Array.isArray(data?.data) ? (data.data as NbaBookRow[]) : [];
+        const book = books[0];
+        setUpcomingGameSpread(parseNbaOddsLine(book?.Spread?.line));
+        setUpcomingGameTotal(parseNbaOddsLine(book?.Total?.line));
+        if (!nbaOddsHomeTeam && typeof data?.homeTeam === 'string') {
+          setNbaOddsHomeTeam(data.homeTeam);
+        }
+        if (!nbaOddsAwayTeam && typeof data?.awayTeam === 'string') {
+          setNbaOddsAwayTeam(data.awayTeam);
+        }
+      } catch {
+        if (!cancelled) {
+          setUpcomingGameSpread(null);
+          setUpcomingGameTotal(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    nbaOddsTeam,
+    nbaOddsOpponent,
+    nbaPropsMode,
+    nbaOddsBooks,
+    selectedNbaBookIndex,
+    nbaOddsHomeTeam,
+    nbaOddsAwayTeam,
+  ]);
+
   useEffect(() => {
     if (nbaOddsMarket !== 'spread' && nbaOddsMarket !== 'total') return;
     // The line opened from the props page stays until the user changes stat.
@@ -1426,6 +1482,10 @@ export default function NbaDashboardPage() {
   const displayOpponent = nextGameOpponent
     ? resolveNbaClubName(nextGameOpponent) || nextGameOpponent
     : null;
+  const nextGameIsHome =
+    selectedTeam && nbaOddsHomeTeam
+      ? !nbaTeamSpreadIsAway(nbaOddsHomeTeam, selectedTeam)
+      : null;
   const matchupOpponentLogo =
     nextGameOpponentLogo ||
     (displayOpponent ? resolveNbaTeamLogo(displayOpponent, logoByTeam) : null);
@@ -1886,6 +1946,12 @@ export default function NbaDashboardPage() {
                     setNbaGameFilters={nbaPropsMode === 'player' ? setNbaGameFilters : undefined}
                     perGameFilterData={nbaPropsMode === 'player' ? nbaPerGameFilterData : null}
                     nextOpponent={displayOpponent}
+                    nextGameTipoff={nextGameTipoff}
+                    nextGameIsHome={displayOpponent ? nextGameIsHome : null}
+                    nextGameSpread={upcomingGameSpread}
+                    nextGameTotal={upcomingGameTotal}
+                    selectedTeamName={selectedTeam}
+                    playerPositionForFilters={nbaPropsMode === 'player' ? dvpPosition : null}
                     gamePropsTeam={nbaPropsMode === 'team' ? selectedTeam : null}
                     uiResetToken={chartUiResetToken}
                     onVisibleGameLogsChange={

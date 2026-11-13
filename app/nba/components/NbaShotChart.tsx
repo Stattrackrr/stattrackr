@@ -139,26 +139,47 @@ function CourtLabel({
   fontSize,
   value,
   empty,
+  subValue,
 }: {
   x: number;
   y: number;
   fontSize: number;
   value: string;
   empty: boolean;
+  /** Optional secondary line under the main label (e.g. FG% allowed under rank). */
+  subValue?: string | null;
 }) {
+  const showSub = Boolean(subValue && !empty && value !== 'TBD' && value !== '-');
+  const mainFill = value === 'TBD' || !empty ? '#fff' : EMPTY_LABEL_FILL;
   return (
-    <text
-      x={x}
-      y={y}
-      textAnchor="middle"
-      fill={value === 'TBD' || !empty ? '#fff' : EMPTY_LABEL_FILL}
-      fontSize={fontSize}
-      fontWeight="bold"
-      stroke={empty ? 'none' : '#000'}
-      strokeWidth={empty ? 0 : 0.5}
-    >
-      {value === 'TBD' ? 'TBD' : empty ? '-' : value}
-    </text>
+    <g>
+      <text
+        x={x}
+        y={showSub ? y - fontSize * 0.22 : y}
+        textAnchor="middle"
+        fill={mainFill}
+        fontSize={fontSize}
+        fontWeight="bold"
+        stroke={empty ? 'none' : '#000'}
+        strokeWidth={empty ? 0 : 0.5}
+      >
+        {value === 'TBD' ? 'TBD' : empty ? '-' : value}
+      </text>
+      {showSub ? (
+        <text
+          x={x}
+          y={y + fontSize * 0.55}
+          textAnchor="middle"
+          fill="#fff"
+          fontSize={Math.max(11, Math.round(fontSize * 0.42))}
+          fontWeight="700"
+          stroke="#000"
+          strokeWidth={0.4}
+        >
+          {subValue}
+        </text>
+      ) : null}
+    </g>
   );
 }
 
@@ -978,6 +999,31 @@ export function NbaShotChart({
     return r != null && r > 0 ? `#${r}` : '-';
   };
 
+  const rankAllowedLabel = (zone: NbaShotZoneId): string | null => {
+    if (valuesLocked) return null;
+    const row = rankMap[zone];
+    if (!row || row.rank == null || row.rank <= 0) return null;
+    if (showAssistDef) {
+      const rate =
+        typeof row.astPerGame === 'number' && Number.isFinite(row.astPerGame)
+          ? row.astPerGame
+          : assistDefenseGames > 0
+            ? row.fga / assistDefenseGames
+            : null;
+      if (rate == null || !Number.isFinite(rate) || rate <= 0) return null;
+      const rounded = Math.round(rate * 10) / 10;
+      return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}/g`;
+    }
+    const fgPct =
+      typeof row.fgPct === 'number' && Number.isFinite(row.fgPct)
+        ? row.fgPct
+        : row.fga > 0
+          ? (row.fgm / row.fga) * 100
+          : null;
+    if (fgPct == null || !Number.isFinite(fgPct)) return null;
+    return `${Math.round(fgPct)}%`;
+  };
+
   const rankEmpty = (zone: NbaShotZoneId) => {
     const r = rankMap[zone]?.rank;
     return r == null || r <= 0;
@@ -1317,13 +1363,15 @@ export function NbaShotChart({
                   Attempts or Makes, Heat shows frequency from the exact spot of every shot. Brighter = more often.
                   <br />
                   <span className="text-purple-600 dark:text-purple-400">Opp Def</span> - Team
-                  defense rankings by zone (lower % = better rank). Zones with no stats show a grey dash.
+                  defense rankings by zone (#1 = toughest). Each zone also shows FG% allowed.
+                  Zones with no stats show a grey dash.
                   <br />
                   <span className="text-teal-600 dark:text-teal-400">Assists</span> - Where his
                   assists finish this season. Same court locations as the shot chart.
                   <br />
                   <span className="text-purple-600 dark:text-purple-400">Opp Ast</span> - Where
-                  this opponent allows the fewest assists. #1 restricts that zone the most.
+                  this opponent allows the fewest assists. #1 restricts that zone the most;
+                  the number under each rank is assists allowed per game.
                 </div>
               )}
             </div>
@@ -1503,18 +1551,19 @@ export function NbaShotChart({
 
               {showRankView ? (
                 <>
-                  <CourtLabel x={centerX} y={60} fontSize={32} value={rankLabel('aboveBreak3')} empty={rankEmpty('aboveBreak3')} />
-                  <CourtLabel x={centerX} y={freeThrowLine - 30} fontSize={28} value={rankLabel('midRange')} empty={rankEmpty('midRange')} />
-                  <CourtLabel x={centerX} y={baseline - 25} fontSize={28} value={rankLabel('restricted')} empty={rankEmpty('restricted')} />
+                  <CourtLabel x={centerX} y={60} fontSize={32} value={rankLabel('aboveBreak3')} empty={rankEmpty('aboveBreak3')} subValue={rankAllowedLabel('aboveBreak3')} />
+                  <CourtLabel x={centerX} y={freeThrowLine - 30} fontSize={28} value={rankLabel('midRange')} empty={rankEmpty('midRange')} subValue={rankAllowedLabel('midRange')} />
+                  <CourtLabel x={centerX} y={baseline - 25} fontSize={28} value={rankLabel('restricted')} empty={rankEmpty('restricted')} subValue={rankAllowedLabel('restricted')} />
                   <CourtLabel
                     x={centerX}
                     y={freeThrowLine + (baseline - freeThrowLine) / 2}
                     fontSize={28}
                     value={rankLabel('paint')}
                     empty={rankEmpty('paint')}
+                    subValue={rankAllowedLabel('paint')}
                   />
-                  <CourtLabel x={45} y={330} fontSize={24} value={rankLabel('leftCorner3')} empty={rankEmpty('leftCorner3')} />
-                  <CourtLabel x={455} y={330} fontSize={24} value={rankLabel('rightCorner3')} empty={rankEmpty('rightCorner3')} />
+                  <CourtLabel x={45} y={330} fontSize={24} value={rankLabel('leftCorner3')} empty={rankEmpty('leftCorner3')} subValue={rankAllowedLabel('leftCorner3')} />
+                  <CourtLabel x={455} y={330} fontSize={24} value={rankLabel('rightCorner3')} empty={rankEmpty('rightCorner3')} subValue={rankAllowedLabel('rightCorner3')} />
                 </>
               ) : (
                 <>

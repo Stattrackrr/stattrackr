@@ -88,14 +88,18 @@ export async function lookupNbaSimilarPlayerLines(
   const playerIds = [...new Set(usable.map((k) => k.playerId))];
   const stats = [...new Set(usable.map((k) => k.stat))];
 
+  const selectCols =
+    'id, game_id, player_id, player_name, board_name, unmatched, stat, snapshot_kind, main_line, captured_at, nba_prop_book_quotes(book, line)';
+  const kinds = Object.keys(KIND_RANK);
+
+  // Player-id filter keeps the join small (all players on 100+ games was multi-second).
   const { data, error } = await supabaseAdmin
     .from('nba_prop_snapshots')
-    .select(
-      'id, game_id, player_id, player_name, board_name, unmatched, stat, snapshot_kind, main_line, captured_at, nba_prop_book_quotes(book, line)'
-    )
+    .select(selectCols)
     .in('game_id', gameIds)
     .in('stat', stats)
-    .in('snapshot_kind', Object.keys(KIND_RANK));
+    .in('snapshot_kind', kinds)
+    .in('player_id', playerIds);
 
   if (error) {
     console.warn('[NBA similar lines]', error.message);
@@ -109,18 +113,40 @@ export async function lookupNbaSimilarPlayerLines(
     usable.map((k) => normName(k.playerName)).filter((n) => n.length >= 4)
   );
 
-  for (const row of (data ?? []) as SnapRow[]) {
-    if (row.player_id && wantedIds.has(row.player_id)) {
-      const key = `${row.game_id}|${row.player_id}|${row.stat}`;
-      const prev = byPlayer.get(key);
-      byPlayer.set(key, prev ? betterSnap(prev, row) : row);
+  const ingest = (rows: SnapRow[]) => {
+    for (const row of rows) {
+      if (row.player_id && wantedIds.has(row.player_id)) {
+        const key = `${row.game_id}|${row.player_id}|${row.stat}`;
+        const prev = byPlayer.get(key);
+        byPlayer.set(key, prev ? betterSnap(prev, row) : row);
+      }
+      for (const label of [row.player_name, row.board_name]) {
+        const n = normName(label);
+        if (!n || !wantedNames.has(n)) continue;
+        const key = `${row.game_id}|${n}|${row.stat}`;
+        const prev = byName.get(key);
+        byName.set(key, prev ? betterSnap(prev, row) : row);
+      }
     }
-    for (const label of [row.player_name, row.board_name]) {
-      const n = normName(label);
-      if (!n || !wantedNames.has(n)) continue;
-      const key = `${row.game_id}|${n}|${row.stat}`;
-      const prev = byName.get(key);
-      byName.set(key, prev ? betterSnap(prev, row) : row);
+  };
+
+  ingest((data ?? []) as SnapRow[]);
+
+  // Name fallback for a small unmatched set only — bulk unmatched-by-game scans are multi-second.
+  const missing = usable.filter((k) => !byPlayer.has(`${k.gameId}|${k.playerId}|${k.stat}`));
+  const missGames = [...new Set(missing.map((k) => k.gameId))];
+  if (missing.length > 0 && missing.length <= 12 && missGames.length <= 8) {
+    const { data: nameRows, error: nameErr } = await supabaseAdmin
+      .from('nba_prop_snapshots')
+      .select(selectCols)
+      .in('game_id', missGames)
+      .in('stat', stats)
+      .in('snapshot_kind', kinds)
+      .or('player_id.is.null,unmatched.eq.true');
+    if (nameErr) {
+      console.warn('[NBA similar lines name]', nameErr.message);
+    } else {
+      ingest((nameRows ?? []) as SnapRow[]);
     }
   }
 

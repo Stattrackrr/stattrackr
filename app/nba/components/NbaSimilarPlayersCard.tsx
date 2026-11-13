@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { fetchSimilarPlayersJson } from '@/lib/charts/similarPlayersFetch';
 import { NBA_SHOT_CHART_SEASON_YEAR } from '@/lib/nba/dash/teams';
 import type { NbaSimilarPlayersPayload } from '@/lib/nba/dash/similarPlayersShared';
 
@@ -80,12 +81,9 @@ export function NbaSimilarPlayersCard({
       limit: '8',
     });
 
-    fetch(`/api/nba/dash/similar-players?${params.toString()}`)
-      .then(async (r) => {
-        const json = await r.json();
-        if (!r.ok) throw new Error(json?.error || 'Failed to load');
-        return json as NbaSimilarPlayersPayload;
-      })
+    fetchSimilarPlayersJson<NbaSimilarPlayersPayload>(
+      `/api/nba/dash/similar-players?${params.toString()}`
+    )
       .then((json) => {
         if (cancelled) return;
         setPayload(json);

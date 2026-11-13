@@ -479,6 +479,8 @@ export default function NblDashboardPage() {
   const [nblOddsLoading, setNblOddsLoading] = useState(false);
   const [nblOddsHomeTeam, setNblOddsHomeTeam] = useState('');
   const [nblOddsAwayTeam, setNblOddsAwayTeam] = useState('');
+  const [upcomingGameSpread, setUpcomingGameSpread] = useState<number | null>(null);
+  const [upcomingGameTotal, setUpcomingGameTotal] = useState<number | null>(null);
   const [selectedNblBookIndex, setSelectedNblBookIndex] = useState(0);
   const [nblGameLineValue, setNblGameLineValue] = useState<number | null>(null);
   const nblOddsBoardKeyRef = useRef('');
@@ -1249,6 +1251,60 @@ export default function NblDashboardPage() {
     };
   }, [nblOddsTeam, nblOddsOpponent, nblPropsMode, selectedPlayer?.name]);
 
+  // Game spread / total for the upcoming-bar tooltip (works in player + team mode).
+  useEffect(() => {
+    const team = nblOddsTeam ? resolveNblClubName(nblOddsTeam) || nblOddsTeam : null;
+    const opponent = nblOddsOpponent ? resolveNblClubName(nblOddsOpponent) || nblOddsOpponent : null;
+    if (!team || !opponent) {
+      setUpcomingGameSpread(null);
+      setUpcomingGameTotal(null);
+      return;
+    }
+    if (nblPropsMode === 'team' && nblOddsBooks.length) {
+      const book = nblOddsBooks[selectedNblBookIndex] || nblOddsBooks[0];
+      setUpcomingGameSpread(parseNblOddsLine(book?.Spread?.line));
+      setUpcomingGameTotal(parseNblOddsLine(book?.Total?.line));
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/nbl/odds?team=${encodeURIComponent(team)}&opponent=${encodeURIComponent(opponent)}`,
+          { cache: 'no-store' }
+        );
+        const data = await res.json();
+        if (cancelled) return;
+        const books = Array.isArray(data?.data) ? (data.data as NblBookRow[]) : [];
+        const book = books[0];
+        setUpcomingGameSpread(parseNblOddsLine(book?.Spread?.line));
+        setUpcomingGameTotal(parseNblOddsLine(book?.Total?.line));
+        if (!nblOddsHomeTeam && typeof data?.homeTeam === 'string') {
+          setNblOddsHomeTeam(data.homeTeam);
+        }
+        if (!nblOddsAwayTeam && typeof data?.awayTeam === 'string') {
+          setNblOddsAwayTeam(data.awayTeam);
+        }
+      } catch {
+        if (!cancelled) {
+          setUpcomingGameSpread(null);
+          setUpcomingGameTotal(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    nblOddsTeam,
+    nblOddsOpponent,
+    nblPropsMode,
+    nblOddsBooks,
+    selectedNblBookIndex,
+    nblOddsHomeTeam,
+    nblOddsAwayTeam,
+  ]);
+
   useEffect(() => {
     if (nblOddsMarket !== 'spread' && nblOddsMarket !== 'total') return;
     // The line opened from the props page stays until the user changes stat.
@@ -1402,6 +1458,10 @@ export default function NblDashboardPage() {
   const displayOpponent = nextGameOpponent
     ? resolveNblClubName(nextGameOpponent) || nextGameOpponent
     : null;
+  const nextGameIsHome =
+    selectedTeam && nblOddsHomeTeam
+      ? !nblTeamSpreadIsAway(nblOddsHomeTeam, selectedTeam)
+      : null;
   const matchupOpponentLogo =
     nextGameOpponentLogo ||
     (displayOpponent ? resolveNblTeamLogo(displayOpponent, logoByTeam) : null);
@@ -1873,6 +1933,11 @@ export default function NblDashboardPage() {
                     setNblGameFilters={nblPropsMode === 'player' ? setNblGameFilters : undefined}
                     perGameFilterData={nblPropsMode === 'player' ? nblPerGameFilterData : null}
                     nextOpponent={displayOpponent}
+                    nextGameTipoff={nextGameTipoff}
+                    nextGameIsHome={displayOpponent ? nextGameIsHome : null}
+                    nextGameSpread={upcomingGameSpread}
+                    nextGameTotal={upcomingGameTotal}
+                    selectedTeamName={selectedTeam}
                     gamePropsTeam={nblPropsMode === 'team' ? selectedTeam : null}
                     uiResetToken={chartUiResetToken}
                     season={NBL_SHOT_CHART_SEASON_YEAR}

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  NBL_STE_STAT_KEYS,
+  NBL_STE_CARD_STAT_KEYS,
   NBL_STE_STAT_LABELS,
   resolveNblSteTeamCode,
   type NblSteStatKey,
@@ -170,7 +170,7 @@ export default function NblOpponentBreakdownCard({
         ) : (
           <>
             <div className="space-y-2">
-              {NBL_STE_STAT_KEYS.map((statKey) => {
+              {NBL_STE_CARD_STAT_KEYS.map((statKey) => {
                 const val = teamSlice.allowed[statKey];
                 const r = payload?.metrics?.[statKey]?.ranks?.[opponentCode] ?? null;
                 const label = NBL_STE_STAT_LABELS[statKey];

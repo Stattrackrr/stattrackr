@@ -16,6 +16,7 @@ import StaticLabelList from './StaticLabelList';
 import CustomXAxisTick from './CustomXAxisTick';
 import { CHART_CONFIG } from '../../constants';
 import { tennisValueHitsOver } from '@/lib/tennis/oddsTypes';
+import { renderUpcomingBarShape } from '@/components/charts/UpcomingGameTooltip';
 
 const NBA_PCT_STATS = ['fg3_pct', 'fg_pct', 'ft_pct', 'opp_fg_pct', 'opp_fg3_pct', 'opp_ft_pct'];
 
@@ -312,6 +313,7 @@ const SimpleChart = memo(function SimpleChart({
     let underCount = 0;
     let counted = 0;
     for (let i = 0; i < total; i++) {
+      if (chartData[i]?.isUpcoming) continue;
       const value = chartData[i].value;
       const state = getBarState(value, bettingLine);
       if (state === 'na' || state === 'push') continue;
@@ -334,7 +336,8 @@ const SimpleChart = memo(function SimpleChart({
   }, [initialBackgroundGradient, getBackgroundGradient]);
 
   // Determine bar color based on value vs betting line
-  const getBarColor = useCallback((value: number | null, line: number) => {
+  const getBarColor = useCallback((value: number | null, line: number, isUpcoming = false) => {
+    if (isUpcoming) return 'transparent';
     if (forceGreyBars) return isDark ? '#4b5563' : '#9ca3af';
     if (value === null || value === undefined || !Number.isFinite(value)) return '#94a3b8'; // no BDL Q1 row
     const state = getBarState(value, line);
@@ -358,9 +361,10 @@ const SimpleChart = memo(function SimpleChart({
     return chartData.map((entry, index) => (
       <Cell 
         key={`cell-${index}`} 
-        fill={getBarColor(entry.value, bettingLine)}
+        fill={getBarColor(entry.value, bettingLine, Boolean(entry.isUpcoming))}
         data-bar-index={index}
         data-bar-value={entry.value}
+        data-upcoming={entry.isUpcoming ? '1' : undefined}
       />
     ));
   }, [chartData, getBarColor, bettingLine, isCompositeStat]);
@@ -430,6 +434,11 @@ const SimpleChart = memo(function SimpleChart({
       
       const i = parseInt(idxAttr, 10);
       if (!Number.isFinite(i) || !data[i]) return;
+      if (data[i].isUpcoming || el.getAttribute('data-upcoming') === '1') {
+        el.setAttribute('data-state', 'upcoming');
+        el.setAttribute('fill', 'transparent');
+        return;
+      }
       
       const barValue = data[i].value;
       if (barValue === null || barValue === undefined || !Number.isFinite(barValue)) {
@@ -862,6 +871,7 @@ const SimpleChart = memo(function SimpleChart({
     if (['moneyline', 'spread', 'q1_moneyline', 'q2_moneyline', 'q3_moneyline', 'q4_moneyline'].includes(selectedStat)) return null;
     const validEntries = chartData
       .map((d: any) => {
+        if (d?.isUpcoming) return null;
         const v = overlay && d?.stats ? Number((d.stats as any)[overlay.madeKey]) : (Number.isFinite(d.value) ? d.value : null);
         return v != null ? { value: v } : null;
       })
@@ -1255,6 +1265,20 @@ const SimpleChart = memo(function SimpleChart({
               radius={[10, 10, 10, 10]}
               shape={isCompositeStat ? (props: any) => {
                 const { x, y, width, height, payload } = props;
+                const barIndex = props.index ?? -1;
+                const HOVER_H = 400;
+                const hoverY = (Number(y) || 0) - HOVER_H;
+                if (payload?.isUpcoming) {
+                  return renderUpcomingBarShape({
+                    x,
+                    y,
+                    width,
+                    height,
+                    isDark,
+                    barIndex,
+                    hoverPad: HOVER_H,
+                  });
+                }
                 const stats = payload?.stats || {};
                 const pts = Number(stats.pts ?? 0);
                 const reb = Number(stats.reb ?? 0);
@@ -1265,7 +1289,6 @@ const SimpleChart = memo(function SimpleChart({
                   : reb + ast;
                 const barColor = getBarColor(payload?.value ?? total, bettingLine);
                 const isLive = (payload as any)?.isLive;
-                const barIndex = props.index ?? -1;
                 const isMostRecent = isLive && barIndex === mergedChartData.length - 1;
                 const chopStroke = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.35)';
                 const segments: { h: number; val: number }[] = [];
@@ -1286,13 +1309,10 @@ const SimpleChart = memo(function SimpleChart({
                 }
                 const clipId = `composite-clip-bar-${barIndex}`;
                 let offset = 0;
-                const HOVER_H = 400;
-                const hoverH = HOVER_H;
-                const hoverY = y - HOVER_H;
                 return (
                   <g style={{ pointerEvents: 'all' }}>
                     {/* Invisible hover rect: full width, full bar slot height for every bar */}
-                    <rect x={x} y={hoverY} width={width} height={hoverH} fill="transparent" style={{ pointerEvents: 'all' }} />
+                    <rect x={x} y={hoverY} width={width} height={HOVER_H} fill="transparent" style={{ pointerEvents: 'all' }} />
                     <defs>
                       <clipPath id={clipId}>
                         <rect x={x} y={y} width={width} height={height} rx={10} ry={10} />
@@ -1379,11 +1399,24 @@ const SimpleChart = memo(function SimpleChart({
                 );
               } : overlay ? (props: any) => {
                 const { x, y, width, height, payload } = props;
+                const barIndex = props.index ?? -1;
+                const HOVER_H = 400;
+                const hoverY = (Number(y) || 0) - HOVER_H;
+                if (payload?.isUpcoming) {
+                  return renderUpcomingBarShape({
+                    x,
+                    y,
+                    width,
+                    height,
+                    isDark,
+                    barIndex,
+                    hoverPad: HOVER_H,
+                  });
+                }
                 const attempts = payload?.stats?.[overlay.totalKey] || 0;
                 const makes = payload?.stats?.[overlay.madeKey] || 0;
                 const makesHeight = attempts > 0 ? (makes / attempts) * height : 0;
                 const isLive = (payload as any)?.isLive;
-                const barIndex = props.index ?? -1;
                 const isMostRecent = isLive && barIndex === mergedChartData.length - 1;
                 
                 // Get color for makes bar based on betting line comparison
@@ -1392,13 +1425,10 @@ const SimpleChart = memo(function SimpleChart({
                   : makes === bettingLine 
                     ? '#9ca3af' 
                     : CHART_CONFIG.colors.red;
-                const HOVER_H = 400;
-                const hoverH = HOVER_H;
-                const hoverY = y - HOVER_H;
                 return (
                   <g>
                     {/* Invisible hover rect: full width, full bar slot height for every bar */}
-                    <rect x={x} y={hoverY} width={width} height={hoverH} fill="transparent" style={{ pointerEvents: 'all' }} />
+                    <rect x={x} y={hoverY} width={width} height={HOVER_H} fill="transparent" style={{ pointerEvents: 'all' }} />
                     {/* Background bar (attempts) - gray, semi-transparent */}
                     <rect
                       x={x}
@@ -1463,6 +1493,17 @@ const SimpleChart = memo(function SimpleChart({
                 const { x, y, width, height, fill, payload } = props;
                 const barIndex = props['data-bar-index'] ?? props.index ?? -1;
                 const barValue = payload?.value ?? props['data-bar-value'];
+                const isUpcoming = Boolean(payload?.isUpcoming);
+                if (isUpcoming) {
+                  return renderUpcomingBarShape({
+                    x,
+                    y,
+                    width,
+                    height,
+                    isDark,
+                    barIndex,
+                  });
+                }
                 const rawHeight = Number(height) || 0;
                 let rectHeight = Math.abs(rawHeight);
                 let rectY = rawHeight < 0 ? (Number(y) || 0) + rawHeight : (Number(y) || 0);

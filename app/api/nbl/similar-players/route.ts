@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildNblSimilarPlayers } from '@/lib/nbl/similarPlayers';
+import { nblSimilarCached } from '@/lib/nbl/similarPlayersCache';
 import { NBL_SHOT_CHART_SEASON_YEAR } from '@/lib/nblTeamCanonical';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const playerId = String(request.nextUrl.searchParams.get('playerId') || '').trim();
@@ -25,13 +28,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const payload = buildNblSimilarPlayers({
-      playerId,
-      opponent,
-      stat,
-      year: Number.isFinite(yearRaw) ? yearRaw : NBL_SHOT_CHART_SEASON_YEAR,
-      limit: Number.isFinite(limitRaw) ? limitRaw : 5,
-    });
+    const year = Number.isFinite(yearRaw) ? yearRaw : NBL_SHOT_CHART_SEASON_YEAR;
+    const limit = Number.isFinite(limitRaw) ? limitRaw : 5;
+    const payload = await nblSimilarCached(
+      [playerId, opponent.toLowerCase(), stat.toLowerCase(), year, limit],
+      () =>
+        buildNblSimilarPlayers({
+          playerId,
+          opponent,
+          stat,
+          year,
+          years: [year, year - 1],
+          limit,
+        })
+    );
     return NextResponse.json(payload);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to build similar players';

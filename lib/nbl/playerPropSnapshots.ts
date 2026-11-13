@@ -219,21 +219,20 @@ function twoWayOuCount(snap: NblPlayerPropSnapshot): number {
   ).length;
 }
 
+function lineMergeKey(line: NblSnapLine): string {
+  return `${line.book}|${line.playerKey}|${line.stat}|${line.kind}|${line.line}`;
+}
+
 function betterSnapshot(prev: NblPlayerPropSnapshot | null, next: NblPlayerPropSnapshot): NblPlayerPropSnapshot {
   if (!prev) return next;
   if (prev.closing && !next.closing) return prev;
-  const mergedLines = [...prev.lines];
+  const byKey = new Map<string, NblSnapLine>();
+  for (const line of prev.lines) byKey.set(lineMergeKey(line), { ...line });
   for (const line of next.lines) {
-    const existing = mergedLines.find(
-      (row) =>
-        row.book === line.book &&
-        row.stat === line.stat &&
-        row.playerKey === line.playerKey &&
-        row.kind === line.kind &&
-        row.line === line.line
-    );
+    const key = lineMergeKey(line);
+    const existing = byKey.get(key);
     if (!existing) {
-      mergedLines.push(line);
+      byKey.set(key, { ...line });
       continue;
     }
     if (existing.over === 'N/A' && line.over !== 'N/A') {
@@ -250,6 +249,7 @@ function betterSnapshot(prev: NblPlayerPropSnapshot | null, next: NblPlayerPropS
       existing.playerKey = line.playerKey;
     }
   }
+  const mergedLines = [...byKey.values()];
   const merged: NblPlayerPropSnapshot = {
     ...next,
     homeTeam: prev.homeTeam || next.homeTeam,
@@ -312,13 +312,50 @@ export async function listNblPlayerPropSnapshotsFromRedis(): Promise<NblPlayerPr
   }
 }
 
-export async function listNblPlayerPropSnapshots(): Promise<NblPlayerPropSnapshot[]> {
+type SnapshotListCache = { at: number; snaps: NblPlayerPropSnapshot[] };
+const SNAPSHOT_LIST_TTL_MS = 10 * 60 * 1000;
+const snapshotListGlobals: { cache: SnapshotListCache | null; inflight: Promise<NblPlayerPropSnapshot[]> | null } =
+  ((globalThis as { __nblPropSnapList?: { cache: SnapshotListCache | null; inflight: Promise<NblPlayerPropSnapshot[]> | null } })
+    .__nblPropSnapList ??= { cache: null, inflight: null });
+
+/** Prefer one complete snapshot over a deep line-merge when listing (merge is for ingest writes). */
+function preferSnapshot(prev: NblPlayerPropSnapshot, next: NblPlayerPropSnapshot): NblPlayerPropSnapshot {
+  if (prev.closing !== next.closing) return prev.closing ? prev : next;
+  if ((next.lineCount || 0) !== (prev.lineCount || 0)) {
+    return (next.lineCount || 0) > (prev.lineCount || 0) ? next : prev;
+  }
+  return String(next.capturedAt || '').localeCompare(String(prev.capturedAt || '')) >= 0 ? next : prev;
+}
+
+async function loadNblPlayerPropSnapshotsUncached(): Promise<NblPlayerPropSnapshot[]> {
   const byKey = new Map<string, NblPlayerPropSnapshot>();
   for (const snap of [...listNblPlayerPropSnapshotsFromDisk(), ...(await listNblPlayerPropSnapshotsFromRedis())]) {
     const prev = byKey.get(snap.gameKey);
-    byKey.set(snap.gameKey, prev ? betterSnapshot(prev, snap) : snap);
+    byKey.set(snap.gameKey, prev ? preferSnapshot(prev, snap) : snap);
   }
   return [...byKey.values()];
+}
+
+/** Disk + Redis merge, process-memory cached (~10m) so similar-players / props list stay fast. */
+export async function listNblPlayerPropSnapshots(): Promise<NblPlayerPropSnapshot[]> {
+  const hit = snapshotListGlobals.cache;
+  if (hit && Date.now() - hit.at < SNAPSHOT_LIST_TTL_MS) return hit.snaps;
+  if (snapshotListGlobals.inflight) return snapshotListGlobals.inflight;
+  const promise = loadNblPlayerPropSnapshotsUncached()
+    .then((snaps) => {
+      snapshotListGlobals.cache = { at: Date.now(), snaps };
+      return snaps;
+    })
+    .finally(() => {
+      snapshotListGlobals.inflight = null;
+    });
+  snapshotListGlobals.inflight = promise;
+  return promise;
+}
+
+/** Drop the in-process snapshot list cache (after ingest writes). */
+export function invalidateNblPlayerPropSnapshotListCache(): void {
+  snapshotListGlobals.cache = null;
 }
 
 export async function persistNblPlayerPropSnapshots(
@@ -392,6 +429,7 @@ export async function persistNblPlayerPropSnapshots(
     if (becameClosing) frozen += 1;
   }
 
+  if (saved || frozen) invalidateNblPlayerPropSnapshotListCache();
   return { saved, frozen, skipped, historyWrites };
 }
 

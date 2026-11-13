@@ -2,12 +2,15 @@ import { ACTIVE_COEFS, SHADOW_POLICY_VERSION } from '@/lib/nba/propLog/shadow';
 import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { fitLoggedLines } from './fitLogged';
+import { fitGate, type FitGate } from './fitGate';
 import type { CandidateResult } from './candidates';
 import type { LoggedFit } from './fitLines';
 import { buildReport, type Report, type ReportBet } from './report';
 
 const PAGE = 1000;
 export const REPORT_KEY = 'nba_model_report_v1';
+/** Latest residual fit + promote gate (day-10 market comparison). Separate from ACTIVE_COEFS. */
+export const FIT_GATE_KEY = 'nba_model_fit_gate_v1';
 const REPORT_TTL_S = 400 * 24 * 60 * 60;
 
 type BetRow = {
@@ -80,16 +83,17 @@ export async function regularSeasonGamesLeft(nowMs: number): Promise<number> {
   return count ?? 0;
 }
 
-export type WeeklyReport = Report & { fit: LoggedFit; candidates: CandidateResult[] };
+export type WeeklyReport = Report & { fit: LoggedFit; fitGate: FitGate; candidates: CandidateResult[] };
 
 export async function buildWeeklyReport(nowMs = Date.now()): Promise<WeeklyReport> {
   const [bets, gamesLeft, logged] = await Promise.all([loadReportBets(), regularSeasonGamesLeft(nowMs), fitLoggedLines()]);
   const report = buildReport({ bets, nowMs, gamesLeft, policyVersion: SHADOW_POLICY_VERSION, modelVersion: ACTIVE_COEFS.version });
-  return { ...report, fit: logged.fit, candidates: logged.candidates };
+  return { ...report, fit: logged.fit, fitGate: fitGate(logged.fit), candidates: logged.candidates };
 }
 
-/** Saves the report as the latest and under its date, so past weeks stay readable. */
+/** Saves the report as the latest and under its date, so past weeks stay readable. Also stores the fit gate. */
 export async function saveWeeklyReport(report: WeeklyReport): Promise<void> {
   await sharedCache.setJSON(REPORT_KEY, report, REPORT_TTL_S);
   await sharedCache.setJSON(`${REPORT_KEY}:${report.generatedAt.slice(0, 10)}`, report, REPORT_TTL_S);
+  await sharedCache.setJSON(FIT_GATE_KEY, { generatedAt: report.generatedAt, gate: report.fitGate, activeModel: ACTIVE_COEFS.version }, REPORT_TTL_S);
 }

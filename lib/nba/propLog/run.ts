@@ -17,17 +17,11 @@ import { addModelFeatures } from './features';
 import { readPriceMemory, recordShadowBets, updatePriceChecks, writePriceMemory, type Trigger } from './shadow';
 import { gameLines, gameMarket, impliedTeamTotal, type LoggedLine, type PropLogPlayer } from './lines';
 import { dueKinds, type ExistingSnapshot as Existing, type SnapshotKind } from './schedule';
+import { PROP_LOG_VERSIONS } from './versions';
+
+export { PROP_LOG_VERSIONS };
 
 type RowKind = SnapshotKind | 'injury_change';
-
-/**
- * Frozen with the start of forward logging; any change bumps a version and starts a new sample.
- * inputs-v2: adds the BettingPros defence-vs-position rank at the player's depth-chart slot.
- * inputs-v3: adds the new model's inputs (minutes with tonight's information, pooled usage, implied-minutes gap).
- * inputs-v4: adds feature-library candidates (opponent absences, rest and travel, chances against results,
- *            combos against their parts, referee crew).
- */
-export const PROP_LOG_VERSIONS = { model: 'none', feature: 'inputs-v4', policy: 'log-v1' } as const;
 
 const H = 60 * 60 * 1000;
 const HORIZON_MS = 36 * H;

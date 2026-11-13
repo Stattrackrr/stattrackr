@@ -53,6 +53,10 @@ export const CANDIDATE_FEATURES: readonly CandidateSpec[] = [
   { name: 'chances_gap', key: 'chances_gap_z', lines: 'base' },
   { name: 'bp_dvp_rank', key: 'bp_dvp_rank', lines: 'base' },
   { name: 'combo_gap', key: 'combo_gap_z', lines: 'combo' },
+  /** ln(1 + minutes since the freshest listed teammate status change) — under-reaction test. */
+  { name: 'teammate_news_age', key: 'teammate_news_age_ln', lines: 'base', lower: 0 },
+  /** Same for the player's own status change (if any). */
+  { name: 'player_news_age', key: 'player_news_age_ln', lines: 'base', lower: 0 },
 ];
 
 export type ModelLine = {

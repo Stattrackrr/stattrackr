@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  NBL_STE_STAT_KEYS,
+  NBL_STE_CARD_STAT_KEYS,
   NBL_STE_STAT_LABELS,
   nblSteMatchupSideLabels,
   resolveNblSteTeamCode,
@@ -88,7 +88,7 @@ export default function NblTeamMatchupCard({
 
   const rows = useMemo(() => {
     if (!payload?.forMetrics || !payload?.metrics) return [];
-    return NBL_STE_STAT_KEYS.filter((key) => key !== 'oreb' && key !== 'dreb').map((key) => {
+    return NBL_STE_CARD_STAT_KEYS.filter((key) => key !== 'oreb' && key !== 'dreb').map((key) => {
       const forEntry = payload.forMetrics[key];
       const allowedEntry = payload.metrics[key];
       const sideLabels = nblSteMatchupSideLabels(key);
@@ -110,7 +110,7 @@ export default function NblTeamMatchupCard({
   const teamTotal = teamCode ? payload?.totalGames?.[teamCode] ?? 0 : 0;
   const oppTotal = oppCode ? payload?.totalGames?.[oppCode] ?? 0 : 0;
 
-  const formatValue = (key: (typeof NBL_STE_STAT_KEYS)[number], value: number | null) => {
+  const formatValue = (key: (typeof NBL_STE_CARD_STAT_KEYS)[number], value: number | null) => {
     if (value == null || !Number.isFinite(value)) return '—';
     if (key === 'fg_pct' || key === 'fg3_pct') return value.toFixed(1);
     return value.toFixed(1);

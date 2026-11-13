@@ -15,6 +15,7 @@ import { fetchNbaOddsNetProps } from '@/lib/nba/dash/oddsApiNet';
 import type { NbaGameOdds, NbaPlayerPropsByBook } from '@/lib/nba/dash/oddsTypes';
 import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { logUsMoveSnapshots } from '@/lib/nba/propLog/usMove';
 import { auFollowed, detectUsMoves, usLines, type AuQuote, type BdlPropRow, type UsLine } from './rules';
 
 const STATE_KEY = 'nba_lag_state_v1';
@@ -78,12 +79,12 @@ async function fetchUsProps(gameId: string): Promise<{ rows: BdlPropRow[]; drift
   return { rows: json.data ?? [], driftMs: Number.isFinite(server) ? Math.round((sentAt + Date.now()) / 2 - server) : null };
 }
 
-export type LagSummary = { games: number; usPolls: number; moves: number; auPulls: number; capReached: boolean; resolved: number; pending: number; errors: string[] };
+export type LagSummary = { games: number; usPolls: number; moves: number; usMoveSnapshots: number; auPulls: number; capReached: boolean; resolved: number; pending: number; errors: string[] };
 
 export async function runLagPoll(nowMs = Date.now()): Promise<LagSummary> {
   const nowIso = new Date(nowMs).toISOString();
   const day = nowIso.slice(0, 10);
-  const summary: LagSummary = { games: 0, usPolls: 0, moves: 0, auPulls: 0, capReached: false, resolved: 0, pending: 0, errors: [] };
+  const summary: LagSummary = { games: 0, usPolls: 0, moves: 0, usMoveSnapshots: 0, auPulls: 0, capReached: false, resolved: 0, pending: 0, errors: [] };
   const board = await getNbaOddsCache();
   const state: LagState = (await sharedCache.getJSON<LagState>(STATE_KEY)) ?? { us: {}, events: [], au: {}, day, auPulls: 0 };
   if (state.day !== day) Object.assign(state, { day, auPulls: 0 });
@@ -113,6 +114,19 @@ export async function runLagPoll(nowMs = Date.now()): Promise<LagSummary> {
   summary.moves = newMoves.length;
 
   if (newMoves.length) {
+    try {
+      summary.usMoveSnapshots = await logUsMoveSnapshots(
+        newMoves.map(({ game, move }) => ({
+          gameId: game.gameId,
+          playerId: move.playerId,
+          stat: move.stat,
+          movedAt: move.movedAt ?? nowIso,
+        })),
+        nowMs
+      );
+    } catch (err) {
+      summary.errors.push(`us_move snapshots: ${err instanceof Error ? err.message : err}`);
+    }
     const ids = [...new Set(newMoves.map((m) => Number(m.move.playerId)))];
     const { data } = await supabaseAdmin.from('nba_players').select('id, full_name').in('id', ids);
     const names = new Map((data ?? []).map((p) => [String(p.id), String(p.full_name)]));

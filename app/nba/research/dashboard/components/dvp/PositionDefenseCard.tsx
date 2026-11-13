@@ -2,8 +2,14 @@
 
 import { useState, useEffect, useMemo, memo } from 'react';
 import { ABBR_TO_TEAM_ID } from '@/lib/nbaConstants';
-import { normalizeAbbr, getEspnLogoUrl } from '@/lib/nbaAbbr';
+import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { cachedFetch } from '@/lib/requestCache';
+import {
+  fetchNbaDvpRankBatch,
+  getCachedNbaDvpRankBatch,
+  normalizeDvpTeamAbbr,
+  type NbaDvpPosition,
+} from '@/lib/nba/dvpRankClient';
 
 // Defense vs Position metrics (static, defined once)
 const DVP_METRICS = [
@@ -17,13 +23,10 @@ const DVP_METRICS = [
   { key: 'to' as const, label: 'Turnovers vs ', isPercentage: false },
 ] as const;
 
-// Global cache shared between all PositionDefenseCard instances (mobile + desktop)
-// Split into two caches: team DVP data (position-independent) and rank data (position-specific)
+// Team DVP values cache (position-independent). Ranks use shared dvpRankClient.
 const dvpTeamCache = new Map<string, { metrics: any, sample: number, timestamp: number }>();
-const dvpRankCache = new Map<string, { metrics: any, timestamp: number }>();
 
-// Auto-clear caches older than 2 minutes to ensure fresh data after ingest
-const DVP_CACHE_TTL = 2 * 60 * 1000; // 2 minutes instead of 5
+const DVP_CACHE_TTL = 2 * 60 * 1000;
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of dvpTeamCache.entries()) {
@@ -31,12 +34,7 @@ setInterval(() => {
       dvpTeamCache.delete(key);
     }
   }
-  for (const [key, value] of dvpRankCache.entries()) {
-    if (value.timestamp && (now - value.timestamp) > DVP_CACHE_TTL) {
-      dvpRankCache.delete(key);
-    }
-  }
-}, 60000); // Check every minute
+}, 60000);
 
 export interface PositionDefenseCardProps {
   isDark: boolean;
@@ -93,16 +91,23 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
         return;
       }
 
-      // Check if we have both team DVP and rank data cached
-      const teamCacheKey = `${targetOpp}:82`;
-      const rankCacheKey = `${targetPos}:82`;
-      
-      // Check cache first - only refresh if needed
+      const teamCacheKey = `${targetOpp}:g82`;
+      const dvpPos = targetPos as NbaDvpPosition;
       const teamCached = dvpTeamCache.get(teamCacheKey);
-      const rankCached = dvpRankCache.get(rankCacheKey);
-      
+      const rankCached = getCachedNbaDvpRankBatch(dvpPos);
+      const normalizedOpp = normalizeDvpTeamAbbr(targetOpp);
+
+      const applyRanks = (metrics: Record<string, Record<string, number>> | undefined) => {
+        const rmap: Record<string, number | null> = {};
+        for (const m of DVP_METRICS) {
+          const rank = metrics?.[m.key]?.[normalizedOpp];
+          rmap[m.key] = typeof rank === 'number' && Number.isFinite(rank) ? rank : null;
+        }
+        setPerRank(rmap);
+      };
+
       // Show team stats immediately if available, ranks can load in background
-      if (teamCached && rankCached) {
+      if (teamCached) {
         const map: Record<string, number | null> = {};
         for (const m of DVP_METRICS) {
           const perGame = teamCached.metrics?.[m.key];
@@ -111,20 +116,10 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
         }
         setPerStat(map);
         setSample(teamCached.sample);
-        
-        // If we have ranks too, show them
         if (rankCached) {
-          const rmap: Record<string, number | null> = {};
-          const normalizedOpp = normalizeAbbr(targetOpp);
-          for (const m of DVP_METRICS) {
-            const ranks = rankCached.metrics?.[m.key] || {};
-            const rank = ranks?.[normalizedOpp] as number | undefined;
-            rmap[m.key] = Number.isFinite(rank as any) ? (rank as number) : null;
-          }
-          setPerRank(rmap);
+          applyRanks(rankCached.metrics);
           setLoading(false);
         } else {
-          // Ranks still loading
           setPerRank({});
           setLoading(true);
         }
@@ -137,160 +132,52 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
 
       try {
         const metricsStr = DVP_METRICS.map(m => m.key).join(',');
-        
-        // Fetch only what we don't have cached
-        const promises: Promise<any>[] = [];
-        
-        // Only fetch if not cached
-        if (!teamCached) {
-          promises.push(
-            cachedFetch<any>(
+
+        const teamPromise = teamCached
+          ? Promise.resolve(teamCached)
+          : cachedFetch<any>(
               `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82`,
               undefined,
-              60 * 60 * 1000 // Cache for 60 minutes (in milliseconds)
+              60 * 60 * 1000
             )
-            .then(data => ({ type: 'team', data }))
-            .catch((error: any) => {
-              return { type: 'team', data: { error: error.message || 'Failed to fetch team data' } };
-            })
-          );
-        }
-        
-        if (!rankCached) {
-          promises.push(
-            cachedFetch<any>(
-              `/api/dvp/rank/batch?pos=${targetPos}&metrics=${metricsStr}&games=82`,
-              undefined,
-              60 * 60 * 1000 // Cache for 60 minutes (in milliseconds)
-            )
-            .then(data => ({ type: 'rank', data }))
-            .catch((error: any) => {
-              return { type: 'rank', data: { error: error.message || 'Failed to fetch rank data' } };
-            })
-          );
-        }
-        
-        if (promises.length > 0) {
-          const results = await Promise.all(promises);
-          
-          let dvpData = teamCached;
-          let rankData = rankCached;
-          
-          results.forEach(result => {
-            if (result.type === 'team') {
-              // Handle rate limit (null) gracefully - skip update but don't show error
-              if (result.data === null) {
-                return; // Skip this result, continue with cached data
-              }
-              if (!result.data || result.data?.error) {
-                // Don't set error if we have cached data - allow fallback to cached data
-                if (!teamCached) {
-                  setError('Unable to load data. Please try again.');
-                }
-                return;
-              }
-              dvpData = { metrics: result.data?.metrics, sample: result.data?.sample_games || 0, timestamp: Date.now() };
-              dvpTeamCache.set(teamCacheKey, dvpData);
-            } else if (result.type === 'rank') {
-              // Handle rate limit (null) gracefully - skip update but don't show error
-              if (result.data === null) {
-                return; // Skip this result, continue with cached data
-              }
-              if (!result.data || result.data?.error) {
-                // Don't set error if we have cached data - allow fallback to cached data
-                if (!rankCached) {
-                  setError('Unable to load data. Please try again.');
-                }
-                return;
-              }
-              rankData = { metrics: result.data?.metrics, timestamp: Date.now() };
-              dvpRankCache.set(rankCacheKey, rankData);
-            }
-          });
-          
-          // Use data if we have both, OR if we have cached data (even if one fetch failed)
-          if (!abort && dvpData && rankData) {
+              .then((data) => {
+                if (!data || data?.error) return teamCached || null;
+                const next = {
+                  metrics: data?.metrics,
+                  sample: data?.sample_games || 0,
+                  timestamp: Date.now(),
+                };
+                dvpTeamCache.set(teamCacheKey, next);
+                return next;
+              })
+              .catch(() => teamCached || null);
+
+        const rankPromise = rankCached
+          ? Promise.resolve(rankCached.metrics)
+          : fetchNbaDvpRankBatch(dvpPos).catch(() => null);
+
+        const [dvpData, rankMetrics] = await Promise.all([teamPromise, rankPromise]);
+
+        if (!abort) {
+          if (dvpData) {
             const map: Record<string, number | null> = {};
-            const rmap: Record<string, number | null> = {};
-            const normalizedOpp = normalizeAbbr(targetOpp);
-            
             for (const m of DVP_METRICS) {
               const perGame = dvpData.metrics?.[m.key];
               const value = perGame ? (perGame?.[targetPos as any] as number | undefined) : undefined;
               map[m.key] = typeof value === 'number' ? value : null;
-              
-              const ranks = rankData.metrics?.[m.key] || {};
-              const rank = ranks?.[normalizedOpp] as number | undefined;
-              
-              // Accept 0 as a valid rank (means team has null value)
-              rmap[m.key] = (typeof rank === 'number' && Number.isFinite(rank)) ? rank : null;
             }
-            
             setPerStat(map);
-            setPerRank(rmap);
             setSample(dvpData.sample);
-            setError(null); // Clear any previous errors
-            setLoading(false);
-          } else if (!abort) {
-            // If we have cached data but new fetch failed, try to use what we have
-            // Check if we have at least one data source (team or rank)
-            if (dvpData || rankData) {
-              const map: Record<string, number | null> = {};
-              const rmap: Record<string, number | null> = {};
-              const normalizedOpp = normalizeAbbr(targetOpp);
-              
-              if (dvpData) {
-                for (const m of DVP_METRICS) {
-                  const perGame = dvpData.metrics?.[m.key];
-                  const value = perGame ? (perGame?.[targetPos as any] as number | undefined) : undefined;
-                  map[m.key] = typeof value === 'number' ? value : null;
-                }
-                setPerStat(map);
-                setSample(dvpData.sample);
-              }
-              
-              if (rankData) {
-                for (const m of DVP_METRICS) {
-                  const ranks = rankData.metrics?.[m.key] || {};
-                  const rank = ranks?.[normalizedOpp] as number | undefined;
-                  rmap[m.key] = (typeof rank === 'number' && Number.isFinite(rank)) ? rank : null;
-                }
-                setPerRank(rmap);
-              }
-              
-              setLoading(false);
-            } else if (promises.length > 0) {
-              // No data at all - show error only if we tried to fetch
-            }
           }
-        } else if (!abort && (teamCached || rankCached)) {
-          // We have some cached data, use it even if incomplete
-          const map: Record<string, number | null> = {};
-          const rmap: Record<string, number | null> = {};
-          const normalizedOpp = normalizeAbbr(targetOpp);
-          
-          if (teamCached) {
-            for (const m of DVP_METRICS) {
-              const perGame = teamCached.metrics?.[m.key];
-              const value = perGame ? (perGame?.[targetPos as any] as number | undefined) : undefined;
-              map[m.key] = typeof value === 'number' ? value : null;
-            }
-            setPerStat(map);
-            setSample(teamCached.sample);
+          if (rankMetrics) {
+            applyRanks(rankMetrics);
+            setError(null);
+          } else if (!rankCached && !teamCached) {
+            setError('Unable to load data. Please try again.');
           }
-          
-          if (rankCached) {
-            for (const m of DVP_METRICS) {
-              const ranks = rankCached.metrics?.[m.key] || {};
-              const rank = ranks?.[normalizedOpp] as number | undefined;
-              rmap[m.key] = Number.isFinite(rank as any) ? (rank as number) : null;
-            }
-            setPerRank(rmap);
-          }
-          
           setLoading(false);
         }
-      } catch (e: any) {
+      } catch {
         if (!abort) setError('Unable to load data. Please try again.');
       } finally {
         if (!abort) setLoading(false);
@@ -298,85 +185,75 @@ const PositionDefenseCard = memo(function PositionDefenseCard({
     };
     run();
 
-    // Background prefetch for other positions - now using batched endpoints
+    // Background prefetch for other positions (shared rank client + team values).
     const targetOpp = oppSel || opponentTeam;
-    const positions: Array<'PG'|'SG'|'SF'|'PF'|'C'> = ['PG','SG','SF','PF','C'];
-    const other = positions.filter(p => p !== (posSel || selectedPosition));
-    
-    const prefetchOne = async (p: 'PG'|'SG'|'SF'|'PF'|'C') => {
-      const teamCacheKey = `${targetOpp}:82`;
-      const rankCacheKey = `${p}:82`;
-      
-      // Skip if already cached and not stale
+    const positions: Array<'PG' | 'SG' | 'SF' | 'PF' | 'C'> = ['PG', 'SG', 'SF', 'PF', 'C'];
+    const other = positions.filter((p) => p !== (posSel || selectedPosition));
+
+    const prefetchOne = async (p: 'PG' | 'SG' | 'SF' | 'PF' | 'C') => {
       if (!targetOpp) return;
+      const teamCacheKey = `${targetOpp}:g82`;
       const teamCached = dvpTeamCache.get(teamCacheKey);
-      const rankCached = dvpRankCache.get(rankCacheKey);
+      const rankCached = getCachedNbaDvpRankBatch(p);
       const now = Date.now();
-      if (teamCached && rankCached && 
-          teamCached.timestamp && rankCached.timestamp &&
-          (now - teamCached.timestamp) < DVP_CACHE_TTL &&
-          (now - rankCached.timestamp) < DVP_CACHE_TTL) return;
-      
+      if (
+        teamCached &&
+        rankCached &&
+        teamCached.timestamp &&
+        now - teamCached.timestamp < DVP_CACHE_TTL
+      ) {
+        return;
+      }
+
       try {
-        const metricsStr = DVP_METRICS.map(m => m.key).join(',');
-        const promises: Promise<any>[] = [];
-        
-        // Only fetch what's not cached or is stale
-        if (!teamCached || (teamCached.timestamp && (now - teamCached.timestamp) >= DVP_CACHE_TTL)) {
-          promises.push(
+        const metricsStr = DVP_METRICS.map((m) => m.key).join(',');
+        const tasks: Promise<unknown>[] = [];
+
+        if (!teamCached || (teamCached.timestamp && now - teamCached.timestamp >= DVP_CACHE_TTL)) {
+          tasks.push(
             cachedFetch<any>(
               `/api/dvp/batch?team=${targetOpp}&metrics=${metricsStr}&games=82`,
               undefined,
-              60 * 60 * 1000 // Cache for 60 minutes (in milliseconds)
-            ).then(data => ({ type: 'team', data }))
+              60 * 60 * 1000
+            ).then((data) => {
+              if (data?.metrics) {
+                dvpTeamCache.set(teamCacheKey, {
+                  metrics: data.metrics,
+                  sample: data.sample_games || 0,
+                  timestamp: Date.now(),
+                });
+              }
+            })
           );
         }
-        
-        if (!rankCached || (rankCached.timestamp && (now - rankCached.timestamp) >= DVP_CACHE_TTL)) {
-          promises.push(
-            cachedFetch<any>(
-              `/api/dvp/rank/batch?pos=${p}&metrics=${metricsStr}&games=10`,
-              undefined,
-              60 * 60 * 1000 // Cache for 60 minutes (in milliseconds)
-            ).then(data => ({ type: 'rank', data }))
-          );
+
+        if (!rankCached) {
+          tasks.push(fetchNbaDvpRankBatch(p));
         }
-        
-        if (promises.length > 0) {
-          const results = await Promise.all(promises);
-          results.forEach(result => {
-            if (result.type === 'team') {
-              // Skip if rate limited (null) - don't overwrite cache with null
-              if (result.data === null) {
-                return;
-              }
-              if (result.data?.metrics) {
-                dvpTeamCache.set(teamCacheKey, { metrics: result.data?.metrics, sample: result.data?.sample_games || 0, timestamp: Date.now() });
-              }
-            } else if (result.type === 'rank') {
-              // Skip if rate limited (null) - don't overwrite cache with null
-              if (result.data === null) {
-                return;
-              }
-              if (result.data?.metrics) {
-                dvpRankCache.set(rankCacheKey, { metrics: result.data?.metrics, timestamp: Date.now() });
-              }
-            }
-          });
-        }
-      } catch {}
+
+        if (tasks.length) await Promise.all(tasks);
+      } catch {
+        // Prefetch is best-effort.
+      }
     };
-    
-    // Prefetch with delay to avoid blocking UI - but only if the browser is idle
+
     if (typeof requestIdleCallback !== 'undefined') {
       requestIdleCallback(() => {
-        other.forEach(p => { prefetchOne(p); });
+        other.forEach((p) => {
+          prefetchOne(p);
+        });
       });
     } else {
-      setTimeout(() => { other.forEach(p => { prefetchOne(p); }); }, 1000);
+      setTimeout(() => {
+        other.forEach((p) => {
+          prefetchOne(p);
+        });
+      }, 1000);
     }
 
-    return () => { abort = true; };
+    return () => {
+      abort = true;
+    };
   }, [oppSel, posSel, opponentTeam, selectedPosition]);
 
   const fmt = (v?: number | null, isPercentage?: boolean) => {

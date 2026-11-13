@@ -166,14 +166,14 @@ export async function buildNbaSimilarPlayers(options: {
     .sort((a, b) => a.distance - b.distance);
 
   /** Recent vs-opponent games to consider so we can prefer one that has a logged line. */
-  const GAME_CANDIDATES = 8;
+  const GAME_CANDIDATES = 4;
   type PeerGames = {
     player: (typeof scored)[number]['player'];
     distance: number;
     games: NbaGameLogRow[];
   };
   const peers: PeerGames[] = [];
-  for (const { player, distance } of scored.slice(0, Math.max(limit * 8, 40))) {
+  for (const { player, distance } of scored.slice(0, Math.max(limit * 6, 24))) {
     const logs = [data, ...olderSets].flatMap((d) => d.logsByPlayer.get(player.playerId) ?? []);
     const games = logs
       .filter((x) => x.opponentCode === opponentCode && (numOrNull(x.minutes) ?? 0) >= 8)
@@ -183,23 +183,35 @@ export async function buildNbaSimilarPlayers(options: {
     peers.push({ player, distance, games });
   }
 
-  const lines = await lookupNbaSimilarPlayerLines(
-    peers.flatMap(({ player, games }) =>
+  const lineKey = (gameId: string, playerId: string) => `${gameId}|${playerId}|${stat}`;
+  const toLineKeys = (rows: Array<{ player: PeerGames['player']; games: NbaGameLogRow[] }>) =>
+    rows.flatMap(({ player, games }) =>
       games.map((g) => ({
         playerId: player.playerId,
         gameId: g.matchId,
         stat,
         playerName: player.name,
       }))
-    )
+    );
+
+  // Phase 1: latest game only (small Supabase query). Phase 2: older games for misses.
+  const lines = await lookupNbaSimilarPlayerLines(
+    toLineKeys(peers.map((p) => ({ player: p.player, games: p.games.slice(0, 1) })))
   );
+  const needMore = peers.filter((p) => !lines.has(lineKey(p.games[0]!.matchId, p.player.playerId)));
+  if (needMore.length) {
+    const extra = await lookupNbaSimilarPlayerLines(
+      toLineKeys(needMore.map((p) => ({ player: p.player, games: p.games.slice(1) })))
+    );
+    for (const [k, v] of extra) lines.set(k, v);
+  }
 
   const out: Array<NbaSimilarPlayerRow & { distance: number }> = [];
   for (const { player, distance, games } of peers) {
     if (out.length >= limit) break;
-    const g = games.find((game) => lines.has(`${game.matchId}|${player.playerId}|${stat}`));
+    const g = games.find((game) => lines.has(lineKey(game.matchId, player.playerId)));
     if (!g) continue;
-    const hit = lines.get(`${g.matchId}|${player.playerId}|${stat}`)!;
+    const hit = lines.get(lineKey(g.matchId, player.playerId))!;
     const value = STAT_FROM_LOG[stat](g);
     out.push({
       matchId: g.matchId,

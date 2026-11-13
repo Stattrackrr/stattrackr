@@ -15,6 +15,9 @@ export const NBA_STE_STAT_KEYS = [
   'oreb',
   'dreb',
   'ast',
+  'fgm',
+  'fga',
+  'fg3m',
   'fg_pct',
   'fg3_pct',
   'stl',
@@ -23,12 +26,28 @@ export const NBA_STE_STAT_KEYS = [
 
 export type NbaSteStatKey = (typeof NBA_STE_STAT_KEYS)[number];
 
+/** Keys shown on Team Matchup / Opponent Breakdown cards (not the full STE set). */
+export const NBA_STE_CARD_STAT_KEYS: readonly NbaSteStatKey[] = [
+  'pts',
+  'reb',
+  'oreb',
+  'dreb',
+  'ast',
+  'fg_pct',
+  'fg3_pct',
+  'stl',
+  'blk',
+];
+
 export const NBA_STE_STAT_LABELS: Record<NbaSteStatKey, string> = {
   pts: 'Points',
   reb: 'Rebounds',
   oreb: 'O-Boards',
   dreb: 'D-Boards',
   ast: 'Assists',
+  fgm: 'FGM',
+  fga: 'FGA',
+  fg3m: '3PM',
   fg_pct: 'Field Goal %',
   fg3_pct: '3-Point %',
   stl: 'Steals',
@@ -81,6 +100,12 @@ export function nbaSteMatchupSideLabels(statKey: NbaSteStatKey): {
       return { team: 'D-Boards', opponent: 'Allows' };
     case 'ast':
       return { team: 'Dishes', opponent: 'Allows' };
+    case 'fgm':
+      return { team: 'Makes', opponent: 'Allows FGM' };
+    case 'fga':
+      return { team: 'Attempts', opponent: 'Allows FGA' };
+    case 'fg3m':
+      return { team: 'Threes', opponent: 'Allows 3PM' };
     case 'fg_pct':
       return { team: 'Shoots', opponent: 'Allows FG%' };
     case 'fg3_pct':

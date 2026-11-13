@@ -59,7 +59,6 @@ export default memo(function NbaXAxisTick({
   const dataPoint = data?.find((d: any) => d.xKey === payload.value);
   const teamName = dataPoint?.tickLabel || payload.value;
   const logoUrl = resolveLogo(String(teamName ?? ''), logoByTeam);
-
   if (hideLogo) {
     return <g transform={`translate(${x},${y})`} />;
   }

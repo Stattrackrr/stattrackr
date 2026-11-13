@@ -1,12 +1,18 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { fetchSimilarPlayersJson } from '@/lib/charts/similarPlayersFetch';
 import { NBL_SHOT_CHART_SEASON_YEAR } from '@/lib/nblTeamCanonical';
 import type { NblSimilarPlayersPayload } from '@/lib/nbl/similarPlayersShared';
 
 function fmtInt(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '—';
   return String(Math.round(n));
+}
+
+function fmtLine(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '—';
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
 function fmtDate(raw: string | null | undefined): string {
@@ -75,12 +81,9 @@ export function NblSimilarPlayersCard({
       limit: '8',
     });
 
-    fetch(`/api/nbl/similar-players?${params.toString()}`)
-      .then(async (r) => {
-        const json = await r.json();
-        if (!r.ok) throw new Error(json?.error || 'Failed to load');
-        return json as NblSimilarPlayersPayload;
-      })
+    fetchSimilarPlayersJson<NblSimilarPlayersPayload>(
+      `/api/nbl/similar-players?${params.toString()}`
+    )
       .then((json) => {
         if (cancelled) return;
         setPayload(json);
@@ -102,9 +105,9 @@ export function NblSimilarPlayersCard({
   const oppLabel = payload?.opponent?.name || opponentName || 'opponent';
   const statLabel = payload?.statLabel || selectedStat || 'Points';
 
-  // Hard rule: each player appears at most once (their most recent vs-opponent game).
+  // Only players with a logged line; newest games first; one row per player.
   const rows = useMemo(() => {
-    const list = payload?.similar || [];
+    const list = (payload?.similar || []).filter((row) => row.line != null && Number.isFinite(row.line));
     const byPlayer = new Map<string, (typeof list)[number]>();
     for (const row of list) {
       const key =
@@ -121,7 +124,9 @@ export function NblSimilarPlayersCard({
         byPlayer.set(key, row);
       }
     }
-    return [...byPlayer.values()];
+    return [...byPlayer.values()].sort((a, b) =>
+      String(b.date || '').localeCompare(String(a.date || ''))
+    );
   }, [payload?.similar]);
 
   const muted = isDark ? 'text-gray-400' : 'text-gray-500';
@@ -154,7 +159,7 @@ export function NblSimilarPlayersCard({
         <div className="text-xs text-red-500 dark:text-red-400 py-6 text-center">{error}</div>
       ) : !rows.length ? (
         <div className={`text-xs ${muted} py-6 text-center`}>
-          No similar players found vs {oppLabel}.
+          No similar players with a line vs {oppLabel}.
         </div>
       ) : (
         <div>
@@ -178,7 +183,7 @@ export function NblSimilarPlayersCard({
             </span>
           </div>
 
-          <div>
+          <div className="max-h-[220px] overflow-y-auto overscroll-contain custom-scrollbar pr-0.5">
             {rows.map((row) => (
               <div
                 key={row.playerId || row.name}
@@ -220,7 +225,7 @@ export function NblSimilarPlayersCard({
                   {fmtInt(row.value)}
                 </div>
                 <div className={`text-xs font-medium tabular-nums text-right ${muted}`}>
-                  {row.line != null ? fmtInt(row.line) : '—'}
+                  {fmtLine(row.line)}
                 </div>
               </div>
             ))}
