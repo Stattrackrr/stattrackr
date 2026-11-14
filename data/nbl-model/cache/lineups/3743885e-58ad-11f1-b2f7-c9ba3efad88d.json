@@ -1,0 +1,212 @@
+{
+  "fixtureId": "3743885e-58ad-11f1-b2f7-c9ba3efad88d",
+  "homeTeam": "Perth Wildcats",
+  "awayTeam": "Illawarra Hawks",
+  "homeScore": "111",
+  "awayScore": "100",
+  "tipoff": "2026-11-14T10:30:00",
+  "teams": [
+    {
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "isHome": true,
+      "starters": [
+        {
+          "personId": "29f9e9a8-530e-11f0-a8c0-5be4c4667c94",
+          "name": "Cameron Huefner",
+          "jersey": "25",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/18d0acde97f5476ab600c57f515a5237?size=400",
+          "starter": true
+        },
+        {
+          "personId": "75f4d047-410d-11f0-92f1-2902fc2f936f",
+          "name": "Kristian Doolittle",
+          "jersey": "5",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c1253737cf374ada9ce1ae522dc51585?size=400",
+          "starter": true
+        },
+        {
+          "personId": "763e9009-410d-11f0-a7ce-2902fc2f936f",
+          "name": "Alex Higgins-Titsha",
+          "jersey": "27",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/81cafd82623d453e96672f64717b0b23?size=400",
+          "starter": true
+        },
+        {
+          "personId": "7693dd9b-410d-11f0-8a74-2902fc2f936f",
+          "name": "Dylan Windler",
+          "jersey": "3",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/77612d10438648118121b68ea7423b51?size=400",
+          "starter": true
+        },
+        {
+          "personId": "f6574bd8-814f-11f0-9264-8be23e86e08f",
+          "name": "Jaron Rillie",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f4c065e558874427b29ad7a2d6e4bfad?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "07da01f9-95e4-11f1-b6a0-1bf0b0404eee",
+          "name": "Anthony Dell'Orso",
+          "jersey": "2",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/dd570850b59d4340afcb3178dd0866a7?size=400",
+          "starter": false
+        },
+        {
+          "personId": "2c284d9b-410d-11f0-adf3-975350631782",
+          "name": "Angus Brandt",
+          "jersey": "26",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ea5f7850171348afa8a079e14370e0d9?size=400",
+          "starter": false
+        },
+        {
+          "personId": "3f5430fd-8dd0-11f0-9214-61af560dfc9e",
+          "name": "Tana Kopa",
+          "jersey": "8",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9239b88d901a4ef88681d2cf570ff236?size=400",
+          "starter": false
+        },
+        {
+          "personId": "4b998bf4-95e4-11f1-8a0a-3dfcf4a739d2",
+          "name": "Marley Sam",
+          "jersey": "13",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a46f26a3716a43ee8a820548e125d29c?size=400",
+          "starter": false
+        },
+        {
+          "personId": "7619d3ea-410d-11f0-9235-2902fc2f936f",
+          "name": "Elijah Pepper",
+          "jersey": "40",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c2cc5ea484a241118485202810668e25?size=400",
+          "starter": false
+        },
+        {
+          "personId": "a00f4f8c-b251-11f1-b4b9-31c76f623538",
+          "name": "Brandon Knight",
+          "jersey": "17",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/19b6cc3853574bef94f662efb473226d?size=400",
+          "starter": false
+        },
+        {
+          "personId": "cb25127e-410c-11f0-85e6-83bd190b7a87",
+          "name": "Jesse Wagstaff",
+          "jersey": "24",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1ae20634fc5a4f6b9d482a62fa4baf82?size=400",
+          "starter": false
+        }
+      ]
+    },
+    {
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "isHome": false,
+      "starters": [
+        {
+          "personId": "50b8ee3f-410d-11f0-8080-9dbbf7342624",
+          "name": "Wani Swaka Lo Buluk",
+          "jersey": "9",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e876d884dda0496ab0c8ce6773f01fe7?size=400",
+          "starter": true
+        },
+        {
+          "personId": "50bd17ba-410d-11f0-8cef-9dbbf7342624",
+          "name": "Sam Froling",
+          "jersey": "13",
+          "position": "C",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1327a070e81d4fa6a01111681fa41bc0?size=400",
+          "starter": true
+        },
+        {
+          "personId": "515b384d-410d-11f0-bc58-9dbbf7342624",
+          "name": "Tyler Harvey",
+          "jersey": "1",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e5492e83a6e9444a8bed248963a200a5?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6b428f54-410d-11f0-b3e3-9dbbf7342624",
+          "name": "Makur Maker",
+          "jersey": "44",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ff3d58966d1545e887c4aa890a9a3f25?size=400",
+          "starter": true
+        },
+        {
+          "personId": "6bbf6d79-410d-11f0-a4cd-9dbbf7342624",
+          "name": "Milton Doyle",
+          "jersey": "35",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0a8f88b849a74a61b3e8f366257ed975?size=400",
+          "starter": true
+        }
+      ],
+      "bench": [
+        {
+          "personId": "504369dc-410d-11f0-95e5-9dbbf7342624",
+          "name": "Daniel Grida",
+          "jersey": "11",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f85c82cc0d2f44c9b9256482a56c221b?size=400",
+          "starter": false
+        },
+        {
+          "personId": "50648c12-410d-11f0-a246-9dbbf7342624",
+          "name": "William Hickey",
+          "jersey": "6",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9b9b24dd8fb54e189f1f9f9c8fcae644?size=400",
+          "starter": false
+        },
+        {
+          "personId": "50b2f2a2-410d-11f0-9783-9dbbf7342624",
+          "name": "Lamar Patterson",
+          "jersey": "24",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b9dda32e9cf746748b4014eadf4d2a2a?size=400",
+          "starter": false
+        },
+        {
+          "personId": "78cb255e-410d-11f0-a317-2902fc2f936f",
+          "name": "Johny Narkle",
+          "jersey": "16",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e20808862517486cb2f4657c7bedd64c?size=400",
+          "starter": false
+        },
+        {
+          "personId": "ba19a46d-a1d3-11f1-b747-cdef4ce7b54e",
+          "name": "Kelan Martin",
+          "jersey": "30",
+          "position": "F",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e823fb15d5d845028d435c68c8752e39?size=400",
+          "starter": false
+        },
+        {
+          "personId": "cb20cb8c-410c-11f0-9c03-83bd190b7a87",
+          "name": "Todd Blanchfield",
+          "jersey": "21",
+          "position": "G",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/14b486bd729a4002953d6cb0a9be8f9f?size=400",
+          "starter": false
+        }
+      ]
+    }
+  ]
+}

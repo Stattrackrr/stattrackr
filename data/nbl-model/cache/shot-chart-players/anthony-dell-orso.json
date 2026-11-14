@@ -5,10 +5,10 @@
   "years": [
     2026
   ],
-  "gamesUsed": 12,
+  "gamesUsed": 13,
   "fixturesFetched": 0,
-  "fixturesCached": 12,
-  "shotCount": 112,
+  "fixturesCached": 13,
+  "shotCount": 113,
   "zones": [
     {
       "zone": "restricted",
@@ -16,7 +16,7 @@
       "fga": 28,
       "fgm": 20,
       "fgPct": 71.42857142857143,
-      "share": 25
+      "share": 24.778761061946902
     },
     {
       "zone": "paint",
@@ -24,7 +24,7 @@
       "fga": 34,
       "fgm": 16,
       "fgPct": 47.05882352941176,
-      "share": 30.357142857142854
+      "share": 30.08849557522124
     },
     {
       "zone": "midRange",
@@ -32,7 +32,7 @@
       "fga": 3,
       "fgm": 1,
       "fgPct": 33.33333333333333,
-      "share": 2.6785714285714284
+      "share": 2.6548672566371683
     },
     {
       "zone": "leftCorner3",
@@ -40,7 +40,7 @@
       "fga": 18,
       "fgm": 8,
       "fgPct": 44.44444444444444,
-      "share": 16.071428571428573
+      "share": 15.929203539823009
     },
     {
       "zone": "rightCorner3",
@@ -48,15 +48,15 @@
       "fga": 7,
       "fgm": 3,
       "fgPct": 42.857142857142854,
-      "share": 6.25
+      "share": 6.1946902654867255
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 22,
+      "fga": 23,
       "fgm": 6,
-      "fgPct": 27.27272727272727,
-      "share": 19.642857142857142
+      "fgPct": 26.08695652173913,
+      "share": 20.353982300884958
     }
   ],
   "points": [
@@ -731,7 +731,13 @@
       6.33,
       0,
       1
+    ],
+    [
+      5.35,
+      8.54,
+      0,
+      1
     ]
   ],
-  "generatedAt": "2026-11-13T20:29:14.849Z"
+  "generatedAt": "2026-11-14T18:45:28.808Z"
 }

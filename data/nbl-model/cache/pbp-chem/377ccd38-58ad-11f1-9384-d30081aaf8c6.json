@@ -1,0 +1,688 @@
+{
+  "fixtureId": "377ccd38-58ad-11f1-9384-d30081aaf8c6",
+  "homeTeam": "Melbourne United",
+  "awayTeam": "South East Melbourne Phoenix",
+  "homeTeamCode": "MEL",
+  "awayTeamCode": "SEM",
+  "lineupValid": false,
+  "players": [
+    {
+      "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+      "name": "Akech Aliir",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+      "name": "Angus Glover",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+      "name": "Chris Goulding",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "024d5bb0-7d7d-11f0-af8e-d779047302e8",
+      "name": "Christian D'Angelo",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+      "name": "Cole Anthony",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 15,
+      "assistedMakes": 4,
+      "assists": 3,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+      "name": "D'Shawn Schwartz",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 6,
+      "assistedMakes": 4,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+      "name": "Dash Daniels",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 6,
+      "assistedMakes": 4,
+      "assists": 5,
+      "ptsCreated": 14,
+      "finds": [
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+          "name": "Tanner Krebs",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+      "name": "Fabijan Krslovic",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 1,
+      "assistedMakes": 1,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+      "name": "Joe Ingles",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 1,
+      "assists": 5,
+      "ptsCreated": 14,
+      "finds": [
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "50aedc0e-410d-11f0-94c9-9dbbf7342624",
+          "name": "Fabijan Krslovic",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+      "name": "Jordan Hunter",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 4,
+      "assistedMakes": 3,
+      "assists": 1,
+      "ptsCreated": 2,
+      "finds": [
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+      "name": "Josh Oduro",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 3,
+      "assistedMakes": 1,
+      "assists": 1,
+      "ptsCreated": 3,
+      "finds": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+          "name": "Kyle Bowen",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "504cbdb1-410d-11f0-bcfd-9dbbf7342624",
+      "name": "Kyle Bowen",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 1,
+      "assistedMakes": 0,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "0f6a905b-410d-11f0-9e79-9dbbf7342624",
+          "name": "Chris Goulding",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "32546154-8ba9-11f1-b556-fd74b92fc3f0",
+          "name": "Josh Oduro",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+      "name": "Luke Travers",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 4,
+      "assistedMakes": 1,
+      "assists": 2,
+      "ptsCreated": 5,
+      "finds": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+      "name": "Malith Machar",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 2,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "2c0893be-410d-11f0-87e6-975350631782",
+      "name": "Nathan Sobey",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 7,
+      "assistedMakes": 2,
+      "assists": 8,
+      "ptsCreated": 20,
+      "finds": [
+        {
+          "personId": "508a1e1d-410d-11f0-977a-9dbbf7342624",
+          "name": "Jordan Hunter",
+          "count": 2,
+          "pts": 6
+        },
+        {
+          "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+          "name": "Yannis Morin",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "4fdd111f-410d-11f0-893b-9dbbf7342624",
+          "name": "Angus Glover",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 3
+        }
+      ],
+      "foundBy": [
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 3
+        }
+      ]
+    },
+    {
+      "personId": "5ec9c9d2-410d-11f0-a085-9dbbf7342624",
+      "name": "Patrick Ryan",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+      "name": "Sam Waardenburg",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 5,
+      "assistedMakes": 5,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 2,
+          "pts": 5
+        },
+        {
+          "personId": "1fe0ad8a-410d-11f0-8cb0-dd70d1fc0253",
+          "name": "Joe Ingles",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "511ee5ca-410d-11f0-94cf-9dbbf7342624",
+          "name": "Luke Travers",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+          "name": "Shea Ili",
+          "count": 1,
+          "pts": 2
+        }
+      ]
+    },
+    {
+      "personId": "2c113c45-410d-11f0-b2cc-975350631782",
+      "name": "Shea Ili",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 3,
+      "ptsCreated": 7,
+      "finds": [
+        {
+          "personId": "31e82976-9511-11f1-9cd2-1beb336ac7cf",
+          "name": "Cole Anthony",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "6bd99e72-410d-11f0-a767-9dbbf7342624",
+          "name": "Malith Machar",
+          "count": 1,
+          "pts": 2
+        },
+        {
+          "personId": "4ffc9a37-410d-11f0-9ecf-9dbbf7342624",
+          "name": "Sam Waardenburg",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "5085c036-410d-11f0-8c88-9dbbf7342624",
+      "name": "Tanner Krebs",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 3,
+      "assistedMakes": 0,
+      "assists": 3,
+      "ptsCreated": 8,
+      "finds": [
+        {
+          "personId": "7594c57d-410d-11f0-842a-2902fc2f936f",
+          "name": "Akech Aliir",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "eb6922f2-530f-11f0-9b9d-930015120978",
+          "name": "Dash Daniels",
+          "count": 1,
+          "pts": 3
+        },
+        {
+          "personId": "da7c4287-893b-11f1-98c2-01a009893656",
+          "name": "D'Shawn Schwartz",
+          "count": 1,
+          "pts": 2
+        }
+      ],
+      "foundBy": []
+    },
+    {
+      "personId": "45fa69e6-410d-11f0-9e4d-27e2b3b3df3f",
+      "name": "Tom Wilson",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "07948bc9-9cf5-11f1-8acf-bd9f13bc3d7d",
+      "name": "Will Hynes",
+      "teamCode": "MEL",
+      "teamName": "Melbourne United",
+      "madeFg": 0,
+      "assistedMakes": 0,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": []
+    },
+    {
+      "personId": "90ee8d03-9b71-11f1-a704-695bae3d3f74",
+      "name": "Yannis Morin",
+      "teamCode": "SEM",
+      "teamName": "South East Melbourne Phoenix",
+      "madeFg": 3,
+      "assistedMakes": 2,
+      "assists": 0,
+      "ptsCreated": 0,
+      "finds": [],
+      "foundBy": [
+        {
+          "personId": "2c0893be-410d-11f0-87e6-975350631782",
+          "name": "Nathan Sobey",
+          "count": 2,
+          "pts": 5
+        }
+      ]
+    }
+  ],
+  "onOff": [],
+  "fetchedAt": "2026-11-14T18:45:32.441Z"
+}

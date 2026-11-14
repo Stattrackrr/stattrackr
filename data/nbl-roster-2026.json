@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-13T20:28:24.167Z",
+  "generatedAt": "2026-11-14T18:44:35.150Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 159,
+  "playerCount": 161,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -836,6 +836,16 @@
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d5e563db6e6145d4bbfea3ce7041ac2d?size=800&format=webp"
     },
     {
+      "playerId": "09018b3c-6c78-49c8-982c-673ff041dee6",
+      "name": "Kingsley Box",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+      "position": "G",
+      "jersey": "15",
+      "imageUrl": null
+    },
+    {
       "playerId": "a10eef82-dac8-4efd-acd5-cdf867139034",
       "name": "Kobe Williamson",
       "team": "Cairns Taipans",
@@ -1376,6 +1386,16 @@
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8fab66501a7641c48f5e2d29302800ab?size=800&format=webp"
     },
     {
+      "playerId": "05e12749-7b66-44f8-84f7-f437fc90dfb6",
+      "name": "Skylar Mays",
+      "team": "NZ Breakers",
+      "teamCode": "NZL",
+      "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "position": "G",
+      "jersey": null,
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8fab66501a7641c48f5e2d29302800ab?size=800&format=webp"
+    },
+    {
       "playerId": "bc5d17e5-219c-41b7-994b-1226cc144877",
       "name": "Sunday Dech",
       "team": "Cairns Taipans",
@@ -1431,7 +1451,7 @@
       "team": "NZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-      "position": null,
+      "position": "G",
       "jersey": "37",
       "imageUrl": null
     },
