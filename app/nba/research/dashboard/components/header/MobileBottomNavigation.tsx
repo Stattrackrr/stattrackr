@@ -114,14 +114,23 @@ export function MobileBottomNavigation({
     if (typeof window === 'undefined') return;
     let frame = 0;
     const retryTimers: ReturnType<typeof setTimeout>[] = [];
-    // Tallest recent layout height (keyboard closed). Used to detect soft keyboard open.
-    let baselineHeight = Math.max(window.innerHeight, window.visualViewport?.height ?? 0);
+    // Closed-keyboard visual height only — never seed from innerHeight. After a long
+    // background, iOS often leaves innerHeight >> visualViewport.height (browser chrome),
+    // which used to look like a soft keyboard and hide this bar permanently.
+    let baselineHeight = window.visualViewport?.height ?? window.innerHeight;
 
     const clearKeyboardHide = (bar: HTMLDivElement) => {
       bar.style.opacity = '';
       bar.style.visibility = '';
       bar.style.pointerEvents = '';
       bar.removeAttribute('aria-hidden');
+    };
+
+    const isTextFieldFocused = () => {
+      const active = document.activeElement as HTMLElement | null;
+      if (!active) return false;
+      const tag = active.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || active.isContentEditable;
     };
 
     const pinToVisualViewport = () => {
@@ -139,11 +148,12 @@ export function MobileBottomNavigation({
       const vv = window.visualViewport;
       const layoutH = window.innerHeight;
       const visualH = vv?.height ?? layoutH;
-      // Soft keyboard: visual viewport shrinks a lot vs the closed-keyboard baseline.
-      // Without this, pinning to vv puts the bar just above the keyboard on search / line inputs.
-      const keyboardOpen = baselineHeight - visualH > 140;
+      // Soft keyboard shrinks the visual viewport. Require a focused text field too —
+      // resume/chrome gaps alone must not hide the nav.
+      const shrink = baselineHeight - visualH > 140;
+      const keyboardOpen = shrink && isTextFieldFocused();
       if (!keyboardOpen) {
-        baselineHeight = Math.max(baselineHeight, layoutH, visualH);
+        baselineHeight = Math.max(baselineHeight, visualH);
       }
       if (keyboardOpen) {
         bar.style.top = 'auto';
@@ -199,7 +209,7 @@ export function MobileBottomNavigation({
     };
 
     const onReturn = () => {
-      baselineHeight = Math.max(window.innerHeight, window.visualViewport?.height ?? 0);
+      baselineHeight = window.visualViewport?.height ?? window.innerHeight;
       schedulePin(true);
     };
     const onViewportChange = () => schedulePin(false);
