@@ -30,13 +30,25 @@ function normPerson(name: string): string {
     .trim();
 }
 
+/** Book / BDL nicknames that differ from the mapping's stored legal name. */
+const NBA_HEADSHOT_NAME_ALIASES: Record<string, string> = {
+  'ace bailey': 'airious bailey',
+  'bub carrington': 'carlton carrington',
+  'carlton carrington': 'carlton carrington',
+  'bones hyland': 'nah shon hyland',
+  'yang hansen': 'hansen yang',
+  'hansen yang': 'hansen yang',
+};
+
 /** Resolve NBA CDN headshot from full or abbreviated board names ("Bam Adebayo" / "b adebayo"). */
 export function toolsNbaPlayerHeadshot(name: string): string | null {
   const want = normPerson(name);
   if (!want) return null;
+  const aliased = NBA_HEADSHOT_NAME_ALIASES[want] ? normPerson(NBA_HEADSHOT_NAME_ALIASES[want]) : want;
+  const keys = [...new Set([want, aliased])];
   const parts = want.split(/\s+/).filter(Boolean);
   const hit =
-    PLAYER_ID_MAPPINGS.find((m) => normPerson(m.name) === want) ||
+    PLAYER_ID_MAPPINGS.find((m) => keys.includes(normPerson(m.name))) ||
     (parts.length >= 2
       ? PLAYER_ID_MAPPINGS.find((m) => {
           const mp = normPerson(m.name).split(/\s+/);
@@ -47,7 +59,7 @@ export function toolsNbaPlayerHeadshot(name: string): string | null {
       : null) ||
     PLAYER_ID_MAPPINGS.find((m) => {
       const n = normPerson(m.name);
-      return n.includes(want) || want.includes(n);
+      return keys.some((k) => n.includes(k) || k.includes(n));
     });
   return hit?.nbaId ? nbaHeadshotUrl(hit.nbaId) : null;
 }

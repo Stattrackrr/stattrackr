@@ -30,6 +30,7 @@ import {
 import { loadNbaPlayerPlayTypeIndex } from './playTypes';
 import type { NbaPlayTypeId } from './playTypesShared';
 import { BOX_COLUMNS, selectAllParallel, toNbaGameLogRow } from './season';
+import { nbaRosterEntry, resolveNbaBoardName } from '@/lib/aiPicks/candidates/nba';
 import { loadNbaRoster, type NbaRosterPlayer } from './server';
 import { NBA_CHART_HISTORY_YEARS, NBA_CURRENT_SEASON_YEAR, normalizeTeamKey, resolveNbaClub } from './teams';
 import type { NbaGameLogRow } from './types';
@@ -382,21 +383,64 @@ async function buildNbaPlayerPropsList(): Promise<NbaPlayerPropsListPayload> {
   if (!slate.length) return emptyNbaListPayload();
 
   const roster = await loadNbaRoster();
+  const rosterById = new Map(roster.map((p) => [String(p.playerId), p]));
   const rosterByName = new Map<string, NbaRosterPlayer[]>();
   for (const p of roster) {
     const key = normalizeNbaPropPlayerName(p.name);
     rosterByName.set(key, [...(rosterByName.get(key) ?? []), p]);
   }
 
+  /** Board nicknames → BDL/roster spelling (normalized). */
+  const BOARD_NAME_ALIASES: Record<string, string> = {
+    'ace bailey': 'airious bailey',
+    'bub carrington': 'carlton carrington',
+    'bones hyland': 'nah shon hyland',
+    'yang hansen': 'hansen yang',
+  };
+
+  const onGame = (p: NbaRosterPlayer, game: NbaGameOdds) =>
+    teamsMatch(p.team, game.homeTeam) || teamsMatch(p.team, game.awayTeam);
+
+  const matchPropPlayer = (propName: string, game: NbaGameOdds, gameEntries: ReturnType<typeof nbaRosterEntry>[]): NbaRosterPlayer | null => {
+    const key = normalizeNbaPropPlayerName(propName);
+    const fromKey = (k: string) => (rosterByName.get(k) ?? []).find((p) => onGame(p, game)) ?? null;
+    const exact = fromKey(key);
+    if (exact) return exact;
+    const aliased = BOARD_NAME_ALIASES[key];
+    if (aliased) {
+      const hit = fromKey(aliased);
+      if (hit) return hit;
+    }
+    // Ace Bailey → Airious Bailey (same surname). Reject loose surname typos (Bones≈Jones).
+    const fuzzyId = resolveNbaBoardName(propName, gameEntries);
+    const fuzzy = fuzzyId ? rosterById.get(fuzzyId) ?? null : null;
+    if (!fuzzy || !onGame(fuzzy, game)) return null;
+    const boardParts = key.split(' ').filter(Boolean);
+    const rosterParts = normalizeNbaPropPlayerName(fuzzy.name).split(' ').filter(Boolean);
+    const boardLast = boardParts.at(-1);
+    const rosterLast = rosterParts.at(-1);
+    if (boardLast && boardLast === rosterLast) return fuzzy;
+    if (
+      boardParts.length === 2 &&
+      rosterParts.length === 2 &&
+      boardParts[0] === rosterParts[1] &&
+      boardParts[1] === rosterParts[0]
+    ) {
+      return fuzzy;
+    }
+    return null;
+  };
+
   type Candidate = { game: NbaGameOdds; player: NbaRosterPlayer; propName: string; team: string; opponent: string };
   const candidates: Candidate[] = [];
   const games: CombinedAflGame[] = [];
   for (const game of slate) {
     games.push({ gameId: game.gameId, homeTeam: game.homeTeam, awayTeam: game.awayTeam, commenceTime: game.commenceTime });
+    const gameEntries = roster
+      .filter((p) => p.playerId && onGame(p, game))
+      .map((p) => nbaRosterEntry(String(p.playerId), p.name));
     for (const propName of gamePlayers(game)) {
-      const named = rosterByName.get(normalizeNbaPropPlayerName(propName)) ?? [];
-      const player =
-        named.find((p) => teamsMatch(p.team, game.homeTeam) || teamsMatch(p.team, game.awayTeam)) ?? null;
+      const player = matchPropPlayer(propName, game, gameEntries);
       if (!player) continue;
       const home = teamsMatch(player.team, game.homeTeam);
       candidates.push({

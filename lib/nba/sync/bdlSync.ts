@@ -195,7 +195,27 @@ export async function runNbaBdlSync(opts: NbaSyncOptions = {}): Promise<NbaSyncS
 
   async function syncPlayers() {
     const active = await bdl.all<Obj>('/v1/players/active');
-    const rows = active.map((p) => mapPlayer(p, { active: true, nbaPersonId: nbaPersonIdByBdl.get(p.id) }));
+    // Keep backfilled nba_person_id when the static map has no entry yet (rookies / nicknames).
+    const existingPersonId = new Map<number, number>();
+    if (db) {
+      const ids = active.map((p) => p.id).filter(Boolean);
+      for (let i = 0; i < ids.length; i += 500) {
+        const { data, error } = await db
+          .from('nba_players')
+          .select('id, nba_person_id')
+          .in('id', ids.slice(i, i + 500));
+        if (error) throw new Error(`nba_players person_id read: ${error.message}`);
+        for (const row of data ?? []) {
+          if (row.nba_person_id != null) existingPersonId.set(Number(row.id), Number(row.nba_person_id));
+        }
+      }
+    }
+    const rows = active.map((p) =>
+      mapPlayer(p, {
+        active: true,
+        nbaPersonId: nbaPersonIdByBdl.get(p.id) ?? existingPersonId.get(p.id) ?? null,
+      })
+    );
     await upsert('nba_players', rows, 'id');
     if (!db) return;
     const activeIds = new Set(rows.map((r) => r.id));

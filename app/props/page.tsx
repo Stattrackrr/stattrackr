@@ -4647,11 +4647,33 @@ export default function NBALandingPage() {
   }, [playerProps]);
 
   const getPlayerIdFromName = (playerName: string): string | null => {
-    const mapping = PLAYER_ID_MAPPINGS.find(m =>
-      m.name.toLowerCase() === playerName.toLowerCase() ||
-      m.name.toLowerCase().includes(playerName.toLowerCase()) ||
-      playerName.toLowerCase().includes(m.name.toLowerCase())
-    );
+    const want = playerName.toLowerCase().trim();
+    const aliases: Record<string, string> = {
+      'ace bailey': 'airious bailey',
+      'bub carrington': 'carlton carrington',
+      'bones hyland': "nah'shon hyland",
+      'yang hansen': 'hansen yang',
+    };
+    const lookup = aliases[want] || want;
+    const mapping =
+      PLAYER_ID_MAPPINGS.find((m) => m.name.toLowerCase() === lookup) ||
+      PLAYER_ID_MAPPINGS.find(
+        (m) =>
+          m.name.toLowerCase() === want ||
+          m.name.toLowerCase().includes(want) ||
+          want.includes(m.name.toLowerCase())
+      ) ||
+      (() => {
+        const parts = lookup.split(/\s+/).filter(Boolean);
+        if (parts.length < 2) return undefined;
+        const last = parts[parts.length - 1]!;
+        const first = parts[0]!;
+        const hits = PLAYER_ID_MAPPINGS.filter((m) => {
+          const mp = m.name.toLowerCase().split(/\s+/);
+          return mp[mp.length - 1] === last && mp[0]?.[0] === first[0];
+        });
+        return hits.length === 1 ? hits[0] : undefined;
+      })();
     return mapping?.bdlId || null;
   };
 
