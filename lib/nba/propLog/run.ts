@@ -12,7 +12,7 @@ import { buildNbaPropDvpIndex, type NbaPropDvpIndex } from '@/lib/nba/dash/playe
 import type { NbaGameOdds } from '@/lib/nba/dash/oddsTypes';
 import { getNbaClubById, resolveNbaClub } from '@/lib/nba/dash/teams';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { latestLineups, lineupGameKey, starterBasis, trackStatusChanges, type LineupVersion } from './context';
+import { latestLineups, lineupGameKey, recentNews, starterBasis, trackStatusChanges, type LineupVersion } from './context';
 import { addModelFeatures } from './features';
 import { readPriceMemory, recordShadowBets, updatePriceChecks, writePriceMemory, type Trigger } from './shadow';
 import { gameLines, gameMarket, impliedTeamTotal, type LoggedLine, type PropLogPlayer } from './lines';
@@ -179,6 +179,8 @@ export type PropLogSummary = {
   lineupsLinked: number;
   featuresComputed?: number;
   shadowBets?: number;
+  /** Would-be bets recorded this run by arm id (see arms.ts). */
+  shadowBetsByArm?: Record<string, number>;
   priceChecks?: number;
   graded: number;
   skipped: string[];
@@ -289,8 +291,14 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
   await addBettingProsDvp(pending, roster.positions);
   if (pending.length) {
     try {
+      // After this run's status changes are stored, so a change seen now has age zero.
+      const news = await recentNews([...new Set(clubs.map((c) => c.code))], nowMs).catch((err) => {
+        summary.skipped.push(`News clock failed: ${err instanceof Error ? err.message : err}`);
+        return undefined;
+      });
       const f = await addModelFeatures(pending, {
         positions: roster.positions,
+        news,
         partLine: (gameId, playerId, stat) => {
           const l = currentLines.get(`${gameId}|${playerId}|${stat}`);
           return l ? { line: l.mainLine, fairOver: l.fairOverAll } : null;
@@ -322,14 +330,17 @@ export async function logNbaPropSnapshots(nowMs = Date.now()): Promise<PropLogSu
     summary.quotes += quotes.length;
     for (const b of batch) {
       summary.inserted[b.row.snapshot_kind] += 1;
-      const policy = b.row.snapshot_kind === 't2h' ? 'main' : b.row.snapshot_kind === 'injury_change' ? 'news' : null;
+      const kind = b.row.snapshot_kind;
       const id = ids.get(key(b.row));
-      if (policy && id) triggers.push({ snapshotId: id, kind: policy, row: b.row, line: b.line });
+      if ((kind === 't2h' || kind === 'injury_change') && id) triggers.push({ snapshotId: id, kind, row: b.row, line: b.line });
     }
   }
 
   try {
-    summary.shadowBets = await recordShadowBets(triggers, memory, nowMs);
+    const shadow = await recordShadowBets(triggers, memory, nowMs);
+    summary.shadowBets = shadow.recorded;
+    summary.shadowBetsByArm = shadow.byArm;
+    for (const e of shadow.errors) summary.skipped.push(`Shadow bets failed for ${e}`);
   } catch (err) {
     summary.skipped.push(`Shadow bets failed: ${err instanceof Error ? err.message : err}`);
   }

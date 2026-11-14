@@ -6,7 +6,11 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
-/** Weekly: CLV of the frozen shadow policy, calibration, lift, sample size and the stop/reopen rules. */
+/**
+ * Weekly: for every shadow arm, CLV (total and its (a) price / (b) drift split), calibration, sample
+ * size and the stop/reopen rules; plus the residual fit gate. Saves arm A's report as before, each
+ * arm's report under its model version, and the arm scoreboard. Posts nothing and promotes nothing.
+ */
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);
   if (!auth.authorized) return auth.response;

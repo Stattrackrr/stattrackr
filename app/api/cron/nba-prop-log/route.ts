@@ -8,9 +8,9 @@ export const runtime = 'nodejs';
 export const maxDuration = 120;
 
 /**
- * Every 5 minutes: snapshot due NBA prop lines from the stored board (with the would-be bets of the
- * frozen shadow policies and their price checks), then grade finished games and score the closing
- * line value of would-be bets.
+ * Every 5 minutes: snapshot due NBA prop lines from the stored board (with the would-be bets of every
+ * frozen shadow arm and their price checks; an arm that fails is skipped and reported in `skipped`),
+ * then grade finished games and score the closing line value of would-be bets.
  */
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);

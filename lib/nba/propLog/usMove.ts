@@ -8,9 +8,11 @@ import { getNbaOddsCache } from '@/lib/nba/dash/odds';
 import type { NbaGameOdds } from '@/lib/nba/dash/oddsTypes';
 import { getNbaClubById, resolveNbaClub } from '@/lib/nba/dash/teams';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { latestLineups, lineupGameKey, starterBasis, type LineupVersion } from './context';
+import type { UsMoveInfo } from './arms';
+import { latestLineups, lineupGameKey, recentNews, starterBasis, type LineupVersion } from './context';
 import { addModelFeatures } from './features';
 import { gameLines, gameMarket, impliedTeamTotal, type LoggedLine, type PropLogPlayer } from './lines';
+import { readPriceMemory, recordShadowBets, type Trigger } from './shadow';
 import { PROP_LOG_VERSIONS } from './versions';
 
 const BOARD_MAX_AGE_MS = 45 * 60 * 1000;
@@ -22,7 +24,18 @@ export type UsMoveTrigger = {
   playerId: string;
   stat: string;
   movedAt: string;
+  /** Each US book's line and fair over-price before and after, for the arms that bet on the move. */
+  from?: Record<string, { line: number; fairOver: number }>;
+  to?: Record<string, { line: number; fairOver: number }>;
 };
+
+export type UsMoveLog = { snapshots: number; shadowBets: number; shadowBetsByArm: Record<string, number>; errors: string[] };
+
+function moveInfo(m: UsMoveTrigger): UsMoveInfo | null {
+  if (!m.from || !m.to) return null;
+  const books = Object.keys(m.to).filter((b) => m.from![b]);
+  return books.length ? { movedAt: m.movedAt || null, books: books.map((b) => ({ from: m.from![b]!, to: m.to![b]! })) } : null;
+}
 
 type InjuryRow = { player_id: number; team_id: number | null; status: string; return_date: string | null; description: string | null; updated_at?: string | null };
 
@@ -110,14 +123,16 @@ function snapshotRow(odds: NbaGameOdds, line: LoggedLine, nowIso: string, ctx: {
 }
 
 /**
- * Insert us_move snapshots for the moved player×stat lines on the current AU board.
- * Returns how many snapshot rows were written (0 when board stale / no match).
+ * Insert us_move snapshots for the moved player×stat lines on the current AU board, then let the
+ * arms that take US moves record their would-be bets on them (nothing posts; a failure there never
+ * stops the snapshots). Returns the rows written (none when the board is stale or nothing matches).
  */
-export async function logUsMoveSnapshots(moves: UsMoveTrigger[], nowMs = Date.now()): Promise<number> {
-  if (!moves.length) return 0;
+export async function logUsMoveSnapshots(moves: UsMoveTrigger[], nowMs = Date.now()): Promise<UsMoveLog> {
+  const out: UsMoveLog = { snapshots: 0, shadowBets: 0, shadowBetsByArm: {}, errors: [] };
+  if (!moves.length) return out;
   const nowIso = new Date(nowMs).toISOString();
   const board = await getNbaOddsCache();
-  if (!board || !(nowMs - Date.parse(board.lastUpdated) <= BOARD_MAX_AGE_MS)) return 0;
+  if (!board || !(nowMs - Date.parse(board.lastUpdated) <= BOARD_MAX_AGE_MS)) return out;
 
   const byGame = new Map<string, UsMoveTrigger[]>();
   for (const m of moves) {
@@ -132,7 +147,7 @@ export async function logUsMoveSnapshots(moves: UsMoveTrigger[], nowMs = Date.no
   );
 
   const games = (board.games ?? []).filter((g) => byGame.has(g.gameId) && g.playerProps);
-  if (!games.length) return 0;
+  if (!games.length) return out;
 
   const clubs = games.flatMap((g) => [resolveNbaClub(g.homeTeam), resolveNbaClub(g.awayTeam)]).filter((c) => c != null);
   const [players, injuries, lineups] = await Promise.all([
@@ -142,7 +157,7 @@ export async function logUsMoveSnapshots(moves: UsMoveTrigger[], nowMs = Date.no
   ]);
   const injuriesAt = injuries.reduce<string | null>((m, r) => (r.updated_at && (!m || r.updated_at > m) ? r.updated_at : m), null);
 
-  const inserts: Array<{ row: ReturnType<typeof snapshotRow>; line: LoggedLine }> = [];
+  const inserts: Array<{ row: ReturnType<typeof snapshotRow>; line: LoggedLine; move: UsMoveTrigger }> = [];
   const currentLines = new Map<string, LoggedLine>();
 
   for (const odds of games) {
@@ -169,15 +184,17 @@ export async function logUsMoveSnapshots(moves: UsMoveTrigger[], nowMs = Date.no
       if (taken.has(key)) continue;
       const line = currentLines.get(key);
       if (!line) continue;
-      inserts.push({ row: snapshotRow(odds, line, move.movedAt || nowIso, ctx), line });
+      inserts.push({ row: snapshotRow(odds, line, move.movedAt || nowIso, ctx), line, move });
       taken.add(key);
     }
   }
 
-  if (!inserts.length) return 0;
+  if (!inserts.length) return out;
+  const news = await recentNews([...new Set(clubs.map((c) => c.code))], nowMs).catch(() => undefined);
   await addModelFeatures(
     inserts.map((x) => x.row),
     {
+      news,
       partLine: (gameId, playerId, stat) => {
         const l = currentLines.get(`${gameId}|${playerId}|${stat}`);
         return l ? { line: l.mainLine, fairOver: l.fairOverAll } : null;
@@ -185,7 +202,7 @@ export async function logUsMoveSnapshots(moves: UsMoveTrigger[], nowMs = Date.no
     }
   ).catch(() => ({ computed: 0, skipped: inserts.length }));
 
-  let written = 0;
+  const triggers: Trigger[] = [];
   for (let i = 0; i < inserts.length; i += INSERT_BATCH) {
     const batch = inserts.slice(i, i + INSERT_BATCH);
     const { data, error } = await supabaseAdmin.from('nba_prop_snapshots').insert(batch.map((b) => b.row)).select('id');
@@ -209,7 +226,20 @@ export async function logUsMoveSnapshots(moves: UsMoveTrigger[], nowMs = Date.no
       const { error: qError } = await supabaseAdmin.from('nba_prop_book_quotes').insert(quotes.slice(j, j + 2000));
       if (qError) throw new Error(`us_move quotes: ${qError.message}`);
     }
-    written += ids.length;
+    out.snapshots += ids.length;
+    batch.forEach((b, j) => {
+      if (ids[j]) triggers.push({ snapshotId: ids[j]!, kind: 'us_move', row: b.row, line: b.line, usMove: moveInfo(b.move) });
+    });
   }
-  return written;
+  if (triggers.length) {
+    try {
+      const shadow = await recordShadowBets(triggers, await readPriceMemory(), nowMs);
+      out.shadowBets = shadow.recorded;
+      out.shadowBetsByArm = shadow.byArm;
+      out.errors.push(...shadow.errors);
+    } catch (err) {
+      out.errors.push(`shadow bets: ${err instanceof Error ? err.message : err}`);
+    }
+  }
+  return out;
 }

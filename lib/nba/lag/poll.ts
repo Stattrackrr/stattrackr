@@ -79,7 +79,7 @@ async function fetchUsProps(gameId: string): Promise<{ rows: BdlPropRow[]; drift
   return { rows: json.data ?? [], driftMs: Number.isFinite(server) ? Math.round((sentAt + Date.now()) / 2 - server) : null };
 }
 
-export type LagSummary = { games: number; usPolls: number; moves: number; usMoveSnapshots: number; auPulls: number; capReached: boolean; resolved: number; pending: number; errors: string[] };
+export type LagSummary = { games: number; usPolls: number; moves: number; usMoveSnapshots: number; shadowBets?: number; shadowBetsByArm?: Record<string, number>; auPulls: number; capReached: boolean; resolved: number; pending: number; errors: string[] };
 
 export async function runLagPoll(nowMs = Date.now()): Promise<LagSummary> {
   const nowIso = new Date(nowMs).toISOString();
@@ -115,15 +115,21 @@ export async function runLagPoll(nowMs = Date.now()): Promise<LagSummary> {
 
   if (newMoves.length) {
     try {
-      summary.usMoveSnapshots = await logUsMoveSnapshots(
+      const logged = await logUsMoveSnapshots(
         newMoves.map(({ game, move }) => ({
           gameId: game.gameId,
           playerId: move.playerId,
           stat: move.stat,
           movedAt: move.movedAt ?? nowIso,
+          from: move.from,
+          to: move.to,
         })),
         nowMs
       );
+      summary.usMoveSnapshots = logged.snapshots;
+      summary.shadowBets = logged.shadowBets;
+      summary.shadowBetsByArm = logged.shadowBetsByArm;
+      for (const e of logged.errors) summary.errors.push(`us_move ${e}`);
     } catch (err) {
       summary.errors.push(`us_move snapshots: ${err instanceof Error ? err.message : err}`);
     }

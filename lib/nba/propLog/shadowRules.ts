@@ -5,6 +5,7 @@
  */
 
 import { fairTwoWay, median } from '@/lib/aiPicks/model/math';
+import { clvSplit, sizeFromSpread } from '@/lib/nba/model/clv';
 import { BASE_STATS } from '@/lib/nba/model/design';
 import { logit } from '@/lib/nba/model/residual';
 import type { LoggedQuote } from './lines';
@@ -16,7 +17,8 @@ export type ModelCoefs = {
   controls: { booksMean: number; booksSd: number; dispMean: number; dispSd: number };
   /** Minimum EV per unit at the best confirmed AU price for a would-be bet. */
   minEv: number;
-  features: Array<{ name: string; key: string; stats?: readonly string[] }>;
+  /** scale: the feature is divided by it before its weight applies (the fit's own scaling; 1 when absent). */
+  features: Array<{ name: string; key: string; stats?: readonly string[]; scale?: number }>;
 };
 
 /**
@@ -44,7 +46,7 @@ export function scoreOver(c: ModelCoefs, l: ScoredLine): number {
   if ((BASE_STATS as readonly string[]).includes(l.stat)) z += t(`b_${l.stat}`);
   for (const f of c.features) {
     if (f.stats && !f.stats.includes(l.stat)) continue;
-    z += t(f.name) * (Number(l.features[f.key] ?? 0) || 0);
+    z += (t(f.name) * (Number(l.features[f.key] ?? 0) || 0)) / (f.scale ?? 1);
   }
   z += t('n_books') * ((l.nBooks - c.controls.booksMean) / c.controls.booksSd);
   z += t('book_dispersion') * (((l.bookDispersion ?? 0) - c.controls.dispMean) / c.controls.dispSd);
@@ -87,6 +89,36 @@ export function priceConfirmed(opts: {
 export function confirmationGaps(msToTip: number): { minGapMs: number; maxSourceAgeMs: number } {
   const near = msToTip <= 2 * 60 * 60 * 1000;
   return { minGapMs: (near ? 2 : 5) * 60_000, maxSourceAgeMs: (near ? 15 : 30) * 60_000 };
+}
+
+export type ClosedBet = { side: 'over' | 'under'; line: number; price: number; book: string; fairAtDecision: number; projection: { mean?: number; sd?: number } | null | undefined };
+
+/**
+ * Closing line value of one would-be bet against the close snapshot of its line: the bet's own line,
+ * the bet book left out of the closing fair, k at 0.8 / 1 / 1.25. `missing` when it can't be scored.
+ */
+export function closingValue(bet: ClosedBet, closeLine: number, closeQuotes: LoggedQuote[]): Record<string, unknown> {
+  const looFair = fairExcluding(closeQuotes, closeLine, bet.book);
+  const allFair = fairExcluding(closeQuotes, closeLine, null);
+  const proj = bet.projection;
+  if (looFair == null || !proj?.mean || !proj.sd) return { missing: looFair == null ? 'no close fair' : 'no projection spread' };
+  const k = sizeFromSpread(proj.mean, proj.sd * proj.sd);
+  const base = { side: bet.side, price: bet.price, line: bet.line, fairNow: bet.fairAtDecision, lineNow: bet.line, lineClose: closeLine };
+  const r4 = (v: number) => Math.round(v * 10000) / 10000;
+  const at = (kk: number, fair: number) => clvSplit({ ...base, fairClose: fair, k: kk });
+  const main = at(k, looFair);
+  return {
+    total: r4(main.total),
+    a: r4(main.a),
+    b: r4(main.b),
+    sameLine: closeLine === bet.line,
+    k: Number.isFinite(k) ? r4(k) : null,
+    totalK08: r4(at(k * 0.8, looFair).total),
+    totalK125: r4(at(k * 1.25, looFair).total),
+    totalAllBooks: allFair == null ? null : r4(at(k, allFair).total),
+    closeLine,
+    closeFair: r4(looFair),
+  };
 }
 
 export type WouldBe = { side: 'over' | 'under'; price: number; book: string; prob: number; fair: number; ev: number; confirmed: boolean };

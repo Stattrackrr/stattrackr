@@ -38,6 +38,13 @@ export function isNewsChange(c: Pick<StatusChange, 'from_status' | 'designation'
   return from !== to && Math.max(from, to) >= SEVERITY.questionable!;
 }
 
+/** Which way a change moves a player: +1 toward out, -1 toward available, 0 when the designation holds. */
+export function newsDirection(c: Pick<StatusChange, 'from_status' | 'designation'>): -1 | 0 | 1 {
+  const from = SEVERITY[c.from_status == null ? 'cleared' : designationOf(c.from_status)] ?? 0;
+  const to = SEVERITY[c.designation] ?? 0;
+  return to > from ? 1 : to < from ? -1 : 0;
+}
+
 /** Changes between two pulls of the report: new listings, status changes, and players who dropped off it. */
 export function diffReports(prev: Record<string, ReportRow>, next: ReportRow[]): StatusChange[] {
   const out: StatusChange[] = [];
