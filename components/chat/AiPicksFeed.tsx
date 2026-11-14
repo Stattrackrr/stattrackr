@@ -467,10 +467,10 @@ function RecordStrip({ pendingCount }: { pendingCount: number }) {
   return (
     <div className="grid grid-cols-4 divide-x divide-gray-200/80 rounded-2xl border border-gray-200/80 bg-white shadow-sm dark:divide-white/[0.07] dark:border-white/[0.07] dark:bg-[#0f1a2b]">
       {cells.map((c) => (
-        <div key={c.label} className="px-2 py-2.5 text-center">
+        <div key={c.label} className="min-w-0 px-1.5 py-2.5 text-center sm:px-2">
           <div className="text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">{c.label}</div>
           <div
-            className={`mt-0.5 text-base font-bold tabular-nums ${
+            className={`mt-0.5 whitespace-nowrap text-sm font-bold tabular-nums tracking-tight sm:text-base ${
               c.tone == null || c.tone === 0
                 ? 'text-gray-900 dark:text-white'
                 : c.tone > 0
