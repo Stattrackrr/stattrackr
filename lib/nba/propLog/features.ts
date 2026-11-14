@@ -20,6 +20,7 @@ import { altitudeVisitor, chancesGap, comboGapZ, fatigue, opponentAbsence, type 
 import { crewEffect, refTendencies, type OfficiatedGame } from '@/lib/nba/refs/rules';
 import { loadOfficials, type OfficialsRow } from '@/lib/nba/refs/sync';
 import { designationOf } from './contextRules';
+import { etDay, freshestNews, gameDayEt, type NewsItem } from './featureRules';
 
 /** Combo stats as their parts, for the usage shift. */
 const PARTS: Record<NblPropMarket, BaseStat[]> = {
@@ -34,12 +35,17 @@ const PARTS: Record<NblPropMarket, BaseStat[]> = {
 };
 
 const ROTATION_MINUTES = 20;
-const etDay = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
-const dayOf = (g: NbaGameLogRow) => String(g.date || '').slice(0, 10);
+/** Starter flags are read for each player's last few games only: the minutes model looks back 5. */
+const STARTER_LOOKBACK = 6;
+const LINEUP_PAGE = 1000;
+/** The game's US Eastern day, the same calendar tonight's day is on (the log's own date is the UTC tip time). */
+const dayOf = (g: NbaGameLogRow) => gameDayEt(g.date);
 
 export type FeatureRow = {
   game_id: string;
   tip_at: string;
+  /** When the snapshot was taken; news age is measured to this moment. */
+  captured_at?: string;
   player_id: string | null;
   team: string | null;
   opponent: string | null;
@@ -60,6 +66,8 @@ export type FeatureContext = {
   positions?: Map<string, string | null>;
   /** The current main line and fair over-price of another stat for the same player, for combos. */
   partLine?: (gameId: string, playerId: string, stat: BaseStat) => { line: number; fairOver: number | null } | null;
+  /** Recent injury-news changes by team code (see recentNews), for news age and direction. */
+  news?: Map<string, NewsItem[]>;
 };
 
 function startsTonight(basis: string | null): boolean | null {
@@ -91,12 +99,32 @@ export async function addModelFeatures(rows: FeatureRow[], ctx: FeatureContext =
   const schedule = (team: string, beforeDay: string) =>
     [...(teamGames.get(team)?.values() ?? [])].filter((g) => g.date < beforeDay).sort((a, b) => a.date.localeCompare(b.date));
 
-  // Starters in this season's games.
-  const matchIds = [...new Set([...teamGames.values()].flatMap((m) => [...m.keys()]))].map(Number).filter(Number.isFinite);
+  // Starters in each player's last few games this season, paged so no game's flags are cut off.
+  const needed = new Set<number>();
+  for (const row of withPlayer) {
+    const day = etDay(row.tip_at);
+    const played = (cur.logsByPlayer.get(row.player_id!) ?? []).filter((g) => (g.minutes ?? 0) > 0 && dayOf(g) < day);
+    for (const g of played.slice(-STARTER_LOOKBACK)) if (Number.isFinite(Number(g.matchId))) needed.add(Number(g.matchId));
+  }
+  const matchIds = [...needed];
   const started = new Map<string, boolean>();
-  for (let i = 0; i < matchIds.length; i += 200) {
-    const { data } = await supabaseAdmin.from('nba_lineups').select('game_id, player_id, starter').in('game_id', matchIds.slice(i, i + 200));
-    for (const r of data ?? []) started.set(`${r.game_id}|${r.player_id}`, Boolean(r.starter));
+  flags: for (let i = 0; i < matchIds.length; i += 100) {
+    for (let from = 0; ; from += LINEUP_PAGE) {
+      const { data, error } = await supabaseAdmin
+        .from('nba_lineups')
+        .select('game_id, player_id, starter')
+        .in('game_id', matchIds.slice(i, i + 100))
+        .order('game_id')
+        .order('player_id')
+        .range(from, from + LINEUP_PAGE - 1);
+      if (error) {
+        // Half a set of flags reads as role changes that never happened; none at all is safe.
+        started.clear();
+        break flags;
+      }
+      for (const r of data ?? []) started.set(`${r.game_id}|${r.player_id}`, Boolean(r.starter));
+      if ((data?.length ?? 0) < LINEUP_PAGE) break;
+    }
   }
 
   const logsOf = (id: string, beforeDay: string) =>
@@ -240,16 +268,17 @@ export async function addModelFeatures(rows: FeatureRow[], ctx: FeatureContext =
       const parts = PARTS[stat];
       const home = typeof row.features.home === 'boolean' ? (row.features.home as boolean) : null;
       const out: Record<string, unknown> = {};
-      const tipMs = Date.parse(row.tip_at);
-      const newsAgeLn = (playerId: string) => {
-        const inj = row.injury_report.find((r) => String(r.player_id) === playerId);
-        const at = inj?.updated_at ? Date.parse(inj.updated_at) : NaN;
-        if (!Number.isFinite(at) || !(tipMs > at)) return null;
-        return Math.log1p(Math.max(0, (tipMs - at) / 60_000));
-      };
-      const teammateAges = others.map((o) => newsAgeLn(o.id)).filter((v): v is number => v != null);
-      out.teammate_news_age_ln = teammateAges.length ? r4(Math.min(...teammateAges)) : null;
-      out.player_news_age_ln = newsAgeLn(pid);
+      // News: the latest real status move for him and for a rotation teammate, as first seen by the
+      // logger, aged to this snapshot. dir: +1 toward out, -1 toward available.
+      const teamNews = ctx.news?.get(team) ?? [];
+      const capturedMs = row.captured_at ? Date.parse(row.captured_at) : NaN;
+      const own = freshestNews(teamNews, capturedMs, (id) => id === pid);
+      const mate = freshestNews(teamNews, capturedMs, (id) => id !== pid && (recentAvg(id, team, day, (g) => g.minutes) ?? 0) >= ROTATION_MINUTES);
+      out.teammate_news_age_ln = mate ? r4(mate.ageLn) : null;
+      out.teammate_news_dir = mate ? mate.dir : null;
+      out.teammate_news_id = mate ? mate.playerId : null;
+      out.player_news_age_ln = own ? r4(own.ageLn) : null;
+      out.player_news_dir = own ? own.dir : null;
 
       if (row.opponent) {
         const oppSched = schedule(row.opponent, day);

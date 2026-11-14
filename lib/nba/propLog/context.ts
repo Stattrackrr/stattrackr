@@ -13,7 +13,8 @@ import type { RwPage } from '@/lib/nba/rotowireLineups';
 import { mapInjury } from '@/lib/nba/sync/mappers';
 import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { diffReports, isNewsChange, type LineupVersion, type ReportRow } from './contextRules';
+import { diffReports, isNewsChange, newsDirection, type LineupVersion, type ReportRow } from './contextRules';
+import type { NewsItem } from './featureRules';
 
 export { lineupGameKey, starterBasis, type LineupVersion } from './contextRules';
 
@@ -81,6 +82,39 @@ export async function trackStatusChanges(nowMs: number, nextGameByTeam: Map<numb
     newsPlayers.set(c.team_id, (newsPlayers.get(c.team_id) ?? new Set()).add(c.player_id));
   }
   return { report, reportAt: nowIso, changes: changes.length, newsPlayers };
+}
+
+const NEWS_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
+/**
+ * Each player's latest news change (see isNewsChange) in the last three days, by team code, as first
+ * seen by the logger. This is the point-in-time news clock: the live report has no change time.
+ */
+export async function recentNews(teams: string[], nowMs: number): Promise<Map<string, NewsItem[]>> {
+  const out = new Map<string, NewsItem[]>();
+  if (!teams.length) return out;
+  const seen = new Set<string>();
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabaseAdmin
+      .from('nba_status_changes')
+      .select('player_id, team, from_status, designation, captured_at')
+      .in('team', teams)
+      .gte('captured_at', new Date(nowMs - NEWS_WINDOW_MS).toISOString())
+      .lte('captured_at', new Date(nowMs).toISOString())
+      .order('captured_at', { ascending: false })
+      .order('id')
+      .range(from, from + 999);
+    if (error) throw new Error(`nba_status_changes read: ${error.message}`);
+    for (const r of data ?? []) {
+      const id = String(r.player_id);
+      const change = { from_status: r.from_status as string | null, designation: String(r.designation ?? '') };
+      if (!r.team || seen.has(id) || !isNewsChange(change)) continue;
+      seen.add(id);
+      out.set(r.team, [...(out.get(r.team) ?? []), { playerId: id, at: r.captured_at, dir: newsDirection(change) }]);
+    }
+    if ((data?.length ?? 0) < 1000) break;
+  }
+  return out;
 }
 
 const lineupHash = (t: { confirmed: boolean; status: string; starters: unknown; mayNotPlay: unknown }) =>

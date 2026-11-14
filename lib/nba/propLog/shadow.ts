@@ -1,30 +1,30 @@
 /**
  * Frozen shadow policies (agreed build spec, section 3 item 1): every logged line is judged once at
- * its decision point and the would-be bet, if any, is recorded with everything it was based on.
+ * its decision point by every registered arm (see arms.ts), and each arm's would-be bet, if any, is
+ * recorded with everything it was based on.
  *   main: the first snapshot from 2 hours before tip (t2h);
- *   news: each injury_change snapshot.
+ *   news: each injury_change snapshot, and each us_move snapshot for arms that take them.
  * Then the posted price is checked again 5, 10 and 20 minutes later, and after tip the bet gets its
  * closing line value (bet line, bet book left out of the close, k at 0.8 / 1 / 1.25). Nothing posts.
  */
 
 import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { clvSplit, sizeFromSpread } from '@/lib/nba/model/clv';
+import { ARMS, type Arm } from './arms';
 import type { LoggedLine, LoggedQuote } from './lines';
-import { confirmationGaps, decide, fairExcluding, MODEL_V0, priceConfirmed, type ModelCoefs, type PriceMemory } from './shadowRules';
+import { dropRepeatNews, memoryKey, wouldBeBets, type Trigger } from './shadowBets';
+import { closingValue, type PriceMemory } from './shadowRules';
 
-/** Bumped whenever the policy or the coefficients change; each version is its own evaluation sample. */
-/** shadow-v0.1: news fires only on real designation moves for players with props, one bet per line per game. */
-export const SHADOW_POLICY_VERSION = 'shadow-v0.1';
-export const ACTIVE_COEFS: ModelCoefs = MODEL_V0;
+export { ACTIVE_COEFS, SHADOW_POLICY_VERSION } from './arms';
+export { memoryKey, type Trigger } from './shadowBets';
 
 const MEMORY_KEY = 'nba_prop_log_price_memory_v1';
 const MEMORY_TTL_S = 2 * 60 * 60;
 const CHECK_OFFSETS_MIN = [5, 10, 20] as const;
 /** A check runs on the first logger run past its offset, within this window (runs are every 5 minutes). */
 const CHECK_WINDOW_MIN = 10;
-
-export const memoryKey = (gameId: string, boardName: string, stat: string) => `${gameId}|${boardName}|${stat}`;
+const BET_BATCH = 500;
+const PAGE = 1000;
 
 export async function readPriceMemory(): Promise<Record<string, PriceMemory>> {
   return (await sharedCache.getJSON<Record<string, PriceMemory>>(MEMORY_KEY)) ?? {};
@@ -52,86 +52,56 @@ export async function writePriceMemory(
   await sharedCache.setJSON(MEMORY_KEY, next, MEMORY_TTL_S);
 }
 
-export type Trigger = {
-  snapshotId: string;
-  kind: 'main' | 'news';
-  row: { game_id: string; tip_at: string; player_id: string | null; stat: string; main_line: number; n_books: number; book_dispersion: number | null; features: Record<string, unknown>; model_version: string; feature_version: string };
-  line: LoggedLine;
-};
+export type ShadowResult = { recorded: number; byArm: Record<string, number>; errors: string[] };
 
-/** Would-be bets for this run's decision snapshots; returns how many were recorded. */
-export async function recordShadowBets(triggers: Trigger[], memory: Record<string, PriceMemory>, nowMs: number): Promise<number> {
-  const nowIso = new Date(nowMs).toISOString();
-  const bets: Array<Record<string, unknown>> = [];
-  for (const t of triggers) {
-    if (!t.row.player_id) continue;
-    const previous = memory[memoryKey(t.row.game_id, t.line.boardName, t.line.stat)];
-    const gaps = confirmationGaps(Date.parse(t.row.tip_at) - nowMs);
-    const quoteFor = (book: string) => t.line.quotes.find((q) => q.book === book && q.line === t.line.mainLine);
-    const bet = decide({
-      coefs: ACTIVE_COEFS,
-      line: { stat: t.row.stat, features: t.row.features, nBooks: t.row.n_books, bookDispersion: t.row.book_dispersion, mainLine: t.line.mainLine, quotes: t.line.quotes },
-      best: { over: t.line.bestAuOver, under: t.line.bestAuUnder },
-      confirmed: (side, book) => {
-        const quote = quoteFor(book);
-        return quote ? priceConfirmed({ quote, side, previous, nowMs, ...gaps }) : false;
-      },
-    });
-    if (!bet) continue;
-    bets.push({
-      policy: t.kind,
-      policy_version: SHADOW_POLICY_VERSION,
-      model_version: ACTIVE_COEFS.version,
-      feature_version: t.row.feature_version,
-      trigger_snapshot_id: t.snapshotId,
-      game_id: t.row.game_id,
-      player_id: t.row.player_id,
-      stat: t.row.stat,
-      side: bet.side,
-      line: t.line.mainLine,
-      price: bet.price,
-      book: bet.book,
-      price_confirmed: bet.confirmed,
-      model_prob: Math.round(bet.prob * 10000) / 10000,
-      fair_at_decision: Math.round(bet.fair * 10000) / 10000,
-      features: { ...t.row.features, ev: Math.round(bet.ev * 10000) / 10000 },
-      created_at: nowIso,
-    });
+/**
+ * Would-be bets of every arm for this run's decision snapshots. One read (news bets already taken)
+ * and one batched write however many arms there are; an arm that fails is reported and skipped.
+ */
+export async function recordShadowBets(triggers: Trigger[], memory: Record<string, PriceMemory>, nowMs: number, arms: readonly Arm[] = ARMS): Promise<ShadowResult> {
+  const { bets, errors } = wouldBeBets(triggers, memory, nowMs, arms);
+  const result: ShadowResult = { recorded: 0, byArm: {}, errors };
+  if (!bets.length) return result;
+  // News: one would-be bet per arm, player, stat and side per game.
+  const news = bets.filter((b) => b.policy === 'news');
+  let prior: Array<{ policy_version: string; game_id: string; player_id: string | null; stat: string; side: string }> = [];
+  if (news.length) {
+    const versions = [...new Set(news.map((b) => b.policy_version))];
+    const games = [...new Set(news.map((b) => b.game_id))];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabaseAdmin
+        .from('nba_shadow_bets')
+        .select('policy_version, game_id, player_id, stat, side')
+        .eq('policy', 'news')
+        .in('policy_version', versions)
+        .in('game_id', games)
+        .order('id')
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(`nba_shadow_bets read: ${error.message}`);
+      prior = prior.concat(data ?? []);
+      if ((data?.length ?? 0) < PAGE) break;
+    }
   }
-  if (!bets.length) return 0;
-  // News: one would-be bet per player, stat and side per game; a later report change doesn't bet the same line again.
-  const lineOf = (b: Record<string, unknown>) => `${b.game_id}|${b.player_id}|${b.stat}|${b.side}`;
-  const newsGames = [...new Set(bets.filter((b) => b.policy === 'news').map((b) => String(b.game_id)))];
-  const taken = new Set<string>();
-  if (newsGames.length) {
-    const { data: prior, error: pError } = await supabaseAdmin
+  const fresh = dropRepeatNews(bets, prior);
+  const armOf = new Map(arms.map((a) => [a.policyVersion, a.id]));
+  for (let i = 0; i < fresh.length; i += BET_BATCH) {
+    const { data, error } = await supabaseAdmin
       .from('nba_shadow_bets')
-      .select('game_id, player_id, stat, side')
-      .eq('policy', 'news')
-      .eq('policy_version', SHADOW_POLICY_VERSION)
-      .in('game_id', newsGames);
-    if (pError) throw new Error(`nba_shadow_bets read: ${pError.message}`);
-    for (const p of prior ?? []) taken.add(lineOf(p));
+      .upsert(fresh.slice(i, i + BET_BATCH), { onConflict: 'policy,policy_version,trigger_snapshot_id,side', ignoreDuplicates: true })
+      .select('id, book, price, created_at, policy_version');
+    if (error) throw new Error(`nba_shadow_bets: ${error.message}`);
+    const checks = (data ?? []).map((b) => ({ shadow_bet_id: b.id, posted_at: b.created_at, book: b.book, price_posted: b.price }));
+    if (checks.length) {
+      const { error: cError } = await supabaseAdmin.from('nba_bet_price_checks').insert(checks);
+      if (cError) throw new Error(`nba_bet_price_checks: ${cError.message}`);
+    }
+    for (const b of data ?? []) {
+      const arm = armOf.get(b.policy_version) ?? b.policy_version;
+      result.byArm[arm] = (result.byArm[arm] ?? 0) + 1;
+      result.recorded += 1;
+    }
   }
-  const fresh = bets.filter((b) => {
-    if (b.policy !== 'news') return true;
-    const key = lineOf(b);
-    if (taken.has(key)) return false;
-    taken.add(key);
-    return true;
-  });
-  if (!fresh.length) return 0;
-  const { data, error } = await supabaseAdmin
-    .from('nba_shadow_bets')
-    .upsert(fresh, { onConflict: 'policy,policy_version,trigger_snapshot_id,side', ignoreDuplicates: true })
-    .select('id, book, price, created_at');
-  if (error) throw new Error(`nba_shadow_bets: ${error.message}`);
-  const checks = (data ?? []).map((b) => ({ shadow_bet_id: b.id, posted_at: b.created_at, book: b.book, price_posted: b.price }));
-  if (checks.length) {
-    const { error: cError } = await supabaseAdmin.from('nba_bet_price_checks').insert(checks);
-    if (cError) throw new Error(`nba_bet_price_checks: ${cError.message}`);
-  }
-  return data?.length ?? 0;
+  return result;
 }
 
 /** Fills the +5 / +10 / +20 minute prices from this run's board for checks that are due. */
@@ -167,61 +137,110 @@ export async function updatePriceChecks(currentLines: Map<string, LoggedLine>, n
   return updated;
 }
 
-type ShadowRow = { id: string; game_id: string; player_id: string; stat: string; side: 'over' | 'under'; line: number; price: number; book: string; fair_at_decision: number; features: Record<string, any>; trigger_snapshot_id: string };
+const CLV_BETS_PER_RUN = 1000;
+/**
+ * More than a full slate, so bets still waiting on a close (up to NO_CLOSE_AFTER_MS after tip) can
+ * never fill a run and hold up games that tipped after them.
+ */
+const CLV_GAMES_PER_RUN = 16;
+const CLV_WRITES_PER_RUN = 400;
+const CLV_WRITES_AT_ONCE = 10;
+/** A line with no close snapshot this long after tip never gets one (the close is only taken before tip). */
+const NO_CLOSE_AFTER_MS = 6 * 60 * 60 * 1000;
 
-/** Closing line value for would-be bets whose game has a close snapshot. */
+type PendingBet = {
+  id: string;
+  game_id: string;
+  player_id: string;
+  stat: string;
+  side: 'over' | 'under';
+  line: number;
+  price: number;
+  book: string;
+  fair_at_decision: number;
+  projection: { mean?: number; sd?: number } | null;
+  nba_prop_snapshots: { tip_at: string } | Array<{ tip_at: string }> | null;
+};
+
+/**
+ * Closing line value for would-be bets whose game has tipped. Work is bounded per run: only games
+ * that have started, one read of their close snapshots and quotes shared by every arm's bets on the
+ * same line, and a capped number of writes (the rest are picked up by the next run).
+ */
 export async function computeShadowClv(nowMs: number): Promise<number> {
   const { data, error } = await supabaseAdmin
     .from('nba_shadow_bets')
-    .select('id, game_id, player_id, stat, side, line, price, book, fair_at_decision, features, trigger_snapshot_id')
+    .select('id, game_id, player_id, stat, side, line, price, book, fair_at_decision, projection:features->projection, nba_prop_snapshots!trigger_snapshot_id(tip_at)')
     .is('clv', null)
     .order('created_at')
-    .limit(500);
+    .limit(CLV_BETS_PER_RUN);
   if (error) throw new Error(`shadow bets read: ${error.message}`);
-  let done = 0;
-  for (const b of (data ?? []) as ShadowRow[]) {
-    const { data: close } = await supabaseAdmin
+  const tipOf = (b: PendingBet) => Date.parse((Array.isArray(b.nba_prop_snapshots) ? b.nba_prop_snapshots[0] : b.nba_prop_snapshots)?.tip_at ?? '');
+  const tipped = ((data ?? []) as unknown as PendingBet[]).filter((b) => tipOf(b) <= nowMs);
+  const games = [...new Set(tipped.map((b) => b.game_id))].slice(0, CLV_GAMES_PER_RUN);
+  if (!games.length) return 0;
+  const bets = tipped.filter((b) => games.includes(b.game_id));
+  const lineKey = (r: { game_id: string; player_id: string | null; stat: string }) => `${r.game_id}|${r.player_id}|${r.stat}`;
+  const wanted = new Set(bets.map(lineKey));
+
+  // The close snapshot of each line with a pending bet (the latest, if a line somehow has two).
+  const closes = new Map<string, { id: string; main_line: number; captured_at: string }>();
+  for (let from = 0; ; from += PAGE) {
+    const { data: rows, error: cError } = await supabaseAdmin
       .from('nba_prop_snapshots')
-      .select('id, tip_at, main_line')
-      .eq('game_id', b.game_id)
-      .eq('player_id', b.player_id)
-      .eq('stat', b.stat)
+      .select('id, game_id, player_id, stat, main_line, captured_at')
       .eq('snapshot_kind', 'close')
-      .maybeSingle();
-    if (!close || Date.parse(close.tip_at) > nowMs) continue;
-    const { data: q } = await supabaseAdmin.from('nba_prop_book_quotes').select('book, line, over_price, under_price, source_ts, coherent').eq('snapshot_id', close.id);
-    const quotes: LoggedQuote[] = (q ?? []).map((r) => ({ book: r.book, line: Number(r.line), over: r.over_price, under: r.under_price, sourceTs: r.source_ts, coherent: r.coherent }));
-    const closeLine = Number(close.main_line);
-    const looFair = fairExcluding(quotes, closeLine, b.book);
-    const allFair = fairExcluding(quotes, closeLine, null);
-    const proj = b.features?.projection as { mean?: number; sd?: number } | undefined;
-    if (looFair == null || !proj?.mean || !proj.sd) {
-      await supabaseAdmin.from('nba_shadow_bets').update({ clv: { missing: looFair == null ? 'no close fair' : 'no projection spread' } }).eq('id', b.id);
+      .in('game_id', games)
+      .not('player_id', 'is', null)
+      .order('id')
+      .range(from, from + PAGE - 1);
+    if (cError) throw new Error(`close snapshots read: ${cError.message}`);
+    for (const r of rows ?? []) {
+      const key = lineKey(r);
+      if (!wanted.has(key)) continue;
+      const have = closes.get(key);
+      if (!have || r.captured_at > have.captured_at) closes.set(key, { id: r.id, main_line: Number(r.main_line), captured_at: r.captured_at });
+    }
+    if ((rows?.length ?? 0) < PAGE) break;
+  }
+  const quotes = new Map<string, LoggedQuote[]>();
+  const closeIds = [...closes.values()].map((c) => c.id);
+  for (let i = 0; i < closeIds.length; i += 100) {
+    for (let from = 0; ; from += PAGE) {
+      const { data: rows, error: qError } = await supabaseAdmin
+        .from('nba_prop_book_quotes')
+        .select('snapshot_id, book, line, over_price, under_price, source_ts, coherent')
+        .in('snapshot_id', closeIds.slice(i, i + 100))
+        .order('snapshot_id')
+        .order('book')
+        .range(from, from + PAGE - 1);
+      if (qError) throw new Error(`close quotes read: ${qError.message}`);
+      for (const r of rows ?? []) {
+        const list = quotes.get(r.snapshot_id) ?? [];
+        list.push({ book: r.book, line: Number(r.line), over: r.over_price, under: r.under_price, sourceTs: r.source_ts, coherent: r.coherent });
+        quotes.set(r.snapshot_id, list);
+      }
+      if ((rows?.length ?? 0) < PAGE) break;
+    }
+  }
+
+  const updates: Array<{ id: string; clv: Record<string, unknown>; scored: boolean }> = [];
+  for (const b of bets) {
+    const close = closes.get(lineKey(b));
+    if (!close) {
+      if (nowMs - tipOf(b) > NO_CLOSE_AFTER_MS && updates.length < CLV_WRITES_PER_RUN) updates.push({ id: b.id, clv: { missing: 'no close snapshot' }, scored: false });
       continue;
     }
-    const k = sizeFromSpread(proj.mean, proj.sd * proj.sd);
-    const base = { side: b.side, price: Number(b.price), line: Number(b.line), fairNow: Number(b.fair_at_decision), lineNow: Number(b.line), lineClose: closeLine };
-    const r4 = (v: number) => Math.round(v * 10000) / 10000;
-    const at = (kk: number, fair: number) => clvSplit({ ...base, fairClose: fair, k: kk });
-    const main = at(k, looFair);
-    await supabaseAdmin
-      .from('nba_shadow_bets')
-      .update({
-        clv: {
-          total: r4(main.total),
-          a: r4(main.a),
-          b: r4(main.b),
-          sameLine: closeLine === Number(b.line),
-          k: Number.isFinite(k) ? r4(k) : null,
-          totalK08: r4(at(k * 0.8, looFair).total),
-          totalK125: r4(at(k * 1.25, looFair).total),
-          totalAllBooks: allFair == null ? null : r4(at(k, allFair).total),
-          closeLine,
-          closeFair: r4(looFair),
-        },
-      })
-      .eq('id', b.id);
-    done += 1;
+    const clv = closingValue({ side: b.side, line: Number(b.line), price: Number(b.price), book: b.book, fairAtDecision: Number(b.fair_at_decision), projection: b.projection }, close.main_line, quotes.get(close.id) ?? []);
+    updates.push({ id: b.id, clv, scored: !('missing' in clv) });
+    if (updates.length >= CLV_WRITES_PER_RUN) break;
+  }
+  let done = 0;
+  for (let i = 0; i < updates.length; i += CLV_WRITES_AT_ONCE) {
+    const results = await Promise.all(updates.slice(i, i + CLV_WRITES_AT_ONCE).map((u) => supabaseAdmin.from('nba_shadow_bets').update({ clv: u.clv }).eq('id', u.id)));
+    const failed = results.find((r) => r.error);
+    if (failed?.error) throw new Error(`shadow clv update: ${failed.error.message}`);
+    done += updates.slice(i, i + CLV_WRITES_AT_ONCE).filter((u) => u.scored).length;
   }
   return done;
 }

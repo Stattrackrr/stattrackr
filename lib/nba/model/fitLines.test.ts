@@ -58,6 +58,25 @@ test('latency signature: lift at decision time, none at close; coefficients scor
   }
 });
 
+test('a feature that is small in its own units still earns its weight (the fit scales it, scoring undoes it)', () => {
+  const { t2h } = latency(9000, 4);
+  // The same signal in units a tenth the size, as the logged minutes and usage inputs are.
+  const small = t2h.map((l) => ({ ...l, features: { ...l.features, minutes_new_info_z: (l.features.minutes_new_info_z as number) * 0.1 } }));
+  const fit = fitLines(small, [], 'v1-test');
+  assert.equal(fit.status, 'fitted');
+  if (fit.status !== 'fitted') return;
+  const feature = fit.coefs.features.find((f) => f.name === 'minutes_new_info')!;
+  assert.ok(Math.abs(feature.scale! - 0.1) < 0.01, `scale ${feature.scale}`);
+  assert.ok(Math.abs(fit.coefs.theta.minutes_new_info! - 0.35) < 0.08, `weight per scaled unit ${fit.coefs.theta.minutes_new_info}`);
+  assert.ok(fit.liftVsMarket.lo > 0, `lift ${fit.liftVsMarket.mean}`);
+  const spec = modelSpec(small);
+  const theta = spec.params.map((p) => fit.coefs.theta[p.name]!);
+  for (const l of small.slice(0, 50)) {
+    const p = scoreOver(fit.coefs, { fairOver: l.fairOver, stat: l.stat, features: l.features, nBooks: l.nBooks, bookDispersion: l.bookDispersion });
+    assert.ok(Math.abs(p - predict(theta, lineVector(spec, l))) < 1e-4);
+  }
+});
+
 test('logged rows map to model lines: only graded base stats with a fair', () => {
   const row = { game_id: 'g', player_id: 'p', stat: 'points', tip_at: '2026-11-02T00:30:00Z', fair_over_all: 0.52, n_books: 9, book_dispersion: 0.01, features: { minutes_new_info_z: 1.2 }, result_over: 'win' };
   const l = toModelLine(row)!;

@@ -26,6 +26,7 @@ export type SnapshotRow = {
   book_dispersion: number | null;
   features: Record<string, unknown> | null;
   result_over: string | null;
+  feature_version?: string | null;
 };
 
 export const COMBO_STATS = ['pra', 'pr', 'pa', 'ra'] as const;
@@ -55,6 +56,7 @@ export function toModelLine(r: SnapshotRow, opts: { combos?: boolean } = {}): Mo
     date: etDate(r.tip_at),
     nBooks: Number(r.n_books),
     bookDispersion: r.book_dispersion == null ? null : Number(r.book_dispersion),
+    ...(r.feature_version ? { featureVersion: r.feature_version } : {}),
   };
 }
 
@@ -121,7 +123,7 @@ export function fitLines(lines: ModelLine[], closeLines: ModelLine[] = [], versi
       theta: Object.fromEntries(spec.params.map((p, j) => [p.name, Math.round(fit.theta[j]! * 1e6) / 1e6])),
       controls: spec.controls,
       minEv: 0.03,
-      features: V1_FEATURES.map((f) => ({ name: f.name, key: f.key, ...(f.stats ? { stats: f.stats } : {}) })),
+      features: V1_FEATURES.map((f, j) => ({ name: f.name, key: f.key, ...(f.stats ? { stats: f.stats } : {}), scale: Math.round((spec.featureScales[j] ?? 1) * 1e6) / 1e6 })),
     },
     liftVsMarket: liftOverBaseline(design, fit.oof, raw),
     liftVsFittedMarket: liftOverBaseline(design, fit.oof, fittedMarket),

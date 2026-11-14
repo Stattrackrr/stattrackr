@@ -20,6 +20,8 @@ export type ReportBet = {
   /** ISO time the would-be bet was recorded. */
   at: string;
   policy: 'main' | 'news';
+  /** The snapshot kind the bet was decided on (t2h, injury_change, us_move), when recorded. */
+  trigger?: string | null;
   side: 'over' | 'under';
   stat: string;
   line: number;
@@ -175,7 +177,7 @@ export type Report = {
   generatedAt: string;
   policyVersion: string;
   modelVersion: string;
-  counts: { bets: number; confirmed: number; withClv: number; graded: number; games: number; byPolicy: Record<string, number> };
+  counts: { bets: number; confirmed: number; withClv: number; graded: number; games: number; byPolicy: Record<string, number>; byTrigger: Record<string, number> };
   clv: { total: Bounds; a: Bounds; b: Bounds };
   reported: {
     clvAt5: Interval;
@@ -239,6 +241,10 @@ export function buildReport(opts: {
       graded: returns.length,
       games: new Set(bets.map((b) => b.game)).size,
       byPolicy: bets.reduce<Record<string, number>>((acc, b) => ({ ...acc, [b.policy]: (acc[b.policy] ?? 0) + 1 }), {}),
+      byTrigger: bets.reduce<Record<string, number>>((acc, b) => {
+        const t = b.trigger ?? (b.policy === 'main' ? 't2h' : 'injury_change');
+        return { ...acc, [t]: (acc[t] ?? 0) + 1 };
+      }, {}),
     },
     clv,
     reported: {

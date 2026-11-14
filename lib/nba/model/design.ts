@@ -72,9 +72,23 @@ export type ModelLine = {
   date: string;
   nBooks: number;
   bookDispersion: number | null;
+  /** The inputs version the line was logged under (see lib/nba/propLog/versions.ts). */
+  featureVersion?: string;
 };
 
-export type ModelSpec = { params: Param[]; features: readonly FeatureSpec[]; controls: { booksMean: number; booksSd: number; dispMean: number; dispSd: number } };
+export type ModelSpec = {
+  params: Param[];
+  features: readonly FeatureSpec[];
+  /**
+   * Each feature's spread over the lines it applies to. The fit sees feature / scale, so the penalty
+   * toward zero weighs the same on every feature and on the controls. Without it a feature that is
+   * small in its own units (minutes_new_info_z has an SD near 0.13, usage_shift_z near 0.02) carried
+   * 40 to over 1,000 times less information than the penalty and could not move off zero whatever the
+   * data said. Scoring divides by the same scale (ModelCoefs.features[].scale).
+   */
+  featureScales: number[];
+  controls: { booksMean: number; booksSd: number; dispMean: number; dispSd: number };
+};
 
 const sd = (xs: number[], mean: number) => {
   const v = Math.sqrt(xs.reduce((a, x) => a + (x - mean) ** 2, 0) / Math.max(1, xs.length - 1));
@@ -86,6 +100,12 @@ export function modelSpec(lines: ModelLine[], features: readonly FeatureSpec[] =
   const disp = lines.map((l) => l.bookDispersion ?? 0);
   const booksMean = books.reduce((a, b) => a + b, 0) / Math.max(1, books.length);
   const dispMean = disp.reduce((a, b) => a + b, 0) / Math.max(1, disp.length);
+  // Spread around zero, not the mean: zero means "no new information" and must stay zero.
+  const featureScales = features.map((f) => {
+    const xs = lines.filter((l) => !f.stats || (f.stats as readonly string[]).includes(l.stat)).map((l) => Number(l.features[f.key] ?? 0) || 0);
+    const rms = Math.sqrt(xs.reduce((a, x) => a + x * x, 0) / Math.max(1, xs.length));
+    return rms > 1e-9 ? rms : 1;
+  });
   const params: Param[] = [
     { name: 'a', center: 1, group: 'a' },
     { name: 'b', center: 0, group: 'b' },
@@ -94,7 +114,7 @@ export function modelSpec(lines: ModelLine[], features: readonly FeatureSpec[] =
     { name: 'n_books', center: 0, group: 'control' },
     { name: 'book_dispersion', center: 0, group: 'control' },
   ];
-  return { params, features, controls: { booksMean, booksSd: sd(books, booksMean), dispMean, dispSd: sd(disp, dispMean) } };
+  return { params, features, featureScales, controls: { booksMean, booksSd: sd(books, booksMean), dispMean, dispSd: sd(disp, dispMean) } };
 }
 
 /** One line as a row of the design, in param order. */
@@ -104,7 +124,7 @@ export function lineVector(spec: ModelSpec, l: Pick<ModelLine, 'fairOver' | 'sta
     logit(l.fairOver),
     1,
     ...BASE_STATS.map((s) => (s === l.stat ? 1 : 0)),
-    ...spec.features.map((f) => (f.stats && !(f.stats as readonly string[]).includes(l.stat) ? 0 : Number(l.features[f.key] ?? 0) || 0)),
+    ...spec.features.map((f, j) => (f.stats && !(f.stats as readonly string[]).includes(l.stat) ? 0 : (Number(l.features[f.key] ?? 0) || 0) / (spec.featureScales[j] ?? 1))),
     (l.nBooks - c.booksMean) / c.booksSd,
     ((l.bookDispersion ?? 0) - c.dispMean) / c.dispSd,
   ];
@@ -125,7 +145,7 @@ export function buildDesign(lines: ModelLine[], spec: ModelSpec = modelSpec(line
 
 /** The market-only baselines for the lift test: a = 1, b = 0 (the fair price itself), and a, b fitted. */
 export function marketOnlySpec(spec: ModelSpec): ModelSpec {
-  return { ...spec, params: spec.params.filter((p) => p.name === 'a' || p.name === 'b'), features: [] };
+  return { ...spec, params: spec.params.filter((p) => p.name === 'a' || p.name === 'b'), features: [], featureScales: [] };
 }
 
 export function marketOnlyDesign(lines: ModelLine[], spec: ModelSpec): Design {

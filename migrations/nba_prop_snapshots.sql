@@ -79,6 +79,10 @@ CREATE TABLE IF NOT EXISTS public.nba_prop_book_quotes (
 
 -- Would-be bets under a frozen policy ('main': once at the first scan from 2h before tip; 'news':
 -- once after each later status change). Training and evaluation use these trigger rows only.
+-- Several shadow arms (lib/nba/propLog/arms.ts) record against the same trigger snapshots. Each arm
+-- has its own policy_version, so the UNIQUE key below already keeps their rows apart; no schema
+-- change is needed. Bets decided on a us_move snapshot are stored with policy 'news' and
+-- features->>'trigger' = 'us_move'; features->>'arm' names the arm.
 CREATE TABLE IF NOT EXISTS public.nba_shadow_bets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   policy TEXT NOT NULL CHECK (policy IN ('main', 'news')),

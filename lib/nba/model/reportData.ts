@@ -1,23 +1,32 @@
-import { ACTIVE_COEFS, SHADOW_POLICY_VERSION } from '@/lib/nba/propLog/shadow';
+import { ACTIVE_COEFS, ARMS, SHADOW_POLICY_VERSION, type ArmId } from '@/lib/nba/propLog/arms';
 import sharedCache from '@/lib/sharedCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { fitLoggedLines } from './fitLogged';
 import { fitGate, type FitGate } from './fitGate';
 import type { CandidateResult } from './candidates';
 import type { LoggedFit } from './fitLines';
+import { armLivePostingEnabled } from './promote';
 import { buildReport, type Report, type ReportBet } from './report';
+import { buildScoreboard, type ArmScoreboard } from './scoreboard';
 
 const PAGE = 1000;
+/** Arm A's full weekly report (the control), as before the other arms existed. Also saved per date. */
 export const REPORT_KEY = 'nba_model_report_v1';
 /** Latest residual fit + promote gate (day-10 market comparison). Separate from ACTIVE_COEFS. */
 export const FIT_GATE_KEY = 'nba_model_fit_gate_v1';
+/** The scoreboard: one row per arm with its verdicts, and where each arm's full report is stored. */
+export const ARMS_KEY = 'nba_model_arms_v1';
 const REPORT_TTL_S = 400 * 24 * 60 * 60;
+
+/** Each arm's full report lives under its model version, so a new version is a new record. */
+export const armReportKey = (modelVersion: string) => `${REPORT_KEY}:${modelVersion}`;
 
 type BetRow = {
   id: string;
   game_id: string;
   created_at: string;
   policy: 'main' | 'news';
+  trigger: string | null;
   side: 'over' | 'under';
   stat: string;
   line: number;
@@ -40,7 +49,7 @@ export async function loadReportBets(policyVersion = SHADOW_POLICY_VERSION, mode
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabaseAdmin
       .from('nba_shadow_bets')
-      .select('id, game_id, created_at, policy, side, stat, line, price, price_confirmed, model_prob, fair_at_decision, clv, nba_prop_snapshots!trigger_snapshot_id(result_over, result_under), nba_bet_price_checks(price_5m, price_10m, price_20m, vanished)')
+      .select('id, game_id, created_at, policy, trigger:features->>trigger, side, stat, line, price, price_confirmed, model_prob, fair_at_decision, clv, nba_prop_snapshots!trigger_snapshot_id(result_over, result_under), nba_bet_price_checks(price_5m, price_10m, price_20m, vanished)')
       .eq('policy_version', policyVersion)
       .eq('model_version', modelVersion)
       .order('created_at')
@@ -55,6 +64,7 @@ export async function loadReportBets(policyVersion = SHADOW_POLICY_VERSION, mode
         game: r.game_id,
         at: r.created_at,
         policy: r.policy,
+        trigger: r.trigger,
         side: r.side,
         stat: r.stat,
         line: Number(r.line),
@@ -83,17 +93,85 @@ export async function regularSeasonGamesLeft(nowMs: number): Promise<number> {
   return count ?? 0;
 }
 
-export type WeeklyReport = Report & { fit: LoggedFit; fitGate: FitGate; candidates: CandidateResult[] };
+export type ArmReport = Report & { arm: { id: ArmId; name: string; purpose: string } };
+
+export type WeeklyReport = Report & {
+  fit: LoggedFit;
+  fitGate: FitGate;
+  candidates: CandidateResult[];
+  /** The same fit, gate and tests on lines with sound inputs only. */
+  clean: { featureVersions: readonly string[]; fit: LoggedFit; fitGate: FitGate; candidates: CandidateResult[] };
+  /** Every arm's full report (arm A's is also the top level of this object). */
+  arms: ArmReport[];
+  scoreboard: ArmScoreboard;
+};
 
 export async function buildWeeklyReport(nowMs = Date.now()): Promise<WeeklyReport> {
-  const [bets, gamesLeft, logged] = await Promise.all([loadReportBets(), regularSeasonGamesLeft(nowMs), fitLoggedLines()]);
-  const report = buildReport({ bets, nowMs, gamesLeft, policyVersion: SHADOW_POLICY_VERSION, modelVersion: ACTIVE_COEFS.version });
-  return { ...report, fit: logged.fit, fitGate: fitGate(logged.fit), candidates: logged.candidates };
+  const [gamesLeft, logged, ...loaded] = await Promise.all([
+    regularSeasonGamesLeft(nowMs),
+    fitLoggedLines(),
+    ...ARMS.map((arm) =>
+      loadReportBets(arm.policyVersion, arm.coefs.version).then(
+        (bets) => ({ arm, bets, error: undefined as string | undefined }),
+        (err) => ({ arm, bets: null, error: err instanceof Error ? err.message : String(err) })
+      )
+    ),
+  ]);
+  // One arm's report failing never hides the others; arm A's is the record this report is built on.
+  const arms = loaded.map(({ arm, bets, error }) => {
+    if (!bets) return { arm, report: null, error };
+    try {
+      const report: ArmReport = { ...buildReport({ bets, nowMs, gamesLeft, policyVersion: arm.policyVersion, modelVersion: arm.coefs.version }), arm: { id: arm.id, name: arm.name, purpose: arm.purpose } };
+      return { arm, report, error: undefined };
+    } catch (err) {
+      return { arm, report: null, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
+  const control = arms.find((a) => a.arm.id === 'A');
+  if (!control?.report) throw new Error(`arm A report: ${control?.error ?? 'missing'}`);
+  const gate = fitGate(logged.fit);
+  const cleanGate = fitGate(logged.clean.fit);
+  const scoreboard = buildScoreboard({
+    generatedAt: control.report.generatedAt,
+    arms,
+    reportKey: armReportKey,
+    gate,
+    cleanGate,
+    cleanFeatureVersions: logged.clean.featureVersions,
+    livePostingEnabled: armLivePostingEnabled(),
+  });
+  return {
+    ...control.report,
+    fit: logged.fit,
+    fitGate: gate,
+    candidates: logged.candidates,
+    clean: { featureVersions: logged.clean.featureVersions, fit: logged.clean.fit, fitGate: cleanGate, candidates: logged.clean.candidates },
+    arms: arms.flatMap((a) => (a.report ? [a.report] : [])),
+    scoreboard,
+  };
 }
 
-/** Saves the report as the latest and under its date, so past weeks stay readable. Also stores the fit gate. */
+/**
+ * Saves the week's record, each under the latest key and under its date so past weeks stay readable:
+ *   nba_model_report_v1                  arm A's report with the fits and the scoreboard (as before);
+ *   nba_model_report_v1:{model_version}  each arm's full report;
+ *   nba_model_arms_v1                    the scoreboard on its own;
+ *   nba_model_fit_gate_v1                the residual promote gates.
+ */
 export async function saveWeeklyReport(report: WeeklyReport): Promise<void> {
-  await sharedCache.setJSON(REPORT_KEY, report, REPORT_TTL_S);
-  await sharedCache.setJSON(`${REPORT_KEY}:${report.generatedAt.slice(0, 10)}`, report, REPORT_TTL_S);
-  await sharedCache.setJSON(FIT_GATE_KEY, { generatedAt: report.generatedAt, gate: report.fitGate, activeModel: ACTIVE_COEFS.version }, REPORT_TTL_S);
+  const day = report.generatedAt.slice(0, 10);
+  const { arms, ...main } = report;
+  await sharedCache.setJSON(REPORT_KEY, main, REPORT_TTL_S);
+  await sharedCache.setJSON(`${REPORT_KEY}:${day}`, main, REPORT_TTL_S);
+  for (const arm of arms) {
+    await sharedCache.setJSON(armReportKey(arm.modelVersion), arm, REPORT_TTL_S);
+    await sharedCache.setJSON(`${armReportKey(arm.modelVersion)}:${day}`, arm, REPORT_TTL_S);
+  }
+  await sharedCache.setJSON(ARMS_KEY, report.scoreboard, REPORT_TTL_S);
+  await sharedCache.setJSON(`${ARMS_KEY}:${day}`, report.scoreboard, REPORT_TTL_S);
+  await sharedCache.setJSON(
+    FIT_GATE_KEY,
+    { generatedAt: report.generatedAt, gate: report.fitGate, cleanGate: report.clean.fitGate, cleanFeatureVersions: report.clean.featureVersions, promoteShadow: report.scoreboard.residual.promoteShadow, activeModel: ACTIVE_COEFS.version },
+    REPORT_TTL_S
+  );
 }
