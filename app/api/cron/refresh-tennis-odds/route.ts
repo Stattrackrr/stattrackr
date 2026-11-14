@@ -8,8 +8,9 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 /**
- * Pull The Odds API tennis catalog, rebuild DVP boards, then bake the props list
- * + combined tennis slice (including DVP ranks). Page/Ask reads never hit live APIs.
+ * Pull API-Tennis get_odds (+ AU extra books), rebuild DVP boards, then bake the
+ * props list + combined tennis slice. Empty / thin refreshes keep the prior board.
+ * Page/Ask reads never hit live APIs.
  */
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);
@@ -17,6 +18,17 @@ export async function GET(request: NextRequest) {
   try {
     const force = request.nextUrl.searchParams.get('force') === '1';
     const result = await refreshTennisOddsSnapshots({ force });
+    // Empty ingest keeps the prior odds index — do not rebake (that would wipe the props list).
+    if (result.keptPrevious) {
+      return NextResponse.json({
+        success: true,
+        ...result,
+        tennisList: null,
+        tennisCombined: null,
+        dvp: null,
+        skippedBake: true,
+      });
+    }
     const dvp = await rebuildTennisDvpAndBakeProps();
     return NextResponse.json({
       success: true,

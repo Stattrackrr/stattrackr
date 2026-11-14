@@ -6,14 +6,7 @@
 import { americanToDecimal, decimalToAmerican } from '@/lib/currencyUtils';
 import { getBookmakerInfo, getBookmakerRegion } from '@/lib/bookmakers';
 import sharedCache from '@/lib/sharedCache';
-import {
-  getOddsApiTennisMatch,
-  readOddsApiTennisCatalog,
-  refreshOddsApiTennisCatalog,
-  tennisNamesMatch,
-  tennisTourFromOdds,
-  type OddsApiTennisMatch,
-} from '@/lib/tennis/oddsApi';
+import { readOddsApiTennisCatalog, tennisTourFromOdds } from '@/lib/tennis/oddsApi';
 import {
   getTennisNextGame,
   listUniqueUpcomingTennisGames,
@@ -84,6 +77,9 @@ type TennisOddsRefreshMeta = {
   matchIds?: string[];
   /** Matches priced by each extra bookmaker feed. */
   extraBooks?: Record<string, number>;
+  /** True when a refresh found no priced matches and kept the previous board. */
+  keptPrevious?: boolean;
+  keepReason?: string;
 };
 
 export type TennisOddsRefreshResult = TennisOddsRefreshMeta & {
@@ -570,17 +566,9 @@ function mergeBookRows(primary: TennisBookRow[], extra: TennisBookRow[]): Tennis
   return [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function mergeSources(
-  raw: Record<string, unknown> | null,
-  oddsApi: OddsApiTennisMatch | null,
-  next: TennisNextGame
-): TennisBookRow[] {
-  let books = raw ? parseMatchMarkets(raw) : [];
-  if (oddsApi?.books?.length) {
-    const oddsHomeIsTennisHome = tennisNamesMatch(oddsApi.homeTeam, next.homeName);
-    books = mergeBookRows(books, orientBooksForPlayer(oddsApi.books, oddsHomeIsTennisHome));
-  }
-  return books;
+/** API-Tennis get_odds → book rows. Extra AU books are merged separately in refresh. */
+function booksFromApiTennis(raw: Record<string, unknown> | null): TennisBookRow[] {
+  return raw ? parseMatchMarkets(raw) : [];
 }
 
 function presentSnapshot(snapshot: TennisOddsSnapshot, next: TennisNextGame): TennisMatchOdds {
@@ -642,34 +630,6 @@ async function writeOddsIndex(matches: TennisOddsIndexMatch[]): Promise<void> {
     { fetchedAt: new Date().toISOString(), matches },
     SNAPSHOT_TTL_SECONDS
   );
-}
-
-function catalogMatchAsNextGame(match: OddsApiTennisMatch): TennisNextGame {
-  const tour = tennisTourFromOdds(match.sportKey, match.sportTitle);
-  return {
-    opponent: match.awayTeam,
-    opponentId: null,
-    opponentIoc: null,
-    opponentRank: null,
-    opponentLogo: null,
-    tipoff: match.commenceTime || null,
-    live: false,
-    isGrandSlam: /_open$|_french_open|_wimbledon|_us_open|_australian_open/i.test(String(match.sportKey || '')),
-    tour,
-    tournamentName: match.sportTitle || null,
-    tournamentKey: match.sportKey || null,
-    surface: null,
-    round: null,
-    matchId: `odds:${match.eventId}`,
-    status: null,
-    playerIsHome: true,
-    homeName: match.homeTeam,
-    awayName: match.awayTeam,
-    playerSeed: null,
-    opponentSeed: null,
-    topSeedName: null,
-    topSeedId: null,
-  };
 }
 
 /** 0 = ATP/WTA main tour, 1 = Challenger, 2 = ITF. */
@@ -770,6 +730,47 @@ function oddsIndexCoversUpcoming(
   });
 }
 
+/** Keep serving the last good board; never rewrite the odds index or delete the props list. */
+async function keepPreviousTennisBoard(
+  previous: TennisOddsRefreshMeta | null,
+  opts: {
+    keepReason: string;
+    upcoming: number;
+    extraBooks?: Record<string, number>;
+  }
+): Promise<TennisOddsRefreshResult> {
+  const meta: TennisOddsRefreshMeta = {
+    fetchedAt: previous?.fetchedAt || new Date().toISOString(),
+    upcoming: opts.upcoming || previous?.upcoming || 0,
+    snapshots: previous?.snapshots || 0,
+    oddsApiSports: 0,
+    oddsApiEvents: 0,
+    matchIds: previous?.matchIds,
+    extraBooks: opts.extraBooks,
+    keptPrevious: true,
+    keepReason: opts.keepReason,
+  };
+  await sharedCache.setJSON(
+    REFRESH_META_KEY,
+    { ...meta, fetchedAt: new Date().toISOString() },
+    SNAPSHOT_TTL_SECONDS
+  );
+  return { ...meta, skipped: false };
+}
+
+/** True when a refresh would replace a healthy board with almost nothing (transient API miss). */
+function tennisRefreshTooThin(snapshots: number, previous: TennisOddsRefreshMeta | null): boolean {
+  if (snapshots <= 0) return true;
+  const prev = previous?.snapshots ?? 0;
+  if (prev < 10) return false;
+  return snapshots < Math.max(5, Math.floor(prev * 0.25));
+}
+
+/**
+ * Rebuild tennis odds snapshots from API-Tennis get_odds (+ AU extra books).
+ * Does not use The Odds API (ODDS_API_KEY) — that is unused for the props board.
+ * Empty / catastrophic runs keep the previous index and props list intact.
+ */
 export async function refreshTennisOddsSnapshots(opts?: {
   force?: boolean;
 }): Promise<TennisOddsRefreshResult> {
@@ -790,70 +791,50 @@ export async function refreshTennisOddsSnapshots(opts?: {
       }
       return { ...previous, skipped: true };
     }
-    const catalog = await refreshOddsApiTennisCatalog({ upcoming, force: true });
+
+    // Transient fixture warm miss must not clear a priced board.
+    if (!upcoming.length) {
+      return keepPreviousTennisBoard(previous, { keepReason: 'upcoming_empty', upcoming: 0 });
+    }
+
     const targets = pickRefreshTargets(upcoming);
     const extra: ExtraTennisBooks = await fetchExtraTennisBooks(targets).catch(() => ({
       rows: new Map(),
       counts: {},
     }));
     let snapshots = 0;
+    const pricedIds = new Set<string>();
     for (let i = 0; i < targets.length; i += 4) {
       const batch = targets.slice(i, i + 4);
       await Promise.all(
         batch.map(async (game) => {
           const matchId = String(game.matchId || '').trim();
           if (!matchId) return;
-          const [raw, oddsApi] = await Promise.all([
-            fetchRawOdds(matchId, { force: true }),
-            getOddsApiTennisMatch({ homeName: game.homeName, awayName: game.awayName }),
-          ]);
-          let books = mergeSources(raw, oddsApi, game);
+          const raw = await fetchRawOdds(matchId, { force: true });
+          let books = booksFromApiTennis(raw);
           const extraRows = extra.rows.get(matchId);
           if (extraRows?.length) books = mergeBookRows(books, extraRows);
           if (!books.length) return;
-          await writeSnapshot(game, books, {
-            oddsApiEventId: oddsApi?.eventId,
-            sportKey: oddsApi?.sportKey,
-          });
+          await writeSnapshot(game, books);
+          pricedIds.add(matchId);
           snapshots += 1;
         })
       );
     }
-    const catalogOnly = (catalog?.matches ?? []).filter((match) => {
-      const alreadyUpcoming = upcoming.some(
-        (game) =>
-          (tennisNamesMatch(match.homeTeam, game.homeName) &&
-            tennisNamesMatch(match.awayTeam, game.awayName)) ||
-          (tennisNamesMatch(match.homeTeam, game.awayName) &&
-            tennisNamesMatch(match.awayTeam, game.homeName))
-      );
-      if (alreadyUpcoming) return false;
-      return tennisOddsMatchStillOnBoard({
-        homeName: match.homeTeam,
-        awayName: match.awayTeam,
-        matchId: `odds:${match.eventId}`,
-        commenceTime: match.commenceTime,
-        playerNextGame: tennisFindUpcomingForListedMatch(upcoming, {
-          matchId: `odds:${match.eventId}`,
-          homeName: match.homeTeam,
-          awayName: match.awayTeam,
-        }),
+
+    if (tennisRefreshTooThin(snapshots, previous)) {
+      return keepPreviousTennisBoard(previous, {
+        keepReason: snapshots === 0 ? 'snapshots_empty' : 'snapshots_too_thin',
+        upcoming: upcoming.length,
+        extraBooks: extra.counts,
       });
-    });
-    for (const match of catalogOnly) {
-      if (!match.books?.length) continue;
-      const next = catalogMatchAsNextGame(match);
-      await writeSnapshot(next, match.books, {
-        oddsApiEventId: match.eventId,
-        sportKey: match.sportKey,
-      });
-      snapshots += 1;
     }
+
     const indexMatches: TennisOddsIndexMatch[] = [];
     const seen = new Set<string>();
     for (const game of targets) {
       const matchId = String(game.matchId || '').trim();
-      if (!matchId || seen.has(matchId)) continue;
+      if (!matchId || seen.has(matchId) || !pricedIds.has(matchId)) continue;
       seen.add(matchId);
       indexMatches.push({
         matchId,
@@ -864,22 +845,16 @@ export async function refreshTennisOddsSnapshots(opts?: {
         tournamentName: game.tournamentName,
       });
     }
-    for (const match of catalogOnly) {
-      const matchId = `odds:${match.eventId}`;
-      if (seen.has(matchId)) continue;
-      seen.add(matchId);
-      indexMatches.push({
-        matchId,
-        homeName: match.homeTeam,
-        awayName: match.awayTeam,
-        commenceTime: match.commenceTime,
-        tour: tennisTourFromOdds(match.sportKey, match.sportTitle),
-        tournamentName: match.sportTitle || null,
-        oddsApiEventId: match.eventId,
-        sportKey: match.sportKey,
+    const boardable = indexMatches.filter((row) => keepOddsIndexMatch(row, upcoming));
+    if (!boardable.length) {
+      return keepPreviousTennisBoard(previous, {
+        keepReason: 'index_empty_after_filter',
+        upcoming: upcoming.length,
+        extraBooks: extra.counts,
       });
     }
-    await writeOddsIndex(indexMatches.filter((row) => keepOddsIndexMatch(row, upcoming)));
+
+    await writeOddsIndex(boardable);
     await Promise.all([
       deleteTennisPlayerPropsListCache(),
       sharedCache.deleteJSON('tennis_props_empty_atp_v1'),
@@ -890,9 +865,9 @@ export async function refreshTennisOddsSnapshots(opts?: {
       fetchedAt: new Date().toISOString(),
       upcoming: upcoming.length,
       snapshots,
-      oddsApiSports: catalog?.sports.length ?? 0,
-      oddsApiEvents: catalog?.matches.length ?? 0,
-      matchIds: indexMatches.map((row) => row.matchId),
+      oddsApiSports: 0,
+      oddsApiEvents: 0,
+      matchIds: boardable.map((row) => row.matchId),
       extraBooks: extra.counts,
     };
     await sharedCache.setJSON(REFRESH_META_KEY, meta, SNAPSHOT_TTL_SECONDS);

@@ -666,50 +666,14 @@ function catalogRefreshRuntime(): {
   return g.__tennisOddsApiCatalogRefresh;
 }
 
-export async function refreshOddsApiTennisCatalog(opts?: {
+/**
+ * The Odds API (ODDS_API_KEY / the-odds-api.com) is not used for StatTrackr tennis props.
+ * Props ingest is API-Tennis + odds-api.net / scrapers only. Kept as a no-op so old callers
+ * cannot hit a dead key or clear boards on catalog miss.
+ */
+export async function refreshOddsApiTennisCatalog(_opts?: {
   upcoming?: Array<{ homeName: string; awayName: string; tournamentName?: string | null; tour?: string | null }>;
   force?: boolean;
 }): Promise<OddsApiTennisCatalog | null> {
-  const existing = await readOddsApiTennisCatalog();
-  if (existing && !opts?.force) return existing;
-  const runtime = catalogRefreshRuntime();
-  if (runtime.inflight) return runtime.inflight;
-  runtime.inflight = (async () => {
-    if (!oddsApiKey()) return existing;
-    if (!opts?.force) {
-      const meta = await sharedCache.getJSON<{ lastAttemptAt?: string }>(CATALOG_META_KEY);
-      const ageMs = meta?.lastAttemptAt ? Date.now() - Date.parse(meta.lastAttemptAt) : Number.POSITIVE_INFINITY;
-      if (Number.isFinite(ageMs) && ageMs < CATALOG_RETRY_MS) return existing;
-    }
-    await sharedCache.setJSON(CATALOG_META_KEY, { lastAttemptAt: new Date().toISOString() }, CATALOG_TTL_SECONDS);
-    const upcoming = opts?.upcoming ?? [];
-    const sports = await listActiveTennisSports(Boolean(opts?.force));
-    const { wanted, titleByKey } = await pickSportsWithEvents(
-      sports,
-      upcoming,
-      Boolean(opts?.force)
-    );
-    const matches: OddsApiTennisMatch[] = [];
-    for (const sportKey of wanted) {
-      const events = await fetchSportOdds(sportKey);
-      const sportTitle = titleByKey.get(sportKey);
-      for (const event of events) {
-        const match = matchFromEvent(sportKey, event, sportTitle);
-        if (match?.books.length) matches.push(match);
-      }
-    }
-    if (!matches.length) return readOddsApiTennisCatalog();
-    const catalog: OddsApiTennisCatalog = {
-      fetchedAt: new Date().toISOString(),
-      sports: wanted,
-      matches,
-    };
-    await sharedCache.setJSON(CATALOG_KEY, catalog, CATALOG_TTL_SECONDS);
-    return catalog;
-  })();
-  try {
-    return await runtime.inflight;
-  } finally {
-    runtime.inflight = null;
-  }
+  return readOddsApiTennisCatalog();
 }
