@@ -126,6 +126,15 @@ export function MobileBottomNavigation({
       bar.removeAttribute('aria-hidden');
     };
 
+    /** Drop to the CSS default bottom — used when iOS resume metrics are nonsense. */
+    const resetBarToBottom = (bar: HTMLDivElement) => {
+      clearKeyboardHide(bar);
+      bar.style.position = 'fixed';
+      bar.style.top = 'auto';
+      bar.style.bottom = `${NAV_VIEWPORT_GAP_PX}px`;
+      bar.style.transform = 'translateZ(0)';
+    };
+
     const isTextFieldFocused = () => {
       const active = document.activeElement as HTMLElement | null;
       if (!active) return false;
@@ -167,11 +176,11 @@ export function MobileBottomNavigation({
       }
       clearKeyboardHide(bar);
       // How far the visual viewport bottom sits above the layout viewport bottom.
-      // When Safari leaves a stale fixed bottom mid-screen, this inset is non-zero and
-      // re-homes the bar to the visible edge without waiting for a reload.
-      const inset = vv
-        ? Math.max(0, Math.round(layoutH - (vv.offsetTop + vv.height)))
-        : 0;
+      // URL-bar chrome is usually <~100px. After a long background iOS often leaves
+      // innerHeight >> visualViewport, which used to set bottom:200+ and stick the bar mid-screen.
+      let inset = vv ? Math.max(0, Math.round(layoutH - (vv.offsetTop + vv.height))) : 0;
+      if (inset > 100) inset = 0;
+      bar.style.position = 'fixed';
       bar.style.top = 'auto';
       bar.style.bottom = `${inset + NAV_VIEWPORT_GAP_PX}px`;
       bar.style.transform = 'translateZ(0)';
@@ -202,7 +211,7 @@ export function MobileBottomNavigation({
         if (hard) nudgeWebKitViewport();
         pinToVisualViewport();
         // iOS often reports stale metrics for a few hundred ms after CSR / resume.
-        for (const ms of hard ? [50, 150, 400, 900] : [120]) {
+        for (const ms of hard ? [50, 150, 400, 900, 1600] : [120]) {
           retryTimers.push(setTimeout(pinToVisualViewport, ms));
         }
       });
@@ -210,6 +219,8 @@ export function MobileBottomNavigation({
 
     const onReturn = () => {
       baselineHeight = window.visualViewport?.height ?? window.innerHeight;
+      // Clear any mid-screen bottom inset before re-measuring — resume metrics lie for a beat.
+      if (barRef.current) resetBarToBottom(barRef.current);
       schedulePin(true);
     };
     const onViewportChange = () => schedulePin(false);
