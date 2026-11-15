@@ -5,10 +5,10 @@
   "years": [
     2026
   ],
-  "gamesUsed": 1,
+  "gamesUsed": 2,
   "fixturesFetched": 0,
-  "fixturesCached": 1,
-  "shotCount": 1,
+  "fixturesCached": 2,
+  "shotCount": 3,
   "zones": [
     {
       "zone": "restricted",
@@ -21,10 +21,10 @@
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 0,
+      "fga": 1,
       "fgm": 0,
       "fgPct": 0,
-      "share": 0
+      "share": 33.33333333333333
     },
     {
       "zone": "midRange",
@@ -37,10 +37,10 @@
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 0,
+      "fga": 1,
       "fgm": 0,
       "fgPct": 0,
-      "share": 0
+      "share": 33.33333333333333
     },
     {
       "zone": "rightCorner3",
@@ -56,7 +56,7 @@
       "fga": 1,
       "fgm": 0,
       "fgPct": 0,
-      "share": 100
+      "share": 33.33333333333333
     }
   ],
   "points": [
@@ -65,7 +65,19 @@
       9.66,
       0,
       1
+    ],
+    [
+      8.46,
+      3.6,
+      0,
+      0
+    ],
+    [
+      1.76,
+      6.3,
+      0,
+      1
     ]
   ],
-  "generatedAt": "2026-11-14T18:45:28.808Z"
+  "generatedAt": "2026-11-15T19:22:12.630Z"
 }

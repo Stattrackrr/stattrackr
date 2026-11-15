@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-14T18:44:24.937Z",
+  "generatedAt": "2026-11-15T19:21:21.465Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -1853,7 +1853,7 @@
       "externalId": "37470d73-58ad-11f1-9bf1-130129845108",
       "startTime": "2026-11-15T06:00:00.000Z",
       "round": "9",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Brisbane Bullets",
       "homeTeamCode": "BRI",
       "homeTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
@@ -1862,8 +1862,8 @@
       "awayTeamCode": "TAS",
       "awayTeamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/TAS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 92,
+      "awayScore": 104,
       "venue": "Brisbane Entertainment Centre",
       "matchSlug": "brisbane-bullets-v-tasmania-jackjumpers-men-15-11-2026"
     },
@@ -1872,7 +1872,7 @@
       "externalId": "3746a5e8-58ad-11f1-8707-7d800a023985",
       "startTime": "2026-11-15T04:00:00.000Z",
       "round": "9",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Sydney Kings",
       "homeTeamCode": "SYD",
       "homeTeamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
@@ -1881,8 +1881,8 @@
       "awayTeamCode": "NZL",
       "awayTeamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "awayLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 111,
+      "awayScore": 102,
       "venue": "Afterpay Arena",
       "matchSlug": "sydney-kings-v-nz-breakers-men-15-11-2026"
     },
@@ -2910,7 +2910,7 @@
       "homeScore": 121,
       "awayScore": 100,
       "venue": "Afterpay Arena",
-      "matchSlug": "sydney-kings-v-illawarra-hawks-men-27-09-2026"
+      "matchSlug": "sydney-kings-v-illawarra-hawks-27-09-2026"
     },
     {
       "id": "36f8857c-58ad-11f1-9db7-b15d4ea6aed8",
@@ -2929,7 +2929,7 @@
       "homeScore": 83,
       "awayScore": 69,
       "venue": "Adelaide Entertainment Centre",
-      "matchSlug": "adelaide-36ers-v-cairns-taipans-men-27-09-2026"
+      "matchSlug": "adelaide-36ers-v-cairns-taipans-27-09-2026"
     },
     {
       "id": "36f4ac8b-58ad-11f1-bf00-2942781e7154",

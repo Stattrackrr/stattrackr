@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-14T18:45:27.073Z",
+  "generatedAt": "2026-11-15T19:22:11.052Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Thursday, November 12, 5pm AEDT",
-  "injuryCount": 24,
+  "injuryCount": 25,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -171,6 +171,15 @@
       "injury": "ACL",
       "returning": "Season",
       "status": "Out for the season",
+      "listedByNbl": true
+    },
+    {
+      "team": "Sydney Kings",
+      "player": "Jayden Stone",
+      "injury": "Illness",
+      "returning": "Possibly 15 November",
+      "status": "Out",
+      "note": "Out of the Sydney Kings’ game against the South East Melbourne Phoenix on Sunday 8 November 2026 with illness, basketball.com.au understands. Expected back for the next game, against the New Zealand Breakers on Sunday 15 November.",
       "listedByNbl": true
     },
     {
