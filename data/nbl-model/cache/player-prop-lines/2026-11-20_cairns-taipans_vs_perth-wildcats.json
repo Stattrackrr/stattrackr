@@ -4,14 +4,14 @@
   "homeTeam": "Cairns Taipans",
   "awayTeam": "Perth Wildcats",
   "commenceTime": "2026-11-20T08:30:00.000Z",
-  "capturedAt": "2026-11-16T06:50:18.461Z",
+  "capturedAt": "2026-11-16T18:42:12.962Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
     "Dabble",
     "Palmerbet"
   ],
-  "lineCount": 312,
+  "lineCount": 314,
   "lines": [
     {
       "player": "Brandon Knight",
@@ -4067,6 +4067,32 @@
       "over": "-278",
       "under": "N/A",
       "overDecimal": 1.36,
+      "underDecimal": null
+    },
+    {
+      "player": "Brandon Knight",
+      "playerKey": "brandon knight",
+      "book": "Dabble",
+      "stat": "assists",
+      "kind": "milestone",
+      "line": 7.5,
+      "label": "8+",
+      "over": "+1100",
+      "under": "N/A",
+      "overDecimal": 12,
+      "underDecimal": null
+    },
+    {
+      "player": "Brandon Knight",
+      "playerKey": "brandon knight",
+      "book": "Dabble",
+      "stat": "points",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-1250",
+      "under": "N/A",
+      "overDecimal": 1.08,
       "underDecimal": null
     }
   ]
