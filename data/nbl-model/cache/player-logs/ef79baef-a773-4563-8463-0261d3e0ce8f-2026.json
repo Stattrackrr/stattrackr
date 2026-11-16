@@ -5,7 +5,7 @@
   "teamCode": "NZL",
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-15T19:21:46.188Z",
+  "generatedAt": "2026-11-16T22:52:04.196Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 14,
   "games": [
@@ -563,7 +563,7 @@
       "steals": 0,
       "blocks": 0,
       "turnovers": 6,
-      "fouls": 4,
+      "fouls": 5,
       "fgMade": 4,
       "fgAttempted": 8,
       "fgPct": 0.5,

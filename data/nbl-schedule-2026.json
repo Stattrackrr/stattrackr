@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-15T19:21:21.465Z",
+  "generatedAt": "2026-11-16T22:51:42.377Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -2910,7 +2910,7 @@
       "homeScore": 121,
       "awayScore": 100,
       "venue": "Afterpay Arena",
-      "matchSlug": "sydney-kings-v-illawarra-hawks-27-09-2026"
+      "matchSlug": "sydney-kings-v-illawarra-hawks-men-27-09-2026"
     },
     {
       "id": "36f8857c-58ad-11f1-9db7-b15d4ea6aed8",
@@ -2929,7 +2929,7 @@
       "homeScore": 83,
       "awayScore": 69,
       "venue": "Adelaide Entertainment Centre",
-      "matchSlug": "adelaide-36ers-v-cairns-taipans-27-09-2026"
+      "matchSlug": "adelaide-36ers-v-cairns-taipans-men-27-09-2026"
     },
     {
       "id": "36f4ac8b-58ad-11f1-bf00-2942781e7154",
