@@ -66,7 +66,8 @@ export async function runAiLearning(nowMs = Date.now()): Promise<AiLearnSummary>
     ] as const;
     for (const [sport, current] of sports) {
       const samples = rows.filter((r) => r.sport === sport).map(watchSample).filter((s): s is LearnSample => s != null);
-      const sportPicks = picks.filter((p) => p.sport === sport && p.status !== 'pending');
+      // A test arm's picks are made under other rules: they never tune the live model.
+      const sportPicks = picks.filter((p) => p.sport === sport && p.status !== 'pending' && !p.track);
       const result: LearnResult<AiSportParams> = learnSport(sport, current, samples, sportPicks, (leg) => modelGroup(leg));
       let version: number | null = null;
       if (result.changes.length) {

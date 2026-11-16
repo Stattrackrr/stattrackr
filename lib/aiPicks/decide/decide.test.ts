@@ -283,6 +283,7 @@ test('posted state counts the last 24 hours and remembers used selections', () =
     postedAt,
     settledAt: null,
     modelVersion: 'v1',
+    track: null,
     legs: [leg],
     altBooks: [],
   });
@@ -298,6 +299,9 @@ test('posted state counts the last 24 hours and remembers used selections', () =
   assert.ok(s.usedKeys.has(candidateKey(leg)));
   assert.ok(s.playersRecent.has('tennis|a. one'));
   assert.ok(s.subjectsUsed.has(subjectId(leg)));
+  const testArm = postedState([{ ...pick(iso(NOW), 'single'), track: 'punter-v1', id: 'arm' }], NOW);
+  assert.equal(testArm.usedKeys.size, 0, 'a test arm pick does not block the live selection');
+  assert.deepEqual(testArm.singlesRecent, {});
 });
 
 test('review parsing fails closed and keeps the veto category', () => {

@@ -50,6 +50,8 @@ export type AiPick = {
   postedAt: string;
   settledAt: string | null;
   modelVersion: string | null;
+  /** Admin-only test arm the pick belongs to (e.g. punter-v1); null = the live picks members see. */
+  track: string | null;
   legs: AiPickLeg[];
   /** Other books that priced every leg when posted, best combined price first. */
   altBooks: Array<{ book: string; price: number; legs: number[] }>;

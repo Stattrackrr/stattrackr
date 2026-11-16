@@ -45,6 +45,8 @@ export type AiPickRow = {
   posted_at: string;
   settled_at: string | null;
   model_version: string | null;
+  /** Test arm (migrations/ai_picks_track.sql); absent before that migration. */
+  track?: string | null;
   context?: { altBooks?: unknown; legs?: Array<{ quotes?: unknown }> } | null;
   ai_pick_legs: AiPickLegRow[] | null;
 };
@@ -116,6 +118,7 @@ export function aiPickFromRow(row: AiPickRow): AiPick {
     postedAt: row.posted_at,
     settledAt: row.settled_at,
     modelVersion: row.model_version,
+    track: row.track ?? null,
     legs: (row.ai_pick_legs ?? []).map(aiPickLegFromRow).sort((a, b) => a.legIndex - b.legIndex),
     altBooks: altBooksFromRow(row, (row.ai_pick_legs ?? []).length),
   };

@@ -97,6 +97,8 @@ export function postedState(picks: AiPick[], nowMs: number): PostedState {
     singlesByGame: {},
   };
   for (const pick of picks) {
+    // A test arm's picks never use the live caps or block the live pick on the same selection.
+    if (pick.track) continue;
     const postedMs = Date.parse(pick.postedAt);
     const recent = postedMs > windowStart;
     if (recent && pick.kind === 'multi') {

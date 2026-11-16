@@ -3,9 +3,9 @@
  * season's box scores from the Redis season snapshots, and the injury report. No per-player queries.
  */
 
-import { NBA_ACHIEVEMENT_MARKETS, NBL_PROP_MARKETS, type NblPropMarket } from '@/lib/aiPicks/markets';
+import { isNblPropMarket, NBA_ACHIEVEMENT_MARKETS, NBL_PROP_MARKETS, type NblPropMarket } from '@/lib/aiPicks/markets';
 import type { NblInjuryContext } from '@/lib/aiPicks/model/nblContext';
-import { playedGames } from '@/lib/aiPicks/model/nblProps';
+import { nblStatValue, playedGames } from '@/lib/aiPicks/model/nblProps';
 import {
   NBA_GAME_MODEL,
   nbaFinalsFromDataset,
@@ -39,9 +39,12 @@ import {
   type NbaRosterEntry,
 } from '@/lib/aiPicks/candidates/nba';
 import type { AiCandidate } from '@/lib/aiPicks/candidates/types';
+import { punterCases, type PunterCase, type PunterGame, type PunterTeammate } from '@/lib/aiPicks/punter/angles';
+import { buildPunterLeague, teammateSplit, type PunterLeague } from '@/lib/aiPicks/punter/league';
 import { getNbaOddsCache, normalizeNbaPropPlayerName } from '@/lib/nba/dash/odds';
 import type { NbaGameOdds, NbaOddsCache } from '@/lib/nba/dash/oddsTypes';
 import { getNbaSeasonDataset, type NbaSeasonDataset } from '@/lib/nba/dash/season';
+import { loadNbaShotSummary } from '@/lib/nba/dash/shotChart';
 import { getNbaClubById, NBA_CURRENT_SEASON_YEAR, resolveNbaClub } from '@/lib/nba/dash/teams';
 import type { NbaGameLogRow } from '@/lib/nba/dash/types';
 import { BdlClient } from '@/lib/nba/bdl/client';
@@ -60,6 +63,8 @@ export type NbaScanResult = {
   /** When the injury report used was pulled (live near tip, else the last stored sync). */
   injuriesAt?: string | null;
   contextIssues?: string[];
+  /** Punter arm (admin-only test track): main-line selections whose reasons qualify, by candidate key. */
+  punterCases?: Map<string, PunterCase>;
 };
 
 type Injury = { playerId: string; teamCode: string; status: string; returning: string | null; description: string | null };
@@ -152,13 +157,16 @@ export async function scanNbaCandidates(opts: {
   if (!games.length) return result;
 
   const live = games.some((g) => Date.parse(g.commenceTime) - nowMs <= NBA_LIVE_INJURY_LEAD_MS);
-  const [cur, prev, report] = await Promise.all([
+  const [cur, prev, report, shots, priorShots] = await Promise.all([
     getNbaSeasonDataset(season),
     getNbaSeasonDataset(season - 1),
     loadInjuries(live, result.contextIssues!).catch((e: Error) => {
       result.contextIssues!.push(e.message);
       return { rows: [] as Injury[], at: null };
     }),
+    // Shot zones feed the punter arm only; without them it simply has no zone reasons.
+    loadNbaShotSummary(season).catch(() => null),
+    loadNbaShotSummary(season - 1).catch(() => null),
   ]);
   const injuries = report.rows;
   result.injuriesAt = report.at;
@@ -254,6 +262,67 @@ export async function scanNbaCandidates(opts: {
     }
     return m;
   };
+
+  // Punter arm (admin-only test track): its reasons for each main line, from the same data. It adds
+  // nothing to the candidates, and a failure here only leaves that arm without cases.
+  let punter: PunterLeague | null = null;
+  try {
+    punter = buildPunterLeague({ season, logsByPlayer: cur.logsByPlayer, positionOf, shots, priorShots, finals });
+  } catch (e) {
+    result.contextIssues!.push(`Punter arm tables: ${e instanceof Error ? e.message : e}`);
+  }
+  result.punterCases = new Map();
+  type PunterMate = PunterTeammate & { id: string };
+  const punterOut = new Map<string, PunterMate[]>();
+  /** Regulars listed out for the team, with the team games each played and missed. */
+  const punterTeammatesOut = (code: string): PunterMate[] => {
+    let list = punterOut.get(code);
+    if (!list) {
+      list = regularsOut(code).flatMap((inj) => {
+        const split = teammateSplit(teams.get(code)?.games ?? [], inj.playerId);
+        return split ? [{ id: inj.playerId, name: nameOf(inj.playerId), status: inj.status, ...split }] : [];
+      });
+      punterOut.set(code, list);
+    }
+    return list;
+  };
+  const punterFor = (built: AiCandidate[], p: { id: string; code: string; opp: { code: string; name: string }; games: NbaGameLogRow[]; rest: number | null }) => {
+    if (!punter) return;
+    const own = (playedGames(p.games) as NbaGameLogRow[]).filter((g) => g.teamCode === p.code);
+    const teammatesOut = punterTeammatesOut(p.code).filter((m) => m.id !== p.id);
+    const position = positionOf(p.id);
+    const zone = punter.zoneOf(p.id);
+    const byLine = new Map<string, ReturnType<typeof punterCases>>();
+    for (const c of built) {
+      if (!isNblPropMarket(c.market) || c.marketKind !== 'main' || c.line == null || (c.side !== 'over' && c.side !== 'under')) continue;
+      const stat = c.market;
+      let cases = byLine.get(`${stat}|${c.line}`);
+      if (!cases) {
+        const games: PunterGame[] = own.flatMap((g) => {
+          const value = nblStatValue(g, stat);
+          return value == null || !g.opponentCode ? [] : [{ matchId: g.matchId, date: String(g.date), season: g.season, opponent: g.opponentCode, value }];
+        });
+        cases = punterCases({
+          stat,
+          line: c.line,
+          position,
+          opponent: p.opp.code,
+          opponentName: p.opp.name,
+          currentSeason: season,
+          games,
+          zone,
+          zoneRanks: punter.zoneRanks,
+          positionRanks: punter.positionRanks(position, stat),
+          defenceRanks: punter.defenceRanks,
+          teammatesOut,
+          restDays: p.rest,
+        });
+        byLine.set(`${stat}|${c.line}`, cases);
+      }
+      if (cases[c.side].qualifies) result.punterCases!.set(c.key, cases[c.side]);
+    }
+  };
+  let punterFailed = false;
 
   for (const odds of games) {
     const homeClub = resolveNbaClub(odds.homeTeam);
@@ -407,6 +476,12 @@ export async function scanNbaCandidates(opts: {
       ];
       // The board spellings, so the pre-post price check finds the same player in a fresh pull.
       for (const c of built) c.context.boardNames = names;
+      try {
+        punterFor(built, { id, code: club.code, opp: { code: oppClub.code, name: oppClub.name }, games, rest });
+      } catch (e) {
+        if (!punterFailed) result.contextIssues!.push(`Punter arm cases: ${e instanceof Error ? e.message : e}`);
+        punterFailed = true;
+      }
       result.candidates.push(...built);
       resolvedCount += 1;
     }

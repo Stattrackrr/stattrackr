@@ -33,7 +33,16 @@ import { pickTitle } from '@/lib/aiPicks/format';
 import { isNblPropMarket } from '@/lib/aiPicks/markets';
 import { round } from '@/lib/aiPicks/model/math';
 import { loadActiveParams } from '@/lib/aiPicks/learn/state';
-import { modelVersion, MULTIS_POSTED, policyVersion, postable, PROPS_ONLY_SPORTS, type AiPicksParams } from '@/lib/aiPicks/params';
+import {
+  AI_PUNTER_TRACK,
+  modelVersion,
+  MULTIS_POSTED,
+  policyVersion,
+  postable,
+  PROPS_ONLY_SPORTS,
+  type AiPicksParams,
+} from '@/lib/aiPicks/params';
+import { runPunterArm, type PunterRunSummary } from '@/lib/aiPicks/punter/run';
 import { sizeUnits } from '@/lib/aiPicks/units';
 import { reschedules, type FixtureTimes } from '@/lib/aiPicks/reschedule';
 import { readNblPulseScoreBoardCache } from '@/lib/nbl/pulseScore';
@@ -105,12 +114,25 @@ export type AiPicksRunSummary = {
   paused: boolean;
   skipped: string[];
   review: { model: string | null; tokensIn: number; tokensOut: number; error: string | null } | null;
+  /** Admin-only punter arm (its own rules and record); its failures stay in here, not in `errors`. */
+  punter?: PunterRunSummary;
   /** Seconds spent in each step, to spot a slow source. */
   timings?: Record<string, number>;
   /** New-pick web push sent after posting. */
   push?: { sent: number; removed: number; error?: string };
   errors: string[];
 };
+
+/** NBA data too old to post from: the board or its AU prices, and (for games near tip) the injury report. */
+export function nbaStaleness(scan: CandidateScan, nowMs: number): { odds: boolean; injuries: boolean } {
+  const boardAt = scan.nba?.boardUpdatedAt ? Date.parse(scan.nba.boardUpdatedAt) : NaN;
+  const auAt = scan.nba?.auPricesAt ? Date.parse(scan.nba.auPricesAt) : NaN;
+  const injuriesAt = scan.nba?.injuriesAt ? Date.parse(scan.nba.injuriesAt) : NaN;
+  return {
+    odds: !(nowMs - boardAt <= MAX_BOARD_AGE_MS) || !(nowMs - auAt <= MAX_NBA_AU_AGE_MS),
+    injuries: !(nowMs - injuriesAt <= MAX_NBA_INJURY_AGE_MS),
+  };
+}
 
 /** Plays worth watching: anything that could be posted as a single or used as a multi leg. */
 export function shortlist(scan: CandidateScan, params: AiPicksParams, nowMs: number, skipped: string[]): AiCandidate[] {
@@ -119,15 +141,11 @@ export function shortlist(scan: CandidateScan, params: AiPicksParams, nowMs: num
   if (boardStale && scan.candidates.some((c) => c.sport === 'nbl' && isNblPropMarket(c.market))) {
     skipped.push(`NBL props board is stale (${scan.nbl?.boardUpdatedAt ?? 'never updated'})`);
   }
-  const nbaBoardAt = scan.nba?.boardUpdatedAt ? Date.parse(scan.nba.boardUpdatedAt) : NaN;
-  const nbaAuAt = scan.nba?.auPricesAt ? Date.parse(scan.nba.auPricesAt) : NaN;
-  const nbaStale = !(nowMs - nbaBoardAt <= MAX_BOARD_AGE_MS) || !(nowMs - nbaAuAt <= MAX_NBA_AU_AGE_MS);
+  const { odds: nbaStale, injuries: nbaInjuriesStale } = nbaStaleness(scan, nowMs);
   if (nbaStale && scan.candidates.some((c) => c.sport === 'nba')) {
     skipped.push(`NBA odds are stale (board ${scan.nba?.boardUpdatedAt ?? 'never'}, AU prices ${scan.nba?.auPricesAt ?? 'never'})`);
   }
   // Close to tip the scan pulls the injury report live; if that failed, near games wait for the next scan.
-  const nbaInjuriesAt = scan.nba?.injuriesAt ? Date.parse(scan.nba.injuriesAt) : NaN;
-  const nbaInjuriesStale = !(nowMs - nbaInjuriesAt <= MAX_NBA_INJURY_AGE_MS);
   const nearTip = (c: AiCandidate) => Date.parse(c.startsAt) - nowMs <= NBA_LIVE_INJURY_LEAD_MS;
   if (nbaInjuriesStale && !nbaStale && scan.candidates.some((c) => c.sport === 'nba' && nearTip(c))) {
     skipped.push(`NBA injury report is stale (${scan.nba?.injuriesAt ?? 'never'})`);
@@ -309,7 +327,9 @@ async function chooseLivePriced(
   state: PostedState,
   nowMs: number,
   closedMultis: Set<string>,
-  summary: AiPicksRunSummary
+  summary: AiPicksRunSummary,
+  /** Filled with every fresh pull, so the punter arm does not pay for the same game twice. */
+  liveGames?: Map<string, NbaLiveGame>
 ): Promise<{ singles: Proposal[]; multi: Proposal | null }> {
   const checked = new Set<string>();
   let list = watched;
@@ -333,6 +353,7 @@ async function chooseLivePriced(
         })
       );
       live = res.live;
+      for (const [id, game] of live) liveGames?.set(id, game);
       summary.livePriceRequests = (summary.livePriceRequests ?? 0) + res.requests;
     } catch (e) {
       summary.errors.push(`live prices: ${(e as Error).message}`);
@@ -411,6 +432,7 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
   };
   const runId = await startRun('scan');
   let review: ReviewResult | null = null;
+  const liveGames = new Map<string, NbaLiveGame>();
   try {
     const params = fixedParams ?? (await loadActiveParams(summary.errors));
     summary.modelVersion = modelVersion(params, ['nbl', 'nba', 'tennis']);
@@ -449,9 +471,10 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
     const seen = new Set(short.map((c) => c.key));
     const gone = (await listWatchingKeys()).filter((r) => !seen.has(r.candidate_key));
     const started = (r: { starts_at: string }) => Date.parse(r.starts_at) <= nowMs + MIN_LEAD_MS;
+    const liveWatch = (key: string) => !key.startsWith('multi|') && !key.startsWith(`${AI_PUNTER_TRACK}|`);
     await setWatchStatus(gone.filter(started).map((r) => r.candidate_key), 'expired', 'Started');
     await setWatchStatus(
-      gone.filter((r) => !started(r) && !r.candidate_key.startsWith('multi|')).map((r) => r.candidate_key),
+      gone.filter((r) => !started(r) && liveWatch(r.candidate_key)).map((r) => r.candidate_key),
       'dropped',
       'No longer qualifies'
     );
@@ -477,7 +500,7 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
       const closedMultis = new Set(await listClosedMultiKeys(new Date(nowMs - RECENT_PICKS_MS).toISOString()));
       const postableRows = watched.filter((w) => postable(w.c));
       if (postableRows.length < watched.length) summary.skipped.push(`Game lines tracked, not posted: ${[...PROPS_ONLY_SPORTS].join(', ')}`);
-      const { singles, multi } = await chooseLivePriced(postableRows, params, state, nowMs, closedMultis, summary);
+      const { singles, multi } = await chooseLivePriced(postableRows, params, state, nowMs, closedMultis, summary, liveGames);
       mark('price check');
       // NBA + NBL multis no longer post; the best one is kept (never shown) so its legs' grades can be checked later.
       const mixed = chooseMulti(
@@ -536,6 +559,18 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
           mark('push');
         }
       }
+    }
+
+    // Admin-only punter arm: its own rules on the same scan. Nothing above depends on it, it never
+    // alerts anyone, and its errors stay in its own summary so a bad night there cannot mark this run failed.
+    if (!settings.paused && Date.now() - startedAt <= REVIEW_CUTOFF_MS) {
+      try {
+        const stale = nbaStaleness(scan, nowMs);
+        summary.punter = await runPunterArm({ scan, params, nowMs, fresh: !stale.odds && !stale.injuries, liveGames });
+      } catch (e) {
+        summary.punter = { cases: 0, eligible: 0, proposals: [], posted: [], rejected: [], skipped: [], livePriceRequests: 0, review: null, errors: [(e as Error).message] };
+      }
+      mark('punter');
     }
   } catch (e) {
     summary.errors.push((e as Error).message);

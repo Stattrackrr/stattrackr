@@ -6,11 +6,13 @@ import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchAddedPickIds, fetchAiPicks, fetchAiRecordBets, setPickAdded } from '@/lib/aiPicks/client';
 import { legBet, legSubject } from '@/lib/aiPicks/format';
+import { AI_PUNTER_LABEL, AI_PUNTER_TRACK } from '@/lib/aiPicks/params';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import type { AiPick, AiPickLeg, AiPickStatus } from '@/lib/aiPicks/types';
 import type { TennisTour } from '@/lib/tennis/types';
 import type { OfficialPickBet } from '@/lib/officialPicksRecord';
 import { computePickRecordStats, formatUnits } from '@/lib/officialPicksRecordStats';
+import { useChatViewer } from '@/components/chat/useChatViewer';
 
 export const AI_PICKS_NAME = 'Stattrackr AI';
 export const AI_PICKS_AVATAR = '/images/stattrackr-icon-192.png';
@@ -362,6 +364,7 @@ function PickCard({
   const book = getBookmakerInfo(pick.bookmaker).name;
   const legs = pick.legs.map((l) => displayLeg(l, info));
   const single = legs[0];
+  const newer = pick.track != null;
 
   return (
     <article
@@ -371,10 +374,12 @@ function PickCard({
       } ${
         added
           ? 'border-orange-400 bg-orange-50/60 ring-1 ring-orange-400/60 dark:border-orange-500/60 dark:bg-orange-500/[0.06] dark:ring-orange-500/40'
-          : 'border-gray-200/80 bg-white dark:border-white/[0.07] dark:bg-[#0f1a2b]'
+          : newer
+            ? 'border-amber-400/70 bg-white dark:border-amber-500/40 dark:bg-[#0f1a2b]'
+            : 'border-gray-200/80 bg-white dark:border-white/[0.07] dark:bg-[#0f1a2b]'
       }`}
     >
-      <span className={`absolute inset-y-0 left-0 w-1 ${STATUS_META[pick.status].accent}`} aria-hidden />
+      <span className={`absolute inset-y-0 left-0 w-1 ${newer ? 'bg-amber-500' : STATUS_META[pick.status].accent}`} aria-hidden />
 
       <div className="flex items-center justify-between gap-3 px-4 pt-3.5">
         <div className="flex min-w-0 items-center gap-2">
@@ -386,6 +391,11 @@ function PickCard({
           <span className="truncate text-[11px] text-gray-400 dark:text-gray-500">· {fmtPosted(pick.postedAt)}</span>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
+          {newer && (
+            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 ring-1 ring-inset ring-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200 dark:ring-amber-400/30">
+              {AI_PUNTER_LABEL}
+            </span>
+          )}
           {onToggleAdded && <AddedButton added={added} onToggle={() => onToggleAdded(pick.id)} />}
           <StatusPill status={pick.status} />
         </div>
@@ -404,6 +414,10 @@ function PickCard({
         ) : (
           <MultiSlip legs={legs} />
         )}
+
+        {newer && pick.writeUp ? (
+          <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-gray-700 dark:text-gray-300">{pick.writeUp}</p>
+        ) : null}
       </div>
 
       <div className="mx-4 mb-4 grid grid-cols-3 divide-x divide-gray-200/80 rounded-xl bg-gray-50 dark:divide-white/[0.07] dark:bg-white/[0.03]">
@@ -429,21 +443,22 @@ function PickCard({
   );
 }
 
-function RecordStrip({ pendingCount }: { pendingCount: number }) {
+/** Units, ROI and record for the live picks, or for one test arm (admin only) when `track` is set. */
+function RecordStrip({ pendingCount, track = null }: { pendingCount: number; track?: string | null }) {
   const [bets, setBets] = useState<OfficialPickBet[]>([]);
   const load = useCallback(async () => {
     try {
-      setBets(await fetchAiRecordBets());
+      setBets(await fetchAiRecordBets(undefined, track));
     } catch {
       /* keep last good strip; feed error banner covers hard failures */
     }
-  }, []);
+  }, [track]);
 
   useEffect(() => {
     void load();
     let timer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
-      .channel('ai-picks-record-strip')
+      .channel(`ai-picks-record-strip-${track ?? 'live'}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ai_picks' }, () => {
         // Debounce: pending start-time tweaks and settle bursts used to rebuild from a short
         // feed window and make Units jump even when View record stayed correct.
@@ -656,28 +671,37 @@ function scrollParent(el: HTMLElement | null): HTMLElement | null {
   return null;
 }
 
+type FeedTrack = 'live' | 'punter';
+
 export function AiPicksFeed() {
+  const [viewer] = useChatViewer('AI picks feed');
   const [picks, setPicks] = useState<AiPick[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('pending');
   const [sport, setSport] = useState<string>('all');
+  const [feedTrack, setFeedTrack] = useState<FeedTrack>('live');
   const [sorts, setSorts] = useState<Record<Tab, SortKey>>({
     pending: TAB_SORTS.pending.default,
     resulted: TAB_SORTS.resulted.default,
   });
   const sort = sorts[tab];
+  const showPunter = viewer.isAdmin && feedTrack === 'punter';
 
   const load = useCallback(async () => {
     try {
-      setPicks(await fetchAiPicks());
+      setPicks(
+        await fetchAiPicks({
+          track: showPunter ? AI_PUNTER_TRACK : null,
+        })
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load AI picks');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showPunter]);
 
   // null: the member can't mark picks (signed out, or before migrations/ai_pick_added.sql is run).
   const [addedIds, setAddedIds] = useState<Set<string> | null>(null);
@@ -830,7 +854,40 @@ export function AiPicksFeed() {
   return (
     <div ref={topRef} className="flex min-h-full flex-col gap-3">
       <div className="-mx-5 -mt-4 space-y-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur dark:bg-[#0f1a2b]/95 relative z-10 sm:sticky sm:-top-4">
-        <RecordStrip pendingCount={pendingCount} />
+        <RecordStrip key={showPunter ? AI_PUNTER_TRACK : 'live'} pendingCount={pendingCount} track={showPunter ? AI_PUNTER_TRACK : null} />
+
+        {viewer.isAdmin ? (
+          <div role="tablist" aria-label="Model track" className="grid grid-cols-2 gap-1 rounded-xl bg-amber-500/10 p-1 ring-1 ring-inset ring-amber-500/20 dark:bg-amber-500/[0.06]">
+            {(
+              [
+                { id: 'live' as const, label: 'Live' },
+                { id: 'punter' as const, label: 'Newer model' },
+              ] as const
+            ).map((t) => {
+              const active = feedTrack === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => {
+                    setFeedTrack(t.id);
+                    setLoading(true);
+                    setResultedLimit(RESULTED_PAGE);
+                  }}
+                  className={`rounded-lg py-1.5 text-xs font-bold transition-colors ${
+                    active
+                      ? 'bg-white text-amber-900 shadow-sm dark:bg-[#1a2740] dark:text-amber-100'
+                      : 'text-amber-900/70 hover:text-amber-950 dark:text-amber-200/70 dark:hover:text-amber-100'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
 
         <div role="tablist" aria-label="Picks" className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1 dark:bg-white/[0.04]">
           {tabs.map((t) => {
@@ -903,7 +960,9 @@ export function AiPicksFeed() {
           </div>
           <p className="mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
             {picks.length === 0
-              ? "No picks yet. Stattrackr AI watches NBL, NBA and tennis lines through the day and only posts when it finds a play worth taking."
+              ? showPunter
+                ? 'No newer-model picks yet. It bets an NBA player prop as soon as three reasons line up: a soft or tough matchup, with a run of the opposite matchups or a regular teammate out. Only you can see them.'
+                : "No picks yet. Stattrackr AI watches NBL, NBA and tennis lines through the day and only posts when it finds a play worth taking."
               : tab === 'pending'
                 ? 'No pending picks right now. New plays show up here as soon as they are posted.'
                 : 'No resulted picks yet.'}

@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { aiPickFromRow, aiPickLegFromRow, type AiPickLegRow, type AiPickRow } from '@/lib/aiPicks/rows';
 import type { AiPick, AiPickLeg, AiPickStatus } from '@/lib/aiPicks/types';
 import { watchBatches } from '@/lib/aiPicks/decide/watch';
-import { policyVersion } from '@/lib/aiPicks/params';
+import { policyVersion, trackWatchKey } from '@/lib/aiPicks/params';
 
 // AI picks tables are not in the generated Supabase schema.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -327,6 +327,76 @@ export async function claimWatch(key: string): Promise<boolean> {
   return Boolean(rows?.length);
 }
 
+export type TrackWatchMeta = Pick<WatchRow, 'sport' | 'event_key' | 'starts_at' | 'market' | 'player' | 'side' | 'line' | 'best_price' | 'bookmaker'>;
+
+/**
+ * A test arm's own watch row for a play, under a prefixed key so the live row is never touched. No
+ * probability and no event label are stored, so the row is never graded into the learning samples,
+ * and it carries the arm's policy version rather than the sport's.
+ */
+function trackWatchRow(track: string, policy: string, candidateKey: string, meta: TrackWatchMeta, nowIso: string) {
+  return {
+    ...meta,
+    candidate_key: trackWatchKey(track, candidateKey),
+    model_prob: null,
+    ev: null,
+    score: null,
+    status: 'watching' as WatchStatus,
+    reason: null as string | null,
+    history: [],
+    first_seen_at: nowIso,
+    last_seen_at: nowIso,
+    policy_version: policy,
+  };
+}
+
+async function upsertTrackWatch(row: ReturnType<typeof trackWatchRow>, ignoreDuplicates: boolean, what: string): Promise<void> {
+  const opts = { onConflict: 'candidate_key', ignoreDuplicates };
+  const res = await db().from('ai_pick_watchlist').upsert(row, opts);
+  if (res.error && OPTIONAL_COLUMNS.test(res.error.message)) {
+    const { policy_version: _p, ...rest } = row;
+    check(await db().from('ai_pick_watchlist').upsert(rest, opts), what);
+    return;
+  }
+  check(res, what);
+}
+
+/** The arm's rows for these plays: posted, or turned down on its review. */
+export async function listTrackWatchRows(track: string, candidateKeys: string[]): Promise<WatchRow[]> {
+  return listWatchRows(candidateKeys.map((k) => trackWatchKey(track, k)));
+}
+
+/**
+ * Claims a play for a test arm. The row is created if it is not there (an existing one is left as
+ * it is), then moved to posted atomically: false when the arm already posted or turned the play down.
+ */
+export async function claimTrackWatch(track: string, policy: string, candidateKey: string, meta: TrackWatchMeta): Promise<boolean> {
+  const row = trackWatchRow(track, policy, candidateKey, meta, new Date().toISOString());
+  await upsertTrackWatch(row, true, 'track watch');
+  return claimWatch(row.candidate_key);
+}
+
+/** Records that the arm's review turned a play down, so it is not put up for review every scan. */
+export async function rejectTrackWatch(track: string, policy: string, candidateKey: string, meta: TrackWatchMeta, reason: string): Promise<void> {
+  const row = trackWatchRow(track, policy, candidateKey, meta, new Date().toISOString());
+  await upsertTrackWatch({ ...row, status: 'dropped', reason }, false, 'track watch veto');
+}
+
+/** A test arm's picks posted since `iso`. Throws until migrations/ai_picks_track.sql has been run. */
+export async function listTrackPicksPostedSince(track: string, iso: string, limit = 200): Promise<AiPick[]> {
+  const rows = check<AiPickRow[] | null>(
+    await db()
+      .from('ai_picks')
+      .select('*, ai_pick_legs(*)')
+      .eq('track', track)
+      .gte('posted_at', iso)
+      .order('posted_at', { ascending: false })
+      .limit(limit),
+    'track picks'
+  );
+  return (rows ?? []).map(aiPickFromRow);
+}
+
 export async function releaseWatch(key: string): Promise<void> {
   await db().from('ai_pick_watchlist').update({ status: 'watching', reason: null }).eq('candidate_key', key).eq('status', 'posted');
 }
@@ -345,6 +415,11 @@ export type NewPick = {
   first_starts_at: string;
   model_version: string;
   context: Record<string, unknown>;
+  /**
+   * Test arm; left off for live picks. The column and the admin-only read rule arrive together in
+   * migrations/ai_picks_track.sql, so an arm's pick cannot be stored where members could read it.
+   */
+  track?: string;
 };
 
 export async function insertPick(pick: NewPick, legs: NewPickLeg[]): Promise<string> {

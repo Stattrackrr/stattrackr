@@ -63,6 +63,21 @@ export const PROPS_ONLY_SPORTS: ReadonlySet<string> = new Set(['nbl', 'nba']);
  */
 export const AI_POLICY_VERSIONS: Readonly<Record<string, string>> = { nba: 'nba-a1', nbl: 'nbl-a1', tennis: 'tennis-a2' };
 
+/**
+ * Admin-only test arm with its own betting rules (lib/aiPicks/punter): NBA player props bet on a
+ * stack of matchup and role reasons. Its picks carry this track, are readable by admin only
+ * (migrations/ai_picks_track.sql) and never count in the live record, caps, learning or alerts.
+ * The rules are fixed per version; changing them means a new track id, so records never mix.
+ */
+export const AI_PUNTER_TRACK = 'punter-v1';
+export const AI_PUNTER_POLICY = 'nba-punter-v1';
+export const AI_PUNTER_LABEL = 'Newer model · testing';
+
+/** Watchlist key for a track's claim on a play, kept apart from the live row for the same play. */
+export function trackWatchKey(track: string, candidateKey: string): string {
+  return `${track}|${candidateKey}`;
+}
+
 export function policyVersion(sports: string[]): string {
   return [...new Set(sports)]
     .sort()

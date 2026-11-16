@@ -18,22 +18,42 @@ export async function fetchAiPicksSettings(): Promise<AiPicksSettings> {
 /** Enough history for the units strip and View record to stay in sync (feed cards still paginate client-side). */
 export const AI_PICKS_RECORD_LIMIT = 1000;
 
+export type FetchAiPicksOpts = {
+  limit?: number;
+  /** A test arm's picks (admin only); left out or null for the live picks members see. */
+  track?: string | null;
+};
+
 /**
  * Newest first, without picks settled before the public record's start date (admin sees the same record
- * as everyone else). RLS returns nothing unless the viewer is admin, or picks are public and the viewer is premium.
+ * as everyone else). RLS returns nothing unless the viewer is admin, or picks are public and the viewer is
+ * premium; a test arm's picks are readable by admin only. One track per call, filtered in the query so a
+ * busy arm can never push live picks out of the window.
  */
-export async function fetchAiPicks(limit = AI_PICKS_RECORD_LIMIT): Promise<AiPick[]> {
+export async function fetchAiPicks(limitOrOpts: number | FetchAiPicksOpts = AI_PICKS_RECORD_LIMIT): Promise<AiPick[]> {
+  const opts: FetchAiPicksOpts = typeof limitOrOpts === 'number' ? { limit: limitOrOpts } : limitOrOpts;
+  const limit = opts.limit ?? AI_PICKS_RECORD_LIMIT;
+  const track = opts.track ?? null;
   const { publicSince } = await fetchAiPicksSettings();
-  let query = db().from('ai_picks').select('*, ai_pick_legs(*)');
-  if (publicSince) query = query.or(`settled_at.is.null,settled_at.gte."${publicSince}"`);
-  const { data, error } = await query.order('posted_at', { ascending: false }).limit(limit);
+  const run = (byTrack: boolean) => {
+    let query = db().from('ai_picks').select('*, ai_pick_legs(*)');
+    if (byTrack) query = track ? query.eq('track', track) : query.is('track', null);
+    if (publicSince) query = query.or(`settled_at.is.null,settled_at.gte."${publicSince}"`);
+    return query.order('posted_at', { ascending: false }).limit(limit);
+  };
+  let { data, error } = await run(true);
+  // Before migrations/ai_picks_track.sql there is no track column, and so no test-arm picks: every pick is live.
+  if (error && /\btrack\b/.test(error.message)) {
+    if (track) return [];
+    ({ data, error } = await run(false));
+  }
   if (error) throw new Error(error.message);
   return ((data ?? []) as AiPickRow[]).map(aiPickFromRow);
 }
 
-/** Same dataset the View record modal and the live Units strip both use. */
-export async function fetchAiRecordBets(limit = AI_PICKS_RECORD_LIMIT): Promise<OfficialPickBet[]> {
-  return aiPicksAsRecordBets(await fetchAiPicks(limit));
+/** Same dataset the View record modal and the Units strip both use: the live picks, or one test arm's. */
+export async function fetchAiRecordBets(limit = AI_PICKS_RECORD_LIMIT, track: string | null = null): Promise<OfficialPickBet[]> {
+  return aiPicksAsRecordBets(await fetchAiPicks({ limit, track }));
 }
 
 /** Picks the signed-in member marked "Added"; null when signed out or the table is not there yet. */
