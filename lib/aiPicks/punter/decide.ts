@@ -6,7 +6,17 @@
  */
 
 import { distinctPrices, legCandidateKey, type AiCandidate } from '@/lib/aiPicks/candidates/types';
-import { nbaHoldReason, NBA_HOLD_MS, POST_HORIZON_MS, type Proposal } from '@/lib/aiPicks/decide/select';
+import {
+  MAX_NBA_SINGLES_PER_GAME,
+  MAX_NBA_SINGLES_PER_RUN,
+  nbaBackupSingles,
+  nbaHoldReason,
+  nbaSinglesCap,
+  NBA_HOLD_MS,
+  PICK_WINDOW_MS,
+  POST_HORIZON_MS,
+  type Proposal,
+} from '@/lib/aiPicks/decide/select';
 import { gameIdentity, MIN_LEAD_MS } from '@/lib/aiPicks/decide/timing';
 import { isNblPropMarket, type NblPropMarket } from '@/lib/aiPicks/markets';
 import { evPerUnit, round } from '@/lib/aiPicks/model/math';
@@ -32,12 +42,16 @@ export const PUNTER_LIMITS = {
    * point, before the books move the line on the same reasons. Only a pending game-time call waits.
    */
   windowMs: POST_HORIZON_MS,
-  perDay: 3,
-  perRun: 2,
+  /**
+   * Volume matches live NBA singles (select.ts): slate-sized 24h cap, up to MAX_NBA_SINGLES_PER_RUN
+   * a scan, up to MAX_NBA_SINGLES_PER_GAME.total props a game. Not a fixed 3/day.
+   */
+  perRun: MAX_NBA_SINGLES_PER_RUN,
   units: 1,
 } as const;
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+/** A case this strong may fill a live-style slate "standout / backup" place. */
+export const PUNTER_BACKUP_CORE = 4;
 
 /** Data problems that rule a line out. The live model's own disagreements with the market do not apply here. */
 export const PUNTER_BLOCKING_FLAG =
@@ -105,43 +119,71 @@ export function punterOrder(a: PunterEntry, b: PunterEntry): number {
 export type PunterState = {
   /** Posting times (ms) in the last 24 hours. */
   recent: number[];
+  /** Prop singles already posted per game identity in the window. */
+  propsByGame: Record<string, number>;
+  /** Games seen on this arm (for slate size when the scan is thin). */
   games: Set<string>;
   keys: Set<string>;
+  /** Players already taken in the window (one pick per player, like live). */
+  players: Set<string>;
+  /** NBA games in the rolling window (upcoming + already picked); unset = no slate cap. */
+  slateGames?: number;
 };
 
 export function punterPostedState(picks: AiPick[], nowMs: number): PunterState {
-  const state: PunterState = { recent: [], games: new Set(), keys: new Set() };
+  const state: PunterState = { recent: [], propsByGame: {}, games: new Set(), keys: new Set(), players: new Set() };
   for (const pick of picks) {
     if (pick.track !== AI_PUNTER_TRACK) continue;
     const postedMs = Date.parse(pick.postedAt);
-    if (postedMs > nowMs - DAY_MS) state.recent.push(postedMs);
+    const recent = postedMs > nowMs - PICK_WINDOW_MS;
+    if (recent) state.recent.push(postedMs);
     for (const leg of pick.legs) {
-      state.games.add(gameIdentity(leg));
+      const game = gameIdentity(leg);
+      state.games.add(game);
       state.keys.add(legCandidateKey(leg));
+      if (recent) {
+        state.propsByGame[game] = (state.propsByGame[game] ?? 0) + 1;
+        if (leg.player) state.players.add(leg.player.toLowerCase());
+      }
     }
   }
   return state;
 }
 
+/** Room on the slate: live NBA singles cap (about one per game) plus backup places for strong cases. */
+export function punterSlateOpen(e: PunterEntry, state: PunterState, takenThisRun: number): boolean {
+  if (state.slateGames == null) return true;
+  const used = state.recent.length + takenThisRun;
+  const cap = nbaSinglesCap(state.slateGames);
+  const backup = e.case.core >= PUNTER_BACKUP_CORE ? nbaBackupSingles(state.slateGames) : 0;
+  return used < cap + backup;
+}
+
 /**
  * Qualifying cases in posting order: the better case first (punterOrder), never the better price
- * ahead of it. One bet a game (a soft opponent lifts several players at once), a few a day.
+ * ahead of it. Volume matches live NBA singles: slate 24h cap, MAX_NBA_SINGLES_PER_RUN a scan,
+ * up to MAX_NBA_SINGLES_PER_GAME.total props a game, one pick per player.
  */
 export function choosePunter(entries: PunterEntry[], state: PunterState, nowMs: number, closed: ReadonlySet<string> = new Set()): PunterEntry[] {
-  const room = Math.min(PUNTER_LIMITS.perRun, PUNTER_LIMITS.perDay - state.recent.length);
-  if (room <= 0) return [];
   const ranked = entries
     .filter((e) => e.case.qualifies && e.case.side === e.c.side && punterEligible(e.c, nowMs).ok)
     .filter((e) => !closed.has(e.c.key) && !state.keys.has(e.c.key))
     .sort(punterOrder);
   const out: PunterEntry[] = [];
-  const games = new Set<string>();
+  const takenByGame: Record<string, number> = {};
+  const takenPlayers = new Set<string>();
   for (const e of ranked) {
+    if (out.length >= PUNTER_LIMITS.perRun) break;
     const game = gameIdentity(e.c);
-    if (state.games.has(game) || games.has(game)) continue;
-    games.add(game);
+    const player = (e.c.player ?? '').toLowerCase();
+    if (player && (state.players.has(player) || takenPlayers.has(player))) continue;
+    const posted = state.propsByGame[game] ?? 0;
+    const run = takenByGame[game] ?? 0;
+    if (posted + run >= MAX_NBA_SINGLES_PER_GAME.total) continue;
+    if (!punterSlateOpen(e, state, out.length)) continue;
+    takenByGame[game] = run + 1;
+    if (player) takenPlayers.add(player);
     out.push(e);
-    if (out.length >= room) break;
   }
   return out;
 }

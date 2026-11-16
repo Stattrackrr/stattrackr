@@ -297,7 +297,15 @@ function cand(over: Partial<AiCandidate> = {}): AiCandidate {
 
 const qualified = (core = 2): PunterEntry['case'] => ({ side: 'over', stat: 'points', line: 13.5, angles: [], against: [], qualifies: true, core, matchup: 0.5 });
 const entry = (over: Partial<AiCandidate> = {}, core = 2): PunterEntry => ({ c: punterCandidate(cand(over))!, case: qualified(core) });
-const fresh = (): PunterState => ({ recent: [], games: new Set(), keys: new Set() });
+const fresh = (over: Partial<PunterState> = {}): PunterState => ({
+  recent: [],
+  propsByGame: {},
+  games: new Set(),
+  keys: new Set(),
+  players: new Set(),
+  slateGames: 10,
+  ...over,
+});
 
 test('the arm records the market chance, not the live model', () => {
   const c = punterCandidate(cand())!;
@@ -336,21 +344,28 @@ test('price discipline and timing', () => {
   assert.equal(PUNTER_LIMITS.windowMs, 24 * H);
 });
 
-test('choice: most reasons first, price last; one a game, two a scan, three a day', () => {
+test('choice: most reasons first, price last; live NBA volume (3/run, 2/game, slate cap)', () => {
   const a = entry({ player: 'A', eventKey: 'g1' }, 2);
   const b = entry({ player: 'B', eventKey: 'g1', bestPrice: 1.95 }, 3);
   const c = entry({ player: 'C', eventKey: 'g2', bestPrice: 1.9 }, 2);
   const d = entry({ player: 'D', eventKey: 'g3', bestPrice: 1.95 }, 2);
+  const e2 = entry({ player: 'E', eventKey: 'g1', bestPrice: 1.88 }, 3);
   const pick = (entries: PunterEntry[], state = fresh(), closed = new Set<string>()) => choosePunter(entries, state, NOW, closed).map((e) => e.c.player);
 
-  assert.deepEqual(pick([a, b, c, d]), ['B', 'D'], 'B has the most reasons; A shares its game; D beats C on price');
-  assert.deepEqual(pick([a, b, c, d], fresh(), new Set([b.c.key])), ['D', 'C'], 'a play already posted or turned down frees its game');
-  assert.deepEqual(pick([a, b, c, d], { ...fresh(), games: new Set(['nba|g1']) }), ['D', 'C']);
-  assert.deepEqual(pick([a, b, c, d], { ...fresh(), keys: new Set([d.c.key]) }), ['B', 'C']);
-  assert.deepEqual(pick([a, b, c, d], { ...fresh(), recent: [NOW - H, NOW - 2 * H] }), ['B'], 'two already today leaves room for one');
-  assert.deepEqual(pick([a, b, c, d], { ...fresh(), recent: [NOW - H, NOW - 2 * H, NOW - 3 * H] }), []);
+  assert.deepEqual(pick([a, b, c, d]), ['B', 'D', 'C'], 'B strongest; up to 3 a run like live NBA');
+  assert.deepEqual(pick([a, b, e2, c]), ['B', 'E', 'C'], 'two props can share a game (live max 2)');
+  assert.deepEqual(pick([a, b, c, d], fresh(), new Set([b.c.key])), ['D', 'C', 'A'], 'a turned-down key frees the slot');
+  assert.deepEqual(pick([a, b, c, d], fresh({ propsByGame: { 'nba|g1': 2 } })), ['D', 'C'], 'game already at 2 props');
+  assert.deepEqual(pick([a, b, c, d], fresh({ keys: new Set([d.c.key]) })), ['B', 'C', 'A']);
+  assert.deepEqual(pick([a, b, c, d], fresh({ players: new Set(['b']) })), ['D', 'C', 'A'], 'one pick per player in the window');
+  // Slate of 2 → cap 2; three already posted fills it unless a backup-core case opens a place.
+  assert.deepEqual(pick([a, c], fresh({ slateGames: 2, recent: [NOW - H, NOW - 2 * H] })), []);
+  assert.deepEqual(pick([b], fresh({ slateGames: 2, recent: [NOW - H, NOW - 2 * H] })), [], 'core 3 is not a backup place');
+  const strong = entry({ player: 'S', eventKey: 'g9', bestPrice: 1.9 }, 4);
+  assert.deepEqual(pick([strong], fresh({ slateGames: 2, recent: [NOW - H, NOW - 2 * H] })), ['S'], 'core 4 fills a backup place');
   assert.deepEqual(pick([{ ...b, case: { ...b.case, qualifies: false } }, entry({ player: 'E', eventKey: 'g4', bestPrice: 1.7 })]), [], 'neither qualifies: no reasons, bad price');
   assert.deepEqual(pick([{ ...a, case: { ...a.case, side: 'under' } }]), [], 'a case only backs its own side');
+  assert.equal(PUNTER_LIMITS.perRun, 3);
 });
 
 test('the better case is chosen, not the better price', () => {
@@ -389,6 +404,8 @@ test('posted state counts only this arm', () => {
   );
   assert.deepEqual(state.recent, [NOW - H]);
   assert.deepEqual([...state.games].sort(), ['nba|g0', 'nba|g1']);
+  assert.deepEqual(state.propsByGame, { 'nba|g1': 1 });
+  assert.deepEqual([...state.players], ['jarrett allen']);
   assert.ok(state.keys.has(cand().key), 'the same key the scan gives the selection');
   assert.equal(state.keys.size, 2);
 });

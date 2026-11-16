@@ -22,6 +22,7 @@ import {
   type TrackWatchMeta,
 } from '@/lib/aiPicks/server';
 import { PUNTER_RULES } from './angles';
+import { gameIdentity } from '@/lib/aiPicks/decide/timing';
 import { choosePunter, punterCandidate, punterEligible, punterPostedState, punterProposal, PUNTER_LIMITS, type PunterEntry } from './decide';
 
 /** Kept apart from the live review's prefix, so the arm's vetoes never use the live review budget. */
@@ -221,6 +222,10 @@ export async function runPunterArm(input: {
     summary.skipped.push(`Not posting until migrations/ai_picks_track.sql is run (${(e as Error).message})`);
     return summary;
   }
+  // Same slate sizing as live NBA singles: upcoming board games + this arm's recent games.
+  const slate = new Set(state.games);
+  for (const c of scan.candidates) if (c.sport === 'nba') slate.add(gameIdentity(c));
+  state.slateGames = slate.size;
   const prefix = trackWatchKey(AI_PUNTER_TRACK, '');
   const closed = new Set(
     (await listTrackWatchRows(AI_PUNTER_TRACK, eligible.map((e) => e.c.key)))
