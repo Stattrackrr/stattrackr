@@ -1215,13 +1215,13 @@ function BonusFlipper({
       {loading && flipsTotal === 0 ? (
         <BonusFlipSkeletonGrid isDark={isDark} />
       ) : flipsTotal === 0 ? (
-        <div className={`rounded-xl border border-dashed px-6 py-12 text-center text-sm ${muted}`}>
-          {scanned
-            ? boardStale
+        scanned ? (
+          <p className={`px-1 py-2 text-sm ${muted}`}>
+            {boardStale
               ? 'Odds board updating — try again in a minute.'
-              : 'No flips with those hedge books right now.'
-            : 'Set your bonus and tap Find flips.'}
-        </div>
+              : 'No flips with those hedge books right now.'}
+          </p>
+        ) : null
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
           {flips.map((flip) => {

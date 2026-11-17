@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Crosshair, LayoutList, MessageSquareText, Sparkles } from "lucide-react";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
-import { AFL_PUBLIC_ENABLED, CHAT_UNDER_MAINTENANCE, JOURNAL_ENABLED, NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, NBA_SIDEBAR_CLOSED_LABEL, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
+import { CHAT_UNDER_MAINTENANCE, NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, NBA_SIDEBAR_CLOSED_LABEL, TENNIS_PUBLIC_ENABLED } from "@/lib/nbaConstants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { usePicksUnread } from "@/lib/aiPicks/unread";
@@ -68,6 +69,7 @@ export default function LeftSidebar({
   const unreadPicksLabel = unreadPicksCount > 9 ? '9+' : unreadPicksCount.toString();
   const [showSettings, setShowSettings] = useState(false);
   const [showSportsDropdown, setShowSportsDropdown] = useState(true);
+  const [showMoreFeatures, setShowMoreFeatures] = useState(true);
   // Dropdown below profile card (name click toggles this)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   // Profile modal (opened only when "Profile" is clicked in the dropdown)
@@ -94,9 +96,6 @@ export default function LeftSidebar({
   const [savingUnitSize, setSavingUnitSize] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showMainSaveSuccess, setShowMainSaveSuccess] = useState(false);
-  const [preferredJournalInput, setPreferredJournalInput] = useState<'money' | 'units'>('money');
-  const [preferredCurrency, setPreferredCurrency] = useState<'USD' | 'AUD' | 'GBP' | 'EUR'>('USD');
-  
   const currencySymbols: Record<'USD' | 'AUD' | 'GBP' | 'EUR', string> = {
     USD: '$',
     AUD: 'A$',
@@ -189,7 +188,7 @@ export default function LeftSidebar({
       
       const { data: profile } = await supabase
         .from('profiles')
-        .select('unit_size, bankroll, unit_type, bankroll_currency, preferred_journal_input, preferred_currency')
+        .select('unit_size, bankroll, unit_type, bankroll_currency')
         .eq('id', user.id)
         .single();
       
@@ -199,8 +198,6 @@ export default function LeftSidebar({
           bankroll?: number | null;
           unit_type?: string | null;
           bankroll_currency?: string | null;
-          preferred_journal_input?: string | null;
-          preferred_currency?: string | null;
         };
         if (profileData.unit_size) {
           setUnitSize(profileData.unit_size.toString());
@@ -213,12 +210,6 @@ export default function LeftSidebar({
         }
         if (profileData.bankroll_currency) {
           setBankrollCurrency(profileData.bankroll_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
-        }
-        if (profileData.preferred_journal_input) {
-          setPreferredJournalInput(profileData.preferred_journal_input as 'money' | 'units');
-        }
-        if (profileData.preferred_currency) {
-          setPreferredCurrency(profileData.preferred_currency as 'USD' | 'AUD' | 'GBP' | 'EUR');
         }
       }
     } catch (error) {
@@ -361,68 +352,21 @@ export default function LeftSidebar({
 
   const handleSaveSettings = async () => {
     try {
-      // Save to localStorage for persistence
       localStorage.setItem('theme', theme);
       localStorage.setItem('oddsFormat', oddsFormat);
-      
-      // Save journal preferences to database
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Try UPDATE first
-        const { error: updateError } = await (supabase
-          .from('profiles') as any)
-          .update({
-            preferred_journal_input: preferredJournalInput,
-            preferred_currency: preferredCurrency,
-          })
-          .eq('id', user.id);
-        
-        if (updateError) {
-          // If UPDATE fails, try INSERT (in case profile row doesn't exist)
-          const { error: insertError } = await (supabase
-            .from('profiles') as any)
-            .insert({
-              id: user.id,
-              preferred_journal_input: preferredJournalInput,
-              preferred_currency: preferredCurrency,
-            });
-          
-          if (insertError) {
-            console.error('Error saving journal preferences:', {
-              updateError: updateError.message || updateError,
-              insertError: insertError.message || insertError,
-              code: updateError.code || insertError.code,
-              details: updateError.details || insertError.details,
-              hint: updateError.hint || insertError.hint,
-            });
-          } else {
-            // Show success message
-            setShowMainSaveSuccess(true);
-            setTimeout(() => {
-              setShowMainSaveSuccess(false);
-            }, 3000);
-          }
-        } else {
-          // Show success message
-          setShowMainSaveSuccess(true);
-          setTimeout(() => {
-            setShowMainSaveSuccess(false);
-          }, 3000);
-        }
-      }
-      
-      // Close the settings modal
+      setShowMainSaveSuccess(true);
+      setTimeout(() => {
+        setShowMainSaveSuccess(false);
+      }, 3000);
       setShowSettings(false);
-      
-      console.log('Settings saved:', { theme, oddsFormat, preferredJournalInput, preferredCurrency });
     } catch (error) {
       console.error('Error saving settings:', error);
     }
   };
 
-  // Sport icons from public/images.
+  // Sport icons from public/images. Fixed slot so names stay aligned; NBA logo is larger inside it.
   const SportLogo = ({ sport }: { sport: "nba" | "afl" | "nbl" | "atp" | "wta" }) => (
-    <span className="flex-shrink-0 flex items-center justify-center w-6 h-6" aria-hidden>
+    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center" aria-hidden>
       <img
         src={
           sport === "nba"
@@ -436,7 +380,13 @@ export default function LeftSidebar({
                   : "/images/wta-logo.png"
         }
         alt=""
-        className={sport === "atp" || sport === "wta" ? "w-6 h-6 object-contain" : "w-5 h-5 object-contain"}
+        className={
+          sport === "nba"
+            ? "h-7 w-7 object-contain"
+            : sport === "atp" || sport === "wta"
+              ? "h-6 w-6 object-contain"
+              : "h-5 w-5 object-contain"
+        }
       />
     </span>
   );
@@ -452,17 +402,6 @@ export default function LeftSidebar({
             logo: <SportLogo sport="nba" />,
             comingSoon: true,
             comingSoonText: NBA_SIDEBAR_CLOSED_LABEL,
-          },
-        ]),
-    ...(AFL_PUBLIC_ENABLED
-      ? [{ name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" /> }]
-      : [
-          {
-            name: "AFL",
-            href: "/props?sport=all",
-            logo: <SportLogo sport="afl" />,
-            comingSoon: true,
-            comingSoonText: NBA_OFFSEASON_SIDEBAR_LABEL,
           },
         ]),
     {
@@ -485,6 +424,52 @@ export default function LeftSidebar({
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
   ];
+
+  // AFL under Off season — visible but not clickable until the season is back.
+  const offSeasonSports: SportEntry[] = [
+    {
+      name: "AFL",
+      href: "/props?sport=afl",
+      logo: <SportLogo sport="afl" />,
+      comingSoon: true,
+      comingSoonText: NBA_OFFSEASON_SIDEBAR_LABEL,
+    },
+  ];
+
+  const renderSportRow = (sport: SportEntry) => (
+    <li key={sport.name}>
+      {sport.comingSoon === true ? (
+        <div className="flex items-center justify-between gap-2 px-3 py-2 text-sm font-medium rounded transition-colors text-gray-400 dark:text-gray-500 cursor-not-allowed">
+          <span className="flex items-center gap-2">
+            {sport.logo}
+            <span>{sport.name}</span>
+          </span>
+          <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full shrink-0">
+            {sport.comingSoonText ?? 'Coming Soon'}
+          </span>
+        </div>
+      ) : (
+        <Link
+          href={sport.href}
+          onMouseEnter={() => {
+            if (sport.href.startsWith('/props')) kickCombinedPropsEarlyFetch();
+          }}
+          onClick={() => setShowSportsDropdown(false)}
+          className="flex items-center justify-between gap-2 px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800"
+        >
+          <span className="flex items-center gap-2">
+            {sport.logo}
+            <span>{sport.name}</span>
+          </span>
+          {sport.beta && (
+            <span className="text-[10px] font-semibold uppercase tracking-wide bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded shrink-0">
+              Beta
+            </span>
+          )}
+        </Link>
+      )}
+    </li>
+  );
 
   return (
     <>
@@ -561,154 +546,183 @@ export default function LeftSidebar({
               {/* Sports Dropdown Menu - Inline */}
               {showSportsDropdown && (
                 <ul className="mt-1 space-y-1 pl-2">
-                  {sports.map((sport) => (
-                    <li key={sport.name}>
-                      {sport.comingSoon === true ? (
-                        <div
-                          className="block px-3 py-2 text-sm font-medium rounded transition-colors text-gray-400 dark:text-gray-500 cursor-not-allowed flex items-center justify-between gap-2"
-                        >
-                          <span className="flex items-center gap-2">
-                            {sport.logo}
-                            <span>{sport.name}</span>
-                          </span>
-                          <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full shrink-0">
-                            {sport.comingSoonText ?? 'Coming Soon'}
-                          </span>
-                        </div>
-                      ) : (
-                        <Link
-                          href={sport.href}
-                          onMouseEnter={() => {
-                            if (sport.href.startsWith('/props')) kickCombinedPropsEarlyFetch();
-                          }}
-                          onClick={() => setShowSportsDropdown(false)}
-                          className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 flex items-center justify-between gap-2"
-                        >
-                          <span className="flex items-center gap-2">
-                            {sport.logo}
-                            <span>{sport.name}</span>
-                          </span>
-                          {sport.beta && (
-                            <span className="text-[10px] font-semibold uppercase tracking-wide bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded shrink-0">
-                              Beta
-                            </span>
-                          )}
-                        </Link>
-                      )}
-                    </li>
-                  ))}
+                  {sports.map(renderSportRow)}
                 </ul>
               )}
             </div>
 
-            <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <Link
-                href="/props?sport=all"
-                onMouseEnter={() => kickCombinedPropsEarlyFetch()}
-                onClick={(e) => {
-                  if (pathname?.startsWith('/props')) return;
-                  e.preventDefault();
-                  kickCombinedPropsEarlyFetch();
-                  void pushBoardRoute(router.push.bind(router), '/props?sport=all', 'to-props');
-                }}
-                className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname?.startsWith('/props')
-                    ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                    : 'text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                Props
-              </Link>
-              {!hasPremium ? (
-                <button
-                  type="button"
-                  onClick={() => openProUpgrade()}
-                  className="mt-1 flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-400 opacity-65 dark:text-gray-500"
-                >
-                  <span className="inline-flex items-center">
-                    Tools
-                    <ProLockMark />
-                  </span>
-                </button>
-              ) : (
-                <Link
-                  href="/tools"
-                  onMouseEnter={() => kickToolsEarlyFetch()}
-                  onFocus={() => kickToolsEarlyFetch()}
-                  onClick={(e) => {
-                    if (pathname?.startsWith('/tools')) return;
-                    e.preventDefault();
-                    kickToolsEarlyFetch();
-                    void pushBoardRoute(router.push.bind(router), '/tools', 'to-tools');
-                  }}
-                  className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    pathname?.startsWith('/tools')
-                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                      : 'text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white'
-                  }`}
-                >
-                  Tools
-                </Link>
-              )}
-              {CHAT_UNDER_MAINTENANCE ? (
-                <div
-                  className="mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                  title="Chat is under maintenance"
-                >
-                  <span>Chat</span>
-                  <span className="rounded-md bg-amber-600 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white">
-                    MAINT
-                  </span>
+            {offSeasonSports.length > 0 ? (
+              <div className="mt-3">
+                <div className="w-full px-3 py-2 text-sm font-medium text-black dark:text-white">
+                  Off season
                 </div>
-              ) : (
-              <Link
-                href="/chat"
-                className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === "/chat"
-                    ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-                    : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
-                }`}
+                <ul className="mt-1 space-y-1 pl-2">{offSeasonSports.map(renderSportRow)}</ul>
+              </div>
+            ) : null}
+
+            <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={() => setShowMoreFeatures((open) => !open)}
+                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                aria-expanded={showMoreFeatures}
               >
-                <span className="flex items-center gap-2">
-                  <span>Chat</span>
-                  {unreadChatCount > 0 ? (
-                    <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                      {unreadChatLabel}
-                    </span>
-                  ) : null}
-                </span>
-              </Link>
-              )}
-              {!hasPremium ? (
-                <button
-                  type="button"
-                  onClick={() => openProUpgrade()}
-                  className="mt-1 flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-400 opacity-65 dark:text-gray-500"
+                <span>More features</span>
+                <svg
+                  className={`h-4 w-4 transition-transform ${showMoreFeatures ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <span className="inline-flex items-center">
-                    Picks
-                    <ProLockMark />
-                  </span>
-                </button>
-              ) : (
-                <Link
-                  href="/picks"
-                  className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    pathname === "/picks"
-                      ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-                      : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span>Picks</span>
-                    {unreadPicksCount > 0 ? (
-                      <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                        {unreadPicksLabel}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </button>
+              {showMoreFeatures ? (
+                <ul className="mt-1 space-y-1 pl-2">
+                  <li>
+                    <Link
+                      href="/props?sport=all"
+                      onMouseEnter={() => kickCombinedPropsEarlyFetch()}
+                      onClick={(e) => {
+                        if (pathname?.startsWith('/props')) return;
+                        e.preventDefault();
+                        kickCombinedPropsEarlyFetch();
+                        void pushBoardRoute(router.push.bind(router), '/props?sport=all', 'to-props');
+                      }}
+                      className={`mt-1 flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                        pathname?.startsWith('/props')
+                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                          : 'text-black hover:bg-gray-200 hover:text-black dark:text-white dark:hover:bg-gray-800 dark:hover:text-white'
+                      }`}
+                    >
+                                            <span className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center" aria-hidden>
+                        <LayoutList className="h-[18px] w-[18px]" />
                       </span>
-                    ) : null}
-                  </span>
-                </Link>
-              )}
+                      <span>Props</span>
+                    </Link>
+                  </li>
+                  <li>
+                    {!hasPremium ? (
+                      <button
+                        type="button"
+                        onClick={() => openProUpgrade()}
+                        className="mt-1 flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-1.5 text-sm font-medium text-gray-400 opacity-65 dark:text-gray-500"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <span className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center" aria-hidden>
+                            <Crosshair className="h-[18px] w-[18px]" />
+                          </span>
+                          <span className="inline-flex items-center">
+                            Tools
+                            <ProLockMark />
+                          </span>
+                        </span>
+                      </button>
+                    ) : (
+                      <Link
+                        href="/tools"
+                        onMouseEnter={() => kickToolsEarlyFetch()}
+                        onFocus={() => kickToolsEarlyFetch()}
+                        onClick={(e) => {
+                          if (pathname?.startsWith('/tools')) return;
+                          e.preventDefault();
+                          kickToolsEarlyFetch();
+                          void pushBoardRoute(router.push.bind(router), '/tools', 'to-tools');
+                        }}
+                        className={`mt-1 flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                          pathname?.startsWith('/tools')
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                            : 'text-black hover:bg-gray-200 hover:text-black dark:text-white dark:hover:bg-gray-800 dark:hover:text-white'
+                        }`}
+                      >
+                        <span className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center" aria-hidden>
+                          <Crosshair className="h-[18px] w-[18px]" />
+                        </span>
+                        <span>Tools</span>
+                      </Link>
+                    )}
+                  </li>
+                  <li>
+                    {CHAT_UNDER_MAINTENANCE ? (
+                      <div
+                        className="mt-1 flex items-center justify-between rounded-lg px-3 py-1.5 text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                        title="Chat is under maintenance"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center" aria-hidden>
+                            <MessageSquareText className="h-[18px] w-[18px]" />
+                          </span>
+                          <span>Chat</span>
+                        </span>
+                        <span className="rounded-md bg-amber-600 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white">
+                          MAINT
+                        </span>
+                      </div>
+                    ) : (
+                      <Link
+                        href="/chat"
+                        className={`mt-1 flex items-center justify-between rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                          pathname === '/chat'
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                            : 'text-black hover:bg-gray-200 hover:text-black dark:text-white dark:hover:bg-gray-800 dark:hover:text-white'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center" aria-hidden>
+                            <MessageSquareText className="h-[18px] w-[18px]" />
+                          </span>
+                          <span>Chat</span>
+                          {unreadChatCount > 0 ? (
+                            <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                              {unreadChatLabel}
+                            </span>
+                          ) : null}
+                        </span>
+                      </Link>
+                    )}
+                  </li>
+                  <li>
+                    {!hasPremium ? (
+                      <button
+                        type="button"
+                        onClick={() => openProUpgrade()}
+                        className="mt-1 flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-1.5 text-sm font-medium text-gray-400 opacity-65 dark:text-gray-500"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <span className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center" aria-hidden>
+                            <Sparkles className="h-[18px] w-[18px]" />
+                          </span>
+                          <span className="inline-flex items-center">
+                            Picks
+                            <ProLockMark />
+                          </span>
+                        </span>
+                      </button>
+                    ) : (
+                      <Link
+                        href="/picks"
+                        className={`mt-1 flex items-center justify-between rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                          pathname === '/picks'
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                            : 'text-black hover:bg-gray-200 hover:text-black dark:text-white dark:hover:bg-gray-800 dark:hover:text-white'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center" aria-hidden>
+                            <Sparkles className="h-[18px] w-[18px]" />
+                          </span>
+                          <span>Picks</span>
+                          {unreadPicksCount > 0 ? (
+                            <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                              {unreadPicksLabel}
+                            </span>
+                          ) : null}
+                        </span>
+                      </Link>
+                    )}
+                  </li>
+                </ul>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -1221,62 +1235,21 @@ export default function LeftSidebar({
             
             <div className="p-6 border-t border-gray-200 dark:border-gray-700 space-y-6">
               <div>
-                <h3 className="text-base font-semibold text-black dark:text-white mb-4">
-                  {JOURNAL_ENABLED ? 'Journal Settings' : 'Preferences'}
-                </h3>
-                
-                {JOURNAL_ENABLED ? (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-black dark:text-gray-300 mb-3">Preferred Input</label>
-                  <select 
-                    value={preferredJournalInput}
-                    onChange={(e) => setPreferredJournalInput(e.target.value as 'money' | 'units')}
-                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  >
-                    <option value="money">Money (Currency)</option>
-                    <option value="units">Units</option>
-                  </select>
-                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Choose how to input stakes when adding bets from dashboard</p>
-                </div>
-                ) : null}
-                
-                {/* Preferred Currency */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-black dark:text-gray-300 mb-3">Preferred Currency</label>
-                  <select 
-                    value={preferredCurrency}
-                    onChange={(e) => setPreferredCurrency(e.target.value as 'USD' | 'AUD' | 'GBP' | 'EUR')}
-                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  >
-                    <option value="USD">USD ($)</option>
-                    <option value="AUD">AUD (A$)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="EUR">EUR (€)</option>
-                  </select>
-                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Default currency for journal entries</p>
-                </div>
-                
-                {/* Unit Settings Button - styled like other dropdowns */}
-                <div>
-                  <label className="block text-sm font-medium text-black dark:text-gray-300 mb-3">Unit Settings</label>
-                  <button
-                    onClick={() => setShowUnitSettingsModal(true)}
-                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left flex items-center justify-between focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  >
-                    <span>Configure Unit Size</span>
-                    <svg 
-                      className="w-4 h-4" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
+                <label className="block text-sm font-medium text-black dark:text-gray-300 mb-3">Unit Settings</label>
+                <button
+                  type="button"
+                  onClick={() => setShowUnitSettingsModal(true)}
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left flex items-center justify-between focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                >
+                  <span>Configure Unit Size</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
-              
-              <button 
+
+              <button
+                type="button"
                 onClick={handleSaveSettings}
                 disabled={savingUnitSize}
                 className="w-full bg-purple-600 text-white py-3 px-4 rounded-xl hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
