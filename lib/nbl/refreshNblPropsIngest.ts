@@ -10,10 +10,10 @@ import { getNblPulseScoreBoard } from '@/lib/nbl/pulseScore';
 import { getNblOddsCache, refreshNblOddsData } from '@/lib/nbl/refreshNblOdds';
 
 /**
- * Player props and game lines both refresh every cron tick (10 minutes; a little under so jitter
- * never skips one). Game lines cost a credit per game on the odds-api.net plan shared with NBA.
+ * Player props and game lines refresh every cron tick (5 minutes; a little under so jitter never
+ * skips one). Game lines cost a credit per game on the odds-api.net plan shared with NBA/tennis.
  */
-const NBL_GAME_ODDS_MIN_AGE_MS = 9 * 60 * 1000;
+const NBL_GAME_ODDS_MIN_AGE_MS = 4 * 60 * 1000;
 
 async function gameOddsForIngest(writeDisk: boolean): Promise<Awaited<ReturnType<typeof refreshNblOddsData>>> {
   if (!writeDisk) {

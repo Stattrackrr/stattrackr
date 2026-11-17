@@ -24,15 +24,15 @@
     },
     {
       "path": "/api/cron/refresh-tennis-odds",
-      "schedule": "*/30 * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/refresh-nbl-odds",
-      "schedule": "*/10 * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/refresh-nba-odds",
-      "schedule": "5,15,25,35,45,55 * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/refresh-nba-odds-near",
@@ -84,7 +84,7 @@
     },
     {
       "path": "/api/cron/warm-tools",
-      "schedule": "*/2 * * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/warm-tools-bonus",

@@ -31,10 +31,10 @@ export function toolsCacheSet<T>(key: string, value: T, at = Date.now()): void {
   store.set(key, { at, value });
 }
 
-/** Serve without re-reading boards / re-scanning. */
-export const OPPORTUNITIES_HOT_MS = 90_000;
+/** Serve without re-reading boards / re-scanning (warm-tools every 1m). */
+export const OPPORTUNITIES_HOT_MS = 45_000;
 /** Redis/shared soft window — still serve, refresh in background after HOT. */
-export const OPPORTUNITIES_SOFT_MS = 3 * 60_000;
+export const OPPORTUNITIES_SOFT_MS = 2 * 60_000;
 const OPPORTUNITIES_REDIS_TTL_SEC = 180;
 
 export type OpportunitiesPayload = {

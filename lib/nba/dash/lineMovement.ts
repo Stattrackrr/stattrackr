@@ -1,7 +1,7 @@
 /**
  * NBA over/under line movement per player, stat and book.
  *
- * Every odds ingest (Vercel cron every 10 minutes) appends a point when a book's main O/U line
+ * Every odds ingest (Vercel cron every 5 minutes) appends a point when a book's main O/U line
  * or prices change, up to tip-off. Stored in Redis. Milestones (10+ and so on) are left out on purpose.
  */
 

@@ -38,7 +38,8 @@ export type { TennisBookRow, TennisMatchOdds } from '@/lib/tennis/oddsTypes';
 const API_BASE = 'https://api.api-tennis.com/tennis/';
 const ODDS_CACHE_TTL_SECONDS = 5 * 60;
 const SNAPSHOT_TTL_SECONDS = 24 * 60 * 60;
-const MIN_REFRESH_MS = 25 * 60 * 1000;
+/** Shared board cadence for props + Tools ARB/EV/MID (cron every 5m). */
+const MIN_REFRESH_MS = 4 * 60 * 1000;
 const MAX_SNAPSHOT_MATCHES = 80;
 const REFRESH_META_KEY = 'tennis_odds_refresh_meta_v2';
 const ODDS_INDEX_KEY = 'tennis_odds_index_v1';

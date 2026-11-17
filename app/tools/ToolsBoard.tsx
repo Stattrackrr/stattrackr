@@ -380,6 +380,8 @@ export function ToolsBoard({
   const [flips, setFlips] = useState<ToolsBonusFlip[]>([]);
   const [boardLoading, setBoardLoading] = useState(() => !(readToolsOpsCache()?.length));
   const [bonusLoading, setBonusLoading] = useState(false);
+  /** Freshest book as-of from the shared Redis backpack (not the Tools rescan clock). */
+  const [boardScannedAt, setBoardScannedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [proRequired, setProRequired] = useState(false);
   const bootstrappedRef = useRef(false);
@@ -436,6 +438,8 @@ export function ToolsBoard({
       );
       setOps(next);
       writeToolsOpsCache(next);
+      const scannedAt = typeof json?.meta?.scannedAt === 'string' ? json.meta.scannedAt : null;
+      setBoardScannedAt(scannedAt);
     } catch (e) {
       if (!quiet || !opsLenRef.current) {
         setError(e instanceof Error ? e.message : 'Could not load tools.');
@@ -565,6 +569,17 @@ export function ToolsBoard({
   };
 
   const loading = tab === 'bonus' ? bonusLoading : boardLoading;
+  const boardAgeLabel =
+    tab !== 'bonus' && boardScannedAt
+      ? (() => {
+          const ageMs = Date.now() - Date.parse(boardScannedAt);
+          if (!Number.isFinite(ageMs) || ageMs < 0) return null;
+          const mins = Math.max(0, Math.round(ageMs / 60_000));
+          if (mins <= 0) return 'Odds as of just now';
+          if (mins === 1) return 'Odds as of 1m ago';
+          return `Odds as of ${mins}m ago`;
+        })()
+      : null;
 
   if (!authReady) {
     return <ToolsBoardSkeleton isDark={isDark} />;
@@ -632,14 +647,17 @@ export function ToolsBoard({
             );
           })}
         </nav>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => (tab === 'bonus' ? void loadBonus() : void loadOpportunities({ fresh: true }))}
-          className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${pillIdle} disabled:opacity-50`}
-        >
-          {loading ? 'Updating…' : 'Refresh'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {boardAgeLabel ? <span className={`text-[11px] tabular-nums ${muted}`}>{boardAgeLabel}</span> : null}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => (tab === 'bonus' ? void loadBonus() : void loadOpportunities({ fresh: true }))}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${pillIdle} disabled:opacity-50`}
+          >
+            {loading ? 'Updating…' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {tab === 'middles' ? (

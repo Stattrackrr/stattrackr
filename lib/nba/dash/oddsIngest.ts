@@ -19,21 +19,21 @@ const DAYS_BACK = 1;
 const DAYS_AHEAD = 6;
 const PROPS_WINDOW_MS = (DAYS_AHEAD + 1) * 24 * 60 * 60 * 1000;
 /**
- * odds-api.net costs 1 credit per request (250k/month on Starter, shared with NBL): the soonest
- * games every 15 minutes, the day's slate every run inside 6 hours of tip, and the last 90 minutes
- * every 3 minutes (refreshNbaNearTipOdds).
+ * odds-api.net costs 1 credit per request (2M/month on Starter, shared with NBL/tennis/tools):
+ * soonest games every 5 minutes, games inside 6h of tip every 3 minutes, last 90 minutes every
+ * 3 minutes via refreshNbaNearTipOdds. Same Redis board feeds AI picks + Tools ARB/EV/MID.
  */
 const ODDS_NET_MAX_GAMES = 15;
-const ODDS_NET_MIN_INTERVAL_MS = 15 * 60 * 1000;
-/** Games inside this of tip are pulled every cron run (10 minutes; a little under so jitter never skips one). */
+const ODDS_NET_MIN_INTERVAL_MS = 5 * 60 * 1000;
+/** Games inside this of tip are pulled every 3 minutes when a full pull is not due. */
 const ODDS_NET_NEAR_TIP_MS = 6 * 60 * 60 * 1000;
-const ODDS_NET_NEAR_INTERVAL_MS = 9 * 60 * 1000;
+const ODDS_NET_NEAR_INTERVAL_MS = 3 * 60 * 1000;
 /** The quick refresh covers games this close to tip. */
 const ODDS_NET_FINAL_MS = 90 * 60 * 1000;
 /** Matches findNbaOddsGame's 4h cutoff with some slack. */
 const KEEP_AFTER_TIP_MS = 6 * 60 * 60 * 1000;
 const BOARD_TTL_SECONDS = 3 * 24 * 60 * 60;
-const CRON_INTERVAL_MS = 10 * 60 * 1000;
+const CRON_INTERVAL_MS = 5 * 60 * 1000;
 /** Prediction exchanges, not sportsbooks. */
 const EXCLUDED_VENDORS = new Set(['kalshi', 'polymarket']);
 

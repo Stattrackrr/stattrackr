@@ -37,7 +37,7 @@ export async function refreshNblOddsData(options?: {
   }
 
   const now = new Date();
-  const nextUpdate = new Date(now.getTime() + 30 * 60 * 1000);
+  const nextUpdate = new Date(now.getTime() + 5 * 60 * 1000);
   try {
     const apiGames = await fetchOddsApiNetNblGameLines();
     if (!apiGames) {
