@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Loader2 } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
@@ -8,6 +8,7 @@ import { BackToPropsButton } from '@/components/BackToPropsButton';
 import { PickAlertsButton } from '@/components/picks/PickAlertsButton';
 import { PicksReadMeButton } from '@/components/picks/PicksReadMeButton';
 import { AiPicksFeed, AiPicksLearningPanel } from '@/components/chat/AiPicksFeed';
+import { AiPicksFeedSkeleton } from '@/components/chat/AiPicksFeedSkeleton';
 import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
 import { useChatViewer } from '@/components/chat/useChatViewer';
 import { openProUpgrade } from '@/components/ProFeatureLock';
@@ -151,12 +152,24 @@ export default function PicksPageClient() {
         <div className="mx-auto h-full w-full max-w-[1550px]">
           <div className="dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-2 sm:px-3 sm:pt-4 lg:px-3 lg:pb-4">
             {viewer.loading ? (
-              <div className="flex flex-1 items-center justify-center">
-                <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-gray-600 shadow-sm dark:border-gray-700 dark:bg-[#0f1a2b] dark:text-gray-300">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading picks...
+              <section className="flex min-h-0 flex-1 flex-col sm:h-[calc(100dvh-9rem)] lg:h-[calc(100vh-1rem)] lg:max-w-[1480px] lg:pr-3">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent dark:bg-transparent lg:h-full lg:rounded-3xl lg:border lg:border-gray-200 lg:bg-white lg:shadow-sm dark:lg:border-gray-700 dark:lg:bg-[#0f1a2b]">
+                  <div className="border-b border-gray-200 px-2 py-3 dark:border-gray-700 sm:px-5 sm:py-4">
+                    <div className="flex flex-col gap-1.5">
+                      <BackToPropsButton className="mb-1" />
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Picks</h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Picks from Stattrackr AI, posted, tracked and graded automatically.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="chat-scrollbar relative z-0 min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain px-5 py-4">
+                    <AiPicksFeedSkeleton />
+                  </div>
                 </div>
-              </div>
+              </section>
             ) : !viewer.hasPremium ? (
               <div className="rounded-3xl border border-purple-200 bg-gradient-to-br from-purple-50 to-white p-6 shadow-sm dark:border-purple-800/60 dark:from-purple-950/30 dark:to-[#0f1a2b]">
                 <div className="max-w-2xl">

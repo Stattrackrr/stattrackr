@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowUpDown, Check, Clock, Highlighter, Loader2, Minus, Sparkles, X } from 'lucide-react';
+import { AiPicksFeedSkeleton } from '@/components/chat/AiPicksFeedSkeleton';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { supabase } from '@/lib/supabaseClient';
@@ -823,12 +824,7 @@ export function AiPicksFeed() {
   }, [flashId]);
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Loading AI picks...
-      </div>
-    );
+    return <AiPicksFeedSkeleton />;
   }
 
   if (error) {

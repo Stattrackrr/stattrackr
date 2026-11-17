@@ -14,6 +14,7 @@ import { arbStakes } from '@/lib/tools/math';
 import { clientNbaLogo, clientNblLogo } from '@/lib/tools/mediaClient';
 import type { ToolsBonusFlip, ToolsOpportunity } from '@/lib/tools/types';
 import { supabase } from '@/lib/supabaseClient';
+import { BonusFlipSkeletonGrid, ToolsBoardSkeleton, ToolsOpsSkeletonGrid } from './ToolsSkeletons';
 
 const ARB_BANKROLL = 1000;
 
@@ -566,11 +567,7 @@ export function ToolsBoard({
   const loading = tab === 'bonus' ? bonusLoading : boardLoading;
 
   if (!authReady) {
-    return (
-      <div className={`rounded-xl border px-6 py-14 text-center text-sm ${card} ${muted}`}>
-        Opening tools…
-      </div>
-    );
+    return <ToolsBoardSkeleton isDark={isDark} />;
   }
 
   if (!isPro || proRequired) {
@@ -694,9 +691,7 @@ export function ToolsBoard({
           onScan={() => void loadBonus()}
         />
       ) : loading && !boardOps.length ? (
-        <div className={`rounded-xl border border-dashed px-6 py-14 text-center text-sm ${muted}`}>
-          Loading board…
-        </div>
+        <ToolsOpsSkeletonGrid isDark={isDark} />
       ) : boardOps.length === 0 ? (
         <div className={`rounded-xl border border-dashed px-6 py-14 text-center text-sm ${muted}`}>
           No opportunities right now. Try Refresh.
@@ -1200,7 +1195,7 @@ function BonusFlipper({
       </section>
 
       {loading && flipsTotal === 0 ? (
-        <div className={`rounded-xl border border-dashed px-6 py-12 text-center text-sm ${muted}`}>Finding flips…</div>
+        <BonusFlipSkeletonGrid isDark={isDark} />
       ) : flipsTotal === 0 ? (
         <div className={`rounded-xl border border-dashed px-6 py-12 text-center text-sm ${muted}`}>
           {scanned

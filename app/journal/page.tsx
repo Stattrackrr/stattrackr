@@ -19,15 +19,12 @@ import { Lightbulb, ChevronDown, ChevronUp, TrendingUp, TrendingDown, BarChart3,
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
 import ImportedBetsReviewDrawer from '@/components/ImportedBetsReviewDrawer';
+import { JournalPageSkeleton } from '@/components/JournalPageSkeleton';
 
 export default function JournalPage() {
   return (
     <ThemeProvider>
-      <Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-          <div className="text-xl">Loading journal...</div>
-        </div>
-      }>
+      <Suspense fallback={<JournalPageSkeleton />}>
         <ErrorBoundary>
           <JournalContent />
         </ErrorBoundary>
@@ -1649,11 +1646,7 @@ function JournalContent() {
 
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div>Loading...</div>
-      </div>
-    );
+    return <JournalPageSkeleton />;
   }
 
   // Paywall for non-Pro users (only show if explicitly false, not if null/loading)
