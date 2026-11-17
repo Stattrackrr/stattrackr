@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-16T22:52:40.058Z",
+  "generatedAt": "2026-11-17T21:42:15.070Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
-  "sourceUpdatedText": "Thursday, November 12, 5pm AEDT",
-  "injuryCount": 25,
+  "sourceUpdatedText": "Tuesday, November 17, 5pm AEDT",
+  "injuryCount": 23,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -36,7 +36,7 @@
       "team": "Brisbane Bullets",
       "player": "Max Mackinnon",
       "injury": "Concussion",
-      "returning": "Round 9",
+      "returning": "TBC",
       "status": "Out",
       "note": "Still in concussion protocol and out of the game against the Perth Wildcats on Wednesday 4 November 2026, the Herald Sun reported that day. He last played on 29 October.",
       "listedByNbl": true
@@ -63,9 +63,9 @@
       "team": "Cairns Taipans",
       "player": "Walter Brown",
       "injury": "Ankle",
-      "returning": "Round 9",
+      "returning": "TBC",
       "status": "Out",
-      "note": "Out of both Round 8 games, the Taipans confirmed on 4 November 2026 (Fox Sports, @NBLPleb). The NBL’s list of 8 November has an ankle injury, with a Round 9 return.",
+      "note": "Out of both Round 8 games, the Taipans confirmed on 4 November 2026 (Fox Sports, @NBLPleb). The NBL’s list of 16 November has an ankle injury, with his return to be confirmed.",
       "listedByNbl": true
     },
     {
@@ -158,28 +158,11 @@
       "listedByNbl": true
     },
     {
-      "team": "South East Melbourne Phoenix",
-      "player": "Hunter Goodrick",
-      "injury": "Knee",
-      "returning": "Round 9",
-      "status": "Out",
-      "listedByNbl": true
-    },
-    {
       "team": "Sydney Kings",
       "player": "Keli Leaupepe",
       "injury": "ACL",
       "returning": "Season",
       "status": "Out for the season",
-      "listedByNbl": true
-    },
-    {
-      "team": "Sydney Kings",
-      "player": "Jayden Stone",
-      "injury": "Illness",
-      "returning": "Possibly 15 November",
-      "status": "Out",
-      "note": "Out of the Sydney Kings’ game against the South East Melbourne Phoenix on Sunday 8 November 2026 with illness, basketball.com.au understands. Expected back for the next game, against the New Zealand Breakers on Sunday 15 November.",
       "listedByNbl": true
     },
     {
