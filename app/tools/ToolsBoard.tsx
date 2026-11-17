@@ -608,9 +608,9 @@ export function ToolsBoard({
   }
 
   return (
-    <div className="pb-24 lg:pb-8">
+    <div className="min-w-0 pb-24 lg:pb-8">
       <div
-        className={`mb-5 flex flex-wrap items-end justify-between gap-3 border-b pb-3 ${
+        className={`mb-5 flex min-w-0 flex-wrap items-end justify-between gap-3 border-b pb-3 ${
           isDark ? 'border-white/10' : 'border-gray-200'
         }`}
       >
@@ -715,7 +715,7 @@ export function ToolsBoard({
           No opportunities right now. Try Refresh.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
           {pagedOps.map((op) => (
             <OpportunityCard key={op.id} op={op} isDark={isDark} />
           ))}
@@ -796,9 +796,11 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
   const meta = KIND_META[op.kind];
   const stats = cardStats(op);
   return (
-    <article className={`rounded-xl border p-4 sm:p-5 ${isDark ? meta.card : meta.cardLight}`}>
+    <article
+      className={`min-w-0 overflow-hidden rounded-xl border p-4 sm:p-5 ${isDark ? meta.card : meta.cardLight}`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide ${isDark ? meta.chip : meta.chipLight}`}>
             {meta.label}
           </span>
@@ -806,7 +808,7 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
             {sportLabel(op.sport)}
           </span>
         </div>
-        <div className={`text-sm font-semibold tabular-nums ${isDark ? meta.edge : meta.edgeLight}`}>{op.edgeLabel}</div>
+        <div className={`shrink-0 text-sm font-semibold tabular-nums ${isDark ? meta.edge : meta.edgeLight}`}>{op.edgeLabel}</div>
       </div>
 
       <MatchHeader
@@ -823,11 +825,11 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
       />
 
       {stats.length ? (
-        <div className={`mt-3 grid gap-2 ${stats.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        <div className={`mt-3 grid min-w-0 gap-2 ${stats.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className={`rounded-lg border px-3 py-2 ${isDark ? STAT_TILE.borderDark : STAT_TILE.borderLight}`}
+              className={`min-w-0 rounded-lg border px-2 py-2 sm:px-3 ${isDark ? STAT_TILE.borderDark : STAT_TILE.borderLight}`}
             >
               <div
                 className={`text-[10px] font-medium uppercase tracking-wide ${
@@ -836,7 +838,7 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
               >
                 {stat.label}
               </div>
-              <div className={`mt-0.5 text-sm font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <div className={`mt-0.5 truncate text-sm font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {stat.value}
               </div>
             </div>
@@ -844,7 +846,7 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
         </div>
       ) : null}
 
-      <div className="mt-3 grid gap-1.5">
+      <div className="mt-3 grid min-w-0 gap-1.5">
         {op.legs.map((leg) => {
           const selection = legSelectionLabel(leg.selection || '', op.market || '');
           // EV edge lives in the stats tiles — don't repeat it under the book row.
@@ -857,12 +859,12 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
           return (
             <div
               key={`${leg.bookKey}-${leg.selection}-${leg.odds}`}
-              className={`rounded-lg border px-3 py-2.5 ${isDark ? meta.leg : meta.legLight}`}
+              className={`min-w-0 overflow-hidden rounded-lg border px-3 py-2.5 ${isDark ? meta.leg : meta.legLight}`}
             >
-              <div className="flex items-center justify-between gap-3">
-                <span className="flex min-w-0 items-center gap-2">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                   <BookmakerLogo bookKey={leg.bookKey || leg.book} className="h-5 w-5 shrink-0 rounded object-contain" />
-                  <span className="min-w-0 truncate text-sm">
+                  <span className="block min-w-0 truncate text-sm">
                     <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>{leg.book}</span>
                     <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                       {' '}
@@ -879,14 +881,14 @@ function OpportunityCard({ op, isDark }: { op: ToolsOpportunity; isDark: boolean
               ) : null}
               {op.kind === 'ev' && (op.sharp?.length || op.fairOdds != null) && leg === op.legs[0] ? (
                 <div
-                  className={`mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums ${
+                  className={`mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums ${
                     isDark ? 'text-slate-400' : 'text-gray-500'
                   }`}
                 >
                   {op.sharp?.map((s) => (
-                    <span key={s.bookKey} className="inline-flex items-center gap-1.5">
+                    <span key={s.bookKey} className="inline-flex max-w-full items-center gap-1.5">
                       <BookmakerLogo bookKey={s.bookKey} className="h-3.5 w-3.5 shrink-0 rounded object-contain" />
-                      <span>
+                      <span className="truncate">
                         {s.book} {s.odds.toFixed(2)}
                       </span>
                     </span>
@@ -1223,14 +1225,14 @@ function BonusFlipper({
           </p>
         ) : null
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3">
           {flips.map((flip) => {
             const hedgeStake = flip.hedgeLeg.stake ?? 0;
             const bonusStake = flip.bonusLeg.stake ?? (Number(amount) || 0);
             return (
-              <article key={flip.id} className={`rounded-xl border p-4 sm:p-5 ${card}`}>
+              <article key={flip.id} className={`min-w-0 overflow-hidden rounded-xl border p-4 sm:p-5 ${card}`}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <span
                       className={`rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide ${
                         isDark ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-50 text-violet-900'
@@ -1242,7 +1244,7 @@ function BonusFlipper({
                       {sportLabel(flip.league || flip.sport)}
                     </span>
                   </div>
-                  <div className={`text-sm font-semibold tabular-nums ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
+                  <div className={`shrink-0 text-sm font-semibold tabular-nums ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
                     {(flip.retention * 100).toFixed(1)}% convert
                   </div>
                 </div>
@@ -1260,7 +1262,7 @@ function BonusFlipper({
                   isDark={isDark}
                 />
 
-                <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="mt-3 grid min-w-0 grid-cols-3 gap-2">
                   {[
                     { label: 'Lock', value: `$${flip.cashOut.toFixed(0)}` },
                     { label: 'Keep', value: `${(flip.retention * 100).toFixed(0)}%` },
@@ -1268,7 +1270,7 @@ function BonusFlipper({
                   ].map((stat) => (
                     <div
                       key={stat.label}
-                      className={`rounded-lg border px-3 py-2 ${isDark ? STAT_TILE.borderDark : STAT_TILE.borderLight}`}
+                      className={`min-w-0 rounded-lg border px-2 py-2 sm:px-3 ${isDark ? STAT_TILE.borderDark : STAT_TILE.borderLight}`}
                     >
                       <div
                         className={`text-[10px] font-medium uppercase tracking-wide ${
@@ -1277,22 +1279,22 @@ function BonusFlipper({
                       >
                         {stat.label}
                       </div>
-                      <div className={`mt-0.5 text-sm font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <div className={`mt-0.5 truncate text-sm font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {stat.value}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-3 grid gap-1.5">
-                  <div className={`rounded-lg border px-3 py-2.5 ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-100 bg-gray-50'}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="flex min-w-0 items-center gap-2">
+                <div className="mt-3 grid min-w-0 gap-1.5">
+                  <div className={`min-w-0 overflow-hidden rounded-lg border px-3 py-2.5 ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-100 bg-gray-50'}`}>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                         <BookmakerLogo
                           bookKey={flip.bonusLeg.bookKey || flip.bonusLeg.book}
                           className="h-5 w-5 shrink-0 rounded object-contain"
                         />
-                        <span className="min-w-0 truncate text-sm">
+                        <span className="block min-w-0 truncate text-sm">
                           <span className={muted}>{flip.bonusLeg.book}</span>
                           <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                             {' '}
@@ -1309,14 +1311,14 @@ function BonusFlipper({
                     </div>
                   </div>
 
-                  <div className={`rounded-lg border px-3 py-2.5 ${isDark ? 'border-white/10 bg-black/25' : 'border-gray-100 bg-white'}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="flex min-w-0 items-center gap-2">
+                  <div className={`min-w-0 overflow-hidden rounded-lg border px-3 py-2.5 ${isDark ? 'border-white/10 bg-black/25' : 'border-gray-100 bg-white'}`}>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                         <BookmakerLogo
                           bookKey={flip.hedgeLeg.bookKey || flip.hedgeLeg.book}
                           className="h-5 w-5 shrink-0 rounded object-contain"
                         />
-                        <span className="min-w-0 truncate text-sm">
+                        <span className="block min-w-0 truncate text-sm">
                           <span className={muted}>{flip.hedgeLeg.book}</span>
                           <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                             {' '}
