@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-17T21:42:15.070Z",
+  "generatedAt": "2026-11-18T21:20:51.323Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Tuesday, November 17, 5pm AEDT",
-  "injuryCount": 23,
+  "injuryCount": 24,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -129,6 +129,14 @@
       "returning": "TBC",
       "status": "Out",
       "note": "The Breakers say James has a torn left hamstring, reported by Olgun Uluc on 16 September 2026. On 3 October general manager Dillon Boucher said James is three weeks post-injury and will be assessed at the four-to-six-week mark of his rehabilitation, reported by Jai at Fox Sports (@NBLPleb). Mojave King has joined as injury cover, and Boucher said the club will keep monitoring the import market.",
+      "listedByNbl": true
+    },
+    {
+      "team": "New Zealand Breakers",
+      "player": "Anzac Rissetto",
+      "injury": "Illness",
+      "returning": "Round 10",
+      "status": "Out",
       "listedByNbl": true
     },
     {

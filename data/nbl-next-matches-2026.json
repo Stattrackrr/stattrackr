@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-17T21:41:18.028Z",
+  "generatedAt": "2026-11-18T21:19:57.171Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-      "name": "NZ Breakers",
-      "team_code": "NZL",
-      "nextMatches": [
-        {
-          "id": "01c3439f-b3a1-465d-9827-a3280f4ec0c3",
-          "match_slug": "nz-breakers-v-south-east-melbourne-phoenix-men-18-11-2026",
-          "match_title": "NZ Breakers v South East Melbourne Phoenix men 18-11-2026",
-          "match_ticket_url": "https://fans.nzbreakers.basketball/schedule",
-          "external_id": "3748f8f0-58ad-11f1-bb02-b15d4ea6aed8",
-          "start_time_datetime": "2026-11-18T06:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-          "opponent_name": "South East Melbourne Phoenix",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
-          "venue": "Spark Arena",
-          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
-        }
-      ]
-    },
-    {
-      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-      "name": "South East Melbourne Phoenix",
-      "team_code": "SEM",
-      "nextMatches": [
-        {
-          "id": "01c3439f-b3a1-465d-9827-a3280f4ec0c3",
-          "match_slug": "nz-breakers-v-south-east-melbourne-phoenix-men-18-11-2026",
-          "match_title": "NZ Breakers v South East Melbourne Phoenix men 18-11-2026",
-          "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
-          "external_id": "3748f8f0-58ad-11f1-bb02-b15d4ea6aed8",
-          "start_time_datetime": "2026-11-18T06:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-          "opponent_name": "NZ Breakers",
-          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-          "venue": "Spark Arena",
-          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
-        }
-      ]
-    },
     {
       "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "name": "Illawarra Hawks",
@@ -167,7 +125,49 @@
           "is_home": true,
           "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "opponent_name": "NZ Breakers",
-          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
+          "opponent_logo": "https://images.dc.connect.sportradar.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+        }
+      ]
+    },
+    {
+      "id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "name": "NZ Breakers",
+      "team_code": "NZL",
+      "nextMatches": [
+        {
+          "id": "aec48ef8-56e8-4e3c-a838-1e34e086deb5",
+          "match_slug": "melbourne-united-v-nz-breakers-men-21-11-2026",
+          "match_title": "Melbourne United v NZ Breakers men 21-11-2026",
+          "match_ticket_url": "https://fans.nzbreakers.basketball/schedule",
+          "external_id": "3750b552-58ad-11f1-a12d-7ddf75ccac0d",
+          "start_time_datetime": "2026-11-21T08:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "opponent_name": "Melbourne United",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
+        }
+      ]
+    },
+    {
+      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+      "name": "South East Melbourne Phoenix",
+      "team_code": "SEM",
+      "nextMatches": [
+        {
+          "id": "e37dbe7f-3b77-499e-aec5-929ac7487245",
+          "match_slug": "south-east-melbourne-phoenix-v-cairns-taipans-men-22-11-2026",
+          "match_title": "South East Melbourne Phoenix v Cairns Taipans men 22-11-2026",
+          "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
+          "external_id": "37514d45-58ad-11f1-917b-0f009f2e4d02",
+          "start_time_datetime": "2026-11-22T04:00:00.000Z",
+          "is_home": true,
+          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "opponent_name": "Cairns Taipans",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
           "venue": "John Cain Arena",
           "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
         }

@@ -1,17 +1,17 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-17T21:41:46.073Z",
+  "generatedAt": "2026-11-18T21:20:20.850Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 161,
-  "gameRows": 1393,
+  "playerCount": 160,
+  "gameRows": 1403,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
       "name": "Akech Aliir",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/92012cd9-65dd-47f1-a51e-a6b5169bf359-2026.json"
     },
     {
@@ -51,7 +51,7 @@
       "name": "Angus Glover",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/79fe0730-aca0-4167-97cc-1ef09514cc66-2026.json"
     },
     {
@@ -219,7 +219,7 @@
       "name": "Carlin Davison",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/ef79baef-a773-4563-8463-0261d3e0ce8f-2026.json"
     },
     {
@@ -227,7 +227,7 @@
       "name": "Charles Bediako",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/ac574899-344f-4ec9-9b8e-f2ee16d706c8-2026.json"
     },
     {
@@ -267,7 +267,7 @@
       "name": "D'Shawn Schwartz",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/6c3024b9-ffb8-4a9d-bb23-1e99191f98b9-2026.json"
     },
     {
@@ -299,7 +299,7 @@
       "name": "Dash Daniels",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/d92ec6d5-b731-476a-b4a4-10cc36211bf5-2026.json"
     },
     {
@@ -315,7 +315,7 @@
       "name": "Dejan Vasiljevic",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/84a1ebbc-7e5c-4423-9987-045086e5ba26-2026.json"
     },
     {
@@ -403,7 +403,7 @@
       "name": "Hunter Goodrick",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 3,
+      "gameCount": 4,
       "cacheFile": "nbl-model/cache/player-logs/0a5486ee-953a-4fae-920d-4a77de1bdf03-2026.json"
     },
     {
@@ -419,7 +419,7 @@
       "name": "Izayah Le'Afa",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 10,
+      "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/54a74f78-bff8-4cdb-99d0-ebd1cc720b47-2026.json"
     },
     {
@@ -579,7 +579,7 @@
       "name": "Jordan Hunter",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 12,
+      "gameCount": 13,
       "cacheFile": "nbl-model/cache/player-logs/6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9-2026.json"
     },
     {
@@ -699,7 +699,7 @@
       "name": "Kouat Noi",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/52017fdb-600a-4da8-b37c-bf4b227b90ec-2026.json"
     },
     {
@@ -907,7 +907,7 @@
       "name": "Mojave King",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/3443c855-3ca4-4274-8cbf-74423c32b425-2026.json"
     },
     {
@@ -923,7 +923,7 @@
       "name": "Nathan Sobey",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/7f6e18b2-6494-41c7-9791-d72c632317d5-2026.json"
     },
     {
@@ -931,7 +931,7 @@
       "name": "Nelson Weidemann",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 7,
+      "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/5694f763-4380-4def-ab19-18793d2888c2-2026.json"
     },
     {
@@ -971,7 +971,7 @@
       "name": "Patrick Ryan",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/9b71131b-787a-475d-aa1b-00dc4394f5e2-2026.json"
     },
     {
@@ -1011,7 +1011,7 @@
       "name": "Reuben Te Rangi",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/95352144-95bb-4154-963a-b3b90dd915a4-2026.json"
     },
     {
@@ -1043,7 +1043,7 @@
       "name": "Sam Davidson",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/6a6983d4-e83e-403a-9b3e-04a8535ab545-2026.json"
     },
     {
@@ -1067,7 +1067,7 @@
       "name": "Sam Mennenga",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/6096f09f-0ba7-4981-bb32-d62f287b9f96-2026.json"
     },
     {
@@ -1105,17 +1105,9 @@
     {
       "playerId": "05e12749-7b66-44f8-84f7-f437fc90dfb6",
       "name": "Skylar Mays",
-      "team": "South East Melbourne Phoenix",
-      "teamCode": "SEM",
-      "gameCount": 11,
-      "cacheFile": "nbl-model/cache/player-logs/05e12749-7b66-44f8-84f7-f437fc90dfb6-2026.json"
-    },
-    {
-      "playerId": "05e12749-7b66-44f8-84f7-f437fc90dfb6",
-      "name": "Skylar Mays",
       "team": "NZ Breakers",
       "teamCode": "NZL",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/05e12749-7b66-44f8-84f7-f437fc90dfb6-2026.json"
     },
     {
@@ -1147,7 +1139,7 @@
       "name": "Tanner Krebs",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 12,
+      "gameCount": 13,
       "cacheFile": "nbl-model/cache/player-logs/a793b9cb-fb83-4554-8672-f35ccd77d6b1-2026.json"
     },
     {
@@ -1283,7 +1275,7 @@
       "name": "Yannis Morin",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/5f85917c-1552-4800-b64a-48cf1023c60c-2026.json"
     },
     {

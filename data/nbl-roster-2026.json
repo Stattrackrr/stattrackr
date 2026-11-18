@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-17T21:41:27.244Z",
+  "generatedAt": "2026-11-18T21:20:04.809Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 161,
+  "playerCount": 160,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -1378,22 +1378,12 @@
     {
       "playerId": "05e12749-7b66-44f8-84f7-f437fc90dfb6",
       "name": "Skylar Mays",
-      "team": "South East Melbourne Phoenix",
-      "teamCode": "SEM",
-      "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-      "position": "G",
-      "jersey": "9",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8fab66501a7641c48f5e2d29302800ab?size=800&format=webp"
-    },
-    {
-      "playerId": "05e12749-7b66-44f8-84f7-f437fc90dfb6",
-      "name": "Skylar Mays",
       "team": "NZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
-      "jersey": null,
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8fab66501a7641c48f5e2d29302800ab?size=800&format=webp"
+      "jersey": "17",
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d58267a1efae40b2bd6c7c63df3b1508?size=800&format=webp"
     },
     {
       "playerId": "bc5d17e5-219c-41b7-994b-1226cc144877",

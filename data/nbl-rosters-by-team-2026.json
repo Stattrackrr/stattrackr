@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-17T21:41:26.754Z",
+  "generatedAt": "2026-11-18T21:20:04.295Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -1643,8 +1643,8 @@
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
-          "jersey": "9",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8fab66501a7641c48f5e2d29302800ab?size=800&format=webp",
+          "jersey": "17",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d58267a1efae40b2bd6c7c63df3b1508?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Budućnost - Montenegro",
           "idSource": "rosetta"
