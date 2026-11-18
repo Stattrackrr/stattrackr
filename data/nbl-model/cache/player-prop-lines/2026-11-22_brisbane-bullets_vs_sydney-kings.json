@@ -4,7 +4,7 @@
   "homeTeam": "Brisbane Bullets",
   "awayTeam": "Sydney Kings",
   "commenceTime": "2026-11-22T06:00:00.000Z",
-  "capturedAt": "2026-11-18T07:43:42.048Z",
+  "capturedAt": "2026-11-18T17:22:39.984Z",
   "closing": false,
   "source": "odds-api-net",
   "books": [
@@ -14,7 +14,7 @@
     "Ladbrokes",
     "TAB"
   ],
-  "lineCount": 1192,
+  "lineCount": 1194,
   "lines": [
     {
       "player": "Andrew Carr",
@@ -15510,6 +15510,32 @@
       "over": "+3000",
       "under": "N/A",
       "overDecimal": 31,
+      "underDecimal": null
+    },
+    {
+      "player": "Max Mackinnon",
+      "playerKey": "max mackinnon",
+      "book": "Bet365",
+      "stat": "pr",
+      "kind": "milestone",
+      "line": 9.5,
+      "label": "10+",
+      "over": "-5000",
+      "under": "N/A",
+      "overDecimal": 1.02,
+      "underDecimal": null
+    },
+    {
+      "player": "Nate Hinton",
+      "playerKey": "nate hinton",
+      "book": "Bet365",
+      "stat": "pra",
+      "kind": "milestone",
+      "line": 14.5,
+      "label": "15+",
+      "over": "-10000",
+      "under": "N/A",
+      "overDecimal": 1.01,
       "underDecimal": null
     }
   ]
