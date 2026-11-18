@@ -1943,6 +1943,8 @@ export default function NblDashboardPage() {
                     season={NBL_SHOT_CHART_SEASON_YEAR}
                     teammateFilterName={nblPropsMode === 'player' ? teammateFilterName : null}
                     withWithoutMode={withWithoutMode}
+                    setTeammateFilterName={nblPropsMode === 'player' ? setTeammateFilterName : undefined}
+                    setWithWithoutMode={nblPropsMode === 'player' ? setWithWithoutMode : undefined}
                     clearTeammateFilter={clearTeammateFilter}
                     rosterPlayers={rosterPlayers}
                     statLineCounts={nblStatLineCounts}

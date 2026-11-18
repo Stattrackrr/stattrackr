@@ -848,6 +848,8 @@ interface NbaStatsChartProps {
   apiErrorHint?: string | null;
   teammateFilterName?: string | null;
   withWithoutMode?: 'with' | 'without';
+  setTeammateFilterName?: (name: string | null) => void;
+  setWithWithoutMode?: (mode: 'with' | 'without') => void;
   season?: number;
   clearTeammateFilter?: () => void;
   /** Roster used to resolve teammate names → playerIds for with/without. */
@@ -897,7 +899,7 @@ interface NbaStatsChartProps {
 }
 
 export function NbaStatsChart({
-  stats: _stats,
+  stats,
   gameLogs = [],
   allGameLogs = [],
   isDark,
@@ -908,6 +910,8 @@ export function NbaStatsChart({
   apiErrorHint,
   teammateFilterName,
   withWithoutMode = 'with',
+  setTeammateFilterName,
+  setWithWithoutMode,
   season = NBA_CURRENT_SEASON_YEAR,
   clearTeammateFilter,
   rosterPlayers = [],
@@ -938,6 +942,7 @@ export function NbaStatsChart({
 }: NbaStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
+  const [teammateKeysReady, setTeammateKeysReady] = useState(false);
   const [upcomingRanks, setUpcomingRanks] = useState<UpcomingRankRow[]>([]);
   const [upcomingTeamAllowedRows, setUpcomingTeamAllowedRows] = useState<UpcomingTeamAllowed[]>([]);
   const [upcomingExpectedPace, setUpcomingExpectedPace] = useState<number | null>(null);
@@ -996,9 +1001,11 @@ export function NbaStatsChart({
   useEffect(() => {
     if (!teammateFilterName?.trim()) {
       setTeammateGameKeys(new Set());
+      setTeammateKeysReady(false);
       return;
     }
     let cancelled = false;
+    setTeammateKeysReady(false);
     const want = teammateFilterName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
     const rosterHit =
       rosterPlayers.find((p) => {
@@ -1010,6 +1017,7 @@ export function NbaStatsChart({
 
     if (!rosterHit?.playerId) {
       setTeammateGameKeys(new Set());
+      setTeammateKeysReady(true);
       return;
     }
 
@@ -1034,9 +1042,13 @@ export function NbaStatsChart({
           if (date && opp) keys.add(`d:${date}|${opp}`);
         }
         setTeammateGameKeys(keys);
+        setTeammateKeysReady(true);
       })
       .catch(() => {
-        if (!cancelled) setTeammateGameKeys(new Set());
+        if (!cancelled) {
+          setTeammateGameKeys(new Set());
+          setTeammateKeysReady(true);
+        }
       });
     return () => {
       cancelled = true;
@@ -1168,9 +1180,15 @@ export function NbaStatsChart({
   const venueDropdownRef = useRef<HTMLDivElement>(null);
   const homeAwayDropdownRef = useRef<HTMLDivElement>(null);
   const restDaysDropdownRef = useRef<HTMLDivElement>(null);
+  const teammateMenuRef = useRef<HTMLDivElement>(null);
   const [isVenueDropdownOpen, setIsVenueDropdownOpen] = useState(false);
   const [isHomeAwayDropdownOpen, setIsHomeAwayDropdownOpen] = useState(false);
   const [isRestDaysDropdownOpen, setIsRestDaysDropdownOpen] = useState(false);
+  const [teammateMenuOpen, setTeammateMenuOpen] = useState(false);
+  const [teammateImportanceRank, setTeammateImportanceRank] = useState<{
+    byId: Map<string, number>;
+    byName: Map<string, number>;
+  }>({ byId: new Map(), byName: new Map() });
   const lineSyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutoSyncedStatRef = useRef<string | null>(null);
 
@@ -1252,6 +1270,8 @@ export function NbaStatsChart({
 
   const filteredGameLogs = useMemo(() => {
     if (!teammateFilterName?.trim()) return dedupedGameLogs;
+    // Keep current bars up until teammate game keys finish loading — avoids empty flash.
+    if (!teammateKeysReady) return dedupedGameLogs;
     if (teammateGameKeys.size === 0) {
       return withWithoutMode === 'with' ? [] : dedupedGameLogs;
     }
@@ -1266,7 +1286,7 @@ export function NbaStatsChart({
       if (withWithoutMode === 'with') return playedWithTeammate;
       return !playedWithTeammate;
     });
-  }, [dedupedGameLogs, teammateFilterName, teammateGameKeys, withWithoutMode]);
+  }, [dedupedGameLogs, teammateFilterName, teammateGameKeys, teammateKeysReady, withWithoutMode]);
 
   const venueOptions = useMemo(() => {
     const fromGames = new Set<string>();
@@ -1318,11 +1338,15 @@ export function NbaStatsChart({
     setIsVenueDropdownOpen(false);
     setIsHomeAwayDropdownOpen(false);
     setIsRestDaysDropdownOpen(false);
+    setTeammateMenuOpen(false);
     setSplitResultFilter('all');
     setSplitVenueFilter('all');
     setRestDaysMode('all');
     setIsTimeframeDropdownOpen(false);
     setSelectedAdvancedFilter(null);
+    clearTeammateFilter?.();
+    setTeammateFilterName?.(null);
+    setWithWithoutMode?.('with');
     if (showAdvancedFilters && setShowAdvancedFilters) {
       setShowAdvancedFilters(false);
     }
@@ -1513,7 +1537,7 @@ export function NbaStatsChart({
       return;
     }
 
-    const playerName = String(_stats?.name || '').trim();
+    const playerName = String(stats?.name || '').trim();
     const teamName = String(selectedTeamName || gamePropsTeam || '').trim();
     const metricsList = dvpMetricsForStat(selectedStat);
     let cancelled = false;
@@ -1648,7 +1672,7 @@ export function NbaStatsChart({
     nextOpponent,
     selectedStat,
     playerPositionForFilters,
-    _stats?.name,
+    stats?.name,
     selectedTeamName,
     gamePropsTeam,
   ]);
@@ -2207,6 +2231,9 @@ export function NbaStatsChart({
       if (quarterDropdownRef.current && !quarterDropdownRef.current.contains(target)) {
         setIsQuarterDropdownOpen(false);
       }
+      if (teammateMenuRef.current && !teammateMenuRef.current.contains(target)) {
+        setTeammateMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -2217,6 +2244,72 @@ export function NbaStatsChart({
       if (lineSyncDebounceRef.current) clearTimeout(lineSyncDebounceRef.current);
     };
   }, []);
+
+  const canEditTeammate =
+    mode === 'player' && Boolean(setTeammateFilterName && setWithWithoutMode);
+  const activeTeammate = teammateFilterName?.trim() || null;
+
+  useEffect(() => {
+    const teamName = String(selectedTeamName || '').trim();
+    if (!canEditTeammate || !teamName || !showAdvancedFilters) {
+      setTeammateImportanceRank({ byId: new Map(), byName: new Map() });
+      return;
+    }
+    const ac = new AbortController();
+    const params = new URLSearchParams({
+      team: teamName,
+      year: String(season || NBA_CURRENT_SEASON_YEAR),
+      tf: 'last5',
+    });
+    fetch(`/api/nba/dash/team-usage?${params}`, { signal: ac.signal })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('usage-rank'))))
+      .then((data: { players?: Array<{ playerId?: string; name?: string }> }) => {
+        const rows = Array.isArray(data.players) ? data.players : [];
+        const byId = new Map<string, number>();
+        const byName = new Map<string, number>();
+        rows.forEach((p, i) => {
+          const id = String(p.playerId || '').trim();
+          const name = String(p.name || '').trim().toLowerCase();
+          if (id) byId.set(id, i);
+          if (name) byName.set(name, i);
+        });
+        setTeammateImportanceRank({ byId, byName });
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+      });
+    return () => ac.abort();
+  }, [canEditTeammate, selectedTeamName, showAdvancedFilters, season]);
+
+  const teammateOptions = useMemo(() => {
+    if (!canEditTeammate) return [] as Array<{ name: string; playerId: string | null }>;
+    const selfName = String(stats?.name || '').trim().toLowerCase();
+    const teamKey = normalizeTeamKey(resolveNbaClubName(selectedTeamName) || selectedTeamName || '');
+    const rankOf = (p: { name: string; playerId: string | null }) => {
+      const id = String(p.playerId || '').trim();
+      if (id && teammateImportanceRank.byId.has(id)) return teammateImportanceRank.byId.get(id)!;
+      const name = String(p.name || '').trim().toLowerCase();
+      if (name && teammateImportanceRank.byName.has(name)) return teammateImportanceRank.byName.get(name)!;
+      return null;
+    };
+    return rosterPlayers
+      .filter((p) => {
+        const id = String(p.playerId || '').trim();
+        const name = String(p.name || '').trim();
+        if (!id || !name) return false;
+        if (selfName && name.toLowerCase() === selfName) return false;
+        if (!teamKey) return true;
+        const playerTeam = normalizeTeamKey(resolveNbaClubName(p.team) || p.team || '');
+        return !playerTeam || playerTeam === teamKey;
+      })
+      .sort((a, b) => {
+        const ar = rankOf(a);
+        const br = rankOf(b);
+        if (ar != null && br != null && ar !== br) return ar - br;
+        if ((ar != null) !== (br != null)) return ar != null ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+  }, [canEditTeammate, rosterPlayers, selectedTeamName, stats?.name, teammateImportanceRank]);
 
   const customTooltip = useCallback((props: any) => {
     return (
@@ -2320,6 +2413,7 @@ export function NbaStatsChart({
   const splitsToggleActive =
     showAdvancedFilters ||
     restDaysMode !== 'all' ||
+    Boolean(activeTeammate) ||
     (splitVenueFilter !== 'all' && (splitVenueFilter === 'Home' || splitVenueFilter === 'Away'));
 
   const homeAwayButtonLabel =
@@ -2346,11 +2440,16 @@ export function NbaStatsChart({
               setSplitVenueFilter('all');
               setIsHomeAwayDropdownOpen(false);
               setIsRestDaysDropdownOpen(false);
+              setTeammateMenuOpen(false);
+              clearTeammateFilter?.();
+              setTeammateFilterName?.(null);
+              setWithWithoutMode?.('with');
               resetAdvancedRanges();
             } else {
               setShowSplitsFilters(false);
               setIsHomeAwayDropdownOpen(false);
               setIsRestDaysDropdownOpen(false);
+              setTeammateMenuOpen(false);
               // Keep opponent-rank data wiring for later; no slider UI on NBA for now.
               setSelectedAdvancedFilter(null);
             }
@@ -2467,7 +2566,7 @@ export function NbaStatsChart({
       <div
         className={`space-y-2 sm:space-y-3 md:space-y-4 ${
           showAdvancedFilters || showSplitsFilters
-            ? 'mb-1 sm:mb-2 md:mb-2 lg:mb-3'
+            ? 'mb-3 sm:mb-4 md:mb-4 lg:mb-5'
             : 'mb-2 sm:mb-3 md:mb-4 lg:mb-6'
         }`}
       >
@@ -2559,6 +2658,7 @@ export function NbaStatsChart({
                   setIsTimeframeDropdownOpen(false);
                   setIsQuarterDropdownOpen(false);
                   setIsRestDaysDropdownOpen(false);
+                  setTeammateMenuOpen(false);
                   setIsHomeAwayDropdownOpen((prev) => !prev);
                 }}
                 className={`w-16 sm:w-20 px-1 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
@@ -2608,6 +2708,7 @@ export function NbaStatsChart({
                   setIsTimeframeDropdownOpen(false);
                   setIsQuarterDropdownOpen(false);
                   setIsHomeAwayDropdownOpen(false);
+                  setTeammateMenuOpen(false);
                   setIsRestDaysDropdownOpen((prev) => !prev);
                 }}
                 className={`w-16 sm:w-20 px-1 sm:px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
@@ -2650,6 +2751,123 @@ export function NbaStatsChart({
                 </div>
               )}
             </div>
+            {canEditTeammate ? (
+              <div
+                className={`relative flex h-[32px] flex-shrink-0 items-stretch ${teammateMenuOpen ? 'z-[60]' : ''}`}
+                ref={teammateMenuRef}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsHomeAwayDropdownOpen(false);
+                    setIsRestDaysDropdownOpen(false);
+                    setIsTimeframeDropdownOpen(false);
+                    setIsQuarterDropdownOpen(false);
+                    setTeammateMenuOpen((open) => !open);
+                  }}
+                  className={`flex h-full min-w-0 max-w-[9.5rem] items-center justify-center gap-1 border bg-white px-2 text-xs font-medium text-gray-900 hover:bg-gray-50 dark:bg-[#0a1929] dark:text-white dark:hover:bg-gray-600 sm:max-w-[12rem] sm:px-2.5 ${
+                    activeTeammate ? 'rounded-l-xl' : 'rounded-xl'
+                  } ${
+                    activeTeammate
+                      ? 'border-purple-300 bg-purple-100 dark:border-purple-600 dark:bg-purple-900/30'
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  <span className="truncate">
+                    {activeTeammate
+                      ? `${withWithoutMode === 'without' ? 'W/O' : 'With'} ${activeTeammate.split(/\s+/).pop()}`
+                      : 'Teammate'}
+                  </span>
+                  <svg className="h-3 w-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {activeTeammate ? (
+                  <button
+                    type="button"
+                    aria-label="Clear teammate"
+                    onClick={() => {
+                      clearTeammateFilter?.();
+                      setTeammateFilterName?.(null);
+                      setTeammateMenuOpen(false);
+                    }}
+                    className="flex h-full w-7 flex-shrink-0 items-center justify-center rounded-r-xl border border-l-0 border-purple-300 bg-purple-100 text-purple-800 hover:bg-purple-200 dark:border-purple-600 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/50"
+                  >
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M1 1L7 7M7 1L1 7" />
+                    </svg>
+                  </button>
+                ) : null}
+                {teammateMenuOpen ? (
+                  <div className="absolute top-full left-0 z-[70] mt-1 w-52 overflow-hidden rounded-lg border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-[#0a1929] sm:w-56">
+                    <div className="flex gap-1 border-b border-gray-200 p-1.5 dark:border-gray-700">
+                      {(['with', 'without'] as const).map((modeOption) => {
+                        const on = withWithoutMode === modeOption;
+                        return (
+                          <button
+                            key={modeOption}
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setWithWithoutMode?.(modeOption);
+                            }}
+                            className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium ${
+                              on
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            {modeOption === 'with' ? 'With' : 'Without'}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="max-h-56 overflow-y-auto">
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          clearTeammateFilter?.();
+                          setTeammateFilterName?.(null);
+                          setTeammateMenuOpen(false);
+                        }}
+                        className={`w-full px-2.5 py-1.5 text-left text-xs font-medium hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                          !activeTeammate
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                            : 'text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        Any teammate
+                      </button>
+                      {teammateOptions.map((mate, index) => {
+                        const selected = activeTeammate === mate.name;
+                        return (
+                          <button
+                            key={mate.playerId || mate.name}
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setTeammateFilterName?.(mate.name);
+                              setTeammateMenuOpen(false);
+                            }}
+                            className={`w-full px-2.5 py-1.5 text-left text-xs font-medium hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                              selected
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                                : 'text-gray-900 dark:text-white'
+                            } ${index === teammateOptions.length - 1 ? 'rounded-b-lg' : ''}`}
+                          >
+                            {mate.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             {rightChartControls(true)}
           </div>
         )}
@@ -2773,13 +2991,14 @@ export function NbaStatsChart({
             disableBarAnimation={false}
             barAnimationDuration={180}
             chartAnimationKey={`${mode}-${selectedStat}-${selectedTimeframe}-${chartData.map((row) => row.xKey).join('|')}`}
-            teammateFilterName={teammateFilterName}
+            teammateFilterName={null}
             withWithoutMode={withWithoutMode}
-            clearTeammateFilter={clearTeammateFilter}
+            clearTeammateFilter={undefined}
             centerAverageOverlay={true}
             averageOverlayLowerOnMobile={true}
-            averageOverlayLower={false}
-            averageOverlayLowerExtra={false}
+            averageOverlayLower={showAdvancedFilters}
+            averageOverlayLowerExtra={showAdvancedFilters}
+            averageOverlayInsideChart={showAdvancedFilters}
             desktopChartLeftInset={24}
             desktopChartRightInset={8}
             desktopChartRightInsetWithSecondAxis={64}

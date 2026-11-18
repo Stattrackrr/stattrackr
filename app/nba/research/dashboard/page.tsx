@@ -1960,6 +1960,8 @@ export default function NbaDashboardPage() {
                     season={NBA_SHOT_CHART_SEASON_YEAR}
                     teammateFilterName={nbaPropsMode === 'player' ? teammateFilterName : null}
                     withWithoutMode={withWithoutMode}
+                    setTeammateFilterName={nbaPropsMode === 'player' ? setTeammateFilterName : undefined}
+                    setWithWithoutMode={nbaPropsMode === 'player' ? setWithWithoutMode : undefined}
                     clearTeammateFilter={clearTeammateFilter}
                     rosterPlayers={rosterPlayers}
                     statLineCounts={nbaStatLineCounts}

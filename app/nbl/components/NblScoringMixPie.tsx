@@ -295,6 +295,10 @@ export function NblScoringMixPie({
   const [shownLabel, setShownLabel] = useState(PIE_STATS[0].full);
   const [teammateMenuOpen, setTeammateMenuOpen] = useState(false);
   const [rebInfoKey, setRebInfoKey] = useState<string | null>(null);
+  const [importanceRank, setImportanceRank] = useState<{
+    byId: Map<string, number>;
+    byName: Map<string, number>;
+  }>({ byId: new Map(), byName: new Map() });
   const teammateMenuRef = useRef<HTMLDivElement>(null);
   const rebInfoRef = useRef<HTMLDivElement>(null);
   const selectedRowRef = useRef<HTMLButtonElement | null>(null);
@@ -306,10 +310,50 @@ export function NblScoringMixPie({
 
   const activeStat = PIE_STATS.find((s) => s.key === statKey) ?? PIE_STATS[0];
 
+  useEffect(() => {
+    const teamName = team?.trim();
+    if (!teamName) {
+      setImportanceRank({ byId: new Map(), byName: new Map() });
+      return;
+    }
+    const ac = new AbortController();
+    const tf = avgWindowToTf(avgWindow, season);
+    const params = new URLSearchParams({
+      team: teamName,
+      year: String(season),
+      tf,
+    });
+    fetch(`/api/nbl/team-usage?${params}`, { signal: ac.signal })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('usage-rank'))))
+      .then((data: { players?: TeamUsagePlayer[] }) => {
+        const rows = Array.isArray(data.players) ? data.players : [];
+        const byId = new Map<string, number>();
+        const byName = new Map<string, number>();
+        rows.forEach((p, i) => {
+          const id = String(p.playerId || '').trim();
+          const name = String(p.name || '').trim().toLowerCase();
+          if (id) byId.set(id, i);
+          if (name) byName.set(name, i);
+        });
+        setImportanceRank({ byId, byName });
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+      });
+    return () => ac.abort();
+  }, [team, season, avgWindow]);
+
   const teammateOptions = useMemo(() => {
     const selfName = String(playerName || '').trim().toLowerCase();
     const selfId = String(playerId || '').trim();
     const teamKey = normalizeTeamKey(resolveNblClubName(team) || team || '');
+    const rankOf = (p: PieRosterPlayer) => {
+      const id = String(p.playerId || '').trim();
+      if (id && importanceRank.byId.has(id)) return importanceRank.byId.get(id)!;
+      const name = String(p.name || '').trim().toLowerCase();
+      if (name && importanceRank.byName.has(name)) return importanceRank.byName.get(name)!;
+      return null;
+    };
     return rosterPlayers
       .filter((p) => {
         const id = String(p.playerId || '').trim();
@@ -321,8 +365,14 @@ export function NblScoringMixPie({
         const playerTeam = normalizeTeamKey(resolveNblClubName(p.team) || p.team || '');
         return !playerTeam || playerTeam === teamKey;
       })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [rosterPlayers, team, playerId, playerName]);
+      .sort((a, b) => {
+        const ar = rankOf(a);
+        const br = rankOf(b);
+        if (ar != null && br != null && ar !== br) return ar - br;
+        if ((ar != null) !== (br != null)) return ar != null ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+  }, [rosterPlayers, team, playerId, playerName, importanceRank]);
 
   useEffect(() => {
     if (!teammateMenuOpen) return;
@@ -370,6 +420,8 @@ export function NblScoringMixPie({
     const ac = new AbortController();
     const hadPlayers = (playersRef.current?.length ?? 0) > 0;
     if (!hadPlayers) setLoadState('loading');
+    // Clear prior empty/zero sample so we keep the last good pie while the split loads.
+    setSplitSampleGames(null);
     const tf = avgWindowToTf(avgWindow, season);
     const params = new URLSearchParams({
       team: teamName,
@@ -468,10 +520,14 @@ export function NblScoringMixPie({
     return placed;
   }, [players, playerId, playerName, activeStat.key, emptySplit, isDark, valuesLocked]);
 
+  const splitPending = Boolean(activeTeammate && splitSampleGames == null);
+
   useEffect(() => {
     const to = slices;
     const from = animFromRef.current;
     if (!to.length) {
+      // Keep the last pie frame while the teammate split request is in flight.
+      if (splitPending && from.length) return;
       animFromRef.current = [];
       setAnimSlices([]);
       return;
@@ -496,7 +552,7 @@ export function NblScoringMixPie({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [slices]);
+  }, [slices, splitPending]);
 
   useEffect(() => {
     if (emptySplit) return;
@@ -860,7 +916,7 @@ export function NblScoringMixPie({
     </div>
   );
 
-  if (loadState === 'loading' || loadState === 'idle') {
+  if ((loadState === 'loading' || loadState === 'idle') && !animSlices.length) {
     return (
       <div className="flex flex-col gap-3 min-w-0">
         {header}
@@ -869,7 +925,15 @@ export function NblScoringMixPie({
     );
   }
 
-  if (!slices.length) {
+  if (!slices.length && !(splitPending && animSlices.length)) {
+    if (splitPending) {
+      return (
+        <div className="flex flex-col gap-3 min-w-0">
+          {header}
+          <div className="min-h-[280px]" aria-hidden />
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col gap-3 min-w-0">
         {header}
