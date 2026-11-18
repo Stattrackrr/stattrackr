@@ -117,9 +117,17 @@ function mixHex(a: string, b: string, t: number): string {
   return `#${((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)}`;
 }
 
-function yearFromTimeframe(tf: NbaChartTimeframe, fallback: number): number {
-  const m = String(tf).match(/^season(\d{4})$/);
-  return m ? Number(m[1]) : fallback;
+type AdvAvgWindow = 'last1' | 'last5' | 'last10' | 'season';
+
+const ADV_AVG_WINDOWS: { id: AdvAvgWindow; label: string }[] = [
+  { id: 'last1', label: 'Last' },
+  { id: 'last5', label: 'L5' },
+  { id: 'last10', label: 'L10' },
+  { id: 'season', label: 'Season' },
+];
+
+function avgWindowToTf(window: AdvAvgWindow, seasonYear: number): string {
+  return window === 'season' ? `season${seasonYear}` : window;
 }
 
 function playerValue(p: TeamUsagePlayer, key: string): number {
@@ -250,7 +258,7 @@ export function NbaScoringMixPie({
   team,
   playerId,
   playerName,
-  timeframe,
+  timeframe: _chartTimeframe,
   season = NBA_CURRENT_SEASON_YEAR,
   isDark,
   rosterPlayers = [],
@@ -278,6 +286,7 @@ export function NbaScoringMixPie({
 }) {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [statKey, setStatKey] = useState('usgPct');
+  const [avgWindow, setAvgWindow] = useState<AdvAvgWindow>('last5');
   const [players, setPlayers] = useState<TeamUsagePlayer[] | null>(null);
   const [splitSampleGames, setSplitSampleGames] = useState<number | null>(null);
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'empty' | 'ready'>('idle');
@@ -361,11 +370,11 @@ export function NbaScoringMixPie({
     const ac = new AbortController();
     const hadPlayers = (playersRef.current?.length ?? 0) > 0;
     if (!hadPlayers) setLoadState('loading');
-    const year = yearFromTimeframe(timeframe, season);
+    const tf = avgWindowToTf(avgWindow, season);
     const params = new URLSearchParams({
       team: teamName,
-      year: String(year),
-      tf: String(timeframe),
+      year: String(season),
+      tf,
     });
     if (playerId) params.set('playerId', playerId);
     if (activeTeammate) {
@@ -390,7 +399,7 @@ export function NbaScoringMixPie({
         }
       });
     return () => ac.abort();
-  }, [team, playerId, timeframe, season, activeTeammate, withWithoutMode, teammateId]);
+  }, [team, playerId, avgWindow, season, activeTeammate, withWithoutMode, teammateId]);
 
   const emptySplit = Boolean(activeTeammate && splitSampleGames === 0);
 
@@ -561,9 +570,46 @@ export function NbaScoringMixPie({
   const activeIdx = Math.max(0, PIE_STATS.findIndex((s) => s.key === activeStat.key));
 
   const tabPct = 100 / PIE_STATS.length;
-  const controlShell = `h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white`;
-  const controlActive =
-    'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 text-purple-800 dark:text-purple-200';
+  const controlShell = `h-8 rounded-lg border text-xs font-medium ${
+    isDark
+      ? 'border-white/10 bg-white/[0.04] text-white'
+      : 'border-black/[0.08] bg-white text-gray-900'
+  }`;
+  const controlActive = isDark
+    ? 'border-violet-400/40 bg-violet-500/20 text-violet-100'
+    : 'border-violet-300 bg-violet-50 text-violet-800';
+  const renderAvgWindowControl = () => (
+    <div
+      className={`inline-flex h-8 shrink-0 items-center gap-0.5 rounded-lg p-0.5 ${
+        isDark ? 'bg-white/[0.06]' : 'bg-black/[0.05]'
+      }`}
+      role="group"
+      aria-label="Advanced averages window"
+    >
+      {ADV_AVG_WINDOWS.map((option) => {
+        const active = avgWindow === option.id;
+        const label = option.id === 'season' ? String(season) : option.label;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => setAvgWindow(option.id)}
+            className={`h-full rounded-md px-2 text-[11px] font-semibold tracking-wide transition-all duration-200 touch-manipulation sm:px-2.5 ${
+              active
+                ? isDark
+                  ? 'bg-white/15 text-white shadow-sm'
+                  : 'bg-white text-gray-900 shadow-sm'
+                : isDark
+                  ? 'text-gray-500 hover:text-gray-300'
+                  : 'text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
   const header = (
     <div className="flex flex-col gap-2.5 px-3 sm:px-4">
       <div className="flex items-end justify-between gap-3">
@@ -654,9 +700,10 @@ export function NbaScoringMixPie({
           </div>
         ) : null}
       </div>
-      {canEditTeammate ? (
-        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-          {activeTeammate && !emptySplit ? (
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="hidden min-w-0 sm:flex sm:items-center sm:gap-3">
+          {renderAvgWindowControl()}
+          {canEditTeammate && activeTeammate && !emptySplit ? (
             <p className={`text-[11px] ${muted}`}>
               {valuesLocked
                 ? `TBD games ${withWithoutMode === 'without' ? 'without' : 'with'} ${activeTeammate}`
@@ -666,118 +713,150 @@ export function NbaScoringMixPie({
                     } ${activeTeammate}`
                   : `${withWithoutMode === 'without' ? 'Without' : 'With'} ${activeTeammate}`}
             </p>
-          ) : (
-            <span className="hidden sm:block" />
-          )}
-          <div className="flex items-center gap-2 min-w-0 sm:justify-end">
-            <div className={`inline-flex p-0.5 ${controlShell}`}>
-              {(['with', 'without'] as const).map((mode) => {
-                const on = withWithoutMode === mode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setWithWithoutMode?.(mode)}
-                    className={`px-2.5 h-[26px] rounded-[10px] text-xs font-medium transition-colors ${
-                      on
-                        ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200'
-                        : isDark
-                          ? 'text-gray-400 hover:text-gray-200'
-                          : 'text-gray-500 hover:text-gray-800'
-                    }`}
-                  >
-                    {mode === 'with' ? 'With' : 'Without'}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="relative min-w-0 flex-1 sm:flex-none sm:w-[190px]" ref={teammateMenuRef}>
-              <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setTeammateMenuOpen((open) => !open)}
-                className={`min-w-0 flex-1 ${controlShell} px-2.5 flex items-center justify-between gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-600 ${
-                  activeTeammate ? controlActive : ''
+          ) : null}
+        </div>
+        {canEditTeammate && activeTeammate && !emptySplit ? (
+          <p className={`text-[11px] sm:hidden ${muted}`}>
+            {valuesLocked
+              ? `TBD games ${withWithoutMode === 'without' ? 'without' : 'with'} ${activeTeammate}`
+              : sampleGames != null
+                ? `${sampleGames} ${sampleGames === 1 ? 'game' : 'games'} ${
+                    withWithoutMode === 'without' ? 'without' : 'with'
+                  } ${activeTeammate}`
+                : `${withWithoutMode === 'without' ? 'Without' : 'With'} ${activeTeammate}`}
+          </p>
+        ) : null}
+        <div className="flex min-w-0 items-center gap-2 sm:justify-end">
+          {canEditTeammate ? (
+            <>
+              <div
+                className={`inline-flex h-8 items-center gap-0.5 rounded-lg p-0.5 ${
+                  isDark ? 'bg-white/[0.06]' : 'bg-black/[0.05]'
                 }`}
               >
-                <span className={`truncate ${activeTeammate ? '' : muted}`}>
-                  {activeTeammate || 'Teammate'}
-                </span>
-                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {activeTeammate ? (
-                <button
-                  type="button"
-                  aria-label="Clear teammate"
-                  onClick={() => {
-                    clearTeammateFilter?.();
-                    setTeammateFilterName?.(null);
-                    setTeammateMenuOpen(false);
-                  }}
-                  className={`${controlShell} w-[32px] px-0 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600`}
-                >
-                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                    <path d="M1 1L7 7M7 1L1 7" />
-                  </svg>
-                </button>
-              ) : null}
+                {(['with', 'without'] as const).map((mode) => {
+                  const on = withWithoutMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setWithWithoutMode?.(mode)}
+                      className={`h-full rounded-md px-2.5 text-xs font-semibold transition-all duration-200 ${
+                        on
+                          ? isDark
+                            ? 'bg-white/15 text-white shadow-sm'
+                            : 'bg-white text-gray-900 shadow-sm'
+                          : isDark
+                            ? 'text-gray-500 hover:text-gray-300'
+                            : 'text-gray-500 hover:text-gray-800'
+                      }`}
+                    >
+                      {mode === 'with' ? 'With' : 'Without'}
+                    </button>
+                  );
+                })}
               </div>
-              {teammateMenuOpen ? (
-                <>
-                  <div
-                    className={`absolute top-full right-0 mt-1 w-full min-w-[190px] max-h-64 overflow-y-auto rounded-lg border shadow-lg z-50 ${
-                      isDark ? 'border-gray-600 bg-[#0a1929]' : 'border-gray-300 bg-white'
+              <div className="relative min-w-0 flex-1 sm:flex-none sm:w-[190px]" ref={teammateMenuRef}>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setTeammateMenuOpen((open) => !open)}
+                    className={`min-w-0 flex-1 ${controlShell} px-2.5 flex items-center justify-between gap-1.5 transition-colors ${
+                      activeTeammate
+                        ? controlActive
+                        : isDark
+                          ? 'hover:bg-white/[0.07]'
+                          : 'hover:bg-black/[0.03]'
                     }`}
                   >
+                    <span className={`truncate ${activeTeammate ? '' : muted}`}>
+                      {activeTeammate || 'Teammate'}
+                    </span>
+                    <svg className="w-3 h-3 flex-shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {activeTeammate ? (
                     <button
                       type="button"
+                      aria-label="Clear teammate"
                       onClick={() => {
                         clearTeammateFilter?.();
                         setTeammateFilterName?.(null);
                         setTeammateMenuOpen(false);
                       }}
-                      className={`w-full text-left px-2.5 py-1.5 text-xs font-medium first:rounded-t-lg ${
-                        !activeTeammate
-                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                          : isDark
-                            ? 'text-white hover:bg-gray-800'
-                            : 'text-gray-900 hover:bg-gray-100'
+                      className={`${controlShell} w-8 px-0 flex items-center justify-center transition-colors ${
+                        isDark ? 'hover:bg-white/[0.07]' : 'hover:bg-black/[0.03]'
                       }`}
                     >
-                      Any teammate
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                        <path d="M1 1L7 7M7 1L1 7" />
+                      </svg>
                     </button>
-                    {teammateOptions.map((mate) => {
-                      const selected = activeTeammate === mate.name;
-                      return (
-                        <button
-                          key={mate.playerId || mate.name}
-                          type="button"
-                          onClick={() => {
-                            setTeammateFilterName?.(mate.name);
-                            setTeammateMenuOpen(false);
-                          }}
-                          className={`w-full text-left px-2.5 py-1.5 text-xs font-medium last:rounded-b-lg ${
-                            selected
-                              ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                              : isDark
-                                ? 'text-white hover:bg-gray-800'
-                                : 'text-gray-900 hover:bg-gray-100'
-                          }`}
-                        >
-                          {mate.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="fixed inset-0 z-40" onClick={() => setTeammateMenuOpen(false)} aria-hidden />
-                </>
-              ) : null}
-            </div>
-          </div>
+                  ) : null}
+                </div>
+                {teammateMenuOpen ? (
+                  <>
+                    <div
+                      className={`absolute top-full right-0 z-50 mt-1.5 max-h-64 w-full min-w-[190px] overflow-y-auto rounded-xl border shadow-xl backdrop-blur-sm ${
+                        isDark
+                          ? 'border-white/10 bg-[#0a1929]/95'
+                          : 'border-black/[0.08] bg-white/95'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearTeammateFilter?.();
+                          setTeammateFilterName?.(null);
+                          setTeammateMenuOpen(false);
+                        }}
+                        className={`w-full px-2.5 py-2 text-left text-xs font-medium first:rounded-t-xl ${
+                          !activeTeammate
+                            ? isDark
+                              ? 'bg-violet-500/20 text-violet-200'
+                              : 'bg-violet-50 text-violet-800'
+                            : isDark
+                              ? 'text-white hover:bg-white/[0.06]'
+                              : 'text-gray-900 hover:bg-black/[0.04]'
+                        }`}
+                      >
+                        Any teammate
+                      </button>
+                      {teammateOptions.map((mate) => {
+                        const selected = activeTeammate === mate.name;
+                        return (
+                          <button
+                            key={mate.playerId || mate.name}
+                            type="button"
+                            onClick={() => {
+                              setTeammateFilterName?.(mate.name);
+                              setTeammateMenuOpen(false);
+                            }}
+                            className={`w-full px-2.5 py-2 text-left text-xs font-medium last:rounded-b-xl ${
+                              selected
+                                ? isDark
+                                  ? 'bg-violet-500/20 text-violet-200'
+                                  : 'bg-violet-50 text-violet-800'
+                                : isDark
+                                  ? 'text-white hover:bg-white/[0.06]'
+                                  : 'text-gray-900 hover:bg-black/[0.04]'
+                            }`}
+                          >
+                            {mate.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="fixed inset-0 z-40" onClick={() => setTeammateMenuOpen(false)} aria-hidden />
+                  </>
+                ) : null}
+              </div>
+            </>
+          ) : null}
+          <div className="sm:hidden">{renderAvgWindowControl()}</div>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 
