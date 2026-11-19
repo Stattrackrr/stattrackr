@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-18T21:20:10.597Z",
+  "generatedAt": "2026-11-19T21:22:13.694Z",
   "source": "rosetta.nbl.com.au",
   "teams": [
     {
@@ -86,26 +86,6 @@
     },
     {
       "pos": 5,
-      "team": "Adelaide 36ers",
-      "teamCode": "ADL",
-      "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-      "teamLogo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-      "played": 13,
-      "win": 7,
-      "loss": 6,
-      "points_for": 1208,
-      "points_against": 1202,
-      "points_percentage": 1.005,
-      "win_percentage": 0.5385,
-      "last_5": "WLWLLLWWLWLWW",
-      "streak": 2,
-      "home_wins": 3,
-      "home_losses": 3,
-      "away_wins": 4,
-      "away_losses": 3
-    },
-    {
-      "pos": 6,
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
@@ -123,6 +103,26 @@
       "home_losses": 4,
       "away_wins": 0,
       "away_losses": 2
+    },
+    {
+      "pos": 6,
+      "team": "Adelaide 36ers",
+      "teamCode": "ADL",
+      "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "teamLogo": "https://cdn.nbl.com.au/app_assets/ADL.png",
+      "played": 14,
+      "win": 7,
+      "loss": 7,
+      "points_for": 1305,
+      "points_against": 1305,
+      "points_percentage": 1,
+      "win_percentage": 0.5,
+      "last_5": "WLWLLLWWLWLWWL",
+      "streak": 0,
+      "home_wins": 3,
+      "home_losses": 3,
+      "away_wins": 4,
+      "away_losses": 4
     },
     {
       "pos": 7,
@@ -146,6 +146,26 @@
     },
     {
       "pos": 8,
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "teamLogo": "https://cdn.nbl.com.au/app_assets/ILL.png",
+      "played": 16,
+      "win": 6,
+      "loss": 10,
+      "points_for": 1565,
+      "points_against": 1668,
+      "points_percentage": 0.9382,
+      "win_percentage": 0.375,
+      "last_5": "LLLWLLLWLLWWLWLW",
+      "streak": 1,
+      "home_wins": 2,
+      "home_losses": 4,
+      "away_wins": 4,
+      "away_losses": 6
+    },
+    {
+      "pos": 9,
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
@@ -165,7 +185,7 @@
       "away_losses": 5
     },
     {
-      "pos": 9,
+      "pos": 10,
       "team": "NZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
@@ -183,26 +203,6 @@
       "home_losses": 2,
       "away_wins": 2,
       "away_losses": 8
-    },
-    {
-      "pos": 10,
-      "team": "Illawarra Hawks",
-      "teamCode": "ILL",
-      "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-      "teamLogo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-      "played": 15,
-      "win": 5,
-      "loss": 10,
-      "points_for": 1462,
-      "points_against": 1571,
-      "points_percentage": 0.9306,
-      "win_percentage": 0.3333,
-      "last_5": "LLLWLLLWLLWWLWL",
-      "streak": 0,
-      "home_wins": 1,
-      "home_losses": 4,
-      "away_wins": 4,
-      "away_losses": 6
     }
   ]
 }

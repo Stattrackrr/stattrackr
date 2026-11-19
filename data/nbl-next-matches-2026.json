@@ -1,52 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-18T21:19:57.171Z",
+  "generatedAt": "2026-11-19T21:22:01.414Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-      "name": "Illawarra Hawks",
-      "team_code": "ILL",
-      "nextMatches": [
-        {
-          "id": "449234a7-692a-4db3-8526-38ea0ce3f069",
-          "match_slug": "illawarra-hawks-v-adelaide-36ers-men-19-11-2026",
-          "match_title": "Illawarra Hawks v Adelaide 36ers men 19-11-2026",
-          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
-          "external_id": "3748b33b-58ad-11f1-9f9a-71e9315f7411",
-          "start_time_datetime": "2026-11-19T08:30:00.000Z",
-          "is_home": true,
-          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-          "opponent_name": "Adelaide 36ers",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-          "venue": "WIN Entertainment Centre",
-          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
-        }
-      ]
-    },
-    {
-      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-      "name": "Adelaide 36ers",
-      "team_code": "ADL",
-      "nextMatches": [
-        {
-          "id": "449234a7-692a-4db3-8526-38ea0ce3f069",
-          "match_slug": "illawarra-hawks-v-adelaide-36ers-men-19-11-2026",
-          "match_title": "Illawarra Hawks v Adelaide 36ers men 19-11-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
-          "external_id": "3748b33b-58ad-11f1-9f9a-71e9315f7411",
-          "start_time_datetime": "2026-11-19T08:30:00.000Z",
-          "is_home": false,
-          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "opponent_name": "Illawarra Hawks",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-          "venue": "WIN Entertainment Centre",
-          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
-        }
-      ]
-    },
     {
       "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "name": "Cairns Taipans",
@@ -107,6 +65,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
           "venue": "MyState Bank Arena",
           "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
+        }
+      ]
+    },
+    {
+      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "name": "Illawarra Hawks",
+      "team_code": "ILL",
+      "nextMatches": [
+        {
+          "id": "82d56765-ab66-4943-bb7a-896cf8a6b04f",
+          "match_slug": "tasmania-jackjumpers-v-illawarra-hawks-men-21-11-2026",
+          "match_title": "Tasmania JackJumpers v Illawarra Hawks men 21-11-2026",
+          "match_ticket_url": "https://www.ticketmaster.com.au/illawarra-hawks-tickets/artist/1055493",
+          "external_id": "37726ee0-58ad-11f1-8d86-85bf0639ac6b",
+          "start_time_datetime": "2026-11-21T06:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+          "opponent_name": "Tasmania JackJumpers",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/TAS.png",
+          "venue": "MyState Bank Arena",
+          "opponent_logo_blurhash": "L25$batj01ah1hWW^Moe00V[.kSz"
         }
       ]
     },
@@ -212,6 +191,27 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/BNE.png",
           "venue": "Brisbane Entertainment Centre",
           "opponent_logo_blurhash": "LAD9iCxu0s5dS+s*s+xU0aIwoI}$"
+        }
+      ]
+    },
+    {
+      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "name": "Adelaide 36ers",
+      "team_code": "ADL",
+      "nextMatches": [
+        {
+          "id": "b4496010-2cc2-41e0-af64-967181712658",
+          "match_slug": "adelaide-36ers-v-south-east-melbourne-phoenix-men-02-12-2026",
+          "match_title": "Adelaide 36ers v South East Melbourne Phoenix men 02-12-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS27",
+          "external_id": "374bfa7a-58ad-11f1-80a5-a590ae8a6049",
+          "start_time_datetime": "2026-12-02T08:30:00.000Z",
+          "is_home": true,
+          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "opponent_name": "South East Melbourne Phoenix",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
+          "venue": "Adelaide Entertainment Centre",
+          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
         }
       ]
     }
