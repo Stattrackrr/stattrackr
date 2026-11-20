@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
 import { BackToPropsButton } from '@/components/BackToPropsButton';
 import { PickAlertsButton } from '@/components/picks/PickAlertsButton';
+import { PicksModelDisclaimer } from '@/components/picks/PicksModelDisclaimer';
 import { PicksReadMeButton } from '@/components/picks/PicksReadMeButton';
 import { AiPicksFeed, AiPicksLearningPanel } from '@/components/chat/AiPicksFeed';
 import { AiPicksFeedSkeleton } from '@/components/chat/AiPicksFeedSkeleton';
@@ -242,6 +243,7 @@ export default function PicksPageClient() {
                   </div>
 
                   <div className="chat-scrollbar relative z-0 min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain px-5 py-4">
+                    {!locked ? <PicksModelDisclaimer /> : null}
                     {locked ? <AiPicksLearningPanel /> : <AiPicksFeed />}
                   </div>
                 </div>
