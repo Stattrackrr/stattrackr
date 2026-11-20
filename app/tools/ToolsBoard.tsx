@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { openProUpgrade } from '@/components/ProFeatureLock';
+import { ToolsArbAlertsButton } from '@/components/tools/ToolsArbAlertsButton';
 import { TOOLS_SOFT_BOOKS, displayBook } from '@/lib/tools/books';
 import { readToolsOpsCache, writeToolsOpsCache } from '@/lib/tools/clientCache';
 import { arbStakes } from '@/lib/tools/math';
@@ -649,6 +650,7 @@ export function ToolsBoard({
         </nav>
         <div className="flex flex-wrap items-center gap-2">
           {boardAgeLabel ? <span className={`text-[11px] tabular-nums ${muted}`}>{boardAgeLabel}</span> : null}
+          <ToolsArbAlertsButton />
           <button
             type="button"
             disabled={loading}

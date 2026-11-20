@@ -9,10 +9,11 @@ export async function POST(request: NextRequest) {
   const userId = await pushRequestUserId(request);
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = (await request.json().catch(() => null)) as { endpoint?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as { endpoint?: unknown; kind?: unknown } | null;
   if (!validPushEndpoint(body?.endpoint)) return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 });
 
-  const result = await sendTestPush(body.endpoint, userId);
+  const kind = body?.kind === 'tools-arb' ? 'tools-arb' : 'picks';
+  const result = await sendTestPush(body.endpoint, userId, kind);
   if (result.error) return NextResponse.json({ error: result.error }, { status: 400 });
   return NextResponse.json({ ok: true, sent: result.sent });
 }
