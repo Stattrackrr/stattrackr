@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-19T21:22:07.560Z",
+  "generatedAt": "2026-11-20T21:03:07.263Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -1019,7 +1019,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "13",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/53e530ef8ed944cc8ff29b4eaee5cb22?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6e1acf6a074149ffb8961f4bddf89bbd?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Tasmania JackJumpers",
           "idSource": "rosetta"

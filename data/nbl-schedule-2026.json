@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-19T21:22:00.146Z",
+  "generatedAt": "2026-11-20T21:02:55.047Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -1796,7 +1796,7 @@
       "externalId": "37779e30-58ad-11f1-a2d6-d729b42cc855",
       "startTime": "2026-11-20T08:30:00.000Z",
       "round": "10",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Cairns Taipans",
       "homeTeamCode": "CNS",
       "homeTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
@@ -1805,8 +1805,8 @@
       "awayTeamCode": "PER",
       "awayTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "awayLogo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 98,
+      "awayScore": 90,
       "venue": "Cairns Convention Centre",
       "matchSlug": "cairns-taipans-v-perth-wildcats-men-20-11-2026"
     },

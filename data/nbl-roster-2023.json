@@ -1,7 +1,7 @@
 {
   "year": 2023,
   "seasonLabel": "NBL24",
-  "generatedAt": "2026-11-19T21:21:42.619Z",
+  "generatedAt": "2026-11-20T21:02:32.410Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 141,
   "players": [
@@ -793,7 +793,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "F",
       "jersey": "6",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/554a21ad6c244f248c31a84d215ef6b9?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4faa43f7129345cda8128f202d09e4aa?size=800&format=webp"
     },
     {
       "playerId": "52017fdb-600a-4da8-b37c-bf4b227b90ec",
@@ -943,7 +943,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
       "jersey": "8",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/47d13a92db22406e957c88d33b4f9794?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/31cc48dde962461492a7576a73465ee9?size=800&format=webp"
     },
     {
       "playerId": "3cb1f805-3931-4801-8acb-98978ce6fd4f",
@@ -1193,7 +1193,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
       "jersey": "13",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/53e530ef8ed944cc8ff29b4eaee5cb22?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6e1acf6a074149ffb8961f4bddf89bbd?size=800&format=webp"
     },
     {
       "playerId": "356764c7-67a9-4fa8-9b40-aa293e0d455d",
