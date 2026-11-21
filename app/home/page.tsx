@@ -26,13 +26,13 @@ import {
   Star,
   User as UserIcon,
   X,
+  Headphones,
   LayoutGrid,
   LineChart,
-  Trophy,
-  Megaphone,
   MessageCircle,
   Medal,
   DollarSign,
+  Wrench,
 } from 'lucide-react';
 
 function getInitials(name: string): string {
@@ -724,8 +724,7 @@ export default function HomePage() {
         'All statistics - NBL',
         'All statistics - ATP',
         'All statistics - WTA',
-        'AFL premium prediction model',
-        'Admin picks',
+        'Tools board — arb, EV, middles, bonus flips',
         'All device compatibility',
         'Priority support',
       ],
@@ -1138,10 +1137,10 @@ export default function HomePage() {
             {[
               { icon: Medal, feature: 'Sports', pro: 'NBA, AFL, NBL, ATP, WTA', free: 'NBA, AFL, NBL, ATP, WTA', freeOk: true },
               { icon: LayoutGrid, feature: 'Props board', pro: 'Full board', free: '1 prop per sport' },
-              { icon: LineChart, feature: 'Advanced stats for every sport', pro: 'Included', free: 'Locked' },
-              { icon: Trophy, feature: 'AFL prediction model', pro: 'Included', free: 'Locked' },
-              { icon: Megaphone, feature: 'Admin picks', pro: 'Included', free: 'Locked' },
+              { icon: LineChart, feature: 'Advanced stats for every sport', pro: 'Included', free: 'Some locked' },
+              { icon: Wrench, feature: 'Tools board', pro: 'Arb, EV, middles, bonus', free: 'Locked' },
               { icon: MessageCircle, feature: 'Chat', pro: 'Included', free: 'Included', freeOk: true },
+              { icon: Headphones, feature: 'Priority support', pro: 'ASAP', free: 'Longer', freeOk: true },
               { icon: DollarSign, feature: 'Price', pro: 'From $20/month', free: 'Free', freeOk: true },
             ].map((row) => (
               <div key={row.feature} className="overflow-hidden rounded-2xl border border-gray-800 bg-[#071422]">
@@ -1154,16 +1153,16 @@ export default function HomePage() {
                 <div className="grid grid-cols-2 text-sm">
                   <div className="bg-[#0c1c33] px-3 py-3">
                     <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-purple-300">StatTrackr</p>
-                    <p className="flex items-start gap-1.5 font-medium leading-snug text-emerald-400">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0" />
-                      {row.pro}
+                    <p className="grid grid-cols-[1rem_1fr] items-center gap-1.5 font-medium leading-snug text-emerald-400">
+                      <Check className="h-4 w-4" />
+                      <span>{row.pro}</span>
                     </p>
                   </div>
                   <div className="px-3 py-3">
                     <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">Free</p>
-                    <p className={`flex items-start gap-1.5 font-medium leading-snug ${row.freeOk ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {row.freeOk ? <Check className="mt-0.5 h-4 w-4 shrink-0" /> : <X className="mt-0.5 h-4 w-4 shrink-0" />}
-                      {row.free}
+                    <p className={`grid grid-cols-[1rem_1fr] items-center gap-1.5 font-medium leading-snug ${row.freeOk ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {row.freeOk ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                      <span>{row.free}</span>
                     </p>
                   </div>
                 </div>
@@ -1183,10 +1182,10 @@ export default function HomePage() {
                 {[
                   { icon: Medal, feature: 'Sports', pro: 'NBA, AFL, NBL, ATP, WTA', free: 'NBA, AFL, NBL, ATP, WTA', freeOk: true },
                   { icon: LayoutGrid, feature: 'Props board', pro: 'Full board', free: '1 prop per sport' },
-                  { icon: LineChart, feature: 'Advanced stats for every sport', pro: 'Included', free: 'Locked' },
-                  { icon: Trophy, feature: 'AFL prediction model', pro: 'Included', free: 'Locked' },
-                  { icon: Megaphone, feature: 'Admin picks', pro: 'Included', free: 'Locked' },
+                  { icon: LineChart, feature: 'Advanced stats for every sport', pro: 'Included', free: 'Some locked' },
+                  { icon: Wrench, feature: 'Tools board', pro: 'Arb, EV, middles, bonus', free: 'Locked' },
                   { icon: MessageCircle, feature: 'Chat', pro: 'Included', free: 'Included', freeOk: true },
+                  { icon: Headphones, feature: 'Priority support', pro: 'ASAP', free: 'Longer', freeOk: true },
                   { icon: DollarSign, feature: 'Price', pro: 'From $20/month', free: 'Free', freeOk: true },
                 ].map((row) => (
                   <React.Fragment key={row.feature}>
@@ -1196,13 +1195,17 @@ export default function HomePage() {
                       </span>
                       {row.feature}
                     </div>
-                    <div className="flex items-center justify-center gap-2 border-x border-t border-purple-500/30 bg-[#0c1c33] px-4 py-4 font-medium text-emerald-400">
+                    <div className="grid grid-cols-[1rem_1fr] items-center gap-2 border-x border-t border-purple-500/30 bg-[#0c1c33] px-5 py-4 font-medium text-emerald-400">
                       <Check className="h-4 w-4" />
-                      {row.pro}
+                      <span className="leading-snug">{row.pro}</span>
                     </div>
-                    <div className={`flex items-center justify-center gap-2 border-t border-gray-800 px-4 py-4 font-medium ${row.freeOk ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <div
+                      className={`grid grid-cols-[1rem_1fr] items-center gap-2 border-t border-gray-800 px-5 py-4 font-medium ${
+                        row.freeOk ? 'text-emerald-400' : 'text-rose-400'
+                      }`}
+                    >
                       {row.freeOk ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                      {row.free}
+                      <span className="leading-snug">{row.free}</span>
                     </div>
                   </React.Fragment>
                 ))}
@@ -1383,8 +1386,6 @@ export default function HomePage() {
           </div>
           <div className="space-y-3">
             {[
-              { q: 'How has the AFL prediction model performed?', a: 'Profitable every week of the AFL season. The model has consistently identified value across rounds, giving subscribers an edge week after week.' },
-              { q: 'How have the admin picks performed?', a: '40+ units made across the season. Our team\'s hand-selected picks have delivered strong, consistent returns for subscribers.' },
               { q: 'Can I cancel anytime?', a: 'Yes. You can cancel your subscription at any time. There are no cancellation fees and no unnecessary hurdles.' },
               { q: 'Is mobile supported?', a: 'Yes. StatTrackr works across phone, tablet, and desktop. The full feature set and data are available on mobile, so you can research on the go.' },
               { q: 'How do I contact support?', a: <>Email us at <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>. We typically respond within 24 hours.</> },
