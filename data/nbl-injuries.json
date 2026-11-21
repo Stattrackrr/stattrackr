@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-20T21:04:05.607Z",
+  "generatedAt": "2026-11-21T20:05:40.989Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
-  "sourceUpdatedText": "Tuesday, November 17, 5pm AEDT",
-  "injuryCount": 24,
+  "sourceUpdatedText": "Friday, November 20, 9pm AEDT",
+  "injuryCount": 21,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -21,42 +21,6 @@
       "injury": "ACL",
       "returning": "TBC",
       "status": "Out",
-      "listedByNbl": true
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Jacob Holt",
-      "injury": "Ankle",
-      "returning": "Round 10",
-      "status": "Out",
-      "note": "Expected to miss five weeks with the ankle injury from 15 October 2026, Walshly News reported on 21 October. Archie Woodhill suits up in his place.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Max Mackinnon",
-      "injury": "Concussion",
-      "returning": "TBC",
-      "status": "Out",
-      "note": "Still in concussion protocol and out of the game against the Perth Wildcats on Wednesday 4 November 2026, the Herald Sun reported that day. He last played on 29 October.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Sam McDaniel",
-      "injury": "Lower leg",
-      "returning": "Round 10",
-      "status": "Out",
-      "note": "Hurt his lower leg against Tasmania on 3 October 2026 and ruled out for about six weeks; Mawot Mag is his injury replacement. The NBL lists Round 10, and the Herald Sun reported on 4 November he could return around the FIBA break.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Brisbane Bullets",
-      "player": "Arnas Velicka",
-      "injury": "Lower limb",
-      "returning": "Early December",
-      "status": "Out",
-      "note": "Hurt against the Cairns Taipans on 8 October 2026. Brisbane expect him back in early December and the NBL lists Rounds 11 to 12; the Herald Sun reported on 4 November he could return around the FIBA break. Raul Neto is his injury replacement.",
       "listedByNbl": true
     },
     {
@@ -88,11 +52,28 @@
     },
     {
       "team": "Illawarra Hawks",
+      "player": "William \"Davo\" Hickey",
+      "injury": "Illness",
+      "returning": "Test",
+      "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "Illawarra Hawks",
       "player": "Mason Peatling",
       "injury": "Foot",
       "returning": "Season",
       "status": "Out for the season",
       "note": "Illawarra announced on 9 October 2026 that he will have season-ending foot surgery, NBL.com.au reported.",
+      "listedByNbl": true
+    },
+    {
+      "team": "Melbourne United",
+      "player": "Cole Anthony",
+      "injury": "Suspended",
+      "returning": "Round 11",
+      "status": "Out",
+      "note": "Suspended for one match and fined $10,000 by the NBL on 19 November 2026 for breaching its Code of Conduct in the game against South East Melbourne on 14 November. The NBL lists his return as Round 11.",
       "listedByNbl": true
     },
     {
@@ -132,10 +113,10 @@
       "listedByNbl": true
     },
     {
-      "team": "New Zealand Breakers",
-      "player": "Anzac Rissetto",
-      "injury": "Illness",
-      "returning": "Round 10",
+      "team": "Perth Wildcats",
+      "player": "Anthony Dell'Orso",
+      "injury": "Ankle",
+      "returning": "TBC",
       "status": "Out",
       "listedByNbl": true
     },
@@ -198,15 +179,6 @@
       "returning": "TBC",
       "status": "Out",
       "note": "Tasmania have confirmed the knee injury is an ACL, and have signed Nick Stoddart as a Nominated Replacement Player to cover him for the Blitz and the start of the season.",
-      "listedByNbl": true
-    },
-    {
-      "team": "Tasmania JackJumpers",
-      "player": "David Johnson",
-      "injury": "Calf",
-      "returning": "Round 11",
-      "status": "Out",
-      "note": "Johnson left Tasmania’s loss to the Sydney Kings on Friday 30 October 2026 in the second quarter and did not return. Head coach Scott Roth said afterwards the calf injury “is going to be quite a while”.",
       "listedByNbl": true
     },
     {

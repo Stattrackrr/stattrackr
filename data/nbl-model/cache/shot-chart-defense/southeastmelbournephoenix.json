@@ -86,7 +86,7 @@
       "fgm": 22,
       "fgPct": 37.28813559322034,
       "share": 5.8300395256917,
-      "rank": 3,
+      "rank": 5,
       "teamsCompared": 10
     },
     {
@@ -106,7 +106,7 @@
       "fgm": 40,
       "fgPct": 34.78260869565217,
       "share": 11.363636363636363,
-      "rank": 4,
+      "rank": 3,
       "teamsCompared": 10
     },
     {
@@ -129,5 +129,5 @@
     "rank": 7,
     "teamsCompared": 10
   },
-  "generatedAt": "2026-11-20T21:04:07.759Z"
+  "generatedAt": "2026-11-21T20:05:43.323Z"
 }
