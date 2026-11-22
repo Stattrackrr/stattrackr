@@ -7576,14 +7576,11 @@ export default function NBALandingPage() {
 
   const secondaryPropsPaintRows = isSecondaryListMode && secondaryPaintableProps.length > 0;
   const propsTablePaginatedProps = activePaginatedProps;
+  /** Only filtered rows count — empty search/filters must show the empty state, not a blank table. */
   const propsTableHasRows =
-    propsSport === 'nba'
-      ? activeFilteredCount > 0
-      : isSecondaryListMode
-        ? activeFilteredCount > 0 || secondaryPaintableProps.length > 0
-        : propsSport === 'combined'
-          ? combinedPaintUnlocked && activeFilteredCount > 0
-          : activeFilteredCount > 0;
+    propsSport === 'combined'
+      ? combinedPaintUnlocked && activeFilteredCount > 0
+      : activeFilteredCount > 0;
 
   useEffect(() => {
     if (propsSport !== 'nba' || playerProps.length > 0) {
@@ -7601,8 +7598,11 @@ export default function NBALandingPage() {
       if (combinedPropsLoading || !combinedPropsFetchComplete) return true;
       return false;
     }
-    if (secondaryPropsPaintRows) return false;
     if (activeFilteredCount !== 0) return false;
+    // Source board is loaded; search/filters just matched nothing — show empty copy, not skeleton.
+    if (propsSport === 'nba' && playerProps.length > 0) return false;
+    if (isSecondaryListMode && aflPropsFetchComplete && secondaryPaintableProps.length > 0) return false;
+    if (secondaryPropsPaintRows) return false;
     if (
       (isSecondaryListMode && (aflPropsLoading || !aflPropsFetchComplete)) ||
       (propsSport === 'nba' && !showNoPropsMessage)
@@ -7614,8 +7614,10 @@ export default function NBALandingPage() {
     return true;
   }, [
     secondaryPropsPaintRows,
+    secondaryPaintableProps.length,
     activeFilteredCount,
     propsSport,
+    playerProps.length,
     aflPropsLoading,
     aflPropsFetchComplete,
     showNoPropsMessage,
@@ -7624,6 +7626,7 @@ export default function NBALandingPage() {
     combinedPropsFetchComplete,
     combinedPaintUnlocked,
     debouncedSearchQuery,
+    isSecondaryListMode,
   ]);
   /** Club-site portraits for AFL props; bump version to invalidate client after resolver changes. */
   const [aflPortraitExtras, setAflPortraitExtras] = useState<Record<string, string>>({});
@@ -9537,7 +9540,7 @@ export default function NBALandingPage() {
               <div className={`rounded-2xl lg:rounded-lg w-full pr-0 lg:pr-2 border lg:border-transparent ${
                 shellDark ? 'bg-[#050d1a] border-white/5' : 'bg-white border-gray-200'
               }`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.6rem', paddingRight: '0.6rem' }}>
-                {!propsTableHasRows && !secondaryPropsPaintRows ? (
+                {!propsTableHasRows ? (
                     isPropsLoadingSkeleton ? (
                       <>
                       {/* Desktop Skeleton - AFL loading or NBA empty */}
@@ -9655,42 +9658,15 @@ export default function NBALandingPage() {
                       liveEligibleAflPropsCount === 0 && !debouncedSearchQuery.trim() ? (
                         <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           <p className="text-lg font-medium mb-2">No props found</p>
-                          <p className="text-sm">Come back later</p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              userModifiedAflGamesRef.current = false;
-                              secondarySkipFetchSportRef.current = null;
-                              try {
-                                sessionStorage.removeItem(getSecondaryPropsCacheKey(propsSport));
-                              } catch {
-                                // Ignore
-                              }
-                              setSecondaryPropsFetchComplete(false);
-                              setAflPropsLoading(true);
-                              setAflPropsRetryKey((k) => k + 1);
-                            }}
-                            className={`mt-4 px-4 py-2 rounded-lg font-medium ${mounted && isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
-                          >
-                            Try again
-                          </button>
-                        </div>
-                      ) : liveEligibleAflPropsCount === 0 ? (
-                        <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                          <p className="text-lg font-medium max-w-lg">
-                            {debouncedSearchQuery.trim()
-                              ? 'No props match your search'
-                              : isTennisPropsSport(propsSport)
-                                ? 'No props found'
-                                : propsSport === 'nbl'
-                                  ? (aflIngestMessage ?? AFL_USER_NO_ODDS)
-                                  : aflIngestMessage && /^Fetched \d+ stats/i.test(aflIngestMessage)
-                                    ? AFL_USER_NO_ODDS
-                                    : (aflIngestMessage ?? AFL_USER_NO_ODDS)}
+                          <p className="text-sm max-w-lg">
+                            {isTennisPropsSport(propsSport)
+                              ? 'Come back later'
+                              : propsSport === 'nbl'
+                                ? (aflIngestMessage ?? 'Come back later')
+                                : aflIngestMessage && /^Fetched \d+ stats/i.test(aflIngestMessage)
+                                  ? AFL_USER_NO_ODDS
+                                  : (aflIngestMessage ?? 'Come back later')}
                           </p>
-                          {debouncedSearchQuery.trim() ? (
-                            <p className="text-sm mt-1">Try a different player name, or clear search.</p>
-                          ) : null}
                           <button
                             type="button"
                             onClick={() => {
@@ -9712,11 +9688,11 @@ export default function NBALandingPage() {
                         </div>
                       ) : (
                         <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                          <p className="text-lg font-medium">No props match your search or filters</p>
-                          <p className="text-sm mt-1">
-                            {propsSport === 'nbl' && nblOuOnly
+                          <p className="text-lg font-medium mb-2">No props match your search</p>
+                          <p className="text-sm">
+                            {propsSport === 'nbl' && nblOuOnly && !debouncedSearchQuery.trim()
                               ? 'O/U only is on, and these books only posted overs. Turn that chip off to see the board.'
-                              : 'Try a different search term or adjust the Games / Prop Types / Bookmakers filters.'}
+                              : 'Try a different player or stat search.'}
                           </p>
                         </div>
                       )
@@ -9742,6 +9718,13 @@ export default function NBALandingPage() {
                       }`}>
                         <p className="text-lg font-medium mb-2">No props found</p>
                         <p className="text-sm">Come back later</p>
+                      </div>
+                    ) : propsSport === 'nba' ? (
+                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${
+                        mounted && isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        <p className="text-lg font-medium mb-2">No props match your search</p>
+                        <p className="text-sm">Try a different player or stat search.</p>
                       </div>
                     ) : (
                     <>
