@@ -14,10 +14,11 @@ import {
 } from '@/lib/profileSubscriptionGate';
 import type { User } from '@supabase/supabase-js';
 import { StatTrackrSplash } from '@/components/StatTrackrSplash';
-import HomeQuizLanding from '@/components/HomeQuizLanding';
+import HomeQuizLanding, { HomeCouponStrip } from '@/components/HomeQuizLanding';
 import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { readEntryIntent, redirectForEntryIntent, setEntryIntent, startProCheckout } from '@/lib/entryIntent';
 import { readReferralCode, saveReferralCode } from '@/lib/referral/storage';
+import { BLACK_FRIDAY_SALE, isBlackFridaySaleActive } from '@/lib/blackFridaySale';
 import { 
   CheckCircle2,
   Check,
@@ -771,8 +772,15 @@ export default function HomePage() {
       )}
       {user && (
     <div className="min-h-screen bg-[#050d1a] text-white">
+      {isBlackFridaySaleActive() ? (
+        <div className="fixed left-0 right-0 top-0 z-[60]">
+          <HomeCouponStrip onClick={() => scrollToSection('pricing')} />
+        </div>
+      ) : null}
       {/* Navigation Bar */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 pt-[max(1rem,env(safe-area-inset-top))] ${
+      <nav className={`fixed left-0 right-0 z-50 transition-all duration-300 pt-[max(1rem,env(safe-area-inset-top))] ${
+        isBlackFridaySaleActive() ? 'top-9' : 'top-0'
+      } ${
         isScrolled ? 'bg-[#050d1a]/95 backdrop-blur-sm border-b border-gray-800' : 'bg-transparent'
       }`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
@@ -917,7 +925,9 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section ref={heroRef} className="relative overflow-hidden px-4 pb-20 pt-28 sm:px-6 sm:pt-32 lg:px-8">
+      <section ref={heroRef} className={`relative overflow-hidden px-4 pb-20 sm:px-6 lg:px-8 ${
+        isBlackFridaySaleActive() ? 'pt-36 sm:pt-40' : 'pt-28 sm:pt-32'
+      }`}>
         {/* Decorative background glow — lighter on mobile to avoid GPU jank */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -left-32 w-[40rem] h-[40rem] rounded-full bg-purple-600/15 md:bg-purple-600/20 blur-3xl md:blur-[120px]" />
@@ -1257,7 +1267,16 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-4">Competitive pricing</h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">Pick the billing cycle that suits you.</p>
+            {isBlackFridaySaleActive() ? (
+              <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+                <span className="inline-flex items-center gap-2 rounded-full border border-purple-400/35 bg-purple-500/10 px-3 py-1 text-sm font-semibold text-purple-200">
+                  Black Friday 33% off
+                </span>
+                <span className="mt-3 block">Ends {BLACK_FRIDAY_SALE.endsLabel}. Pick the billing cycle that suits you.</span>
+              </p>
+            ) : (
+              <p className="text-lg text-gray-400 max-w-2xl mx-auto">Pick the billing cycle that suits you.</p>
+            )}
           </div>
 
           {/* Mobile toggle */}
@@ -1278,7 +1297,9 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {plans.map((plan) => (
+            {plans.map((plan) => {
+              const bf = isBlackFridaySaleActive();
+              return (
               <React.Fragment key={plan.name}>
                 {/* Monthly */}
                 <div
@@ -1286,14 +1307,28 @@ export default function HomePage() {
                   className={`bg-[#050d1a] rounded-xl border-2 p-8 ${billingCycle === 'monthly' ? 'border-purple-600 shadow-2xl shadow-purple-600/20' : 'border-gray-800'} ${billingCycle !== 'monthly' ? 'hidden md:block' : ''}`}
                 >
                   <div className="mb-6">
-                    <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                    <div className="mb-2 flex items-center gap-2">
+                      <h3 className="text-2xl font-bold">{plan.name}</h3>
+                      {bf ? (
+                        <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-300">
+                          Black Friday
+                        </span>
+                      ) : null}
+                    </div>
                     {plan.description ? <p className="text-gray-400 mb-4 text-sm">{plan.description}</p> : null}
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      {bf ? (
+                        <span className="text-xl font-medium text-gray-500 line-through">
+                          ${BLACK_FRIDAY_SALE.was.monthly.toFixed(2)}
+                        </span>
+                      ) : null}
                       <span className="text-4xl font-bold">${plan.price.monthly.toFixed(2)}</span>
                       <span className="text-sm font-medium text-gray-400">AUD</span>
                       <span className="text-gray-400">/month</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">Billed monthly</p>
+                    <p className={`text-xs mt-2 ${bf ? 'text-purple-300' : 'text-gray-500'}`}>
+                      {bf ? `Black Friday price · ends ${BLACK_FRIDAY_SALE.endsLabel}` : 'Billed monthly'}
+                    </p>
                   </div>
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, idx) => (
@@ -1317,14 +1352,28 @@ export default function HomePage() {
                   className={`bg-[#050d1a] rounded-xl border-2 p-8 ${billingCycle === 'semiannual' ? 'border-purple-600 shadow-2xl shadow-purple-600/20' : 'border-gray-800'} ${billingCycle !== 'semiannual' ? 'hidden md:block' : ''}`}
                 >
                   <div className="mb-6">
-                    <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                    <div className="mb-2 flex items-center gap-2">
+                      <h3 className="text-2xl font-bold">{plan.name}</h3>
+                      {bf ? (
+                        <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-300">
+                          Black Friday
+                        </span>
+                      ) : null}
+                    </div>
                     {plan.description ? <p className="text-gray-400 mb-4 text-sm">{plan.description}</p> : null}
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      {bf ? (
+                        <span className="text-xl font-medium text-gray-500 line-through">
+                          ${BLACK_FRIDAY_SALE.was.semiannual.toFixed(2)}
+                        </span>
+                      ) : null}
                       <span className="text-4xl font-bold">${plan.price.semiannual.toFixed(2)}</span>
                       <span className="text-sm font-medium text-gray-400">AUD</span>
                       <span className="text-gray-400">/6 months</span>
                     </div>
-                    <p className="text-xs text-emerald-400 mt-2">Save 17%</p>
+                    <p className={`text-xs mt-2 ${bf ? 'text-purple-300' : 'text-emerald-400'}`}>
+                      {bf ? `Black Friday price · ends ${BLACK_FRIDAY_SALE.endsLabel}` : 'Save 17%'}
+                    </p>
                   </div>
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, idx) => (
@@ -1348,14 +1397,28 @@ export default function HomePage() {
                   className={`bg-[#050d1a] rounded-xl border-2 p-8 ${billingCycle === 'annual' ? 'border-purple-600 shadow-2xl shadow-purple-600/20' : 'border-gray-800'} ${billingCycle !== 'annual' ? 'hidden md:block' : ''}`}
                 >
                   <div className="mb-6">
-                    <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                    <div className="mb-2 flex items-center gap-2">
+                      <h3 className="text-2xl font-bold">{plan.name}</h3>
+                      {bf ? (
+                        <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-300">
+                          Black Friday
+                        </span>
+                      ) : null}
+                    </div>
                     {plan.description ? <p className="text-gray-400 mb-4 text-sm">{plan.description}</p> : null}
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      {bf ? (
+                        <span className="text-xl font-medium text-gray-500 line-through">
+                          ${BLACK_FRIDAY_SALE.was.annual.toFixed(2)}
+                        </span>
+                      ) : null}
                       <span className="text-4xl font-bold">${plan.price.annual.toFixed(2)}</span>
                       <span className="text-sm font-medium text-gray-400">AUD</span>
                       <span className="text-gray-400">/year</span>
                     </div>
-                    <p className="text-xs text-emerald-400 mt-2">Save 25%</p>
+                    <p className={`text-xs mt-2 ${bf ? 'text-purple-300' : 'text-emerald-400'}`}>
+                      {bf ? `Black Friday price · ends ${BLACK_FRIDAY_SALE.endsLabel}` : 'Save 25%'}
+                    </p>
                   </div>
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, idx) => (
@@ -1373,7 +1436,8 @@ export default function HomePage() {
                   </button>
                 </div>
               </React.Fragment>
-            ))}
+            );
+            })}
           </div>
         </div>
       </section>

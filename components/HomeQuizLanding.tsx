@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
+import { BLACK_FRIDAY_SALE, isBlackFridaySaleActive } from '@/lib/blackFridaySale';
 
 type Answers = {
   sports?: string[];
@@ -215,6 +216,7 @@ function PageContinue({
 }) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+  const bf = isBlackFridaySaleActive();
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -366,7 +368,16 @@ function PageContinue({
         <div className="mx-auto max-w-7xl">
           <div className="mb-16 text-center">
             <h2 className="mb-4 text-4xl font-bold sm:text-5xl">Competitive pricing</h2>
-            <p className="mx-auto max-w-2xl text-lg text-gray-400">Pick the billing cycle that suits you.</p>
+            {bf ? (
+              <p className="mx-auto max-w-2xl text-lg text-gray-400">
+                <span className="inline-flex items-center gap-2 rounded-full border border-purple-400/35 bg-purple-500/10 px-3 py-1 text-sm font-semibold text-purple-200">
+                  Black Friday 33% off
+                </span>
+                <span className="mt-3 block">Ends {BLACK_FRIDAY_SALE.endsLabel}. Pick the billing cycle that suits you.</span>
+              </p>
+            ) : (
+              <p className="mx-auto max-w-2xl text-lg text-gray-400">Pick the billing cycle that suits you.</p>
+            )}
           </div>
           <div className="mb-8 flex justify-center md:hidden">
             <div className="flex gap-1 rounded-xl border border-gray-800 bg-white/[0.05] p-1">
@@ -387,13 +398,27 @@ function PageContinue({
           <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-3">
             <div className={`rounded-xl border-2 bg-[#050d1a] p-8 ${billingCycle === 'monthly' ? 'border-purple-600 shadow-2xl shadow-purple-600/20' : 'border-gray-800'} ${billingCycle !== 'monthly' ? 'hidden md:block' : ''}`}>
               <div className="mb-6">
-                <h3 className="mb-2 text-2xl font-bold">Pro</h3>
-                <div className="flex items-baseline gap-2">
+                <div className="mb-2 flex items-center gap-2">
+                  <h3 className="text-2xl font-bold">Pro</h3>
+                  {bf ? (
+                    <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-300">
+                      Black Friday
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  {bf ? (
+                    <span className="text-xl font-medium text-gray-500 line-through">
+                      ${BLACK_FRIDAY_SALE.was.monthly.toFixed(2)}
+                    </span>
+                  ) : null}
                   <span className="text-4xl font-bold">$20.00</span>
                   <span className="text-sm font-medium text-gray-400">AUD</span>
                   <span className="text-gray-400">/month</span>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">Billed monthly</p>
+                <p className={`mt-2 text-xs ${bf ? 'text-purple-300' : 'text-gray-500'}`}>
+                  {bf ? `Black Friday price · ends ${BLACK_FRIDAY_SALE.endsLabel}` : 'Billed monthly'}
+                </p>
               </div>
               <ul className="mb-8 space-y-3">
                 {PLAN_FEATURES.map((feature) => (
@@ -409,13 +434,27 @@ function PageContinue({
             </div>
             <div className={`rounded-xl border-2 bg-[#050d1a] p-8 ${billingCycle === 'semiannual' ? 'border-purple-600 shadow-2xl shadow-purple-600/20' : 'border-gray-800'} ${billingCycle !== 'semiannual' ? 'hidden md:block' : ''}`}>
               <div className="mb-6">
-                <h3 className="mb-2 text-2xl font-bold">Pro</h3>
-                <div className="flex items-baseline gap-2">
+                <div className="mb-2 flex items-center gap-2">
+                  <h3 className="text-2xl font-bold">Pro</h3>
+                  {bf ? (
+                    <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-300">
+                      Black Friday
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  {bf ? (
+                    <span className="text-xl font-medium text-gray-500 line-through">
+                      ${BLACK_FRIDAY_SALE.was.semiannual.toFixed(2)}
+                    </span>
+                  ) : null}
                   <span className="text-4xl font-bold">$100.00</span>
                   <span className="text-sm font-medium text-gray-400">AUD</span>
                   <span className="text-gray-400">/6 months</span>
                 </div>
-                <p className="mt-2 text-xs text-emerald-400">Save 17%</p>
+                <p className={`mt-2 text-xs ${bf ? 'text-purple-300' : 'text-emerald-400'}`}>
+                  {bf ? `Black Friday price · ends ${BLACK_FRIDAY_SALE.endsLabel}` : 'Save 17%'}
+                </p>
               </div>
               <ul className="mb-8 space-y-3">
                 {PLAN_FEATURES.map((feature) => (
@@ -431,13 +470,27 @@ function PageContinue({
             </div>
             <div className={`rounded-xl border-2 bg-[#050d1a] p-8 ${billingCycle === 'annual' ? 'border-purple-600 shadow-2xl shadow-purple-600/20' : 'border-gray-800'} ${billingCycle !== 'annual' ? 'hidden md:block' : ''}`}>
               <div className="mb-6">
-                <h3 className="mb-2 text-2xl font-bold">Pro</h3>
-                <div className="flex items-baseline gap-2">
+                <div className="mb-2 flex items-center gap-2">
+                  <h3 className="text-2xl font-bold">Pro</h3>
+                  {bf ? (
+                    <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-300">
+                      Black Friday
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  {bf ? (
+                    <span className="text-xl font-medium text-gray-500 line-through">
+                      ${BLACK_FRIDAY_SALE.was.annual.toFixed(2)}
+                    </span>
+                  ) : null}
                   <span className="text-4xl font-bold">$180.00</span>
                   <span className="text-sm font-medium text-gray-400">AUD</span>
                   <span className="text-gray-400">/year</span>
                 </div>
-                <p className="mt-2 text-xs text-emerald-400">Save 25%</p>
+                <p className={`mt-2 text-xs ${bf ? 'text-purple-300' : 'text-emerald-400'}`}>
+                  {bf ? `Black Friday price · ends ${BLACK_FRIDAY_SALE.endsLabel}` : 'Save 25%'}
+                </p>
               </div>
               <ul className="mb-8 space-y-3">
                 {PLAN_FEATURES.map((feature) => (
@@ -572,10 +625,9 @@ function PageContinue({
 }
 
 const HOME_PROMO = {
-  code: 'NBA27',
-  percentOff: 15,
-  /** The strip disappears once this passes. */
-  endsAt: Date.parse('2026-10-29T10:00:00+11:00'),
+  percentOff: 33,
+  /** The strip disappears once this passes (Black Friday + 3 days). */
+  endsAt: BLACK_FRIDAY_SALE.endsAt.getTime(),
 };
 
 /** Milliseconds until the promo ends; null until mounted, so the server and first client render match. */
@@ -600,26 +652,23 @@ function formatPromoTimeLeft(ms: number | null): string {
 function CouponText({ timeLeft }: { timeLeft: string }) {
   return (
     <>
-      Use code
-      <span className="rounded-md bg-white/20 px-2 py-0.5 font-bold tracking-[0.14em]">{HOME_PROMO.code}</span>
-      for {HOME_PROMO.percentOff}% off
-      <span className="text-white/60">·</span>
-      <span className="text-white/90">Ends in</span>
-      <span className="rounded-md bg-black/25 px-2 py-0.5 font-bold tabular-nums">{timeLeft}</span>
+      <span className="font-bold tracking-wide text-purple-200">Black Friday</span>
+      <span className="font-semibold text-white">{HOME_PROMO.percentOff}% off subscriptions</span>
+      <span className="text-white/40">·</span>
+      <span className="text-white/70">Ends in</span>
+      <span className="rounded border border-purple-400/30 bg-purple-500/15 px-2 py-0.5 font-bold tabular-nums text-purple-100">
+        {timeLeft}
+      </span>
     </>
   );
 }
 
-function HomeCouponStrip() {
+export function HomeCouponStrip({ onClick }: { onClick?: () => void } = {}) {
   const left = usePromoTimeLeft(HOME_PROMO.endsAt);
-  if (left === 0) return null;
+  if (left === 0 || !isBlackFridaySaleActive()) return null;
   const timeLeft = formatPromoTimeLeft(left);
-  return (
-    <div
-      className="relative h-9 overflow-hidden bg-gradient-to-r from-violet-700 via-fuchsia-600 to-violet-700"
-      role="region"
-      aria-label={`Use code ${HOME_PROMO.code} for ${HOME_PROMO.percentOff}% off`}
-    >
+  const body = (
+    <>
       <p className="home-coupon-static hidden h-9 items-center justify-center gap-2 text-sm font-semibold text-white sm:text-base">
         <CouponText timeLeft={timeLeft} />
       </p>
@@ -634,6 +683,29 @@ function HomeCouponStrip() {
           </div>
         ))}
       </div>
+    </>
+  );
+  const className =
+    'relative h-9 w-full overflow-hidden border-b border-purple-500/25 bg-[#071422]';
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`${className} cursor-pointer text-left`}
+        aria-label={`Black Friday ${HOME_PROMO.percentOff}% off subscriptions. Ends in ${timeLeft}`}
+      >
+        {body}
+      </button>
+    );
+  }
+  return (
+    <div
+      className={className}
+      role="region"
+      aria-label={`Black Friday ${HOME_PROMO.percentOff}% off subscriptions. Ends in ${timeLeft}`}
+    >
+      {body}
     </div>
   );
 }
@@ -851,7 +923,11 @@ export default function HomeQuizLanding({
     return (
       <>
         <div className="sticky top-0 z-40">
-        <HomeCouponStrip />
+        <HomeCouponStrip
+          onClick={() => {
+            document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        />
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#050d1a]/95 px-5 backdrop-blur-sm sm:px-8">
           <div className="flex items-center gap-2">
             <Image
