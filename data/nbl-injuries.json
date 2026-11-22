@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-21T20:05:40.989Z",
+  "generatedAt": "2026-11-22T20:23:57.989Z",
   "source": "basketball.com.au",
   "sourceUrl": "https://www.basketball.com.au/news/nbl-injury-report",
   "sourcePage": "/news/nbl-injury-report",
   "sourceUpdatedText": "Friday, November 20, 9pm AEDT",
-  "injuryCount": 21,
+  "injuryCount": 22,
   "injuries": [
     {
       "team": "Adelaide 36ers",
@@ -144,6 +144,15 @@
       "injury": "Personal Reasons",
       "returning": "TBC",
       "status": "Out",
+      "listedByNbl": true
+    },
+    {
+      "team": "Sydney Kings",
+      "player": "Kendric Davis",
+      "injury": "Quad",
+      "returning": "TBC",
+      "status": "Out",
+      "note": "Ruled out of Sydney’s game against the Brisbane Bullets on Sunday 22 November 2026 with a quad injury, the club confirmed, reported by Jai at Fox Sports (@NBLPleb). The Kings have ruled him out of that game only and have not given a return date.",
       "listedByNbl": true
     },
     {

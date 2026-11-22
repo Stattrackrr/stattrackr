@@ -1,94 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-21T20:04:20.953Z",
+  "generatedAt": "2026-11-22T20:22:48.920Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
-    {
-      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-      "name": "South East Melbourne Phoenix",
-      "team_code": "SEM",
-      "nextMatches": [
-        {
-          "id": "e37dbe7f-3b77-499e-aec5-929ac7487245",
-          "match_slug": "south-east-melbourne-phoenix-v-cairns-taipans-men-22-11-2026",
-          "match_title": "South East Melbourne Phoenix v Cairns Taipans men 22-11-2026",
-          "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
-          "external_id": "37514d45-58ad-11f1-917b-0f009f2e4d02",
-          "start_time_datetime": "2026-11-22T04:00:00.000Z",
-          "is_home": true,
-          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
-          "opponent_name": "Cairns Taipans",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-          "venue": "John Cain Arena",
-          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
-        }
-      ]
-    },
-    {
-      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
-      "name": "Cairns Taipans",
-      "team_code": "CNS",
-      "nextMatches": [
-        {
-          "id": "e37dbe7f-3b77-499e-aec5-929ac7487245",
-          "match_slug": "south-east-melbourne-phoenix-v-cairns-taipans-men-22-11-2026",
-          "match_title": "South East Melbourne Phoenix v Cairns Taipans men 22-11-2026",
-          "match_ticket_url": "https://tickets.taipans.com/",
-          "external_id": "37514d45-58ad-11f1-917b-0f009f2e4d02",
-          "start_time_datetime": "2026-11-22T04:00:00.000Z",
-          "is_home": false,
-          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
-          "opponent_name": "South East Melbourne Phoenix",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
-          "venue": "John Cain Arena",
-          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
-        }
-      ]
-    },
-    {
-      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-      "name": "Brisbane Bullets",
-      "team_code": "BRI",
-      "nextMatches": [
-        {
-          "id": "89f41ff8-7834-4670-bdee-d74c0ffc90cd",
-          "match_slug": "brisbane-bullets-v-sydney-kings-men-22-11-2026",
-          "match_title": "Brisbane Bullets v Sydney Kings men 22-11-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS27",
-          "external_id": "374c5a9d-58ad-11f1-8829-1daf76a0ede8",
-          "start_time_datetime": "2026-11-22T06:00:00.000Z",
-          "is_home": true,
-          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
-          "opponent_name": "Sydney Kings",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-          "venue": "Brisbane Entertainment Centre",
-          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
-        }
-      ]
-    },
-    {
-      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
-      "name": "Sydney Kings",
-      "team_code": "SYD",
-      "nextMatches": [
-        {
-          "id": "89f41ff8-7834-4670-bdee-d74c0ffc90cd",
-          "match_slug": "brisbane-bullets-v-sydney-kings-men-22-11-2026",
-          "match_title": "Brisbane Bullets v Sydney Kings men 22-11-2026",
-          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS27",
-          "external_id": "374c5a9d-58ad-11f1-8829-1daf76a0ede8",
-          "start_time_datetime": "2026-11-22T06:00:00.000Z",
-          "is_home": false,
-          "opponent_id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-          "opponent_name": "Brisbane Bullets",
-          "opponent_logo": "https://cdn.nbl.com.au/app_assets/BNE.png",
-          "venue": "Brisbane Entertainment Centre",
-          "opponent_logo_blurhash": "LAD9iCxu0s5dS+s*s+xU0aIwoI}$"
-        }
-      ]
-    },
     {
       "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "name": "Adelaide 36ers",
@@ -107,6 +23,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
           "venue": "Adelaide Entertainment Centre",
           "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
+        }
+      ]
+    },
+    {
+      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+      "name": "South East Melbourne Phoenix",
+      "team_code": "SEM",
+      "nextMatches": [
+        {
+          "id": "b4496010-2cc2-41e0-af64-967181712658",
+          "match_slug": "adelaide-36ers-v-south-east-melbourne-phoenix-men-02-12-2026",
+          "match_title": "Adelaide 36ers v South East Melbourne Phoenix men 02-12-2026",
+          "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
+          "external_id": "374bfa7a-58ad-11f1-80a5-a590ae8a6049",
+          "start_time_datetime": "2026-12-02T08:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+          "opponent_name": "Adelaide 36ers",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
+          "venue": "Adelaide Entertainment Centre",
+          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
+        }
+      ]
+    },
+    {
+      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "name": "Brisbane Bullets",
+      "team_code": "BRI",
+      "nextMatches": [
+        {
+          "id": "5cb939b9-7c55-4e37-8bb9-d9943b9b3372",
+          "match_slug": "brisbane-bullets-v-perth-wildcats-men-03-12-2026",
+          "match_title": "Brisbane Bullets v Perth Wildcats men 03-12-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS27",
+          "external_id": "3748a57b-58ad-11f1-a4fa-fb9d3a8baf78",
+          "start_time_datetime": "2026-12-03T09:00:00.000Z",
+          "is_home": true,
+          "opponent_id": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "opponent_name": "Perth Wildcats",
+          "opponent_logo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
+          "venue": "Brisbane Entertainment Centre",
+          "opponent_logo_blurhash": "LDH_Pv_N1b?HHrkCTJD%1v?HD456"
         }
       ]
     },
@@ -191,6 +149,48 @@
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
           "venue": "WIN Entertainment Centre",
           "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
+        }
+      ]
+    },
+    {
+      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+      "name": "Sydney Kings",
+      "team_code": "SYD",
+      "nextMatches": [
+        {
+          "id": "91b471d0-089a-4be1-bc7c-278f1695f642",
+          "match_slug": "illawarra-hawks-v-sydney-kings-men-04-12-2026",
+          "match_title": "Illawarra Hawks v Sydney Kings men 04-12-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS27",
+          "external_id": "3751fcc5-58ad-11f1-a32f-279e256f2655",
+          "start_time_datetime": "2026-12-04T08:30:00.000Z",
+          "is_home": false,
+          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "opponent_name": "Illawarra Hawks",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
+          "venue": "WIN Entertainment Centre",
+          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
+        }
+      ]
+    },
+    {
+      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "name": "Cairns Taipans",
+      "team_code": "CNS",
+      "nextMatches": [
+        {
+          "id": "53dd2fe3-4ff0-4799-9f0f-e8a40e381d58",
+          "match_slug": "cairns-taipans-v-south-east-melbourne-phoenix-men-05-12-2026",
+          "match_title": "Cairns Taipans v South East Melbourne Phoenix men 05-12-2026",
+          "match_ticket_url": "https://tickets.taipans.com/",
+          "external_id": "37770bc1-58ad-11f1-a93a-ebcda8a5e5b1",
+          "start_time_datetime": "2026-12-05T06:30:00.000Z",
+          "is_home": true,
+          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "opponent_name": "South East Melbourne Phoenix",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
+          "venue": "Cairns Convention Centre",
+          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
         }
       ]
     },

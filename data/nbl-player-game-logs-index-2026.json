@@ -1,17 +1,17 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-21T20:05:07.521Z",
+  "generatedAt": "2026-11-22T20:23:24.644Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 160,
-  "gameRows": 1481,
+  "gameRows": 1522,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
       "name": "Akech Aliir",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/92012cd9-65dd-47f1-a51e-a6b5169bf359-2026.json"
     },
     {
@@ -35,7 +35,7 @@
       "name": "Andrew Carr",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/378c71b4-8d3d-4161-aaa4-88c69be7309e-2026.json"
     },
     {
@@ -83,7 +83,7 @@
       "name": "Arnas Velicka",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 5,
+      "gameCount": 6,
       "cacheFile": "nbl-model/cache/player-logs/7ea89a63-460c-4530-a6b8-e770aced04e3-2026.json"
     },
     {
@@ -267,7 +267,7 @@
       "name": "D'Shawn Schwartz",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/6c3024b9-ffb8-4a9d-bb23-1e99191f98b9-2026.json"
     },
     {
@@ -299,7 +299,7 @@
       "name": "Dash Daniels",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/d92ec6d5-b731-476a-b4a4-10cc36211bf5-2026.json"
     },
     {
@@ -379,7 +379,7 @@
       "name": "Harry Rouhliadeff",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/2d1e9f7f-e241-4797-8b2f-70472f07f4c8-2026.json"
     },
     {
@@ -387,7 +387,7 @@
       "name": "Harry Wessels",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/9f292ecd-bd5e-413a-b8d7-8397eaa04b3e-2026.json"
     },
     {
@@ -403,7 +403,7 @@
       "name": "Hunter Goodrick",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 4,
+      "gameCount": 5,
       "cacheFile": "nbl-model/cache/player-logs/0a5486ee-953a-4fae-920d-4a77de1bdf03-2026.json"
     },
     {
@@ -427,7 +427,7 @@
       "name": "Jack McVeigh",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 15,
+      "gameCount": 16,
       "cacheFile": "nbl-model/cache/player-logs/b50568ab-1745-4c99-9360-a270000b3366-2026.json"
     },
     {
@@ -435,7 +435,7 @@
       "name": "Jacob Holt",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 6,
+      "gameCount": 7,
       "cacheFile": "nbl-model/cache/player-logs/00e61e90-d1f1-4ec8-8a72-e7b04c0e5c0b-2026.json"
     },
     {
@@ -467,7 +467,7 @@
       "name": "Jason Spurgin",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 11,
+      "gameCount": 12,
       "cacheFile": "nbl-model/cache/player-logs/be414749-6d0f-4620-857d-a9b017a2c0b4-2026.json"
     },
     {
@@ -475,7 +475,7 @@
       "name": "Jayden Stone",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 8,
+      "gameCount": 9,
       "cacheFile": "nbl-model/cache/player-logs/509b7fe4-bf76-47ca-bb4c-4eea1ca5bdfb-2026.json"
     },
     {
@@ -491,7 +491,7 @@
       "name": "Jaylin Williams",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/a13a2ea7-3918-4cd3-93d2-a33703ce234d-2026.json"
     },
     {
@@ -499,7 +499,7 @@
       "name": "Jaylon Brown",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 15,
+      "gameCount": 16,
       "cacheFile": "nbl-model/cache/player-logs/17bfb8e3-400e-428d-96a3-64eecea3b6a2-2026.json"
     },
     {
@@ -571,7 +571,7 @@
       "name": "Jonah Bolden",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 15,
+      "gameCount": 16,
       "cacheFile": "nbl-model/cache/player-logs/fc16e0a8-a6b8-4000-b37f-d3a58d98244b-2026.json"
     },
     {
@@ -579,7 +579,7 @@
       "name": "Jordan Hunter",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9-2026.json"
     },
     {
@@ -635,7 +635,7 @@
       "name": "Keanu Pinder",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 15,
+      "gameCount": 16,
       "cacheFile": "nbl-model/cache/player-logs/59a777fb-049b-4f99-8bb1-f53516f76953-2026.json"
     },
     {
@@ -731,7 +731,7 @@
       "name": "Kyrin Galloway",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 15,
+      "gameCount": 16,
       "cacheFile": "nbl-model/cache/player-logs/872bdcab-a933-4436-874d-4d94f4e184e8-2026.json"
     },
     {
@@ -739,7 +739,7 @@
       "name": "Lachlan Bofinger",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/98ee26c6-adb4-470a-b30e-63c14524d6d1-2026.json"
     },
     {
@@ -755,7 +755,7 @@
       "name": "Lat Mayen",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/2337cf0e-9ee7-439d-8aec-770b3876368c-2026.json"
     },
     {
@@ -779,7 +779,7 @@
       "name": "Luke Paul",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 10,
+      "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/08c14dd1-935b-4e34-8e1f-97da35d055c9-2026.json"
     },
     {
@@ -803,7 +803,7 @@
       "name": "Makuach Maluach",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/6a42971e-6638-4472-b289-98c544aaa90a-2026.json"
     },
     {
@@ -819,7 +819,7 @@
       "name": "Malique Lewis",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 15,
+      "gameCount": 16,
       "cacheFile": "nbl-model/cache/player-logs/c6b7202f-6619-422a-8d2b-8e52a8d48935-2026.json"
     },
     {
@@ -867,7 +867,7 @@
       "name": "Matthew Dellavedova",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 7,
+      "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/83582125-9e71-4e7c-ae15-07f11333b2da-2026.json"
     },
     {
@@ -883,7 +883,7 @@
       "name": "Max Mackinnon",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 9,
+      "gameCount": 10,
       "cacheFile": "nbl-model/cache/player-logs/9b04b8b2-c234-4c8e-8653-d896d66267a9-2026.json"
     },
     {
@@ -899,7 +899,7 @@
       "name": "Mitch Norton",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/2e2291aa-36b6-4928-b348-0f5951fbc3b4-2026.json"
     },
     {
@@ -915,7 +915,7 @@
       "name": "Nate Hinton",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/aeb4d203-4032-44a5-a412-584f007d6dfb-2026.json"
     },
     {
@@ -923,7 +923,7 @@
       "name": "Nathan Sobey",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 12,
+      "gameCount": 13,
       "cacheFile": "nbl-model/cache/player-logs/7f6e18b2-6494-41c7-9791-d72c632317d5-2026.json"
     },
     {
@@ -971,7 +971,7 @@
       "name": "Patrick Ryan",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 10,
+      "gameCount": 11,
       "cacheFile": "nbl-model/cache/player-logs/9b71131b-787a-475d-aa1b-00dc4394f5e2-2026.json"
     },
     {
@@ -1019,7 +1019,7 @@
       "name": "Reyne Smith",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 15,
+      "gameCount": 16,
       "cacheFile": "nbl-model/cache/player-logs/b21f6432-c1e5-446a-b516-d1c981b77c48-2026.json"
     },
     {
@@ -1027,7 +1027,7 @@
       "name": "Rio Bruton",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 3,
+      "gameCount": 4,
       "cacheFile": "nbl-model/cache/player-logs/52e3e7c5-4fa9-4fa2-b8ff-1bf1a4750537-2026.json"
     },
     {
@@ -1059,7 +1059,7 @@
       "name": "Sam McDaniel",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 1,
+      "gameCount": 2,
       "cacheFile": "nbl-model/cache/player-logs/f36a7c02-4846-4a7d-a778-f8910383c455-2026.json"
     },
     {
@@ -1091,7 +1091,7 @@
       "name": "Shaun Bruce",
       "team": "Cairns Taipans",
       "teamCode": "CNS",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/f4c4d041-69b8-4757-9142-f5c028a070f2-2026.json"
     },
     {
@@ -1123,7 +1123,7 @@
       "name": "Taine Murray",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 8,
+      "gameCount": 9,
       "cacheFile": "nbl-model/cache/player-logs/bf2ff692-c8a9-4e97-bf5e-907ee38b9af1-2026.json"
     },
     {
@@ -1139,7 +1139,7 @@
       "name": "Tanner Krebs",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/a793b9cb-fb83-4554-8672-f35ccd77d6b1-2026.json"
     },
     {
@@ -1179,7 +1179,7 @@
       "name": "Torrey Craig",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/e11926a6-ab96-4a00-9e0f-f343b2f97655-2026.json"
     },
     {
@@ -1203,7 +1203,7 @@
       "name": "Tyler Robertson",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 12,
+      "gameCount": 13,
       "cacheFile": "nbl-model/cache/player-logs/ac10899d-d7cc-4994-8ee6-fda299502786-2026.json"
     },
     {
@@ -1211,7 +1211,7 @@
       "name": "Tyrell Harrison",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/fb85d99d-86ac-46f7-b60d-ea33ae00a9fd-2026.json"
     },
     {
@@ -1243,7 +1243,7 @@
       "name": "Will Johnston",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/9b55dd7f-4988-4e54-a889-36d23705aeb8-2026.json"
     },
     {
@@ -1267,7 +1267,7 @@
       "name": "Xavier Cooks",
       "team": "Sydney Kings",
       "teamCode": "SYD",
-      "gameCount": 13,
+      "gameCount": 14,
       "cacheFile": "nbl-model/cache/player-logs/46fc1fe9-abf7-4e72-9c80-60483ae9da5e-2026.json"
     },
     {
@@ -1275,7 +1275,7 @@
       "name": "Yannis Morin",
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
-      "gameCount": 14,
+      "gameCount": 15,
       "cacheFile": "nbl-model/cache/player-logs/5f85917c-1552-4800-b64a-48cf1023c60c-2026.json"
     },
     {

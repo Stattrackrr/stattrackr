@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-21T20:04:19.402Z",
+  "generatedAt": "2026-11-22T20:22:47.721Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 165,
   "games": [
@@ -1720,7 +1720,7 @@
       "externalId": "374c5a9d-58ad-11f1-8829-1daf76a0ede8",
       "startTime": "2026-11-22T06:00:00.000Z",
       "round": "10",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "Brisbane Bullets",
       "homeTeamCode": "BRI",
       "homeTeamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
@@ -1729,8 +1729,8 @@
       "awayTeamCode": "SYD",
       "awayTeamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 115,
+      "awayScore": 104,
       "venue": "Brisbane Entertainment Centre",
       "matchSlug": "brisbane-bullets-v-sydney-kings-men-22-11-2026"
     },
@@ -1739,7 +1739,7 @@
       "externalId": "37514d45-58ad-11f1-917b-0f009f2e4d02",
       "startTime": "2026-11-22T04:00:00.000Z",
       "round": "10",
-      "status": "scheduled",
+      "status": "complete",
       "homeTeam": "South East Melbourne Phoenix",
       "homeTeamCode": "SEM",
       "homeTeamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
@@ -1748,8 +1748,8 @@
       "awayTeamCode": "CNS",
       "awayTeamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "awayLogo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-      "homeScore": null,
-      "awayScore": null,
+      "homeScore": 92,
+      "awayScore": 95,
       "venue": "John Cain Arena",
       "matchSlug": "south-east-melbourne-phoenix-v-cairns-taipans-men-22-11-2026"
     },
