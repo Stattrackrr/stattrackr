@@ -10,7 +10,6 @@ import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/compon
 import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { TennisStatsChart, type NblChartTimeframe } from '@/app/tennis/components/TennisStatsChart';
-import TennisDvpCard from '@/app/tennis/components/TennisDvpCard';
 import TennisTeamMatchupCard from '@/app/tennis/components/TennisTeamMatchupCard';
 import TennisMatchInfoCard from '@/app/tennis/components/TennisMatchInfoCard';
 import TennisAdvancedAveragesCard from '@/app/tennis/components/TennisAdvancedAveragesCard';
@@ -86,7 +85,7 @@ import { findTennisRosterPlayer } from '@/lib/tennis/rosterMatch';
 import { formatTennisStartClock, tennisMatchConfirmedLive } from '@/lib/tennis/oddsBoard';
 
 type NblPropsMode = 'player' | 'team';
-type NblRightTab = 'dvp' | 'team_matchup' | 'match_info';
+type NblRightTab = 'team_matchup' | 'match_info';
 type TennisFormContainerTab = 'overview' | 'similar';
 
 type NblRosterPlayer = {
@@ -519,7 +518,7 @@ function readInitialNblSelection(): {
     selectedPlayer: null as NblRosterPlayer | null,
     selectedTeam: null as string | null,
     nblPropsMode: 'player' as NblPropsMode,
-    nblRightTab: 'dvp' as NblRightTab,
+    nblRightTab: 'team_matchup' as NblRightTab,
     nblTeamFilter: 'All',
     chartTimeframe: 'last10' as NblChartTimeframe,
     mainChartStat: 'moneyline',
@@ -574,7 +573,7 @@ function readInitialNblSelection(): {
       selectedPlayer: player,
       selectedTeam: player.team || tennisTeamParam || null,
       nblPropsMode: 'player',
-      nblRightTab: 'dvp',
+      nblRightTab: 'team_matchup',
       searchQuery: player.name,
       mainChartStat: defaultTennisGameStat(stat || empty.mainChartStat),
       lockedPropsStat: stat && isTennisChartStat(stat) ? defaultTennisGameStat(stat) : null,
@@ -616,11 +615,9 @@ function readInitialNblSelection(): {
       : 'player';
   const persistedTab = String(persisted.nblRightTab || '');
   const rightTab: NblRightTab =
-    persistedTab === 'team_matchup' || persistedTab === 'dvp' || persistedTab === 'match_info'
-      ? persistedTab
-      : persistedTab === 'breakdown'
-        ? 'team_matchup'
-        : 'dvp';
+    persistedTab === 'match_info'
+      ? 'match_info'
+      : 'team_matchup';
   const tf =
     typeof persisted.chartTimeframe === 'string' &&
     (NBL_CHART_TIMEFRAMES as readonly string[]).includes(persisted.chartTimeframe)
@@ -673,9 +670,9 @@ export default function TennisDashboardPage() {
 
   // SSR-safe defaults only — restore from localStorage/URL after mount (avoids hydration mismatch).
   const [nblPropsMode, setNblPropsMode] = useState<NblPropsMode>('player');
-  const [nblRightTab, setNblRightTab] = useState<NblRightTab>('dvp');
+  const [nblRightTab, setNblRightTab] = useState<NblRightTab>('team_matchup');
   const [nblRightTabsVisited, setNblRightTabsVisited] = useState<Set<NblRightTab>>(
-    () => new Set(['dvp'])
+    () => new Set(['team_matchup'])
   );
   const [playerVsContainerTab, setPlayerVsContainerTab] = useState<TennisFormContainerTab>(
     TENNIS_AI_UNDER_MAINTENANCE ? 'similar' : 'overview'
@@ -808,17 +805,8 @@ export default function TennisDashboardPage() {
 
   useEffect(() => {
     if (!freeTier) return;
-    if (nblRightTab === 'dvp') {
-      setNblRightTab('team_matchup');
-      setNblRightTabsVisited((prev) => {
-        if (prev.has('team_matchup')) return prev;
-        const next = new Set(prev);
-        next.add('team_matchup');
-        return next;
-      });
-    }
     if (playerVsContainerTab !== 'overview') setPlayerVsContainerTab('overview');
-  }, [freeTier, nblRightTab, playerVsContainerTab]);
+  }, [freeTier, playerVsContainerTab]);
 
   useEffect(() => {
     beginTennisDashboardSession();
@@ -930,19 +918,7 @@ export default function TennisDashboardPage() {
     };
   }, []);
 
-  // Game Props has no DVP tab — fall back to Player Matchup.
-  useEffect(() => {
-    if (nblPropsMode === 'team' && nblRightTab === 'dvp') {
-      setNblRightTab('team_matchup');
-      setNblRightTabsVisited((prev) => new Set(prev).add('team_matchup'));
-    }
-  }, [nblPropsMode, nblRightTab]);
-
   const visitRightTab = (tab: NblRightTab) => {
-    if (freeTier && tab === 'dvp') {
-      openProUpgrade();
-      return;
-    }
     setNblRightTab(tab);
     setNblRightTabsVisited((prev) => new Set(prev).add(tab));
   };
@@ -2059,7 +2035,7 @@ export default function TennisDashboardPage() {
                   </div>
                 )}
 
-                {/* 4.5 DVP | Breakdown | Matchup — mobile (tabs pinned; body scrolls) */}
+                {/* 4.5 Player Matchup | Match Info — mobile (tabs pinned; body scrolls) */}
                 <div
                   className={`lg:hidden w-full min-w-0 flex flex-col flex-shrink-0 rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 h-[60vh] max-h-[60vh] overflow-hidden`}
                 >
@@ -2075,21 +2051,7 @@ export default function TennisDashboardPage() {
                     </div>
                   ) : (
                     <>
-                      <div className={`grid gap-1.5 sm:gap-2 mb-2 flex-shrink-0 ${nblPropsMode === 'player' ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                        {nblPropsMode === 'player' && (
-                          <button
-                            type="button"
-                            onClick={() => visitRightTab('dvp')}
-                            className={`relative inline-flex flex-1 items-center justify-center gap-1.5 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border touch-manipulation ${
-                              !freeTier && nblRightTab === 'dvp'
-                                ? 'bg-purple-600 text-white border-purple-600'
-                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                            } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
-                          >
-                            DVP
-                            {freeTier ? <ProLockMark /> : null}
-                          </button>
-                        )}
+                      <div className="grid gap-1.5 sm:gap-2 mb-2 flex-shrink-0 grid-cols-2">
                         <button
                           type="button"
                           onClick={() => visitRightTab('team_matchup')}
@@ -2114,25 +2076,6 @@ export default function TennisDashboardPage() {
                         </button>
                       </div>
                       <div className="relative w-full min-w-0 flex-1 min-h-0 overflow-y-auto">
-                        {showMobileDashCards && nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
-                          <div className={nblRightTab === 'dvp' ? 'w-full' : 'hidden'}>
-                            <TennisDvpCard
-                              isDark={!!mounted && isDark}
-                              playerName={matchupLeft}
-                              playerId={selectedPlayer?.playerId || null}
-                              opponentName={statsOpponent}
-                              opponentId={
-                                displayOpponent
-                                  ? nextGameOpponentId || propsOpponentIdFallback
-                                  : null
-                              }
-                              tournamentName={nextGameTournament}
-                              tournamentKey={nextGameTournamentKey}
-                              stage={dvpStage}
-                              tour={dvpTour}
-                            />
-                          </div>
-                        )}
                         {nblRightTabsVisited.has('team_matchup') && (
                           <div
                             className={
@@ -2327,7 +2270,7 @@ export default function TennisDashboardPage() {
                 {/* Filter By — desktop */}
                 <TennisBannerArt className="hidden lg:block" />
 
-                {/* DVP | Player Matchup — desktop */}
+                {/* Player Matchup | Match Info — desktop */}
                 <div className={`hidden lg:block rounded-lg ${TENNIS_DASH_CARD_GLOW} p-1.5 xl:p-2 w-full min-w-0`}>
                   {showEmptyShell ? (
                     <div className="h-[420px]" />
@@ -2355,21 +2298,7 @@ export default function TennisDashboardPage() {
                     </div>
                   ) : (
                     <>
-                      <div className={`grid gap-1.5 xl:gap-2 mb-2 ${nblPropsMode === 'player' ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                        {nblPropsMode === 'player' && (
-                          <button
-                            type="button"
-                            onClick={() => visitRightTab('dvp')}
-                            className={`relative inline-flex flex-1 items-center justify-center gap-1.5 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                              !freeTier && nblRightTab === 'dvp'
-                                ? 'bg-purple-600 text-white border-purple-600'
-                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                            } ${freeTier ? 'cursor-pointer opacity-65' : ''}`}
-                          >
-                            DVP
-                            {freeTier ? <ProLockMark /> : null}
-                          </button>
-                        )}
+                      <div className="grid gap-1.5 xl:gap-2 mb-2 grid-cols-2">
                         <button
                           type="button"
                           onClick={() => visitRightTab('team_matchup')}
@@ -2393,36 +2322,7 @@ export default function TennisDashboardPage() {
                           Match Info
                         </button>
                       </div>
-                      <div
-                        className={`relative w-full min-w-0 flex flex-col min-h-0 h-[380px] xl:h-[420px] ${
-                          nblPropsMode === 'player' && nblRightTab === 'dvp'
-                            ? 'overflow-visible'
-                            : 'overflow-hidden'
-                        }`}
-                      >
-                        {showDesktopDashCards && nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
-                          <div
-                            className={
-                              nblRightTab === 'dvp' ? 'w-full h-full flex flex-col min-h-0' : 'hidden'
-                            }
-                          >
-                            <TennisDvpCard
-                              isDark={!!mounted && isDark}
-                              playerName={matchupLeft}
-                              playerId={selectedPlayer?.playerId || null}
-                              opponentName={statsOpponent}
-                              opponentId={
-                                displayOpponent
-                                  ? nextGameOpponentId || propsOpponentIdFallback
-                                  : null
-                              }
-                              tournamentName={nextGameTournament}
-                              tournamentKey={nextGameTournamentKey}
-                              stage={dvpStage}
-                              tour={dvpTour}
-                            />
-                          </div>
-                        )}
+                      <div className="relative w-full min-w-0 flex flex-col min-h-0 h-[380px] xl:h-[420px] overflow-hidden">
                         {((nblPropsMode === 'team' && nblRightTab === 'team_matchup') ||
                           (nblPropsMode === 'player' &&
                             nblRightTabsVisited.has('team_matchup'))) && (

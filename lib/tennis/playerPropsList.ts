@@ -73,9 +73,6 @@ import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketC
 import {
   TENNIS_DVP_METRICS,
   tennisDvpTournamentBestOf,
-  tennisLiveFieldRank,
-  tennisPositiveRank,
-  type TennisDvpMetricKey,
 } from '@/lib/tennis/dvpShared';
 import { tennisAssignDrawRanks, tennisAssignDrawSeeds } from '@/lib/tennis/seeds';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
@@ -295,30 +292,16 @@ type DvpFields = {
   dvpFieldSize: number | null;
 };
 
-function dvpMetricForStat(stat: TennisPropStat): TennisDvpMetricKey {
-  if (stat === 'gamesWon') return 'oppGamesWon';
-  if (stat === 'gamesLost') return 'gamesWon';
-  return 'totalGames';
-}
-
 function asTennisPropStat(statType: string): TennisPropStat | null {
   return (TENNIS_PROP_STATS as readonly string[]).includes(statType)
     ? (statType as TennisPropStat)
     : null;
 }
 
-function liveFieldRank(opp: {
-  drawRank?: number | null;
-  seed?: number | null;
-  rankPos?: number | null;
-}): number | null {
-  return tennisLiveFieldRank(opp);
-}
-
-/** Same last-10 ranks the dashboard DVP card shows for this opponent. */
+/** Tennis DvP removed from product — never attach ranks to props rows. */
 function dashboardDvpFieldsForStat(
-  stat: TennisPropStat,
-  opp: {
+  _stat: TennisPropStat,
+  _opp: {
     drawRank?: number | null;
     seed?: number | null;
     rankPos?: number | null;
@@ -329,36 +312,9 @@ function dashboardDvpFieldsForStat(
       fieldSize?: number | null;
     }>;
   } | null,
-  fieldSize: number | null
+  _fieldSize: number | null
 ): DvpFields | null {
-  if (!opp) return null;
-  const fallbackRank = liveFieldRank(opp);
-  if (stat === 'moneyline') {
-    if (fallbackRank == null) return null;
-    return {
-      dvpRating: fallbackRank,
-      dvpStatValue: opp.rankPos ?? null,
-      dvpFieldSize: fieldSize,
-    };
-  }
-  const metricKey = dvpMetricForStat(stat);
-  const metric = opp.metrics?.find((item) => item.key === metricKey);
-  const metricRank = tennisPositiveRank(metric?.rank);
-  if (metricRank != null) {
-    return {
-      dvpRating: metricRank,
-      dvpStatValue: metric?.value ?? null,
-      dvpFieldSize: metric?.fieldSize ?? fieldSize,
-    };
-  }
-  if (fallbackRank == null) {
-    return metric ? { dvpRating: null, dvpStatValue: null, dvpFieldSize: fieldSize } : null;
-  }
-  return {
-    dvpRating: fallbackRank,
-    dvpStatValue: metric?.value ?? opp.rankPos ?? null,
-    dvpFieldSize: metric?.fieldSize ?? fieldSize,
-  };
+  return null;
 }
 
 function isH2hMatch(row: TennisMatchRow, opponentName: string, opponentId: string | null): boolean {
@@ -1251,18 +1207,24 @@ export async function bakeCachedTennisDvp(): Promise<{ props: number; withDvp: n
   if (!cached?.data?.length) {
     return { props: 0, withDvp: 0 };
   }
-  const baked = await overlayLiveTennisDvp(cached);
-  const withDvp = baked.data.filter(
-    (row) => typeof row.dvpRating === 'number' && Number.isFinite(row.dvpRating) && row.dvpRating > 0
-  ).length;
+  // Clear tennis DvP from list + combined snapshot (feature removed).
+  const baked: TennisPlayerPropsListPayload = {
+    ...cached,
+    data: cached.data.map((row) => ({
+      ...row,
+      dvpRating: null,
+      dvpStatValue: null,
+      dvpFieldSize: null,
+    })),
+  };
   await writeTennisPlayerPropsListCache(baked);
   try {
     const { patchCombinedSnapshotTennisDvp } = await import('@/lib/combinedPropsSnapshotPaint');
     await patchCombinedSnapshotTennisDvp(baked.data);
   } catch {
-    /* list cache still has DVP even if combined patch fails */
+    /* list cache still cleared even if combined patch fails */
   }
-  return { props: baked.data.length, withDvp };
+  return { props: baked.data.length, withDvp: 0 };
 }
 
 /** Rows repeat the same match ~10x (one per prop line); each lookup scans every upcoming fixture. */
@@ -1473,36 +1435,67 @@ type TennisRankRoster = {
 /**
  * One world-rank source for every player and opponent on the board.
  * Prefer live Redis standings (freshest), then Redis player.rank, then the committed ranks file.
+ * Falls back to name match when id is missing so the Rank column is never blank when we know them.
  */
 function applyListWorldRanks(
   payload: TennisPlayerPropsListPayload,
   roster: TennisRankRoster | null | undefined
 ): TennisPlayerPropsListPayload {
   const standingById = new Map<string, number>();
+  const standingByName: Array<{ name: string; pos: number }> = [];
   for (const row of [...(roster?.standings?.ATP || []), ...(roster?.standings?.WTA || [])]) {
     const id = String(row.playerId || '').trim();
     const pos = Number(row.pos);
-    if (id && Number.isFinite(pos) && pos > 0) standingById.set(id, pos);
+    if (!(Number.isFinite(pos) && pos > 0)) continue;
+    if (id) standingById.set(id, pos);
+    const name = String(row.name || '').trim();
+    if (name) standingByName.push({ name, pos });
   }
   const playerRankById = new Map<string, number>();
+  const playerRankByName: Array<{ name: string; rank: number }> = [];
   for (const player of roster?.players || []) {
     const id = String(player.playerId || '').trim();
     const rank = Number(player.rank);
-    if (id && Number.isFinite(rank) && rank > 0) playerRankById.set(id, rank);
+    if (!(Number.isFinite(rank) && rank > 0)) continue;
+    if (id) playerRankById.set(id, rank);
+    const name = String(player.name || '').trim();
+    if (name) playerRankByName.push({ name, rank });
   }
   const fallback = loadTennisDisplayRanks();
-  const rankFor = (id: string | null | undefined, current: number | null | undefined): number | null => {
+  const rankByName = (name: string | null | undefined): number | null => {
+    const want = String(name || '').trim();
+    if (!want) return null;
+    const wantLower = want.toLowerCase();
+    const standingExact = standingByName.find((row) => row.name.toLowerCase() === wantLower);
+    if (standingExact) return standingExact.pos;
+    const standingHits = standingByName.filter((row) => tennisIdentityMatch(row.name, want));
+    if (standingHits.length === 1) return standingHits[0]!.pos;
+    const rosterExact = playerRankByName.find((row) => row.name.toLowerCase() === wantLower);
+    if (rosterExact) return rosterExact.rank;
+    const rosterHits = playerRankByName.filter((row) => tennisIdentityMatch(row.name, want));
+    if (rosterHits.length === 1) return rosterHits[0]!.rank;
+    return null;
+  };
+  const rankFor = (
+    id: string | null | undefined,
+    name: string | null | undefined,
+    current: number | null | undefined
+  ): number | null => {
     const key = String(id || '').trim();
-    if (!key) return current ?? null;
-    if (standingById.has(key)) return standingById.get(key)!;
-    if (playerRankById.has(key)) return playerRankById.get(key)!;
-    if (fallback.has(key)) return fallback.get(key)!;
-    return current ?? null;
+    if (key) {
+      if (standingById.has(key)) return standingById.get(key)!;
+      if (playerRankById.has(key)) return playerRankById.get(key)!;
+      if (fallback.has(key)) return fallback.get(key)!;
+    }
+    const byName = rankByName(name);
+    if (byName != null) return byName;
+    const cur = Number(current);
+    return Number.isFinite(cur) && cur > 0 ? cur : null;
   };
   let changed = false;
   const data = payload.data.map((row) => {
-    const playerRank = rankFor(row.playerId, row.playerRank);
-    const opponentRank = rankFor(row.opponentId, row.opponentRank);
+    const playerRank = rankFor(row.playerId, row.playerName, row.playerRank);
+    const opponentRank = rankFor(row.opponentId, row.opponent, row.opponentRank);
     if (playerRank === row.playerRank && opponentRank === row.opponentRank) return row;
     changed = true;
     return { ...row, playerRank, opponentRank };
@@ -1609,11 +1602,16 @@ export async function applyTennisListLiveOverlay(
   } catch {
     /* keep baked identity if roster is cold */
   }
-  try {
-    next = await overlayLiveTennisDvp(next);
-  } catch {
-    /* keep baked DVP if live overlay fails */
-  }
+  // Tennis DvP is unused in product — strip ranks (and skip live overlay) so props never show it.
+  next = {
+    ...next,
+    data: next.data.map((row) => ({
+      ...row,
+      dvpRating: null,
+      dvpStatValue: null,
+      dvpFieldSize: null,
+    })),
+  };
   next = { ...next, data: fillMissingTennisOpponentIoc(fillRosterFlags(next.data)) };
   // Last: one world-rank pass so player and opponent badges match (Redis standings first).
   const ranked = applyListWorldRanks(next, roster);
@@ -1769,13 +1767,31 @@ export async function getTennisPlayerPropsList(opts?: {
   }
   try {
     const overlaid = await overlayLiveTennisDvp(payload);
+    const cleared = {
+      ...overlaid,
+      data: overlaid.data.map((row) => ({
+        ...row,
+        dvpRating: null,
+        dvpStatValue: null,
+        dvpFieldSize: null,
+      })),
+    };
     return applyListWorldRanks(
-      { ...overlaid, data: fillMissingTennisOpponentIoc(fillRosterFlags(overlaid.data)) },
+      { ...cleared, data: fillMissingTennisOpponentIoc(fillRosterFlags(cleared.data)) },
       roster
     );
   } catch {
+    const cleared = {
+      ...payload,
+      data: payload.data.map((row) => ({
+        ...row,
+        dvpRating: null,
+        dvpStatValue: null,
+        dvpFieldSize: null,
+      })),
+    };
     return applyListWorldRanks(
-      { ...payload, data: fillMissingTennisOpponentIoc(fillRosterFlags(payload.data)) },
+      { ...cleared, data: fillMissingTennisOpponentIoc(fillRosterFlags(cleared.data)) },
       roster
     );
   }

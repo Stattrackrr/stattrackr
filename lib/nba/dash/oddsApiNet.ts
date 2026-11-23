@@ -236,7 +236,8 @@ export async function fetchNbaOddsNetProps(targets: NbaOddsNetTarget[]): Promise
     });
     const eventId = event?.event_id ?? event?.id;
     if (eventId == null) {
-      result.props.set(target.gameId, {});
+      // No event match — leave the map unset so ingest keeps any prior AU books
+      // (setting {} is truthy and would wipe them while BDL US props remain).
       continue;
     }
     const swapped = teamKey(event!.home_team || event!.home) !== home;

@@ -396,9 +396,11 @@ function EmptyStat({ dark }: { dark: boolean }) {
 
 function propsListRowKey(
   prop: PlayerProp,
-  rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta'
+  rowSport: 'nba' | 'afl' | 'nbl' | 'atp' | 'wta',
+  index?: number
 ): string {
-  return `${rowSport}|${prop.playerName}|${prop.statType}|${prop.line}|${prop.gameId ?? ''}|${prop.opponent ?? ''}`;
+  const base = `${rowSport}|${prop.playerName}|${prop.playerId ?? ''}|${prop.statType}|${prop.line}|${prop.gameId ?? ''}|${prop.opponent ?? ''}|${prop.bookmaker ?? ''}`;
+  return index == null ? base : `${base}|${index}`;
 }
 
 const PROPS_DESKTOP_STAT_COL_STYLE = {
@@ -535,6 +537,7 @@ type ColumnSortMap = Record<string, ColumnSortDir>;
 
 const EMPTY_COLUMN_SORT: ColumnSortMap = {
   dvp: 'none',
+  rank: 'none',
   l5: 'none',
   l10: 'none',
   h2h: 'none',
@@ -565,6 +568,15 @@ function comparePropsBySortColumn(
     if (bVal === null) return -1;
     // First click (asc) = easiest/best DvP first (higher rank number first in existing UX).
     return direction === 'asc' ? bVal - aVal : aVal - bVal;
+  }
+  if (column === 'rank') {
+    // playerRank - opponentRank: more negative = player higher ranked (better).
+    const aAdv = tennisRankAdvantage(a.playerRank, a.opponentRank);
+    const bAdv = tennisRankAdvantage(b.playerRank, b.opponentRank);
+    if (aAdv === null && bAdv === null) return 0;
+    if (aAdv === null) return 1;
+    if (bAdv === null) return -1;
+    return direction === 'asc' ? aAdv - bAdv : bAdv - aAdv;
   }
   if (column === 'l5') {
     aVal = hitRatePercent(a.last5HitRate);
@@ -646,111 +658,6 @@ interface AflGameForProps {
 type CombinedSportSource = 'nba' | 'afl' | 'nbl' | 'atp' | 'wta';
 type CombinedPlayerPropRow = PlayerProp & { sportSource?: CombinedSportSource };
 
-function combinedPlayerCollapseKey(prop: CombinedPlayerPropRow): string {
-  const sport = prop.sportSource || 'nba';
-  const id = String(prop.playerId || '').trim();
-  if (id) return `${sport}|id:${id}`;
-  return `${sport}|name:${String(prop.playerName || '').trim().toLowerCase()}`;
-}
-
-function combinedMarketPriority(prop: CombinedPlayerPropRow): number {
-  const sport = prop.sportSource;
-  const tennisKey = tennisPropsMarketKey(prop.statType);
-  if (sport === 'atp' || sport === 'wta' || tennisKey) {
-    const order: Record<TennisPropsMarketKey, number> = {
-      totalGames: 0,
-      gamesWon: 1,
-      totalSets: 2,
-      spread: 3,
-      gamesLost: 4,
-      setsWon: 5,
-      moneyline: 6,
-    };
-    return tennisKey ? order[tennisKey] : 9;
-  }
-  const stat = normalizeSecondaryPropStatType(prop.statType);
-  if (sport === 'nbl') {
-    if (stat === 'points') return 0;
-    if (stat === 'rebounds') return 1;
-    if (stat === 'assists') return 2;
-    if (stat === 'threeMade') return 3;
-    if (stat === 'pra') return 4;
-    if (stat === 'pr') return 5;
-    if (stat === 'pa') return 6;
-    if (stat === 'ra') return 7;
-    return 8;
-  }
-  if (sport === 'afl') {
-    if (stat === 'disposals' || stat === 'disposals_over') return 0;
-    if (stat === 'goals_over') return 1;
-    if (stat === 'marks') return 2;
-    if (stat === 'tackles') return 3;
-    if (stat === 'kicks') return 4;
-    if (stat === 'handballs') return 5;
-    if (stat === 'fantasy_points') return 6;
-    if (stat === 'anytime_goal_scorer') return 7;
-    return 8;
-  }
-  const nba = String(prop.statType || '').toUpperCase();
-  if (nba === 'PTS') return 0;
-  if (nba === 'PRA') return 1;
-  if (nba === 'REB') return 2;
-  if (nba === 'AST') return 3;
-  if (nba === 'THREES' || nba === 'FG3M') return 4;
-  if (nba === 'PR') return 5;
-  if (nba === 'PA') return 6;
-  if (nba === 'RA') return 7;
-  return 8;
-}
-
-function combinedHitPercent(hr?: { hits: number; total: number } | null): number | null {
-  return hr && hr.total > 0 ? (hr.hits / hr.total) * 100 : null;
-}
-
-/** One combined row per player: best last-10 hit rate, then last-5, then the main market. */
-function combinedRowRank(prop: CombinedPlayerPropRow): number[] {
-  const books =
-    (Array.isArray(prop.bookmakerLines) ? prop.bookmakerLines.length : 0) ||
-    (String(prop.bookmaker || '').trim() ? 1 : 0);
-  return [
-    (prop.last10HitRate?.total ?? 0) >= 10 ? 1 : 0,
-    combinedHitPercent(prop.last10HitRate) ?? -1,
-    combinedHitPercent(prop.last5HitRate) ?? -1,
-    -combinedMarketPriority(prop),
-    books,
-  ];
-}
-
-function preferCombinedRow(current: CombinedPlayerPropRow, next: CombinedPlayerPropRow): CombinedPlayerPropRow {
-  const currentRank = combinedRowRank(current);
-  const nextRank = combinedRowRank(next);
-  for (let i = 0; i < currentRank.length; i += 1) {
-    if (nextRank[i] === currentRank[i]) continue;
-    return nextRank[i] > currentRank[i] ? next : current;
-  }
-  return current;
-}
-
-/** Combined tab: one market per player. Sport pages keep every market. */
-function collapseCombinedPropsToOnePerPlayer(rows: CombinedPlayerPropRow[]): CombinedPlayerPropRow[] {
-  const winner = new Map<string, CombinedPlayerPropRow>();
-  for (const row of rows) {
-    const key = combinedPlayerCollapseKey(row);
-    const existing = winner.get(key);
-    winner.set(key, existing ? preferCombinedRow(existing, row) : row);
-  }
-  const seen = new Set<string>();
-  const out: CombinedPlayerPropRow[] = [];
-  for (const row of rows) {
-    const key = combinedPlayerCollapseKey(row);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const chosen = winner.get(key);
-    if (chosen) out.push(chosen);
-  }
-  return out;
-}
-
 type CombinedPropsSnapshotResponse = {
   success: boolean;
   error?: string;
@@ -810,7 +717,7 @@ const TENNIS_RANK_FILTER_OPTIONS: Array<{ label: string; maxRank: number | null 
 ];
 const TENNIS_MAX_RANK_STORAGE_KEY = 'tennis_filters_max_rank';
 /** ATP/WTA tabs open on this filter; combined always applies it to tennis rows. */
-const TENNIS_DEFAULT_MAX_RANK = 200;
+const TENNIS_DEFAULT_MAX_RANK = 300;
 
 function hasStoredTennisMaxRankFilter(): boolean {
   if (typeof window === 'undefined') return false;
@@ -1448,8 +1355,116 @@ function tennisPropsEventSubtitle(prop: PlayerProp, games: AflGameForProps[]): s
   return [tour, place, surface].filter(Boolean).join(' - ');
 }
 
-function tennisRankLabel(rank?: number | null): string {
-  return rank != null && Number.isFinite(rank) && rank > 0 ? `#${rank}` : '';
+function tennisValidWorldRank(rank?: number | string | null): number | null {
+  const n = Number(rank);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function tennisRankLabel(rank?: number | string | null): string {
+  const n = tennisValidWorldRank(rank);
+  return n != null ? `#${n}` : '';
+}
+
+/** playerRank − opponentRank; negative means the selected player is higher ranked. */
+function tennisRankAdvantage(
+  playerRank?: number | null,
+  opponentRank?: number | null
+): number | null {
+  const p = tennisValidWorldRank(playerRank);
+  const o = tennisValidWorldRank(opponentRank);
+  if (p == null || o == null) return null;
+  return p - o;
+}
+
+function tennisRankLeanBoxStyle(
+  playerRank: number | string | null | undefined,
+  opponentRank: number | string | null | undefined,
+  isDark: boolean,
+  mounted: boolean
+): {
+  background: string;
+  borderColor: string;
+  borderWidth: string;
+  boxShadow: string;
+  hasLean: boolean;
+} {
+  const p = tennisValidWorldRank(playerRank);
+  const o = tennisValidWorldRank(opponentRank);
+  let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
+  let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
+  let glowColor = '';
+  let hasLean = false;
+  if (p != null && o != null) {
+    hasLean = true;
+    if (p < o) {
+      bgColor = '#22c55e';
+      borderColor = '#22c55e';
+      glowColor = '#22c55e';
+    } else if (o < p) {
+      bgColor = '#B03A3A';
+      borderColor = '#ef4444';
+      glowColor = '#ef4444';
+    } else {
+      bgColor = '#E88A3B';
+      borderColor = '#f97316';
+      glowColor = '#f97316';
+    }
+  }
+  return {
+    background:
+      bgColor !== (mounted && isDark ? '#374151' : '#f9fafb')
+        ? `linear-gradient(to top, ${bgColor}, ${bgColor}00)`
+        : bgColor,
+    borderColor,
+    borderWidth: hasLean ? '1px' : '2px',
+    boxShadow: glowColor ? `0 0 8px ${glowColor}60, 0 0 4px ${glowColor}40` : 'none',
+    hasLean,
+  };
+}
+
+function TennisRankVsBox({
+  playerRank,
+  opponentRank,
+  isDark,
+  mounted,
+  compact = false,
+}: {
+  playerRank?: number | null;
+  opponentRank?: number | null;
+  isDark: boolean;
+  mounted: boolean;
+  compact?: boolean;
+}) {
+  const p = tennisValidWorldRank(playerRank);
+  const o = tennisValidWorldRank(opponentRank);
+  const pLabel = p != null ? `#${p}` : '—';
+  const oLabel = o != null ? `#${o}` : '—';
+  const { hasLean, ...boxStyle } = tennisRankLeanBoxStyle(playerRank, opponentRank, isDark, mounted);
+
+  if (compact) {
+    return (
+      <div className="relative flex w-full flex-col items-center justify-center rounded-lg border-2 py-2" style={boxStyle}>
+        <div className={`text-[10px] font-semibold mb-0.5 ${hasLean ? 'text-white' : mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          Rank
+        </div>
+        <div className={`text-sm font-bold tabular-nums leading-tight ${hasLean || (mounted && isDark) ? 'text-white' : 'text-gray-900'}`}>
+          {pLabel}
+        </div>
+        <div className={`text-[10px] font-medium tabular-nums leading-tight ${hasLean ? 'text-white' : mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+          vs {oLabel}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border" style={boxStyle}>
+      <div className="h-full w-full flex flex-col items-center justify-center text-center leading-tight gap-0">
+        <div className="text-sm font-semibold text-white leading-tight tabular-nums">{pLabel}</div>
+        <div className="text-xs font-medium text-white leading-tight tabular-nums">vs {oLabel}</div>
+      </div>
+    </div>
+  );
 }
 
 function tennisIocFromListedPlayer(name: string, props: PlayerProp[]): string | null {
@@ -1471,10 +1486,6 @@ function tennisIocFromListedPlayer(name: string, props: PlayerProp[]): string | 
   if (exact.length === 1) return exact[0];
   if (identity.length === 1) return identity[0];
   return null;
-}
-
-function isTennisMoneylineStat(statType?: string): boolean {
-  return String(statType || '') === 'moneyline';
 }
 
 function TennisFlagAndRank({
@@ -2062,11 +2073,6 @@ function mergeTennisPropForPaint(previous: PlayerProp | undefined, next: PlayerP
         : next.bookmakerLines;
   const gameDate = tennisTipoffValue(next.gameDate) || tennisTipoffValue(previous.gameDate) || next.gameDate || previous.gameDate;
   const primary = bookmakerLines?.[0];
-  const nextRank = typeof next.dvpRating === 'number' && Number.isFinite(next.dvpRating) && next.dvpRating > 0;
-  const prevRank = typeof previous.dvpRating === 'number' && Number.isFinite(previous.dvpRating) && previous.dvpRating > 0;
-  const prevField = Number(previous.dvpFieldSize) || 0;
-  const nextField = Number(next.dvpFieldSize) || 0;
-  const keepPrevDvp = prevRank && (!nextRank || prevField > nextField);
   return {
     ...next,
     gameDate,
@@ -2074,9 +2080,17 @@ function mergeTennisPropForPaint(previous: PlayerProp | undefined, next: PlayerP
     bookmaker: takeNext ? next.bookmaker || previous.bookmaker : previous.bookmaker || next.bookmaker,
     overOdds: primary?.overOdds || next.overOdds || previous.overOdds,
     underOdds: primary?.underOdds || next.underOdds || previous.underOdds,
-    dvpRating: keepPrevDvp ? previous.dvpRating : next.dvpRating ?? previous.dvpRating,
-    dvpStatValue: keepPrevDvp ? previous.dvpStatValue : next.dvpStatValue ?? previous.dvpStatValue,
-    dvpFieldSize: keepPrevDvp ? previous.dvpFieldSize : next.dvpFieldSize ?? previous.dvpFieldSize,
+    // Keep world ranks across thin refreshes so the Rank column never blanks out.
+    playerId: next.playerId || previous.playerId,
+    opponentId: next.opponentId || previous.opponentId,
+    playerRank: tennisValidWorldRank(next.playerRank) ?? tennisValidWorldRank(previous.playerRank),
+    opponentRank: tennisValidWorldRank(next.opponentRank) ?? tennisValidWorldRank(previous.opponentRank),
+    playerIoc: next.playerIoc || previous.playerIoc,
+    opponentIoc: next.opponentIoc || previous.opponentIoc,
+    // Tennis DvP removed from the product — never carry stale DvP across paints.
+    dvpRating: null,
+    dvpStatValue: null,
+    dvpFieldSize: null,
     last5Avg: next.last5Avg ?? previous.last5Avg,
     last10Avg: next.last10Avg ?? previous.last10Avg,
     h2hAvg: next.h2hAvg ?? previous.h2hAvg,
@@ -2770,7 +2784,7 @@ export default function NBALandingPage() {
   const [propTypeDropdownOpen, setPropTypeDropdownOpen] = useState(false);
   const [gamesDropdownOpen, setGamesDropdownOpen] = useState(false);
   const [tennisMaxRank, setTennisMaxRank] = useState<number | null>(readTennisMaxRankFilter);
-  /** True while the rank filter is the automatic Top 200 default (not a choice from the dropdown). */
+  /** True while the rank filter is the automatic Top 300 default (not a choice from the dropdown). */
   const [tennisRankAuto, setTennisRankAuto] = useState(() => !hasStoredTennisMaxRankFilter());
   const [nblOuOnly, setNblOuOnly] = useState(readNblOuOnlyFilter);
   const [propLineDropdownOpen, setPropLineDropdownOpen] = useState(false);
@@ -5696,6 +5710,18 @@ export default function NBALandingPage() {
     });
   }, [isCombinedMode]);
   const isSecondaryListMode = isSecondaryPropsSport(propsSport);
+  /** Tennis uses Rank (player vs opp world rank); other sports keep DvP. */
+  const showPropsRankColumn = isTennisPropsSport(propsSport);
+  const showPropsDvpColumn = !isTennisPropsSport(propsSport);
+  useEffect(() => {
+    if (showPropsRankColumn) {
+      setColumnSort((prev) => (prev.dvp === 'none' ? prev : { ...prev, dvp: 'none' }));
+      setColumnSortPriority((prev) => (prev.includes('dvp') ? prev.filter((c) => c !== 'dvp') : prev));
+      return;
+    }
+    setColumnSort((prev) => (prev.rank === 'none' ? prev : { ...prev, rank: 'none' }));
+    setColumnSortPriority((prev) => (prev.includes('rank') ? prev.filter((c) => c !== 'rank') : prev));
+  }, [showPropsRankColumn]);
   const showH2hColumn = true;
   /** Combined keeps the same desktop column count as NBA/AFL-only; sport is an inline badge on the prop cell. */
   const showCombinedDesktopSportColumn = false;
@@ -6964,10 +6990,8 @@ export default function NBALandingPage() {
     ];
     const ready = assemble(true);
     const visible = q ? assemble(false) : ready;
-    return {
-      rows: q ? visible : collapseCombinedPropsToOnePerPlayer(visible),
-      cacheTotal: ready.length,
-    };
+    // Every market row (PTS, REB, games won, …) — same as sport tabs; no one-per-player collapse.
+    return { rows: visible };
   }, [playerProps, aflProps, tennisCombinedProps, nblCombinedProps, debouncedSearchQuery, getStatLabel, propsSport]);
 
   const displaySortedCombinedProps = useMemo(() => {
@@ -9553,9 +9577,11 @@ export default function NBALandingPage() {
                               </th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>Odds</th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>IP</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
-                                DvP
-                              </th>
+                              {showPropsDvpColumn || showPropsRankColumn ? (
+                                <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                                  {showPropsRankColumn ? 'Rank' : 'Defence'}
+                                </th>
+                              ) : null}
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L5</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L10</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
@@ -9589,9 +9615,11 @@ export default function NBALandingPage() {
                                 <td className="py-3 px-4">
                                   <div className={`h-4 w-12 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
                                 </td>
-                                <td className="py-3 px-1 text-center">
-                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
-                                </td>
+                                {showPropsDvpColumn || showPropsRankColumn ? (
+                                  <td className="py-3 px-1 text-center">
+                                    <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                  </td>
+                                ) : null}
                                 <td className="py-3 px-1 text-center">
                                   <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
                                 </td>
@@ -9738,9 +9766,11 @@ export default function NBALandingPage() {
                               </th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>Odds</th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>IP</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
-                                DvP
-                              </th>
+                              {showPropsDvpColumn || showPropsRankColumn ? (
+                                <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                                  {showPropsRankColumn ? 'Rank' : 'Defence'}
+                                </th>
+                              ) : null}
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L5</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L10</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
@@ -9774,9 +9804,11 @@ export default function NBALandingPage() {
                                 <td className="py-3 px-4">
                                   <div className={`h-4 w-12 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
                                 </td>
-                                <td className="py-3 px-1 text-center">
-                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
-                                </td>
+                                {showPropsDvpColumn || showPropsRankColumn ? (
+                                  <td className="py-3 px-1 text-center">
+                                    <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                  </td>
+                                ) : null}
                                 <td className="py-3 px-1 text-center">
                                   <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
                                 </td>
@@ -9965,23 +9997,24 @@ export default function NBALandingPage() {
                                 </div>
                               </div>
                             </th>
+                            {showPropsDvpColumn || showPropsRankColumn ? (
                             <th 
                               className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity select-none`} 
                               style={PROPS_DESKTOP_STAT_COL_STYLE}
-                              onClick={() => handleColumnSort('dvp')}
+                              onClick={() => handleColumnSort(showPropsRankColumn ? 'rank' : 'dvp')}
                             >
                               <div className="flex flex-col items-center justify-center gap-0.5">
                                 
                                 <span className="flex items-center justify-center gap-1.5">
-                                  <span>DvP</span>
+                                  <span>{showPropsRankColumn ? 'Rank' : 'Defence'}</span>
                                 <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
-                                  columnSort.dvp !== 'none' 
+                                  (showPropsRankColumn ? columnSort.rank : columnSort.dvp) !== 'none' 
                                     ? mounted && isDark ? 'bg-purple-600 border-purple-500' : 'bg-purple-100 border-purple-300'
                                     : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
                                 }`}>
-                                  {columnSort.dvp === 'asc' && <span className="text-[8px] leading-none">↑</span>}
-                                  {columnSort.dvp === 'desc' && <span className="text-[8px] leading-none">↓</span>}
-                                  {columnSort.dvp === 'none' && (
+                                  {(showPropsRankColumn ? columnSort.rank : columnSort.dvp) === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                  {(showPropsRankColumn ? columnSort.rank : columnSort.dvp) === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                  {(showPropsRankColumn ? columnSort.rank : columnSort.dvp) === 'none' && (
                                     <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                                     </svg>
@@ -9990,6 +10023,7 @@ export default function NBALandingPage() {
                                 </span>
                               </div>
                             </th>
+                            ) : null}
                             <th 
                               className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity select-none`} 
                               style={PROPS_DESKTOP_STAT_COL_STYLE}
@@ -10331,7 +10365,7 @@ export default function NBALandingPage() {
                             };
                             return (
                               <tr
-                                key={propsListRowKey(prop, rowSport)}
+                                key={propsListRowKey(prop, rowSport, idx)}
                                 className={`border-b ${mounted && isDark ? 'border-gray-900 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
                                 onAuxClick={(e) => {
                                   if (e.button !== 1) return;
@@ -10976,9 +11010,17 @@ export default function NBALandingPage() {
                                   </div>
                                 </td>
                                 
-                                {/* DvP Column */}
+                                {/* Tennis rows: player vs opp world rank. Other sports: DvP. */}
+                                {showPropsDvpColumn || showPropsRankColumn ? (
                                 <td className="py-3 px-1 text-center align-middle" style={PROPS_DESKTOP_STAT_COL_STYLE}>
-                                  {displayProp.dvpRating !== null && displayProp.dvpRating !== undefined && typeof displayProp.dvpRating === 'number' && displayProp.dvpRating > 0 ? (
+                                  {isTennisPropsSport(rowSport) ? (
+                                  <TennisRankVsBox
+                                    playerRank={displayProp.playerRank}
+                                    opponentRank={displayProp.opponentRank}
+                                    isDark={isDark}
+                                    mounted={mounted}
+                                  />
+                                  ) : displayProp.dvpRating !== null && displayProp.dvpRating !== undefined && typeof displayProp.dvpRating === 'number' && displayProp.dvpRating > 0 ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
@@ -11018,14 +11060,9 @@ export default function NBALandingPage() {
                                             {dvpRankText(rowSport, displayProp.dvpRating, displayProp.dvpFieldSize)}
                                           </div>
                                         </div>
-                                        {isTennisPropsSport(rowSport) && isTennisMoneylineStat(displayProp.statType) ? (
-                                          <span className="pb-0.5 text-[8px] leading-none font-medium text-white/80">
-                                            Seed
-                                          </span>
-                                        ) : null}
                                       </div>
                                     </div>
-                                  ) : propsSport === 'afl' ? (
+                                  ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
                                         background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
@@ -11035,23 +11072,9 @@ export default function NBALandingPage() {
                                       }}>
                                       <EmptyStat dark={mounted && isDark} />
                                     </div>
-                                  ) : (
-                                    <div className="relative inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
-                                      style={{
-                                        background: mounted && isDark ? 'rgba(55, 65, 81, 0.3)' : '#f9fafb',
-                                        borderColor: mounted && isDark ? 'rgba(75, 85, 99, 0.35)' : '#eceef1',
-                                        borderWidth: '2px',
-                                        boxShadow: 'none',
-                                      }}>
-                                      <EmptyStat dark={mounted && isDark} />
-                                      {isTennisPropsSport(rowSport) && isTennisMoneylineStat(displayProp.statType) ? (
-                                        <span className={`absolute bottom-0.5 left-0 right-0 text-[8px] leading-none font-medium ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                          Seed
-                                        </span>
-                                      ) : null}
-                                    </div>
                                   )}
                                 </td>
+                                ) : null}
                                 
                                 {/* L5 Column */}
                                 <td className="py-3 px-1 text-center align-middle" style={PROPS_DESKTOP_STAT_COL_STYLE}>
@@ -11475,11 +11498,12 @@ export default function NBALandingPage() {
                               </div>
                             </button>
 
-                            {/* DvP Sort */}
+                            {/* DvP or tennis Rank sort */}
+                            {showPropsDvpColumn || showPropsRankColumn ? (
                             <button
-                              onClick={() => handleColumnSort('dvp')}
+                              onClick={() => handleColumnSort(showPropsRankColumn ? 'rank' : 'dvp')}
                               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
-                                columnSort.dvp !== 'none'
+                                (showPropsRankColumn ? columnSort.rank : columnSort.dvp) !== 'none'
                                   ? mounted && isDark
                                     ? 'bg-purple-600 border-purple-500 text-white'
                                     : 'bg-purple-100 border-purple-300 text-purple-900'
@@ -11488,24 +11512,25 @@ export default function NBALandingPage() {
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
-                              {columnSortRank('dvp') != null && columnSortPriority.length > 1 ? (
-                                <span className="text-[10px] opacity-80">{columnSortRank('dvp')}</span>
+                              {columnSortRank(showPropsRankColumn ? 'rank' : 'dvp') != null && columnSortPriority.length > 1 ? (
+                                <span className="text-[10px] opacity-80">{columnSortRank(showPropsRankColumn ? 'rank' : 'dvp')}</span>
                               ) : null}
-                              <span>DvP</span>
+                              <span>{showPropsRankColumn ? 'Rank' : 'Defence'}</span>
                               <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
-                                columnSort.dvp !== 'none'
+                                (showPropsRankColumn ? columnSort.rank : columnSort.dvp) !== 'none'
                                   ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
                                   : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
                               }`}>
-                                {columnSort.dvp === 'asc' && <span className="text-[8px] leading-none">↑</span>}
-                                {columnSort.dvp === 'desc' && <span className="text-[8px] leading-none">↓</span>}
-                                {columnSort.dvp === 'none' && (
+                                {(showPropsRankColumn ? columnSort.rank : columnSort.dvp) === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                {(showPropsRankColumn ? columnSort.rank : columnSort.dvp) === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                {(showPropsRankColumn ? columnSort.rank : columnSort.dvp) === 'none' && (
                                   <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                                   </svg>
                                 )}
                               </div>
                             </button>
+                            ) : null}
 
                             {/* L5 Sort */}
                             <button
@@ -11803,7 +11828,7 @@ export default function NBALandingPage() {
                           
                           return (
                             <div
-                              key={propsListRowKey(prop, rowSport)}
+                              key={propsListRowKey(prop, rowSport, idx)}
                               className={`relative rounded-2xl border px-3.5 py-3.5 cursor-pointer active:scale-[0.99] transition-transform shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
                                 mounted && isDark ? 'bg-gradient-to-br from-[#0b1a2b] via-[#10253f] to-[#1b1c3d] border-[#463e6b]' : 'bg-white border-gray-200'
                               }`}
@@ -12200,10 +12225,19 @@ export default function NBALandingPage() {
                               </div>
                               
                               {/* Statistics Grid */}
-                              <div className={`grid grid-cols-6 gap-1 px-1 py-2.5 rounded-2xl mb-3.5 w-full overflow-hidden border ${
+                              <div className={`grid ${showPropsDvpColumn || showPropsRankColumn ? 'grid-cols-6' : 'grid-cols-5'} gap-1 px-1 py-2.5 rounded-2xl mb-3.5 w-full overflow-hidden border ${
                                 mounted && isDark ? 'bg-[#0f1a34] border-[#4a3f74]' : 'bg-gray-50 border-gray-200'
                               }`}>
-                                {/* DvP */}
+                                {/* Tennis Rank or DvP */}
+                                {(showPropsDvpColumn || showPropsRankColumn) && isTennisPropsSport(rowSport) ? (
+                                  <TennisRankVsBox
+                                    playerRank={prop.playerRank}
+                                    opponentRank={prop.opponentRank}
+                                    isDark={isDark}
+                                    mounted={mounted}
+                                    compact
+                                  />
+                                ) : showPropsDvpColumn && !isTennisPropsSport(rowSport) ? (
                                 <div className="relative flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={(() => {
                                   if (prop.dvpRating === null || prop.dvpRating === undefined) {
                                     return { background: mounted && isDark ? '#1a2140' : '#f9fafb', borderColor: mounted && isDark ? '#4d4a73' : '#e5e7eb' };
@@ -12234,16 +12268,12 @@ export default function NBALandingPage() {
                               boxShadow: glowColor ? `0 0 12px ${glowColor}75, 0 0 6px ${glowColor}55` : 'none',
                             };
                                 })()}>
-                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>DvP</div>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>Defence</div>
                                   <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {prop.dvpRating !== null && prop.dvpRating !== undefined ? dvpRankText(rowSport, prop.dvpRating, prop.dvpFieldSize) : <span className="flex h-5 items-center"><EmptyStat dark={mounted && isDark} /></span>}
                                   </div>
-                                  {isTennisPropsSport(rowSport) && isTennisMoneylineStat(prop.statType) ? (
-                                    <span className={`text-[8px] leading-none font-medium mt-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                                      Seed
-                                    </span>
-                                  ) : null}
                                 </div>
+                                ) : null}
                                 {/* L5 */}
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.last5HitRate)}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>L5</div>
@@ -12517,7 +12547,7 @@ export default function NBALandingPage() {
                           {isSecondaryListMode
                             ? `Showing ${(aflPage - 1) * ITEMS_PER_PAGE + 1} - ${Math.min(aflPage * ITEMS_PER_PAGE, rankedAflProps.length)} of ${displaySortedAflProps.length}`
                             : propsSport === 'combined'
-                              ? `Showing ${(combinedPage - 1) * ITEMS_PER_PAGE + 1} - ${Math.min(combinedPage * ITEMS_PER_PAGE, rankedCombinedProps.length)} of ${filteredCombinedProps.cacheTotal}`
+                              ? `Showing ${(combinedPage - 1) * ITEMS_PER_PAGE + 1} - ${Math.min(combinedPage * ITEMS_PER_PAGE, rankedCombinedProps.length)} of ${rankedCombinedProps.length}`
                               : `Showing ${(currentPageSafe - 1) * pageSize + 1} - ${Math.min(currentPageSafe * pageSize, rankedNbaProps.length)} of ${displaySortedProps.length}`}
                         </div>
                         <div className="flex items-center gap-2">

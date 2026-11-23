@@ -136,7 +136,14 @@ export function getNbaClubById(id: string | number | null | undefined) {
 
 export function resolveNbaClub(input: string | null | undefined) {
   if (!input) return null;
-  return NAME_TO_CLUB.get(normalizeTeamKey(input)) ?? null;
+  const key = normalizeTeamKey(input);
+  const direct = NAME_TO_CLUB.get(key);
+  if (direct) return direct;
+  // odds-api.net often labels games "POR Trail Blazers", "PHI 76ers", "UTA Jazz".
+  for (const club of NBA_CLUBS) {
+    if (key === normalizeTeamKey(club.code) + normalizeTeamKey(club.shortName)) return club;
+  }
+  return null;
 }
 
 export function resolveNbaClubName(input: string | null | undefined): string | null {
