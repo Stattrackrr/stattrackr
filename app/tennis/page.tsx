@@ -2142,9 +2142,9 @@ export default function TennisDashboardPage() {
                             <TennisTeamMatchupCard
                               isDark={!!mounted && isDark}
                               teamName={matchupLeft}
-                              opponentName={statsOpponent}
+                              opponentName={rosterOpponent?.name || statsOpponent}
                               playerId={selectedPlayer?.playerId || null}
-                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              opponentId={displayOpponent ? statsOpponentId : null}
                               tournamentName={nextGameTournament}
                               tournamentKey={nextGameTournamentKey}
                               stage={dvpStage}
@@ -2165,7 +2165,7 @@ export default function TennisDashboardPage() {
                               playerRank={matchupPlayerRank}
                               playerSeed={displayOpponent ? nextGamePlayerSeed : null}
                               opponentName={displayOpponent}
-                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              opponentId={displayOpponent ? statsOpponentId : null}
                               opponentIoc={matchupOpponentIoc}
                               opponentRank={matchupOpponentRank}
                               opponentSeed={displayOpponent ? nextGameOpponentSeed : null}
@@ -2436,9 +2436,9 @@ export default function TennisDashboardPage() {
                             <TennisTeamMatchupCard
                               isDark={!!mounted && isDark}
                               teamName={matchupLeft}
-                              opponentName={statsOpponent}
+                              opponentName={rosterOpponent?.name || statsOpponent}
                               playerId={selectedPlayer?.playerId || null}
-                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              opponentId={displayOpponent ? statsOpponentId : null}
                               tournamentName={nextGameTournament}
                               tournamentKey={nextGameTournamentKey}
                               stage={dvpStage}
@@ -2460,7 +2460,7 @@ export default function TennisDashboardPage() {
                               playerRank={matchupPlayerRank}
                               playerSeed={displayOpponent ? nextGamePlayerSeed : null}
                               opponentName={displayOpponent}
-                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              opponentId={displayOpponent ? statsOpponentId : null}
                               opponentIoc={matchupOpponentIoc}
                               opponentRank={matchupOpponentRank}
                               opponentSeed={displayOpponent ? nextGameOpponentSeed : null}

@@ -8,6 +8,7 @@ import {
   emptySourceMatch,
   sideOf,
   sourceMatchToBookRow,
+  tennisDisplayName,
   tennisGameIsBestOfThree,
   validPrice,
   type SourceMatch,
@@ -15,6 +16,7 @@ import {
 import type { TennisNextGame } from '@/lib/tennis/nextGame';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import type { TennisBookRow } from '@/lib/tennis/oddsTypes';
+import type { TennisTour } from '@/lib/tennis/types';
 
 const BASE = 'https://api.odds-api.net/v1';
 export const TENNIS_BET365_AU_BOOK = 'bet365 au';
@@ -45,6 +47,21 @@ export const TENNIS_ODDS_NET_BOOKS: readonly string[] = [
 const SNAPSHOT_PAGES = 4;
 /** Fixture start times move with order of play; odds-api.net keeps the scheduled time. */
 const START_TOLERANCE_MS = 24 * 60 * 60 * 1000;
+/**
+ * API-Tennis sometimes misses Challenger/ITF singles that AU books already price.
+ * Cap matches the main snapshot budget so an oddsnet-only slate can still cover a full day
+ * when API-Tennis upcoming is empty/cold.
+ */
+const MAX_ORPHAN_MATCHES = 80;
+const ORPHAN_AHEAD_MS = 48 * 60 * 60 * 1000;
+
+export function tennisOddsNetMatchId(eventId: string | number): string {
+  return `oddsnet:${String(eventId).trim()}`;
+}
+
+export function isTennisOddsNetMatchId(matchId: string | null | undefined): boolean {
+  return String(matchId || '').startsWith('oddsnet:');
+}
 
 type NetEvent = {
   event_id?: string | number;
@@ -375,76 +392,232 @@ export async function fetchTennisOddsNetSnapshot(event: TennisOddsNetEvent): Pro
   return { ok, sources, asOf, rowCapHit: Boolean(cursor), raw };
 }
 
-export type TennisOddsNetStats = { matches: number; rowCapHits: string[] };
+export type TennisOddsNetStats = { matches: number; rowCapHits: string[]; orphans?: number };
 
-/** One snapshot of our books per matched match; book rows per API-Tennis match id. */
-export async function fetchTennisOddsApiNetBooks(
+export type TennisOddsNetOrphan = {
+  game: TennisNextGame;
+  books: TennisBookRow[];
+  eventId: string;
+};
+
+export type TennisOddsNetBoard = {
+  rows: Map<string, TennisBookRow[]>;
+  orphans: TennisOddsNetOrphan[];
+};
+
+type TaggedNetEvent = NetEvent & { league: string };
+
+function tourFromOddsNetLeague(league: string): TennisTour {
+  return /\bwta\b/i.test(league) ? 'WTA' : 'ATP';
+}
+
+function eventTypeFromOddsNetLeague(league: string): string {
+  if (/itf/i.test(league)) return tourFromOddsNetLeague(league) === 'WTA' ? 'Itf Women Singles' : 'Itf Men Singles';
+  if (/challenger|125/i.test(league)) {
+    return tourFromOddsNetLeague(league) === 'WTA' ? 'Challenger Women Singles' : 'Challenger Men Singles';
+  }
+  return tourFromOddsNetLeague(league) === 'WTA' ? 'Wta Singles' : 'Atp Singles';
+}
+
+function tennisNextGameFromOddsNetEvent(ev: TaggedNetEvent): TennisNextGame | null {
+  const eventId = String(ev.event_id ?? '').trim();
+  const homeRaw = String(ev.home_team || '').trim();
+  const awayRaw = String(ev.away_team || '').trim();
+  if (!eventId || !homeRaw || !awayRaw || /\//.test(homeRaw) || /\//.test(awayRaw)) return null;
+  const homeName = tennisDisplayName(homeRaw);
+  const awayName = tennisDisplayName(awayRaw);
+  const startSec = typeof ev.start_time === 'number' ? ev.start_time : NaN;
+  const tipoff = Number.isFinite(startSec) ? new Date(startSec * 1000).toISOString() : null;
+  const tour = tourFromOddsNetLeague(ev.league);
+  const tournamentName = String(ev.league || '').trim() || null;
+  return {
+    opponent: awayName,
+    opponentId: null,
+    opponentIoc: null,
+    opponentRank: null,
+    opponentLogo: null,
+    tipoff,
+    live: String(ev.event_state || '').toLowerCase() === 'live',
+    isGrandSlam: false,
+    tour,
+    tournamentName,
+    tournamentKey: null,
+    surface: null,
+    round: null,
+    matchId: tennisOddsNetMatchId(eventId),
+    status: ev.event_state ? String(ev.event_state) : null,
+    playerIsHome: true,
+    homeName,
+    awayName,
+    playerSeed: null,
+    opponentSeed: null,
+    topSeedName: null,
+    topSeedId: null,
+    eventType: eventTypeFromOddsNetLeague(ev.league),
+  };
+}
+
+async function snapshotBooksForEvent(
+  eventId: string,
+  names: { home: string; away: string },
+  homeIsHome: boolean,
+  bestOfThree: boolean,
+  matchId: string,
+  stats: TennisOddsNetStats
+): Promise<TennisBookRow[]> {
+  const items: NetItem[] = [];
+  let cursor = '';
+  for (let pageNo = 0; pageNo < SNAPSHOT_PAGES; pageNo += 1) {
+    const qs = new URLSearchParams({ limit: '500', bookmakers: TENNIS_ODDS_NET_BOOKS.join(',') });
+    if (cursor) qs.set('cursor', cursor);
+    const snap = await fetchJson(`${BASE}/events/${encodeURIComponent(eventId)}/odds/snapshot?${qs}`);
+    if (!snap) {
+      cursor = '';
+      break;
+    }
+    items.push(...((snap.items ?? []) as NetItem[]));
+    cursor = snap.complete === true ? '' : String(snap.next_cursor || '');
+    if (!cursor) break;
+  }
+  if (cursor) {
+    stats.rowCapHits.push(matchId);
+    console.warn(`[tennis odds-api.net] row cap hit for match ${matchId} (event ${eventId}) after ${items.length} rows`);
+  }
+  stats.matches += 1;
+  const byBook = new Map<string, NetItem[]>();
+  for (const item of items) {
+    const book = String(item.bookmaker || '').toLowerCase();
+    if (!book) continue;
+    byBook.set(book, [...(byBook.get(book) ?? []), item]);
+  }
+  const others: TennisBookRow[] = [];
+  for (const [book, list] of byBook) {
+    if (book.startsWith('bet365') && book !== 'bet365') continue;
+    const name = book === 'bet365' ? TENNIS_BET365_AU_BOOK : book;
+    const row = sourceMatchToBookRow(tennisOddsApiNetSourceFromItems(list, name, names), homeIsHome, bestOfThree);
+    if (row) others.push(row);
+  }
+  return others;
+}
+
+function oddsNetOrphanTier(league: string): number {
+  const type = eventTypeFromOddsNetLeague(league).toLowerCase();
+  if (type.includes('itf')) return 2;
+  if (type.includes('challenger')) return 1;
+  return 0;
+}
+
+/** True when this odds-api.net singles event is already represented by an API-Tennis slate game. */
+export function tennisOddsNetEventCoveredByGames(ev: {
+  home_team?: string;
+  away_team?: string;
+  event_id?: string | number;
+}, games: TennisNextGame[]): boolean {
+  const home = tennisDisplayName(String(ev.home_team || ''));
+  const away = tennisDisplayName(String(ev.away_team || ''));
+  if (!home || !away) return false;
+  return games.some(
+    (game) =>
+      (samePlayer(home, game.homeName) && samePlayer(away, game.awayName)) ||
+      (samePlayer(home, game.awayName) && samePlayer(away, game.homeName))
+  );
+}
+
+/**
+ * Matched API-Tennis fixtures plus odds-api.net-only singles AU books already price —
+ * e.g. Jesse Delaney vs Matthew Dellavedova when API-Tennis omitted the fixture.
+ * Orphans are taken from every covered tennis league (not only leagues that already matched).
+ */
+export async function fetchTennisOddsApiNetBoard(
   games: TennisNextGame[],
   stats: TennisOddsNetStats = { matches: 0, rowCapHits: [] }
-): Promise<Map<string, TennisBookRow[]>> {
+): Promise<TennisOddsNetBoard> {
   const rows = new Map<string, TennisBookRow[]>();
-  if (!apiKey() || !games.length) return rows;
+  const orphans: TennisOddsNetOrphan[] = [];
+  if (!apiKey()) return { rows, orphans };
   const leagues = await tennisLeagues();
-  if (!leagues.length) return rows;
-  const events = (await mapLimit(leagues, CONCURRENCY, leagueEvents)).flat();
+  if (!leagues.length) return { rows, orphans };
+  const events = (
+    await mapLimit(leagues, CONCURRENCY, async (league) => {
+      const list = await leagueEvents(league);
+      return list.map((ev) => ({ ...ev, league }) as TaggedNetEvent);
+    })
+  ).flat();
   const matched: Array<{
     matchId: string;
     eventId: string;
     homeIsHome: boolean;
     names: { home: string; away: string };
     bestOfThree: boolean;
+    league: string;
   }> = [];
+  const matchedEventIds = new Set<string>();
   for (const game of games) {
     const matchId = String(game.matchId || '').trim();
     if (!matchId) continue;
     for (const ev of events) {
       const hit = sameMatch(ev, game);
       if (!hit) continue;
+      const eventId = String(ev.event_id);
       matched.push({
         matchId,
-        eventId: String(ev.event_id),
+        eventId,
         homeIsHome: hit.homeIsHome,
         names: { home: String(ev.home_team || ''), away: String(ev.away_team || '') },
         bestOfThree: tennisGameIsBestOfThree(game),
+        league: ev.league,
       });
+      matchedEventIds.add(eventId);
       break;
     }
   }
   await mapLimit(matched, CONCURRENCY, async ({ matchId, eventId, homeIsHome, names, bestOfThree }) => {
-    const items: NetItem[] = [];
-    let cursor = '';
-    for (let pageNo = 0; pageNo < SNAPSHOT_PAGES; pageNo += 1) {
-      const qs = new URLSearchParams({ limit: '500', bookmakers: TENNIS_ODDS_NET_BOOKS.join(',') });
-      if (cursor) qs.set('cursor', cursor);
-      const snap = await fetchJson(`${BASE}/events/${encodeURIComponent(eventId)}/odds/snapshot?${qs}`);
-      if (!snap) {
-        cursor = '';
-        break;
-      }
-      items.push(...((snap.items ?? []) as NetItem[]));
-      cursor = snap.complete === true ? '' : String(snap.next_cursor || '');
-      if (!cursor) break;
-    }
-    // Pages still left after the last one: some books were cut off. Logged so it can't happen silently.
-    if (cursor) {
-      stats.rowCapHits.push(matchId);
-      console.warn(`[tennis odds-api.net] row cap hit for match ${matchId} (event ${eventId}) after ${items.length} rows`);
-    }
-    stats.matches += 1;
-    const byBook = new Map<string, NetItem[]>();
-    for (const item of items) {
-      const book = String(item.bookmaker || '').toLowerCase();
-      if (!book) continue;
-      byBook.set(book, [...(byBook.get(book) ?? []), item]);
-    }
-    const others: TennisBookRow[] = [];
-    for (const [book, list] of byBook) {
-      if (book.startsWith('bet365') && book !== 'bet365') continue;
-      const name = book === 'bet365' ? TENNIS_BET365_AU_BOOK : book;
-      const row = sourceMatchToBookRow(tennisOddsApiNetSourceFromItems(list, name, names), homeIsHome, bestOfThree);
-      if (row) others.push(row);
-    }
-    if (others.length) rows.set(matchId, others);
+    const books = await snapshotBooksForEvent(eventId, names, homeIsHome, bestOfThree, matchId, stats);
+    if (books.length) rows.set(matchId, books);
   });
-  return rows;
+
+  const now = Date.now();
+  const orphanCandidates = events
+    .filter((ev) => {
+      const eventId = String(ev.event_id ?? '').trim();
+      if (!eventId || matchedEventIds.has(eventId)) return false;
+      const home = String(ev.home_team || '');
+      const away = String(ev.away_team || '');
+      if (!home || !away || /\//.test(home) || /\//.test(away)) return false;
+      if (String(ev.event_state || '').toLowerCase() === 'finished') return false;
+      // Same pairing already on the API-Tennis slate (even if tipoff/name form differed).
+      if (tennisOddsNetEventCoveredByGames(ev, games)) return false;
+      const startMs = typeof ev.start_time === 'number' ? ev.start_time * 1000 : NaN;
+      if (!Number.isFinite(startMs)) return false;
+      if (startMs < now - 60 * 60 * 1000 || startMs > now + ORPHAN_AHEAD_MS) return false;
+      return true;
+    })
+    .sort(
+      (a, b) =>
+        oddsNetOrphanTier(a.league) - oddsNetOrphanTier(b.league) ||
+        Number(a.start_time || 0) - Number(b.start_time || 0)
+    )
+    .slice(0, MAX_ORPHAN_MATCHES);
+
+  await mapLimit(orphanCandidates, CONCURRENCY, async (ev) => {
+    const game = tennisNextGameFromOddsNetEvent(ev);
+    if (!game?.matchId) return;
+    const eventId = String(ev.event_id);
+    const names = { home: String(ev.home_team || ''), away: String(ev.away_team || '') };
+    const books = await snapshotBooksForEvent(eventId, names, true, true, game.matchId, stats);
+    if (!books.length) return;
+    rows.set(game.matchId, books);
+    orphans.push({ game, books, eventId });
+  });
+  stats.orphans = orphans.length;
+  return { rows, orphans };
+}
+
+/** One snapshot of our books per matched match; book rows per API-Tennis match id. */
+export async function fetchTennisOddsApiNetBooks(
+  games: TennisNextGame[],
+  stats: TennisOddsNetStats = { matches: 0, rowCapHits: [] }
+): Promise<Map<string, TennisBookRow[]>> {
+  const board = await fetchTennisOddsApiNetBoard(games, stats);
+  return board.rows;
 }

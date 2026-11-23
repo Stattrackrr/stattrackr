@@ -8,6 +8,7 @@ import { readTennisPlayerLogsCacheMany, tennisComputedCacheKey } from '@/lib/ten
 import { loadPlayerMatchesCached, loadTennisPlayersCached, tennisLogsNeedHistory } from '@/lib/tennis/loadCached';
 import { tennisIdentityMatch } from '@/lib/tennis/oddsApi';
 import { mergeCareerH2h } from '@/lib/tennis/h2hHistory';
+import { tennisIsH2hMatch } from '@/lib/tennis/h2hMatch';
 import {
   TENNIS_MATCHUP_STATS,
   tennisMatchupBoardKey,
@@ -25,6 +26,7 @@ import {
   type TennisPlayer,
   type TennisTour,
 } from '@/lib/tennis/data';
+import { findTennisRosterPlayer } from '@/lib/tennis/rosterMatch';
 
 export {
   TENNIS_MATCHUP_STATS,
@@ -101,7 +103,8 @@ function resolvePlayer(
   players: TennisPlayer[],
   name: string,
   preferredTour: TennisTour,
-  playerId?: string | null
+  playerId?: string | null,
+  preferFromGames?: TennisMatchRow[]
 ): ResolvedMatchupPlayer {
   const rawName = String(name || '').trim();
   const numeric = isNumericTennisId(rawName);
@@ -119,6 +122,45 @@ function resolvePlayer(
     }
   }
   if (!human) return { id: id || null, name: human || rawName, ioc: null, tour: preferredTour };
+
+  // Abbreviated slate names ("Ja. Delaney") can match more than one roster player.
+  // Only trust the selected player's log when it points at a single opponent id.
+  if (preferFromGames?.length) {
+    const h2hIds = new Map<string, { id: string; name: string }>();
+    for (const row of preferFromGames) {
+      if (!tennisIsH2hMatch(row, human, null)) continue;
+      const rowId = String(row.opponentId || '').trim();
+      if (!rowId) continue;
+      h2hIds.set(rowId, { id: rowId, name: humanTennisName(row.opponent, human) || human });
+    }
+    if (h2hIds.size === 1) {
+      const only = [...h2hIds.values()][0];
+      const byHint = players.find((p) => p.playerId === only.id);
+      if (byHint) {
+        return {
+          id: byHint.playerId,
+          name: humanTennisName(byHint.name, only.name, human) || byHint.name,
+          ioc: byHint.ioc,
+          tour: byHint.tour,
+        };
+      }
+    }
+  }
+
+  const rosterHit = findTennisRosterPlayer(players, {
+    playerId: id || null,
+    name: human,
+    tour: preferredTour,
+  });
+  if (rosterHit) {
+    return {
+      id: rosterHit.playerId,
+      name: humanTennisName(rosterHit.name, human) || rosterHit.name,
+      ioc: rosterHit.ioc,
+      tour: rosterHit.tour,
+    };
+  }
+
   const key = normName(human);
   const exactTour = players.find((p) => p.tour === preferredTour && normName(p.name) === key);
   if (exactTour) {
@@ -130,7 +172,9 @@ function resolvePlayer(
   }
   const identity = players.filter((p) => tennisIdentityMatch(p.name, human));
   const identityTour = identity.filter((p) => p.tour === preferredTour);
-  const identityHits = identityTour.length ? identityTour : identity;
+  const identityHits = [
+    ...new Map((identityTour.length ? identityTour : identity).map((p) => [p.playerId, p])).values(),
+  ];
   if (identityHits.length === 1) {
     return {
       id: identityHits[0].playerId,
@@ -139,8 +183,10 @@ function resolvePlayer(
       tour: identityHits[0].tour,
     };
   }
+  // Ambiguous abbreviated names ("Ja. Delaney" → Jake + Jesse) must not guess.
+  // Callers need a real opponentId from the fixture/props row.
   const last = key.split(/\s+/).filter(Boolean).pop() || '';
-  if (last.length >= 3) {
+  if (last.length >= 3 && identityHits.length === 0) {
     const lastHits = players.filter((p) => {
       const parts = normName(p.name).split(/\s+/);
       return parts[parts.length - 1] === last && p.tour === preferredTour;
@@ -250,10 +296,28 @@ function assembleTennisPlayerMatchup(
     tour === 'WTA' ? 'all' : bestOfN === 5 ? 5 : bestOfN === 3 ? 3 : 'all';
 
   let resolvedPlayer = resolvePlayer(players, playerName, tour, opts.playerId);
-  let resolvedOpponent = resolvePlayer(players, opponentName, tour, opts.opponentId);
   const playerAll = gamesFor(resolvedPlayer.id, resolvedPlayer.name || playerName);
-  const opponentAll = gamesFor(resolvedOpponent.id, resolvedOpponent.name || opponentName);
   resolvedPlayer = resolveFromGames(resolvedPlayer, playerAll);
+  let resolvedOpponent = resolvePlayer(
+    players,
+    opponentName,
+    tour,
+    opts.opponentId,
+    playerAll
+  );
+  let opponentAll = gamesFor(resolvedOpponent.id, resolvedOpponent.name || opponentName);
+  // Name-only abbreviated opponents ("Ja. Delaney") can miss the roster id on the
+  // first pass; retry once we have the selected player's log to disambiguate.
+  if (!opponentAll.length && !String(opts.opponentId || '').trim()) {
+    const retry = resolvePlayer(players, opponentName, tour, null, playerAll);
+    if (retry.id && retry.id !== resolvedOpponent.id) {
+      const retryGames = gamesFor(retry.id, retry.name || opponentName);
+      if (retryGames.length) {
+        resolvedOpponent = retry;
+        opponentAll = retryGames;
+      }
+    }
+  }
   resolvedOpponent = resolveFromGames(resolvedOpponent, opponentAll);
   const playerWindow = windowMatches(playerAll, windowN, year);
   const opponentWindow = windowMatches(opponentAll, windowN, year);
@@ -418,31 +482,40 @@ export async function buildTennisPlayerMatchupAsync(
   const selectedBestOf: TennisMatchupBestOf =
     tour === 'WTA' ? 'all' : bestOfN === 5 ? 5 : bestOfN === 3 ? 3 : 'all';
   const resolvedPlayer = resolvePlayer(players, String(opts.playerName || ''), tour, opts.playerId);
-  const resolvedOpponent = resolvePlayer(players, String(opts.opponentName || ''), tour, opts.opponentId);
   const fieldIds = [...new Set((opts.fieldIds || []).map((id) => String(id || '').trim()).filter(Boolean))];
-  const ids = [
-    ...fieldIds,
-    String(resolvedPlayer.id || '').trim(),
-    String(resolvedOpponent.id || '').trim(),
-  ].filter(Boolean);
-  const logsById = await readTennisPlayerLogsCacheMany(ids);
-  const thinIds = [resolvedPlayer.id, resolvedOpponent.id]
-    .map((id) => String(id || '').trim())
-    .filter((id) => id && tennisLogsNeedHistory(logsById.get(id)));
-  if (thinIds.length) {
-    const filled = await Promise.all(
-      thinIds.map((id) =>
-        loadPlayerMatchesCached({
-          playerId: id,
-          tour,
-          opponentId: id === String(resolvedPlayer.id || '') ? resolvedOpponent.id : resolvedPlayer.id,
-          opponentName: id === String(resolvedPlayer.id || '') ? opts.opponentName : opts.playerName,
-        })
-      )
-    );
-    thinIds.forEach((id, index) => {
-      if (filled[index]?.length) logsById.set(id, filled[index]);
+  const playerIdEarly = String(resolvedPlayer.id || '').trim();
+  const seedIds = [...fieldIds, playerIdEarly].filter(Boolean);
+  const logsById = await readTennisPlayerLogsCacheMany(seedIds);
+  if (playerIdEarly && tennisLogsNeedHistory(logsById.get(playerIdEarly))) {
+    const filled = await loadPlayerMatchesCached({
+      playerId: playerIdEarly,
+      tour,
+      opponentId: opts.opponentId,
+      opponentName: opts.opponentName,
     });
+    if (filled.length) logsById.set(playerIdEarly, filled);
+  }
+  const playerSeedGames = playerIdEarly ? logsById.get(playerIdEarly) || [] : [];
+  let resolvedOpponent = resolvePlayer(
+    players,
+    String(opts.opponentName || ''),
+    tour,
+    opts.opponentId,
+    playerSeedGames
+  );
+  const opponentIdEarly = String(resolvedOpponent.id || '').trim();
+  if (opponentIdEarly && !logsById.has(opponentIdEarly)) {
+    const oppLogs = await readTennisPlayerLogsCacheMany([opponentIdEarly]);
+    for (const [id, rows] of oppLogs) logsById.set(id, rows);
+  }
+  if (opponentIdEarly && tennisLogsNeedHistory(logsById.get(opponentIdEarly))) {
+    const filled = await loadPlayerMatchesCached({
+      playerId: opponentIdEarly,
+      tour,
+      opponentId: resolvedPlayer.id,
+      opponentName: opts.playerName,
+    });
+    if (filled.length) logsById.set(opponentIdEarly, filled);
   }
   const extra = opts.extraGamesById;
   const rawById = new Map<string, TennisMatchRow[]>();

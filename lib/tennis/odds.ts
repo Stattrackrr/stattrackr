@@ -22,6 +22,7 @@ import {
   tennisPairingMatches,
 } from '@/lib/tennis/oddsBoard';
 import { fetchExtraTennisBooks, type ExtraTennisBooks } from '@/lib/tennis/extraBooks';
+import { isTennisOddsNetMatchId } from '@/lib/tennis/oddsApiNet';
 import { deleteTennisPlayerPropsListCache } from '@/lib/tennis/playerPropsListCache';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import {
@@ -793,26 +794,36 @@ export async function refreshTennisOddsSnapshots(opts?: {
       return { ...previous, skipped: true };
     }
 
-    // Transient fixture warm miss must not clear a priced board.
-    if (!upcoming.length) {
-      return keepPreviousTennisBoard(previous, { keepReason: 'upcoming_empty', upcoming: 0 });
-    }
-
-    const targets = pickRefreshTargets(upcoming);
+    // API-Tennis can be empty while AU books still price Challenger/ITF singles.
+    // Keep serving orphans from odds-api.net instead of freezing the prior board.
+    const targets = upcoming.length ? pickRefreshTargets(upcoming) : [];
     const extra: ExtraTennisBooks = await fetchExtraTennisBooks(targets).catch(() => ({
       rows: new Map(),
       counts: {},
+      orphans: [],
     }));
+    const orphanGames = extra.orphans.map((row) => row.game);
+    const refreshGames = [...targets, ...orphanGames];
+    if (!refreshGames.length) {
+      return keepPreviousTennisBoard(previous, {
+        keepReason: upcoming.length ? 'targets_empty' : 'upcoming_empty',
+        upcoming: upcoming.length,
+        extraBooks: extra.counts,
+      });
+    }
     let snapshots = 0;
     const pricedIds = new Set<string>();
-    for (let i = 0; i < targets.length; i += 4) {
-      const batch = targets.slice(i, i + 4);
+    for (let i = 0; i < refreshGames.length; i += 4) {
+      const batch = refreshGames.slice(i, i + 4);
       await Promise.all(
         batch.map(async (game) => {
           const matchId = String(game.matchId || '').trim();
           if (!matchId) return;
-          const raw = await fetchRawOdds(matchId, { force: true });
-          let books = booksFromApiTennis(raw);
+          let books: TennisBookRow[] = [];
+          if (!isTennisOddsNetMatchId(matchId)) {
+            const raw = await fetchRawOdds(matchId, { force: true });
+            books = booksFromApiTennis(raw);
+          }
           const extraRows = extra.rows.get(matchId);
           if (extraRows?.length) books = mergeBookRows(books, extraRows);
           if (!books.length) return;
@@ -833,7 +844,8 @@ export async function refreshTennisOddsSnapshots(opts?: {
 
     const indexMatches: TennisOddsIndexMatch[] = [];
     const seen = new Set<string>();
-    for (const game of targets) {
+    const upcomingForIndex = [...upcoming, ...orphanGames];
+    for (const game of refreshGames) {
       const matchId = String(game.matchId || '').trim();
       if (!matchId || seen.has(matchId) || !pricedIds.has(matchId)) continue;
       seen.add(matchId);
@@ -846,7 +858,7 @@ export async function refreshTennisOddsSnapshots(opts?: {
         tournamentName: game.tournamentName,
       });
     }
-    const boardable = indexMatches.filter((row) => keepOddsIndexMatch(row, upcoming));
+    const boardable = indexMatches.filter((row) => keepOddsIndexMatch(row, upcomingForIndex));
     if (!boardable.length) {
       return keepPreviousTennisBoard(previous, {
         keepReason: 'index_empty_after_filter',

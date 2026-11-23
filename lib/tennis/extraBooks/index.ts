@@ -11,7 +11,11 @@ import { pointsbetTennisFeed } from '@/lib/tennis/extraBooks/pointsbet';
 import { runExtraBookFeed } from '@/lib/tennis/extraBooks/shared';
 import { unibetTennisFeed } from '@/lib/tennis/extraBooks/unibet';
 import type { TennisNextGame } from '@/lib/tennis/nextGame';
-import { fetchTennisOddsApiNetBooks, type TennisOddsNetStats } from '@/lib/tennis/oddsApiNet';
+import {
+  fetchTennisOddsApiNetBoard,
+  type TennisOddsNetOrphan,
+  type TennisOddsNetStats,
+} from '@/lib/tennis/oddsApiNet';
 import { addToDay, tallyBook, type ParityDay, type ParityTally } from '@/lib/tennis/extraBooks/parity';
 import sharedCache from '@/lib/sharedCache';
 import type { TennisBookRow } from '@/lib/tennis/oddsTypes';
@@ -37,19 +41,27 @@ export type ExtraTennisBooks = {
   rows: Map<string, TennisBookRow[]>;
   /** Matches each feed priced, for the refresh summary. */
   counts: Record<string, number>;
+  /** odds-api.net singles with AU prices that API-Tennis never listed. */
+  orphans: TennisOddsNetOrphan[];
 };
 
 export async function fetchExtraTennisBooks(games: TennisNextGame[]): Promise<ExtraTennisBooks> {
   const feeds = [ladbrokesTennisFeed, nedsTennisFeed, betrightTennisFeed, pointsbetTennisFeed, unibetTennisFeed];
   const netStats: TennisOddsNetStats = { matches: 0, rowCapHits: [] };
-  const [net, ...siteRows] = await Promise.all([
-    withBudget(fetchTennisOddsApiNetBooks(games, netStats), new Map<string, TennisBookRow[]>()),
+  const emptyBoard = { rows: new Map<string, TennisBookRow[]>(), orphans: [] as TennisOddsNetOrphan[] };
+  const [netBoard, ...siteRows] = await Promise.all([
+    withBudget(fetchTennisOddsApiNetBoard(games, netStats), emptyBoard),
     ...feeds.map((feed) => withBudget(runExtraBookFeed(feed, games), new Map<string, TennisBookRow>())),
   ]);
+  const net = netBoard.rows;
   const rows = new Map<string, TennisBookRow[]>();
   const add = (matchId: string, row: TennisBookRow) => rows.set(matchId, [...(rows.get(matchId) ?? []), row]);
   for (const [matchId, list] of net) for (const row of list) add(matchId, row);
-  const counts: Record<string, number> = { 'odds-api.net': net.size, 'odds-api.net row cap hits': netStats.rowCapHits.length };
+  const counts: Record<string, number> = {
+    'odds-api.net': net.size,
+    'odds-api.net row cap hits': netStats.rowCapHits.length,
+    'odds-api.net orphans': netBoard.orphans.length,
+  };
   const parity: Record<string, ParityTally> = {};
   feeds.forEach((feed, i) => {
     counts[feed.name] = siteRows[i].size;
@@ -57,5 +69,5 @@ export async function fetchExtraTennisBooks(games: TennisNextGame[]): Promise<Ex
     parity[feed.name] = tallyBook(net, siteRows[i], feed.name);
   });
   await recordParity(parity, netStats.rowCapHits.length).catch(() => undefined);
-  return { rows, counts };
+  return { rows, counts, orphans: netBoard.orphans };
 }

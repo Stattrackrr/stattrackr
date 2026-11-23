@@ -6,6 +6,8 @@ import { isTennisQualifyingLabel, type TennisDvpStage } from '@/lib/tennis/dvpSh
 import { tennisAssignDrawRanks } from '@/lib/tennis/seeds';
 import { tennisIdentityIndex, tennisIdentityMatch, tennisSamePersonRecords } from '@/lib/tennis/oddsApi';
 import { canonicalTennisIoc } from '@/lib/tennis/nationality';
+import { tennisDisplayNameFor } from '@/lib/tennis/playerNames';
+import { readTennisPlayerPropsListCache } from '@/lib/tennis/playerPropsListCache';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import {
   TENNIS_PROPS_LIVE_GRACE_MS,
@@ -216,12 +218,14 @@ function officialPlayer(playerId: string | null, fallback: string): OfficialPlay
   if (memoized) return memoized;
   const hit = id ? index.byId.get(id) ?? null : null;
   const exact = name ? index.byLowerName.get(name.toLowerCase()) ?? [] : [];
-  const cluster = name && exact.length !== 1 ? tennisSamePersonRecords(index.identity(name)) : null;
+  const identityHits = name && exact.length !== 1 ? index.identity(name) : [];
+  const cluster = identityHits.length ? tennisSamePersonRecords(identityHits) : null;
+  // Keep fixture player keys; never pick an ambiguous name match by tour rank.
   const byName =
     exact.length === 1
       ? exact[0]
       : cluster
-        ? [...cluster].sort((a, b) => (a.rank ?? 99999) - (b.rank ?? 99999))[0]
+        ? [...cluster].sort((a, b) => a.name.localeCompare(b.name))[0]
         : null;
   const idAgrees =
     Boolean(hit) &&
@@ -247,9 +251,12 @@ function officialPlayer(playerId: string | null, fallback: string): OfficialPlay
 
 function withOfficialOpponent(next: TennisNextGame): TennisNextGame {
   const resolved = officialPlayer(next.opponentId, next.opponent);
-  if (!resolved.playerId && !resolved.ioc) return next;
-  const opponent = resolved.name || next.opponent;
-  const opponentId = resolved.playerId || next.opponentId;
+  // Keep a fixture/props player id even when the abbreviated odds name is ambiguous.
+  const opponentId = String(next.opponentId || resolved.playerId || '').trim() || null;
+  const opponent =
+    tennisDisplayNameFor(opponentId, resolved.name || next.opponent) ||
+    resolved.name ||
+    next.opponent;
   const opponentIoc = resolved.ioc || next.opponentIoc;
   if (
     opponent === next.opponent &&
@@ -264,6 +271,46 @@ function withOfficialOpponent(next: TennisNextGame): TennisNextGame {
     opponentId,
     opponentIoc,
     opponentRank: next.opponentRank ?? resolved.rank,
+    opponentLogo: next.opponentLogo || resolved.imageUrl,
+  };
+}
+
+/**
+ * Props bake already resolved the match to roster ids. When API-Tennis only has
+ * "Ja. Delaney" with no player key, pull Jake's id from that match row — never guess by rank.
+ */
+async function withPropsBoardOpponent(
+  next: TennisNextGame,
+  playerId: string | null
+): Promise<TennisNextGame> {
+  if (String(next.opponentId || '').trim()) {
+    const full = tennisDisplayNameFor(next.opponentId, next.opponent);
+    return full && full !== next.opponent ? { ...next, opponent: full } : next;
+  }
+  const matchId = String(next.matchId || '').trim();
+  if (!matchId) return next;
+  const cached = await readTennisPlayerPropsListCache().catch(() => null);
+  const rows = Array.isArray(cached?.data) ? cached.data : [];
+  if (!rows.length) return next;
+  const wantPlayer = String(playerId || '').trim();
+  const hit =
+    rows.find((row) => {
+      if (String(row.gameId || '').trim() !== matchId) return false;
+      if (wantPlayer && String(row.playerId || '').trim() === wantPlayer) return true;
+      return nextGameInvolvesName(next, String(row.playerName || ''));
+    }) || null;
+  const opponentId = String(hit?.opponentId || '').trim() || null;
+  if (!opponentId) return next;
+  const opponent =
+    tennisDisplayNameFor(opponentId, String(hit?.opponent || next.opponent)) ||
+    String(hit?.opponent || next.opponent);
+  const resolved = officialPlayer(opponentId, opponent);
+  return {
+    ...next,
+    opponent: resolved.name || opponent,
+    opponentId,
+    opponentIoc: resolved.ioc || next.opponentIoc,
+    opponentRank: next.opponentRank ?? resolved.rank ?? hit?.opponentRank ?? null,
     opponentLogo: next.opponentLogo || resolved.imageUrl,
   };
 }
@@ -1144,9 +1191,10 @@ export async function getTennisNextGame(opts: {
   }
 
   const live = indexLiveEvents(byPlayerId, upcomingRuntime().window?.events);
-  const finish = (row: TennisNextGame | null) => {
+  const finish = async (row: TennisNextGame | null) => {
     if (!row) return null;
-    const identified = withOfficialOpponent(row);
+    const fromProps = await withPropsBoardOpponent(row, playerId || null);
+    const identified = withOfficialOpponent(fromProps);
     const seeded = withDrawSeeds(withSurface(identified), playerId || null, live);
     const opponentIoc = canonicalTennisIoc({
       playerId: seeded.opponentId,
