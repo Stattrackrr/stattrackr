@@ -5710,9 +5710,11 @@ export default function NBALandingPage() {
     });
   }, [isCombinedMode]);
   const isSecondaryListMode = isSecondaryPropsSport(propsSport);
-  /** Tennis uses Rank (player vs opp world rank); other sports keep DvP. */
+  /** Tennis uses Rank (player vs opp world rank); single sports keep DvP; All (combined) uses Defence. */
   const showPropsRankColumn = isTennisPropsSport(propsSport);
   const showPropsDvpColumn = !isTennisPropsSport(propsSport);
+  const propsDvpOrRankLabel = showPropsRankColumn ? 'Rank' : 'DvP';
+  const propsDesktopDvpOrRankLabel = showPropsRankColumn ? 'Rank' : isCombinedMode ? 'Defence' : 'DvP';
   useEffect(() => {
     if (showPropsRankColumn) {
       setColumnSort((prev) => (prev.dvp === 'none' ? prev : { ...prev, dvp: 'none' }));
@@ -9579,7 +9581,7 @@ export default function NBALandingPage() {
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>IP</th>
                               {showPropsDvpColumn || showPropsRankColumn ? (
                                 <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
-                                  {showPropsRankColumn ? 'Rank' : 'Defence'}
+                                  {propsDesktopDvpOrRankLabel}
                                 </th>
                               ) : null}
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L5</th>
@@ -9768,7 +9770,7 @@ export default function NBALandingPage() {
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>IP</th>
                               {showPropsDvpColumn || showPropsRankColumn ? (
                                 <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
-                                  {showPropsRankColumn ? 'Rank' : 'Defence'}
+                                  {propsDesktopDvpOrRankLabel}
                                 </th>
                               ) : null}
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L5</th>
@@ -10006,7 +10008,7 @@ export default function NBALandingPage() {
                               <div className="flex flex-col items-center justify-center gap-0.5">
                                 
                                 <span className="flex items-center justify-center gap-1.5">
-                                  <span>{showPropsRankColumn ? 'Rank' : 'Defence'}</span>
+                                  <span>{propsDesktopDvpOrRankLabel}</span>
                                 <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
                                   (showPropsRankColumn ? columnSort.rank : columnSort.dvp) !== 'none' 
                                     ? mounted && isDark ? 'bg-purple-600 border-purple-500' : 'bg-purple-100 border-purple-300'
@@ -11515,7 +11517,7 @@ export default function NBALandingPage() {
                               {columnSortRank(showPropsRankColumn ? 'rank' : 'dvp') != null && columnSortPriority.length > 1 ? (
                                 <span className="text-[10px] opacity-80">{columnSortRank(showPropsRankColumn ? 'rank' : 'dvp')}</span>
                               ) : null}
-                              <span>{showPropsRankColumn ? 'Rank' : 'Defence'}</span>
+                              <span>{propsDvpOrRankLabel}</span>
                               <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
                                 (showPropsRankColumn ? columnSort.rank : columnSort.dvp) !== 'none'
                                   ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
@@ -12268,7 +12270,7 @@ export default function NBALandingPage() {
                               boxShadow: glowColor ? `0 0 12px ${glowColor}75, 0 0 6px ${glowColor}55` : 'none',
                             };
                                 })()}>
-                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>Defence</div>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>DvP</div>
                                   <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                     {prop.dvpRating !== null && prop.dvpRating !== undefined ? dvpRankText(rowSport, prop.dvpRating, prop.dvpFieldSize) : <span className="flex h-5 items-center"><EmptyStat dark={mounted && isDark} /></span>}
                                   </div>
