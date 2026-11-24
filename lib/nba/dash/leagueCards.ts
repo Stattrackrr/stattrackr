@@ -317,8 +317,28 @@ export function aggregateNbaTeamUsageStats(games: NbaGameLogRow[]) {
   return { minutes: round1(minuteSum / n), games: n, stats };
 }
 
-function applyLastN(games: NbaGameLogRow[], lastN: number | null) {
-  return lastN != null && lastN > 0 ? games.slice(-lastN) : games;
+/**
+ * Advanced averages L5/L10 = the club's last N regular-season games (shared match window),
+ * not each player's own last N appearances.
+ */
+function teamLastNMatchIds(
+  teamGames: NbaSeasonDataset['teamGames'],
+  teamCode: string,
+  lastN: number | null | undefined
+): Set<string> | null {
+  if (lastN == null || lastN <= 0) return null;
+  const byMatch = new Map<string, { matchId: string; date: string }>();
+  for (const g of teamGames.values()) {
+    if (g.teamCode !== teamCode || g.postseason) continue;
+    byMatch.set(g.matchId, { matchId: g.matchId, date: String(g.date || '') });
+  }
+  const ordered = [...byMatch.values()].sort((a, b) => a.date.localeCompare(b.date));
+  return new Set(ordered.slice(-lastN).map((g) => g.matchId));
+}
+
+function gamesInTeamWindow(games: NbaGameLogRow[], matchIds: Set<string> | null) {
+  if (!matchIds) return games;
+  return games.filter((g) => matchIds.has(g.matchId));
 }
 
 const normName = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
@@ -335,6 +355,7 @@ export async function loadNbaTeamUsage(opts: {
   const club = resolveNbaClub(opts.team);
   if (!club) return { players: [], sampleGames: null };
   const data = await getNbaSeasonDataset(opts.year);
+  const windowMatchIds = teamLastNMatchIds(data.teamGames, club.code, opts.lastN ?? null);
 
   const teamLogs = (id: string) =>
     (data.logsByPlayer.get(id) ?? []).filter((g) => g.teamCode === club.code && !g.postseason);
@@ -367,7 +388,7 @@ export async function loadNbaTeamUsage(opts: {
 
   const baseline: NbaTeamUsagePlayer[] = [];
   for (const id of ids) {
-    const agg = aggregateNbaTeamUsageStats(applyLastN(teamLogs(id), opts.lastN ?? null));
+    const agg = aggregateNbaTeamUsageStats(gamesInTeamWindow(teamLogs(id), windowMatchIds));
     if (!agg) continue;
     if (includePlayerId !== id && agg.minutes < MIN_AVG_MINUTES) continue;
     baseline.push(toPlayer(id, agg));
@@ -375,8 +396,8 @@ export async function loadNbaTeamUsage(opts: {
   baseline.sort((a, b) => (b.stats.usgPct ?? 0) - (a.stats.usgPct ?? 0));
   if (!useFilter) return { players: baseline, sampleGames: null };
 
-  const teammateGames = new Set(teamLogs(teammateId).map((g) => g.matchId));
-  const focus = includePlayerId ? applyLastN(teamLogs(includePlayerId), opts.lastN ?? null) : [];
+  const teammateGames = new Set(gamesInTeamWindow(teamLogs(teammateId), windowMatchIds).map((g) => g.matchId));
+  const focus = includePlayerId ? gamesInTeamWindow(teamLogs(includePlayerId), windowMatchIds) : [];
   const matched = focus.filter((g) => (mode === 'with') === teammateGames.has(g.matchId));
   const sampleGames = includePlayerId ? matched.length : teammateGames.size;
   const focusKeys = includePlayerId ? new Set(matched.map((g) => g.matchId)) : teammateGames;
@@ -384,7 +405,7 @@ export async function loadNbaTeamUsage(opts: {
     return { players: baseline.map((p) => ({ ...p, usgPct: 0, minutes: 0, games: 0, stats: {} })), sampleGames: 0 };
   }
   const filtered = baseline.map((p) => {
-    const games = teamLogs(p.playerId).filter((g) => {
+    const games = gamesInTeamWindow(teamLogs(p.playerId), windowMatchIds).filter((g) => {
       const inFocus = focusKeys.has(g.matchId);
       return includePlayerId ? inFocus : mode === 'with' ? inFocus : !inFocus;
     });
