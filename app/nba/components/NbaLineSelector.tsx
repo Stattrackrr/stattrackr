@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { americanToDecimal } from '@/lib/currencyUtils';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { getBookmakerInfo, getBookmakerRegion, type BookmakerRegion } from '@/lib/bookmakers';
+import { useLiveTransientLine } from '@/lib/useLiveTransientLine';
 import {
   nbaBookLines,
   nbaExactLineOnBook,
@@ -99,6 +100,13 @@ export function NbaLineSelector({
 }: NbaLineSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const liveLine = useLiveTransientLine(currentLineValue);
+  const effectiveLine =
+    liveLine != null && Number.isFinite(liveLine)
+      ? liveLine
+      : currentLineValue != null && Number.isFinite(currentLineValue)
+        ? currentLineValue
+        : null;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -110,15 +118,28 @@ export function NbaLineSelector({
 
   const isMoneyline = market === 'h2h';
   const isOu = market === 'spread' || market === 'total';
-  const selectedBook = books[selectedBookIndex];
+  const liveBookIndex = useMemo(() => {
+    if (liveLine == null || !isOu) return null;
+    const tol = 0.01;
+    if (market === 'spread') {
+      return books.findIndex((book) => {
+        const line = parseNbaOddsLine(book.Spread?.line);
+        return line != null && Math.abs(line - liveLine) < tol;
+      });
+    }
+    return books.findIndex((book) => nbaExactLineOnBook(book, liveLine) != null);
+  }, [books, isOu, liveLine, market]);
+  const displayBookIndex =
+    liveLine != null ? (liveBookIndex != null && liveBookIndex >= 0 ? liveBookIndex : -1) : selectedBookIndex;
+  const selectedBook = displayBookIndex >= 0 ? books[displayBookIndex] : undefined;
   const selectedLine: NbaPropLine | undefined = isOu
     ? market === 'spread'
       ? nbaOuHasOdds(selectedBook?.Spread)
         ? { ...selectedBook.Spread, kind: 'ou', label: selectedBook.Spread.line }
         : undefined
-      : currentLineValue != null && Number.isFinite(currentLineValue)
-        ? nbaExactLineOnBook(selectedBook, currentLineValue)
-        : nbaLineMatchingValue(selectedBook, currentLineValue)
+      : effectiveLine != null && Number.isFinite(effectiveLine)
+        ? nbaExactLineOnBook(selectedBook, effectiveLine)
+        : nbaLineMatchingValue(selectedBook, effectiveLine)
     : undefined;
   const ouRow = selectedLine;
   const bookmakerInfo = selectedBook ? getBookmakerInfo(selectedBook.name) : null;
@@ -135,16 +156,16 @@ export function NbaLineSelector({
         ? parseNbaOddsLine(selectedBook?.Spread?.line)
         : null;
   const selectedBookLineMismatch =
-    currentLineValue != null &&
-    Number.isFinite(currentLineValue) &&
+    effectiveLine != null &&
+    Number.isFinite(effectiveLine) &&
     !isMoneyline &&
     selectedBookLine != null &&
-    Math.abs(selectedBookLine - currentLineValue) >= 0.01;
+    Math.abs(selectedBookLine - effectiveLine) >= 0.01;
 
   const showSkeleton =
     !disabled &&
     market != null &&
-    (books.length === 0 || !hasDisplayableOdds || selectedBookLineMismatch);
+    (books.length === 0 || displayBookIndex < 0 || !hasDisplayableOdds || selectedBookLineMismatch);
 
   const ouDropdownItems = isOu && market === 'spread'
     ? books
@@ -290,10 +311,10 @@ export function NbaLineSelector({
                       const d = item.d;
                       const lineN = parseNbaOddsLine(d.line);
                       const isSelected =
-                        item.bookIndex === selectedBookIndex &&
-                        (currentLineValue == null ||
+                        item.bookIndex === (displayBookIndex >= 0 ? displayBookIndex : selectedBookIndex) &&
+                        (effectiveLine == null ||
                           lineN == null ||
-                          Math.abs(lineN - currentLineValue) < 0.01);
+                          Math.abs(lineN - effectiveLine) < 0.01);
                       return (
                         <button
                           key={`${book.name}-${item.bookIndex}-${d.line}`}
@@ -347,10 +368,10 @@ export function NbaLineSelector({
                           const d = item.d;
                           const lineN = parseNbaOddsLine(d.line);
                           const isSelected =
-                            item.bookIndex === selectedBookIndex &&
-                            currentLineValue != null &&
+                            item.bookIndex === (displayBookIndex >= 0 ? displayBookIndex : selectedBookIndex) &&
+                            effectiveLine != null &&
                             lineN != null &&
-                            Math.abs(lineN - currentLineValue) < 0.01;
+                            Math.abs(lineN - effectiveLine) < 0.01;
                           return (
                             <button
                               key={`${book.name}-${item.bookIndex}-ms-${d.label}`}

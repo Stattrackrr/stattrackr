@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { americanToDecimal } from '@/lib/currencyUtils';
 import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { getBookmakerInfo, getBookmakerRegion, type BookmakerRegion } from '@/lib/bookmakers';
 import { tennisLastName } from '@/lib/tennis/chartStats';
+import { useLiveTransientLine } from '@/lib/useLiveTransientLine';
 import {
   isTennisOuStat,
   TENNIS_DASHBOARD_LINES,
@@ -103,6 +104,13 @@ export function TennisLineSelector({
 }: TennisLineSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const liveLine = useLiveTransientLine(currentLineValue);
+  const effectiveLine =
+    liveLine != null && Number.isFinite(liveLine)
+      ? liveLine
+      : currentLineValue != null && Number.isFinite(currentLineValue)
+        ? currentLineValue
+        : null;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -114,12 +122,22 @@ export function TennisLineSelector({
 
   const isMoneyline = selectedStat === 'moneyline';
   const isOu = isTennisOuStat(selectedStat);
-  const selectedBook = books[selectedBookIndex];
+  const liveBookIndex = useMemo(() => {
+    if (liveLine == null || !isOu) return null;
+    return books.findIndex((book) =>
+      tennisOuLinesForStat(book, selectedStat, TENNIS_DASHBOARD_LINES).some((row) =>
+        tennisLineMatches(row.line, liveLine)
+      )
+    );
+  }, [books, isOu, liveLine, selectedStat]);
+  const displayBookIndex =
+    liveLine != null ? (liveBookIndex != null && liveBookIndex >= 0 ? liveBookIndex : -1) : selectedBookIndex;
+  const selectedBook = displayBookIndex >= 0 ? books[displayBookIndex] : undefined;
   const ouLines = tennisOuLinesForStat(selectedBook, selectedStat, TENNIS_DASHBOARD_LINES);
   const mainOu = tennisMainLineForStat(selectedBook, selectedStat, TENNIS_DASHBOARD_LINES);
   const displayOu: TennisOuLine | undefined =
-    currentLineValue != null && Number.isFinite(currentLineValue)
-      ? ouLines.find((row) => tennisLineMatches(row.line, currentLineValue)) ?? mainOu ?? ouLines[0]
+    effectiveLine != null && Number.isFinite(effectiveLine)
+      ? ouLines.find((row) => tennisLineMatches(row.line, effectiveLine)) ?? mainOu ?? ouLines[0]
       : mainOu ?? ouLines[0];
   const bookmakerInfo = selectedBook ? getBookmakerInfo(selectedBook.name) : null;
   const displayHomeTeam = tennisLastName(homeTeam) || homeTeam;
@@ -131,11 +149,12 @@ export function TennisLineSelector({
 
   const selectedBookLineMismatch =
     isOu &&
-    currentLineValue != null &&
-    Number.isFinite(currentLineValue) &&
-    !ouLines.some((row) => tennisLineMatches(row.line, currentLineValue));
+    effectiveLine != null &&
+    Number.isFinite(effectiveLine) &&
+    !ouLines.some((row) => tennisLineMatches(row.line, effectiveLine));
 
-  const showSkeleton = (books.length === 0 || !hasDisplayableOdds || selectedBookLineMismatch) && !disabled;
+  const showSkeleton =
+    (books.length === 0 || displayBookIndex < 0 || !hasDisplayableOdds || selectedBookLineMismatch) && !disabled;
 
   const ouDropdownItems = isOu
     ? books.flatMap((book, bookIndex) =>
@@ -245,8 +264,8 @@ export function TennisLineSelector({
                       const book = books[item.bookIndex];
                       const d = item.d;
                       const isSelected =
-                        item.bookIndex === selectedBookIndex &&
-                        tennisLineMatches(d.line, currentLineValue ?? tennisParseLineNumber(displayOu?.line));
+                        item.bookIndex === (displayBookIndex >= 0 ? displayBookIndex : selectedBookIndex) &&
+                        tennisLineMatches(d.line, effectiveLine ?? tennisParseLineNumber(displayOu?.line));
                       return (
                         <button
                           key={`${book.name}-${item.bookIndex}-${d.line}`}

@@ -15,7 +15,7 @@ import {
   defaultSupportingStatForMain,
   type SupportingStatKind,
 } from '@/app/nba/components/NbaSupportingStats';
-import {
+import { 
   DEFAULT_NBA_GAME_FILTERS,
   type NbaGameFiltersState,
 } from '@/app/nba/components/NbaGameFilters';
@@ -27,13 +27,14 @@ import { fetchTeamDepthChart } from '@/app/nba/research/dashboard/utils/depthCha
 import { calculateSelectedPosition } from '@/app/nba/research/dashboard/utils/positionUtils';
 import NbaOpponentBreakdownCard from '@/app/nba/components/NbaOpponentBreakdownCard';
 import type { NbaGameFilterDataItem } from '@/app/nba/components/NbaGameFilters';
-import {
+import { 
   buildNbaPerGameDefenseRanks,
   nbaChartStatToDvpMetric,
 } from '@/lib/nba/dash/chartDefenseRanks';
 import NbaTeamMatchupCard from '@/app/nba/components/NbaTeamMatchupCard';
 import { NbaPredictedLineupsCard } from '@/app/nba/components/NbaPredictedLineupsCard';
 import { NbaLineSelector } from '@/app/nba/components/NbaLineSelector';
+import { isLineInputFocused } from '@/lib/bettingLineInput';
 import { NbaInjuriesCard } from '@/app/nba/components/NbaInjuriesCard';
 import { NbaLadderCard } from '@/app/nba/components/NbaLadderCard';
 import { NbaModelPanel } from '@/app/nba/components/NbaModelPanel';
@@ -723,7 +724,7 @@ export default function NbaDashboardPage() {
     }
     const payload: PersistedNbaPageState = {
       selectedPlayer,
-      selectedTeam,
+    selectedTeam,
       nbaPropsMode,
       nbaTeamFilter,
       nbaRightTab,
@@ -1377,6 +1378,8 @@ export default function NbaDashboardPage() {
         ignoreNextTransientLineRef.current = false;
         return;
       }
+      // While stepping the line, LineSelector updates live; skip parent setState so the chart stays smooth.
+      if (isLineInputFocused()) return;
       const value = (e as CustomEvent<{ value: number }>).detail?.value;
       if (value == null || !Number.isFinite(value)) return;
       const stored =
@@ -1573,25 +1576,25 @@ export default function NbaDashboardPage() {
       <div className="px-0 dashboard-container" style={containerStyle}>
         <div className={innerContainerClassName} style={innerContainerStyle}>
           <div className="pt-4 min-h-0 lg:h-full dashboard-container" style={{ paddingLeft: 0 }}>
-            <DashboardLeftSidebarWrapper
-              sidebarOpen={sidebarOpen}
-              setSidebarOpen={setSidebarOpen}
-              oddsFormat={oddsFormat}
-              setOddsFormat={setOddsFormat}
+        <DashboardLeftSidebarWrapper
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+            oddsFormat={oddsFormat}
+            setOddsFormat={setOddsFormat}
               hasPremium={isPro}
-              avatarUrl={avatarUrl}
-              username={username}
-              userEmail={userEmail}
-              isPro={isPro}
+            avatarUrl={avatarUrl}
+            username={username}
+            userEmail={userEmail}
+            isPro={isPro}
               onSubscriptionClick={() => router.push('/subscription')}
               onSignOutClick={async () => {
                 await supabase.auth.signOut({ scope: 'local' });
                 router.push('/');
               }}
-              onProfileUpdated={({ username: u, avatar_url: a }) => {
-                if (u !== undefined) setUsername(u ?? null);
-                if (a !== undefined) setAvatarUrl(a ?? null);
-              }}
+            onProfileUpdated={({ username: u, avatar_url: a }) => {
+              if (u !== undefined) setUsername(u ?? null);
+              if (a !== undefined) setAvatarUrl(a ?? null);
+            }}
               showDashboardNavLinks
             />
             <div className="flex flex-col lg:flex-row gap-0 lg:gap-0 min-h-0">
@@ -1959,10 +1962,10 @@ export default function NbaDashboardPage() {
                     }
                     season={NBA_SHOT_CHART_SEASON_YEAR}
                     teammateFilterName={nbaPropsMode === 'player' ? teammateFilterName : null}
-                    withWithoutMode={withWithoutMode}
+              withWithoutMode={withWithoutMode}
                     setTeammateFilterName={nbaPropsMode === 'player' ? setTeammateFilterName : undefined}
                     setWithWithoutMode={nbaPropsMode === 'player' ? setWithWithoutMode : undefined}
-                    clearTeammateFilter={clearTeammateFilter}
+      clearTeammateFilter={clearTeammateFilter}
                     rosterPlayers={rosterPlayers}
                     statLineCounts={nbaStatLineCounts}
                     slotLeftOfLine={
@@ -2193,7 +2196,7 @@ export default function NbaDashboardPage() {
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                       <NbaBoxScore
                         gameLogs={selectedPlayerGameLogs}
-                        selectedPlayer={selectedPlayer}
+              selectedPlayer={selectedPlayer}
                         isLoading={statsLoadingForPlayer || showStatsLoadingShell}
                         isDark={!!mounted && isDark}
                         resolveTeamLogo={(name) => resolveNbaTeamLogo(name, logoByTeam)}
@@ -2354,7 +2357,7 @@ export default function NbaDashboardPage() {
                   </div>
                   </>
                   )}
-                </div>
+          </div>
 
                 {/* 4.52 Player vs Team / Similar Players — mobile (player mode) */}
                 {nbaPropsMode === 'player' && (
@@ -2493,7 +2496,7 @@ export default function NbaDashboardPage() {
                   >
                     <NbaBoxScore
                       gameLogs={selectedPlayerGameLogs}
-                      selectedPlayer={selectedPlayer}
+            selectedPlayer={selectedPlayer}
                       isLoading={statsLoadingForPlayer}
                       isDark={!!mounted && isDark}
                       resolveTeamLogo={(name) => resolveNbaTeamLogo(name, logoByTeam)}
@@ -2524,10 +2527,10 @@ export default function NbaDashboardPage() {
                       gameLogs={selectedPlayerGameLogs as unknown as Array<Record<string, unknown>>}
                       rosterPlayers={rosterPlayers}
                       teammateFilterName={teammateFilterName}
-                      setTeammateFilterName={setTeammateFilterName}
-                      withWithoutMode={withWithoutMode}
-                      setWithWithoutMode={setWithWithoutMode}
-                      clearTeammateFilter={clearTeammateFilter}
+            setTeammateFilterName={setTeammateFilterName}
+            withWithoutMode={withWithoutMode}
+            setWithWithoutMode={setWithWithoutMode}
+            clearTeammateFilter={clearTeammateFilter}
                     />
                   )}
                 </div>
@@ -2535,7 +2538,7 @@ export default function NbaDashboardPage() {
                 {/* 4.7 Ladder — mobile */}
                 <div className={`order-12 lg:hidden w-full min-w-0 rounded-lg ${NBA_DASH_CARD_GLOW} p-3 sm:p-4 pb-8 sm:pb-10`}>
                   <NbaLadderCard isDark={!!mounted && isDark} logoByTeam={logoByTeam} />
-                </div>
+        </div>
 
                 {/* 5. Shot chart — mobile (desktop lives in right panel, same as NBA) */}
                 {nbaPropsMode === 'player' ? (
@@ -2558,11 +2561,11 @@ export default function NbaDashboardPage() {
                           opponentTeam={displayOpponent}
                         />
                       </ProFeatureLock>
-                    </div>
-                  </div>
+          </div>
+        </div>
                 ) : null}
-              </div>
-
+      </div>
+      
               {/* Right panel — desktop */}
               <div
                 className={`dashboard-scroll-side relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 px-2 sm:px-2 md:px-0 pb-8 lg:pb-12 fade-scrollbar custom-scrollbar min-w-0 ${

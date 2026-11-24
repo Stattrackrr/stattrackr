@@ -16,6 +16,7 @@ import TennisAdvancedAveragesCard from '@/app/tennis/components/TennisAdvancedAv
 import { TennisSimilarPlayersCard } from '@/app/tennis/components/TennisSimilarPlayersCard';
 import { TennisAskPanel } from '@/app/tennis/components/TennisAskPanel';
 import { TennisLineSelector } from '@/app/tennis/components/TennisLineSelector';
+import { isLineInputFocused } from '@/lib/bettingLineInput';
 import {
   isTennisOuStat,
   TENNIS_DASHBOARD_LINES,
@@ -1399,6 +1400,8 @@ export default function TennisDashboardPage() {
         ignoreNextTransientLineRef.current = false;
         return;
       }
+      // While stepping the line, LineSelector updates live; skip parent setState so the chart stays smooth.
+      if (isLineInputFocused()) return;
       const value = (e as CustomEvent<{ value: number }>).detail?.value;
       if (value == null || !Number.isFinite(value)) return;
       if (!tennisOddsBooks.length || !isTennisOuStat(mainChartStat)) return;

@@ -21,6 +21,7 @@ import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/component
 import { AflRoleStatsCard } from '@/app/afl/components/AflRoleStatsCard';
 import { type AflBookRow, type AflPropLine, type AflPropOverOnly, type AflPropYesNo, getGoalsMarketLineOver, getGoalsMarketLines } from '@/app/afl/components/AflBestOddsTable';
 import { AflLineSelector } from '@/app/afl/components/AflLineSelector';
+import { isLineInputFocused } from '@/lib/bettingLineInput';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import { JOURNAL_ENABLED } from '@/lib/nbaConstants';
 import {
@@ -1584,6 +1585,8 @@ export default function AFLPage() {
         ignoreNextTransientLineRef.current = false;
         return;
       }
+      // While stepping the line, LineSelector updates live; skip parent setState so the chart stays smooth.
+      if (isLineInputFocused()) return;
       const value = (e as CustomEvent<{ value: number }>).detail?.value;
       if (value == null || !Number.isFinite(value)) return;
 

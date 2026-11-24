@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { americanToDecimal } from '@/lib/currencyUtils';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import { opponentToFootywireTeam } from '@/lib/aflTeamMapping';
+import { useLiveTransientLine } from '@/lib/useLiveTransientLine';
 import type { AflBookRow } from './AflBestOddsTable';
 import { getGoalsMarketLineOver, getGoalsMarketLines } from './AflBestOddsTable';
 
@@ -94,6 +95,13 @@ export function AflLineSelector({
 }: AflLineSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const liveLine = useLiveTransientLine(currentLineValue);
+  const effectiveLine =
+    liveLine != null && Number.isFinite(liveLine)
+      ? liveLine
+      : currentLineValue != null && Number.isFinite(currentLineValue)
+        ? currentLineValue
+        : null;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -107,13 +115,46 @@ export function AflLineSelector({
   const displayKey = (isDisposals ? selectedDisposalsColumn : playerPropColumn ?? STAT_TO_KEY[selectedStat]) as keyof AflBookRow | undefined;
   const key = (playerPropColumn ?? STAT_TO_KEY[selectedStat]) as keyof AflBookRow | undefined;
   const isGoalsOver = playerPropColumn === 'GoalsOver';
-  const selectedBook = books[selectedBookIndex];
   const isMoneyline = !playerPropColumn && selectedStat === 'moneyline';
   const isYesNo = playerPropColumn === 'AnytimeGoalScorer';
-  // For Goals: use line that matches currentLineValue so 0.5 (Anytime) and Goals Over both display correctly
+  const liveBookIndex = useMemo(() => {
+    if (liveLine == null || isMoneyline || isYesNo) return null;
+    const tol = 0.01;
+    if (isGoalsOver) {
+      return books.findIndex((book) =>
+        getGoalsMarketLines(book).some((x) => {
+          const n = parseFloat(String(x.line).replace(/[^0-9.-]/g, ''));
+          return Number.isFinite(n) && Math.abs(n - liveLine) < tol;
+        })
+      );
+    }
+    if (isDisposals) {
+      return books.findIndex((book) => {
+        for (const c of ['Disposals', 'DisposalsOver'] as const) {
+          const lineStr = (book[c] as { line?: string } | undefined)?.line;
+          if (!lineStr || lineStr === 'N/A') continue;
+          const n = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+          if (Number.isFinite(n) && Math.abs(n - liveLine) < tol) return true;
+        }
+        return false;
+      });
+    }
+    const col = (playerPropColumn ?? STAT_TO_KEY[selectedStat]) as keyof AflBookRow | undefined;
+    if (!col) return -1;
+    return books.findIndex((book) => {
+      const lineStr = (book[col] as { line?: string } | undefined)?.line;
+      if (!lineStr || lineStr === 'N/A') return false;
+      const n = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
+      return Number.isFinite(n) && Math.abs(n - liveLine) < tol;
+    });
+  }, [books, isDisposals, isGoalsOver, isMoneyline, isYesNo, liveLine, playerPropColumn, selectedStat]);
+  const displayBookIndex =
+    liveLine != null ? (liveBookIndex != null && liveBookIndex >= 0 ? liveBookIndex : -1) : selectedBookIndex;
+  const selectedBook = displayBookIndex >= 0 ? books[displayBookIndex] : undefined;
+  // For Goals: use line that matches effectiveLine so 0.5 (Anytime) and Goals Over both display correctly
   const goalsData = isGoalsOver && selectedBook
-    ? (currentLineValue != null && Number.isFinite(currentLineValue)
-        ? getGoalsMarketLines(selectedBook).find((x) => Math.abs(parseFloat(x.line) - currentLineValue) < 0.01)
+    ? (effectiveLine != null && Number.isFinite(effectiveLine)
+        ? getGoalsMarketLines(selectedBook).find((x) => Math.abs(parseFloat(x.line) - effectiveLine) < 0.01)
         : null) ?? getGoalsMarketLineOver(selectedBook)
     : null;
   const data = isGoalsOver
@@ -127,6 +168,7 @@ export function AflLineSelector({
 
   const hasDisplayableOdds =
     books.length > 0 &&
+    displayBookIndex >= 0 &&
     (isMoneyline
       ? data && (data as { home?: string; away?: string }).home !== 'N/A' && (data as { home?: string; away?: string }).away !== 'N/A'
       : isYesNo
@@ -138,13 +180,13 @@ export function AflLineSelector({
             : data && (data.over !== 'N/A' || (data as { under?: string }).under !== 'N/A'));
 
   const selectedBookLineMismatch =
-    currentLineValue != null &&
-    Number.isFinite(currentLineValue) &&
+    effectiveLine != null &&
+    Number.isFinite(effectiveLine) &&
     !isMoneyline &&
     !isYesNo &&
     data?.line != null &&
     data.line !== 'N/A' &&
-    Math.abs(parseFloat(String(data.line).replace(/[^0-9.-]/g, '')) - currentLineValue) >= 0.01;
+    Math.abs(parseFloat(String(data.line).replace(/[^0-9.-]/g, '')) - effectiveLine) >= 0.01;
 
   // For disposals stat: O/U lines first, then Over-only (alt) lines with an "Alternate" section title
   const disposalsOuItems = isDisposals
@@ -193,7 +235,8 @@ export function AflLineSelector({
     : [];
   const hasGoalsDropdown = goalsDropdownItems.length > 0;
 
-  const showSkeleton = (books.length === 0 || !hasDisplayableOdds || selectedBookLineMismatch) && !disabled;
+  const showSkeleton =
+    (books.length === 0 || displayBookIndex < 0 || !hasDisplayableOdds || selectedBookLineMismatch) && !disabled;
 
   return (
     <div className="relative flex-shrink-0 w-[100px] sm:w-[110px] md:w-[120px]" ref={ref}>
@@ -455,7 +498,7 @@ export function AflLineSelector({
                 ) : isGoalsOver && hasGoalsDropdown ? (
                   goalsDropdownItems.map((item) => {
                     const book = books[item.bookIndex];
-                    const isSelected = item.bookIndex === selectedBookIndex && currentLineValue != null && Number.isFinite(currentLineValue) && Math.abs(parseFloat(item.line) - currentLineValue) < 0.01;
+                    const isSelected = item.bookIndex === (displayBookIndex >= 0 ? displayBookIndex : selectedBookIndex) && effectiveLine != null && Number.isFinite(effectiveLine) && Math.abs(parseFloat(item.line) - effectiveLine) < 0.01;
                     const info = getBookmakerInfo(book.name);
                     return (
                       <button

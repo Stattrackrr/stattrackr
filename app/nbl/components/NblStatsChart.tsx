@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { NblGameFilterDataItem } from '@/app/nbl/components/NblGameFilters';
-import { writeLineInputValue } from '@/lib/bettingLineInput';
+import { isLineInputFocused, writeLineInputValue } from '@/lib/bettingLineInput';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import NblXAxisTick from '@/app/nbl/components/NblXAxisTick';
@@ -2052,9 +2052,10 @@ export function NblStatsChart({
   }, [selectedStat, externalLineValue, hasDecimalValues, emitTransientLine, chartDataReady]);
 
   // When external line (e.g. from selected bookmaker) changes, sync chart line to it.
-  // Never rewrite the DOM while focused — that ate digits mid-keystroke.
+  // Never rewrite while focused — parent sync + digit overwrite both fight the spinner.
   useEffect(() => {
     if (externalLineValue == null || !Number.isFinite(externalLineValue)) return;
+    if (isLineInputFocused()) return;
     const [min, max] = yAxisConfig.domain;
     const clamped = Math.max(min, Math.min(max, externalLineValue));
     const next = hasDecimalValues ? Math.round(clamped * 10) / 10 : Math.round(clamped * 2) / 2;
@@ -2472,7 +2473,15 @@ export function NblStatsChart({
             onChange={(e) => {
               const raw = Number((e.target as HTMLInputElement).value);
               if (!Number.isFinite(raw)) return;
-              setLineValue(normalizeLineValue(raw));
+              const next = normalizeLineValue(raw);
+              // Chart bars update locally (smooth). Emit for LineSelector live chips;
+              // parents ignore while focused so the heavy dashboard doesn't re-render.
+              setLineValue(next);
+              if (lineSyncDebounceRef.current) {
+                clearTimeout(lineSyncDebounceRef.current);
+                lineSyncDebounceRef.current = null;
+              }
+              emitTransientLine(next);
             }}
             onBlur={(e) => {
               const raw = Number((e.target as HTMLInputElement).value);

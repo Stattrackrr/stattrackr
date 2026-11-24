@@ -31,6 +31,7 @@ import {
 import NblTeamMatchupCard from '@/app/nbl/components/NblTeamMatchupCard';
 import { NblTeamSelectionsCard } from '@/app/nbl/components/NblTeamSelectionsCard';
 import { NblLineSelector } from '@/app/nbl/components/NblLineSelector';
+import { isLineInputFocused } from '@/lib/bettingLineInput';
 import { NblInjuriesCard } from '@/app/nbl/components/NblInjuriesCard';
 import { NblLadderCard } from '@/app/nbl/components/NblLadderCard';
 import { NblModelPanel } from '@/app/nbl/components/NblModelPanel';
@@ -1357,6 +1358,8 @@ export default function NblDashboardPage() {
         ignoreNextTransientLineRef.current = false;
         return;
       }
+      // While stepping the line, LineSelector updates live; skip parent setState so the chart stays smooth.
+      if (isLineInputFocused()) return;
       const value = (e as CustomEvent<{ value: number }>).detail?.value;
       if (value == null || !Number.isFinite(value)) return;
       const stored =
