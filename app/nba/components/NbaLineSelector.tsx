@@ -134,12 +134,14 @@ export function NbaLineSelector({
   const selectedBook = displayBookIndex >= 0 ? books[displayBookIndex] : undefined;
   const selectedLine: NbaPropLine | undefined = isOu
     ? market === 'spread'
-      ? nbaOuHasOdds(selectedBook?.Spread)
+      ? selectedBook && nbaOuHasOdds(selectedBook.Spread)
         ? { ...selectedBook.Spread, kind: 'ou', label: selectedBook.Spread.line }
         : undefined
-      : effectiveLine != null && Number.isFinite(effectiveLine)
+      : selectedBook && effectiveLine != null && Number.isFinite(effectiveLine)
         ? nbaExactLineOnBook(selectedBook, effectiveLine)
-        : nbaLineMatchingValue(selectedBook, effectiveLine)
+        : selectedBook
+          ? nbaLineMatchingValue(selectedBook, effectiveLine)
+          : undefined
     : undefined;
   const ouRow = selectedLine;
   const bookmakerInfo = selectedBook ? getBookmakerInfo(selectedBook.name) : null;
