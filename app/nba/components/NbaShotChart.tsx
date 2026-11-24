@@ -199,18 +199,13 @@ function getColorForRank(rank: number, fgPct?: number): string {
   return '#6b7280';
 }
 
-function defenseRankPillClass(rank: number): string {
-  if (rank <= 6) return 'bg-rose-500/15 text-rose-500 dark:text-rose-400';
-  if (rank <= 12) return 'bg-orange-500/15 text-orange-500 dark:text-orange-400';
-  if (rank <= 21) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
-  return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+/** Same hex bands as court zone fills so analysis pills match Opp Def colours. */
+function defenseRankPillStyle(rank: number): { backgroundColor: string; color: string } {
+  return { backgroundColor: getColorForRank(rank), color: '#fff' };
 }
 
-function scoringRankPillClass(rank: number): string {
-  if (rank <= 2) return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
-  if (rank <= 4) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
-  if (rank <= 7) return 'bg-orange-500/15 text-orange-500 dark:text-orange-400';
-  return 'bg-rose-500/15 text-rose-500 dark:text-rose-400';
+function scoringRankPillStyle(rank: number): { backgroundColor: string; color: string } {
+  return { backgroundColor: getColorForScoringRank(rank), color: '#fff' };
 }
 
 function getColorForScoringRank(rank: number): string {
@@ -425,7 +420,6 @@ function AnalysisAccordion({
                       ? getColorForScoringRank(rank)
                       : getColorForRank(rank)
                     : '#6b7280';
-                const pillClass = invert ? scoringRankPillClass : defenseRankPillClass;
                 const isEmpty = row.ptsPerGame === '—' && row.rank <= 0;
                 return (
                   <div
@@ -461,11 +455,14 @@ function AnalysisAccordion({
                           row.rankPills.map((pill, pillIndex) => (
                             <span
                               key={`${row.id}-${pillIndex}`}
-                              className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${
+                              className="rounded-md px-1.5 py-0.5 text-[9px] font-bold tabular-nums"
+                              style={
                                 valuesLocked
-                                  ? 'bg-gray-500/15 text-gray-500 dark:text-gray-400'
-                                  : pillClass(pill.rank)
-                              }`}
+                                  ? { backgroundColor: 'rgba(107,114,128,0.15)', color: '#6b7280' }
+                                  : invert
+                                    ? scoringRankPillStyle(pill.rank)
+                                    : defenseRankPillStyle(pill.rank)
+                              }
                             >
                               {pill.label}
                             </span>
@@ -1591,19 +1588,19 @@ export function NbaShotChart({
               </span>
               <div className="flex items-center gap-1">
                 <div className="w-5 h-5 rounded" style={{ backgroundColor: '#ef4444' }} />
-                <span className="text-gray-600 dark:text-gray-400">#1-2 (Elite)</span>
+                <span className="text-gray-600 dark:text-gray-400">#1-6 (Elite)</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-5 h-5 rounded" style={{ backgroundColor: '#f97316' }} />
-                <span className="text-gray-600 dark:text-gray-400">#3-4 (Good)</span>
+                <span className="text-gray-600 dark:text-gray-400">#7-12 (Good)</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-5 h-5 rounded" style={{ backgroundColor: '#fbbf24' }} />
-                <span className="text-gray-600 dark:text-gray-400">#5-7 (Avg)</span>
+                <span className="text-gray-600 dark:text-gray-400">#13-21 (Avg)</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-5 h-5 rounded" style={{ backgroundColor: '#10b981' }} />
-                <span className="text-gray-600 dark:text-gray-400">#8-10 (Weak)</span>
+                <span className="text-gray-600 dark:text-gray-400">#22-30 (Weak)</span>
               </div>
             </div>
           ) : (
