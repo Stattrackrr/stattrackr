@@ -102,6 +102,15 @@ export async function GET(request: NextRequest) {
       label: `shot-defense ${team}`,
       run: () => shotChartGET(req('/api/nba/dash/shot-chart', { mode: 'defense', team, years: shotYears, ranks: '1' })),
     },
+    // Shared Advanced averages baseline (no playerId) — same key the pie uses without a teammate split.
+    {
+      label: `usage L5 ${team}`,
+      run: () => teamUsageGET(req('/api/nba/dash/team-usage', { team, year, tf: 'last5' })),
+    },
+    {
+      label: `usage L10 ${team}`,
+      run: () => teamUsageGET(req('/api/nba/dash/team-usage', { team, year, tf: 'last10' })),
+    },
   ]);
   const perPlayer: Task[] = [...players].flatMap(([playerId, p]) => [
     {
@@ -115,7 +124,11 @@ export async function GET(request: NextRequest) {
         shotChartGET(req('/api/nba/dash/shot-chart', { mode: 'player', playerName: p.name, years: shotYears, team: p.team })),
     },
     {
-      label: `usage ${p.name}`,
+      label: `usage L5 ${p.name}`,
+      run: () => teamUsageGET(req('/api/nba/dash/team-usage', { team: p.team, year, tf: 'last5', playerId })),
+    },
+    {
+      label: `usage L10 ${p.name}`,
       run: () => teamUsageGET(req('/api/nba/dash/team-usage', { team: p.team, year, tf: 'last10', playerId })),
     },
     {

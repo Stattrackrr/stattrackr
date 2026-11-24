@@ -23,14 +23,21 @@ export async function GET(request: NextRequest) {
   const ww = String(sp.get('ww') || '').trim().toLowerCase();
   try {
     const year = await resolveNbaDataSeason(tf.year ?? (Number.isFinite(yearParam) && yearParam > 0 ? yearParam : null));
+    const teammatePlayerId = String(sp.get('teammateId') || '').trim() || null;
+    const teammateName = String(sp.get('teammateName') || '').trim() || null;
+    const teammateMode = ww === 'without' ? ('without' as const) : ww === 'with' ? ('with' as const) : null;
+    // With/without only applies when a teammate is chosen. Otherwise playerId only tweaks the
+    // minutes floor for the focus player — share the team baseline cache so stale per-player
+    // keys (built before team-window L5) cannot keep serving the wrong roster.
+    const hasTeammateFilter = Boolean((teammatePlayerId || teammateName) && teammateMode);
     const opts = {
       team,
       year,
       lastN: tf.lastN,
-      includePlayerId: String(sp.get('playerId') || '').trim() || null,
-      teammatePlayerId: String(sp.get('teammateId') || '').trim() || null,
-      teammateName: String(sp.get('teammateName') || '').trim() || null,
-      teammateMode: ww === 'without' ? ('without' as const) : ww === 'with' ? ('with' as const) : null,
+      includePlayerId: hasTeammateFilter ? String(sp.get('playerId') || '').trim() || null : null,
+      teammatePlayerId: hasTeammateFilter ? teammatePlayerId : null,
+      teammateName: hasTeammateFilter ? teammateName : null,
+      teammateMode: hasTeammateFilter ? teammateMode : null,
     };
     const { players, sampleGames } = await nbaDashCached(
       'team-usage',
