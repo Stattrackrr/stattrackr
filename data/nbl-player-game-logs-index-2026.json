@@ -1,10 +1,10 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-22T20:23:24.644Z",
+  "generatedAt": "2026-11-24T00:45:12.399Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 160,
-  "gameRows": 1522,
+  "playerCount": 161,
+  "gameRows": 1530,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -1003,6 +1003,14 @@
       "name": "Raul Neto",
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
+      "gameCount": 8,
+      "cacheFile": "nbl-model/cache/player-logs/006371b2-9a3f-4d04-8057-723db3ee6042-2026.json"
+    },
+    {
+      "playerId": "006371b2-9a3f-4d04-8057-723db3ee6042",
+      "name": "Raul Neto",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
       "gameCount": 8,
       "cacheFile": "nbl-model/cache/player-logs/006371b2-9a3f-4d04-8057-723db3ee6042-2026.json"
     },

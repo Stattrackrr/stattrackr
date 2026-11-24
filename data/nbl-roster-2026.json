@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-11-22T20:22:58.028Z",
+  "generatedAt": "2026-11-24T00:44:51.214Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 160,
+  "playerCount": 161,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -1253,6 +1253,16 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "G",
       "jersey": "19",
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b8e6235a56aa463bb71d84e75ad65dfc?size=800&format=webp"
+    },
+    {
+      "playerId": "006371b2-9a3f-4d04-8057-723db3ee6042",
+      "name": "Raul Neto",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "position": "G",
+      "jersey": null,
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b8e6235a56aa463bb71d84e75ad65dfc?size=800&format=webp"
     },
     {
