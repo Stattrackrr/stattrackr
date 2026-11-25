@@ -424,7 +424,16 @@ const PROPS_DESKTOP_IP_COL_STYLE = {
 function navigateToTennisDashboardFromProp(
   prop: Pick<
     PlayerProp,
-    'playerName' | 'playerId' | 'team' | 'opponent' | 'opponentIoc' | 'opponentId' | 'statType' | 'line' | 'bookmaker'
+    | 'playerName'
+    | 'playerId'
+    | 'team'
+    | 'opponent'
+    | 'opponentIoc'
+    | 'opponentId'
+    | 'opponentRank'
+    | 'statType'
+    | 'line'
+    | 'bookmaker'
   >,
   router: { push: (href: string) => void },
   lineValue?: number
@@ -436,6 +445,7 @@ function navigateToTennisDashboardFromProp(
     opponent: prop.opponent,
     opponentIoc: prop.opponentIoc,
     opponentId: prop.opponentId,
+    opponentRank: prop.opponentRank,
     statType: prop.statType,
     line:
       typeof lineValue === 'number' && Number.isFinite(lineValue)

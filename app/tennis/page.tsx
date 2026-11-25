@@ -686,6 +686,7 @@ export default function TennisDashboardPage() {
   const [propsOpponentFallback, setPropsOpponentFallback] = useState<string | null>(null);
   const [propsOpponentIocFallback, setPropsOpponentIocFallback] = useState<string | null>(null);
   const [propsOpponentIdFallback, setPropsOpponentIdFallback] = useState<string | null>(null);
+  const [propsOpponentRankFallback, setPropsOpponentRankFallback] = useState<number | null>(null);
   const [selectedPlayerGameLogs, setSelectedPlayerGameLogs] = useState<Array<Record<string, unknown>>>([]);
   const [selectedTeamGameLogs, setSelectedTeamGameLogs] = useState<Array<Record<string, unknown>>>([]);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
@@ -884,6 +885,10 @@ export default function TennisDashboardPage() {
       if (urlOpponentIoc) setPropsOpponentIocFallback(urlOpponentIoc);
       const urlOpponentId = String(url.searchParams.get('oid') || '').trim();
       if (urlOpponentId) setPropsOpponentIdFallback(urlOpponentId);
+      const urlOpponentRank = Number(url.searchParams.get('orank') || '');
+      if (Number.isFinite(urlOpponentRank) && urlOpponentRank > 0) {
+        setPropsOpponentRankFallback(Math.round(urlOpponentRank));
+      }
     } catch {
       tennisLineFromUrlRef.current = null;
     }
@@ -1047,6 +1052,8 @@ export default function TennisDashboardPage() {
     propsOpponentFallback ?? '',
     propsOpponentIocFallback ?? '',
     propsOpponentIdFallback ?? '',
+    propsOpponentRankFallback ?? '',
+    nextGameOpponentRank ?? '',
     selectedPlayer?.playerId ?? '',
     mainChartStat ?? '',
     chartTimeframe ?? '',
@@ -1079,6 +1086,9 @@ export default function TennisDashboardPage() {
       const nextOppId = String(nextGameOpponentId || propsOpponentIdFallback || '').trim();
       if (nextOppId) url.searchParams.set('oid', nextOppId);
       else url.searchParams.delete('oid');
+      const nextOppRank = nextGameOpponentRank ?? propsOpponentRankFallback;
+      if (nextOppRank != null && nextOppRank > 0) url.searchParams.set('orank', String(nextOppRank));
+      else url.searchParams.delete('orank');
       if (mainChartStat) url.searchParams.set('stat', mainChartStat);
       else url.searchParams.delete('stat');
       url.searchParams.set('tf', chartTimeframe);
@@ -1111,6 +1121,7 @@ export default function TennisDashboardPage() {
       url.searchParams.delete('opponent');
       url.searchParams.delete('oioc');
       url.searchParams.delete('oid');
+      url.searchParams.delete('orank');
       url.searchParams.delete('player');
       url.searchParams.delete('pid');
       url.searchParams.delete('stat');
@@ -1435,6 +1446,7 @@ export default function TennisDashboardPage() {
         .trim()
         .toLowerCase()
         .replace(/\s+/g, '');
+    let nextBookIndex = selectedTennisBookIndex;
     const preferredBook = preferredTennisBookmakerRef.current;
     if (preferredBook) {
       const preferredNorm = normalizeBook(preferredBook);
@@ -1443,6 +1455,7 @@ export default function TennisDashboardPage() {
         return bookNorm === preferredNorm || bookNorm.includes(preferredNorm) || preferredNorm.includes(bookNorm);
       });
       if (preferredIndex >= 0) {
+        nextBookIndex = preferredIndex;
         setSelectedTennisBookIndex((prev) => {
           if (prev !== preferredIndex) ignoreNextTransientLineRef.current = true;
           return preferredIndex;
@@ -1452,9 +1465,35 @@ export default function TennisDashboardPage() {
     }
     if (!isTennisOuStat(mainChartStat)) return;
     const urlLine = tennisLineFromUrlRef.current;
+    let lineForSync = tennisGameLineValue;
     if (urlLine != null && Number.isFinite(urlLine)) {
       setTennisGameLineValue(urlLine);
       tennisLineFromUrlRef.current = null;
+      lineForSync = urlLine;
+    }
+    // Incoming props (esp. sparse markets like OPP GAMES WON) may land on a preferred
+    // book that doesn't post that line — pick any book that does so the chip isn't blank.
+    if (
+      hasIncomingTennisBookOrLineRef.current &&
+      lineForSync != null &&
+      Number.isFinite(lineForSync)
+    ) {
+      const bookHasLine = (book: (typeof tennisOddsBooks)[number] | undefined) =>
+        Boolean(
+          book &&
+            tennisOuLinesForStat(book, mainChartStat, TENNIS_DASHBOARD_LINES).some((row) =>
+              tennisLineMatches(row.line, lineForSync!, 0.01)
+            )
+        );
+      if (!bookHasLine(tennisOddsBooks[nextBookIndex])) {
+        const idx = tennisOddsBooks.findIndex((book) => bookHasLine(book));
+        if (idx >= 0 && idx !== nextBookIndex) {
+          setSelectedTennisBookIndex((prev) => {
+            if (prev !== idx) ignoreNextTransientLineRef.current = true;
+            return idx;
+          });
+        }
+      }
       return;
     }
     if (hasIncomingTennisBookOrLineRef.current) return;
@@ -1468,7 +1507,7 @@ export default function TennisDashboardPage() {
     }
     if (n != null) setTennisGameLineValue(n);
     else setTennisGameLineValue(0.5);
-  }, [mainChartStat, tennisOddsBooks]);
+  }, [mainChartStat, tennisOddsBooks, selectedTennisBookIndex, tennisGameLineValue]);
 
   useEffect(() => {
     if (!tennisOddsBooks.length) return;
@@ -1600,7 +1639,8 @@ export default function TennisDashboardPage() {
     : NaN;
   const matchupOpponentRank = displayOpponent
     ? nextGameOpponentRank ??
-      (Number.isFinite(rosterOpponentRank) && rosterOpponentRank > 0 ? rosterOpponentRank : null)
+      (Number.isFinite(rosterOpponentRank) && rosterOpponentRank > 0 ? rosterOpponentRank : null) ??
+      propsOpponentRankFallback
     : null;
   const playerRankRaw = Number(selectedPlayer?.jersey ?? rosterSelf?.jersey);
   const matchupPlayerRank =
