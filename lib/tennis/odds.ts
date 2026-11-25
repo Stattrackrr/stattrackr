@@ -858,6 +858,18 @@ export async function refreshTennisOddsSnapshots(opts?: {
         tournamentName: game.tournamentName,
       });
     }
+    // Challenger/ITF oddsnet orphans flicker off the props board when a refresh prices
+    // the main tour but misses this cycle's orphan pull (quota/timeout/cap). Keep prior
+    // oddsnet index rows that still have snapshots and a tip still on the board.
+    for (const row of index) {
+      const matchId = String(row.matchId || '').trim();
+      if (!matchId || seen.has(matchId) || !isTennisOddsNetMatchId(matchId)) continue;
+      if (!keepOddsIndexMatch(row, upcomingForIndex)) continue;
+      const snap = await getSnapshot(matchId);
+      if (!snap?.bookmakers?.length) continue;
+      seen.add(matchId);
+      indexMatches.push(row);
+    }
     const boardable = indexMatches.filter((row) => keepOddsIndexMatch(row, upcomingForIndex));
     if (!boardable.length) {
       return keepPreviousTennisBoard(previous, {

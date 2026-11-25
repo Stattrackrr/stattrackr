@@ -1652,6 +1652,21 @@ async function loadTennisPlayerPropsList(refresh?: boolean): Promise<TennisPlaye
       return payload;
     }
     if (builtCount > 0) {
+      // Overlay filtered every row (e.g. transient upcoming miss). Never publish an empty
+      // board over a healthy cache — that is what made Challenger props vanish mid-session.
+      const previous = await readUsableTennisListCache();
+      if (previous?.data.length) {
+        try {
+          const filtered = await applyTennisListLiveOverlay(previous);
+          if (filtered.data.length) {
+            const data = attachTennisHeadshots(filtered.data);
+            return data === filtered.data ? filtered : { ...filtered, data };
+          }
+        } catch {
+          return previous;
+        }
+        return previous;
+      }
       const empty = {
         ...payload,
         data: [] as TennisListPropRow[],
