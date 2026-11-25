@@ -4,6 +4,7 @@ import { clearInflightJsonByUrlPrefix } from '@/lib/clientFetchDedupe';
 
 let controller: AbortController | null = null;
 let leaving = false;
+const inflight = new Map<string, Promise<Response>>();
 
 function currentController(): AbortController {
   if (!controller || controller.signal.aborted) {
@@ -28,6 +29,7 @@ function abortCurrent(): void {
     controller.abort();
   }
   controller = new AbortController();
+  inflight.clear();
   clearInflightJsonByUrlPrefix('/api/afl');
 }
 
@@ -59,6 +61,23 @@ function mergedSignal(extra?: AbortSignal | null): AbortSignal {
 export function aflDashboardFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   if (leaving) {
     return Promise.reject(new DOMException('The operation was aborted.', 'AbortError'));
+  }
+  const url = String(input);
+  // Props prefetch + dashboard must share one request (esp. 3-season game logs).
+  const canDedupe = !init?.method || init.method === 'GET';
+  if (canDedupe) {
+    let pending = inflight.get(url);
+    if (!pending) {
+      pending = fetch(input, {
+        cache: 'default',
+        ...init,
+        signal: mergedSignal(init?.signal ?? null),
+      }).finally(() => {
+        inflight.delete(url);
+      });
+      inflight.set(url, pending);
+    }
+    return pending.then((res) => res.clone());
   }
   return fetch(input, {
     cache: 'default',

@@ -460,10 +460,53 @@ function navigateToTennisDashboardFromProp(
     playerId: prop.playerId,
     tour: String(prop.team || '').trim(),
     opponent: prop.opponent,
+    opponentId: prop.opponentId,
   });
   abortAflDashboardFetches();
   snapshotPropsPageBeforeLeave();
   router.push(href);
+}
+
+/** Start critical dashboard log fetches on hover so click paint is already warm. */
+function prefetchDashboardFromPropRow(
+  prop: Pick<PlayerProp, 'playerName' | 'playerId' | 'team' | 'opponent' | 'opponentId'>,
+  rowSport: string
+): void {
+  if (rowSport === 'nba') {
+    prefetchNbaDashboardFromProps({
+      playerName: prop.playerName,
+      playerId: prop.playerId,
+      team: prop.team,
+      opponent: prop.opponent,
+    });
+    return;
+  }
+  if (rowSport === 'nbl') {
+    prefetchNblDashboardFromProps({
+      playerName: prop.playerName,
+      playerId: prop.playerId,
+      team: prop.team,
+      opponent: prop.opponent,
+    });
+    return;
+  }
+  if (rowSport === 'afl') {
+    prefetchAflDashboardFromProps({
+      playerName: prop.playerName,
+      team: prop.team || '',
+      opponent: prop.opponent || '',
+    });
+    return;
+  }
+  if (isTennisPropsSport(rowSport)) {
+    prefetchTennisDashboardFromProps({
+      playerName: prop.playerName,
+      playerId: prop.playerId,
+      tour: String(prop.team || '').trim(),
+      opponent: prop.opponent,
+      opponentId: prop.opponentId,
+    });
+  }
 }
 
 function tennisPropsHeadshotUrl(
@@ -10379,6 +10422,8 @@ export default function NBALandingPage() {
                               <tr
                                 key={propsListRowKey(prop, rowSport, idx)}
                                 className={`border-b ${mounted && isDark ? 'border-gray-900 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
+                                onMouseEnter={() => prefetchDashboardFromPropRow(prop, rowSport)}
+                                onFocus={() => prefetchDashboardFromPropRow(prop, rowSport)}
                                 onAuxClick={(e) => {
                                   if (e.button !== 1) return;
                                   if (eventTargetIsInteractive(e)) return;
@@ -11844,6 +11889,8 @@ export default function NBALandingPage() {
                               className={`relative rounded-2xl border px-3.5 py-3.5 cursor-pointer active:scale-[0.99] transition-transform shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
                                 mounted && isDark ? 'bg-gradient-to-br from-[#0b1a2b] via-[#10253f] to-[#1b1c3d] border-[#463e6b]' : 'bg-white border-gray-200'
                               }`}
+                              onMouseEnter={() => prefetchDashboardFromPropRow(prop, rowSport)}
+                              onTouchStart={() => prefetchDashboardFromPropRow(prop, rowSport)}
                               onAuxClick={(e) => {
                                 if (e.button !== 1) return;
                                 if (eventTargetIsInteractive(e)) return;

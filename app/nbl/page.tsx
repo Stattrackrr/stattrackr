@@ -66,6 +66,10 @@ import {
   normalizeTeamKey,
   resolveNblClubName,
 } from '@/lib/nblTeamCanonical';
+import {
+  loadNblPlayerLogs,
+  readNblPlayerLogsCache,
+} from '@/lib/nbl/playerLogsClientCache';
 import { defaultNblTeamStat, isNblTeamGameStat } from '@/lib/nbl/teamGameLogsShared';
 import {
   nblBestLinePick,
@@ -132,8 +136,6 @@ function getNblTeamAbbrev(teamName: string): string {
 const NBL_TEAM_FILTER_OPTIONS = ['All', ...NBL_CLUBS.map((c) => c.name)];
 const NBL_FREE_PLAYER_SPORTS: readonly PropsDashboardSport[] = ['nbl'];
 const NBL_PAGE_STATE_KEY = 'nblPageState:v1';
-const NBL_PLAYER_LOGS_CACHE_PREFIX = 'nblPlayerLogsCache:v4';
-const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const CHART_DISPLAY_DELAY_MS = 120;
 const NBL_CHART_TIMEFRAMES: readonly NblChartTimeframe[] = [
   'last5',
@@ -159,21 +161,12 @@ type PersistedNblPageState = {
   nblGameFilters?: NblGameFiltersState | null;
 };
 
-type CachedNblPlayerLogs = {
-  createdAt: number;
-  years: number[];
-  games: NblGameLogRow[];
-};
 
 function normalizeNblPlayerNameForMatch(name: string): string {
   return String(name || '')
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function nblPlayerLogsCacheKey(playerId: string): string {
-  return `${NBL_PLAYER_LOGS_CACHE_PREFIX}:${playerId}:${NBL_CHART_HISTORY_YEARS.join(',')}`;
 }
 
 function parseIncomingNblLine(raw: string | null | undefined): number | null {
@@ -856,7 +849,7 @@ export default function NblDashboardPage() {
     setShowSearchDropdown(false);
   };
 
-  // Load game logs whenever a player is selected (cache-first soft remount, then network).
+  // Load game logs: soft-paint from shared props/dashboard cache, join in-flight prefetch.
   useEffect(() => {
     if (!selectedPlayer?.playerId) {
       if (!loadingPlayerFromUrl) {
@@ -866,60 +859,23 @@ export default function NblDashboardPage() {
       return;
     }
     const playerId = selectedPlayer.playerId;
-    const cacheKey = nblPlayerLogsCacheKey(playerId);
-    try {
-      const raw = localStorage.getItem(cacheKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as CachedNblPlayerLogs;
-        const fresh =
-          Number.isFinite(parsed?.createdAt) &&
-          Date.now() - Number(parsed.createdAt) <= NBL_PLAYER_LOGS_CACHE_TTL_MS;
-        const yearsMatch =
-          Array.isArray(parsed.years) &&
-          parsed.years.join(',') === NBL_CHART_HISTORY_YEARS.join(',');
-        if (fresh && yearsMatch && Array.isArray(parsed.games)) {
-          const hasRates = parsed.games.some(
-            (g) => g != null && (g.usgPct != null || g.tsPct != null || g.pace != null)
-          );
-          if (hasRates) {
-            setSelectedPlayerGameLogs(parsed.games);
-            setStatsLoadingForPlayer(false);
-            return;
-          }
-        }
-      }
-    } catch {
-      /* ignore malformed cache */
+    const cached = readNblPlayerLogsCache(playerId);
+    if (cached?.games.length) {
+      setSelectedPlayerGameLogs(cached.games);
+      setStatsLoadingForPlayer(false);
+      if (cached.fresh) return;
+    } else {
+      setStatsLoadingForPlayer(true);
     }
 
     let cancelled = false;
-    setStatsLoadingForPlayer(true);
     (async () => {
       try {
-        const res = await fetch(
-          `/api/nbl/player-game-logs?playerId=${encodeURIComponent(playerId)}&years=${NBL_CHART_HISTORY_YEARS.join(',')}`,
-          { cache: 'no-store' }
-        );
-        if (!res.ok) throw new Error(`logs ${res.status}`);
-        const data = await res.json();
+        const games = await loadNblPlayerLogs(playerId);
         if (cancelled) return;
-        const games = Array.isArray(data.games) ? (data.games as NblGameLogRow[]) : [];
         setSelectedPlayerGameLogs(games);
-        try {
-          const payload: CachedNblPlayerLogs = {
-            createdAt: Date.now(),
-            years: [...NBL_CHART_HISTORY_YEARS],
-            games,
-          };
-          localStorage.setItem(cacheKey, JSON.stringify(payload));
-        } catch {
-          /* ignore quota */
-        }
       } catch {
-        if (!cancelled) {
-          // Keep already-painted logs on error (soft remount / cache path).
-          setSelectedPlayerGameLogs((prev) => prev);
-        }
+        if (!cancelled) setSelectedPlayerGameLogs((prev) => prev);
       } finally {
         if (!cancelled) setStatsLoadingForPlayer(false);
       }

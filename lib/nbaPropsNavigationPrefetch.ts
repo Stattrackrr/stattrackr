@@ -1,5 +1,6 @@
 import { writeNbaNextGamePrefetch } from '@/lib/nba/dash/nextGamePrefetch';
-import { NBA_CHART_HISTORY_YEARS, NBA_CURRENT_SEASON_YEAR, resolveNbaClubName } from '@/lib/nba/dash/teams';
+import { NBA_CURRENT_SEASON_YEAR, resolveNbaClubName } from '@/lib/nba/dash/teams';
+import { prefetchNbaPlayerLogs } from '@/lib/nba/playerLogsClientCache';
 
 /** Warm NBA dashboard data on props → dashboard navigation. Does not block routing. */
 export function prefetchNbaDashboardFromProps(options: {
@@ -13,6 +14,9 @@ export function prefetchNbaDashboardFromProps(options: {
   const opponent = resolveNbaClubName(options.opponent) || '';
   const playerId = String(options.playerId || '').trim();
   if (!playerName && !team) return;
+
+  // Critical path: same in-flight + localStorage cache the dashboard reads for chart paint.
+  if (/^\d+$/.test(playerId)) prefetchNbaPlayerLogs(playerId);
 
   if (team) {
     void fetch(`/api/nba/dash/next-game?team=${encodeURIComponent(team)}&year=${NBA_CURRENT_SEASON_YEAR}`)
@@ -37,11 +41,6 @@ export function prefetchNbaDashboardFromProps(options: {
   if (playerName && team && opponent) {
     urls.push(
       `/api/nba/dash/player-props?player=${encodeURIComponent(playerName)}&stat=points&team=${encodeURIComponent(team)}&opponent=${encodeURIComponent(opponent)}`
-    );
-  }
-  if (/^\d+$/.test(playerId)) {
-    urls.push(
-      `/api/nba/dash/player-game-logs?playerId=${encodeURIComponent(playerId)}&years=${NBA_CHART_HISTORY_YEARS.join(',')}`
     );
   }
   for (const url of urls) {

@@ -3074,6 +3074,7 @@ export default function AFLPage() {
         // Ignore.
       }
     }
+    let softPaintedFromCache = false;
     if (!needsStaleLogBypass && !shouldBypassClientLogsCache) {
       try {
         const raw = localStorage.getItem(logsCacheKey);
@@ -3084,7 +3085,7 @@ export default function AFLPage() {
           const gamesTyped = parsed.games as { season?: unknown; date?: string; game_date?: string }[];
           const has2026 = season !== 2026 || has2026InGames(gamesTyped);
           const bothSeasonsOk = cacheOkFor2026(gamesTyped);
-          if (isFresh && gamesOk && has2026 && bothSeasonsOk) {
+          if (gamesOk && has2026 && bothSeasonsOk) {
             setSelectedPlayerGameLogs(dedupeAflGames(parsed.games as Record<string, unknown>[]) as AflGameLogRecord[]);
             setSelectedPlayerGameLogsWithQuarters(
               dedupeAflGames(
@@ -3095,8 +3096,10 @@ export default function AFLPage() {
               setSelectedPlayer((prev) => (prev ? { ...prev, ...parsed.mergedStats } : prev));
               playerStatsCacheRef.current.set(cacheKey, parsed.mergedStats);
             }
+            softPaintedFromCache = true;
             setStatsLoadingForPlayer(false);
-            return;
+            // Fresh cache: skip network. Stale: keep chart painted and refresh below.
+            if (isFresh) return;
           }
           if (gamesOk && season === 2026 && (!has2026InGames(gamesTyped) || !has2025InGames(gamesTyped))) {
             try {
@@ -3114,7 +3117,7 @@ export default function AFLPage() {
     const baseUrl = `/api/afl/player-game-logs?player_name=${encodeURIComponent(String(playerName))}${teamQuery}&include_both=1`;
 
     let cancelled = false;
-    setStatsLoadingForPlayer(true);
+    if (!softPaintedFromCache) setStatsLoadingForPlayer(true);
     const searchStartedAtMs = Date.now();
     const currentYear = season;
     const prevYear = currentYear - 1;
@@ -3122,7 +3125,8 @@ export default function AFLPage() {
     // Do not pass force_fetch from the browser: it bypasses Redis + FootyWire memory cache and
     // blocks ~20s+ per season while scraping live. Freshness is handled by TTL, cron warm, and
     // localStorage invalidation when 2026/2025 mix looks wrong.
-    const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
+    // Prefer cache:'default' so props prefetch + CDN HIT share one trip (soft-paint handles stale).
+    const fetchOpts = { cache: 'default' as RequestCache };
     type SeasonFetchResult = { ok: boolean; data: Record<string, unknown> };
     const emptyOlderSeason: SeasonFetchResult = { ok: true, data: { games: [], gamesWithQuarters: [] } };
     (async () => {

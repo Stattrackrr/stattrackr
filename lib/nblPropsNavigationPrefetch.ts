@@ -1,5 +1,6 @@
 import { writeNblNextGamePrefetch } from '@/lib/nbl/nblNextGamePrefetch';
-import { NBL_CHART_HISTORY_YEARS, NBL_CURRENT_SEASON_YEAR } from '@/lib/nblTeamCanonical';
+import { prefetchNblPlayerLogs } from '@/lib/nbl/playerLogsClientCache';
+import { NBL_CURRENT_SEASON_YEAR } from '@/lib/nblTeamCanonical';
 
 /** Warm NBL dashboard data on props → dashboard navigation. Does not block routing. */
 export function prefetchNblDashboardFromProps(options: {
@@ -13,6 +14,9 @@ export function prefetchNblDashboardFromProps(options: {
   const opponent = String(options.opponent || '').trim();
   const playerId = String(options.playerId || '').trim();
   if (!playerName && !team) return;
+
+  // Critical path: same in-flight + localStorage cache the dashboard reads for chart paint.
+  if (playerId) prefetchNblPlayerLogs(playerId);
 
   if (team) {
     void fetch(
@@ -39,11 +43,6 @@ export function prefetchNblDashboardFromProps(options: {
   if (playerName && team && opponent) {
     urls.push(
       `/api/nbl/player-props?player=${encodeURIComponent(playerName)}&stat=points&team=${encodeURIComponent(team)}&opponent=${encodeURIComponent(opponent)}`
-    );
-  }
-  if (playerId) {
-    urls.push(
-      `/api/nbl/player-game-logs?playerId=${encodeURIComponent(playerId)}&years=${NBL_CHART_HISTORY_YEARS.join(',')}`
     );
   }
   for (const url of urls) {

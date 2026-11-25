@@ -70,6 +70,10 @@ import {
   normalizeTeamKey,
   resolveNbaClubName,
 } from '@/lib/nba/dash/teams';
+import {
+  loadNbaPlayerLogs,
+  readNbaPlayerLogsCache,
+} from '@/lib/nba/playerLogsClientCache';
 import { defaultNbaTeamStat, isNbaTeamGameStat } from '@/lib/nba/dash/teamGameLogsShared';
 import {
   nbaBestLinePick,
@@ -146,8 +150,6 @@ function getNbaTeamAbbrev(teamName: string): string {
 const NBA_TEAM_FILTER_OPTIONS = ['All', ...NBA_CLUBS.map((c) => c.name)];
 const NBA_FREE_PLAYER_SPORTS: readonly PropsDashboardSport[] = ['nba'];
 const NBA_PAGE_STATE_KEY = 'nbaPageState:v1';
-const NBA_PLAYER_LOGS_CACHE_PREFIX = 'nbaPlayerLogsCache:v4';
-const NBA_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const CHART_DISPLAY_DELAY_MS = 120;
 const NBA_CHART_TIMEFRAMES: readonly NbaChartTimeframe[] = [
   'last5',
@@ -173,21 +175,11 @@ type PersistedNbaPageState = {
   nbaGameFilters?: NbaGameFiltersState | null;
 };
 
-type CachedNbaPlayerLogs = {
-  createdAt: number;
-  years: number[];
-  games: NbaGameLogRow[];
-};
-
 function normalizeNbaPlayerNameForMatch(name: string): string {
   return String(name || '')
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function nbaPlayerLogsCacheKey(playerId: string): string {
-  return `${NBA_PLAYER_LOGS_CACHE_PREFIX}:${playerId}:${NBA_CHART_HISTORY_YEARS.join(',')}`;
 }
 
 function parseIncomingNbaLine(raw: string | null | undefined): number | null {
@@ -874,7 +866,7 @@ export default function NbaDashboardPage() {
     setShowSearchDropdown(false);
   };
 
-  // Load game logs whenever a player is selected (cache-first soft remount, then network).
+  // Load game logs: soft-paint from shared props/dashboard cache, join in-flight prefetch.
   useEffect(() => {
     if (!selectedPlayer?.playerId) {
       if (!loadingPlayerFromUrl) {
@@ -884,60 +876,23 @@ export default function NbaDashboardPage() {
       return;
     }
     const playerId = selectedPlayer.playerId;
-    const cacheKey = nbaPlayerLogsCacheKey(playerId);
-    try {
-      const raw = localStorage.getItem(cacheKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as CachedNbaPlayerLogs;
-        const fresh =
-          Number.isFinite(parsed?.createdAt) &&
-          Date.now() - Number(parsed.createdAt) <= NBA_PLAYER_LOGS_CACHE_TTL_MS;
-        const yearsMatch =
-          Array.isArray(parsed.years) &&
-          parsed.years.join(',') === NBA_CHART_HISTORY_YEARS.join(',');
-        if (fresh && yearsMatch && Array.isArray(parsed.games)) {
-          const hasRates = parsed.games.some(
-            (g) => g != null && (g.usgPct != null || g.tsPct != null || g.pace != null)
-          );
-          if (hasRates) {
-            setSelectedPlayerGameLogs(parsed.games);
-            setStatsLoadingForPlayer(false);
-            return;
-          }
-        }
-      }
-    } catch {
-      /* ignore malformed cache */
+    const cached = readNbaPlayerLogsCache(playerId);
+    if (cached?.games.length) {
+      setSelectedPlayerGameLogs(cached.games);
+      setStatsLoadingForPlayer(false);
+      if (cached.fresh) return;
+    } else {
+      setStatsLoadingForPlayer(true);
     }
 
     let cancelled = false;
-    setStatsLoadingForPlayer(true);
     (async () => {
       try {
-        const res = await fetch(
-          `/api/nba/dash/player-game-logs?playerId=${encodeURIComponent(playerId)}&years=${NBA_CHART_HISTORY_YEARS.join(',')}`,
-          { cache: 'no-store' }
-        );
-        if (!res.ok) throw new Error(`logs ${res.status}`);
-        const data = await res.json();
+        const games = await loadNbaPlayerLogs(playerId);
         if (cancelled) return;
-        const games = Array.isArray(data.games) ? (data.games as NbaGameLogRow[]) : [];
         setSelectedPlayerGameLogs(games);
-        try {
-          const payload: CachedNbaPlayerLogs = {
-            createdAt: Date.now(),
-            years: [...NBA_CHART_HISTORY_YEARS],
-            games,
-          };
-          localStorage.setItem(cacheKey, JSON.stringify(payload));
-        } catch {
-          /* ignore quota */
-        }
       } catch {
-        if (!cancelled) {
-          // Keep already-painted logs on error (soft remount / cache path).
-          setSelectedPlayerGameLogs((prev) => prev);
-        }
+        if (!cancelled) setSelectedPlayerGameLogs((prev) => prev);
       } finally {
         if (!cancelled) setStatsLoadingForPlayer(false);
       }

@@ -16,9 +16,12 @@ export function prefetchAflDashboardFromProps(options: {
     : '';
   const teamEnc = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
   const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(playerName)}${teamEnc}&include_both=1`;
+  // Dashboard waits on current + prior + older seasons — warm all three, not just current.
   const urls = [
     `/api/afl/player-props?player=${encodeURIComponent(playerName)}&all=1${teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
     `${logsBase}&season=${currentSeason}`,
+    `${logsBase}&season=${currentSeason - 1}`,
+    `${logsBase}&season=${currentSeason - 2}`,
     `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(playerName)}`,
     `/api/afl/players?query=${encodeURIComponent(playerName)}&limit=30`,
   ];
