@@ -16,8 +16,9 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+/** Empty board: never CDN-cache. Populated board: short edge cache so WiFi reloads aren't a 2.7MB origin pull every time. */
 const COMBINED_CACHE_CONTROL = 'private, no-store';
-const COMBINED_CACHE_CONTROL_HIT = 'private, no-store';
+const COMBINED_CACHE_CONTROL_HIT = 'public, s-maxage=45, stale-while-revalidate=180';
 
 function emptyCombinedShell(): CombinedPropsSnapshot {
   const now = new Date().toISOString();

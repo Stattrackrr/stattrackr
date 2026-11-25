@@ -45,7 +45,10 @@ export async function GET(request: NextRequest) {
       NBA_DASH_CACHE.league,
       () => loadNbaTeamUsage(opts)
     );
-    return NextResponse.json({ team, year, lastN: tf.lastN, sampleGames, players });
+    return NextResponse.json(
+      { team, year, lastN: tf.lastN, sampleGames, players },
+      { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=1800' } }
+    );
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message, players: [] }, { status: 500 });
   }
