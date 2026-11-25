@@ -65,13 +65,21 @@ export const AI_POLICY_VERSIONS: Readonly<Record<string, string>> = { nba: 'nba-
 
 /**
  * Admin-only test arm with its own betting rules (lib/aiPicks/punter): NBA player props bet on a
- * stack of matchup and role reasons. Its picks carry this track, are readable by admin only
- * (migrations/ai_picks_track.sql) and never count in the live record, caps, learning or alerts.
- * The rules are fixed per version; changing them means a new track id, so records never mix.
+ * stack of matchup and role reasons. Retired from the Newer-model tab in favour of cash-v1; kept
+ * so old `punter-v1` rows and probes still resolve.
  */
 export const AI_PUNTER_TRACK = 'punter-v1';
 export const AI_PUNTER_POLICY = 'nba-punter-v1';
-export const AI_PUNTER_LABEL = 'Newer model · testing';
+export const AI_PUNTER_LABEL = 'Punter · retired';
+
+/**
+ * Admin-only cash arm (lib/aiPicks/cash): NBA props at market EV ≥ 3%, top 8 by EV per US-East day.
+ * Backtested on logged Arm A shadow bets. Readable by admin only (migrations/ai_picks_track.sql);
+ * never counts in the live record, caps, learning or member alerts. New rules ⇒ new track id.
+ */
+export const AI_CASH_TRACK = 'cash-v1';
+export const AI_CASH_POLICY = 'nba-cash-v1';
+export const AI_CASH_LABEL = 'Newer model · testing';
 
 /** Watchlist key for a track's claim on a play, kept apart from the live row for the same play. */
 export function trackWatchKey(track: string, candidateKey: string): string {

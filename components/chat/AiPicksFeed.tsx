@@ -7,7 +7,7 @@ import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchAddedPickIds, fetchAiPicks, fetchAiRecordBets, setPickAdded } from '@/lib/aiPicks/client';
 import { legBet, legSubject } from '@/lib/aiPicks/format';
-import { AI_PUNTER_LABEL, AI_PUNTER_TRACK } from '@/lib/aiPicks/params';
+import { AI_CASH_LABEL, AI_CASH_TRACK } from '@/lib/aiPicks/params';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import type { AiPick, AiPickLeg, AiPickStatus } from '@/lib/aiPicks/types';
 import type { TennisTour } from '@/lib/tennis/types';
@@ -394,7 +394,7 @@ function PickCard({
         <div className="flex shrink-0 items-center gap-1.5">
           {newer && (
             <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 ring-1 ring-inset ring-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200 dark:ring-amber-400/30">
-              {AI_PUNTER_LABEL}
+              {AI_CASH_LABEL}
             </span>
           )}
           {onToggleAdded && <AddedButton added={added} onToggle={() => onToggleAdded(pick.id)} />}
@@ -672,7 +672,7 @@ function scrollParent(el: HTMLElement | null): HTMLElement | null {
   return null;
 }
 
-type FeedTrack = 'live' | 'punter';
+type FeedTrack = 'live' | 'cash';
 
 export function AiPicksFeed() {
   const [viewer] = useChatViewer('AI picks feed');
@@ -687,13 +687,13 @@ export function AiPicksFeed() {
     resulted: TAB_SORTS.resulted.default,
   });
   const sort = sorts[tab];
-  const showPunter = viewer.isAdmin && feedTrack === 'punter';
+  const showCash = viewer.isAdmin && feedTrack === 'cash';
 
   const load = useCallback(async () => {
     try {
       setPicks(
         await fetchAiPicks({
-          track: showPunter ? AI_PUNTER_TRACK : null,
+          track: showCash ? AI_CASH_TRACK : null,
         })
       );
       setError(null);
@@ -702,7 +702,7 @@ export function AiPicksFeed() {
     } finally {
       setLoading(false);
     }
-  }, [showPunter]);
+  }, [showCash]);
 
   // null: the member can't mark picks (signed out, or before migrations/ai_pick_added.sql is run).
   const [addedIds, setAddedIds] = useState<Set<string> | null>(null);
@@ -850,14 +850,14 @@ export function AiPicksFeed() {
   return (
     <div ref={topRef} className="flex min-h-full flex-col gap-3">
       <div className="-mx-5 -mt-4 space-y-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur dark:bg-[#0f1a2b]/95 relative z-10 sm:sticky sm:-top-4">
-        <RecordStrip key={showPunter ? AI_PUNTER_TRACK : 'live'} pendingCount={pendingCount} track={showPunter ? AI_PUNTER_TRACK : null} />
+        <RecordStrip key={showCash ? AI_CASH_TRACK : 'live'} pendingCount={pendingCount} track={showCash ? AI_CASH_TRACK : null} />
 
         {viewer.isAdmin ? (
           <div role="tablist" aria-label="Model track" className="grid grid-cols-2 gap-1 rounded-xl bg-amber-500/10 p-1 ring-1 ring-inset ring-amber-500/20 dark:bg-amber-500/[0.06]">
             {(
               [
                 { id: 'live' as const, label: 'Live' },
-                { id: 'punter' as const, label: 'Newer model' },
+                { id: 'cash' as const, label: 'Newer model' },
               ] as const
             ).map((t) => {
               const active = feedTrack === t.id;
@@ -956,8 +956,8 @@ export function AiPicksFeed() {
           </div>
           <p className="mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
             {picks.length === 0
-              ? showPunter
-                ? 'No newer-model picks yet. It bets an NBA player prop as soon as three reasons line up: a soft or tough matchup, with a run of the opposite matchups or a regular teammate out. Only you can see them.'
+              ? showCash
+                ? 'No cash top8 picks yet. It posts the best NBA soft-price props (market EV ≥ 3%), up to 8 per US-East day. Only you can see them.'
                 : "No picks yet. Stattrackr AI watches NBL, NBA and tennis lines through the day and only posts when it finds a play worth taking."
               : tab === 'pending'
                 ? 'No pending picks right now. New plays show up here as soon as they are posted.'

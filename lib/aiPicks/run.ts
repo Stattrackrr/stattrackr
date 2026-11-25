@@ -34,6 +34,7 @@ import { isNblPropMarket } from '@/lib/aiPicks/markets';
 import { round } from '@/lib/aiPicks/model/math';
 import { loadActiveParams } from '@/lib/aiPicks/learn/state';
 import {
+  AI_CASH_TRACK,
   AI_PUNTER_TRACK,
   modelVersion,
   MULTIS_POSTED,
@@ -42,7 +43,7 @@ import {
   PROPS_ONLY_SPORTS,
   type AiPicksParams,
 } from '@/lib/aiPicks/params';
-import { runPunterArm, type PunterRunSummary } from '@/lib/aiPicks/punter/run';
+import { runCashArm, type CashRunSummary } from '@/lib/aiPicks/cash/run';
 import { sizeUnits } from '@/lib/aiPicks/units';
 import { reschedules, type FixtureTimes } from '@/lib/aiPicks/reschedule';
 import { readNblPulseScoreBoardCache } from '@/lib/nbl/pulseScore';
@@ -114,8 +115,8 @@ export type AiPicksRunSummary = {
   paused: boolean;
   skipped: string[];
   review: { model: string | null; tokensIn: number; tokensOut: number; error: string | null } | null;
-  /** Admin-only punter arm (its own rules and record); its failures stay in here, not in `errors`. */
-  punter?: PunterRunSummary;
+  /** Admin-only cash top8 arm (market EV ≥ 3%, 8/ET day); failures stay here, not in `errors`. */
+  cash?: CashRunSummary;
   /** Seconds spent in each step, to spot a slow source. */
   timings?: Record<string, number>;
   /** New-pick web push sent after posting. */
@@ -471,7 +472,8 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
     const seen = new Set(short.map((c) => c.key));
     const gone = (await listWatchingKeys()).filter((r) => !seen.has(r.candidate_key));
     const started = (r: { starts_at: string }) => Date.parse(r.starts_at) <= nowMs + MIN_LEAD_MS;
-    const liveWatch = (key: string) => !key.startsWith('multi|') && !key.startsWith(`${AI_PUNTER_TRACK}|`);
+    const liveWatch = (key: string) =>
+      !key.startsWith('multi|') && !key.startsWith(`${AI_PUNTER_TRACK}|`) && !key.startsWith(`${AI_CASH_TRACK}|`);
     await setWatchStatus(gone.filter(started).map((r) => r.candidate_key), 'expired', 'Started');
     await setWatchStatus(
       gone.filter((r) => !started(r) && liveWatch(r.candidate_key)).map((r) => r.candidate_key),
@@ -561,16 +563,25 @@ export async function runAiPicks(nowMs = Date.now(), fixedParams?: AiPicksParams
       }
     }
 
-    // Admin-only punter arm: its own rules on the same scan. Nothing above depends on it, it never
-    // alerts anyone, and its errors stay in its own summary so a bad night there cannot mark this run failed.
+    // Admin-only cash top8 arm: market EV shopping, max 8/ET day. Never alerts members; errors stay local.
     if (!settings.paused && Date.now() - startedAt <= REVIEW_CUTOFF_MS) {
       try {
         const stale = nbaStaleness(scan, nowMs);
-        summary.punter = await runPunterArm({ scan, params, nowMs, fresh: !stale.odds && !stale.injuries, liveGames });
+        summary.cash = await runCashArm({ scan, params, nowMs, fresh: !stale.odds && !stale.injuries, liveGames });
       } catch (e) {
-        summary.punter = { cases: 0, eligible: 0, proposals: [], posted: [], rejected: [], skipped: [], livePriceRequests: 0, review: null, errors: [(e as Error).message] };
+        summary.cash = {
+          board: 0,
+          eligible: 0,
+          dayCount: 0,
+          dayRoom: 0,
+          proposals: [],
+          posted: [],
+          skipped: [],
+          livePriceRequests: 0,
+          errors: [(e as Error).message],
+        };
       }
-      mark('punter');
+      mark('cash');
     }
   } catch (e) {
     summary.errors.push((e as Error).message);
