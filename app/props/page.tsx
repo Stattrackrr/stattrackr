@@ -467,46 +467,91 @@ function navigateToTennisDashboardFromProp(
   router.push(href);
 }
 
-/** Start critical dashboard log fetches on hover so click paint is already warm. */
+/**
+ * Hover warmup for dashboard logs — dwell + single-flight only.
+ * Unthrottled mouseEnter/touchStart flooded /api/* (esp. AFL ×3 seasons) and starved
+ * the props page itself (blank navy shell + multi‑second navigations).
+ */
+const propsDashboardHoverPrefetch = {
+  timer: null as ReturnType<typeof setTimeout> | null,
+  key: '' as string,
+  done: new Set<string>(),
+};
+
 function prefetchDashboardFromPropRow(
   prop: Pick<PlayerProp, 'playerName' | 'playerId' | 'team' | 'opponent' | 'opponentId'>,
-  rowSport: string
+  rowSport: string,
+  opts?: { immediate?: boolean }
 ): void {
-  if (rowSport === 'nba') {
-    prefetchNbaDashboardFromProps({
-      playerName: prop.playerName,
-      playerId: prop.playerId,
-      team: prop.team,
-      opponent: prop.opponent,
-    });
+  const key = `${rowSport}|${prop.playerId || ''}|${prop.playerName}|${prop.team || ''}|${prop.opponent || ''}`;
+  const run = () => {
+    if (propsDashboardHoverPrefetch.done.has(key)) return;
+    propsDashboardHoverPrefetch.done.add(key);
+    if (propsDashboardHoverPrefetch.done.size > 80) {
+      propsDashboardHoverPrefetch.done.clear();
+      propsDashboardHoverPrefetch.done.add(key);
+    }
+    if (rowSport === 'nba') {
+      prefetchNbaDashboardFromProps({
+        playerName: prop.playerName,
+        playerId: prop.playerId,
+        team: prop.team,
+        opponent: prop.opponent,
+      });
+      return;
+    }
+    if (rowSport === 'nbl') {
+      prefetchNblDashboardFromProps({
+        playerName: prop.playerName,
+        playerId: prop.playerId,
+        team: prop.team,
+        opponent: prop.opponent,
+      });
+      return;
+    }
+    if (rowSport === 'afl') {
+      prefetchAflDashboardFromProps({
+        playerName: prop.playerName,
+        team: prop.team || '',
+        opponent: prop.opponent || '',
+      });
+      return;
+    }
+    if (isTennisPropsSport(rowSport)) {
+      prefetchTennisDashboardFromProps({
+        playerName: prop.playerName,
+        playerId: prop.playerId,
+        tour: String(prop.team || '').trim(),
+        opponent: prop.opponent,
+        opponentId: prop.opponentId,
+      });
+    }
+  };
+
+  if (opts?.immediate) {
+    if (propsDashboardHoverPrefetch.timer) {
+      clearTimeout(propsDashboardHoverPrefetch.timer);
+      propsDashboardHoverPrefetch.timer = null;
+    }
+    run();
     return;
   }
-  if (rowSport === 'nbl') {
-    prefetchNblDashboardFromProps({
-      playerName: prop.playerName,
-      playerId: prop.playerId,
-      team: prop.team,
-      opponent: prop.opponent,
-    });
-    return;
+
+  if (propsDashboardHoverPrefetch.key === key && propsDashboardHoverPrefetch.timer) return;
+  if (propsDashboardHoverPrefetch.timer) clearTimeout(propsDashboardHoverPrefetch.timer);
+  propsDashboardHoverPrefetch.key = key;
+  propsDashboardHoverPrefetch.timer = setTimeout(() => {
+    propsDashboardHoverPrefetch.timer = null;
+    run();
+  }, 220);
+}
+
+function cancelPropsDashboardHoverPrefetch(): void {
+  if (propsDashboardHoverPrefetch.timer) {
+    clearTimeout(propsDashboardHoverPrefetch.timer);
+    propsDashboardHoverPrefetch.timer = null;
   }
-  if (rowSport === 'afl') {
-    prefetchAflDashboardFromProps({
-      playerName: prop.playerName,
-      team: prop.team || '',
-      opponent: prop.opponent || '',
-    });
-    return;
-  }
-  if (isTennisPropsSport(rowSport)) {
-    prefetchTennisDashboardFromProps({
-      playerName: prop.playerName,
-      playerId: prop.playerId,
-      tour: String(prop.team || '').trim(),
-      opponent: prop.opponent,
-      opponentId: prop.opponentId,
-    });
-  }
+  propsDashboardHoverPrefetch.key = '';
 }
 
 function tennisPropsHeadshotUrl(
@@ -10423,7 +10468,7 @@ export default function NBALandingPage() {
                                 key={propsListRowKey(prop, rowSport, idx)}
                                 className={`border-b ${mounted && isDark ? 'border-gray-900 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
                                 onMouseEnter={() => prefetchDashboardFromPropRow(prop, rowSport)}
-                                onFocus={() => prefetchDashboardFromPropRow(prop, rowSport)}
+                                onMouseLeave={() => cancelPropsDashboardHoverPrefetch()}
                                 onAuxClick={(e) => {
                                   if (e.button !== 1) return;
                                   if (eventTargetIsInteractive(e)) return;
@@ -10438,6 +10483,7 @@ export default function NBALandingPage() {
                                   if (navigatingRef.current) return;
                                   navigatingRef.current = true;
                                   setNavigatingToPlayer(true);
+                                  prefetchDashboardFromPropRow(prop, rowSport, { immediate: true });
 
                                   if (rowSport === 'afl' || rowSport === 'nbl' || isTennisPropsSport(rowSport)) {
                                     navigateToSecondaryDashboard();
@@ -11890,7 +11936,7 @@ export default function NBALandingPage() {
                                 mounted && isDark ? 'bg-gradient-to-br from-[#0b1a2b] via-[#10253f] to-[#1b1c3d] border-[#463e6b]' : 'bg-white border-gray-200'
                               }`}
                               onMouseEnter={() => prefetchDashboardFromPropRow(prop, rowSport)}
-                              onTouchStart={() => prefetchDashboardFromPropRow(prop, rowSport)}
+                              onMouseLeave={() => cancelPropsDashboardHoverPrefetch()}
                               onAuxClick={(e) => {
                                 if (e.button !== 1) return;
                                 if (eventTargetIsInteractive(e)) return;
@@ -11902,6 +11948,7 @@ export default function NBALandingPage() {
                                 if (eventTargetIsInteractive(e)) return;
                                 if (bookmakerPopupClosingRef.current || openPopup) return;
                                 if (navigatingRef.current) return;
+                                prefetchDashboardFromPropRow(prop, rowSport, { immediate: true });
                                 navigatingRef.current = true;
                                 setNavigatingToPlayer(true);
                                 if (rowSport === 'afl' || rowSport === 'nbl' || isTennisPropsSport(rowSport)) {
