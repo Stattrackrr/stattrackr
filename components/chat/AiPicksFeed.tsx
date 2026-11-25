@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { fetchAddedPickIds, fetchAiPicks, fetchAiRecordBets, setPickAdded } from '@/lib/aiPicks/client';
 import { legBet, legSubject } from '@/lib/aiPicks/format';
 import { AI_CASH_LABEL, AI_CASH_TRACK } from '@/lib/aiPicks/params';
+import { PicksModelDisclaimer } from '@/components/picks/PicksModelDisclaimer';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import type { AiPick, AiPickLeg, AiPickStatus } from '@/lib/aiPicks/types';
 import type { TennisTour } from '@/lib/tennis/types';
@@ -849,6 +850,8 @@ export function AiPicksFeed() {
 
   return (
     <div ref={topRef} className="flex min-h-full flex-col gap-3">
+      {/* Trust disclaimer is for the public Live stand-in only — not the admin cash model. */}
+      {!showCash ? <PicksModelDisclaimer /> : null}
       <div className="-mx-5 -mt-4 space-y-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur dark:bg-[#0f1a2b]/95 relative z-10 sm:sticky sm:-top-4">
         <RecordStrip key={showCash ? AI_CASH_TRACK : 'live'} pendingCount={pendingCount} track={showCash ? AI_CASH_TRACK : null} />
 

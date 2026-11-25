@@ -79,7 +79,7 @@ export const AI_PUNTER_LABEL = 'Punter · retired';
  */
 export const AI_CASH_TRACK = 'cash-v1';
 export const AI_CASH_POLICY = 'nba-cash-v1';
-export const AI_CASH_LABEL = 'Newer model · testing';
+export const AI_CASH_LABEL = 'Newer model';
 
 /** Watchlist key for a track's claim on a play, kept apart from the live row for the same play. */
 export function trackWatchKey(track: string, candidateKey: string): string {
